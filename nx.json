@@ -27,7 +27,22 @@
     ]
   },
   "projects": {
+    "authentications": {
+      "tags": []
+    },
+    "feeds": {
+      "tags": []
+    },
     "metadata": {
+      "tags": []
+    },
+    "notifications": {
+      "tags": []
+    },
+    "searches": {
+      "tags": []
+    },
+    "users": {
       "tags": []
     }
   }
