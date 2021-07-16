@@ -17,7 +17,8 @@
             "tsConfig": "apps/authentications/tsconfig.app.json",
             "assets": [
               "apps/authentications/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
@@ -75,7 +76,8 @@
             "tsConfig": "apps/feeds/tsconfig.app.json",
             "assets": [
               "apps/feeds/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
@@ -133,7 +135,8 @@
             "tsConfig": "apps/metadata/tsconfig.app.json",
             "assets": [
               "apps/metadata/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
@@ -191,7 +194,8 @@
             "tsConfig": "apps/notifications/tsconfig.app.json",
             "assets": [
               "apps/notifications/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
@@ -249,7 +253,8 @@
             "tsConfig": "apps/searches/tsconfig.app.json",
             "assets": [
               "apps/searches/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
@@ -307,7 +312,8 @@
             "tsConfig": "apps/users/tsconfig.app.json",
             "assets": [
               "apps/users/src/assets"
-            ]
+            ],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
