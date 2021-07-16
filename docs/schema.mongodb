@@ -1,0 +1,460 @@
+db.createCollection('users', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'users',
+      required: ['displayName', 'displayId', 'createDate', 'updateDate', 'type', 'ownerAccount'],
+      properties: {
+        displayName: {
+          bsonType: 'string'
+        },
+        displayId: {
+          bsonType: 'string'
+        },
+        profile: {
+          bsonType: 'object'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        },
+        type: {
+          enum: ["people", "page", "guest"]
+        },
+        ownerAccount: {
+          bsonType: 'objectId'
+        }
+      }
+    }
+  }
+});
+db.createCollection('contents', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'contents',
+      required: ['payload', 'createDate', 'updateDate', 'author', 'engagements', 'hashtags', 'revisionCount'],
+      properties: {
+        type: {
+          enum: ["post", "blog", "recast"]
+        },
+        payload: {
+          bsonType: 'object'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        },
+        author: {
+          bsonType: 'object'
+        },
+        engagements: {
+          bsonType: 'object'
+        },
+        hashtags: {
+          bsonType: 'array'
+        },
+        revisionCount: {
+          bsonType: 'int'
+        }
+      }
+    }
+  }
+});
+db.createCollection('engagements', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'engagements',
+      required: ['user', 'targetRef', 'createDate', 'updateDate', 'target', 'type'],
+      properties: {
+        user: {
+          bsonType: 'objectId'
+        },
+        targetRef: {
+          bsonType: 'object'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        },
+        target: {
+          bsonType: 'object'
+        },
+        type: {
+          enum: ["like", "recast", "quote", "comment"]
+        }
+      }
+    }
+  }
+});
+db.createCollection('comments', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'comments',
+      required: ['message', 'author', 'engagements', 'createDate', 'updateDate', 'hashtags', 'revisionCount'],
+      properties: {
+        message: {
+          bsonType: 'string'
+        },
+        author: {
+          bsonType: 'object'
+        },
+        engagements: {
+          bsonType: 'object'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        },
+        hashtags: {
+          bsonType: 'string'
+        },
+        revisionCount: {
+          bsonType: 'int'
+        }
+      }
+    }
+  }
+});
+db.createCollection('relationships', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'relationships',
+      required: ['followedUser', 'user', 'createDate', 'updateDate'],
+      properties: {
+        followedUser: {
+          bsonType: 'objectId'
+        },
+        user: {
+          bsonType: 'objectId'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        }
+      }
+    }
+  }
+});
+db.createCollection('revisions', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'revisions',
+      required: ['objectRef', 'payload', 'createDate', 'version'],
+      properties: {
+        objectRef: {
+          bsonType: 'object'
+        },
+        payload: {
+          bsonType: 'object'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        version: {
+          bsonType: 'int'
+        }
+      }
+    }
+  }
+});
+db.createCollection('circleContents', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'circleContents',
+      required: ['user', 'circle', 'content', 'feature', 'aggregator', 'score'],
+      properties: {
+        user: {
+          bsonType: 'objectId'
+        },
+        circle: {
+          bsonType: 'string'
+        },
+        content: {
+          bsonType: 'object'
+        },
+        feature: {
+          bsonType: 'string'
+        },
+        aggregator: {
+          bsonType: 'object'
+        },
+        score: {
+          bsonType: 'int'
+        }
+      }
+    }
+  }
+});
+db.createCollection('circles', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'circles',
+      required: ['slug', 'name', 'type'],
+      properties: {
+        slug: {
+          bsonType: 'string'
+        },
+        name: {
+          bsonType: 'string'
+        },
+        type: {
+          enum: ["default", "topic"]
+        }
+      }
+    }
+  }
+});
+db.createCollection('accounts', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'accounts',
+      required: ['email', 'password', 'activateDate', 'createDate', 'updateDate', 'preferences'],
+      properties: {
+        email: {
+          bsonType: 'string'
+        },
+        password: {
+          bsonType: 'string'
+        },
+        activateDate: {
+          bsonType: 'date'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        },
+        preferences: {
+          bsonType: 'object'
+        },
+        user: {
+          bsonType: 'object'
+        }
+      }
+    }
+  }
+});
+db.createCollection('accountActivations', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'accountActivations',
+      required: ['account', 'verifyToken', 'verfiyTokenExpireDate', 'type', 'inUse', 'createDate', 'updateDate'],
+      properties: {
+        account: {
+          bsonType: 'objectId'
+        },
+        verifyToken: {
+          bsonType: 'string'
+        },
+        verfiyTokenExpireDate: {
+          bsonType: 'date'
+        },
+        type: {
+          enum: ["email", "mobile"]
+        },
+        activationDate: {
+          bsonType: 'date'
+        },
+        inUse: {
+          bsonType: 'bool'
+        },
+        expireDate: {
+          bsonType: 'date'
+        },
+        revocationDate: {
+          bsonType: 'date'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        }
+      }
+    }
+  }
+});
+db.createCollection('accountAuthenIds', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'accountAuthenIds',
+      required: ['type', 'externalId', 'account', 'createDate', 'updateDate'],
+      properties: {
+        type: {
+          enum: ["facebook", "telegram", "google"]
+        },
+        externalId: {
+          bsonType: 'string'
+        },
+        account: {
+          bsonType: 'objectId'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        }
+      }
+    }
+  }
+});
+db.createCollection('features', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'features',
+      required: ['slug', 'name'],
+      properties: {
+        slug: {
+          bsonType: 'string'
+        },
+        name: {
+          bsonType: 'string'
+        }
+      }
+    }
+  }
+});
+db.createCollection('credentials', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'credentials',
+      required: ['account', 'accessToken', 'refreshToken', 'accessTokenExpireDate', 'refreshTokenExpireDate', 'device', 'platform', 'deviceUUID', 'createDate', 'updateDate'],
+      properties: {
+        account: {
+          bsonType: 'objectId'
+        },
+        accessToken: {
+          bsonType: 'string'
+        },
+        refreshToken: {
+          bsonType: 'string'
+        },
+        accessTokenExpireDate: {
+          bsonType: 'date'
+        },
+        refreshTokenExpireDate: {
+          bsonType: 'date'
+        },
+        device: {
+          bsonType: 'string'
+        },
+        platform: {
+          bsonType: 'string'
+        },
+        deviceUUID: {
+          bsonType: 'string'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
+        }
+      }
+    }
+  }
+});
+db.createCollection('I18N', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'I18N',
+      required: ['objectRef', 'tag', 'value'],
+      properties: {
+        objectRef: {
+          bsonType: 'object'
+        },
+        tag: {
+          bsonType: 'string'
+        },
+        value: {
+          bsonType: 'string'
+        }
+      }
+    }
+  }
+});
+db.createCollection('hashtags', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'hashtags',
+      required: ['tag', 'score', 'aggregator'],
+      properties: {
+        tag: {
+          bsonType: 'string'
+        },
+        score: {
+          bsonType: 'int'
+        },
+        aggregator: {
+          bsonType: 'object'
+        }
+      }
+    }
+  }
+});
+db.createCollection('hashtagItems', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'hashtagItems',
+      required: ['objectRef', 'payload', 'hashtag'],
+      properties: {
+        objectRef: {
+          bsonType: 'object'
+        },
+        payload: {
+          bsonType: 'object'
+        },
+        hashtag: {
+          bsonType: 'objectId'
+        }
+      }
+    }
+  }
+});
+db.createCollection('archiveHashtags', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      title: 'archiveHashtags',
+      required: ['hashtags', 'from', 'to'],
+      properties: {
+        hashtags: {
+          bsonType: 'array'
+        },
+        from: {
+          bsonType: 'date'
+        },
+        to: {
+          bsonType: 'date'
+        }
+      }
+    }
+  }
+});
