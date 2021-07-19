@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@castcle-api/environments": ["libs/environments/src/index.ts"]
+      "@castcle-api/environments": ["libs/environments/src/index.ts"],
+      "@castcle-api/database": ["libs/database/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
