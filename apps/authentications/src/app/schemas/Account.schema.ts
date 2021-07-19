@@ -37,17 +37,17 @@ export class Account{
     activateDate:Date
 
     @Prop({ required: true })
-    createdDate:Date
+    createDate:Date
 
     @Prop({ required: true })
     updateDate:Date
 
-    @Prop({ required: true })
-    preference:{
+    @Prop({ required: true, type:Object })
+    preferences:{
         langagues:string[]
     }
 
-    @Prop()
+    @Prop({type:Object})
     mobile:{
         countryCode:string,
         number:string
