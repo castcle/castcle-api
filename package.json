@@ -23,7 +23,13 @@
     "update": "nx migrate latest",
     "workspace-generator": "nx workspace-generator",
     "dep-graph": "nx dep-graph",
-    "help": "nx help"
+    "help": "nx help",
+    "build:authentications": "nx build authentications",
+    "build:feeds": "nx build feeds",
+    "build:metadata": "nx build metadata",
+    "build:notifications": "nx build notifications",
+    "build:searches": "nx build searches",
+    "build:users": "nx build users"
   },
   "private": true,
   "dependencies": {

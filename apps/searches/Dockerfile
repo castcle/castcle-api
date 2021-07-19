@@ -22,7 +22,7 @@
 FROM node:16.5.0-alpine
 WORKDIR /app
 COPY ./dist/apps/searches .
-ENV PORT=3333
+ENV PORT=3000
 EXPOSE ${PORT}
 RUN npm install --production
 # dependencies that nestjs needs
