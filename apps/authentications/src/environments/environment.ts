@@ -22,6 +22,5 @@
  */
 
 export const environment = {
-  production: false,
-  dbLocation:'mongodb://localhost/castcleV1'
+  production: false
 };
