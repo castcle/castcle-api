@@ -30,6 +30,9 @@
     "authentications": {
       "tags": []
     },
+    "database": {
+      "tags": []
+    },
     "feeds": {
       "tags": []
     },
@@ -37,6 +40,9 @@
       "tags": []
     },
     "notifications": {
+      "tags": []
+    },
+    "schemas": {
       "tags": []
     },
     "searches": {

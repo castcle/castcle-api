@@ -60,6 +60,31 @@
         }
       }
     },
+    "database": {
+      "root": "libs/database",
+      "sourceRoot": "libs/database/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/database/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/database"
+          ],
+          "options": {
+            "jestConfig": "libs/database/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "feeds": {
       "root": "apps/feeds",
       "sourceRoot": "apps/feeds/src",
@@ -232,6 +257,31 @@
           ],
           "options": {
             "jestConfig": "apps/notifications/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "schemas": {
+      "root": "libs/schemas",
+      "sourceRoot": "libs/schemas/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/schemas/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/schemas"
+          ],
+          "options": {
+            "jestConfig": "libs/schemas/jest.config.js",
             "passWithNoTests": true
           }
         }
