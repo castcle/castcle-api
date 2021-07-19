@@ -224,7 +224,7 @@ db.createCollection('accounts', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'accounts',
-      required: ['email', 'password', 'activateDate', 'createDate', 'updateDate', 'preferences'],
+      required: ['createDate', 'updateDate', 'preferences'],
       properties: {
         email: {
           bsonType: 'string'
