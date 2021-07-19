@@ -1,3 +1,4 @@
+use('castcleV1')
 db.createCollection('users', {
   validator: {
     $jsonSchema: {
@@ -134,7 +135,7 @@ db.createCollection('relationships', {
       required: ['followedUser', 'user', 'createDate', 'updateDate'],
       properties: {
         followedUser: {
-          bsonType: 'objectId'
+          bsonType: 'array'
         },
         user: {
           bsonType: 'objectId'
@@ -154,7 +155,7 @@ db.createCollection('revisions', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'revisions',
-      required: ['objectRef', 'payload', 'createDate', 'version'],
+      required: ['objectRef', 'payload', 'createDate'],
       properties: {
         objectRef: {
           bsonType: 'object'
@@ -164,24 +165,18 @@ db.createCollection('revisions', {
         },
         createDate: {
           bsonType: 'date'
-        },
-        version: {
-          bsonType: 'int'
         }
       }
     }
   }
 });
-db.createCollection('circleContents', {
+db.createCollection('feedItems', {
   validator: {
     $jsonSchema: {
       bsonType: 'object',
-      title: 'circleContents',
-      required: ['user', 'circle', 'content', 'feature', 'aggregator', 'score'],
+      title: 'feedItems',
+      required: ['circle', 'content', 'feature', 'aggregator', 'score', 'account'],
       properties: {
-        user: {
-          bsonType: 'objectId'
-        },
         circle: {
           bsonType: 'string'
         },
@@ -196,6 +191,9 @@ db.createCollection('circleContents', {
         },
         score: {
           bsonType: 'int'
+        },
+        account: {
+          bsonType: 'objectId'
         }
       }
     }
@@ -247,6 +245,9 @@ db.createCollection('accounts', {
           bsonType: 'object'
         },
         user: {
+          bsonType: 'object'
+        },
+        mobile: {
           bsonType: 'object'
         }
       }
