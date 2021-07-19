@@ -38,24 +38,24 @@ export class Credential{
     @Prop({required:true})
     refreshToken:string
 
-    @Prop()
+    @Prop({required:true})
     accessTokenExpireDate:Date;
 
-    @Prop()
+    @Prop({required:true})
     refreshTokenExpireDate:Date;
 
-    @Prop()
+    @Prop({required:true})
     platform:string
 
-    @Prop()
+    @Prop({required:true})
     deviceUUID:string
 
     @Prop({required:true})
     device:string
 
-    @Prop()
+    @Prop({required:true})
     createDate:Date
 
-    @Prop()
+    @Prop({required:true})
     updateDate:Date
 }
