@@ -47,19 +47,21 @@ describe('AccountService', () => {
     })
     describe('Onboarding', () => {
         let createdDocument
-        
-        it('should create credential when create an account',async () => {
-            createdDocument = await service.create({
-                isGuest:true,
-                createDate:new Date(),
-                updateDate:new Date(),
-                preferences:{languages:["en", "en"]}
+        describe('Create account flow', () => {
+            it('should create a credential when create an account',async () => {
+                createdDocument = await service.create({
+                    isGuest:true,
+                    createDate:new Date(),
+                    updateDate:new Date(),
+                    preferences:{languages:["en", "en"]}
+                })
+                expect(createdDocument.account).toBeDefined();
+                expect(createdDocument.credential).toBeDefined();
+                expect(createdDocument.credential.accessToken).toBeDefined()
+                
             })
-            expect(createdDocument.account).toBeDefined();
-            expect(createdDocument.credential).toBeDefined();
-            expect(createdDocument.credential.accessToken).toBeDefined()
-            
         })
+        
 
 
 
