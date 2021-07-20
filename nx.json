@@ -30,6 +30,9 @@
     "authentications": {
       "tags": []
     },
+    "environments": {
+      "tags": []
+    },
     "feeds": {
       "tags": []
     },
