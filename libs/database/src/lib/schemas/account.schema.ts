@@ -37,6 +37,9 @@ export class Account{
     activateDate:Date
 
     @Prop({ required: true })
+    isGuest:boolean
+
+    @Prop({ required: true })
     createDate:Date
 
     @Prop({ required: true })
