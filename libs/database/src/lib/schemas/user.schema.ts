@@ -47,7 +47,7 @@ export interface UserProfile{
     details:string
 }
 
-export const UserType = { People:'people', Page:'page'}
+export enum UserType { People = 'people', Page ='page'}
 
 @Schema()
 export class User{
