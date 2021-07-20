@@ -29,6 +29,7 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { Environment as env } from '@castcle-api/environments';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -37,6 +38,7 @@ async function bootstrap() {
   app.setGlobalPrefix('authentications');
   await app.listen(port, () => {
     Logger.log('Listening at http://localhost:' + port);
+    Logger.log(`Environment at ${env.node_env}`)
   });
 }
 
