@@ -23,6 +23,6 @@
 
 export const environment = {
     production: false,
-    dbLocation: "mongodb://localhost/castcleV1"
+    dbLocation: `mongodb://${process.env.dbHost}/${process.env.dbName}`
   };
   
