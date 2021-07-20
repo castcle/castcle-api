@@ -259,7 +259,7 @@ db.createCollection('accountActivations', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'accountActivations',
-      required: ['account', 'verifyToken', 'verfiyTokenExpireDate', 'type', 'inUse', 'createDate', 'updateDate'],
+      required: ['account', 'verifyToken', 'verfiyTokenExpireDate', 'type', 'createDate', 'updateDate'],
       properties: {
         account: {
           bsonType: 'objectId'
@@ -275,9 +275,6 @@ db.createCollection('accountActivations', {
         },
         activationDate: {
           bsonType: 'date'
-        },
-        inUse: {
-          bsonType: 'bool'
         },
         expireDate: {
           bsonType: 'date'
