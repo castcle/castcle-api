@@ -26,6 +26,9 @@ import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from "../schemas/account.schema"
 
+export type CredentialDocument = Credential & Document
+
+
 @Schema()
 export class Credential{
 
@@ -59,3 +62,5 @@ export class Credential{
     @Prop({required:true})
     updateDate:Date
 }
+
+export const CredentialSchema = SchemaFactory.createForClass(Credential);
