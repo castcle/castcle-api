@@ -25,7 +25,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccountService } from "./account.service"
 
-import { environment } from "../../environments/environment"
+import { Environment as env } from '@castcle-api/environments';
 import { AccountDocument, AccountSchema } from "../schemas/account.schema"
 import { CredentialSchema } from "../schemas/credential.schema"
 
@@ -35,7 +35,7 @@ describe('AccountService', () => {
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
-                MongooseModule.forRoot(environment.dbLocation),
+                MongooseModule.forRoot( `mongodb://${env.db_host}/${env.db_database_name}`),
                 MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
             ],
             providers:[AccountService],
