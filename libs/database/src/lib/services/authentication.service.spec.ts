@@ -30,7 +30,7 @@ import { AccountDocument, AccountSchema } from "../schemas/account.schema"
 import { CredentialSchema } from "../schemas/credential.schema"
 
 
-describe('AccountService', () => {
+describe('Authentication Service', () => {
     let service:AuthenticationService
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -47,24 +47,94 @@ describe('AccountService', () => {
     })
     describe('Onboarding', () => {
         let createdDocument
-        describe('Create account flow', () => {
-            it('should create a credential when create an account',async () => {
-                createdDocument = await service.create({
-                    isGuest:true,
-                    createDate:new Date(),
-                    updateDate:new Date(),
-                    preferences:{languages:["en", "en"]}
-                })
-                expect(createdDocument.account).toBeDefined();
-                expect(createdDocument.credential).toBeDefined();
-                expect(createdDocument.credential.accessToken).toBeDefined()
+        describe('#generateToken()', () => {
+            it('should return HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)',async () => {
                 
             })
         })
         
+        describe('#verifyToken()', () => {
+            it('should return true if token = generateToken(header,payload)', () => {
 
+            })
+            it('should return false if token is not valid', () => {
+
+            })
+        })
+
+        describe('#generateAccessToken()', () => {
+            it('should return accountId, acessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
+
+            })
+            it('should generate an account if there is no deviceUUID in credentials\'s collection that call this function', () => {
+
+            })
+            it('should not generate an account if account with deviceUUID is already exist', () => {
+
+            })
+        })
+
+        describe('#verifyAccessToken()', () => {
+            it('should return true if accessToken is valid ', () => {
+
+            })
+            it('should return false if accessToken is invalid ', () => {
+                
+            })
+            it('should return false if accessToken is expire ', () => {
+                
+            })
+        })
+
+        describe('#refreshAccessToken()', () => {
+            it('should return accessToken if refreshToken is valid ', () => {
+
+            })
+            it('should return false if accessToken is invalid ', () => {
+                
+            })
+            it('should return false if accessToken is expire ', () => {
+                
+            })
+        })
+
+        describe('#createAccountWithEmail()', () => {
+            it('should create AccountActivation if accessToken is valid', () => {
+
+            })
+            it('should return  AccountActivation if accessToken is valid', () => {
+                
+            })
+            it('should return  null if accessToken is invalid', () => {
+                
+            })
+        })
+
+        describe('#verifyAccountWithEmail()', () => {
+            it('should update an Account if verifyToken is valid', () => {
+
+            })
+            it('should return  Account if function run sucessfully', () => {
+                
+            })
+            it('should return  null if verifyToken is invalid', () => {
+                
+            })
+        })
+
+        describe('#loginWithEmail()', () => {
+            it('should update an Account if verifyToken is valid', () => {
+
+            })
+            it('should return  Account if function run sucessfully', () => {
+                
+            })
+            it('should return  null if verifyToken is invalid', () => {
+                
+            })
+        })
 
 
     })
     
-});
+}); 
