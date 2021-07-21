@@ -23,7 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AccountService } from "./account.service"
+import { AuthenticationService } from "./authentication.service"
 
 import { Environment as env } from '@castcle-api/environments';
 import { AccountDocument, AccountSchema } from "../schemas/account.schema"
@@ -31,16 +31,16 @@ import { CredentialSchema } from "../schemas/credential.schema"
 
 
 describe('AccountService', () => {
-    let service:AccountService
+    let service:AuthenticationService
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
                 MongooseModule.forRoot( env.db_location),
                 MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
             ],
-            providers:[AccountService],
+            providers:[AuthenticationService],
         }).compile()
-        service = module.get<AccountService>(AccountService);
+        service = module.get<AuthenticationService>(AuthenticationService);
     });
     it('should be defined', () => {
         expect(service).toBeDefined();

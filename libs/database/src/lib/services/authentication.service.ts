@@ -29,7 +29,7 @@ import { CredentialDocument } from "../schemas/credential.schema"
 import { CreateAccountDto } from "../dtos/account.dto"
 
 @Injectable()
-export class AccountService {
+export class AuthenticationService {
     constructor(@InjectModel('Account') public accountModel:Model<AccountDocument>, @InjectModel('Credential') public credentialModel:Model<CredentialDocument> ){}
 
     async create(createAccountDto:CreateAccountDto){
