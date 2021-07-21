@@ -21,16 +21,46 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { Account } from "../schemas/account.schema"
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+export type CredentialDocument = Credential & Document
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
 
-@Module({
-  imports: [],
-  controllers: [AppController, HealthyController],
-  providers: [AppService],
-})
-export class AppModule {}
+@Schema()
+export class Credential{
+
+    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+    account:Account
+
+    @Prop({required:true})
+    accessToken:string
+
+    @Prop({required:true})
+    refreshToken:string
+
+    @Prop({required:true})
+    accessTokenExpireDate:Date;
+
+    @Prop({required:true})
+    refreshTokenExpireDate:Date;
+
+    @Prop({required:true})
+    platform:string
+
+    @Prop({required:true})
+    deviceUUID:string
+
+    @Prop({required:true})
+    device:string
+
+    @Prop({required:true})
+    createDate:Date
+
+    @Prop({required:true})
+    updateDate:Date
+}
+
+export const CredentialSchema = SchemaFactory.createForClass(Credential);

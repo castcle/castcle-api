@@ -21,16 +21,40 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+export type AccountDocument = Account & Document
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+@Schema()
+export class Account{
+    @Prop()
+    email:string
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
+    @Prop()
+    password:string
 
-@Module({
-  imports: [],
-  controllers: [AppController, HealthyController],
-  providers: [AppService],
-})
-export class AppModule {}
+    @Prop()
+    activateDate:Date
+
+    @Prop({ required: true })
+    isGuest:boolean
+
+    @Prop({ required: true })
+    createDate:Date
+
+    @Prop({ required: true })
+    updateDate:Date
+
+    @Prop({ required: true, type:Object })
+    preferences:{
+        langagues:string[]
+    }
+
+    @Prop({type:Object})
+    mobile:{
+        countryCode:string,
+        number:string
+    }
+}
+
+export const AccountSchema = SchemaFactory.createForClass(Account);
