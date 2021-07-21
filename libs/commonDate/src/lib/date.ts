@@ -59,7 +59,7 @@ export class CommonDate {
     if (!dt) {
       dt = new Date();
     }
-    let minuteAdd = day * 1440 + hour * 60 + min;
+    const minuteAdd = day * 1440 + hour * 60 + min;
     return new Date(dt.getTime() + 60000 * minuteAdd);
   }
 
