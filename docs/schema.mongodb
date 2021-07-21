@@ -38,7 +38,7 @@ db.createCollection('contents', {
       required: ['payload', 'createDate', 'updateDate', 'author', 'engagements', 'hashtags', 'revisionCount'],
       properties: {
         type: {
-          enum: ["post", "blog", "recast"]
+          enum: ["post", "blog", "recast", "quote"]
         },
         payload: {
           bsonType: 'object'
@@ -134,7 +134,7 @@ db.createCollection('relationships', {
       required: ['followedUser', 'user', 'createDate', 'updateDate'],
       properties: {
         followedUser: {
-          bsonType: 'objectId'
+          bsonType: 'array'
         },
         user: {
           bsonType: 'objectId'
@@ -154,7 +154,7 @@ db.createCollection('revisions', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'revisions',
-      required: ['objectRef', 'payload', 'createDate', 'version'],
+      required: ['objectRef', 'payload', 'createDate'],
       properties: {
         objectRef: {
           bsonType: 'object'
@@ -164,24 +164,18 @@ db.createCollection('revisions', {
         },
         createDate: {
           bsonType: 'date'
-        },
-        version: {
-          bsonType: 'int'
         }
       }
     }
   }
 });
-db.createCollection('circleContents', {
+db.createCollection('feedItems', {
   validator: {
     $jsonSchema: {
       bsonType: 'object',
-      title: 'circleContents',
-      required: ['user', 'circle', 'content', 'feature', 'aggregator', 'score'],
+      title: 'feedItems',
+      required: ['circle', 'content', 'feature', 'aggregator', 'score', 'account'],
       properties: {
-        user: {
-          bsonType: 'objectId'
-        },
         circle: {
           bsonType: 'string'
         },
@@ -196,6 +190,9 @@ db.createCollection('circleContents', {
         },
         score: {
           bsonType: 'int'
+        },
+        account: {
+          bsonType: 'objectId'
         }
       }
     }
@@ -206,7 +203,7 @@ db.createCollection('circles', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'circles',
-      required: ['slug', 'name', 'type'],
+      required: ['slug', 'name', 'type', 'createDate', 'updateDate'],
       properties: {
         slug: {
           bsonType: 'string'
@@ -216,6 +213,12 @@ db.createCollection('circles', {
         },
         type: {
           enum: ["default", "topic"]
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
         }
       }
     }
@@ -226,7 +229,7 @@ db.createCollection('accounts', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'accounts',
-      required: ['email', 'password', 'activateDate', 'createDate', 'updateDate', 'preferences'],
+      required: ['createDate', 'updateDate', 'preferences'],
       properties: {
         email: {
           bsonType: 'string'
@@ -248,6 +251,9 @@ db.createCollection('accounts', {
         },
         user: {
           bsonType: 'object'
+        },
+        mobile: {
+          bsonType: 'object'
         }
       }
     }
@@ -258,7 +264,7 @@ db.createCollection('accountActivations', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'accountActivations',
-      required: ['account', 'verifyToken', 'verfiyTokenExpireDate', 'type', 'inUse', 'createDate', 'updateDate'],
+      required: ['account', 'verifyToken', 'verfiyTokenExpireDate', 'type', 'createDate', 'updateDate'],
       properties: {
         account: {
           bsonType: 'objectId'
@@ -274,9 +280,6 @@ db.createCollection('accountActivations', {
         },
         activationDate: {
           bsonType: 'date'
-        },
-        inUse: {
-          bsonType: 'bool'
         },
         expireDate: {
           bsonType: 'date'
@@ -325,13 +328,19 @@ db.createCollection('features', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'features',
-      required: ['slug', 'name'],
+      required: ['slug', 'name', 'createDate', 'updateDate'],
       properties: {
         slug: {
           bsonType: 'string'
         },
         name: {
           bsonType: 'string'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
         }
       }
     }
@@ -342,7 +351,7 @@ db.createCollection('credentials', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'credentials',
-      required: ['account', 'accessToken', 'refreshToken', 'accessTokenExpireDate', 'refreshTokenExpireDate', 'device', 'platform', 'deviceUUID', 'createDate', 'updateDate'],
+      required: ['account', 'accessToken', 'refreshToken', 'accessTokenExpireDate', 'refreshTokenExpireDate', 'device', 'platform', 'deviceUUID', 'createDate', 'updateDate', 'createDate', 'updateDate'],
       properties: {
         account: {
           bsonType: 'objectId'
@@ -373,6 +382,12 @@ db.createCollection('credentials', {
         },
         updateDate: {
           bsonType: 'date'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
         }
       }
     }
@@ -383,7 +398,7 @@ db.createCollection('I18N', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'I18N',
-      required: ['objectRef', 'tag', 'value'],
+      required: ['objectRef', 'tag', 'value', 'createDate', 'updateDate'],
       properties: {
         objectRef: {
           bsonType: 'object'
@@ -393,6 +408,12 @@ db.createCollection('I18N', {
         },
         value: {
           bsonType: 'string'
+        },
+        createDate: {
+          bsonType: 'date'
+        },
+        updateDate: {
+          bsonType: 'date'
         }
       }
     }
@@ -443,18 +464,20 @@ db.createCollection('archiveHashtags', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'archiveHashtags',
-      required: ['hashtags', 'from', 'to'],
+      required: ['hashtags', 'fromDate', 'toDate'],
       properties: {
         hashtags: {
           bsonType: 'array'
         },
-        from: {
+        fromDate: {
           bsonType: 'date'
         },
-        to: {
+        toDate: {
           bsonType: 'date'
         }
       }
     }
   }
 });
+Object list
+Main Diagram
