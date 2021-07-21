@@ -35,7 +35,7 @@ describe('AccountService', () => {
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
-                MongooseModule.forRoot( `mongodb://${env.db_host}/${env.db_database_name}`),
+                MongooseModule.forRoot( env.db_location),
                 MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
             ],
             providers:[AccountService],
