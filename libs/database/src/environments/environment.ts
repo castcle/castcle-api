@@ -20,9 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment as env } from '@castcle-api/environments';
 
 export const environment = {
     production: false,
-    dbLocation: `mongodb://${process.env.dbHost}/${process.env.dbName}`
+    dbLocation: `mongodb://${env.db_host}/${env.db_database_name}`
   };
   
