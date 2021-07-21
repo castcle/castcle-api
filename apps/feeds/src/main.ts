@@ -29,10 +29,15 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { SwaggerModule } from '@nestjs/swagger';
+import { DocumentConfig } from "./docs/document.config"
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3335;
+
+  const document = SwaggerModule.createDocument(app, DocumentConfig);
+  SwaggerModule.setup('feeds/documentations', app, document);
 
   app.setGlobalPrefix('feeds');
   await app.listen(port, () => {
