@@ -37,6 +37,7 @@ export const Environment = {
   db_host: process.env.DB_HOST,
   db_port: process.env.DB_PORT as unknown as number,
   db_database_name: process.env.DB_DATABASE_NAME,
+  db_location:`mongodb://${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}`,
   // Mail Service
   smtp_username: process.env.SMTP_USERNAME,
   smtp_password: process.env.SMTP_PASSWORD,
