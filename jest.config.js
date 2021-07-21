@@ -30,5 +30,6 @@ module.exports = {
     '<rootDir>/apps/notifications',
     '<rootDir>/apps/searches',
     '<rootDir>/libs/environments',
+    '<rootDir>/libs/database',
   ],
 };
