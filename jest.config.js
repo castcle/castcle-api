@@ -31,5 +31,6 @@ module.exports = {
     '<rootDir>/apps/searches',
     '<rootDir>/libs/data',
     '<rootDir>/libs/commonDate',
+    '<rootDir>/libs/environments',
   ],
 };

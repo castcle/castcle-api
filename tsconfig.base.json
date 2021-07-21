@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@castcle-api/commonDate": ["libs/commonDate/src/index.ts"]
+      "@castcle-api/commonDate": ["libs/commonDate/src/index.ts"],
+      "@castcle-api/environments": ["libs/environments/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
