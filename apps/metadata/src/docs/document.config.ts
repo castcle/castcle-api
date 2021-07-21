@@ -20,28 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
 
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
-import { SwaggerModule } from '@nestjs/swagger';
-import { DocumentConfig } from "./docs/document.config"
+import {  DocumentBuilder } from '@nestjs/swagger';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3337;
-
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup('searches/documentations', app, document);
-  
-  app.setGlobalPrefix('searches');
-  await app.listen(port, () => {
-    Logger.log('Listening at http://localhost:' + port);
-  });
-}
-
-bootstrap();
+export const DocumentConfig = new DocumentBuilder()
+    .setTitle('Notification example')
+    .setDescription('The  API description')
+    .setVersion('1.0')
+    .addTag('cats')
+    .build();
