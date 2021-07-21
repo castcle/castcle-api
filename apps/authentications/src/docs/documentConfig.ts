@@ -24,7 +24,7 @@
 import {  DocumentBuilder } from '@nestjs/swagger';
 
 export const DocumentConfig = new DocumentBuilder()
-    .setTitle('Autthentication example')
+    .setTitle('Authentication example')
     .setDescription('The  API description')
     .setVersion('1.0')
     .addTag('cats')
