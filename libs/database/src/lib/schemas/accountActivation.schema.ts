@@ -57,11 +57,11 @@ export class AccountActivation{
     @Prop()
     revocationDate:Date
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const AccountActivationSchema = SchemaFactory.createForClass(AccountActivation);

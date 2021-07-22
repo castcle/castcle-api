@@ -37,11 +37,11 @@ export class Feature{
     @Prop({required:true})
     value:string
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);

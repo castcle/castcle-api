@@ -89,11 +89,11 @@ export class Content{
     @Prop({type:Array})
     hashtags:any[]
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

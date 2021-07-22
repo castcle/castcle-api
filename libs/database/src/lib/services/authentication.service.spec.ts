@@ -39,7 +39,7 @@ describe('Authentication Service', () => {
                 MongooseModule.forRoot( env.db_location),
                 MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
             ],
-            providers:[],
+            providers:[ AuthenticationService ],
         }).compile()
         service = module.get<AuthenticationService>(AuthenticationService);
     });
@@ -98,14 +98,14 @@ describe('Authentication Service', () => {
                 expect(createAccountResult.accountDocument.isGuest).toBeDefined()
                 expect(createAccountResult.accountDocument.preferences).toBeDefined()
                 expect(createAccountResult.accountDocument).toBeDefined()
-                //expect(createAccountResult.accountDocument.updateDate).toBeDefined()
+                expect(createAccountResult.accountDocument.updatedAt).toBeDefined()
                 //check credential
                 expect(createAccountResult.credentialDocument.accessToken).toBeDefined()
                 expect(createAccountResult.credentialDocument.accessTokenExpireDate).toBeDefined()
                 expect(createAccountResult.credentialDocument.refreshToken).toBeDefined()
                 expect(createAccountResult.credentialDocument.refreshTokenExpireDate).toBeDefined()
-                //expect(createAccountResult.credentialDocument.createDate).toBeDefined()
-                //expect(createAccountResult.credentialDocument.updateDate).toBeDefined()
+                expect(createAccountResult.credentialDocument.createdAt).toBeDefined()
+                expect(createAccountResult.credentialDocument.updatedAt).toBeDefined()
             })
             it('newly created Account should be guest', () => {
                 expect(createAccountResult.accountDocument.isGuest).toBe(true);

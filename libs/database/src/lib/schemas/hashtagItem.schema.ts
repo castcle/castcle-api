@@ -43,11 +43,11 @@ export class HashtagItem{
     @Prop({required:true, type:Object })
     payload: Comment | Content | any
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

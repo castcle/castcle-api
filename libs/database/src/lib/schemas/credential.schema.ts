@@ -60,7 +60,7 @@ export class Credential{
     createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 
     isAccessTokenValid :Function
 

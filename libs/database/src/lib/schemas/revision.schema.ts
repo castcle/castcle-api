@@ -35,11 +35,11 @@ export class Revision{
     @Prop({required:true, type:Object})
     payload:string
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 
 }
 

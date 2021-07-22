@@ -43,11 +43,11 @@ export class ArchiveHashtag{
     @Prop({required:true})
     toDate:Date
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const ArchiveHashtagSchema = SchemaFactory.createForClass(ArchiveHashtag);

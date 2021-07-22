@@ -47,11 +47,11 @@ export class Comment{
     @Prop({type:Array})
     hashtags:any[]
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

@@ -43,11 +43,11 @@ export class Circle{
     @Prop({required:true})
     type:string
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const CircleSchema = SchemaFactory.createForClass(Circle);

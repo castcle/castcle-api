@@ -54,7 +54,7 @@ export class Account{
     createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

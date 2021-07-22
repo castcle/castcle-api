@@ -70,11 +70,11 @@ export class User{
     @Prop()
     verified:boolean
   
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

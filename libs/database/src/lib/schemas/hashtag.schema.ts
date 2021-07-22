@@ -39,11 +39,11 @@ export class Hashtag{
     @Prop({required:true, type:Object })
     aggregator:any
 
-    @Prop()
-    createAt?:Date
+    @Prop() 
+    createdAt?:Date
 
     @Prop()
-    updateAt?:Date
+    updatedAt?:Date
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
