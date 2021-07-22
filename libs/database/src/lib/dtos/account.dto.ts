@@ -20,7 +20,33 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import * as mongoose from 'mongoose';
 
+export class SaveCredentialDto{
+    account?:mongoose.Types.ObjectId
+    accessToken:string
+    refreshToken?:string
+    accessTokenExpireDate:Date;
+    refreshTokenExpireDate?:Date;
+    platform?:string
+    deviceUUID?:string
+    device?:string
+    createDate:Date
+    updateDate:Date
+}
+
+export class CreateCredentialDto{
+    account:mongoose.Types.ObjectId
+    accessToken:string
+    refreshToken:string
+    accessTokenExpireDate:Date;
+    refreshTokenExpireDate?:Date;
+    platform:string
+    deviceUUID:string
+    device:string
+    createDate:Date
+    updateDate:Date
+}
 
 export class CreateAccountDto{
     isGuest:boolean
