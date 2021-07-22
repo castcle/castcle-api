@@ -8,16 +8,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/authentications",
             "main": "apps/authentications/src/main.ts",
             "tsConfig": "apps/authentications/tsconfig.app.json",
-            "assets": [
-              "apps/authentications/src/assets"
-            ],
+            "assets": ["apps/authentications/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -43,18 +39,35 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/authentications/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/authentications/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/authentications"
-          ],
+          "outputs": ["coverage/apps/authentications"],
           "options": {
             "jestConfig": "apps/authentications/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "commonDate": {
+      "root": "libs/commonDate",
+      "sourceRoot": "libs/commonDate/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/commonDate/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/commonDate"],
+          "options": {
+            "jestConfig": "libs/commonDate/jest.config.js",
             "passWithNoTests": true
           }
         }
@@ -117,16 +130,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/feeds",
             "main": "apps/feeds/src/main.ts",
             "tsConfig": "apps/feeds/tsconfig.app.json",
-            "assets": [
-              "apps/feeds/src/assets"
-            ],
+            "assets": ["apps/feeds/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -152,16 +161,12 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/feeds/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/feeds/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/feeds"
-          ],
+          "outputs": ["coverage/apps/feeds"],
           "options": {
             "jestConfig": "apps/feeds/jest.config.js",
             "passWithNoTests": true
@@ -176,16 +181,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/metadata",
             "main": "apps/metadata/src/main.ts",
             "tsConfig": "apps/metadata/tsconfig.app.json",
-            "assets": [
-              "apps/metadata/src/assets"
-            ],
+            "assets": ["apps/metadata/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -211,16 +212,12 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/metadata/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/metadata/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/metadata"
-          ],
+          "outputs": ["coverage/apps/metadata"],
           "options": {
             "jestConfig": "apps/metadata/jest.config.js",
             "passWithNoTests": true
@@ -235,16 +232,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/notifications",
             "main": "apps/notifications/src/main.ts",
             "tsConfig": "apps/notifications/tsconfig.app.json",
-            "assets": [
-              "apps/notifications/src/assets"
-            ],
+            "assets": ["apps/notifications/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -270,16 +263,12 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/notifications/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/notifications/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/notifications"
-          ],
+          "outputs": ["coverage/apps/notifications"],
           "options": {
             "jestConfig": "apps/notifications/jest.config.js",
             "passWithNoTests": true
@@ -294,16 +283,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/searches",
             "main": "apps/searches/src/main.ts",
             "tsConfig": "apps/searches/tsconfig.app.json",
-            "assets": [
-              "apps/searches/src/assets"
-            ],
+            "assets": ["apps/searches/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -329,16 +314,12 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/searches/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/searches/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/searches"
-          ],
+          "outputs": ["coverage/apps/searches"],
           "options": {
             "jestConfig": "apps/searches/jest.config.js",
             "passWithNoTests": true
@@ -353,16 +334,12 @@
       "targets": {
         "build": {
           "executor": "@nrwl/node:build",
-          "outputs": [
-            "{options.outputPath}"
-          ],
+          "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/users",
             "main": "apps/users/src/main.ts",
             "tsConfig": "apps/users/tsconfig.app.json",
-            "assets": [
-              "apps/users/src/assets"
-            ],
+            "assets": ["apps/users/src/assets"],
             "generatePackageJson": true
           },
           "configurations": {
@@ -388,16 +365,12 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "apps/users/**/*.ts"
-            ]
+            "lintFilePatterns": ["apps/users/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/users"
-          ],
+          "outputs": ["coverage/apps/users"],
           "options": {
             "jestConfig": "apps/users/jest.config.js",
             "passWithNoTests": true
