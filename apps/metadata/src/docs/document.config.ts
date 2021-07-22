@@ -24,8 +24,8 @@
 import {  DocumentBuilder } from '@nestjs/swagger';
 
 export const DocumentConfig = new DocumentBuilder()
-    .setTitle('Notification example')
-    .setDescription('The  API description')
-    .setVersion('1.0')
-    .addTag('cats')
-    .build();
+  .setTitle('Notification example')
+  .setDescription('The  API description')
+  .setVersion('1.0')
+  .addTag('cats')
+  .build();

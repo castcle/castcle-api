@@ -23,15 +23,14 @@
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { Environment as env } from '@castcle-api/environments';
 import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { DocumentConfig } from './docs/document.config';
-// import { DocumentConfig } from "./docs/document.config"
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = env.port || 3332;
+  const port = process.env.PORT || 3332;
+  
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup('documentations', app, document);
