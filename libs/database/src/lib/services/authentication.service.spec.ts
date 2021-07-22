@@ -26,8 +26,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthenticationService } from "./authentication.service"
 
 import { Environment as env } from '@castcle-api/environments';
-import { AccountDocument, AccountSchema } from "../schemas/account.schema"
-import { CredentialSchema } from "../schemas/credential.schema"
+import { Account, AccountDocument, AccountSchema } from "../schemas/account.schema"
+import { CredentialDocument, CredentialSchema } from "../schemas/credential.schema"
 
 
 describe('Authentication Service', () => {
@@ -64,11 +64,54 @@ describe('Authentication Service', () => {
                 expect(typeof result.accessTokenExpireDate).toBeDefined()
                 expect(typeof result.refreshTokenExpireDate).toBeDefined()
             })
-            it('should generate an account if there is no deviceUUID in credentials\'s collection that call this function', () => {
+        })
 
+        describe('#createAccount()', () => {
+            let createAccountResult:{accountDocument:AccountDocument, credentialDocument:CredentialDocument};
+            let accountDocumentCountBefore:number;
+            let credentialDocumentCountBefore:number;
+            beforeAll(async () => {
+                accountDocumentCountBefore =  await service._accountModel.countDocuments().exec();
+                credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
+                createAccountResult  = await service.createAccount({
+                    device:"iPhone01",
+                    deviceUUID:"68b696d7-320b-4402-a412-d9cee10fc6a3",
+                    languagesPreferences:["en", "en"],
+                    header:{
+                        platform:"iOs"
+                    }
+                })
             })
-            it('should not generate an account if account with deviceUUID is already exist', () => {
 
+            it('should create a new Account ', async () => {
+                expect(createAccountResult.accountDocument).toBeDefined();
+                const currentAccountDocumentCount  = await service._accountModel.countDocuments().exec();
+                expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(1);
+            })
+            it('should create a new Credential with account from above', () => {
+                expect(createAccountResult.credentialDocument).toBeDefined();
+                expect(createAccountResult.credentialDocument.account).toEqual(createAccountResult.accountDocument as Account)//not sure how to  check
+            })
+            it('should create documents with all required properties', () => {
+                //check account
+                expect(createAccountResult.accountDocument.isGuest).toBeDefined()
+                expect(createAccountResult.accountDocument.preferences).toBeDefined()
+                expect(createAccountResult.accountDocument.createDate).toBeDefined()
+                expect(createAccountResult.accountDocument.updateDate).toBeDefined()
+                //check credential
+                expect(createAccountResult.credentialDocument.accessToken).toBeDefined()
+                expect(createAccountResult.credentialDocument.accessTokenExpireDate).toBeDefined()
+                expect(createAccountResult.credentialDocument.refreshToken).toBeDefined()
+                expect(createAccountResult.credentialDocument.refreshTokenExpireDate).toBeDefined()
+                expect(createAccountResult.credentialDocument.createDate).toBeDefined()
+                expect(createAccountResult.credentialDocument.updateDate).toBeDefined()
+            })
+            it('newly created Account should be guest', () => {
+                expect(createAccountResult.accountDocument.isGuest).toBe(true);
+            })
+            it('should contain all valid tokens', () => {
+                expect(createAccountResult.credentialDocument.isAccessTokenValid()).toBe(true)
+                expect(createAccountResult.credentialDocument.isRefreshTokenValid()).toBe(true)
             })
         })
 

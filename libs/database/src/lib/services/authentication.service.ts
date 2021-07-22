@@ -48,13 +48,13 @@ export interface AccessTokenPayload{
 
 @Injectable()
 export class AuthenticationService {
-    constructor(@InjectModel('Account') private accountModel:Model<AccountDocument>, @InjectModel('Credential') private credentialModel:Model<CredentialDocument> ){}
+    constructor(@InjectModel('Account') public _accountModel:Model<AccountDocument>, @InjectModel('Credential') public _credentialModel:Model<CredentialDocument> ){}
 
-    getCredentialFromDeviceUUID = (deviceUUID:string) => this.credentialModel.findOne({deviceUUID:deviceUUID}).exec();
+    getCredentialFromDeviceUUID = (deviceUUID:string) => this._credentialModel.findOne({deviceUUID:deviceUUID}).exec();
 
     async createAccount(accountRequirements:AccountRequirements){
         const now = new Date();
-        const newAccount = new this.accountModel({
+        const newAccount = new this._accountModel({
             isGuest:true,
             preferences:{
                 languages:accountRequirements.languagesPreferences
@@ -67,7 +67,7 @@ export class AuthenticationService {
             device:accountRequirements.device,
             deviceUUID:accountRequirements.deviceUUID
         })
-        const credentialDocument = new this.credentialModel({
+        const credentialDocument = new this._credentialModel({
             account: mongoose.Types.ObjectId(accountDocument._id),
             accessToken: tokens.accessToken,
             accessTokenExpireDate: tokens.accessTokenExpireDate,
