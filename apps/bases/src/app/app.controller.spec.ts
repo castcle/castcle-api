@@ -21,18 +21,25 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/apps/bases'
-  ]
-};
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+describe('AppController', () => {
+  let app: TestingModule;
+
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService]
+    }).compile();
+  });
+
+  describe('getData', () => {
+    it('should return "Welcome to bases!"', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getData()).toEqual({ message: 'Welcome to bases!' });
+    });
+  });
+});

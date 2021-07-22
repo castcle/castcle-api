@@ -21,18 +21,14 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/apps/bases'
-  ]
-};
+import { Controller, Get } from '@nestjs/common';
+
+@Controller('healthy')
+export class HealthyController {
+
+  @Get()
+  getData() {
+    return '';
+  }
+
+}
