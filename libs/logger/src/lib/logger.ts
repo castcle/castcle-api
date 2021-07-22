@@ -21,19 +21,43 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger'
-  ]
-};
+import { ConsoleLogger } from '@nestjs/common';
+
+export class CastLogger extends ConsoleLogger {
+
+  /**
+   * Write a 'log' level log.
+   */
+  log(message: any, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (context) {
+      argArray.push(context);
+    }
+    super.log.apply(this, argArray);
+  }
+  
+  /**
+   * Write an 'error' level log.
+   */
+  error(message: any, stack?: string, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (stack) {
+      argArray.push(stack);
+    }
+    if (context) {
+      argArray.push(context);
+    }
+    super.error.apply(this, argArray);
+  }
+
+  /**
+   * Write a 'warn' level log.
+   */
+  warn(message: any, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (context) {
+      argArray.push(context);
+    }
+    super.warn.apply(this, argArray);
+  }
+}

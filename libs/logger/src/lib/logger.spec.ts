@@ -21,19 +21,21 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger'
-  ]
-};
+import { Test, TestingModule } from '@nestjs/testing';
+import { CastLogger } from './logger';
+
+describe('CastLogger', () => {
+  let controller: CastLogger;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CastLogger]
+    }).compile();
+
+    controller = module.get<CastLogger>(CastLogger);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
