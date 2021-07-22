@@ -21,7 +21,7 @@
 
 FROM node:16.5.0-alpine
 WORKDIR /app
-COPY ./dist/apps/searches .
+COPY ./dist/apps/bases .
 ENV PORT=3000
 EXPOSE ${PORT}
 RUN npm install --production
