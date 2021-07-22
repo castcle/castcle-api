@@ -25,7 +25,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 export type AccountDocument = Account & Document
 
-@Schema()
+@Schema({
+    timestamps:true
+})
 export class Account{
     @Prop()
     email:string
@@ -38,12 +40,6 @@ export class Account{
 
     @Prop({ required: true })
     isGuest:boolean
-
-    @Prop({ required: true })
-    createDate:Date
-
-    @Prop({ required: true })
-    updateDate:Date
 
     @Prop({ required: true, type:Object })
     preferences:{

@@ -29,7 +29,9 @@ import { Account } from "../schemas/account.schema"
 export type CredentialDocument = Credential & Document
 
 
-@Schema()
+@Schema({
+    timestamps:true
+})
 export class Credential{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
@@ -55,12 +57,6 @@ export class Credential{
 
     @Prop({required:true})
     device:string
-
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
 
     isAccessTokenValid :Function
 
