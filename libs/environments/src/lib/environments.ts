@@ -51,4 +51,6 @@ export const Environment = {
   jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN as unknown as number,
   jwt_verify_secret: process.env.JWT_VERIFY_SECRET,
   jwt_verify_expires_in: process.env.JWT_VERIFY_EXPIRES_IN as unknown as number,
+  jwt_signature_secret: process.env.JWT_SIGNATURE_SECRET,
+  jwt_signature_expires_in: process.env.JWT_SIGNATURE_EXPIRES_IN as unknown as number,
 };
