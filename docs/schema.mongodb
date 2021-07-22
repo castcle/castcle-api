@@ -479,5 +479,3 @@ db.createCollection('archiveHashtags', {
     }
   }
 });
-Object list
-Main Diagram
