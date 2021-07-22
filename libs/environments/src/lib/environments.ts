@@ -23,7 +23,7 @@
 
 import * as dotenv from 'dotenv';
 
-const env = dotenv.config()
+const env = dotenv.config();
 if (!env) {
   throw new Error('Env not found!');
 }
@@ -31,6 +31,7 @@ if (!env) {
 export const Environment = {
   production: process.env.NODE_ENV === 'production',
   node_env: process.env.NODE_ENV,
+  port: process.env.PORT,
   // Database
   db_username: process.env.DB_USERNAME,
   db_password: process.env.DB_PASSWORD,
