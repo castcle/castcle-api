@@ -51,6 +51,12 @@ export class Account{
         countryCode:string,
         number:string
     }
+
+    @Prop() 
+    createdAt?:Date
+
+    @Prop()
+    updateAt?:Date
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

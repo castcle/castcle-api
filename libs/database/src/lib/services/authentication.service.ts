@@ -53,50 +53,43 @@ export class AuthenticationService {
     getCredentialFromDeviceUUID = (deviceUUID:string) => this._credentialModel.findOne({deviceUUID:deviceUUID}).exec();
 
     async createAccount(accountRequirements:AccountRequirements){
-        const now = new Date();
         const newAccount = new this._accountModel({
             isGuest:true,
             preferences:{
                 languages:accountRequirements.languagesPreferences
-            },
-            createDate:now,
-            updateDate:now
+            }
         } as CreateAccountDto)
         const accountDocument = await newAccount.save()
         const tokens = this._generateAccessToken(accountRequirements.header, {
             device:accountRequirements.device,
             deviceUUID:accountRequirements.deviceUUID
         })
-        const credentialDocument = new this._credentialModel({
+        const credential = new this._credentialModel({
             account: mongoose.Types.ObjectId(accountDocument._id),
             accessToken: tokens.accessToken,
             accessTokenExpireDate: tokens.accessTokenExpireDate,
             refreshToken: tokens.refreshToken,
             refreshTokenExpireDate: tokens.refreshTokenExpireDate,
-            createDate: now,
-            updateDate: now,
             device: accountRequirements.device,
             platform: accountRequirements.header.platform,
             deviceUUID: accountRequirements.deviceUUID
         } as CreateCredentialDto)
+        const credentialDocument =await credential.save();
+        
         return { accountDocument, credentialDocument }
     }
 
     _generateAccessToken(header:{[key:string]:string}, payload:AccessTokenPayload){
         const now = new Date();
         const accessToken = generateToken(header, payload, env.jwt_access_secret);
-        const accessTokenExpireDate =  new Date(now.getTime() + env.jwt_access_expires_in * 1000);
+        const accessTokenExpireDate = new Date(now.getTime() + env.jwt_access_expires_in * 1000);
         const refreshToken = generateToken(header, payload, env.jwt_refresh_secret);
-        const refreshTokenExpireDate = new Date(now.getTime() + env.jwt_refresh_expires_in);
+        const refreshTokenExpireDate = new Date(now.getTime() + env.jwt_refresh_expires_in * 1000 );
         return { accessToken, accessTokenExpireDate, refreshToken, refreshTokenExpireDate}
     }
 
-    verifyAccessToken(token:string, header:{[key:string]:string}, payload:any){
-
-    }
-
-    refreshAccessToken(refreshToken:string){
-
+    refreshAccessToken(credentialDocument:CredentialDocument){
+        
     }
 
     createAccountWithEmail( email:string, password:string, accessToken:string){

@@ -31,8 +31,7 @@ export class SaveCredentialDto{
     platform?:string
     deviceUUID?:string
     device?:string
-    createDate:Date
-    updateDate:Date
+    
 }
 
 export class CreateCredentialDto{
@@ -44,14 +43,12 @@ export class CreateCredentialDto{
     platform:string
     deviceUUID:string
     device:string
-    createDate:Date
-    updateDate:Date
+    
 }
 
 export class CreateAccountDto{
     isGuest:boolean
-    updateDate:Date
-    createDate:Date
+    
     preferences:{
         languages:string[]
     }

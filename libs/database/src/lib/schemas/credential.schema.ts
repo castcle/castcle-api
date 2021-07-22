@@ -58,6 +58,12 @@ export class Credential{
     @Prop({required:true})
     device:string
 
+    @Prop() 
+    createdAt?:Date
+
+    @Prop()
+    updateAt?:Date
+
     isAccessTokenValid :Function
 
     isRefreshTokenValid :Function
