@@ -21,14 +21,21 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HealthyController } from './healthy.controller';
 
-@Module({
-  imports: [],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+describe('HealthyController', () => {
+  let controller: HealthyController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthyController]
+    }).compile();
+
+    controller = module.get<HealthyController>(HealthyController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});

@@ -21,14 +21,14 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
+import { Controller, Get } from '@nestjs/common';
 
-@Module({
-  imports: [],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+@Controller('healthy')
+export class HealthyController {
+
+  @Get()
+  getData() {
+    return '';
+  }
+
+}
