@@ -22,7 +22,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { AuthenticationService } from "./authentication.service"
 
 import { Environment as env } from '@castcle-api/environments';
@@ -32,13 +32,14 @@ import { CredentialDocument, CredentialSchema } from "../schemas/credential.sche
 
 describe('Authentication Service', () => {
     let service:AuthenticationService
+    
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
                 MongooseModule.forRoot( env.db_location),
                 MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
             ],
-            providers:[AuthenticationService],
+            providers:[],
         }).compile()
         service = module.get<AuthenticationService>(AuthenticationService);
     });
