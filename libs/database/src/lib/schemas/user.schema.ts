@@ -49,7 +49,7 @@ export interface UserProfile{
 
 export enum UserType { People = 'people', Page ='page'}
 
-@Schema()
+@Schema({ timestamps:true })
 export class User{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
@@ -70,11 +70,11 @@ export class User{
     @Prop()
     verified:boolean
   
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

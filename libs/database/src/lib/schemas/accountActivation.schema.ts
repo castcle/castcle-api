@@ -33,7 +33,7 @@ export enum AccountActivationType{
     Mobile = "mobile"
 }
 
-@Schema()
+@Schema({ timestamps:true })
 export class AccountActivation{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
@@ -57,9 +57,11 @@ export class AccountActivation{
     @Prop()
     revocationDate:Date
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
+    @Prop()
+    updateAt?:Date
 }
 
 export const AccountActivationSchema = SchemaFactory.createForClass(AccountActivation);

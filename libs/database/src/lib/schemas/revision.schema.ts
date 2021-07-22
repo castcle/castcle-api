@@ -27,7 +27,7 @@ import { Document } from 'mongoose';
 
 export type RevisionDocument = Revision & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Revision{
     @Prop({required:true, type:Object})
     objectRef:any
@@ -35,8 +35,11 @@ export class Revision{
     @Prop({required:true, type:Object})
     payload:string
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
+
+    @Prop()
+    updateAt?:Date
 
 }
 

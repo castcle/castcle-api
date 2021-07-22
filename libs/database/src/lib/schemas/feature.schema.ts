@@ -49,7 +49,7 @@ import { Document } from 'mongoose';
 
 export type FeatureDocument = Feature & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Feature{
     @Prop({required:true})
     slug:string
@@ -57,11 +57,11 @@ export class Feature{
     @Prop({required:true})
     name:string
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);

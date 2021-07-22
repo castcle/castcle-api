@@ -37,7 +37,7 @@ export enum EngagementType{
     Comment = "comment"
 }
 
-@Schema()
+@Schema({ timestamps:true })
 export class Engagement{
     @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
     user:User
@@ -51,11 +51,11 @@ export class Engagement{
     @Prop({required:true})
     type:string
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    updateAt?:Date
 
 }
 

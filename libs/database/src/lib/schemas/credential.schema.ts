@@ -29,9 +29,7 @@ import { Account } from "../schemas/account.schema"
 export type CredentialDocument = Credential & Document
 
 
-@Schema({
-    timestamps:true
-})
+@Schema({ timestamps:true })
 export class Credential{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})

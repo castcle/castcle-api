@@ -36,7 +36,7 @@ export enum AccountAuthenIdType{
     Telegram = "telegram"
 }
 
-@Schema()
+@Schema({ timestamps:true })
 export class AccountAuthenId{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
@@ -45,11 +45,11 @@ export class AccountAuthenId{
     @Prop({required:true})
     type:string
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const AccountAuthenIdSchema = SchemaFactory.createForClass(AccountAuthenId);

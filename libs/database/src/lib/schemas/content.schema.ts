@@ -65,7 +65,7 @@ export enum ContentType{
 
 export type ContentDocument = Content & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Content{
 
     @Prop({required: true, type:Object})
@@ -89,11 +89,11 @@ export class Content{
     @Prop({type:Array})
     hashtags:any[]
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

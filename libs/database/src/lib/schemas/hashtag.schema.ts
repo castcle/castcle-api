@@ -26,7 +26,7 @@ import { Document } from 'mongoose';
 
 export type HashtagDocument = Hashtag & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Hashtag{
     
 
@@ -39,11 +39,11 @@ export class Hashtag{
     @Prop({required:true, type:Object })
     aggregator:any
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);

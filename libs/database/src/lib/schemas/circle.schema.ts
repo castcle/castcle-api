@@ -32,7 +32,7 @@ export enum CircleType{
 
 export type CircleDocument = Circle & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Circle{
     @Prop({required:true})
     slug:string
@@ -43,11 +43,11 @@ export class Circle{
     @Prop({required:true})
     type:string
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const CircleSchema = SchemaFactory.createForClass(Circle);

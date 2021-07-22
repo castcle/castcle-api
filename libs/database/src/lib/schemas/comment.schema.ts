@@ -26,7 +26,7 @@ import { Document } from 'mongoose';
 import { Account } from "../schemas/account.schema"
 export type CommentDocument = Comment & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class Comment{
 
     @Prop({required: true, type:Object})
@@ -47,11 +47,11 @@ export class Comment{
     @Prop({type:Array})
     hashtags:any[]
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

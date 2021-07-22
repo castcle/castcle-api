@@ -30,7 +30,7 @@ import { Content } from "./content.schema"
 
 export type HashtagItemDocument = HashtagItem & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class HashtagItem{
     
 
@@ -43,11 +43,11 @@ export class HashtagItem{
     @Prop({required:true, type:Object })
     payload: Comment | Content | any
 
-    @Prop({required:true})
-    createDate:Date
+    @Prop()
+    createAt?:Date
 
-    @Prop({required:true})
-    updateDate:Date
+    @Prop()
+    updateAt?:Date
 }
 
 export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

@@ -30,7 +30,7 @@ import { Content } from "./content.schema"
 
 export type ArchiveHashtagDocument = ArchiveHashtag & Document
 
-@Schema()
+@Schema({ timestamps:true })
 export class ArchiveHashtag{
     
 
@@ -42,6 +42,12 @@ export class ArchiveHashtag{
 
     @Prop({required:true})
     toDate:Date
+
+    @Prop()
+    createAt?:Date
+
+    @Prop()
+    updateAt?:Date
 }
 
 export const ArchiveHashtagSchema = SchemaFactory.createForClass(ArchiveHashtag);
