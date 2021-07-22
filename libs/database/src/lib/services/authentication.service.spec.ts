@@ -61,8 +61,8 @@ describe('Authentication Service', () => {
                 expect(typeof result.accessToken).toBe("string")
                 expect(result.refreshToken).toBeDefined()
                 expect(typeof result.refreshToken).toBe("string")
-                expect(typeof result.accessTokenExpireDate).toBeDefined()
-                expect(typeof result.refreshTokenExpireDate).toBeDefined()
+                expect( result.accessTokenExpireDate).toBeDefined()
+                expect( result.refreshTokenExpireDate).toBeDefined()
             })
         })
 
