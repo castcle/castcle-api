@@ -351,7 +351,7 @@ db.createCollection('credentials', {
     $jsonSchema: {
       bsonType: 'object',
       title: 'credentials',
-      required: ['account', 'accessToken', 'refreshToken', 'accessTokenExpireDate', 'refreshTokenExpireDate', 'device', 'platform', 'deviceUUID', 'createDate', 'updateDate', 'createDate', 'updateDate'],
+      required: ['account', 'accessToken', 'refreshToken', 'accessTokenExpireDate', 'refreshTokenExpireDate', 'device', 'platform', 'deviceUUID', 'createDate', 'updateDate'],
       properties: {
         account: {
           bsonType: 'objectId'
@@ -376,12 +376,6 @@ db.createCollection('credentials', {
         },
         deviceUUID: {
           bsonType: 'string'
-        },
-        createDate: {
-          bsonType: 'date'
-        },
-        updateDate: {
-          bsonType: 'date'
         },
         createDate: {
           bsonType: 'date'
