@@ -33,5 +33,6 @@ module.exports = {
     '<rootDir>/libs/commonDate',
     '<rootDir>/libs/environments',
     '<rootDir>/libs/database',
-  ],
+    '<rootDir>/apps/bases'
+  ]
 };

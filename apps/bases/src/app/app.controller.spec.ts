@@ -21,32 +21,25 @@
  * or have any questions.
  */
 
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
+import { Test, TestingModule } from '@nestjs/testing';
 
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
-import { SwaggerModule } from '@nestjs/swagger';
-import { DocumentConfig } from './docs/document.config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3338;
-  const prefix = 'users';
-  
-  // For Global
-  app.setGlobalPrefix(prefix);
+describe('AppController', () => {
+  let app: TestingModule;
 
-  // For documentations
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  
-  await app.listen(port, () => {
-    Logger.log('Listening at http://localhost:' + port);
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService]
+    }).compile();
   });
-}
 
-bootstrap();
+  describe('getData', () => {
+    it('should return "Welcome to bases!"', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getData()).toEqual({ message: 'Welcome to bases!' });
+    });
+  });
+});
