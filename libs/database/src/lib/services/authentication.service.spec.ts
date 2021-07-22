@@ -47,9 +47,22 @@ describe('Authentication Service', () => {
     })
     describe('Onboarding', () => {
         let createdDocument
-        describe('#generateAccessToken()', () => {
+        describe('#_generateAccessToken()', () => {
             it('should return accountId, acessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
+                const now = new Date();
+                const result = service._generateAccessToken({
+                    AcceptVersion:'v1'
+                }, {
+                    deviceUUID : 'blablabla',
+                    device:'testIphone'
+                })
 
+                expect(result.accessToken).toBeDefined()
+                expect(typeof result.accessToken).toBe("string")
+                expect(result.refreshToken).toBeDefined()
+                expect(typeof result.refreshToken).toBe("string")
+                expect(typeof result.accessTokenExpireDate).toBeDefined()
+                expect(typeof result.refreshTokenExpireDate).toBeDefined()
             })
             it('should generate an account if there is no deviceUUID in credentials\'s collection that call this function', () => {
 
