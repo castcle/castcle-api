@@ -28,6 +28,8 @@ import * as mongoose from 'mongoose';
 import { CredentialDocument } from "../schemas/credential.schema"
 import { CreateAccountDto } from "../dtos/account.dto"
 
+const generateToken = (header:{[key:string]:string}, payload:any) => `encode:$${JSON.stringify(header)}.${JSON.stringify(payload)}`
+
 @Injectable()
 export class AuthenticationService {
     constructor(@InjectModel('Account') public accountModel:Model<AccountDocument>, @InjectModel('Credential') public credentialModel:Model<CredentialDocument> ){}

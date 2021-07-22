@@ -47,21 +47,6 @@ describe('Authentication Service', () => {
     })
     describe('Onboarding', () => {
         let createdDocument
-        describe('#generateToken()', () => {
-            it('should return HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)',async () => {
-                
-            })
-        })
-        
-        describe('#verifyToken()', () => {
-            it('should return true if token = generateToken(header,payload)', () => {
-
-            })
-            it('should return false if token is not valid', () => {
-
-            })
-        })
-
         describe('#generateAccessToken()', () => {
             it('should return accountId, acessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
 
