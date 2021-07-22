@@ -61,6 +61,14 @@ export class Credential{
 
     @Prop({required:true})
     updateDate:Date
+
+    isAccessTokenValid = () => {
+        return true;
+    }
+
+    isRefreshTokenValid = () => {
+        return true;
+    }
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
