@@ -24,10 +24,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
+  private readonly logger = new CastLogger(AppController.name, CastLoggerOptions);
 
   @Get()
   getData() {
@@ -36,6 +38,7 @@ export class AppController {
       dt.getDateFromString('1981-11-10', 'YYYY-MM-DD'),
       'DD-MM-YY'
     );
+    this.logger.log('Root');
     return this.appService.getData().message + birthDay;
   }
 }

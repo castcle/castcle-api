@@ -21,7 +21,8 @@
  * or have any questions.
  */
 
-import { ConsoleLogger } from '@nestjs/common';
+import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
+import { Environment as env } from '@castcle-api/environments';
 
 export class CastLogger extends ConsoleLogger {
 
@@ -61,3 +62,9 @@ export class CastLogger extends ConsoleLogger {
     super.warn.apply(this, argArray);
   }
 }
+
+export const CastLoggerLevel: LogLevel[] = (env.production) ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'];
+export const CastLoggerOptions: ConsoleLoggerOptions = {
+  logLevels: CastLoggerLevel,
+  timestamp: true,
+};

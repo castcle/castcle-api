@@ -21,14 +21,18 @@
  * or have any questions.
  */
 
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
+import { Environment as env } from '@castcle-api/environments';
+import { CastLogger, CastLoggerOptions, CastLoggerLevel } from '@castcle-api/logger';
 import { AppModule } from './app/app.module';
 import { DocumentConfig } from './docs/document.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const app = await NestFactory.create(AppModule, {
+    logger: CastLoggerLevel,
+  });
   const port = process.env.PORT || 3332;
   
   // For documentations
@@ -36,7 +40,8 @@ async function bootstrap() {
   SwaggerModule.setup('documentations', app, document);
 
   await app.listen(port, () => {
-    Logger.log('Listening at http://localhost:' + port);
+    logger.log('Listening at http://localhost:' + port);
+    logger.log(`Environment at ${env.node_env}`);
   });
 }
 
