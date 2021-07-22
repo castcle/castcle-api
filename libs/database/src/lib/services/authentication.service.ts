@@ -26,7 +26,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, Account } from '../schemas/account.schema';
 import * as mongoose from 'mongoose';
 import { CredentialDocument } from "../schemas/credential.schema"
-import { CreateAccountDto } from "../dtos/account.dto"
 
 const generateToken = (header:{[key:string]:string}, payload:any) => `encode:$${JSON.stringify(header)}.${JSON.stringify(payload)}`
 
@@ -34,7 +33,31 @@ const generateToken = (header:{[key:string]:string}, payload:any) => `encode:$${
 export class AuthenticationService {
     constructor(@InjectModel('Account') public accountModel:Model<AccountDocument>, @InjectModel('Credential') public credentialModel:Model<CredentialDocument> ){}
 
-    async create(createAccountDto:CreateAccountDto){
+    generateAccessToken(header:{[key:string]:string}, payload:any){
+
+    }
+
+    verifyAccessToken(token:string, header:{[key:string]:string}, payload:any){
+
+    }
+
+    refreshAccessToken(refreshToken:string){
+
+    }
+
+    createAccountWithEmail( email:string, password:string, accessToken:string){
+
+    }
+
+    verifyAccountWithEmail( verifyToken:string){
+
+    }
+
+    loginWithEmail( email:string, password:string){
+
+    }
+
+    /*async create(createAccountDto:CreateAccountDto){
         const createdAccount = new this.accountModel(createAccountDto);
         const resultSavedCreatedAccount = await createdAccount.save();
         const createdCredential = new this.credentialModel({
@@ -70,5 +93,5 @@ export class AuthenticationService {
 
     async getTotalDocuments(){
         return  this.accountModel.countDocuments().exec()
-    }
+    }*/
 }
