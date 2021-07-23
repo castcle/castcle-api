@@ -56,7 +56,7 @@ describe('Authentication Service', () => {
                 credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
                 createAccountResult  = await service.createAccount({
                     device:"iPhone01",
-                    deviceUUID:"78b696d7-320b-4402-a412-d9cee10fc6a3",
+                    deviceUUID:"80b696d7-320b-4402-a412-d9cee10fc6a3",
                     languagesPreferences:["en", "en"],
                     header:{
                         platform:"iOs"
@@ -152,6 +152,21 @@ describe('Authentication Service', () => {
                     const credentialFromAccessToken = await service._credentialModel.findOne({accessToken: testToken}).exec()
                     expect(credentialFromAccessToken).toBeUndefined()
                     expect(service.verifyAccessToken(testToken)).toBe(false)
+                }
+            })
+        })
+
+        describe('#getCredentialFromDeviceUUID', () => {
+            it('should return credential document when call a function from newly create Account device UUID', async () => {
+                if(env.db_test_in_db){
+                    const resultCredential = await service.getCredentialFromDeviceUUID("80b696d7-320b-4402-a412-d9cee10fc6a3")
+                    expect(resultCredential._id).toEqual(createAccountResult.credentialDocument._id)
+                }
+            })
+            it('should return null if there is not found deviceUUID', async () => {
+                if(env.db_test_in_db){
+                    const resultCredential = await service.getCredentialFromDeviceUUID("NOPEEE")
+                    expect(resultCredential).toBeNull()
                 }
             })
         })
