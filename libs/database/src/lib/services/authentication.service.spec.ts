@@ -47,10 +47,8 @@ describe('Authentication Service', () => {
         expect(service).toBeDefined();
     })
     describe('Onboarding', () => {
-        let createdDocument
         describe('#_generateAccessToken()', () => {
-            it('should return accountId, acessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
-                const now = new Date();
+            it('should return accountId, accessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
                 const result = service._generateAccessToken({
                     AcceptVersion:'v1'
                 }, {
@@ -65,6 +63,9 @@ describe('Authentication Service', () => {
                 expect( result.accessTokenExpireDate).toBeDefined()
                 expect( result.refreshTokenExpireDate).toBeDefined()
             })
+            it(`should have Access Token Expire in = ${env.jwt_access_expires_in} seconds and Refresh Token Expire in ${env.jwt_refresh_expires_in} seconds `, async () => {
+                
+            })
         })
 
         describe('#createAccount()', () => {
@@ -72,52 +73,64 @@ describe('Authentication Service', () => {
             let accountDocumentCountBefore:number;
             let credentialDocumentCountBefore:number;
             beforeAll(async () => {
-                accountDocumentCountBefore =  await service._accountModel.countDocuments().exec();
-                credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
-                createAccountResult  = await service.createAccount({
-                    device:"iPhone01",
-                    deviceUUID:"68b696d7-320b-4402-a412-d9cee10fc6a3",
-                    languagesPreferences:["en", "en"],
-                    header:{
-                        platform:"iOs"
-                    }
-                })
+                if(env.db_test_in_db){
+                    accountDocumentCountBefore =  await service._accountModel.countDocuments().exec();
+                    credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
+                    createAccountResult  = await service.createAccount({
+                        device:"iPhone01",
+                        deviceUUID:"68b696d7-320b-4402-a412-d9cee10fc6a3",
+                        languagesPreferences:["en", "en"],
+                        header:{
+                            platform:"iOs"
+                        }
+                    })
+                }
             })
 
             it('should create a new Account ', async () => {
-                expect(createAccountResult.accountDocument).toBeDefined();
-                const currentAccountDocumentCount  = await service._accountModel.countDocuments().exec();
-                expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(1);
+                if(env.db_test_in_db){
+                    expect(createAccountResult.accountDocument).toBeDefined();
+                    const currentAccountDocumentCount  = await service._accountModel.countDocuments().exec();
+                    expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(1);
+                }
             })
             it('should create a new Credential with account from above', () => {
-                expect(createAccountResult.credentialDocument).toBeDefined();
-                expect(createAccountResult.credentialDocument.account).toEqual(createAccountResult.accountDocument._id)//not sure how to  check
+                if(env.db_test_in_db){
+                    expect(createAccountResult.credentialDocument).toBeDefined();
+                    expect(createAccountResult.credentialDocument.account).toEqual(createAccountResult.accountDocument._id)//not sure how to  check
+                }
             })
             it('should create documents with all required properties', () => {
-                //check account
-                expect(createAccountResult.accountDocument.isGuest).toBeDefined()
-                expect(createAccountResult.accountDocument.preferences).toBeDefined()
-                expect(createAccountResult.accountDocument).toBeDefined()
-                expect(createAccountResult.accountDocument.updatedAt).toBeDefined()
-                //check credential
-                expect(createAccountResult.credentialDocument.accessToken).toBeDefined()
-                expect(createAccountResult.credentialDocument.accessTokenExpireDate).toBeDefined()
-                expect(createAccountResult.credentialDocument.refreshToken).toBeDefined()
-                expect(createAccountResult.credentialDocument.refreshTokenExpireDate).toBeDefined()
-                expect(createAccountResult.credentialDocument.createdAt).toBeDefined()
-                expect(createAccountResult.credentialDocument.updatedAt).toBeDefined()
+                if(env.db_test_in_db){
+                    //check account
+                    expect(createAccountResult.accountDocument.isGuest).toBeDefined()
+                    expect(createAccountResult.accountDocument.preferences).toBeDefined()
+                    expect(createAccountResult.accountDocument).toBeDefined()
+                    expect(createAccountResult.accountDocument.updatedAt).toBeDefined()
+                    expect(createAccountResult.accountDocument.createdAt).toBeDefined()
+                    //check credential
+                    expect(createAccountResult.credentialDocument.accessToken).toBeDefined()
+                    expect(createAccountResult.credentialDocument.accessTokenExpireDate).toBeDefined()
+                    expect(createAccountResult.credentialDocument.refreshToken).toBeDefined()
+                    expect(createAccountResult.credentialDocument.refreshTokenExpireDate).toBeDefined()
+                    expect(createAccountResult.credentialDocument.createdAt).toBeDefined()
+                    expect(createAccountResult.credentialDocument.updatedAt).toBeDefined()
+                }
             })
             it('newly created Account should be guest', () => {
-                expect(createAccountResult.accountDocument.isGuest).toBe(true);
+                if(env.db_test_in_db)
+                    expect(createAccountResult.accountDocument.isGuest).toBe(true);
             })
             it('should contain all valid tokens', () => {
-                expect(createAccountResult.credentialDocument.isAccessTokenValid()).toBe(true)
-                expect(createAccountResult.credentialDocument.isRefreshTokenValid()).toBe(true)
+                if(env.db_test_in_db){
+                    expect(createAccountResult.credentialDocument.isAccessTokenValid()).toBe(true)
+                    expect(createAccountResult.credentialDocument.isRefreshTokenValid()).toBe(true)
+                }
             })
         })
 
         describe('#verifyAccessToken()', () => {
-            it('should return true if accessToken is valid ', () => {
+            it('should return accessToken if refreshToken is valid ', () => {
 
             })
             it('should return false if accessToken is invalid ', () => {
