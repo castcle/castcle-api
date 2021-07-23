@@ -86,15 +86,11 @@ export class AuthenticationService {
   }
 
   async verifyAccessToken(accessToken:string){
-    try{
-      const credentialDocument = await this._credentialModel.findOne({accessToken:accessToken}).exec();
-      if(credentialDocument && credentialDocument.isAccessTokenValid())
-        return true;
-      else
-        return false;
-    }catch(e){
+    const credentialDocument = await this._credentialModel.findOne({accessToken:accessToken}).exec();
+    if(credentialDocument && credentialDocument.isAccessTokenValid())
+      return true;
+    else
       return false;
-    }
   }
 
   refreshAccessToken(credentialDocument:CredentialDocument){
