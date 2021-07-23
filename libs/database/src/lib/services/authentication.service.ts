@@ -43,76 +43,73 @@ export interface AccountRequirements{
 export interface AccessTokenPayload{
     device:string,
     deviceUUID:string
-    
 }
 
 @Injectable()
 export class AuthenticationService {
   constructor(@InjectModel('Account') public _accountModel:Model<AccountDocument>, @InjectModel('Credential') public _credentialModel:Model<CredentialDocument> ){}
+  getCredentialFromDeviceUUID = (deviceUUID:string) => this._credentialModel.findOne({deviceUUID:deviceUUID}).exec();
 
-    getCredentialFromDeviceUUID = (deviceUUID:string) => this._credentialModel.findOne({deviceUUID:deviceUUID}).exec();
-
-    async createAccount(accountRequirements:AccountRequirements){
-      const newAccount = new this._accountModel({
-        isGuest:true,
-        preferences:{
-          languages:accountRequirements.languagesPreferences
-        }
-      } as CreateAccountDto);
-      const accountDocument = await newAccount.save();
-      const tokens = this._generateAccessToken(accountRequirements.header, {
-        device:accountRequirements.device,
-        deviceUUID:accountRequirements.deviceUUID
-      });
-      const credential = new this._credentialModel({
-        account: mongoose.Types.ObjectId(accountDocument._id),
-        accessToken: tokens.accessToken,
-        accessTokenExpireDate: tokens.accessTokenExpireDate,
-        refreshToken: tokens.refreshToken,
-        refreshTokenExpireDate: tokens.refreshTokenExpireDate,
-        device: accountRequirements.device,
-        platform: accountRequirements.header.platform,
-        deviceUUID: accountRequirements.deviceUUID
-      } as CreateCredentialDto);
-      const credentialDocument =await credential.save();
-        
-      return { accountDocument, credentialDocument };
-    }
-
-    _generateAccessToken(header:{[key:string]:string}, payload:AccessTokenPayload){
-      const now = new Date();
-      const accessToken = generateToken(header, payload, env.jwt_access_secret);
-      const accessTokenExpireDate = new Date(now.getTime() + env.jwt_access_expires_in * 1000);
-      const refreshToken = generateToken(header, payload, env.jwt_refresh_secret);
-      const refreshTokenExpireDate = new Date(now.getTime() + env.jwt_refresh_expires_in * 1000 );
-      return { accessToken, accessTokenExpireDate, refreshToken, refreshTokenExpireDate};
-    }
-
-    async verifyAccessToken(accessToken:string){
-      try{
-        const credentialDocument = await this._credentialModel.findOne({accessToken:accessToken}).exec();
-        if(credentialDocument && credentialDocument.isAccessTokenValid())
-          return true;
-        else
-          return false;
-      }catch(e){
-        return false;
+  async createAccount(accountRequirements:AccountRequirements){
+    const newAccount = new this._accountModel({
+      isGuest:true,
+      preferences:{
+        languages:accountRequirements.languagesPreferences
       }
+    } as CreateAccountDto);
+    const accountDocument = await newAccount.save();
+    const tokens = this._generateAccessToken(accountRequirements.header, {
+      device:accountRequirements.device,
+      deviceUUID:accountRequirements.deviceUUID
+    });
+    const credential = new this._credentialModel({
+      account: mongoose.Types.ObjectId(accountDocument._id),
+      accessToken: tokens.accessToken,
+      accessTokenExpireDate: tokens.accessTokenExpireDate,
+      refreshToken: tokens.refreshToken,
+      refreshTokenExpireDate: tokens.refreshTokenExpireDate,
+      device: accountRequirements.device,
+      platform: accountRequirements.header.platform,
+      deviceUUID: accountRequirements.deviceUUID
+    } as CreateCredentialDto);
+    const credentialDocument =await credential.save();
+    return { accountDocument, credentialDocument };
+  }
+
+  _generateAccessToken(header:{[key:string]:string}, payload:AccessTokenPayload){
+    const now = new Date();
+    const accessToken = generateToken(header, payload, env.jwt_access_secret);
+    const accessTokenExpireDate = new Date(now.getTime() + env.jwt_access_expires_in * 1000);
+    const refreshToken = generateToken(header, payload, env.jwt_refresh_secret);
+    const refreshTokenExpireDate = new Date(now.getTime() + env.jwt_refresh_expires_in * 1000 );
+    return { accessToken, accessTokenExpireDate, refreshToken, refreshTokenExpireDate};
+  }
+
+  async verifyAccessToken(accessToken:string){
+    try{
+      const credentialDocument = await this._credentialModel.findOne({accessToken:accessToken}).exec();
+      if(credentialDocument && credentialDocument.isAccessTokenValid())
+        return true;
+      else
+        return false;
+    }catch(e){
+      return false;
     }
+  }
 
-    refreshAccessToken(credentialDocument:CredentialDocument){
-        
-    }
+  refreshAccessToken(credentialDocument:CredentialDocument){
+      
+  }
 
-    createAccountWithEmail( email:string, password:string, accessToken:string){
+  createAccountWithEmail( email:string, password:string, accessToken:string){
 
-    }
+  }
 
-    verifyAccountWithEmail( verifyToken:string){
+  verifyAccountWithEmail( verifyToken:string){
 
-    }
+  }
 
-    loginWithEmail( email:string, password:string){
+  loginWithEmail( email:string, password:string){
 
-    }
+  }
 }
