@@ -115,42 +115,4 @@ export class AuthenticationService {
     loginWithEmail( email:string, password:string){
 
     }
-
-  /*async create(createAccountDto:CreateAccountDto){
-        const createdAccount = new this.accountModel(createAccountDto);
-        const resultSavedCreatedAccount = await createdAccount.save();
-        const createdCredential = new this.credentialModel({
-            account: mongoose.Types.ObjectId(resultSavedCreatedAccount._id),
-            accessToken: "guestAccessToken",
-            refreshToken: "guestAccessToken",
-            refreshTokenExpireDate: new Date(),
-            accessTokenExpireDate: new Date(),
-            device: "Ifong 112",
-            platform: "guestA",
-            deviceUUID: "UUUID",
-            createDate:new Date(),
-            updateDate:new Date()
-        })
-        await createdCredential.save()
-        return {
-            account:createdAccount,
-            credential:createdCredential
-        }
-    }
-
-    async update(){
-
-    }
-
-    async delete(){
-
-    }
-
-    async findById(id:any){
-        return this.accountModel.findById(id)
-    }
-
-    async getTotalDocuments(){
-        return  this.accountModel.countDocuments().exec()
-    }*/
 }
