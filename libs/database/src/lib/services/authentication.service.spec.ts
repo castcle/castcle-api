@@ -24,7 +24,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
-
 import { Environment as env } from '@castcle-api/environments';
 import { Account, AccountDocument, AccountSchema } from '../schemas/account.schema';
 import { CredentialDocument, CredentialSchema } from '../schemas/credential.schema';
@@ -147,8 +146,8 @@ describe('Authentication Service', () => {
           //find a create account credential
           const credentialFromAccessToken = await service._credentialModel.findOne({accessToken:createAccountResult.credentialDocument.accessToken}).exec();
           expect(credentialFromAccessToken).toBeDefined();
-          expect(service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toEqual(credentialFromAccessToken.isAccessTokenValid());
-          expect(service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toBe(true);
+          expect(await service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toEqual(credentialFromAccessToken.isAccessTokenValid());
+          expect(await service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toBe(true);
         }
       });
       it('should return false if found a credential and that credential access token is invalid', async () => {
@@ -161,7 +160,7 @@ describe('Authentication Service', () => {
           const testToken = 'shouldnotexist';
           const credentialFromAccessToken = await service._credentialModel.findOne({accessToken: testToken}).exec();
           expect(credentialFromAccessToken).toBeNull();
-          expect(service.verifyAccessToken(testToken)).toBe(false);
+          expect(await service.verifyAccessToken(testToken)).toBe(false);
         }
       });
     });
