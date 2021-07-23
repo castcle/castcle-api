@@ -23,7 +23,7 @@
 import * as mongoose from 'mongoose';
 
 export class SaveCredentialDto{
-    account?:mongoose.Types.ObjectId
+  	account?:mongoose.Types.ObjectId
     accessToken:string
     refreshToken?:string
     accessTokenExpireDate:Date;
@@ -48,7 +48,8 @@ export class CreateCredentialDto{
 
 export class CreateAccountDto{
     isGuest:boolean
-    
+    updateDate:Date
+    createDate:Date
     preferences:{
         languages:string[]
     }
