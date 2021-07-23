@@ -29,29 +29,29 @@ export type CommentDocument = Comment & Document
 @Schema({ timestamps:true })
 export class Comment{
 
-    @Prop({required: true, type:Object})
-    author:Account | any
+  @Prop({required: true, type:Object})
+  author:Account | any
 
-    @Prop({required:true})
-    message:string
+  @Prop({required:true})
+  message:string
 
-    @Prop({required:true, type:Object})
-    engagements:{[engagementKey:string]:{
-        count:number,
-        refs:any[]
-    }}
+  @Prop({required:true, type:Object})
+  engagements:{[engagementKey:string]:{
+      count:number,
+      refs:any[]
+  }}
 
-    @Prop({required:true})
-    revisionCount:number;
+  @Prop({required:true})
+  revisionCount:number;
 
-    @Prop({type:Array})
-    hashtags:any[]
+  @Prop({type:Array})
+  hashtags:any[]
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

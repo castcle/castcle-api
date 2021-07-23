@@ -29,21 +29,20 @@ export type HashtagDocument = Hashtag & Document
 @Schema({ timestamps:true })
 export class Hashtag{
     
+  @Prop({required:true})
+  tag:string
 
-    @Prop({required:true})
-    tag:string
+  @Prop({required:true})
+  score:number
+  
+  @Prop({required:true, type:Object })
+  aggregator:any
 
-    @Prop({required:true})
-    score:number
-    
-    @Prop({required:true, type:Object })
-    aggregator:any
+  @Prop() 
+  createdAt?:Date
 
-    @Prop() 
-    createdAt?:Date
-
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);

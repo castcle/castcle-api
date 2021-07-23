@@ -29,22 +29,22 @@ import { Account } from '../schemas/account.schema';
 export type UserDocument = User & Document
 
 export interface UserProfile{
-    birthdate:string
-    overview:string
-    works:string[]
-    educations:string[]
-    homeTowns:string[]
-    websites:{
-        website:string
-        detail:string
-    }[]
-    socials:{
-        facebook:string
-        twitter:string
-        youtube:string
-        medium:string
-    }
-    details:string
+  birthdate:string
+  overview:string
+  works:string[]
+  educations:string[]
+  homeTowns:string[]
+  websites:{
+      website:string
+      detail:string
+  }[]
+  socials:{
+      facebook:string
+      twitter:string
+      youtube:string
+      medium:string
+  }
+  details:string
 }
 
 export enum UserType { People = 'people', Page ='page'}
@@ -52,29 +52,29 @@ export enum UserType { People = 'people', Page ='page'}
 @Schema({ timestamps:true })
 export class User{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    ownerAccount:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  ownerAccount:Account
 
-    @Prop({required:true})
-    displayName:string
+  @Prop({required:true})
+  displayName:string
 
-    @Prop({required:true})
-    displayId:string
+  @Prop({required:true})
+  displayId:string
 
-    @Prop({type: Object})
-    profile:UserProfile
+  @Prop({type: Object})
+  profile:UserProfile
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop()
-    verified:boolean
-  
-    @Prop() 
-    createdAt?:Date
+  @Prop()
+  verified:boolean
 
-    @Prop()
-    updatedAt?:Date
+  @Prop() 
+  createdAt?:Date
+
+  @Prop()
+  updatedAt?:Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

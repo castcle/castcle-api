@@ -33,21 +33,20 @@ export type HashtagItemDocument = HashtagItem & Document
 @Schema({ timestamps:true })
 export class HashtagItem{
     
+  @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'Hashtag'})
+  hashtag:Hashtag
 
-    @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'Hashtag'})
-    hashtag:Hashtag
+  @Prop({required:true})
+  objectRef:any
+  
+  @Prop({required:true, type:Object })
+  payload: Comment | Content | any
 
-    @Prop({required:true})
-    objectRef:any
-    
-    @Prop({required:true, type:Object })
-    payload: Comment | Content | any
+  @Prop() 
+  createdAt?:Date
 
-    @Prop() 
-    createdAt?:Date
-
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

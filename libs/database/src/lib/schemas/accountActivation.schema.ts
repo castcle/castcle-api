@@ -29,39 +29,39 @@ import { Account } from '../schemas/account.schema';
 export type AccountActivationDocument = AccountActivation & Document
 
 export enum AccountActivationType{
-    Email = 'email',
-    Mobile = 'mobile'
+  Email = 'email',
+  Mobile = 'mobile'
 }
 
 @Schema({ timestamps:true })
 export class AccountActivation{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    account:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  account:Account
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop({required:true})
-    verifyToken:string
+  @Prop({required:true})
+  verifyToken:string
 
-    @Prop({required:true})
-    verifyTokenExpireDate:Date
+  @Prop({required:true})
+  verifyTokenExpireDate:Date
 
-    @Prop()
-    activationDate:Date;
+  @Prop()
+  activationDate:Date;
 
-    @Prop({required:true})
-    expireDate:Date;
+  @Prop({required:true})
+  expireDate:Date;
 
-    @Prop()
-    revocationDate:Date
+  @Prop()
+  revocationDate:Date
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const AccountActivationSchema = SchemaFactory.createForClass(AccountActivation);

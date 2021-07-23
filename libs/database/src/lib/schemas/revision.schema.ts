@@ -29,17 +29,18 @@ export type RevisionDocument = Revision & Document
 
 @Schema({ timestamps:true })
 export class Revision{
-    @Prop({required:true, type:Object})
-    objectRef:any
+  
+  @Prop({required:true, type:Object})
+  objectRef:any
 
-    @Prop({required:true, type:Object})
-    payload:string
+  @Prop({required:true, type:Object})
+  payload:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 
 }
 

@@ -32,22 +32,21 @@ export type ArchiveHashtagDocument = ArchiveHashtag & Document
 
 @Schema({ timestamps:true })
 export class ArchiveHashtag{
-    
 
-    @Prop({required:true, type: Array})
-    hashtags:Hashtag[]
+  @Prop({required:true, type: Array})
+  hashtags:Hashtag[]
 
-    @Prop({required:true})
-    fromDate:Date
+  @Prop({required:true})
+  fromDate:Date
 
-    @Prop({required:true})
-    toDate:Date
+  @Prop({required:true})
+  toDate:Date
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const ArchiveHashtagSchema = SchemaFactory.createForClass(ArchiveHashtag);

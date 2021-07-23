@@ -28,20 +28,21 @@ export type FeatureDocument = Feature & Document
 
 @Schema({ timestamps:true })
 export class Feature{
-    @Prop({required:true, type: Object})
-    objectRef:any
 
-    @Prop({required:true})
-    tag:string
+  @Prop({required:true, type: Object})
+  objectRef:any
 
-    @Prop({required:true})
-    value:string
+  @Prop({required:true})
+  tag:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop({required:true})
+  value:string
 
-    @Prop()
-    updatedAt?:Date
+  @Prop() 
+  createdAt?:Date
+
+  @Prop()
+  updatedAt?:Date
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);

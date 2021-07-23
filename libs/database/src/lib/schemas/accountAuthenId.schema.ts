@@ -30,26 +30,26 @@ import { Account } from '../schemas/account.schema';
 export type AccountAuthenIdDocument = AccountAuthenId & Document
 
 export enum AccountAuthenIdType{
-    Twitter = 'twitter',
-    Facebook = 'facebook',
-    Google = 'google',
-    Telegram = 'telegram'
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram'
 }
 
 @Schema({ timestamps:true })
 export class AccountAuthenId{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    account:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  account:Account
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const AccountAuthenIdSchema = SchemaFactory.createForClass(AccountAuthenId);

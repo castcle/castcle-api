@@ -51,17 +51,17 @@ export type FeatureDocument = Feature & Document
 
 @Schema({ timestamps:true })
 export class Feature{
-    @Prop({required:true})
-    slug:string
+  @Prop({required:true})
+  slug:string
 
-    @Prop({required:true})
-    name:string
+  @Prop({required:true})
+  name:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);

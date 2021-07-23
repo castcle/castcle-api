@@ -27,34 +27,34 @@ export type AccountDocument = Account & Document
 
 @Schema({ timestamps:true })
 export class Account{
-    @Prop()
-    email:string
+  @Prop()
+  email:string
 
-    @Prop()
-    password:string
+  @Prop()
+  password:string
 
-    @Prop()
-    activateDate:Date
+  @Prop()
+  activateDate:Date
 
-    @Prop({ required: true })
-    isGuest:boolean
+  @Prop({ required: true })
+  isGuest:boolean
 
-    @Prop({ required: true, type:Object })
-    preferences:{
-        langagues:string[]
-    }
+  @Prop({ required: true, type:Object })
+  preferences:{
+      langagues:string[]
+  }
 
-    @Prop({type:Object})
-    mobile:{
-        countryCode:string,
-        number:string
-    }
+  @Prop({type:Object})
+  mobile:{
+      countryCode:string,
+      number:string
+  }
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

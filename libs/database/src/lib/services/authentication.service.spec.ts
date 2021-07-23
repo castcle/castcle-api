@@ -82,7 +82,6 @@ describe('Authentication Service', () => {
           deviceUUID : 'blablabla',
           device:'testIphone'
         });
-
         expect(result.accessToken).toBeDefined();
         expect(typeof result.accessToken).toBe('string');
         expect(result.refreshToken).toBeDefined();
@@ -96,8 +95,6 @@ describe('Authentication Service', () => {
     });
 
     describe('#createAccount()', () => {
-           
-
       it('should create a new Account ', async () => {
         if(env.db_test_in_db){
           expect(createAccountResult.accountDocument).toBeDefined();

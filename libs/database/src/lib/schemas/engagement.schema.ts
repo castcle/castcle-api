@@ -31,31 +31,31 @@ import { Content } from './content.schema';
 export type EngagementDocument = Engagement & Document
 
 export enum EngagementType{
-    Like = 'like',
-    Recast = 'recast',
-    Quote = 'quote',
-    Comment = 'comment'
+  Like = 'like',
+  Recast = 'recast',
+  Quote = 'quote',
+  Comment = 'comment'
 }
 
 @Schema({ timestamps:true })
 export class Engagement{
-    @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
-    user:User
+  @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
+  user:User
 
-    @Prop({required:true, type: Object})
-    targetRef:any
+  @Prop({required:true, type: Object})
+  targetRef:any
 
-    @Prop({required:true, type: Object})
-    target: Comment | Content | any
+  @Prop({required:true, type: Object})
+  target: Comment | Content | any
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 
 }
 

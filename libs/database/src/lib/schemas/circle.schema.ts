@@ -26,28 +26,28 @@ import { Document } from 'mongoose';
 
 
 export enum CircleType{
-    Default = 'default',
-    Topic = 'Topic'
+  Default = 'default',
+  Topic = 'Topic'
 }
 
 export type CircleDocument = Circle & Document
 
 @Schema({ timestamps:true })
 export class Circle{
-    @Prop({required:true})
-    slug:string
+  @Prop({required:true})
+  slug:string
 
-    @Prop({required:true})
-    name:string
+  @Prop({required:true})
+  name:string
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const CircleSchema = SchemaFactory.createForClass(Circle);

@@ -22,16 +22,16 @@
  */
 
 export interface TokenHeader{
-    acceptVersion:string
+  acceptVersion:string
 }
 
 
 
 export class CreateAccountDto{
-    isGuest:boolean
-    updateDate:Date
-    createDate:Date
-    preferences:{
-        languages:string[]
-    }
+  isGuest:boolean
+  updateDate:Date
+  createDate:Date
+  preferences:{
+      languages:string[]
+  }
 }

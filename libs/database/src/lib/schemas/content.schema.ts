@@ -25,42 +25,42 @@ import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 
 export interface PostPayload{
-    content:string
-    photo:{
-        file:string
-    }[]
-    link:{
-        type:string
-        url:string
-    }[]
+  content:string
+  photo:{
+      file:string
+  }[]
+  link:{
+      type:string
+      url:string
+  }[]
 }
 
 export interface BlogPayload{
-    header:string
-    content:any
-    photo:{
-        file:string
-    }[]
-    link:{
-        type:string
-        url:string
-    }[]
+  header:string
+  content:any
+  photo:{
+      file:string
+  }[]
+  link:{
+      type:string
+      url:string
+  }[]
 }
 
 export interface RecastPayload{
-    source:Content
+  source:Content
 }
 
 export interface QuotePayload{
-    source:Content
-    content:string
+  source:Content
+  content:string
 }
 
 export enum ContentType{
-    Post = 'post',
-    Blog = 'blog',
-    Recast = 'recast',
-    Quote = 'quote'
+  Post = 'post',
+  Blog = 'blog',
+  Recast = 'recast',
+  Quote = 'quote'
 }
 
 export type ContentDocument = Content & Document
@@ -68,32 +68,32 @@ export type ContentDocument = Content & Document
 @Schema({ timestamps:true })
 export class Content{
 
-    @Prop({required: true, type:Object})
-    author:Account | any
+  @Prop({required: true, type:Object})
+  author:Account | any
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop({required:true, type:Object})
-    payload:PostPayload | BlogPayload | RecastPayload | QuotePayload
+  @Prop({required:true, type:Object})
+  payload:PostPayload | BlogPayload | RecastPayload | QuotePayload
 
-    @Prop({required:true, type:Object})
-    engagements:{[engagementKey:string]:{
-        count:number,
-        refs:any[]
-    }}
+  @Prop({required:true, type:Object})
+  engagements:{[engagementKey:string]:{
+      count:number,
+      refs:any[]
+  }}
 
-    @Prop({required:true})
-    revisionCount:number;
+  @Prop({required:true})
+  revisionCount:number;
 
-    @Prop({type:Array})
-    hashtags:any[]
+  @Prop({type:Array})
+  hashtags:any[]
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

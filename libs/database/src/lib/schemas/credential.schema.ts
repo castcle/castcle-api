@@ -32,39 +32,39 @@ export type CredentialDocument = Credential & Document
 @Schema({ timestamps:true })
 export class Credential{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    account:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  account:Account
 
-    @Prop({required:true})
-    accessToken:string
+  @Prop({required:true})
+  accessToken:string
 
-    @Prop({required:true})
-    refreshToken:string
+  @Prop({required:true})
+  refreshToken:string
 
-    @Prop({required:true})
-    accessTokenExpireDate:Date;
+  @Prop({required:true})
+  accessTokenExpireDate:Date;
 
-    @Prop({required:true})
-    refreshTokenExpireDate:Date;
+  @Prop({required:true})
+  refreshTokenExpireDate:Date;
 
-    @Prop({required:true})
-    platform:string
+  @Prop({required:true})
+  platform:string
 
-    @Prop({required:true})
-    deviceUUID:string
+  @Prop({required:true})
+  deviceUUID:string
 
-    @Prop({required:true})
-    device:string
+  @Prop({required:true})
+  device:string
 
-    @Prop() 
-    createdAt?:Date
+  @Prop() 
+  createdAt?:Date
 
-    @Prop()
-    updatedAt?:Date
+  @Prop()
+  updatedAt?:Date
 
-    isAccessTokenValid :Function
+  isAccessTokenValid :Function
 
-    isRefreshTokenValid :Function
+  isRefreshTokenValid :Function
     
 }
 
