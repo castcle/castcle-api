@@ -26,8 +26,8 @@ import { Document } from 'mongoose';
 
 
 export enum CircleType{
-    Default = "default",
-    Topic = "Topic"
+    Default = 'default',
+    Topic = 'Topic'
 }
 
 export type CircleDocument = Circle & Document

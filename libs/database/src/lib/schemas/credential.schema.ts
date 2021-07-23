@@ -24,7 +24,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
 
 export type CredentialDocument = Credential & Document
 
@@ -70,5 +70,5 @@ export class Credential{
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
 
-CredentialSchema.methods.isAccessTokenValid = () => true
-CredentialSchema.methods.isRefreshTokenValid = () => true
+CredentialSchema.methods.isAccessTokenValid = () => true;
+CredentialSchema.methods.isRefreshTokenValid = () => true;
