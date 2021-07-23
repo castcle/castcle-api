@@ -47,6 +47,24 @@ describe('Authentication Service', () => {
         expect(service).toBeDefined();
     })
     describe('Onboarding', () => {
+        let createAccountResult:{accountDocument:AccountDocument, credentialDocument:CredentialDocument};
+        let accountDocumentCountBefore:number;
+        let credentialDocumentCountBefore:number;
+        beforeAll(async () => {
+            if(env.db_test_in_db){
+                accountDocumentCountBefore =  await service._accountModel.countDocuments().exec();
+                credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
+                createAccountResult  = await service.createAccount({
+                    device:"iPhone01",
+                    deviceUUID:"78b696d7-320b-4402-a412-d9cee10fc6a3",
+                    languagesPreferences:["en", "en"],
+                    header:{
+                        platform:"iOs"
+                    }
+                })
+            }
+        })
+
         describe('#_generateAccessToken()', () => {
             it('should return accountId, accessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
                 const result = service._generateAccessToken({
@@ -69,23 +87,7 @@ describe('Authentication Service', () => {
         })
 
         describe('#createAccount()', () => {
-            let createAccountResult:{accountDocument:AccountDocument, credentialDocument:CredentialDocument};
-            let accountDocumentCountBefore:number;
-            let credentialDocumentCountBefore:number;
-            beforeAll(async () => {
-                if(env.db_test_in_db){
-                    accountDocumentCountBefore =  await service._accountModel.countDocuments().exec();
-                    credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
-                    createAccountResult  = await service.createAccount({
-                        device:"iPhone01",
-                        deviceUUID:"68b696d7-320b-4402-a412-d9cee10fc6a3",
-                        languagesPreferences:["en", "en"],
-                        header:{
-                            platform:"iOs"
-                        }
-                    })
-                }
-            })
+           
 
             it('should create a new Account ', async () => {
                 if(env.db_test_in_db){
@@ -129,15 +131,28 @@ describe('Authentication Service', () => {
             })
         })
 
-        describe('#verifyAccessToken()', () => {
-            it('should return accessToken if refreshToken is valid ', () => {
-
+        describe('#verifyAccessToken()',  () => {
+            it('should return true if found a credential and that credential access token is valid',async () => {
+                if(env.db_test_in_db){
+                    //find a create account credential
+                     const credentialFromAccessToken = await service._credentialModel.findOne({accessToken:createAccountResult.credentialDocument.accessToken}).exec()
+                     expect(credentialFromAccessToken).toBeDefined()
+                     expect(service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toEqual(credentialFromAccessToken.isAccessTokenValid())
+                     expect(service.verifyAccessToken(createAccountResult.credentialDocument.accessToken)).toBe(true)
+                }
             })
-            it('should return false if accessToken is invalid ', () => {
-                
+            it('should return false if found a credential and that credential access token is invalid', async () => {
+                if(env.db_test_in_db){
+                    //find a way to make it xpire
+                }
             })
-            it('should return false if accessToken is expire ', () => {
-                
+            it('should return false if credential not found ', async () => {
+                if(env.db_test_in_db){
+                    const testToken = "shouldnotexist"
+                    const credentialFromAccessToken = await service._credentialModel.findOne({accessToken: testToken}).exec()
+                    expect(credentialFromAccessToken).toBeUndefined()
+                    expect(service.verifyAccessToken(testToken)).toBe(false)
+                }
             })
         })
 
