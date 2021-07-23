@@ -32,17 +32,17 @@ import { CredentialDocument } from '../schemas/credential.schema';
 const generateToken = (header:{[key:string]:string}, payload:any, secret:string) => `encode:$${JSON.stringify(header)}.${JSON.stringify(payload)}.${secret}`;
 
 export interface AccountRequirements{
-    header:{
-        platform:string,
-    },
-    device:string,
-    deviceUUID:string,
-    languagesPreferences:string[]
+  header:{
+    platform:string,
+  },
+  device:string,
+  deviceUUID:string,
+  languagesPreferences:string[]
 }
 
 export interface AccessTokenPayload{
-    device:string,
-    deviceUUID:string
+  device:string,
+  deviceUUID:string
 }
 
 @Injectable()
