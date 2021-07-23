@@ -32,14 +32,23 @@ import { CredentialDocument, CredentialSchema } from "../schemas/credential.sche
 
 describe('Authentication Service', () => {
     let service:AuthenticationService
-    
+    const importModules = env.db_test_in_db?[MongooseModule.forRoot( env.db_location),
+        MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])]:[]
+    const providers = env.db_test_in_db?[ AuthenticationService ]:[ AuthenticationService,
+        {
+          provide: getModelToken('Account'),
+          useValue: {},
+        },
+        {
+          provide: getModelToken('Credential'),
+          useValue: {},
+        },
+      ]
+
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            imports: [
-                MongooseModule.forRoot( env.db_location),
-                MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
-            ],
-            providers:[ AuthenticationService ],
+            imports: importModules,
+            providers: providers,
         }).compile()
         service = module.get<AuthenticationService>(AuthenticationService);
     });
@@ -56,7 +65,7 @@ describe('Authentication Service', () => {
                 credentialDocumentCountBefore = await service._credentialModel.countDocuments().exec();
                 createAccountResult  = await service.createAccount({
                     device:"iPhone01",
-                    deviceUUID:"80b696d7-320b-4402-a412-d9cee10fc6a3",
+                    deviceUUID:"81b696d7-320b-4402-a412-d9cee10fc6a3",
                     languagesPreferences:["en", "en"],
                     header:{
                         platform:"iOs"
@@ -159,7 +168,7 @@ describe('Authentication Service', () => {
         describe('#getCredentialFromDeviceUUID', () => {
             it('should return credential document when call a function from newly create Account device UUID', async () => {
                 if(env.db_test_in_db){
-                    const resultCredential = await service.getCredentialFromDeviceUUID("80b696d7-320b-4402-a412-d9cee10fc6a3")
+                    const resultCredential = await service.getCredentialFromDeviceUUID("81b696d7-320b-4402-a412-d9cee10fc6a3")
                     expect(resultCredential._id).toEqual(createAccountResult.credentialDocument._id)
                 }
             })
