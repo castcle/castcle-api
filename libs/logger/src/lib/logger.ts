@@ -63,7 +63,7 @@ export class CastLogger extends ConsoleLogger {
   }
 }
 
-export const CastLoggerLevel: LogLevel[] = (env.production) ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'];
+export const CastLoggerLevel: LogLevel[] = (env.production) ? ['log', 'error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'];
 export const CastLoggerOptions: ConsoleLoggerOptions = {
   logLevels: CastLoggerLevel,
   timestamp: true,
