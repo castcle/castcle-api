@@ -24,9 +24,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { Hashtag } from "./hashtag.schema"
-import { Comment } from "./comment.schema"
-import { Content } from "./content.schema"
+import { Hashtag } from './hashtag.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
 
 export type HashtagItemDocument = HashtagItem & Document
 

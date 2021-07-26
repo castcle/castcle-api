@@ -22,7 +22,7 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
 
 export interface PostPayload{
     content:string
@@ -57,10 +57,10 @@ export interface QuotePayload{
 }
 
 export enum ContentType{
-    Post = "post",
-    Blog = "blog",
-    Recast = "recast",
-    Quote = "quote"
+    Post = 'post',
+    Blog = 'blog',
+    Recast = 'recast',
+    Quote = 'quote'
 }
 
 export type ContentDocument = Content & Document

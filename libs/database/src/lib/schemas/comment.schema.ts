@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
 export type CommentDocument = Comment & Document
 
 @Schema()

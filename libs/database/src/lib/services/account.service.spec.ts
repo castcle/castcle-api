@@ -23,48 +23,48 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AccountService } from "./account.service"
+import { AccountService } from './account.service';
 
 import { Environment as env } from '@castcle-api/environments';
-import { AccountDocument, AccountSchema } from "../schemas/account.schema"
-import { CredentialSchema } from "../schemas/credential.schema"
+import { AccountDocument, AccountSchema } from '../schemas/account.schema';
+import { CredentialSchema } from '../schemas/credential.schema';
 
 
 describe('AccountService', () => {
-    let service:AccountService
-    beforeAll(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            imports: [
-                MongooseModule.forRoot( env.db_location),
-                MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
-            ],
-            providers:[AccountService],
-        }).compile()
-        service = module.get<AccountService>(AccountService);
-    });
-    it('should be defined', () => {
-        expect(service).toBeDefined();
-    })
-    describe('Onboarding', () => {
-        let createdDocument
-        describe('Create account flow', () => {
-            it('should create a credential when create an account',async () => {
-                createdDocument = await service.create({
-                    isGuest:true,
-                    createDate:new Date(),
-                    updateDate:new Date(),
-                    preferences:{languages:["en", "en"]}
-                })
-                expect(createdDocument.account).toBeDefined();
-                expect(createdDocument.credential).toBeDefined();
-                expect(createdDocument.credential.accessToken).toBeDefined()
+  let service:AccountService;
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot( env.db_location),
+        MongooseModule.forFeature([ {name: 'Account', schema: AccountSchema}, {name:'Credential', schema:CredentialSchema}])
+      ],
+      providers:[AccountService],
+    }).compile();
+    service = module.get<AccountService>(AccountService);
+  });
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+  describe('Onboarding', () => {
+    let createdDocument;
+    describe('Create account flow', () => {
+      it('should create a credential when create an account',async () => {
+        createdDocument = await service.create({
+          isGuest:true,
+          createDate:new Date(),
+          updateDate:new Date(),
+          preferences:{languages:['en', 'en']}
+        });
+        expect(createdDocument.account).toBeDefined();
+        expect(createdDocument.credential).toBeDefined();
+        expect(createdDocument.credential.accessToken).toBeDefined();
                 
-            })
-        })
+      });
+    });
         
 
 
 
-    })
+  });
     
 });

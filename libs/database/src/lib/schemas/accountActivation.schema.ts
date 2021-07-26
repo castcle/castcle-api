@@ -24,13 +24,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
 
 export type AccountActivationDocument = AccountActivation & Document
 
 export enum AccountActivationType{
-    Email = "email",
-    Mobile = "mobile"
+    Email = 'email',
+    Mobile = 'mobile'
 }
 
 @Schema()

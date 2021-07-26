@@ -31,6 +31,7 @@ export class HealthyController {
   @Get()
   getData() {
     this.logger.log('Health Check');
+
     return '';
   }
 }

@@ -24,17 +24,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { User } from "./user.schema"
-import { Comment } from "./comment.schema"
-import { Content } from "./content.schema"
+import { User } from './user.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
 
 export type EngagementDocument = Engagement & Document
 
 export enum EngagementType{
-    Like = "like",
-    Recast = "recast",
-    Quote = "quote",
-    Comment = "comment"
+    Like = 'like',
+    Recast = 'recast',
+    Quote = 'quote',
+    Comment = 'comment'
 }
 
 @Schema()

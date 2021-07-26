@@ -25,48 +25,48 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, Account } from '../schemas/account.schema';
 import * as mongoose from 'mongoose';
-import { CredentialDocument } from "../schemas/credential.schema"
-import { CreateAccountDto } from "../dtos/account.dto"
+import { CredentialDocument } from '../schemas/credential.schema';
+import { CreateAccountDto } from '../dtos/account.dto';
 
 @Injectable()
 export class AccountService {
-    constructor(@InjectModel('Account') public accountModel:Model<AccountDocument>, @InjectModel('Credential') public credentialModel:Model<CredentialDocument> ){}
+  constructor(@InjectModel('Account') public accountModel:Model<AccountDocument>, @InjectModel('Credential') public credentialModel:Model<CredentialDocument> ){}
 
-    async create(createAccountDto:CreateAccountDto){
-        const createdAccount = new this.accountModel(createAccountDto);
-        const resultSavedCreatedAccount = await createdAccount.save();
-        const createdCredential = new this.credentialModel({
-            account: mongoose.Types.ObjectId(resultSavedCreatedAccount._id),
-            accessToken: "guestAccessToken",
-            refreshToken: "guestAccessToken",
-            refreshTokenExpireDate: new Date(),
-            accessTokenExpireDate: new Date(),
-            device: "Ifong 112",
-            platform: "guestA",
-            deviceUUID: "UUUID",
-            createDate:new Date(),
-            updateDate:new Date()
-        })
-        await createdCredential.save()
-        return {
-            account:createdAccount,
-            credential:createdCredential
-        }
-    }
+  async create(createAccountDto:CreateAccountDto){
+    const createdAccount = new this.accountModel(createAccountDto);
+    const resultSavedCreatedAccount = await createdAccount.save();
+    const createdCredential = new this.credentialModel({
+      account: mongoose.Types.ObjectId(resultSavedCreatedAccount._id),
+      accessToken: 'guestAccessToken',
+      refreshToken: 'guestAccessToken',
+      refreshTokenExpireDate: new Date(),
+      accessTokenExpireDate: new Date(),
+      device: 'Ifong 112',
+      platform: 'guestA',
+      deviceUUID: 'UUUID',
+      createDate:new Date(),
+      updateDate:new Date()
+    });
+    await createdCredential.save();
+    return {
+      account:createdAccount,
+      credential:createdCredential
+    };
+  }
 
-    async update(){
+  async update(){
 
-    }
+  }
 
-    async delete(){
+  async delete(){
 
-    }
+  }
 
-    async findById(id:any){
-        return this.accountModel.findById(id)
-    }
+  async findById(id:any){
+    return this.accountModel.findById(id);
+  }
 
-    async getTotalDocuments(){
-        return  this.accountModel.countDocuments().exec()
-    }
+  async getTotalDocuments(){
+    return  this.accountModel.countDocuments().exec();
+  }
 }
