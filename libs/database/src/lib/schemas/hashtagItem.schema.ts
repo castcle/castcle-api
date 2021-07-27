@@ -27,7 +27,7 @@ import * as mongoose from 'mongoose';
 import { Hashtag } from './hashtag.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
-import { TimestampBase } from "./base.timestamp.schema"
+import { TimestampBase } from './base.timestamp.schema';
 
 export type HashtagItemDocument = HashtagItem & Document
 

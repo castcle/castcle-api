@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { TimestampBase } from "./base.timestamp.schema"
+import { TimestampBase } from './base.timestamp.schema';
 export type AccountDocument = Account & Document
 
 @Schema({ timestamps:true })
