@@ -25,19 +25,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type AccountAuthenIdDocument = AccountAuthenId & Document
 
 export enum AccountAuthenIdType{
-    Twitter = "twitter",
-    Facebook = "facebook",
-    Google = "google",
-    Telegram = "telegram"
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram'
 }
 
-@Schema()
-export class AccountAuthenId{
+@Schema({ timestamps:true })
+export class AccountAuthenId extends TimestampBase{
 
     @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
     account:Account
@@ -45,11 +46,6 @@ export class AccountAuthenId{
     @Prop({required:true})
     type:string
 
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const AccountAuthenIdSchema = SchemaFactory.createForClass(AccountAuthenId);

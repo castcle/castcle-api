@@ -21,29 +21,17 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { TimestampBase } from "./base.timestamp.schema"
-
-export enum CircleType{
-  Default = 'default',
-  Topic = 'Topic'
+export interface TokenHeader{
+  acceptVersion:string
 }
 
-export type CircleDocument = Circle & Document
 
-@Schema({ timestamps:true })
-export class Circle extends TimestampBase{
 
-  @Prop({required:true})
-  slug:string
-
-  @Prop({required:true})
-  name:string
-
-  @Prop({required:true})
-  type:string
-
+export class CreateAccountDto{
+  isGuest:boolean
+  updateDate:Date
+  createDate:Date
+  preferences:{
+      languages:string[]
+  }
 }
-
-export const CircleSchema = SchemaFactory.createForClass(Circle);

@@ -24,43 +24,45 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type CredentialDocument = Credential & Document
 
+@Schema({ timestamps:true })
+export class Credential extends TimestampBase{
 
-@Schema()
-export class Credential{
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  account:Account
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    account:Account
+  @Prop({required:true})
+  accessToken:string
 
-    @Prop({required:true})
-    accessToken:string
+  @Prop({required:true})
+  refreshToken:string
 
-    @Prop({required:true})
-    refreshToken:string
+  @Prop({required:true})
+  accessTokenExpireDate:Date;
 
-    @Prop({required:true})
-    accessTokenExpireDate:Date;
+  @Prop({required:true})
+  refreshTokenExpireDate:Date;
 
-    @Prop({required:true})
-    refreshTokenExpireDate:Date;
+  @Prop({required:true})
+  platform:string
 
-    @Prop({required:true})
-    platform:string
+  @Prop({required:true})
+  deviceUUID:string
 
-    @Prop({required:true})
-    deviceUUID:string
+  @Prop({required:true})
+  device:string
 
-    @Prop({required:true})
-    device:string
+  isAccessTokenValid :Function
 
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
+  isRefreshTokenValid :Function
+    
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
+
+CredentialSchema.methods.isAccessTokenValid = () => true;
+CredentialSchema.methods.isRefreshTokenValid = () => true;

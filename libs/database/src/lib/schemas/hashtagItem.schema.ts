@@ -24,30 +24,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { Hashtag } from "./hashtag.schema"
-import { Comment } from "./comment.schema"
-import { Content } from "./content.schema"
+import { Hashtag } from './hashtag.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type HashtagItemDocument = HashtagItem & Document
 
-@Schema()
-export class HashtagItem{
+@Schema({ timestamps:true })
+export class HashtagItem extends TimestampBase{
     
+  @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'Hashtag'})
+  hashtag:Hashtag
 
-    @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'Hashtag'})
-    hashtag:Hashtag
+  @Prop({required:true})
+  objectRef:any
+  
+  @Prop({required:true, type:Object })
+  payload: Comment | Content | any
 
-    @Prop({required:true})
-    objectRef:any
-    
-    @Prop({required:true, type:Object })
-    payload: Comment | Content | any
-
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

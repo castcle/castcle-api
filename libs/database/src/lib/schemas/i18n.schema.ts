@@ -23,25 +23,22 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type FeatureDocument = Feature & Document
 
-@Schema()
-export class Feature{
-    @Prop({required:true, type: Object})
-    objectRef:any
+@Schema({ timestamps:true })
+export class Feature extends TimestampBase{
 
-    @Prop({required:true})
-    tag:string
+  @Prop({required:true, type: Object})
+  objectRef:any
 
-    @Prop({required:true})
-    value:string
+  @Prop({required:true})
+  tag:string
 
-    @Prop({required:true})
-    createDate:Date
+  @Prop({required:true})
+  value:string
 
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);

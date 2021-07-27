@@ -24,38 +24,33 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { User } from "./user.schema"
-import { Comment } from "./comment.schema"
-import { Content } from "./content.schema"
+import { User } from './user.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type EngagementDocument = Engagement & Document
 
 export enum EngagementType{
-    Like = "like",
-    Recast = "recast",
-    Quote = "quote",
-    Comment = "comment"
+  Like = 'like',
+  Recast = 'recast',
+  Quote = 'quote',
+  Comment = 'comment'
 }
 
-@Schema()
-export class Engagement{
-    @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
-    user:User
+@Schema({ timestamps:true })
+export class Engagement extends TimestampBase{
+  @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
+  user:User
 
-    @Prop({required:true, type: Object})
-    targetRef:any
+  @Prop({required:true, type: Object})
+  targetRef:any
 
-    @Prop({required:true, type: Object})
-    target: Comment | Content | any
+  @Prop({required:true, type: Object})
+  target: Comment | Content | any
 
-    @Prop({required:true})
-    type:string
-
-    @Prop({required:true})
-    updateDate:Date
-
-    @Prop({required:true})
-    createDate:Date
+  @Prop({required:true})
+  type:string
 
 }
 

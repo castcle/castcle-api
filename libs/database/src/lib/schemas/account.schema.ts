@@ -23,38 +23,34 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TimestampBase } from "./base.timestamp.schema"
 export type AccountDocument = Account & Document
 
-@Schema()
-export class Account{
-    @Prop()
-    email:string
+@Schema({ timestamps:true })
+export class Account extends TimestampBase{
+  @Prop()
+  email:string
 
-    @Prop()
-    password:string
+  @Prop()
+  password:string
 
-    @Prop()
-    activateDate:Date
+  @Prop()
+  activateDate:Date
 
-    @Prop({ required: true })
-    isGuest:boolean
+  @Prop({ required: true })
+  isGuest:boolean
 
-    @Prop({ required: true })
-    createDate:Date
+  @Prop({ required: true, type:Object })
+  preferences:{
+      langagues:string[]
+  }
 
-    @Prop({ required: true })
-    updateDate:Date
+  @Prop({type:Object})
+  mobile:{
+      countryCode:string,
+      number:string
+  }
 
-    @Prop({ required: true, type:Object })
-    preferences:{
-        langagues:string[]
-    }
-
-    @Prop({type:Object})
-    mobile:{
-        countryCode:string,
-        number:string
-    }
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

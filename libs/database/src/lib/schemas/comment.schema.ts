@@ -23,35 +23,32 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
+
 export type CommentDocument = Comment & Document
 
-@Schema()
-export class Comment{
+@Schema({ timestamps:true })
+export class Comment extends TimestampBase{
 
-    @Prop({required: true, type:Object})
-    author:Account | any
+  @Prop({required: true, type:Object})
+  author:Account | any
 
-    @Prop({required:true})
-    message:string
+  @Prop({required:true})
+  message:string
 
-    @Prop({required:true, type:Object})
-    engagements:{[engagementKey:string]:{
-        count:number,
-        refs:any[]
-    }}
+  @Prop({required:true, type:Object})
+  engagements:{[engagementKey:string]:{
+      count:number,
+      refs:any[]
+  }}
 
-    @Prop({required:true})
-    revisionCount:number;
+  @Prop({required:true})
+  revisionCount:number;
 
-    @Prop({type:Array})
-    hashtags:any[]
+  @Prop({type:Array})
+  hashtags:any[]
 
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

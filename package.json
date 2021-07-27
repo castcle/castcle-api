@@ -43,6 +43,7 @@
   "dependencies": {
     "@nestjs/common": "^8.0.4",
     "@nestjs/core": "^8.0.4",
+    "@nestjs/mongoose": "^8.0.0",
     "@nestjs/platform-express": "^8.0.4",
     "@nestjs/swagger": "^5.0.4",
     "moment": "^2.29.1",
@@ -68,7 +69,7 @@
     "@typescript-eslint/eslint-plugin": "4.19.0",
     "@typescript-eslint/parser": "4.19.0",
     "dotenv": "8.2.0",
-    "eslint": "7.22.0",
+    "eslint": "^7.31.0",
     "eslint-config-prettier": "8.1.0",
     "jest": "27.0.3",
     "prettier": "^2.3.1",

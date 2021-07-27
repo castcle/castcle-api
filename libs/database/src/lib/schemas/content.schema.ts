@@ -22,78 +22,74 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export interface PostPayload{
-    content:string
-    photo:{
-        file:string
-    }[]
-    link:{
-        type:string
-        url:string
-    }[]
+  content:string
+  photo:{
+      file:string
+  }[]
+  link:{
+      type:string
+      url:string
+  }[]
 }
 
 export interface BlogPayload{
-    header:string
-    content:any
-    photo:{
-        file:string
-    }[]
-    link:{
-        type:string
-        url:string
-    }[]
+  header:string
+  content:any
+  photo:{
+      file:string
+  }[]
+  link:{
+      type:string
+      url:string
+  }[]
 }
 
 export interface RecastPayload{
-    source:Content
+  source:Content
 }
 
 export interface QuotePayload{
-    source:Content
-    content:string
+  source:Content
+  content:string
 }
 
 export enum ContentType{
-    Post = "post",
-    Blog = "blog",
-    Recast = "recast",
-    Quote = "quote"
+  Post = 'post',
+  Blog = 'blog',
+  Recast = 'recast',
+  Quote = 'quote'
 }
 
 export type ContentDocument = Content & Document
 
-@Schema()
-export class Content{
+@Schema({ timestamps:true })
+export class Content extends TimestampBase{
 
-    @Prop({required: true, type:Object})
-    author:Account | any
+  @Prop({required: true, type:Object})
+  author:Account | any
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop({required:true, type:Object})
-    payload:PostPayload | BlogPayload | RecastPayload | QuotePayload
+  @Prop({required:true, type:Object})
+  payload:PostPayload | BlogPayload | RecastPayload | QuotePayload
 
-    @Prop({required:true, type:Object})
-    engagements:{[engagementKey:string]:{
-        count:number,
-        refs:any[]
-    }}
+  @Prop({required:true, type:Object})
+  engagements:{[engagementKey:string]:{
+      count:number,
+      refs:any[]
+  }}
 
-    @Prop({required:true})
-    revisionCount:number;
+  @Prop({required:true})
+  revisionCount:number;
 
-    @Prop({type:Array})
-    hashtags:any[]
+  @Prop({type:Array})
+  hashtags:any[]
 
-    @Prop({required:true})
-    createDate:Date
-
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

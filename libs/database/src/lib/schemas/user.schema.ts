@@ -24,57 +24,53 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type UserDocument = User & Document
 
 export interface UserProfile{
-    birthdate:string
-    overview:string
-    works:string[]
-    educations:string[]
-    homeTowns:string[]
-    websites:{
-        website:string
-        detail:string
-    }[]
-    socials:{
-        facebook:string
-        twitter:string
-        youtube:string
-        medium:string
-    }
-    details:string
+  birthdate:string
+  overview:string
+  works:string[]
+  educations:string[]
+  homeTowns:string[]
+  websites:{
+      website:string
+      detail:string
+  }[]
+  socials:{
+      facebook:string
+      twitter:string
+      youtube:string
+      medium:string
+  }
+  details:string
 }
 
 export enum UserType { People = 'people', Page ='page'}
 
-@Schema()
-export class User{
+@Schema({ timestamps:true })
+export class User extends TimestampBase{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    ownerAccount:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  ownerAccount:Account
 
-    @Prop({required:true})
-    displayName:string
+  @Prop({required:true})
+  displayName:string
 
-    @Prop({required:true})
-    displayId:string
+  @Prop({required:true})
+  displayId:string
 
-    @Prop({type: Object})
-    profile:UserProfile
+  @Prop({type: Object})
+  profile:UserProfile
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop()
-    verified:boolean
-  
-    @Prop({required:true})
-    createDate:Date
+  @Prop()
+  verified:boolean
 
-    @Prop({required:true})
-    updateDate:Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

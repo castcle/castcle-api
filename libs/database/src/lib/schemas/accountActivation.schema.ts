@@ -24,41 +24,39 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from "../schemas/account.schema"
+import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type AccountActivationDocument = AccountActivation & Document
 
 export enum AccountActivationType{
-    Email = "email",
-    Mobile = "mobile"
+  Email = 'email',
+  Mobile = 'mobile'
 }
 
-@Schema()
-export class AccountActivation{
+@Schema({ timestamps:true })
+export class AccountActivation extends TimestampBase{
 
-    @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
-    account:Account
+  @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
+  account:Account
 
-    @Prop({required:true})
-    type:string
+  @Prop({required:true})
+  type:string
 
-    @Prop({required:true})
-    verifyToken:string
+  @Prop({required:true})
+  verifyToken:string
 
-    @Prop({required:true})
-    verifyTokenExpireDate:Date
+  @Prop({required:true})
+  verifyTokenExpireDate:Date
 
-    @Prop()
-    activationDate:Date;
+  @Prop()
+  activationDate:Date;
 
-    @Prop({required:true})
-    expireDate:Date;
+  @Prop({required:true})
+  expireDate:Date;
 
-    @Prop()
-    revocationDate:Date
-
-    @Prop({required:true})
-    createDate:Date
+  @Prop()
+  revocationDate:Date
 
 }
 

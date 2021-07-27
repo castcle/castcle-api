@@ -20,30 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Prop, Schema } from '@nestjs/mongoose';
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { TimestampBase } from "./base.timestamp.schema"
+@Schema()
+export class TimestampBase{
+  @Prop() 
+  createdAt?:Date
 
-export enum CircleType{
-  Default = 'default',
-  Topic = 'Topic'
+  @Prop()
+  updatedAt?:Date
 }
-
-export type CircleDocument = Circle & Document
-
-@Schema({ timestamps:true })
-export class Circle extends TimestampBase{
-
-  @Prop({required:true})
-  slug:string
-
-  @Prop({required:true})
-  name:string
-
-  @Prop({required:true})
-  type:string
-
-}
-
-export const CircleSchema = SchemaFactory.createForClass(Circle);
