@@ -4,15 +4,11 @@
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
-      "rules": {
-        "indent": [2, 2]
-      }
+      "rules": {}
     },
     {
       "files": ["*.ts", "*.tsx"],
-      "rules": {
-        "indent": [2, 2]
-      }
+      "rules": {}
     },
     {
       "files": ["*.js", "*.jsx"],
