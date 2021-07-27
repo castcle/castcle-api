@@ -48,7 +48,10 @@ export interface AccessTokenPayload{
 @Injectable()
 export class AuthenticationService {
   constructor(@InjectModel('Account') public _accountModel:Model<AccountDocument>, @InjectModel('Credential') public _credentialModel:Model<CredentialDocument> ){}
+
   getCredentialFromDeviceUUID = (deviceUUID:string) => this._credentialModel.findOne({deviceUUID:deviceUUID}).exec();
+  
+  getCredentialFromFromRefreshToken = (refreshToken:string) => this._credentialModel.findOne({refreshToken:refreshToken}).exec();
 
   async createAccount(accountRequirements:AccountRequirements){
     const newAccount = new this._accountModel({
@@ -75,6 +78,8 @@ export class AuthenticationService {
     const credentialDocument =await credential.save();
     return { accountDocument, credentialDocument };
   }
+
+  getAccountFromEmail = (email:string) => this._accountModel.findOne({email:email});
 
   _generateAccessToken(header:{[key:string]:string}, payload:AccessTokenPayload){
     const now = new Date();
