@@ -5,9 +5,13 @@
   "scripts": {
     "nx": "nx",
     "start": "nx serve",
+    "start:all": "nx run-many --target=serve --all --parallel --maxParallel=7",
     "build": "nx build",
+    "build:all": "nx run-many --target=build --all",
     "test": "nx test",
+    "test:all": "nx run-many --target=test --all",
     "lint": "nx workspace-lint && nx lint",
+    "lint:all": "nx run-many --target=lint --all",
     "e2e": "nx e2e",
     "affected:apps": "nx affected:apps",
     "affected:libs": "nx affected:libs",
@@ -37,7 +41,8 @@
     "test:metadata": "nx test metadata",
     "test:notifications": "nx test notifications",
     "test:searches": "nx test searches",
-    "test:users": "nx test users"
+    "test:users": "nx test users",
+    "prepare": "husky install"
   },
   "private": true,
   "dependencies": {
@@ -71,6 +76,7 @@
     "dotenv": "8.2.0",
     "eslint": "^7.31.0",
     "eslint-config-prettier": "8.1.0",
+    "husky": "^7.0.1",
     "jest": "27.0.3",
     "prettier": "^2.3.1",
     "ts-jest": "27.0.3",
