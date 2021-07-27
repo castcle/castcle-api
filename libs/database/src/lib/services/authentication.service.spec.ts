@@ -100,6 +100,7 @@ describe('Authentication Service', () => {
           expect(createAccountResult.accountDocument).toBeDefined();
           const currentAccountDocumentCount  = await service._accountModel.countDocuments().exec();
           expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(1);
+
         }
       });
       it('should create a new Credential with account from above', () => {
