@@ -45,6 +45,9 @@
     "feeds": {
       "tags": []
     },
+    "logger": {
+      "tags": []
+    },
     "metadata": {
       "tags": []
     },
