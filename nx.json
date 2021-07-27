@@ -30,7 +30,22 @@
     "authentications": {
       "tags": []
     },
+    "bases": {
+      "tags": []
+    },
+    "commonDate": {
+      "tags": []
+    },
+    "database": {
+      "tags": []
+    },
+    "environments": {
+      "tags": []
+    },
     "feeds": {
+      "tags": []
+    },
+    "logger": {
       "tags": []
     },
     "metadata": {

@@ -32,7 +32,7 @@ describe('AppController', () => {
   beforeAll(async () => {
     app = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [AppService]
     }).compile();
   });
 
@@ -40,7 +40,7 @@ describe('AppController', () => {
     it('should return "Welcome to searches!"', () => {
       const appController = app.get<AppController>(AppController);
       expect(appController.getData()).toEqual({
-        message: 'Welcome to searches!',
+        message: 'Welcome to searches!'
       });
     });
   });

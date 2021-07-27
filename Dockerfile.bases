@@ -15,16 +15,16 @@
 # 3 along with this work; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok, 
-# Thailand 10160, or visit www.castcle.com if you need additional information 
+# Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok,
+# Thailand 10160, or visit www.castcle.com if you need additional information
 # or have any questions.
 
 FROM node:16.5.0-alpine
 WORKDIR /app
-COPY ./dist/apps/feeds .
-ENV PORT=3333
+COPY ./dist/apps/bases .
+ENV PORT=3000
 EXPOSE ${PORT}
 RUN npm install --production
 # dependencies that nestjs needs
-RUN npm install reflect-metadata tslib rxjs @nestjs/platform-express
+RUN npm install reflect-metadata tslib rxjs @nestjs/platform-express dotenv
 CMD node ./main.js
