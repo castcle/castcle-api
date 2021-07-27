@@ -21,28 +21,50 @@
  * or have any questions.
  */
 
-import { NestFactory } from '@nestjs/core';
-import { SwaggerModule } from '@nestjs/swagger';
+import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions, CastLoggerLevel } from '@castcle-api/logger';
-import { AppModule } from './app/app.module';
-import { DocumentConfig } from './docs/document.config';
 
-async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel,
-  });
-  const port = process.env.PORT || 3332;
+export class CastLogger extends ConsoleLogger {
+
+  /**
+   * Write a 'log' level log.
+   */
+  log(message: any, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (context) {
+      argArray.push(context);
+    }
+    super.log.apply(this, argArray);
+  }
   
-  // For documentations
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup('documentations', app, document);
+  /**
+   * Write an 'error' level log.
+   */
+  error(message: any, stack?: string, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (stack) {
+      argArray.push(stack);
+    }
+    if (context) {
+      argArray.push(context);
+    }
+    super.error.apply(this, argArray);
+  }
 
-  await app.listen(port, () => {
-    logger.log('Listening at http://localhost:' + port);
-    logger.log(`Environment at ${env.node_env}`);
-  });
+  /**
+   * Write a 'warn' level log.
+   */
+  warn(message: any, context?: string) {
+    const argArray: Array<any> = [message]; 
+    if (context) {
+      argArray.push(context);
+    }
+    super.warn.apply(this, argArray);
+  }
 }
 
-bootstrap();
+export const CastLoggerLevel: LogLevel[] = (env.production) ? ['log', 'error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'];
+export const CastLoggerOptions: ConsoleLoggerOptions = {
+  logLevels: CastLoggerLevel,
+  timestamp: true,
+};

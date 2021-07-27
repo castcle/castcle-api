@@ -29,10 +29,11 @@ module.exports = {
     '<rootDir>/apps/feeds',
     '<rootDir>/apps/notifications',
     '<rootDir>/apps/searches',
+    '<rootDir>/apps/bases',
     '<rootDir>/libs/data',
     '<rootDir>/libs/commonDate',
     '<rootDir>/libs/environments',
     '<rootDir>/libs/database',
-    '<rootDir>/apps/bases'
+    '<rootDir>/libs/logger'
   ]
 };
