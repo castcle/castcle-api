@@ -51,6 +51,8 @@ export class Account extends TimestampBase{
       number:string
   }
 
+  
+
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);
