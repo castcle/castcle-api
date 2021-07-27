@@ -89,9 +89,6 @@ describe('Authentication Service', () => {
         expect( result.accessTokenExpireDate).toBeDefined();
         expect( result.refreshTokenExpireDate).toBeDefined();
       });
-      it(`should have Access Token Expire in = ${env.jwt_access_expires_in} seconds and Refresh Token Expire in ${env.jwt_refresh_expires_in} seconds `, async () => {
-                
-      });
     });
 
     describe('#createAccount()', () => {
@@ -177,55 +174,6 @@ describe('Authentication Service', () => {
         }
       });
     });
-
-    describe('#refreshAccessToken()', () => {
-      it('should return accessToken if refreshToken is valid ', () => {
-
-      });
-      it('should return false if accessToken is invalid ', () => {
-                
-      });
-      it('should return false if accessToken is expire ', () => {
-                
-      });
-    });
-
-    describe('#createAccountWithEmail()', () => {
-      it('should create AccountActivation if accessToken is valid', () => {
-
-      });
-      it('should return  AccountActivation if accessToken is valid', () => {
-                
-      });
-      it('should return  null if accessToken is invalid', () => {
-                
-      });
-    });
-
-    describe('#verifyAccountWithEmail()', () => {
-      it('should update an Account if verifyToken is valid', () => {
-
-      });
-      it('should return  Account if function run sucessfully', () => {
-                
-      });
-      it('should return  null if verifyToken is invalid', () => {
-                
-      });
-    });
-
-    describe('#loginWithEmail()', () => {
-      it('should update an Account if verifyToken is valid', () => {
-
-      });
-      it('should return  Account if function run sucessfully', () => {
-                
-      });
-      it('should return  null if verifyToken is invalid', () => {
-                
-      });
-    });
-
 
   });
     
