@@ -98,19 +98,4 @@ export class AuthenticationService {
       return false;
   }
 
-  refreshAccessToken(credentialDocument:CredentialDocument){
-      
-  }
-
-  createAccountWithEmail( email:string, password:string, accessToken:string){
-
-  }
-
-  verifyAccountWithEmail( verifyToken:string){
-
-  }
-
-  loginWithEmail( email:string, password:string){
-
-  }
 }
