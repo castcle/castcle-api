@@ -23,10 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TimestampBase } from "./base.timestamp.schema"
 export type AccountDocument = Account & Document
 
 @Schema({ timestamps:true })
-export class Account{
+export class Account extends TimestampBase{
   @Prop()
   email:string
 
@@ -50,11 +51,6 @@ export class Account{
       number:string
   }
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

@@ -24,10 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
+
 export type CommentDocument = Comment & Document
 
 @Schema({ timestamps:true })
-export class Comment{
+export class Comment extends TimestampBase{
 
   @Prop({required: true, type:Object})
   author:Account | any
@@ -47,11 +49,6 @@ export class Comment{
   @Prop({type:Array})
   hashtags:any[]
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

@@ -23,11 +23,12 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type HashtagDocument = Hashtag & Document
 
 @Schema({ timestamps:true })
-export class Hashtag{
+export class Hashtag extends TimestampBase{
     
   @Prop({required:true})
   tag:string
@@ -38,11 +39,6 @@ export class Hashtag{
   @Prop({required:true, type:Object })
   aggregator:any
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);

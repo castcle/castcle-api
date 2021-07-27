@@ -25,6 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type UserDocument = User & Document
 
@@ -50,7 +51,7 @@ export interface UserProfile{
 export enum UserType { People = 'people', Page ='page'}
 
 @Schema({ timestamps:true })
-export class User{
+export class User extends TimestampBase{
 
   @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
   ownerAccount:Account
@@ -70,11 +71,6 @@ export class User{
   @Prop()
   verified:boolean
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

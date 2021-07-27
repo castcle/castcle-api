@@ -23,15 +23,13 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import * as mongoose from 'mongoose';
 import { Hashtag } from './hashtag.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type ArchiveHashtagDocument = ArchiveHashtag & Document
 
 @Schema({ timestamps:true })
-export class ArchiveHashtag{
+export class ArchiveHashtag extends TimestampBase{
 
   @Prop({required:true, type: Array})
   hashtags:Hashtag[]
@@ -41,12 +39,7 @@ export class ArchiveHashtag{
 
   @Prop({required:true})
   toDate:Date
-
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
+  
 }
 
 export const ArchiveHashtagSchema = SchemaFactory.createForClass(ArchiveHashtag);

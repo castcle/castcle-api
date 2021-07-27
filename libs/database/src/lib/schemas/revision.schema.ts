@@ -24,23 +24,18 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type RevisionDocument = Revision & Document
 
 @Schema({ timestamps:true })
-export class Revision{
-  
+export class Revision extends TimestampBase{
+
   @Prop({required:true, type:Object})
   objectRef:any
 
   @Prop({required:true, type:Object})
   payload:string
-
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 
 }
 

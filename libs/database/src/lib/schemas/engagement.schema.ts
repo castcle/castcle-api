@@ -27,6 +27,7 @@ import * as mongoose from 'mongoose';
 import { User } from './user.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type EngagementDocument = Engagement & Document
 
@@ -38,7 +39,7 @@ export enum EngagementType{
 }
 
 @Schema({ timestamps:true })
-export class Engagement{
+export class Engagement extends TimestampBase{
   @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'User'})
   user:User
 
@@ -50,12 +51,6 @@ export class Engagement{
 
   @Prop({required:true})
   type:string
-
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 
 }
 

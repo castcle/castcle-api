@@ -25,6 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type AccountActivationDocument = AccountActivation & Document
 
@@ -34,7 +35,7 @@ export enum AccountActivationType{
 }
 
 @Schema({ timestamps:true })
-export class AccountActivation{
+export class AccountActivation extends TimestampBase{
 
   @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
   account:Account
@@ -57,11 +58,6 @@ export class AccountActivation{
   @Prop()
   revocationDate:Date
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const AccountActivationSchema = SchemaFactory.createForClass(AccountActivation);

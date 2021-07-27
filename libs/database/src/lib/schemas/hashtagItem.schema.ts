@@ -27,11 +27,12 @@ import * as mongoose from 'mongoose';
 import { Hashtag } from './hashtag.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type HashtagItemDocument = HashtagItem & Document
 
 @Schema({ timestamps:true })
-export class HashtagItem{
+export class HashtagItem extends TimestampBase{
     
   @Prop({required:true, type: mongoose.Schema.Types.ObjectId, ref:'Hashtag'})
   hashtag:Hashtag
@@ -42,11 +43,6 @@ export class HashtagItem{
   @Prop({required:true, type:Object })
   payload: Comment | Content | any
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

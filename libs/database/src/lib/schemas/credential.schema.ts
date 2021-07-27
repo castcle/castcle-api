@@ -25,12 +25,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export type CredentialDocument = Credential & Document
 
-
 @Schema({ timestamps:true })
-export class Credential{
+export class Credential extends TimestampBase{
 
   @Prop({required: true , type: mongoose.Schema.Types.ObjectId, ref:'Account'})
   account:Account
@@ -55,12 +55,6 @@ export class Credential{
 
   @Prop({required:true})
   device:string
-
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 
   isAccessTokenValid :Function
 

@@ -23,6 +23,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { TimestampBase } from "./base.timestamp.schema"
 
 export interface PostPayload{
   content:string
@@ -66,7 +67,7 @@ export enum ContentType{
 export type ContentDocument = Content & Document
 
 @Schema({ timestamps:true })
-export class Content{
+export class Content extends TimestampBase{
 
   @Prop({required: true, type:Object})
   author:Account | any
@@ -89,11 +90,6 @@ export class Content{
   @Prop({type:Array})
   hashtags:any[]
 
-  @Prop() 
-  createdAt?:Date
-
-  @Prop()
-  updatedAt?:Date
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
