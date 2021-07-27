@@ -56,9 +56,9 @@ export class Credential extends TimestampBase{
   @Prop({required:true})
   device:string
 
-  isAccessTokenValid = () => false;
+  isAccessTokenValid = () => false;//for pass lint guard
 
-  isRefreshTokenValid = () => false;
+  isRefreshTokenValid = () => false;//for pass lint guard
     
 }
 
