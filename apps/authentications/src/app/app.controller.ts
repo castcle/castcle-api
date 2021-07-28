@@ -21,15 +21,18 @@
  * or have any questions.
  */
 
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(AppController.name, CastLoggerOptions);
+  private readonly logger = new CastLogger(
+    AppController.name,
+    CastLoggerOptions
+  );
 
   @Get()
   getData() {

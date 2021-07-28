@@ -28,7 +28,10 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(AppController.name, CastLoggerOptions);
+  private readonly logger = new CastLogger(
+    AppController.name,
+    CastLoggerOptions
+  );
 
   @Get()
   getData() {

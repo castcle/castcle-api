@@ -29,14 +29,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions, CastLoggerLevel } from '@castcle-api/logger';
+import {
+  CastLogger,
+  CastLoggerOptions,
+  CastLoggerLevel
+} from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
   const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel,
+    logger: CastLoggerLevel
   });
   const port = process.env.PORT || 3335;
   const prefix = 'feeds';
@@ -47,7 +51,7 @@ async function bootstrap() {
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  
+
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.node_env}`);

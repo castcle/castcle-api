@@ -26,12 +26,14 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller('healthy')
 export class HealthyController {
-  private readonly logger = new CastLogger(HealthyController.name, CastLoggerOptions);
+  private readonly logger = new CastLogger(
+    HealthyController.name,
+    CastLoggerOptions
+  );
 
   @Get()
   getData() {
     this.logger.log('Health Check');
     return '';
   }
-
 }

@@ -4,9 +4,9 @@ import { Environment as env } from '@castcle-api/environments';
 
 @Global()
 @Module({
-  imports:[MongooseModule.forRoot( env.db_location )],
+  imports: [MongooseModule.forRoot(env.db_location)],
   controllers: [],
   providers: [],
-  exports: [],
+  exports: []
 })
 export class DatabaseModule {}
