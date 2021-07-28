@@ -21,12 +21,35 @@
  * or have any questions.
  */
 
+import { MongooseModuleOptions } from '@nestjs/mongoose';
+import { Assets as assets } from '@castcle-api/assets';
 import * as dotenv from 'dotenv';
 
 const env = dotenv.config();
 if (!env) {
   throw new Error('Env not found!');
 }
+
+// Database
+const sslCA = assets.mongodb_ssl_ca;
+const db_user_pass =
+  process.env.DB_USERNAME === '' && process.env.DB_PASSWORD === ''
+    ? ''
+    : `${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@`;
+const db_query =
+  process.env.DB_HOST === 'localhost'
+    ? ''
+    : `?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false`;
+const db_options: MongooseModuleOptions =
+  process.env.DB_HOST === 'localhost'
+    ? {}
+    : {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        ssl: true,
+        sslValidate: true,
+        sslCA
+      };
 
 export const Environment = {
   production: process.env.NODE_ENV === 'production',
@@ -38,7 +61,8 @@ export const Environment = {
   db_host: process.env.DB_HOST,
   db_port: process.env.DB_PORT as unknown as number,
   db_database_name: process.env.DB_DATABASE_NAME,
-  db_location: `mongodb://${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}`,
+  db_uri: `mongodb://${db_user_pass}${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE_NAME}${db_query}`,
+  db_options,
   db_test_in_db: process.env.DB_TEST_IN_DB === 'yes',
   // Mail Service
   smtp_username: process.env.SMTP_USERNAME,
