@@ -23,11 +23,14 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
+import { Document, Model, model } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
-import { AccountActivationDocument } from './accountActivation.schema';
+import {
+  AccountActivationDocument,
+  AccountActivationSchema
+} from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
-export type AccountDocument = Account & Document;
+export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
   Member = 'member',
@@ -59,6 +62,35 @@ export class Account extends TimestampBase {
     number: string;
   };
 }
+export const AccountSchema = SchemaFactory.createForClass(Account);
+
+export interface IAccount extends Document {
+  verifyPassword(password: string): boolean;
+  createAccountActivation(type: string): Promise<AccountActivationDocument>;
+}
+AccountSchema.methods.verifyPassword = (password: string) => {
+  return true;
+};
+AccountSchema.methods.createAccountActivation = function (type: string) {
+  const accountActivationModel = model(
+    'AccountActivation',
+    AccountActivationSchema
+  );
+  const now = new Date();
+  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
+  const payload = {
+    id: this._id,
+    verifyExpireDate: verifyExpireDate
+  };
+  const token = `${JSON.stringify(payload)}`; //temporary
+  const accountActivation = new accountActivationModel({
+    account: this._id,
+    type: type,
+    verifyToken: token,
+    verifyExpireDate: verifyExpireDate
+  });
+  return accountActivation.save();
+};
 
 export interface AccountModel extends mongoose.Model<AccountDocument> {
   createAccountActivation(
@@ -68,7 +100,6 @@ export interface AccountModel extends mongoose.Model<AccountDocument> {
   ): Promise<AccountActivationDocument>;
 }
 
-export const AccountSchema = SchemaFactory.createForClass(Account);
 AccountSchema.statics.createAccountActivation = (
   accountActivationModel: Model<AccountActivationDocument>,
   accountDocument: AccountDocument,
