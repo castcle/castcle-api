@@ -26,6 +26,11 @@ import { Document } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
 export type AccountDocument = Account & Document;
 
+export enum AccountRole {
+  Member = 'member',
+  Guest = 'guest'
+}
+
 @Schema({ timestamps: true })
 export class Account extends TimestampBase {
   @Prop()
