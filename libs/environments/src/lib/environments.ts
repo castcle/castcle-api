@@ -41,13 +41,15 @@ const db_query =
     ? ''
     : `?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false`;
 const db_options: MongooseModuleOptions =
-  process.env.DB_HOST === 'localhost'
+  process.env.DB_HOST === 'localhost' &&
+  process.env.DB_USERNAME === '' &&
+  process.env.DB_PASSWORD === ''
     ? {}
     : {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         ssl: true,
-        sslValidate: true,
+        sslValidate: process.env.DB_HOST !== 'localhost',
         sslCA
       };
 
