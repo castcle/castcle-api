@@ -1,21 +1,21 @@
-/* 
+/*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *  
+ *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 3 only, as
  * published by the Free Software Foundation.
- *  
+ *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
  * version 3 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
- *  
+ *
  * You should have received a copy of the GNU General Public License version
  * 3 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *  
+ *
  * Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok,
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
@@ -25,71 +25,71 @@ import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
 
-export interface PostPayload{
-  content:string
-  photo:{
-      file:string
-  }[]
-  link:{
-      type:string
-      url:string
-  }[]
+export interface PostPayload {
+  content: string;
+  photo: {
+    file: string;
+  }[];
+  link: {
+    type: string;
+    url: string;
+  }[];
 }
 
-export interface BlogPayload{
-  header:string
-  content:any
-  photo:{
-      file:string
-  }[]
-  link:{
-      type:string
-      url:string
-  }[]
+export interface BlogPayload {
+  header: string;
+  content: any;
+  photo: {
+    file: string;
+  }[];
+  link: {
+    type: string;
+    url: string;
+  }[];
 }
 
-export interface RecastPayload{
-  source:Content
+export interface RecastPayload {
+  source: Content;
 }
 
-export interface QuotePayload{
-  source:Content
-  content:string
+export interface QuotePayload {
+  source: Content;
+  content: string;
 }
 
-export enum ContentType{
+export enum ContentType {
   Post = 'post',
   Blog = 'blog',
   Recast = 'recast',
   Quote = 'quote'
 }
 
-export type ContentDocument = Content & Document
+export type ContentDocument = Content & Document;
 
-@Schema({ timestamps:true })
-export class Content extends TimestampBase{
+@Schema({ timestamps: true })
+export class Content extends TimestampBase {
+  @Prop({ required: true, type: Object })
+  author: Account | any;
 
-  @Prop({required: true, type:Object})
-  author:Account | any
+  @Prop({ required: true })
+  type: string;
 
-  @Prop({required:true})
-  type:string
+  @Prop({ required: true, type: Object })
+  payload: PostPayload | BlogPayload | RecastPayload | QuotePayload;
 
-  @Prop({required:true, type:Object})
-  payload:PostPayload | BlogPayload | RecastPayload | QuotePayload
+  @Prop({ required: true, type: Object })
+  engagements: {
+    [engagementKey: string]: {
+      count: number;
+      refs: any[];
+    };
+  };
 
-  @Prop({required:true, type:Object})
-  engagements:{[engagementKey:string]:{
-      count:number,
-      refs:any[]
-  }}
+  @Prop({ required: true })
+  revisionCount: number;
 
-  @Prop({required:true})
-  revisionCount:number;
-
-  @Prop({type:Array})
-  hashtags:any[]
-
+  @Prop({ type: Array })
+  hashtags: any[];
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

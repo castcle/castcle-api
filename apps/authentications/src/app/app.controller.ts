@@ -30,7 +30,10 @@ import { HttpCode } from '@nestjs/common';
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(AppController.name, CastLoggerOptions);
+  private readonly logger = new CastLogger(
+    AppController.name,
+    CastLoggerOptions
+  );
 
   @Post('checkEmailExists')
   checkEmailExists(){

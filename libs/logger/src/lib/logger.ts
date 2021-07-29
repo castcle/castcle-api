@@ -25,23 +25,22 @@ import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 import { Environment as env } from '@castcle-api/environments';
 
 export class CastLogger extends ConsoleLogger {
-
   /**
    * Write a 'log' level log.
    */
   log(message: any, context?: string) {
-    const argArray: Array<any> = [message]; 
+    const argArray: Array<any> = [message];
     if (context) {
       argArray.push(context);
     }
     super.log.apply(this, argArray);
   }
-  
+
   /**
    * Write an 'error' level log.
    */
   error(message: any, stack?: string, context?: string) {
-    const argArray: Array<any> = [message]; 
+    const argArray: Array<any> = [message];
     if (stack) {
       argArray.push(stack);
     }
@@ -55,7 +54,7 @@ export class CastLogger extends ConsoleLogger {
    * Write a 'warn' level log.
    */
   warn(message: any, context?: string) {
-    const argArray: Array<any> = [message]; 
+    const argArray: Array<any> = [message];
     if (context) {
       argArray.push(context);
     }
@@ -63,8 +62,10 @@ export class CastLogger extends ConsoleLogger {
   }
 }
 
-export const CastLoggerLevel: LogLevel[] = (env.production) ? ['log', 'error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'];
+export const CastLoggerLevel: LogLevel[] = env.production
+  ? ['log', 'error', 'warn']
+  : ['log', 'error', 'warn', 'debug', 'verbose'];
 export const CastLoggerOptions: ConsoleLoggerOptions = {
   logLevels: CastLoggerLevel,
-  timestamp: true,
+  timestamp: true
 };
