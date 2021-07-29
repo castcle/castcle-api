@@ -29,18 +29,22 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions, CastLoggerLevel } from '@castcle-api/logger';
+import {
+  CastLogger,
+  CastLoggerOptions,
+  CastLoggerLevel
+} from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
   const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel,
+    logger: CastLoggerLevel
   });
   const port = process.env.PORT || 3333;
   const prefix = 'metadata';
-  
+
   // For Global
   app.setGlobalPrefix(prefix);
 
