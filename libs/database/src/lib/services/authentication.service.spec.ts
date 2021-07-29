@@ -32,7 +32,8 @@ import {
 } from '../schemas/account.schema';
 import {
   CredentialDocument,
-  CredentialSchema
+  CredentialSchema,
+  CredentialModel
 } from '../schemas/credential.schema';
 
 describe('Authentication Service', () => {
@@ -173,10 +174,14 @@ describe('Authentication Service', () => {
       it('should contain all valid tokens', () => {
         if (env.db_test_in_db) {
           expect(
-            createAccountResult.credentialDocument.isAccessTokenValid()
+            service._credentialModel.isAccessTokenValid(
+              createAccountResult.credentialDocument
+            )
           ).toBe(true);
           expect(
-            createAccountResult.credentialDocument.isRefreshTokenValid()
+            service._credentialModel.isRefreshTokenValid(
+              createAccountResult.credentialDocument
+            )
           ).toBe(true);
         }
       });
@@ -196,7 +201,11 @@ describe('Authentication Service', () => {
             await service.verifyAccessToken(
               createAccountResult.credentialDocument.accessToken
             )
-          ).toEqual(credentialFromAccessToken.isAccessTokenValid());
+          ).toEqual(
+            service._credentialModel.isAccessTokenValid(
+              credentialFromAccessToken
+            )
+          );
           expect(
             await service.verifyAccessToken(
               createAccountResult.credentialDocument.accessToken

@@ -58,13 +58,13 @@ export class Credential extends TimestampBase {
 
   @Prop({ required: true })
   device: string;
+}
 
-  isAccessTokenValid: () => boolean;
-
-  isRefreshTokenValid: () => boolean;
+export interface CredentialModel extends mongoose.Model<CredentialDocument> {
+  isAccessTokenValid(credentialDocument: CredentialDocument): boolean;
+  isRefreshTokenValid(credentialDocument: CredentialDocument): boolean;
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
-
-CredentialSchema.methods.isAccessTokenValid = () => true;
-CredentialSchema.methods.isRefreshTokenValid = () => true;
+CredentialSchema.statics.isAccessTokenValid = () => true;
+CredentialSchema.statics.isRefreshTokenValid = () => true;

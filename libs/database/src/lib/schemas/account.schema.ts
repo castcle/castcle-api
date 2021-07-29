@@ -22,8 +22,10 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
+import { AccountActivationDocument } from './accountActivation.schema';
+import { Environment as env } from '@castcle-api/environments';
 export type AccountDocument = Account & Document;
 
 export enum AccountRole {
@@ -55,6 +57,29 @@ export class Account extends TimestampBase {
     countryCode: string;
     number: string;
   };
+
+  public static createAccountActivation(
+    accountActivationModel: Model<AccountActivationDocument>,
+    accountDocument: AccountDocument,
+    type: 'email' | 'phone'
+  ) {
+    const now = new Date();
+    const verifyExpireDate = new Date(
+      now.getTime() + env.jwt_verify_expires_in
+    );
+    const payload = {
+      id: accountDocument._id,
+      verifyExpireDate: verifyExpireDate
+    };
+    const token = `${JSON.stringify(payload)}`; //temporary
+    const accountActivation = new accountActivationModel({
+      account: accountDocument._id,
+      type: type,
+      verifyToken: token,
+      verifyExpireDate: verifyExpireDate
+    });
+    return accountActivation.save();
+  }
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

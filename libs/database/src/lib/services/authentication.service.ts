@@ -27,7 +27,11 @@ import { AccountDocument, Account } from '../schemas/account.schema';
 import { Environment as env } from '@castcle-api/environments';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
-import { CredentialDocument } from '../schemas/credential.schema';
+import {
+  Credential,
+  CredentialDocument,
+  CredentialModel
+} from '../schemas/credential.schema';
 
 const generateToken = (
   header: { [key: string]: string },
@@ -54,7 +58,7 @@ export class AuthenticationService {
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
-    public _credentialModel: Model<CredentialDocument>
+    public _credentialModel: CredentialModel
   ) {}
 
   getCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -117,7 +121,10 @@ export class AuthenticationService {
     const credentialDocument = await this._credentialModel
       .findOne({ accessToken: accessToken })
       .exec();
-    if (credentialDocument && credentialDocument.isAccessTokenValid())
+    if (
+      credentialDocument &&
+      this._credentialModel.isAccessTokenValid(credentialDocument)
+    )
       return true;
     else return false;
   }
