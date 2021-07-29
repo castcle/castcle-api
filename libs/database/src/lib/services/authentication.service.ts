@@ -23,7 +23,7 @@
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument, Account } from '../schemas/account.schema';
+import { AccountDocument, AccountModel } from '../schemas/account.schema';
 import { Environment as env } from '@castcle-api/environments';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
@@ -56,7 +56,7 @@ export interface AccessTokenPayload {
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: AccountModel,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel
   ) {}

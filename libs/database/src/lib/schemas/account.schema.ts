@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
 import { AccountActivationDocument } from './accountActivation.schema';
@@ -57,29 +58,34 @@ export class Account extends TimestampBase {
     countryCode: string;
     number: string;
   };
+}
 
-  public static createAccountActivation(
+export interface AccountModel extends mongoose.Model<AccountDocument> {
+  createAccountActivation(
     accountActivationModel: Model<AccountActivationDocument>,
     accountDocument: AccountDocument,
     type: 'email' | 'phone'
-  ) {
-    const now = new Date();
-    const verifyExpireDate = new Date(
-      now.getTime() + env.jwt_verify_expires_in
-    );
-    const payload = {
-      id: accountDocument._id,
-      verifyExpireDate: verifyExpireDate
-    };
-    const token = `${JSON.stringify(payload)}`; //temporary
-    const accountActivation = new accountActivationModel({
-      account: accountDocument._id,
-      type: type,
-      verifyToken: token,
-      verifyExpireDate: verifyExpireDate
-    });
-    return accountActivation.save();
-  }
+  ): Promise<AccountActivationDocument>;
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);
+AccountSchema.statics.createAccountActivation = (
+  accountActivationModel: Model<AccountActivationDocument>,
+  accountDocument: AccountDocument,
+  type: 'email' | 'phone'
+) => {
+  const now = new Date();
+  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
+  const payload = {
+    id: accountDocument._id,
+    verifyExpireDate: verifyExpireDate
+  };
+  const token = `${JSON.stringify(payload)}`; //temporary
+  const accountActivation = new accountActivationModel({
+    account: accountDocument._id,
+    type: type,
+    verifyToken: token,
+    verifyExpireDate: verifyExpireDate
+  });
+  return accountActivation.save();
+};
