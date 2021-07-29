@@ -38,19 +38,18 @@ export class Account extends TimestampBase {
   activateDate: Date;
 
   @Prop({ required: true })
-  isGuest:boolean
+  isGuest: boolean;
 
-  @Prop({ required: true, type:Object })
-  preferences:{
-      langagues:string[]
-  }
+  @Prop({ required: true, type: Object })
+  preferences: {
+    langagues: string[];
+  };
 
-  @Prop({type:Object})
-  mobile:{
-      countryCode:string,
-      number:string
-  }
-
+  @Prop({ type: Object })
+  mobile: {
+    countryCode: string;
+    number: string;
+  };
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

@@ -36,112 +36,112 @@ export class AppController {
   );
 
   @Post('checkEmailExists')
-  checkEmailExists(){
+  checkEmailExists() {
     return {
-      'message': 'success message',
-      'payload': {
-        'exist': true 
+      message: 'success message',
+      payload: {
+        exist: true
       }
     };
   }
 
   @Post('login')
-  login(){ 
+  login() {
     return {
-      'accessToken': 'JWT token',
-      'refreshToken': 'JWT token' 
-    }; 
+      accessToken: 'JWT token',
+      refreshToken: 'JWT token'
+    };
   }
-  
+
   @Post('loginWithSocial')
-  loginWithSocial(){
+  loginWithSocial() {
     return {
-      'accessToken': 'JWT token',
-      'refreshToken': 'JWT token',
+      accessToken: 'JWT token',
+      refreshToken: 'JWT token'
     };
   }
 
   @Post('guestLogin')
-  guestLogin(){
+  guestLogin() {
     return {
-      'accessToken': 'JWT token',
-      'refreshToken': 'JWT token',
+      accessToken: 'JWT token',
+      refreshToken: 'JWT token'
     };
   }
 
   @Post('register')
-  register(){
+  register() {
     return {
-      'channel': 'email', // email or mobile
-      'payload': {
-        'email': 'email@castcle.com',
-        'password': 'password', 
-        'displayName': 'Castcle Avenger',
-        'castcleId': 'castcle-avenger', 
-      },
+      channel: 'email', // email or mobile
+      payload: {
+        email: 'email@castcle.com',
+        password: 'password',
+        displayName: 'Castcle Avenger',
+        castcleId: 'castcle-avenger'
+      }
     };
   }
 
   @Post('refreshToken')
-  refreshToken(){
+  refreshToken() {
     return {
-      'accessToken': 'JWT token',
+      accessToken: 'JWT token'
     };
   }
 
   @Post('verificationEmail')
   @HttpCode(204)
-  verificationEmail(){
+  verificationEmail() {
     return `this verification is complete`;
   }
 
   @Post('requestLinkVerify')
   @HttpCode(204)
-  requestLinkVerify(){
+  requestLinkVerify() {
     return `this verification is complete`;
   }
 
   @Post('checkDisplayNameExists')
-  checkDisplayNameExists(){
+  checkDisplayNameExists() {
     return {
-      'message': 'success message',
-      'payload': {
-        'exist': true, // true=มีในระบบ, false=ไม่มีในระบบ
-        'suggestCastcleId': 'castcle-avenger', // กรณีที่ exist=false ให้ ส่ง suggest
+      message: 'success message',
+      payload: {
+        exist: true, // true=มีในระบบ, false=ไม่มีในระบบ
+        suggestCastcleId: 'castcle-avenger' // กรณีที่ exist=false ให้ ส่ง suggest
       }
     };
   }
 
   @Post('checkCastcleIdExists')
-  checkCastcleIdExists(){
+  checkCastcleIdExists() {
     return {
-      'message': 'success message',
-      'payload': {
-        'exist': true, // true=มีในระบบ, false=ไม่มีในระบบ
+      message: 'success message',
+      payload: {
+        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
       }
     };
   }
 
   @Post('requestOTP')
-  requestOTP(){
+  requestOTP() {
     return {
-      'refCode': 'xxxxxxxx', // 8 หลัก
-      'objective': 'mergeAccount',
-      'expiresTime': '2021–06–16T11:22:33Z', // 5 นาทีจาก create
+      refCode: 'xxxxxxxx', // 8 หลัก
+      objective: 'mergeAccount',
+      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
   }
 
   @Post('verificationOTP')
   @HttpCode(204)
-  verificationOTP(){
+  verificationOTP() {
     return `this otp is verify`;
   }
 
   @Post('forgotPasswordRequestOTP')
-  forgotPasswordRequestOTP(){
+  forgotPasswordRequestOTP() {
     return {
-      'refCode': 'xxxxxxxx', // 8 หลัก
-      'expiresTime': '2021–06–16T11:22:33Z', // 5 นาทีจาก create
+      refCode: 'xxxxxxxx', // 8 หลัก
+      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
   }
 
