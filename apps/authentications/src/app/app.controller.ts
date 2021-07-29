@@ -38,8 +38,10 @@ export class AppController {
   @Post('checkEmailExists')
   checkEmailExists() {
     return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+      message: 'success message',
+      payload: {
+        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
+      }
     };
   }
 
