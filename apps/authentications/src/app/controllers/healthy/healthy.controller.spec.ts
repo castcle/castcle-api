@@ -31,7 +31,7 @@ describe('CastcleException', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule]
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -39,10 +39,7 @@ describe('CastcleException', () => {
   });
 
   it(`test`, () => {
-    return request(app.getHttpServer())
-      .get('/healthy')
-      .expect(200)
-      .expect('');
+    return request(app.getHttpServer()).get('/healthy').expect(200).expect('');
   });
 
   afterAll(async () => {

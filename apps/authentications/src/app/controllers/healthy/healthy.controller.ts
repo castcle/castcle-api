@@ -26,8 +26,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller('healthy')
 export class HealthyController {
-  constructor() {
-  }
+  constructor() {}
 
   private readonly _logger = new CastLogger(
     HealthyController.name,

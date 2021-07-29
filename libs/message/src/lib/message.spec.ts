@@ -34,12 +34,12 @@ describe('Message', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         I18nModule.forRoot({
-            fallbackLanguage: 'en',
-            parser: I18nJsonParser,
-            parserOptions: {
-              path: 'libs/message/src/i18n/'
-            }
-          })
+          fallbackLanguage: 'en',
+          parser: I18nJsonParser,
+          parserOptions: {
+            path: 'libs/message/src/i18n/'
+          }
+        })
       ],
       controllers: [MessageTestController],
       providers: []

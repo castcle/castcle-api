@@ -34,12 +34,12 @@ describe('Message', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         I18nModule.forRoot({
-            fallbackLanguage: 'en',
-            parser: I18nJsonParser,
-            parserOptions: {
-              path: 'libs/message/src/i18n/'
-            }
-          })
+          fallbackLanguage: 'en',
+          parser: I18nJsonParser,
+          parserOptions: {
+            path: 'libs/message/src/i18n/'
+          }
+        })
       ],
       controllers: [ExceptionTestController],
       providers: []
@@ -53,7 +53,10 @@ describe('Message', () => {
     return request(app.getHttpServer())
       .get('/exception?code=1001')
       .expect(404)
-      .expect({statusCode:"404", message:"The requested URL was not found."});
+      .expect({
+        statusCode: '404',
+        message: 'The requested URL was not found.'
+      });
   });
 
   afterAll(async () => {

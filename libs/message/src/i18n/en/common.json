@@ -1,6 +1,6 @@
 {
-    "WELCOME": {
-        "user":"{username}",
-        "message": "welcome to castcle"
-    }
+  "WELCOME": {
+    "user": "{username}",
+    "message": "welcome to castcle"
+  }
 }
