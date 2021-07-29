@@ -78,7 +78,7 @@ export class AppController {
   @Post('refreshToken')
   refreshToken() {
     return {
-      accessToken: 'JWT token'
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
     };
   }
 
