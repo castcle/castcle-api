@@ -21,31 +21,29 @@
  * or have any questions.
  */
 
-import * as request from 'supertest';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../app.module';
-import { INestApplication } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
+import { Me } from './me.dto';
+import { Count } from './count.dto';
 
-describe('CastcleException', () => {
-  let app: INestApplication;
+export class User extends Me {
+  @ApiProperty()
+  id: number;
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  @ApiProperty()
+  castcleId: string;
 
-    app = moduleRef.createNestApplication();
-    await app.init();
-  });
+  @ApiProperty()
+  displayName: string;
 
-  it(`test`, () => {
-    return request(app.getHttpServer())
-      .get('/healthy')
-      .expect(200)
-      .expect('');
-  });
+  @ApiProperty()
+  following: Count;
 
-  afterAll(async () => {
-    await app.close();
-  });
-});
+  @ApiProperty()
+  followers: Count;
+
+  @ApiProperty()
+  verified: boolean;
+
+  @ApiProperty()
+  followed: boolean;
+}

@@ -21,15 +21,22 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { I18nJsonParser, I18nModule } from 'nestjs-i18n';
+import { Module } from '@nestjs/common';
 
 @Module({
-  imports: [],
+  imports: [
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      parser: I18nJsonParser,
+      parserOptions: {
+        path: 'libs/message/src/i18n/'
+      }
+    })
+  ],
   controllers: [AppController, HealthyController],
   providers: [AppService]
 })

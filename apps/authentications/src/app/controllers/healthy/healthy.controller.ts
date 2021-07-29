@@ -21,19 +21,22 @@
  * or have any questions.
  */
 
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller('healthy')
 export class HealthyController {
-  private readonly logger = new CastLogger(
+  constructor() {
+  }
+
+  private readonly _logger = new CastLogger(
     HealthyController.name,
     CastLoggerOptions
   );
 
   @Get()
   getData() {
-    this.logger.log('Health Check');
+    this._logger.log('Health Check');
     return '';
   }
 }

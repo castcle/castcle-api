@@ -21,31 +21,42 @@
  * or have any questions.
  */
 
-import * as request from 'supertest';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../app.module';
-import { INestApplication } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Put } from '@nestjs/common';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { ApiResponse } from '@nestjs/swagger';
+import { Me } from '../../dto/me.dto';
+import { User } from '../../dto/user.dto';
 
-describe('CastcleException', () => {
-  let app: INestApplication;
+@Controller('me')
+export class MeController {
+  private readonly logger = new CastLogger(
+    MeController.name,
+    CastLoggerOptions
+  );
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  @Get()
+  @ApiResponse({
+    status: 201,
+    description: 'The record has been successfully created.'
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getData(@Body() user: User) {
+    this.logger.log('me');
 
-    app = moduleRef.createNestApplication();
-    await app.init();
-  });
+    return '';
+  }
 
-  it(`test`, () => {
-    return request(app.getHttpServer())
-      .get('/healthy')
-      .expect(200)
-      .expect('');
-  });
+  @Put()
+  putData(@Body() me: Me) {
+    this.logger.log('me');
 
-  afterAll(async () => {
-    await app.close();
-  });
-});
+    return '';
+  }
+
+  @Delete()
+  deleteData(@Body() id: String) {
+    this.logger.log('me');
+
+    return '';
+  }
+}

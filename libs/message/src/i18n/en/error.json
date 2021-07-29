@@ -1,77 +1,77 @@
 {
-   "1001": {
-      "statusCode": "404",
-      "code": "1001",
-      "message": "The requested URL was not found."
-   },
-   "1002": {
-      "statusCode": "401",
-      "code": "1002",
-      "message": "Missing Authorization header."
-   },
-   "1003": {
-      "statusCode": "401",
-      "code": "1003",
-      "message": "Access token is expired."
-   },
-   "1004": {
-      "statusCode": "401",
-      "code": "1004",
-      "message": "Refresh token is expired."
-   },
-   "3001": {
-      "statusCode": "400",
-      "code": "3001",
-      "message": "Incorrect username or password."
-   },
-   "3002": {
-      "statusCode": "400",
-      "code": "3002",
-      "message": "channel กับ payload ไม่ตรงกัน"
-   },
-   "3003": {
-      "statusCode": "400",
-      "code": "3003",
-      "message": "ไม่มี email หรือ mobile ในระบบ "
-   },
-   "3004": {
-      "statusCode": "400",
-      "code": "3004",
-      "message": "opt ไม่ถูกต้อง หรือ หมดอายุ"
-   },
-   "3005": {
-      "statusCode": "400",
-      "code": "3005",
-      "message": "password ไม่ถูกต้อง"
-   },
-   "3006": {
-      "statusCode": "400",
-      "code": "3006",
-      "message": "refId ไม่ถูกต้อง หรือ หมดอายุ "
-   },
-   "3007": {
-      "statusCode": "400",
-      "code": "3007",
-      "message": "role ไม่ถูกต้อง "
-   },
-   "3008": {
-      "statusCode": "400",
-      "code": "3008",
-      "message": "email หรือ mobile ซ้ำ"
-   },
-   "3009": {
-      "statusCode": "400",
-      "code": "3009",
-      "message": "รูปแบบ email ไม่ถูกต้อง"
-   },
-   "5001": {
-      "statusCode": "400",
-      "code": "5001",
-      "message": "feature {feed} ไม่รองรับ type {image}"
-   },
-   "5002": {
-      "statusCode": "400",
-      "code": "5002",
-      "message": "type กับ payload ไม่ตรงกัน"
-   }
+  "1001": {
+    "statusCode": "404",
+    "code": "1001",
+    "message": "The requested URL was not found."
+  },
+  "1002": {
+    "statusCode": "401",
+    "code": "1002",
+    "message": "Missing Authorization header."
+  },
+  "1003": {
+    "statusCode": "401",
+    "code": "1003",
+    "message": "Access token is expired."
+  },
+  "1004": {
+    "statusCode": "401",
+    "code": "1004",
+    "message": "Refresh token is expired."
+  },
+  "3001": {
+    "statusCode": "400",
+    "code": "3001",
+    "message": "Incorrect username or password."
+  },
+  "3002": {
+    "statusCode": "400",
+    "code": "3002",
+    "message": "channel กับ payload ไม่ตรงกัน"
+  },
+  "3003": {
+    "statusCode": "400",
+    "code": "3003",
+    "message": "ไม่มี email หรือ mobile ในระบบ "
+  },
+  "3004": {
+    "statusCode": "400",
+    "code": "3004",
+    "message": "opt ไม่ถูกต้อง หรือ หมดอายุ"
+  },
+  "3005": {
+    "statusCode": "400",
+    "code": "3005",
+    "message": "password ไม่ถูกต้อง"
+  },
+  "3006": {
+    "statusCode": "400",
+    "code": "3006",
+    "message": "refId ไม่ถูกต้อง หรือ หมดอายุ "
+  },
+  "3007": {
+    "statusCode": "400",
+    "code": "3007",
+    "message": "role ไม่ถูกต้อง "
+  },
+  "3008": {
+    "statusCode": "400",
+    "code": "3008",
+    "message": "email หรือ mobile ซ้ำ"
+  },
+  "3009": {
+    "statusCode": "400",
+    "code": "3009",
+    "message": "รูปแบบ email ไม่ถูกต้อง"
+  },
+  "5001": {
+    "statusCode": "400",
+    "code": "5001",
+    "message": "feature {feed} ไม่รองรับ type {image}"
+  },
+  "5002": {
+    "statusCode": "400",
+    "code": "5002",
+    "message": "type กับ payload ไม่ตรงกัน"
+  }
 }

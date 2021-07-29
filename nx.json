@@ -42,10 +42,16 @@
     "environments": {
       "tags": []
     },
+    "exception": {
+      "tags": []
+    },
     "feeds": {
       "tags": []
     },
     "logger": {
+      "tags": []
+    },
+    "message": {
       "tags": []
     },
     "metadata": {

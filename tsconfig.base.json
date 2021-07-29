@@ -18,7 +18,9 @@
       "@castcle-api/commonDate": ["libs/commonDate/src/index.ts"],
       "@castcle-api/database": ["libs/database/src/index.ts"],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
-      "@castcle-api/logger": ["libs/logger/src/index.ts"]
+      "@castcle-api/exception": ["libs/exception/src/index.ts"],
+      "@castcle-api/logger": ["libs/logger/src/index.ts"],
+      "@castcle-api/message": ["libs/message/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

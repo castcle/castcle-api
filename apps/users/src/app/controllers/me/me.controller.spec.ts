@@ -21,31 +21,21 @@
  * or have any questions.
  */
 
-import * as request from 'supertest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../app.module';
-import { INestApplication } from '@nestjs/common';
+import { MeController } from './me.controller';
 
-describe('CastcleException', () => {
-  let app: INestApplication;
+describe('MeController', () => {
+  let controller: MeController;
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [MeController]
     }).compile();
 
-    app = moduleRef.createNestApplication();
-    await app.init();
+    controller = module.get<MeController>(MeController);
   });
 
-  it(`test`, () => {
-    return request(app.getHttpServer())
-      .get('/healthy')
-      .expect(200)
-      .expect('');
-  });
-
-  afterAll(async () => {
-    await app.close();
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
   });
 });

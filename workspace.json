@@ -166,6 +166,27 @@
         }
       }
     },
+    "exception": {
+      "root": "libs/exception",
+      "sourceRoot": "libs/exception/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/exception/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/exception"],
+          "options": {
+            "jestConfig": "libs/exception/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "feeds": {
       "root": "apps/feeds",
       "sourceRoot": "apps/feeds/src",
@@ -233,6 +254,30 @@
           "outputs": ["coverage/libs/logger"],
           "options": {
             "jestConfig": "libs/logger/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "message": {
+      "root": "libs/message",
+      "sourceRoot": "libs/message/src",
+      "projectType": "library",
+      "compilerOptions": {
+        "assets": ["libs/message/i18n/**/*"]
+      },
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/message/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/message"],
+          "options": {
+            "jestConfig": "libs/message/jest.config.js",
             "passWithNoTests": true
           }
         }
