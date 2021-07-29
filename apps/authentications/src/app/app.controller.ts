@@ -38,47 +38,40 @@ export class AppController {
   @Post('checkEmailExists')
   checkEmailExists() {
     return {
-      message: 'success message',
-      payload: {
-        exist: true
-      }
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
   }
 
   @Post('login')
   login() {
     return {
-      accessToken: 'JWT token',
-      refreshToken: 'JWT token'
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
   }
 
   @Post('loginWithSocial')
   loginWithSocial() {
     return {
-      accessToken: 'JWT token',
-      refreshToken: 'JWT token'
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
   }
 
   @Post('guestLogin')
   guestLogin() {
     return {
-      accessToken: 'JWT token',
-      refreshToken: 'JWT token'
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
   }
 
   @Post('register')
   register() {
     return {
-      channel: 'email', // email or mobile
-      payload: {
-        email: 'email@castcle.com',
-        password: 'password',
-        displayName: 'Castcle Avenger',
-        castcleId: 'castcle-avenger'
-      }
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
   }
 
@@ -92,13 +85,13 @@ export class AppController {
   @Post('verificationEmail')
   @HttpCode(204)
   verificationEmail() {
-    return `this verification is complete`;
+    return '';
   }
 
   @Post('requestLinkVerify')
   @HttpCode(204)
   requestLinkVerify() {
-    return `this verification is complete`;
+    return '';
   }
 
   @Post('checkDisplayNameExists')
@@ -134,7 +127,7 @@ export class AppController {
   @Post('verificationOTP')
   @HttpCode(204)
   verificationOTP() {
-    return `this otp is verify`;
+    return '';
   }
 
   @Post('forgotPasswordRequestOTP')
