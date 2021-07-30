@@ -22,7 +22,7 @@
  */
 
 import { Controller, Get, Query } from '@nestjs/common';
-import { Message } from '@castcle-api/message';
+import { Message } from './message';
 import { I18nService } from 'nestjs-i18n';
 
 @Controller('test')

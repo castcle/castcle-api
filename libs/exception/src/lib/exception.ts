@@ -6,7 +6,7 @@ export class CastcleException extends HttpException {
   private static errorMessages: any;
 
   static async init(i18n: I18nService) {
-    let message = new Message(i18n);
+    const message = new Message(i18n);
     CastcleException.errorMessages = await message.getAllErrorMessage('en');
   }
 

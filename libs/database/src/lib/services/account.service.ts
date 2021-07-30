@@ -57,10 +57,6 @@ export class AccountService {
     };
   }
 
-  async update() {}
-
-  async delete() {}
-
   async findById(id: any) {
     return this.accountModel.findById(id);
   }

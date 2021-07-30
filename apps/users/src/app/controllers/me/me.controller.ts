@@ -54,7 +54,7 @@ export class MeController {
   }
 
   @Delete()
-  deleteData(@Body() id: String) {
+  deleteData(@Body() id: string) {
     this.logger.log('me');
 
     return '';
