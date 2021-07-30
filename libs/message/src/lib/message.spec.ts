@@ -23,24 +23,48 @@
 
 import * as request from 'supertest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../app.module';
+import { I18nJsonParser, I18nModule } from 'nestjs-i18n';
 import { INestApplication } from '@nestjs/common';
-import { Environment as env } from '@castcle-api/environments';
+import { MessageTestController } from './message.test.controller';
 
-describe('HealthCheck', () => {
+describe('Message', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule]
+      imports: [
+        I18nModule.forRoot({
+          fallbackLanguage: 'en',
+          parser: I18nJsonParser,
+          parserOptions: {
+            path: 'libs/message/src/i18n/'
+          }
+        })
+      ],
+      controllers: [MessageTestController],
+      providers: []
     }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
   });
 
-  it(`test`, () => {
-    return request(app.getHttpServer()).get('/healthy').expect(200).expect('');
+  it(`common`, () => {
+    return request(app.getHttpServer())
+      .get('/test/common?code=WELCOME')
+      .expect(200)
+      .expect({ user: 'Tanasin', message: 'welcome to castcle' });
+  });
+
+  it(`error`, () => {
+    return request(app.getHttpServer())
+      .get('/test/error?code=1001')
+      .expect(200)
+      .expect({
+        statusCode: '404',
+        code: '1001',
+        message: 'The requested URL was not found.'
+      });
   });
 
   afterAll(async () => {

@@ -25,51 +25,69 @@ import * as env from '@castcle-api/environments';
 import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
 import { AuthenticationToken } from './authenticationToken';
+import { AuthenticationTokenHeader } from './authenticationHeader';
+import { CastcleException } from '@castcle-api/exception';
 
 export enum TokenType {
   Access = 'access',
   Refresh = 'refresh',
   Signature = 'signature',
   Verify = 'verify'
-};
+}
 
 export class Token {
-
-  generateToken(payload: AuthenticationToken, type:TokenType):string{
+  generateToken(
+    payload: AuthenticationToken,
+    type: TokenType,
+    header: AuthenticationTokenHeader = null
+  ): string {
     const config = this.getTokenConfig(type);
-    const token = jwt.sign(payload, config.secret, { algorithm: 'HS256', expiresIn: Number(config.expiresIn)});
+    if (!header) {
+      header = {
+        alg: 'HS256',
+        typ: 'JWT'
+      };
+    }
+
+    const token = jwt.sign(payload, config.secret, {
+      algorithm: 'HS256',
+      expiresIn: Number(config.expiresIn),
+      header: header
+    });
     return token;
   }
 
-  getTokenConfig(type:TokenType){
+  getTokenConfig(type: TokenType) {
     return {
       secret: env.Environment[`jwt_${type}_secret`],
-      expiresIn: env.Environment[`jwt_${type}_expires_in`],
+      expiresIn: env.Environment[`jwt_${type}_expires_in`]
     };
   }
 
-  validateToken(token:string, type:TokenType):any {
-    try{
+  validateToken(token: string, type: TokenType): any {
+    try {
       const config = this.getTokenConfig(type);
-      const payload:jwt.JwtPayload = jwt.verify(token, config.secret) as jwt.JwtPayload;
+      const payload: jwt.JwtPayload = jwt.verify(
+        token,
+        config.secret
+      ) as jwt.JwtPayload;
       const nowUnixSeconds = Math.round(Number(new Date()) / 1000);
-      if (payload.exp - nowUnixSeconds > env.Environment.jwt_access_expires_in) {
-        return {
-          status: false,
-          error: 'Time out',
-        };
+      if (
+        payload.exp - nowUnixSeconds >
+        env.Environment.jwt_access_expires_in
+      ) {
+        let code = '1003';
+
+        if (type === TokenType.Refresh) {
+          code = '1004';
+        }
+
+        throw new CastcleException(code);
       }
 
       return payload;
-
-    } catch(error){
-      console.error(error);
-      return {
-        status: true,
-        message: 'The error ouccured during token parsing',
-      };
-    } 
-    
+    } catch (error) {
+      throw new CastcleException('1002');
+    }
   }
-
 }

@@ -6,7 +6,7 @@ import { truncate } from 'fs';
 describe('token', () => {
   it('should work', () => {
     const token = new Token();
-    const payload:AuthenticationToken = {
+    const payload: AuthenticationToken = {
       id: '12345678',
       type: AuthenticationUserType.Guest,
       name: 'Tanasin_Vivitvorn',
@@ -14,7 +14,7 @@ describe('token', () => {
       lastName: 'Vivitvorn',
       avatar: '',
       preferredLanguage: 'TH',
-      verified: true,
+      verified: true
     };
 
     const tokenString = token.generateToken(payload, TokenType.Access);
@@ -31,7 +31,7 @@ describe('token', () => {
 
   it('should work', () => {
     const token = new Token();
-    const payload:AuthenticationToken = {
+    const payload: AuthenticationToken = {
       id: '12345678',
       type: AuthenticationUserType.Member,
       name: 'TonyV',
@@ -39,7 +39,7 @@ describe('token', () => {
       lastName: 'V',
       avatar: 'https://www.google.co.th',
       preferredLanguage: 'EN',
-      verified: false,
+      verified: false
     };
 
     const tokenString = token.generateToken(payload, TokenType.Refresh);

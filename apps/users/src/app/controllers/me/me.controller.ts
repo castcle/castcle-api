@@ -21,33 +21,42 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { Body, Controller, Delete, Get, Put } from '@nestjs/common';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { ApiResponse } from '@nestjs/swagger';
+import { Me } from '../../dto/me.dto';
+import { User } from '../../dto/user.dto';
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
+@Controller('me')
+export class MeController {
+  private readonly logger = new CastLogger(
+    MeController.name,
+    CastLoggerOptions
+  );
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram'
-}
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends TimestampBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+  @Get()
+  @ApiResponse({
+    status: 201,
+    description: 'The record has been successfully created.'
   })
-  account: Account;
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getData(@Body() user: User) {
+    this.logger.log('me');
 
-  @Prop({ required: true })
-  type: string;
+    return '';
+  }
+
+  @Put()
+  putData(@Body() me: Me) {
+    this.logger.log('me');
+
+    return '';
+  }
+
+  @Delete()
+  deleteData(@Body() id: String) {
+    this.logger.log('me');
+
+    return '';
+  }
 }
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

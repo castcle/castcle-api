@@ -25,10 +25,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
 
-
-export enum CircleType{
-    Default = 'default',
-    Topic = 'Topic'
+export enum CircleType {
+  Default = 'default',
+  Topic = 'Topic'
 }
 
 export type CircleDocument = Circle & Document;

@@ -21,33 +21,21 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { ApiProperty } from '@nestjs/swagger';
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
+export class Links {
+  @ApiProperty()
+  facebook: string;
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram'
+  @ApiProperty()
+  twitter: string;
+
+  @ApiProperty()
+  youtube: string;
+
+  @ApiProperty()
+  medium: string;
+
+  @ApiProperty()
+  web: string;
 }
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends TimestampBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

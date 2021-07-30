@@ -25,15 +25,15 @@ import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
 
-export interface PostPayload{
-    content:string
-    photo:{
-        file:string
-    }[]
-    link:{
-        type:string
-        url:string
-    }[]
+export interface PostPayload {
+  content: string;
+  photo: {
+    file: string;
+  }[];
+  link: {
+    type: string;
+    url: string;
+  }[];
 }
 
 export interface BlogPayload {

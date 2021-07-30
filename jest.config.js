@@ -36,6 +36,8 @@ module.exports = {
     '<rootDir>/libs/database',
     '<rootDir>/libs/logger',
     '<rootDir>/libs/token',
+    '<rootDir>/libs/message',
+    '<rootDir>/libs/exception',
     '<rootDir>/libs/assets'
   ]
 };

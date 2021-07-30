@@ -21,33 +21,24 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { Controller, Get, Query } from '@nestjs/common';
+import { Message } from '@castcle-api/message';
+import { I18nService } from 'nestjs-i18n';
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
+@Controller('test')
+export class MessageTestController {
+  private _message: Message;
+  constructor(private _i18n: I18nService) {
+    this._message = new Message(this._i18n);
+  }
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram'
+  @Get('/common')
+  getCommonData(@Query('code') code) {
+    return this._message.getCommonMessage(code, 'en', { username: 'Tanasin' });
+  }
+
+  @Get('/error')
+  getErorData(@Query('code') code) {
+    return this._message.getErrorMessage(code, 'en', { username: 'Tanasin' });
+  }
 }
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends TimestampBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

@@ -21,33 +21,23 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { Controller, Get, Query } from '@nestjs/common';
+import { CastcleException } from '@castcle-api/exception';
+import { I18nService } from 'nestjs-i18n';
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
+@Controller('exception')
+export class ExceptionTestController {
+  constructor(private _i18n: I18nService) {
+    CastcleException.init(_i18n);
+  }
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram'
+  @Get()
+  getData(@Query('code') code) {
+    throw new CastcleException(code);
+  }
+
+  @Get('/number')
+  getDataNumber() {
+    throw new CastcleException(3001);
+  }
 }
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends TimestampBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

@@ -21,17 +21,27 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Environment as env } from '@castcle-api/environments';
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { I18nJsonParser, I18nModule } from 'nestjs-i18n';
 
 console.log(env.db_uri);
 console.log(env.db_options);
 @Module({
-  imports: [MongooseModule.forRoot(env.db_uri, env.db_options)],
+  imports: [
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      parser: I18nJsonParser,
+      parserOptions: {
+        path: 'libs/message/src/i18n/'
+      }
+    }),
+    MongooseModule.forRoot(env.db_uri, env.db_options)
+  ],
   controllers: [AppController, HealthyController],
   providers: [AppService]
 })
