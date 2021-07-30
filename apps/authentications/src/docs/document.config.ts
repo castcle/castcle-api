@@ -29,4 +29,3 @@ export const DocumentConfig = new DocumentBuilder()
   .setVersion('1.0')
   .addTag('cats')
   .build();
-

@@ -20,37 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Prop, Schema } from '@nestjs/mongoose';
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import * as mongoose from 'mongoose';
-import { User } from './user.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
-import { TimestampBase } from './base.timestamp.schema';
+@Schema()
+export class TimestampBase {
+  @Prop()
+  createdAt?: Date;
 
-export type EngagementDocument = Engagement & Document;
-
-export enum EngagementType {
-  Like = 'like',
-  Recast = 'recast',
-  Quote = 'quote',
-  Comment = 'comment'
+  @Prop()
+  updatedAt?: Date;
 }
-
-@Schema({ timestamps: true })
-export class Engagement extends TimestampBase {
-  @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  user: User;
-
-  @Prop({ required: true, type: Object })
-  targetRef: any;
-
-  @Prop({ required: true, type: Object })
-  target: Comment | Content | any;
-
-  @Prop({ required: true })
-  type: string;
-}
-
-export const EngagementSchema = SchemaFactory.createForClass(Engagement);

@@ -21,36 +21,15 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import * as mongoose from 'mongoose';
-import { User } from './user.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
-import { TimestampBase } from './base.timestamp.schema';
-
-export type EngagementDocument = Engagement & Document;
-
-export enum EngagementType {
-  Like = 'like',
-  Recast = 'recast',
-  Quote = 'quote',
-  Comment = 'comment'
+export interface TokenHeader {
+  acceptVersion: string;
 }
 
-@Schema({ timestamps: true })
-export class Engagement extends TimestampBase {
-  @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  user: User;
-
-  @Prop({ required: true, type: Object })
-  targetRef: any;
-
-  @Prop({ required: true, type: Object })
-  target: Comment | Content | any;
-
-  @Prop({ required: true })
-  type: string;
+export class CreateAccountDto {
+  isGuest: boolean;
+  updateDate: Date;
+  createDate: Date;
+  preferences: {
+    languages: string[];
+  };
 }
-
-export const EngagementSchema = SchemaFactory.createForClass(Engagement);
