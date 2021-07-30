@@ -43,7 +43,8 @@ console.log(env.db_options);
         path: 'libs/message/src/i18n/'
       }
     }),
-MongooseModule.forRoot(env.db_uri, env.db_options)],
+    MongooseModule.forRoot(env.db_uri, env.db_options)
+  ],
   controllers: [AppController, HealthyController],
   providers: [AppService]
 })
