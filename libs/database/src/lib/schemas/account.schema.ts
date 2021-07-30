@@ -25,10 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model, model } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
-import {
-  AccountActivationDocument,
-  AccountActivationSchema
-} from './accountActivation.schema';
+import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
 export type AccountDocument = Account & IAccount;

@@ -29,7 +29,6 @@ import { Environment as env } from '@castcle-api/environments';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
 import {
-  Credential,
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';

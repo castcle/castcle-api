@@ -23,8 +23,8 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, model } from 'mongoose';
-import { Account, AccountDocument } from '../schemas/account.schema';
+import { Document } from 'mongoose';
+import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
 import { Environment as env } from '@castcle-api/environments';
 
