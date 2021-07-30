@@ -38,7 +38,7 @@ const generateToken = (
   header: { [key: string]: string },
   payload: any,
   secret: string
-) => `encode:$${JSON.stringify(header)}.${JSON.stringify(payload)}.${secret}`;
+) => `${Math.ceil(Math.random() * 100000)}.${secret}`;
 
 export interface AccountRequirements {
   header: {
@@ -54,6 +54,13 @@ export interface AccessTokenPayload {
   deviceUUID: string;
 }
 
+export interface SignupRequirements {
+  email: string;
+  password: string;
+  displayName: string;
+  displayId: string;
+}
+
 @Injectable()
 export class AuthenticationService {
   constructor(
@@ -67,8 +74,11 @@ export class AuthenticationService {
   getCredentialFromDeviceUUID = (deviceUUID: string) =>
     this._credentialModel.findOne({ deviceUUID: deviceUUID }).exec();
 
-  getCredentialFromFromRefreshToken = (refreshToken: string) =>
+  getCredentialFromRefreshToken = (refreshToken: string) =>
     this._credentialModel.findOne({ refreshToken: refreshToken }).exec();
+
+  getCredentialFromAccessToken = (accessToken: string) =>
+    this._credentialModel.findOne({ accessToken: accessToken }).exec();
 
   async createAccount(accountRequirements: AccountRequirements) {
     const newAccount = new this._accountModel({
@@ -95,6 +105,9 @@ export class AuthenticationService {
     const credentialDocument = await credential.save();
     return { accountDocument, credentialDocument };
   }
+
+  getAccountFromCredential = (credential: CredentialDocument) =>
+    this._accountModel.findById(credential.account);
 
   getAccountFromEmail = (email: string) =>
     this._accountModel.findOne({ email: email });
@@ -124,10 +137,7 @@ export class AuthenticationService {
     const credentialDocument = await this._credentialModel
       .findOne({ accessToken: accessToken })
       .exec();
-    if (
-      credentialDocument &&
-      this._credentialModel.isAccessTokenValid(credentialDocument)
-    )
+    if (credentialDocument && credentialDocument.isAccessTokenValid())
       return true;
     else return false;
   }
@@ -136,6 +146,17 @@ export class AuthenticationService {
     this._accountActivationModel.findOne({
       verifyToken: verificationToken
     });
+  }
+
+  async signupByEmail(
+    account: AccountDocument,
+    requirements: SignupRequirements
+  ) {
+    account.email = requirements.email;
+    account.password = requirements.password;
+    //create user here
+    await account.save();
+    return this.createAccountActivation(account, 'email');
   }
 
   createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
@@ -152,6 +173,6 @@ export class AuthenticationService {
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = 'randomToken';
     accountActivation.verifyTokenExpireDate = new Date();
-    accountActivation.save();
+    return accountActivation.save();
   }
 }

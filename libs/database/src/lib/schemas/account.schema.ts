@@ -30,6 +30,7 @@ import {
   AccountActivationSchema
 } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
+import { CredentialDocument, CredentialSchema } from './credential.schema';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -66,31 +67,19 @@ export const AccountSchema = SchemaFactory.createForClass(Account);
 
 export interface IAccount extends Document {
   verifyPassword(password: string): boolean;
-  createAccountActivation(type: string): Promise<AccountActivationDocument>;
+  getOneCredential(): Promise<CredentialDocument>;
 }
 AccountSchema.methods.verifyPassword = (password: string) => {
-  return true;
+  return password === 'testpassword';
 };
-AccountSchema.methods.createAccountActivation = function (type: string) {
-  const accountActivationModel = model(
-    'AccountActivation',
-    AccountActivationSchema
-  );
-  const now = new Date();
-  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
-  const payload = {
-    id: this._id,
-    verifyExpireDate: verifyExpireDate
+AccountSchema.methods.getOneCredential =
+  function (): Promise<CredentialDocument> {
+    const credentialModel: Model<CredentialDocument> = model(
+      'Credential',
+      CredentialSchema
+    );
+    return credentialModel.findOne({ account: this._id }).exec();
   };
-  const token = `${JSON.stringify(payload)}`; //temporary
-  const accountActivation = new accountActivationModel({
-    account: this._id,
-    type: type,
-    verifyToken: token,
-    verifyExpireDate: verifyExpireDate
-  });
-  return accountActivation.save();
-};
 
 export interface AccountModel extends mongoose.Model<AccountDocument> {
   createAccountActivation(
