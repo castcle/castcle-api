@@ -25,18 +25,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Module } from '@nestjs/common';
 import { HealthyController } from './controllers/healthy/healthy.controller';
-import { I18nJsonParser, I18nModule } from 'nestjs-i18n';
+import { I18nModule } from 'nestjs-i18n';
+import { i18n_options } from '@castcle-api/message';
 
 @Module({
-  imports: [
-    I18nModule.forRoot({
-      fallbackLanguage: 'en',
-      parser: I18nJsonParser,
-      parserOptions: {
-        path: 'libs/message/src/i18n/'
-      }
-    })
-  ],
+  imports: [I18nModule.forRoot(i18n_options)],
   controllers: [AppController, HealthyController],
   providers: [AppService]
 })

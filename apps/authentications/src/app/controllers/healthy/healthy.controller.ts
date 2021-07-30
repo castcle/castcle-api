@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller('healthy')

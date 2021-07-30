@@ -23,9 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import * as mongoose from 'mongoose';
 import { Hashtag } from './hashtag.schema';
-import { Comment } from './comment.schema';
 import { TimestampBase } from './base.timestamp.schema';
 
 export type ArchiveHashtagDocument = ArchiveHashtag & Document;

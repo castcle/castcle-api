@@ -23,9 +23,8 @@
 
 import { Body, Controller, Delete, Get, Put } from '@nestjs/common';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { ApiResponse } from '@nestjs/swagger';
-import { Me } from '../../dto/me.dto';
-import { User } from '../../dto/user.dto';
+import { ApiResponse, ApiOkResponse } from '@nestjs/swagger';
+import { dto } from '@castcle-api/database';
 
 @Controller('me')
 export class MeController {
@@ -35,24 +34,55 @@ export class MeController {
   );
 
   @Get()
-  @ApiResponse({
-    status: 201,
-    description: 'The record has been successfully created.'
+  @ApiOkResponse({
+    type: dto.users.user.User
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  getData(@Body() user: User) {
-    this.logger.log('me');
-
-    return '';
+  getData() {
+    return {
+      id: 'uid',
+      castcleId: 'castcle',
+      displayName: 'Display Name',
+      email: 'caXXXXle@castcle.com',
+      overview: "What's make you different?",
+      dob: 'yyyy-MM-dd',
+      images: {
+        avatar: 'url',
+        cover: 'url'
+      },
+      links: {
+        facebook: 'https://facebook.com',
+        twitter: 'https://twitter.com',
+        youtube: 'https://youtube.com',
+        medium: 'https://medium.com',
+        website: null
+      },
+      following: {
+        count: 1234
+      },
+      followers: {
+        count: 1234
+      },
+      verified: true,
+      followed: true
+    };
   }
 
+  @ApiOkResponse({
+    type: dto.users.user.User
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Put()
-  putData(@Body() me: Me) {
+  putData(@Body() me: dto.users.me.Me) {
     this.logger.log('me');
-
     return '';
   }
 
+  @ApiResponse({
+    status: 204,
+    description: 'success'
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Delete()
   deleteData(@Body() id: string) {
     this.logger.log('me');
