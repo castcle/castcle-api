@@ -39,7 +39,7 @@ describe('Authentication Service', () => {
   let service: AuthenticationService;
   const importModules = env.db_test_in_db
     ? [
-        MongooseModule.forRoot(env.db_location),
+        MongooseModule.forRoot(env.db_uri, env.db_options),
         MongooseModule.forFeature([
           { name: 'Account', schema: AccountSchema },
           { name: 'Credential', schema: CredentialSchema }

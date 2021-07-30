@@ -21,21 +21,12 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/token',
-    '<rootDir>/libs/assets'
-  ]
+import * as fs from 'fs';
+
+const mongodb_ssl_ca = fs.readFileSync(
+  `${__dirname}/assets/mongodb.pem`
+) as any;
+
+export const Assets = {
+  mongodb_ssl_ca
 };

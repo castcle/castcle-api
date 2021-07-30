@@ -1,6 +1,27 @@
 {
   "version": 2,
   "projects": {
+    "assets": {
+      "root": "libs/assets",
+      "sourceRoot": "libs/assets/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/assets/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/assets"],
+          "options": {
+            "jestConfig": "libs/assets/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "authentications": {
       "root": "apps/authentications",
       "sourceRoot": "apps/authentications/src",
@@ -13,7 +34,14 @@
             "outputPath": "dist/apps/authentications",
             "main": "apps/authentications/src/main.ts",
             "tsConfig": "apps/authentications/tsconfig.app.json",
-            "assets": ["apps/authentications/src/assets"],
+            "assets": [
+              "apps/authentications/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -64,7 +92,14 @@
             "outputPath": "dist/apps/bases",
             "main": "apps/bases/src/main.ts",
             "tsConfig": "apps/bases/tsconfig.app.json",
-            "assets": ["apps/bases/src/assets"],
+            "assets": [
+              "apps/bases/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -178,7 +213,14 @@
             "outputPath": "dist/apps/feeds",
             "main": "apps/feeds/src/main.ts",
             "tsConfig": "apps/feeds/tsconfig.app.json",
-            "assets": ["apps/feeds/src/assets"],
+            "assets": [
+              "apps/feeds/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -250,7 +292,14 @@
             "outputPath": "dist/apps/metadata",
             "main": "apps/metadata/src/main.ts",
             "tsConfig": "apps/metadata/tsconfig.app.json",
-            "assets": ["apps/metadata/src/assets"],
+            "assets": [
+              "apps/metadata/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -301,7 +350,14 @@
             "outputPath": "dist/apps/notifications",
             "main": "apps/notifications/src/main.ts",
             "tsConfig": "apps/notifications/tsconfig.app.json",
-            "assets": ["apps/notifications/src/assets"],
+            "assets": [
+              "apps/notifications/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -352,7 +408,14 @@
             "outputPath": "dist/apps/searches",
             "main": "apps/searches/src/main.ts",
             "tsConfig": "apps/searches/tsconfig.app.json",
-            "assets": ["apps/searches/src/assets"],
+            "assets": [
+              "apps/searches/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {
@@ -424,7 +487,14 @@
             "outputPath": "dist/apps/users",
             "main": "apps/users/src/main.ts",
             "tsConfig": "apps/users/tsconfig.app.json",
-            "assets": ["apps/users/src/assets"],
+            "assets": [
+              "apps/users/src/assets",
+              {
+                "input": "libs/assets/src/lib/assets",
+                "glob": "**/*",
+                "output": "assets"
+              }
+            ],
             "generatePackageJson": true
           },
           "configurations": {

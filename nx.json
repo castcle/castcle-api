@@ -27,6 +27,9 @@
     ]
   },
   "projects": {
+    "assets": {
+      "tags": []
+    },
     "authentications": {
       "tags": []
     },
