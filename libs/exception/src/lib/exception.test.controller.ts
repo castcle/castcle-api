@@ -22,7 +22,7 @@
  */
 
 import { Controller, Get, Query } from '@nestjs/common';
-import { CastcleException } from '@castcle-api/exception';
+import { CastcleException } from './exception';
 import { I18nService } from 'nestjs-i18n';
 
 @Controller('exception')
