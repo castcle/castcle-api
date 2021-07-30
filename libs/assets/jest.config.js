@@ -21,18 +21,17 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { Environment as env } from '@castcle-api/environments';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
-console.log(env.db_uri);
-console.log(env.db_options);
-@Module({
-  imports: [MongooseModule.forRoot(env.db_uri, env.db_options)],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+module.exports = {
+  displayName: 'assets',
+  preset: '../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
+  },
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../coverage/libs/assets'
+};

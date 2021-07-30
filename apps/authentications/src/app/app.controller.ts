@@ -21,10 +21,11 @@
  * or have any questions.
  */
 
+import { Controller, Get, Post } from '@nestjs/common';
+import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { HttpCode } from '@nestjs/common';
 
 @Controller()
 export class AppController {
@@ -33,6 +34,111 @@ export class AppController {
     AppController.name,
     CastLoggerOptions
   );
+
+  @Post('checkEmailExists')
+  checkEmailExists() {
+    return {
+      message: 'success message',
+      payload: {
+        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
+      }
+    };
+  }
+
+  @Post('login')
+  login() {
+    return {
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+    };
+  }
+
+  @Post('loginWithSocial')
+  loginWithSocial() {
+    return {
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+    };
+  }
+
+  @Post('guestLogin')
+  guestLogin() {
+    return {
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+    };
+  }
+
+  @Post('register')
+  register() {
+    return {
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+    };
+  }
+
+  @Post('refreshToken')
+  refreshToken() {
+    return {
+      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+    };
+  }
+
+  @Post('verificationEmail')
+  @HttpCode(204)
+  verificationEmail() {
+    return '';
+  }
+
+  @Post('requestLinkVerify')
+  @HttpCode(204)
+  requestLinkVerify() {
+    return '';
+  }
+
+  @Post('checkDisplayNameExists')
+  checkDisplayNameExists() {
+    return {
+      message: 'success message',
+      payload: {
+        exist: true, // true=มีในระบบ, false=ไม่มีในระบบ
+        suggestCastcleId: 'castcle-avenger' // กรณีที่ exist=false ให้ ส่ง suggest
+      }
+    };
+  }
+
+  @Post('checkCastcleIdExists')
+  checkCastcleIdExists() {
+    return {
+      message: 'success message',
+      payload: {
+        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
+      }
+    };
+  }
+
+  @Post('requestOTP')
+  requestOTP() {
+    return {
+      refCode: 'xxxxxxxx', // 8 หลัก
+      objective: 'mergeAccount',
+      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
+    };
+  }
+
+  @Post('verificationOTP')
+  @HttpCode(204)
+  verificationOTP() {
+    return '';
+  }
+
+  @Post('forgotPasswordRequestOTP')
+  forgotPasswordRequestOTP() {
+    return {
+      refCode: 'xxxxxxxx', // 8 หลัก
+      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
+    };
+  }
 
   @Get()
   getData() {
