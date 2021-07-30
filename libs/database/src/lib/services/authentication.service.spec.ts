@@ -35,6 +35,7 @@ import {
   CredentialSchema,
   CredentialModel
 } from '../schemas/credential.schema';
+import { AccountActivationSchema } from '../schemas/accountActivation.schema';
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
@@ -43,7 +44,8 @@ describe('Authentication Service', () => {
         MongooseModule.forRoot(env.db_location),
         MongooseModule.forFeature([
           { name: 'Account', schema: AccountSchema },
-          { name: 'Credential', schema: CredentialSchema }
+          { name: 'Credential', schema: CredentialSchema },
+          { name: 'AccountActivation', schema: AccountActivationSchema }
         ])
       ]
     : [];
@@ -57,6 +59,10 @@ describe('Authentication Service', () => {
         },
         {
           provide: getModelToken('Credential'),
+          useValue: {}
+        },
+        {
+          provide: getModelToken('AccountActivation'),
           useValue: {}
         }
       ];

@@ -24,6 +24,7 @@ import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, AccountModel } from '../schemas/account.schema';
+import { AccountActivationDocument } from '../schemas/accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
@@ -58,7 +59,9 @@ export class AuthenticationService {
   constructor(
     @InjectModel('Account') public _accountModel: AccountModel,
     @InjectModel('Credential')
-    public _credentialModel: CredentialModel
+    public _credentialModel: CredentialModel,
+    @InjectModel('AccountActivation')
+    public _accountActivationModel: Model<AccountActivationDocument>
   ) {}
 
   getCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -127,5 +130,28 @@ export class AuthenticationService {
     )
       return true;
     else return false;
+  }
+
+  async verifyEmailToken(verificationToken: string) {
+    this._accountActivationModel.findOne({
+      verifyToken: verificationToken
+    });
+  }
+
+  createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
+    const accountActivation = new this._accountActivationModel({
+      account: account._id,
+      type: type,
+      verifyToken: 'randomToken',
+      verifyTokenExpireDate: new Date()
+    });
+    return accountActivation.save();
+  }
+
+  revokeAccountActivation(accountActivation: AccountActivationDocument) {
+    accountActivation.revocationDate = new Date();
+    accountActivation.verifyToken = 'randomToken';
+    accountActivation.verifyTokenExpireDate = new Date();
+    accountActivation.save();
   }
 }
