@@ -21,21 +21,103 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import { MeController } from './me.controller';
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import * as request from 'supertest';
 
-describe('MeController', () => {
-  let controller: MeController;
+describe('AppController', () => {
+  let app: INestApplication;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [MeController]
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [MeController],
+      providers: []
     }).compile();
 
-    controller = module.get<MeController>(MeController);
+    app = moduleRef.createNestApplication();
+    await app.init();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it(`get`, () => {
+    return request(app.getHttpServer())
+      .get('/me')
+      .expect(200)
+      .expect({
+        id: 'uid',
+        castcleId: 'castcle',
+        displayName: 'Display Name',
+        email: 'caXXXXle@castcle.com',
+        overview: "What's make you different?",
+        dob: 'yyyy-MM-dd',
+        images: {
+          avatar: 'url',
+          cover: 'url'
+        },
+        links: {
+          facebook: 'https://facebook.com',
+          twitter: 'https://twitter.com',
+          youtube: 'https://youtube.com',
+          medium: 'https://medium.com',
+          website: null
+        },
+        following: {
+          count: 1234
+        },
+        followers: {
+          count: 1234
+        },
+        verified: true,
+        followed: true
+      });
+  });
+
+  it(`put`, () => {
+    return request(app.getHttpServer())
+      .put('/me')
+      .send({
+        overview: "What's make you different?",
+        dob: 'yyyy-MM-dd',
+        images: {
+          avatar: 'AVARTAR',
+          cover: 'COVER'
+        },
+        links: {
+          facebook: 'https://facebook.com',
+          twitter: 'https://twitter.com',
+          youtube: 'https://youtube.com',
+          medium: 'https://medium.com',
+          website: 'https://castcle.com'
+        }
+      })
+      .expect(200)
+      .expect({
+        id: 'uid',
+        castcleId: 'castcle',
+        displayName: 'Display Name',
+        email: 'caXXXXle@castcle.com',
+        overview: "What's make you different?",
+        dob: 'yyyy-MM-dd',
+        images: { avatar: 'AVARTAR', cover: 'COVER' },
+        links: {
+          facebook: 'https://facebook.com',
+          twitter: 'https://twitter.com',
+          youtube: 'https://youtube.com',
+          medium: 'https://medium.com',
+          website: null
+        },
+        following: { count: 0 },
+        followers: { count: 0 },
+        verified: true,
+        followed: true
+      });
+  });
+
+  it(`delete`, () => {
+    return request(app.getHttpServer()).delete('/me').expect(204);
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 });

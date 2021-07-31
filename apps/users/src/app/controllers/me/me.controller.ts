@@ -21,18 +21,12 @@
  * or have any questions.
  */
 
-import { Body, Controller, Delete, Get, Put } from '@nestjs/common';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Body, Controller, Delete, Get, HttpCode, Put } from '@nestjs/common';
 import { ApiResponse, ApiOkResponse } from '@nestjs/swagger';
 import { dto } from '@castcle-api/database';
 
 @Controller('me')
 export class MeController {
-  private readonly logger = new CastLogger(
-    MeController.name,
-    CastLoggerOptions
-  );
-
   @Get()
   @ApiOkResponse({
     type: dto.users.User
@@ -74,8 +68,33 @@ export class MeController {
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Put()
   putData(@Body() me: dto.users.Me) {
-    this.logger.log('me');
-    return '';
+    return {
+      id: 'uid',
+      castcleId: 'castcle',
+      displayName: 'Display Name',
+      email: 'caXXXXle@castcle.com',
+      overview: me.overview,
+      dob: me.dob,
+      images: {
+        avatar: me.images.avatar,
+        cover: me.images.cover
+      },
+      links: {
+        facebook: me.links.facebook,
+        twitter: me.links.twitter,
+        youtube: me.links.youtube,
+        medium: me.links.medium,
+        website: null
+      },
+      following: {
+        count: 0
+      },
+      followers: {
+        count: 0
+      },
+      verified: true,
+      followed: true
+    };
   }
 
   @ApiResponse({
@@ -84,9 +103,8 @@ export class MeController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Delete()
-  deleteData(@Body() id: string) {
-    this.logger.log('me');
-
-    return '';
+  @HttpCode(204)
+  deleteData() {
+    return;
   }
 }
