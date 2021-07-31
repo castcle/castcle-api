@@ -27,7 +27,7 @@ import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
 
-export type CredentialDocument = Credential & Document;
+export type CredentialDocument = Credential & ICredential;
 
 @Schema({ timestamps: true })
 export class Credential extends TimestampBase {
@@ -58,13 +58,26 @@ export class Credential extends TimestampBase {
 
   @Prop({ required: true })
   device: string;
-
-  isAccessTokenValid: () => boolean;
-
-  isRefreshTokenValid: () => boolean;
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
 
-CredentialSchema.methods.isAccessTokenValid = () => true;
-CredentialSchema.methods.isRefreshTokenValid = () => true;
+export interface CredentialModel extends mongoose.Model<CredentialDocument> {
+  generateAccessToken(): string;
+  generateRefreshToken(): string;
+}
+
+CredentialSchema.statics.generateAccessToken = () => 'testAccessToken';
+CredentialSchema.statics.generateRefreshToken = () => 'testRefreshToken';
+
+export interface ICredential extends Document {
+  isAccessTokenValid(): boolean;
+  isRefreshTokenValid(): boolean;
+}
+
+CredentialSchema.methods.isAccessTokenValid = function () {
+  return true; //return (this as CredentialDocument).accessToken === 'testAccessToken';
+};
+CredentialSchema.methods.isRefreshTokenValid = function () {
+  return true; //return (this as CredentialDocument).refreshToken === 'testRefreshToken';
+};

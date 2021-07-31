@@ -26,6 +26,7 @@ import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
+import { Environment as env } from '@castcle-api/environments';
 
 export type AccountActivationDocument = AccountActivation & Document;
 
@@ -54,9 +55,6 @@ export class AccountActivation extends TimestampBase {
 
   @Prop()
   activationDate: Date;
-
-  @Prop({ required: true })
-  expireDate: Date;
 
   @Prop()
   revocationDate: Date;

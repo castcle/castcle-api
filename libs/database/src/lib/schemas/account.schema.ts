@@ -22,9 +22,18 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { Document, Model, model } from 'mongoose';
 import { TimestampBase } from './base.timestamp.schema';
-export type AccountDocument = Account & Document;
+import { AccountActivationDocument } from './accountActivation.schema';
+import { Environment as env } from '@castcle-api/environments';
+import { CredentialDocument, CredentialSchema } from './credential.schema';
+export type AccountDocument = Account & IAccount;
+
+export enum AccountRole {
+  Member = 'member',
+  Guest = 'guest'
+}
 
 @Schema({ timestamps: true })
 export class Account extends TimestampBase {
@@ -51,5 +60,49 @@ export class Account extends TimestampBase {
     number: string;
   };
 }
-
 export const AccountSchema = SchemaFactory.createForClass(Account);
+
+export interface IAccount extends Document {
+  verifyPassword(password: string): boolean;
+  getOneCredential(): Promise<CredentialDocument>;
+}
+AccountSchema.methods.verifyPassword = (password: string) => {
+  return password === 'testpassword';
+};
+AccountSchema.methods.getOneCredential =
+  function (): Promise<CredentialDocument> {
+    const credentialModel: Model<CredentialDocument> = model(
+      'Credential',
+      CredentialSchema
+    );
+    return credentialModel.findOne({ account: this._id }).exec();
+  };
+
+export interface AccountModel extends mongoose.Model<AccountDocument> {
+  createAccountActivation(
+    accountActivationModel: Model<AccountActivationDocument>,
+    accountDocument: AccountDocument,
+    type: 'email' | 'phone'
+  ): Promise<AccountActivationDocument>;
+}
+
+AccountSchema.statics.createAccountActivation = (
+  accountActivationModel: Model<AccountActivationDocument>,
+  accountDocument: AccountDocument,
+  type: 'email' | 'phone'
+) => {
+  const now = new Date();
+  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
+  const payload = {
+    id: accountDocument._id,
+    verifyExpireDate: verifyExpireDate
+  };
+  const token = `${JSON.stringify(payload)}`; //temporary
+  const accountActivation = new accountActivationModel({
+    account: accountDocument._id,
+    type: type,
+    verifyToken: token,
+    verifyExpireDate: verifyExpireDate
+  });
+  return accountActivation.save();
+};
