@@ -35,7 +35,7 @@ export class MeController {
 
   @Get()
   @ApiOkResponse({
-    type: dto.users.user.User
+    type: dto.users.User
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   getData() {
@@ -69,11 +69,11 @@ export class MeController {
   }
 
   @ApiOkResponse({
-    type: dto.users.user.User
+    type: dto.users.User
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Put()
-  putData(@Body() me: dto.users.me.Me) {
+  putData(@Body() me: dto.users.Me) {
     this.logger.log('me');
     return '';
   }
