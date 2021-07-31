@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Controller, Param, Put } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { ApiResponse, ApiOkResponse } from '@nestjs/swagger';
@@ -39,9 +39,34 @@ export class AppController {
     type: dto.users.User
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  @Put('/:uuid')
+  @Get('/:uuid')
   putData(@Param('uuid') uuid: string) {
-    this.logger.log('uuid');
-    return '';
+    return {
+      id: uuid,
+      castcleId: 'castcle',
+      displayName: 'Display Name',
+      email: 'caXXXXle@castcle.com',
+      overview: "What's make you different?",
+      dob: 'yyyy-MM-dd',
+      images: {
+        avatar: 'url',
+        cover: 'url'
+      },
+      links: {
+        facebook: 'https://facebook.com',
+        twitter: 'https://twitter.com',
+        youtube: 'https://youtube.com',
+        medium: 'https://medium.com',
+        website: null
+      },
+      following: {
+        count: 1234
+      },
+      followers: {
+        count: 1234
+      },
+      verified: true,
+      followed: true
+    };
   }
 }

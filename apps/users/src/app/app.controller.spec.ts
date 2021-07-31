@@ -21,25 +21,59 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import * as request from 'supertest';
 
 describe('AppController', () => {
-  let app: TestingModule;
+  let app: INestApplication;
 
   beforeAll(async () => {
-    app = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       controllers: [AppController],
       providers: [AppService]
     }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
   });
 
-  describe('getData', () => {
-    it('should return "Welcome to users!"', () => {
-      const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to users!' });
-    });
+  it(`common`, () => {
+    return request(app.getHttpServer())
+      .get('/12345')
+      .expect(200)
+      .expect({
+        id: '12345',
+        castcleId: 'castcle',
+        displayName: 'Display Name',
+        email: 'caXXXXle@castcle.com',
+        overview: "What's make you different?",
+        dob: 'yyyy-MM-dd',
+        images: {
+          avatar: 'url',
+          cover: 'url'
+        },
+        links: {
+          facebook: 'https://facebook.com',
+          twitter: 'https://twitter.com',
+          youtube: 'https://youtube.com',
+          medium: 'https://medium.com',
+          website: null
+        },
+        following: {
+          count: 1234
+        },
+        followers: {
+          count: 1234
+        },
+        verified: true,
+        followed: true
+      });
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 });
