@@ -27,6 +27,7 @@ import * as jwt from 'jsonwebtoken';
 import { AuthenticationToken } from './authenticationToken';
 import { AuthenticationTokenHeader } from './authenticationHeader';
 import { CastcleException } from '@castcle-api/exception';
+import { BaseToken } from './baseToken';
 
 export enum TokenType {
   Access = 'access',
@@ -37,7 +38,7 @@ export enum TokenType {
 
 export class Token {
   generateToken(
-    payload: AuthenticationToken,
+    payload: AuthenticationToken|BaseToken,
     type: TokenType,
     header: AuthenticationTokenHeader = null
   ): string {
