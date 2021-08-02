@@ -23,4 +23,5 @@
 
 export * from './account.dto';
 export * as authentication from './authentication.dto';
+export * as content from './contents/contents.dto';
 export * as users from './users';

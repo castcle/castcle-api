@@ -29,7 +29,7 @@ import { dto } from '@castcle-api/database';
 export class ContentsController {
   @ApiOkResponse({
     schema: {
-      anyOf: refs(dto.contents.ContentsDto)
+      anyOf: refs(dto.content.ContentsDto)
     }
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
