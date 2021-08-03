@@ -167,6 +167,27 @@ describe('Authentication Service', () => {
       });
     });
 
+    describe('#_generateEmailVerifyToken()', () => {
+      it('should return  emailVerifyToken and emailVerifyTokenExpireDate', () => {
+        const result = service._generateEmailVerifyToken({
+          id: 'randomid'
+        });
+        expect(result.emailVerifyToken).toBeDefined();
+        expect(typeof result.emailVerifyToken).toBe('string');
+        expect(result.emailVerifyTokenExpireDate).toBeDefined();
+      });
+      it(`expire date should be in the next ${env.jwt_verify_expires_in} seconds`, () => {
+        const now = new Date();
+        const expectedExpireDate = new Date(
+          now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+        );
+        const result = service._generateEmailVerifyToken({
+          id: 'randomid'
+        });
+        expect(result.emailVerifyTokenExpireDate).toEqual(expectedExpireDate);
+      });
+    });
+
     describe('#createAccount()', () => {
       it('should create a new Account ', async () => {
         expect(createAccountResult.accountDocument).toBeDefined();

@@ -115,7 +115,7 @@ export class AuthenticationService {
   _generateAccessToken(payload: AccessTokenPayload) {
     const now = new Date();
     const accessTokenExpireDate = new Date(
-      now.getTime() + env.jwt_access_expires_in * 1000
+      now.getTime() + Number(env.jwt_access_expires_in) * 1000
     );
     payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
     const accessToken = Token.generateToken(
@@ -132,7 +132,7 @@ export class AuthenticationService {
   _generateRefreshToken(payload: RefreshTokenPayload) {
     const now = new Date();
     const refreshTokenExpireDate = new Date(
-      now.getTime() + env.jwt_refresh_expires_in * 1000
+      now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
     );
     payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
     const refreshToken = Token.generateToken(
@@ -150,7 +150,7 @@ export class AuthenticationService {
   _generateEmailVerifyToken(payload: EmailVerifyToken) {
     const now = new Date();
     const emailVerifyTokenExpireDate = new Date(
-      now.getTime() + Number(env.jwt_verify_expires_in)
+      now.getTime() + Number(env.jwt_verify_expires_in) * 1000
     );
     const emailVerifyToken = Token.generateToken(
       payload,
