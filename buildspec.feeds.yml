@@ -26,6 +26,7 @@ phases:
       - docker build -t $REPOSITORY_URI:$IMAGE_TAG -f Dockerfile.feeds .
   post_build:
     commands:
+      - bash -c "if [ /"$CODEBUILD_BUILD_SUCCEEDING/" == /"0/" ]; then exit 1; fi"
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
