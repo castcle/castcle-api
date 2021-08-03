@@ -20,7 +20,10 @@
       "@castcle-api/database": ["libs/database/src/index.ts"],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
-      "@castcle-api/utils": ["libs/utils/src/index.ts"]
+      "@castcle-api/utils": ["libs/utils/src/index.ts"],
+      "@castcle-api/utils/interceptors": [
+        "libs/utils/interceptors/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]

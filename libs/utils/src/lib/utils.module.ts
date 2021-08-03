@@ -24,6 +24,7 @@ import { Module } from '@nestjs/common';
 import { Token } from './token';
 
 @Module({
+  imports: [],
   controllers: [],
   providers: [],
   exports: []
