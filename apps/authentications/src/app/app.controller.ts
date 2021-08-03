@@ -31,7 +31,6 @@ import {
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpCode } from '@nestjs/common';
 
 @Controller()
@@ -41,11 +40,6 @@ export class AppController {
     AppController.name,
     CastLoggerOptions
   );
-
-  @Get('test')
-  test() {
-    throw new CastcleException(CastcleStatus.INVALID_EMAIL);
-  }
 
   @Post('checkEmailExists')
   checkEmailExists() {
