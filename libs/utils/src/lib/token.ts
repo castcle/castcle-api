@@ -21,21 +21,34 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils'
-  ]
+import * as jwt from 'jsonwebtoken';
+const generateToken = (payload: any, secret: string, expireIn: number) =>
+  jwt.sign(payload, secret, {
+    expiresIn: expireIn,
+    header: {
+      alg: 'HS256',
+      typ: 'JWT'
+    }
+  });
+
+const isTokenValid = (token: string, secret: string) => {
+  try {
+    jwt.verify(token, secret);
+    return true;
+  } catch (error) {
+    console.log('error', error);
+    return false;
+  }
 };
+
+const isTokenExpire = (token: string, secret: string) => {
+  return new Promise<boolean>((resolve) => {
+    jwt.verify(token, secret, (error, decoded) => {
+      if (error && error.name === 'TokenExpiredError') {
+        resolve(true);
+      } else resolve(false);
+    });
+  });
+};
+
+export const Token = { generateToken, isTokenValid, isTokenExpire };
