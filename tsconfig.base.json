@@ -24,7 +24,8 @@
       "@castcle-api/utils": ["libs/utils/src/index.ts"],
       "@castcle-api/utils/interceptors": [
         "libs/utils/interceptors/src/index.ts"
-      ]
+      ],
+      "@castcle-api/utils/exception": ["libs/utils/exception/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

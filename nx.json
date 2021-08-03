@@ -68,6 +68,9 @@
     },
     "utils-interceptors": {
       "tags": []
+    },
+    "utils-exception": {
+      "tags": []
     }
   }
 }
