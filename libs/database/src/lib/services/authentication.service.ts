@@ -112,41 +112,10 @@ export class AuthenticationService {
   getAccountFromEmail = (email: string) =>
     this._accountModel.findOne({ email: email });
 
-  _generateAccessToken(payload: AccessTokenPayload) {
-    const now = new Date();
-    const accessTokenExpireDate = new Date(
-      now.getTime() + Number(env.jwt_access_expires_in) * 1000
-    );
-    payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
-    const accessToken = Token.generateToken(
-      payload,
-      env.jwt_access_secret,
-      Number(env.jwt_access_expires_in)
-    );
-    return {
-      accessToken,
-      accessTokenExpireDate
-    };
-  }
-
-  _generateRefreshToken(payload: RefreshTokenPayload) {
-    const now = new Date();
-    const refreshTokenExpireDate = new Date(
-      now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
-    );
-    payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
-    const refreshToken = Token.generateToken(
-      payload,
-      env.jwt_refresh_secret,
-      Number(env.jwt_refresh_expires_in)
-    );
-
-    return {
-      refreshToken,
-      refreshTokenExpireDate
-    };
-  }
-
+  _generateAccessToken = (payload: AccessTokenPayload) =>
+    this._credentialModel.generateAccessToken(payload);
+  _generateRefreshToken = (payload: RefreshTokenPayload) =>
+    this._credentialModel.generateRefreshToken(payload);
   _generateEmailVerifyToken(payload: EmailVerifyToken) {
     const now = new Date();
     const emailVerifyTokenExpireDate = new Date(

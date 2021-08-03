@@ -21,21 +21,29 @@
  * or have any questions.
  */
 
-import {
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post
-} from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
+import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
+import { AuthenticationService } from '@castcle-api/database';
+import {
+  ApiResponse,
+  ApiOkResponse,
+  ApiHeader,
+  ApiBody
+} from '@nestjs/swagger';
+import { GuestLoginDto, TokenResponse } from './dtos/dto';
 import { HttpCode } from '@nestjs/common';
+import { Req } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private authService: AuthenticationService
+  ) {}
   private readonly logger = new CastLogger(
     AppController.name,
     CastLoggerOptions
@@ -67,12 +75,81 @@ export class AppController {
     };
   }
 
+  @ApiHeader({
+    name: 'Platform',
+    description: 'Device platform',
+    example: 'iOS',
+    required: true
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiHeader({
+    name: 'Device',
+    description: 'Device name',
+    example: 'iPhone',
+    required: true
+  })
+  @ApiOkResponse({
+    type: TokenResponse
+  })
+  @ApiBody({
+    type: GuestLoginDto
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing'
+  })
   @Post('guestLogin')
-  guestLogin() {
-    return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
-    };
+  async guestLogin(@Req() req: Request, @Body() body) {
+    //before guard
+    if (
+      !(
+        (req.headers as any) &&
+        (req.headers as any).platform &&
+        (req.headers as any)['accept-language'] &&
+        (req.headers as any)['device']
+      )
+    )
+      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+
+    const platform: string = (req.headers as any).platform;
+    const preferedLangague: string = (req.headers as any)['accept-language'];
+    const device: string = (req.headers as any)['device'];
+    console.log(req.headers);
+    console.log(body);
+    const deviceUUID = body.deviceUUID;
+    const credential = await this.authService.getCredentialFromDeviceUUID(
+      deviceUUID
+    );
+    if (credential) {
+      const tokenResult = await credential.renewTokens(
+        {
+          id: credential.account as unknown as string,
+          preferredLanguage: [preferedLangague, preferedLangague],
+          role: 'guest'
+        },
+        {
+          id: credential.account as unknown as string,
+          role: 'guest'
+        }
+      );
+      return tokenResult;
+    } else {
+      const result = await this.authService.createAccount({
+        device: device,
+        deviceUUID: deviceUUID,
+        header: { platform: platform },
+        languagesPreferences: [preferedLangague, preferedLangague]
+      });
+      return {
+        accessToken: result.credentialDocument.accessToken,
+        refreshToken: result.credentialDocument.refreshToken
+      };
+    }
   }
 
   @Post('register')
@@ -99,12 +176,6 @@ export class AppController {
   @Post('requestLinkVerify')
   @HttpCode(204)
   requestLinkVerify() {
-    throw new HttpException(
-      {
-        status: HttpStatus.FORBIDDEN
-      },
-      400
-    );
     return '';
   }
 
