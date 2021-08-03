@@ -598,6 +598,31 @@
           }
         }
       }
+    },
+    "utils-exception": {
+      "root": "libs/utils/exception",
+      "sourceRoot": "libs/utils/exception/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/exception/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/exception"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/exception/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
     }
   },
   "cli": {

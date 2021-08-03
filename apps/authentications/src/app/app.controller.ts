@@ -21,10 +21,17 @@
  * or have any questions.
  */
 
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpCode } from '@nestjs/common';
 
 @Controller()
@@ -34,6 +41,11 @@ export class AppController {
     AppController.name,
     CastLoggerOptions
   );
+
+  @Get('test')
+  test() {
+    throw new CastcleException(CastcleStatus.INVALID_EMAIL);
+  }
 
   @Post('checkEmailExists')
   checkEmailExists() {
@@ -93,6 +105,12 @@ export class AppController {
   @Post('requestLinkVerify')
   @HttpCode(204)
   requestLinkVerify() {
+    throw new HttpException(
+      {
+        status: HttpStatus.FORBIDDEN
+      },
+      400
+    );
     return '';
   }
 
