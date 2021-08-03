@@ -20,20 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import * as util from '../util';
+import { Request } from 'express';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
-@Injectable()
-export class TokenInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-    request.$token = util.getTokenFromContext(request);
-    return next.handle();
-  }
-}
+export const getTokenFromContext = (request: Request) => {
+  if (request.headers && request.headers.authorization) {
+    const token = request.headers.authorization.split(' ')[1];
+    if (token) return token;
+    else {
+      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+    }
+  } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+};

@@ -38,14 +38,14 @@ describe('TokenInterceptor', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers: {
-            authorization: 'tokenBefore'
+            authorization: 'Bearer tokenBefore'
           }
         })
       })
     });
     expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
       headers: {
-        authorization: 'tokenBefore'
+        authorization: 'Bearer tokenBefore'
       }
     });
     interceptor.intercept(mockExecutionContext, callHandler);

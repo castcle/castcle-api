@@ -23,14 +23,14 @@
 import {
   CallHandler,
   ExecutionContext,
-  BadGatewayException,
   Injectable,
-  NestInterceptor,
-  HttpException
+  NestInterceptor
 } from '@nestjs/common';
 import { AuthenticationService } from '@castcle-api/database';
 import { Request } from 'express';
 import { CredentialDocument } from '@castcle-api/database/schemas';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import * as util from '../util';
 //for delete
 export interface CredentialRequest extends Request {
   $credential: CredentialDocument;
@@ -41,18 +41,14 @@ export class CredentialInterceptor implements NestInterceptor {
   constructor(private authService: AuthenticationService) {}
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    const accessToken = request.headers.authorization.split(' ')[1];
-    console.log('intercep token', accessToken);
-
+    const accessToken = util.getTokenFromContext(request);
     request.$credential = await this.authService.getCredentialFromAccessToken(
       accessToken
     );
-
     if (request.$credential && request.$credential.isAccessTokenValid()) {
-      console.log('intercep', request.$credential);
       return next.handle();
     } else {
-      throw new HttpException('wrong', 400);
+      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
     }
   }
 }
