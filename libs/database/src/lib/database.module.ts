@@ -21,22 +21,25 @@
  * or have any questions.
  */
 import { Module, Global } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Environment as env } from '@castcle-api/environments';
 import { AuthenticationService } from './services/authentication.service';
 import { AccountSchema } from './schemas/account.schema';
 import { CredentialSchema } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+export const MongooseForFeatures = MongooseModule.forFeature([
+  { name: 'Account', schema: AccountSchema },
+  { name: 'Credential', schema: CredentialSchema },
+  { name: 'AccountActivation', schema: AccountActivationSchema }
+]);
 
 @Global()
 @Module({
   imports: [
     MongooseModule.forRoot(env.db_uri, env.db_options),
-    MongooseModule.forFeature([
-      { name: 'Account', schema: AccountSchema },
-      { name: 'Credential', schema: CredentialSchema },
-      { name: 'AccountActivation', schema: AccountActivationSchema }
-    ])
+    MongooseForFeatures
   ],
   controllers: [],
   providers: [AuthenticationService],
@@ -45,3 +48,20 @@ import { AccountActivationSchema } from './schemas/accountActivation.schema';
 export class DatabaseModule {}
 
 export { AuthenticationService };
+
+let mongod: MongoMemoryServer;
+export const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+export const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};

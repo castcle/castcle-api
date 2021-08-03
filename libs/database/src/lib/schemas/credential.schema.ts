@@ -27,6 +27,11 @@ import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
+import {
+  AccessTokenPayload,
+  RefreshTokenPayload,
+  MemberAccessTokenPayload
+} from '../dtos/token.dto';
 
 export type CredentialDocument = Credential & ICredential;
 
@@ -64,17 +69,105 @@ export class Credential extends TimestampBase {
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
 
 export interface CredentialModel extends mongoose.Model<CredentialDocument> {
-  generateAccessToken(): string;
-  generateRefreshToken(): string;
+  generateAccessToken(payload: AccessTokenPayload | MemberAccessTokenPayload): {
+    accessToken: string;
+    accessTokenExpireDate: Date;
+  };
+  generateRefreshToken(payload: RefreshTokenPayload): {
+    refreshToken: string;
+    refreshTokenExpireDate: Date;
+  };
 }
 
-CredentialSchema.statics.generateAccessToken = () => 'testAccessToken';
-CredentialSchema.statics.generateRefreshToken = () => 'testRefreshToken';
+CredentialSchema.statics.generateAccessToken = (
+  payload: AccessTokenPayload | MemberAccessTokenPayload
+) => {
+  const now = new Date();
+  const accessTokenExpireDate = new Date(
+    now.getTime() + Number(env.jwt_access_expires_in) * 1000
+  );
+  payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
+  const accessToken = Token.generateToken(
+    payload,
+    env.jwt_access_secret,
+    Number(env.jwt_access_expires_in)
+  );
+  return {
+    accessToken,
+    accessTokenExpireDate
+  };
+};
+CredentialSchema.statics.generateRefreshToken = (
+  payload: RefreshTokenPayload
+) => {
+  const now = new Date();
+  const refreshTokenExpireDate = new Date(
+    now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+  );
+  payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
+  const refreshToken = Token.generateToken(
+    payload,
+    env.jwt_refresh_secret,
+    Number(env.jwt_refresh_expires_in)
+  );
+
+  return {
+    refreshToken,
+    refreshTokenExpireDate
+  };
+};
 
 export interface ICredential extends Document {
+  renewTokens(
+    accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
+    refreshTokenPayload: RefreshTokenPayload
+  ): Promise<{ accessToken: string; refreshToken: string }>;
+  renewAccessToken(
+    payload: AccessTokenPayload | MemberAccessTokenPayload
+  ): Promise<string>;
   isAccessTokenValid(): boolean;
   isRefreshTokenValid(): boolean;
 }
+
+CredentialSchema.methods.renewTokens = async function (
+  accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
+  refreshTokenPayload: RefreshTokenPayload
+) {
+  const credentialModel = mongoose.model(
+    'Credential',
+    CredentialSchema
+  ) as CredentialModel;
+  const refreshTokenResult =
+    credentialModel.generateRefreshToken(refreshTokenPayload);
+  const accessTokenResult =
+    credentialModel.generateAccessToken(accessTokenPayload);
+  (this as CredentialDocument).accessToken = accessTokenResult.accessToken;
+  (this as CredentialDocument).accessTokenExpireDate =
+    accessTokenResult.accessTokenExpireDate;
+  (this as CredentialDocument).refreshToken = refreshTokenResult.refreshToken;
+  (this as CredentialDocument).refreshTokenExpireDate =
+    refreshTokenResult.refreshTokenExpireDate;
+  await this.save();
+  return {
+    accessToken: accessTokenResult.accessToken,
+    refreshToken: refreshTokenResult.refreshToken
+  };
+};
+
+CredentialSchema.methods.renewAccessToken = async function (
+  payload: AccessTokenPayload | MemberAccessTokenPayload
+) {
+  const credentialModel = mongoose.model(
+    'Credential',
+    CredentialSchema
+  ) as CredentialModel;
+  const result = credentialModel.generateAccessToken(payload);
+  (this as CredentialDocument).accessToken = result.accessToken;
+  (this as CredentialDocument).accessTokenExpireDate =
+    result.accessTokenExpireDate;
+  await this.save();
+  return result.accessToken;
+};
 
 CredentialSchema.methods.isAccessTokenValid = function () {
   return Token.isTokenValid(
