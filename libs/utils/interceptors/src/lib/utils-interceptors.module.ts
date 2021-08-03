@@ -21,10 +21,12 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-
+import { TokenInterceptor } from './token/token.interceptor';
 @Module({
   controllers: [],
   providers: [],
   exports: []
 })
 export class UtilsInterceptorsModule {}
+
+export { TokenInterceptor };

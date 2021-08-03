@@ -20,10 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ExecutionContext } from '@nestjs/common';
+import { createMock } from '@golevelup/ts-jest';
 import { TokenInterceptor } from './token.interceptor';
+
+const callHandler = {
+  handle: jest.fn()
+};
 
 describe('TokenInterceptor', () => {
   it('should be defined', () => {
     expect(new TokenInterceptor()).toBeDefined();
+  });
+  it('should modify request header to have token if the request contain Authentication: Bearer {token}', () => {
+    const interceptor = new TokenInterceptor();
+    const mockExecutionContext = createMock<ExecutionContext>({
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: {
+            authorization: 'tokenBefore'
+          }
+        })
+      })
+    });
+    expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
+      headers: {
+        authorization: 'tokenBefore'
+      }
+    });
+    interceptor.intercept(mockExecutionContext, callHandler);
+    expect(callHandler.handle).toBeCalled();
   });
 });
