@@ -32,12 +32,13 @@ import {
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';
-
-const generateToken = (
-  header: { [key: string]: string },
-  payload: any,
-  secret: string
-) => `${Math.ceil(Math.random() * 100000)}.${secret}`;
+import { Token } from '@castcle-api/utils';
+import {
+  AccessTokenPayload,
+  RefreshTokenPayload,
+  EmailVerifyToken,
+  MemberAccessTokenPayload
+} from '../dtos/token.dto';
 
 export interface AccountRequirements {
   header: {
@@ -46,11 +47,6 @@ export interface AccountRequirements {
   device: string;
   deviceUUID: string;
   languagesPreferences: string[];
-}
-
-export interface AccessTokenPayload {
-  device: string;
-  deviceUUID: string;
 }
 
 export interface SignupRequirements {
@@ -87,16 +83,21 @@ export class AuthenticationService {
       }
     } as CreateAccountDto);
     const accountDocument = await newAccount.save();
-    const tokens = this._generateAccessToken(accountRequirements.header, {
-      device: accountRequirements.device,
-      deviceUUID: accountRequirements.deviceUUID
+    const accessTokenResult = this._generateAccessToken({
+      id: accountDocument._id as string,
+      preferredLanguage: accountRequirements.languagesPreferences,
+      role: 'guest'
+    });
+    const refreshTokenResult = this._generateRefreshToken({
+      id: accountDocument._id as string,
+      role: 'guest'
     });
     const credential = new this._credentialModel({
       account: mongoose.Types.ObjectId(accountDocument._id),
-      accessToken: tokens.accessToken,
-      accessTokenExpireDate: tokens.accessTokenExpireDate,
-      refreshToken: tokens.refreshToken,
-      refreshTokenExpireDate: tokens.refreshTokenExpireDate,
+      accessToken: accessTokenResult.accessToken,
+      accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
+      refreshToken: refreshTokenResult.refreshToken,
+      refreshTokenExpireDate: refreshTokenResult.refreshTokenExpireDate,
       device: accountRequirements.device,
       platform: accountRequirements.header.platform,
       deviceUUID: accountRequirements.deviceUUID
@@ -111,24 +112,54 @@ export class AuthenticationService {
   getAccountFromEmail = (email: string) =>
     this._accountModel.findOne({ email: email });
 
-  _generateAccessToken(
-    header: { [key: string]: string },
-    payload: AccessTokenPayload
-  ) {
+  _generateAccessToken(payload: AccessTokenPayload) {
     const now = new Date();
-    const accessToken = generateToken(header, payload, env.jwt_access_secret);
     const accessTokenExpireDate = new Date(
-      now.getTime() + env.jwt_access_expires_in * 1000
+      now.getTime() + Number(env.jwt_access_expires_in) * 1000
     );
-    const refreshToken = generateToken(header, payload, env.jwt_refresh_secret);
-    const refreshTokenExpireDate = new Date(
-      now.getTime() + env.jwt_refresh_expires_in * 1000
+    payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
+    const accessToken = Token.generateToken(
+      payload,
+      env.jwt_access_secret,
+      Number(env.jwt_access_expires_in)
     );
     return {
       accessToken,
-      accessTokenExpireDate,
+      accessTokenExpireDate
+    };
+  }
+
+  _generateRefreshToken(payload: RefreshTokenPayload) {
+    const now = new Date();
+    const refreshTokenExpireDate = new Date(
+      now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+    );
+    payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
+    const refreshToken = Token.generateToken(
+      payload,
+      env.jwt_refresh_secret,
+      Number(env.jwt_refresh_expires_in)
+    );
+
+    return {
       refreshToken,
       refreshTokenExpireDate
+    };
+  }
+
+  _generateEmailVerifyToken(payload: EmailVerifyToken) {
+    const now = new Date();
+    const emailVerifyTokenExpireDate = new Date(
+      now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+    );
+    const emailVerifyToken = Token.generateToken(
+      payload,
+      env.jwt_verify_secret,
+      Number(env.jwt_verify_expires_in)
+    );
+    return {
+      emailVerifyToken,
+      emailVerifyTokenExpireDate
     };
   }
 
@@ -154,24 +185,32 @@ export class AuthenticationService {
     account.email = requirements.email;
     account.password = requirements.password;
     //create user here
+
     await account.save();
     return this.createAccountActivation(account, 'email');
   }
 
   createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
+    const emailTokenResult = this._generateEmailVerifyToken({
+      id: account._id
+    });
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
-      verifyToken: 'randomToken',
-      verifyTokenExpireDate: new Date()
+      verifyToken: emailTokenResult.emailVerifyToken,
+      verifyTokenExpireDate: emailTokenResult.emailVerifyTokenExpireDate
     });
     return accountActivation.save();
   }
 
   revokeAccountActivation(accountActivation: AccountActivationDocument) {
+    const emailTokenResult = this._generateEmailVerifyToken({
+      id: accountActivation.account as unknown as string
+    });
     accountActivation.revocationDate = new Date();
-    accountActivation.verifyToken = 'randomToken';
-    accountActivation.verifyTokenExpireDate = new Date();
+    accountActivation.verifyToken = emailTokenResult.emailVerifyToken;
+    accountActivation.verifyTokenExpireDate =
+      emailTokenResult.emailVerifyTokenExpireDate;
     return accountActivation.save();
   }
 }

@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { Token } from '@castcle-api/utils';
+import { Environment as env } from '@castcle-api/environments';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
@@ -76,8 +77,14 @@ export interface ICredential extends Document {
 }
 
 CredentialSchema.methods.isAccessTokenValid = function () {
-  return true; //return (this as CredentialDocument).accessToken === 'testAccessToken';
+  return Token.isTokenValid(
+    (this as CredentialDocument).accessToken,
+    env.jwt_access_secret
+  );
 };
 CredentialSchema.methods.isRefreshTokenValid = function () {
-  return true; //return (this as CredentialDocument).refreshToken === 'testRefreshToken';
+  return Token.isTokenValid(
+    (this as CredentialDocument).accessToken,
+    env.jwt_access_secret
+  );
 };
