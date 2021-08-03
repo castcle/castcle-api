@@ -3,4 +3,8 @@
     "user": "{username}",
     "message": "welcome to castcle"
   }
+  "BYE": {
+    "user": "{username}",
+    "message": "see you again"
+  }
 }
