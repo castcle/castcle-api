@@ -24,7 +24,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
-import { Environment as env } from '@castcle-api/environments';
+import { Environment } from '@castcle-api/environments';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import {
@@ -32,6 +32,16 @@ import {
   closeInMongodConnection,
   MongooseForFeatures
 } from '../database.module';
+
+//for setup env incase deloy at server
+let env: any = Environment;
+if (!env)
+  env = {
+    db_test_in_db: false,
+    jwt_refresh_expires_in: 1800,
+    jwt_access_expires_in: 600,
+    jwt_verify_expires_in: 500
+  };
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
@@ -140,6 +150,7 @@ describe('Authentication Service', () => {
         const expectedExpireDate = new Date(
           now.getTime() + Number(env.jwt_verify_expires_in) * 1000
         );
+
         const result = service._generateEmailVerifyToken({
           id: 'randomid'
         });
