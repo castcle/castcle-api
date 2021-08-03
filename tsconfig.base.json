@@ -18,6 +18,7 @@
       "@castcle-api/assets": ["libs/assets/src/index.ts"],
       "@castcle-api/commonDate": ["libs/commonDate/src/index.ts"],
       "@castcle-api/database": ["libs/database/src/index.ts"],
+      "@castcle-api/database/schemas": ["libs/database/src/lib/schemas/index.ts"],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
       "@castcle-api/utils": ["libs/utils/src/index.ts"],

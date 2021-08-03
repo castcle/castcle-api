@@ -20,20 +20,5 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { TokenInterceptor } from './token/token.interceptor';
-import {
-  CredentialInterceptor,
-  CredentialRequest
-} from './credential/credential.interceptor';
-
-@Module({
-  imports: [DatabaseModule],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsInterceptorsModule {}
-
-export { TokenInterceptor, CredentialInterceptor, CredentialRequest };
+import { CredentialDocument, CredentialModel } from './credential.schema';
+export { CredentialDocument, CredentialModel };
