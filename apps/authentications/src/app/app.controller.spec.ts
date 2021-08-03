@@ -22,7 +22,11 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-
+import {
+  rootMongooseTestModule,
+  MongooseForFeatures
+} from '@castcle-api/database';
+import { AuthenticationService } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -31,8 +35,9 @@ describe('AppController', () => {
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
+      imports: [rootMongooseTestModule(), MongooseForFeatures],
       controllers: [AppController],
-      providers: [AppService]
+      providers: [AppService, AuthenticationService]
     }).compile();
   });
 

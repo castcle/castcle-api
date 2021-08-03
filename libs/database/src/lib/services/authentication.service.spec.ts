@@ -22,64 +22,23 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  MongooseModule,
-  getModelToken,
-  MongooseModuleOptions
-} from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { Environment as env } from '@castcle-api/environments';
+import { AccountDocument } from '../schemas/account.schema';
+import { CredentialDocument } from '../schemas/credential.schema';
 import {
-  Account,
-  AccountDocument,
-  AccountSchema
-} from '../schemas/account.schema';
-import {
-  CredentialDocument,
-  CredentialSchema,
-  CredentialModel
-} from '../schemas/credential.schema';
-import { AccountActivationSchema } from '../schemas/accountActivation.schema';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-
-let mongod: MongoMemoryServer;
-
-export const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-export const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
+  rootMongooseTestModule,
+  closeInMongodConnection,
+  MongooseForFeatures
+} from '../database.module';
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
-    ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
-        MongooseModule.forFeature([
-          { name: 'Account', schema: AccountSchema },
-          { name: 'Credential', schema: CredentialSchema },
-          { name: 'AccountActivation', schema: AccountActivationSchema }
-        ])
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseModule.forFeature([
-          { name: 'Account', schema: AccountSchema },
-          { name: 'Credential', schema: CredentialSchema },
-          { name: 'AccountActivation', schema: AccountActivationSchema }
-        ])
-      ];
+    ? [MongooseModule.forRoot(env.db_uri, env.db_options), MongooseForFeatures]
+    : [rootMongooseTestModule(), MongooseForFeatures];
   const providers = [AuthenticationService];
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({

@@ -21,18 +21,16 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { Environment as env } from '@castcle-api/environments';
-import { HealthyController } from './controllers/healthy/healthy.controller';
+import { ApiProperty } from '@nestjs/swagger';
+export class GuestLoginDto {
+  @ApiProperty()
+  deviceUUID: string;
+}
 
-console.log(env.db_uri);
-console.log(env.db_options);
-@Module({
-  imports: [DatabaseModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+export class TokenResponse {
+  @ApiProperty()
+  accessToken: string;
+
+  @ApiProperty()
+  refreshToken: string;
+}
