@@ -20,4 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export * from './lib/database.module';
+
+export interface AccessTokenPayload {
+  id: string;
+  preferredLanguage: string[];
+  role: 'member' | 'guest'; // member or guest
+  accessTokenExpiresTime?: string; // 30 นาทีจาก create
+}
+
+export interface MemberAccessTokenPayload extends AccessTokenPayload {
+  role: 'member';
+  castcleId: string;
+  displayName: string;
+  email?: string;
+  avatar?: string;
+}
+
+export interface RefreshTokenPayload {
+  id: string;
+  role: 'member' | 'guest';
+  refreshTokenExpiresTime?: string;
+}
+
+export interface EmailVerifyToken {
+  id: string;
+  verifyTokenExpiresTime?: string;
+}

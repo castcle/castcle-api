@@ -120,22 +120,50 @@ describe('Authentication Service', () => {
     });
 
     describe('#_generateAccessToken()', () => {
-      it('should return accountId, accessToken, refreshToken, accessTokenExpireDate and refreshTokenExpireDate', () => {
-        const result = service._generateAccessToken(
-          {
-            AcceptVersion: 'v1'
-          },
-          {
-            deviceUUID: 'blablabla',
-            device: 'testIphone'
-          }
-        );
+      it('should return  accessToken, accessTokenExpireDate', () => {
+        const result = service._generateAccessToken({
+          id: 'randomid',
+          preferredLanguage: ['th', 'th'],
+          role: 'guest'
+        });
         expect(result.accessToken).toBeDefined();
         expect(typeof result.accessToken).toBe('string');
+        expect(result.accessTokenExpireDate).toBeDefined();
+      });
+      it(`expire date should be in the next ${env.jwt_access_expires_in} seconds`, () => {
+        const now = new Date();
+        const expectedExpireDate = new Date(
+          now.getTime() + Number(env.jwt_access_expires_in) * 1000
+        );
+        const result = service._generateAccessToken({
+          id: 'randomid',
+          preferredLanguage: ['th', 'th'],
+          role: 'guest'
+        });
+        expect(result.accessTokenExpireDate).toEqual(expectedExpireDate);
+      });
+    });
+
+    describe('#_generateRefreshToken()', () => {
+      it('should return  refreshToken and refreshTokenExpireDate', () => {
+        const result = service._generateRefreshToken({
+          id: 'randomid',
+          role: 'guest'
+        });
         expect(result.refreshToken).toBeDefined();
         expect(typeof result.refreshToken).toBe('string');
-        expect(result.accessTokenExpireDate).toBeDefined();
         expect(result.refreshTokenExpireDate).toBeDefined();
+      });
+      it(`expire date should be in the next ${env.jwt_refresh_expires_in} seconds`, () => {
+        const now = new Date();
+        const expectedExpireDate = new Date(
+          now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+        );
+        const result = service._generateRefreshToken({
+          id: 'randomid',
+          role: 'guest'
+        });
+        expect(result.refreshTokenExpireDate).toEqual(expectedExpireDate);
       });
     });
 
