@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Token } from '@castcle-api/utils';
-import { Environment as env } from '@castcle-api/environments';
+import { env } from '../environment';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
