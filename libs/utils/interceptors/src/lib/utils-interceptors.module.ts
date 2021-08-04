@@ -22,6 +22,10 @@
  */
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import {
   CredentialInterceptor,
@@ -37,6 +41,8 @@ import {
 export class UtilsInterceptorsModule {}
 
 export {
+  HeadersInterceptor,
+  HeadersRequest,
   TokenInterceptor,
   CredentialInterceptor,
   CredentialRequest,

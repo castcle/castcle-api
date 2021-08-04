@@ -25,14 +25,19 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Environment as env } from '@castcle-api/environments';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 
-console.log(env.db_uri);
-console.log(env.db_options);
 @Module({
   imports: [DatabaseModule],
   controllers: [AppController, HealthyController],
-  providers: [AppService]
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HeadersInterceptor
+    },
+    AppService
+  ]
 })
 export class AppModule {}
