@@ -42,7 +42,7 @@ export class HeadersInterceptor implements NestInterceptor {
     if (request.$language) {
       return next.handle();
     } else {
-      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
     }
   }
 }
