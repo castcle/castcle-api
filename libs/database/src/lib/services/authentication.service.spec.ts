@@ -22,16 +22,30 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
-import {
-  rootMongooseTestModule,
-  closeInMongodConnection,
-  MongooseForFeatures
-} from '../database.module';
+import { MongooseForFeatures } from '../database.module';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongod: MongoMemoryServer;
+const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
