@@ -20,24 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import * as util from '../util';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from '../headers/headers.interceptor';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception'
-  ]
-};
+export interface TokenRequest extends HeadersRequest {
+  $token: string;
+}
+
+@Injectable()
+export class TokenInterceptor extends HeadersInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const HeaderIntercepResult = super.intercept(context, next);
+    const request = context.switchToHttp().getRequest();
+    request.$token = util.getTokenFromRequest(request);
+    return HeaderIntercepResult;
+  }
+}

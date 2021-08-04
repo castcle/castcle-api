@@ -24,7 +24,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
-import { Request } from 'express';
+import { HeadersRequest } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
@@ -104,20 +104,22 @@ export class AppController {
     description: 'will show if some of header is missing'
   })
   @Post('guestLogin')
-  async guestLogin(@Req() req: Request, @Body() body) {
+  async guestLogin(@Req() req: HeadersRequest, @Body() body) {
     //before guard
     if (
       !(
         (req.headers as any) &&
         (req.headers as any).platform &&
-        (req.headers as any)['accept-language'] &&
         (req.headers as any)['device']
       )
     )
-      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+      throw new CastcleException(
+        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
+        req.$language
+      );
 
     const platform: string = (req.headers as any).platform;
-    const preferedLangague: string = (req.headers as any)['accept-language'];
+    const preferedLangague: string = req.$language;
     const device: string = (req.headers as any)['device'];
     console.log(req.headers);
     console.log(body);

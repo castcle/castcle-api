@@ -20,24 +20,37 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ExecutionContext } from '@nestjs/common';
+import { createMock } from '@golevelup/ts-jest';
+import { TokenInterceptor } from './token.interceptor';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception'
-  ]
+const callHandler = {
+  handle: jest.fn()
 };
+
+describe('TokenInterceptor', () => {
+  it('should be defined', () => {
+    expect(new TokenInterceptor()).toBeDefined();
+  });
+  it('should modify request header to have token if the request contain Authentication: Bearer {token}', () => {
+    const interceptor = new TokenInterceptor();
+    const mockExecutionContext = createMock<ExecutionContext>({
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: {
+            authorization: 'Bearer tokenBefore',
+            'accept-language': 'th'
+          }
+        })
+      })
+    });
+    expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
+      headers: {
+        authorization: 'Bearer tokenBefore',
+        'accept-language': 'th'
+      }
+    });
+    interceptor.intercept(mockExecutionContext, callHandler);
+    expect(callHandler.handle).toBeCalled();
+  });
+});

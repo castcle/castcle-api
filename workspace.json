@@ -599,6 +599,31 @@
         }
       }
     },
+    "utils-interceptors": {
+      "root": "libs/utils/interceptors",
+      "sourceRoot": "libs/utils/interceptors/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/interceptors/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/interceptors"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/interceptors/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "utils-exception": {
       "root": "libs/utils/exception",
       "sourceRoot": "libs/utils/exception/src",

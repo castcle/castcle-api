@@ -20,24 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '@castcle-api/database';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from './headers/headers.interceptor';
+import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from './credential/credential.interceptor';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception'
-  ]
+@Module({
+  imports: [DatabaseModule],
+  controllers: [],
+  providers: [],
+  exports: []
+})
+export class UtilsInterceptorsModule {}
+
+export {
+  HeadersInterceptor,
+  HeadersRequest,
+  TokenInterceptor,
+  CredentialInterceptor,
+  CredentialRequest,
+  TokenRequest
 };

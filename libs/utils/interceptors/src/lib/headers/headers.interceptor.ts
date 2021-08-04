@@ -20,24 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor
+} from '@nestjs/common';
+import { Request } from 'express';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import * as util from '../util';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception'
-  ]
-};
+export interface HeadersRequest extends Request {
+  $language: string;
+}
+
+@Injectable()
+export class HeadersInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    request.$language = util.getLangagueFromRequest(request);
+    if (request.$language) {
+      return next.handle();
+    } else {
+      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+    }
+  }
+}
