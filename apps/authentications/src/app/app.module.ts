@@ -25,19 +25,12 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [AppController, HealthyController],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: HeadersInterceptor
-    },
-    AppService
-  ]
+  providers: [AppService]
 })
 export class AppModule {}

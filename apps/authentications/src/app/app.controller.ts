@@ -21,10 +21,13 @@
  * or have any questions.
  */
 
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
-import { HeadersRequest } from '@castcle-api/utils/interceptors';
+import {
+  HeadersRequest,
+  HeadersInterceptor
+} from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
@@ -137,6 +140,7 @@ export class AppController {
     status: 400,
     description: 'will show if some of header is missing'
   })
+  @UseInterceptors(HeadersInterceptor)
   @Post('guestLogin')
   async guestLogin(@Req() req: HeadersRequest, @Body() body) {
     //before guard
