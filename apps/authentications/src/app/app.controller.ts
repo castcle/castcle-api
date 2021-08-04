@@ -34,7 +34,12 @@ import {
   ApiHeader,
   ApiBody
 } from '@nestjs/swagger';
-import { GuestLoginDto, TokenResponse } from './dtos/dto';
+import {
+  GuestLoginDto,
+  TokenResponse,
+  CheckEmailExistDto,
+  CheckingResponse
+} from './dtos/dto';
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 
@@ -49,14 +54,43 @@ export class AppController {
     CastLoggerOptions
   );
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing'
+  })
+  @ApiOkResponse({
+    status: 201,
+    type: CheckingResponse
+  })
+  @ApiBody({
+    type: CheckEmailExistDto
+  })
   @Post('checkEmailExists')
-  checkEmailExists() {
-    return {
-      message: 'success message',
-      payload: {
-        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
-      }
-    };
+  @HttpCode(200)
+  async checkEmailExists(
+    @Req() req: HeadersRequest,
+    @Body('email') email: string
+  ) {
+    //if there is no email in the request and email is not valid (not email )
+    if (!(email && this.authService.validateEmail(email)))
+      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    try {
+      const account = await this.authService.getAccountFromEmail(email);
+      return {
+        message: 'success message',
+        payload: {
+          exist: account ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
+        }
+      };
+    } catch (error) {
+      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    }
   }
 
   @Post('login')

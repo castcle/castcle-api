@@ -27,10 +27,25 @@ export class GuestLoginDto {
   deviceUUID: string;
 }
 
+export class CheckEmailExistDto {
+  @ApiProperty()
+  email: string;
+}
+
 export class TokenResponse {
   @ApiProperty()
   accessToken: string;
 
   @ApiProperty()
   refreshToken: string;
+}
+
+export class CheckingResponse {
+  @ApiProperty()
+  message: string;
+
+  @ApiProperty()
+  payload: {
+    exist: boolean;
+  };
 }

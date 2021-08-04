@@ -107,10 +107,16 @@ export class AuthenticationService {
   }
 
   getAccountFromCredential = (credential: CredentialDocument) =>
-    this._accountModel.findById(credential.account);
+    this._accountModel.findById(credential.account).exec();
 
   getAccountFromEmail = (email: string) =>
-    this._accountModel.findOne({ email: email });
+    this._accountModel.findOne({ email: email }).exec();
+
+  validateEmail = (email: string) => {
+    const re =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email.toLowerCase());
+  };
 
   _generateAccessToken = (payload: AccessTokenPayload) =>
     this._credentialModel.generateAccessToken(payload);
