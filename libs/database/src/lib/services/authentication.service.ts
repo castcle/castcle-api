@@ -25,7 +25,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, AccountModel } from '../schemas/account.schema';
 import { AccountActivationDocument } from '../schemas/accountActivation.schema';
-import { Environment as env } from '@castcle-api/environments';
+import { env } from '../environment';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
 import {
