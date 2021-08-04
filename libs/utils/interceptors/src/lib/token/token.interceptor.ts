@@ -20,26 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import * as util from '../util';
-import { LangagueRequest } from '../language/language.interceptor';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from '../headers/headers.interceptor';
 
-export interface TokenRequest extends LangagueRequest {
+export interface TokenRequest extends HeadersRequest {
   $token: string;
 }
 
 @Injectable()
-export class TokenInterceptor implements NestInterceptor {
+export class TokenInterceptor extends HeadersInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const HeaderIntercepResult = super.intercept(context, next);
     const request = context.switchToHttp().getRequest();
-    request.$language = util.getLangagueFromRequest(request);
     request.$token = util.getTokenFromRequest(request);
-    return next.handle();
+    return HeaderIntercepResult;
   }
 }

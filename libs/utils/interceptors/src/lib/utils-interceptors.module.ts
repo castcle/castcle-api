@@ -22,7 +22,7 @@
  */
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
-import { TokenInterceptor } from './token/token.interceptor';
+import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -36,4 +36,9 @@ import {
 })
 export class UtilsInterceptorsModule {}
 
-export { TokenInterceptor, CredentialInterceptor, CredentialRequest };
+export {
+  TokenInterceptor,
+  CredentialInterceptor,
+  CredentialRequest,
+  TokenRequest
+};

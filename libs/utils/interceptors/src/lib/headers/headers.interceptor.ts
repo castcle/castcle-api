@@ -30,13 +30,13 @@ import { Request } from 'express';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import * as util from '../util';
 
-export interface LangagueRequest extends Request {
+export interface HeadersRequest extends Request {
   $language: string;
 }
 
 @Injectable()
-export class LangagueInterceptor implements NestInterceptor {
-  async intercept(context: ExecutionContext, next: CallHandler) {
+export class HeadersInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     request.$language = util.getLangagueFromRequest(request);
     if (request.$language) {

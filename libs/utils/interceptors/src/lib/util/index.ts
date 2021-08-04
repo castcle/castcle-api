@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { Request } from 'express';
-import { LangagueRequest } from '../language/language.interceptor';
+import { HeadersRequest } from '../headers/headers.interceptor';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
-export const getTokenFromRequest = (request: LangagueRequest) => {
+export const getTokenFromRequest = (request: HeadersRequest) => {
   if (request.headers && request.headers.authorization) {
     const token = request.headers.authorization.split(' ')[1];
     if (token) return token;

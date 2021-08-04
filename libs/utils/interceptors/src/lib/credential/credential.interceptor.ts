@@ -27,7 +27,6 @@ import {
   NestInterceptor
 } from '@nestjs/common';
 import { AuthenticationService } from '@castcle-api/database';
-import { Request } from 'express';
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import * as util from '../util';
@@ -42,6 +41,8 @@ export class CredentialInterceptor implements NestInterceptor {
   constructor(private authService: AuthenticationService) {}
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
+    request.$language = util.getLangagueFromRequest(request);
+    request.$token = util.getTokenFromRequest(request);
     const accessToken = util.getTokenFromRequest(request);
     request.$credential = await this.authService.getCredentialFromAccessToken(
       accessToken
@@ -49,7 +50,10 @@ export class CredentialInterceptor implements NestInterceptor {
     if (request.$credential && request.$credential.isAccessTokenValid()) {
       return next.handle();
     } else {
-      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        request.$language
+      );
     }
   }
 }
