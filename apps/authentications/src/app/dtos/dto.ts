@@ -49,3 +49,8 @@ export class CheckingResponse {
     exist: boolean;
   };
 }
+
+export class RefreshTokenResponse {
+  @ApiProperty()
+  accessToken: string;
+}
