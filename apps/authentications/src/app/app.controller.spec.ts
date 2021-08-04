@@ -22,13 +22,29 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  rootMongooseTestModule,
-  MongooseForFeatures
-} from '@castcle-api/database';
+import { MongooseForFeatures } from '@castcle-api/database';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongod: MongoMemoryServer;
+const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};
 
 describe('AppController', () => {
   let app: TestingModule;

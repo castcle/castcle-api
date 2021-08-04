@@ -27,7 +27,6 @@ import { AuthenticationService } from './services/authentication.service';
 import { AccountSchema } from './schemas/account.schema';
 import { CredentialSchema } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Account', schema: AccountSchema },
@@ -48,20 +47,3 @@ export const MongooseForFeatures = MongooseModule.forFeature([
 export class DatabaseModule {}
 
 export { AuthenticationService };
-
-let mongod: MongoMemoryServer;
-export const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-export const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
