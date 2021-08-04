@@ -26,7 +26,9 @@ import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import {
   HeadersRequest,
-  HeadersInterceptor
+  HeadersInterceptor,
+  TokenInterceptor,
+  TokenRequest
 } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
@@ -35,13 +37,15 @@ import {
   ApiResponse,
   ApiOkResponse,
   ApiHeader,
-  ApiBody
+  ApiBody,
+  ApiBearerAuth
 } from '@nestjs/swagger';
 import {
   GuestLoginDto,
   TokenResponse,
   CheckEmailExistDto,
-  CheckingResponse
+  CheckingResponse,
+  RefreshTokenResponse
 } from './dtos/dto';
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
@@ -200,11 +204,49 @@ export class AppController {
     };
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 201,
+    type: RefreshTokenResponse
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'will show if some of header is missing or invalid refresh token'
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(TokenInterceptor)
   @Post('refreshToken')
-  refreshToken() {
-    return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
-    };
+  async refreshToken(@Req() req: TokenRequest) {
+    /*
+     * !!!
+     * should embed  account and user for better performance
+     */
+    const credential = await this.authService.getCredentialFromRefreshToken(
+      req.$token
+    );
+    if (credential && credential.isRefreshTokenValid()) {
+      const account = await this.authService.getAccountFromCredential(
+        credential
+      );
+      const newAccessToken = await credential.renewAccessToken({
+        id: account._id,
+        role: account.isGuest ? 'guest' : 'member',
+        preferredLanguage: account.preferences.langagues
+      });
+      return {
+        accessToken: newAccessToken
+      };
+    }
+    throw new CastcleException(
+      CastcleStatus.INVALID_REFRESH_TOKEN,
+      req.$language
+    );
   }
 
   @Post('verificationEmail')
