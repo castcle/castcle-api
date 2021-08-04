@@ -38,14 +38,16 @@ describe('TokenInterceptor', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers: {
-            authorization: 'Bearer tokenBefore'
+            authorization: 'Bearer tokenBefore',
+            'accept-language': 'th'
           }
         })
       })
     });
     expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
       headers: {
-        authorization: 'Bearer tokenBefore'
+        authorization: 'Bearer tokenBefore',
+        'accept-language': 'th'
       }
     });
     interceptor.intercept(mockExecutionContext, callHandler);

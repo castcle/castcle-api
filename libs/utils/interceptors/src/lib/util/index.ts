@@ -21,14 +21,28 @@
  * or have any questions.
  */
 import { Request } from 'express';
+import { LangagueRequest } from '../language/language.interceptor';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
-export const getTokenFromContext = (request: Request) => {
+export const getTokenFromRequest = (request: LangagueRequest) => {
   if (request.headers && request.headers.authorization) {
     const token = request.headers.authorization.split(' ')[1];
     if (token) return token;
     else {
-      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+      throw new CastcleException(
+        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
+        request.$language
+      );
     }
+  } else
+    throw new CastcleException(
+      CastcleStatus.MISSING_AUTHORIZATION_HEADER,
+      request.$language
+    );
+};
+
+export const getLangagueFromRequest = (request: Request) => {
+  if (request.headers && request.headers['accept-language']) {
+    return request.headers['accept-language'];
   } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
 };

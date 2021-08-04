@@ -26,7 +26,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 describe('Util', () => {
   describe('#getTokenFromContext()', () => {
     it('shoud return token from request.headers.authorization as string', () => {
-      const result = util.getTokenFromContext({
+      const result = util.getTokenFromRequest({
         headers: {
           authorization: 'Bearer testyo'
         }
@@ -35,12 +35,31 @@ describe('Util', () => {
     }),
       it('shoud throw exception when there is no header', () => {
         expect(() =>
-          util.getTokenFromContext({
+          util.getTokenFromRequest({
             headers: {
               authorization: 'Bearer'
             }
           } as any)
         ).toThrow(CastcleException);
       });
+  });
+  describe('#getLangagueFromRequest()', () => {
+    it('should return langague from request.headers[accept-langague] as string', () => {
+      const result = util.getLangagueFromRequest({
+        headers: {
+          'accept-language': 'th'
+        }
+      } as any);
+      expect(result).toBe('th');
+    });
+    it('should throw exception when there is no header', () => {
+      expect(() =>
+        util.getLangagueFromRequest({
+          headers: {
+            authorization: 'Bearer test yo'
+          }
+        } as any)
+      ).toThrow(CastcleException);
+    });
   });
 });

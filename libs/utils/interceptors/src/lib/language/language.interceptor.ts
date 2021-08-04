@@ -26,20 +26,23 @@ import {
   Injectable,
   NestInterceptor
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Request } from 'express';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import * as util from '../util';
-import { LangagueRequest } from '../language/language.interceptor';
 
-export interface TokenRequest extends LangagueRequest {
-  $token: string;
+export interface LangagueRequest extends Request {
+  $language: string;
 }
 
 @Injectable()
-export class TokenInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+export class LangagueInterceptor implements NestInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     request.$language = util.getLangagueFromRequest(request);
-    request.$token = util.getTokenFromRequest(request);
-    return next.handle();
+    if (request.$language) {
+      return next.handle();
+    } else {
+      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    }
   }
 }

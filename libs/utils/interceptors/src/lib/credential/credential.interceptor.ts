@@ -31,8 +31,9 @@ import { Request } from 'express';
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import * as util from '../util';
+import { TokenRequest } from '../token/token.interceptor';
 //for delete
-export interface CredentialRequest extends Request {
+export interface CredentialRequest extends TokenRequest {
   $credential: CredentialDocument;
 }
 
@@ -41,7 +42,7 @@ export class CredentialInterceptor implements NestInterceptor {
   constructor(private authService: AuthenticationService) {}
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    const accessToken = util.getTokenFromContext(request);
+    const accessToken = util.getTokenFromRequest(request);
     request.$credential = await this.authService.getCredentialFromAccessToken(
       accessToken
     );

@@ -44,6 +44,7 @@ describe('AppController', () => {
   describe('getData', () => {
     it('should return "Welcome to authentications!"', () => {
       const appController = app.get<AppController>(AppController);
+
       expect(appController.getData()).toEqual(
         'Welcome to authentications!10-11-81'
       );

@@ -56,7 +56,7 @@ interface ErrorStatus {
 }
 
 export class CastcleException extends HttpException {
-  constructor(castcleStatus: CastcleStatus) {
+  constructor(castcleStatus: CastcleStatus, language = 'en') {
     const error: ErrorStatus = ErrorMessages[castcleStatus];
     super(error, Number(error.statusCode));
   }
