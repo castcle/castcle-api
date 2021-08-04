@@ -20,23 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/exception'
-  ]
+  displayName: 'utils-exception',
+  preset: '../../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
+  },
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../../coverage/libs/utils/exception'
 };

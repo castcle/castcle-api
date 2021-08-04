@@ -21,11 +21,12 @@
  * or have any questions.
  */
 
-import { Body, Controller, Get, HttpException, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
 import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
 import {
   ApiResponse,
@@ -113,7 +114,7 @@ export class AppController {
         (req.headers as any)['device']
       )
     )
-      throw new HttpException('Header is missing', 400);
+      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
 
     const platform: string = (req.headers as any).platform;
     const preferedLangague: string = (req.headers as any)['accept-language'];
