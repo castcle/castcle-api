@@ -23,12 +23,17 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { AuthenticationService } from './authentication.service';
+import {
+  AuthenticationService,
+  SignupRequirements
+} from './authentication.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { AccountActivationDocument } from '../schemas/accountActivation.schema';
+import { UserDocument } from '../schemas/user.schema';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -145,9 +150,9 @@ describe('Authentication Service', () => {
         const result = service._generateEmailVerifyToken({
           id: 'randomid'
         });
-        expect(result.emailVerifyToken).toBeDefined();
-        expect(typeof result.emailVerifyToken).toBe('string');
-        expect(result.emailVerifyTokenExpireDate).toBeDefined();
+        expect(result.verifyToken).toBeDefined();
+        expect(typeof result.verifyToken).toBe('string');
+        expect(result.verifyTokenExpireDate).toBeDefined();
       });
       it(`expire date should be in the next ${env.jwt_verify_expires_in} seconds`, () => {
         const now = new Date();
@@ -158,7 +163,7 @@ describe('Authentication Service', () => {
         const result = service._generateEmailVerifyToken({
           id: 'randomid'
         });
-        expect(result.emailVerifyTokenExpireDate).toEqual(expectedExpireDate);
+        expect(result.verifyTokenExpireDate).toEqual(expectedExpireDate);
       });
     });
 
@@ -303,6 +308,78 @@ describe('Authentication Service', () => {
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromEmail(newlyInsertEmail);
         expect(result._id).toEqual(newAccountResult._id);
+      });
+    });
+    describe('#getUserFromId()', () => {
+      it('should return null if non id is exist in user', async () => {
+        const result = await service.getUserFromId('notFoundId');
+        expect(result).toBeNull();
+      });
+      it('should return an user when id is match', async () => {
+        const newUser = new service._userModel({
+          displayId: 'testNew',
+          displayName: 'testName',
+          type: 'people',
+          ownerAccount: createAccountResult.accountDocument._id
+        });
+        await newUser.save();
+        const result = await service.getUserFromId('testNew');
+        expect(result).not.toBeNull();
+        expect(result.displayId).toEqual(newUser.displayId);
+        console.log(result);
+        expect(result.displayName).toEqual(newUser.displayName);
+      });
+    });
+    describe('#createAccountActivation()', () => {
+      it('should create account activation with verification token', async () => {
+        const accountActivation = await service.createAccountActivation(
+          createAccountResult.accountDocument,
+          'email'
+        );
+        expect(accountActivation).toBeDefined();
+        expect(accountActivation.verifyToken).toBeDefined();
+        expect(accountActivation.verifyTokenExpireDate).toBeDefined();
+      });
+    });
+    describe('#signupByEmail()', () => {
+      let signupResult: AccountActivationDocument;
+      let afterSaveAccount: AccountDocument;
+      let afterSaveUser: UserDocument;
+      const signupRequirements: SignupRequirements = {
+        displayId: 'dudethisisnew',
+        displayName: 'Dudeee',
+        email: 'sompopdude@dudedude.com',
+        password: 'thisshallpassApassword'
+      };
+      beforeAll(async () => {
+        signupResult = await service.signupByEmail(
+          createAccountResult.accountDocument,
+          {
+            displayId: 'dudethisisnew',
+            displayName: 'Dudeee',
+            email: signupRequirements.email,
+            password: signupRequirements.password
+          }
+        );
+        afterSaveAccount = await service._accountModel.findById(
+          createAccountResult.accountDocument._id
+        );
+        afterSaveUser = await service.getUserFromId('dudethisisnew');
+      });
+      it('should update email, password of current account', () => {
+        expect(afterSaveAccount.email).toBe(signupRequirements.email);
+        expect(afterSaveAccount.password).toBeDefined();
+      });
+      it('should encrypt the password of the new account', () => {
+        expect(afterSaveAccount.password !== signupRequirements.password).toBe(
+          true
+        );
+      });
+      it('should create a user ', () => {
+        expect(afterSaveUser).toBeDefined();
+      });
+      it('should create an accountActivation', () => {
+        expect(signupResult).toBeDefined();
       });
     });
   });

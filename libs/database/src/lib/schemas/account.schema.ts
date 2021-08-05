@@ -28,6 +28,7 @@ import { TimestampBase } from './base.timestamp.schema';
 import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
+import { Password } from '@castcle-api/utils';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -63,11 +64,26 @@ export class Account extends TimestampBase {
 export const AccountSchema = SchemaFactory.createForClass(Account);
 
 export interface IAccount extends Document {
+  changePassword(
+    pasword: string,
+    email?: string
+  ): Promise<AccountDocument | null>;
   verifyPassword(password: string): boolean;
   getOneCredential(): Promise<CredentialDocument>;
 }
-AccountSchema.methods.verifyPassword = (password: string) => {
-  return password === 'testpassword';
+AccountSchema.methods.changePassword = async function (
+  password: string,
+  email?: string
+) {
+  const encryptPassword = await Password.create(password);
+  if (encryptPassword) {
+    (this as AccountDocument).password = encryptPassword;
+    if (email) (this as AccountDocument).email = email;
+    return this.save();
+  } else return null;
+};
+AccountSchema.methods.verifyPassword = function (password: string) {
+  Password.verify(password, (this as AccountDocument).password);
 };
 AccountSchema.methods.getOneCredential =
   function (): Promise<CredentialDocument> {

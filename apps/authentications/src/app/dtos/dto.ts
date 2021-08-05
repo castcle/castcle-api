@@ -32,6 +32,36 @@ export class CheckEmailExistDto {
   email: string;
 }
 
+export class LoginDto {
+  @ApiProperty()
+  username: string;
+  @ApiProperty()
+  password: string;
+}
+
+class RegisterPayload {
+  @ApiProperty()
+  email: string;
+  @ApiProperty()
+  password: string;
+  @ApiProperty()
+  displayName: string;
+  @ApiProperty()
+  castcleId: string;
+}
+
+export class RegisterByEmailDto {
+  @ApiProperty()
+  channel: 'email';
+  @ApiProperty()
+  payload: RegisterPayload;
+}
+
+export class CheckIdExistDto {
+  @ApiProperty()
+  castcleId: string;
+}
+
 export class TokenResponse {
   @ApiProperty()
   accessToken: string;

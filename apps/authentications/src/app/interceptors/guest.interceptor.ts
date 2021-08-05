@@ -20,32 +20,38 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module, Global } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { Environment as env } from '@castcle-api/environments';
-import { AuthenticationService } from './services/authentication.service';
-import { AccountSchema } from './schemas/account.schema';
-import { CredentialSchema } from './schemas/credential.schema';
-import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { UserSchema } from './schemas/user.schema';
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from '@castcle-api/utils/interceptors';
 
-export const MongooseForFeatures = MongooseModule.forFeature([
-  { name: 'Account', schema: AccountSchema },
-  { name: 'Credential', schema: CredentialSchema },
-  { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'User', schema: UserSchema }
-]);
+export interface GuestRequest extends HeadersRequest {
+  $platform: string;
+  $device: string;
+}
 
-@Global()
-@Module({
-  imports: [
-    MongooseModule.forRoot(env.db_uri, env.db_options),
-    MongooseForFeatures
-  ],
-  controllers: [],
-  providers: [AuthenticationService],
-  exports: [AuthenticationService]
-})
-export class DatabaseModule {}
-
-export { AuthenticationService };
+@Injectable()
+export class GuestInterceptor extends HeadersInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = super.intercept(context, next);
+    const request = context.switchToHttp().getRequest();
+    request.$device =
+      request.headers && request.headers.device
+        ? request.headers.device
+        : undefined;
+    request.$platform =
+      request.headers && request.headers.platform
+        ? request.headers.platform
+        : undefined;
+    if (request.$device) {
+      return superResult;
+    } else {
+      throw new CastcleException(
+        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
+        request.$language
+      );
+    }
+  }
+}

@@ -22,6 +22,7 @@
  */
 import { Module } from '@nestjs/common';
 import { Token } from './token';
+import { Password } from './password';
 
 @Module({
   imports: [],
@@ -31,4 +32,4 @@ import { Token } from './token';
 })
 export class UtilsModule {}
 
-export { Token };
+export { Token, Password };
