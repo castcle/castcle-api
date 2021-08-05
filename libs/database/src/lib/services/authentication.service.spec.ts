@@ -32,7 +32,10 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { AccountActivationDocument } from '../schemas/accountActivation.schema';
+import {
+  AccountActivation,
+  AccountActivationDocument
+} from '../schemas/accountActivation.schema';
 import { UserDocument } from '../schemas/user.schema';
 
 let mongod: MongoMemoryServer;
@@ -95,6 +98,10 @@ describe('Authentication Service', () => {
           platform: 'iOs'
         }
       });
+      console.log(
+        'createdAccountDocument ',
+        createAccountResult.accountDocument
+      );
     });
 
     describe('#_generateAccessToken()', () => {
@@ -380,6 +387,40 @@ describe('Authentication Service', () => {
       });
       it('should create an accountActivation', () => {
         expect(signupResult).toBeDefined();
+      });
+    });
+    describe('#verifyAccount()', () => {
+      let accountActivation: AccountActivationDocument;
+      let beforeVerifyAccount;
+      let afterVerifyAccount: AccountDocument;
+      let afterAccountActivation: AccountActivationDocument;
+      beforeAll(async () => {
+        const tokenResult = service._accountActivationModel.generateVerifyToken(
+          {
+            id: 'randomId'
+          }
+        );
+        accountActivation = await new service._accountActivationModel({
+          account: createAccountResult.accountDocument._id,
+          type: 'email',
+          verifyToken: tokenResult.verifyToken,
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+        }).save();
+        beforeVerifyAccount = { ...accountActivation };
+        afterVerifyAccount = await service.verifyAccount(accountActivation);
+        afterAccountActivation = await service._accountActivationModel
+          .findById(accountActivation._id)
+          .exec();
+      });
+      it('should change status of account from isGuest to false and have activationDate', async () => {
+        expect(createAccountResult.accountDocument.isGuest).toBe(true);
+        expect(afterVerifyAccount.isGuest).toBe(false);
+        expect(beforeVerifyAccount.activateDate).not.toBeDefined();
+        expect(afterVerifyAccount.activateDate).toBeDefined();
+      });
+      it('should update the accountActivation status', () => {
+        expect(beforeVerifyAccount.activationDate).not.toBeDefined();
+        expect(afterAccountActivation.activationDate).toBeDefined();
       });
     });
   });

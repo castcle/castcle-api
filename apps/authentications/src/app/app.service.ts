@@ -22,10 +22,33 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
+import { Environment as env } from '@castcle-api/environments';
+
+const currentHosting = `http://localhost:3334`;
+const transporter = nodemailer.createTransport({
+  host: env.smtp_host,
+  port: env.smtp_port,
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: env.smtp_username, // generated ethereal user
+    pass: env.smtp_password // generated ethereal password
+  }
+});
 
 @Injectable()
 export class AppService {
   getData(): { message: string } {
     return { message: 'Welcome to authentications!' };
+  }
+
+  async sendRegistrationEmail(toEmail: string, code: string) {
+    const info = await transporter.sendMail({
+      from: 'No Reply" <no-reply@castcle.com>',
+      subject: 'Welcome to Castcle',
+      to: toEmail,
+      html: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`
+    });
+    console.log(`Email is send `, info.messageId);
   }
 }

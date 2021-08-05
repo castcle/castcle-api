@@ -30,7 +30,7 @@ import { TimestampBase } from './base.timestamp.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils';
 
-export type AccountActivationDocument = AccountActivation & Document;
+export type AccountActivationDocument = AccountActivation & IAccountActivation;
 
 export enum AccountActivationType {
   Email = 'email',
@@ -64,6 +64,17 @@ export class AccountActivation extends TimestampBase {
 
 export const AccountActivationSchema =
   SchemaFactory.createForClass(AccountActivation);
+
+export interface IAccountActivation extends Document {
+  isVerifyTokenValid(): boolean;
+}
+
+AccountActivationSchema.methods.isVerifyTokenValid = function () {
+  return Token.isTokenValid(
+    (this as AccountActivationDocument).verifyToken,
+    env.jwt_verify_secret
+  );
+};
 
 export interface AccountActivationModel
   extends Model<AccountActivationDocument> {

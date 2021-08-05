@@ -32,6 +32,7 @@ import {
   CredentialInterceptor,
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
+import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
@@ -237,6 +238,8 @@ export class AppController {
           CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
           req.$language
         );
+      if (!this.authService.validateEmail(body.payload.email))
+        throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
         {
@@ -249,6 +252,10 @@ export class AppController {
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
+      this.appService.sendRegistrationEmail(
+        body.payload.email,
+        accountActivation.verifyToken
+      );
       // !!! need to add email survice in here
       return {
         accessToken: req.$credential.accessToken,
@@ -306,10 +313,40 @@ export class AppController {
     );
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'will reject if token is invalid'
+  })
   @Post('verificationEmail')
   @HttpCode(204)
-  verificationEmail() {
-    return '';
+  @UseInterceptors(TokenInterceptor)
+  async verificationEmail(@Req() req: TokenRequest) {
+    const accountActivation =
+      await this.authService.getAccountActivationFromVerifyToken(req.$token);
+    if (accountActivation && accountActivation.isVerifyTokenValid()) {
+      //verify email
+      const account = await this.authService.verifyAccount(accountActivation);
+      if (!account)
+        throw new CastcleException(
+          CastcleStatus.INVALID_REFRESH_TOKEN,
+          req.$language
+        );
+      return '';
+    }
+    throw new CastcleException(
+      CastcleStatus.INVALID_REFRESH_TOKEN,
+      req.$language
+    );
   }
 
   @Post('requestLinkVerify')
@@ -382,5 +419,15 @@ export class AppController {
     );
     this.logger.log('Root');
     return this.appService.getData().message + birthDay;
+  }
+
+  /*
+   * !!! use for test link verification only will remove in production
+   */
+  @Get('testLink')
+  testLink(@Req() req: Request) {
+    if (req.query.code) {
+      return `will call post request soon`;
+    } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
   }
 }
