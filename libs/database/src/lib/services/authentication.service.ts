@@ -111,6 +111,17 @@ export class AuthenticationService {
     return { accountDocument, credentialDocument };
   }
 
+  async linkCredentialToAccount(
+    credential: CredentialDocument,
+    account: AccountDocument
+  ) {
+    //remove account old crdentiial
+    await this._accountModel.findByIdAndDelete(credential.account);
+    credential.account = account._id;
+    //set new account credential to current account
+    return credential.save();
+  }
+
   getAccountFromCredential = (credential: CredentialDocument) =>
     this._accountModel.findById(credential.account).exec();
 
