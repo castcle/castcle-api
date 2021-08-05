@@ -47,8 +47,9 @@ export class AppService {
       from: 'No Reply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
       to: toEmail,
+      text: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`,
       html: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`
     });
-    console.log(`Email is send `, info.messageId);
+    console.log(`Email is send `, info.messageId, info);
   }
 }
