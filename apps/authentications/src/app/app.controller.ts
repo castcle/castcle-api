@@ -252,7 +252,7 @@ export class AppController {
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
-      this.appService.sendRegistrationEmail(
+      await this.appService.sendRegistrationEmail(
         body.payload.email,
         accountActivation.verifyToken
       );
