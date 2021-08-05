@@ -110,10 +110,18 @@ export class AppController {
     }
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
   @ApiBody({
     type: LoginDto
   })
   @ApiOkResponse({
+    status: 200,
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
