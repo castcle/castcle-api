@@ -45,8 +45,13 @@ import {
   TokenResponse,
   CheckEmailExistDto,
   CheckingResponse,
-  RefreshTokenResponse
+  RefreshTokenResponse,
+  LoginDto
 } from './dtos/dto';
+import {
+  GuestInterceptor,
+  GuestRequest
+} from './interceptors/guest.interceptor';
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 
@@ -100,12 +105,33 @@ export class AppController {
     }
   }
 
+  @ApiBody({
+    type: LoginDto
+  })
+  @ApiOkResponse({
+    type: TokenResponse
+  })
+  @UseInterceptors(HeadersInterceptor)
   @Post('login')
-  login() {
-    return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
-    };
+  @HttpCode(200)
+  async login(
+    @Req() req: HeadersRequest,
+    @Body('username') email: string,
+    @Body('password') password: string
+  ) {
+    const account = await this.authService.getAccountFromEmail(email);
+    if (!account)
+      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    if (await account.verifyPassword(password)) {
+      return {
+        accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+        refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
+      };
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
+        req.$language
+      );
   }
 
   @Post('loginWithSocial')
@@ -144,27 +170,9 @@ export class AppController {
     status: 400,
     description: 'will show if some of header is missing'
   })
-  @UseInterceptors(HeadersInterceptor)
+  @UseInterceptors(GuestInterceptor)
   @Post('guestLogin')
-  async guestLogin(@Req() req: HeadersRequest, @Body() body) {
-    //before guard
-    if (
-      !(
-        (req.headers as any) &&
-        (req.headers as any).platform &&
-        (req.headers as any)['device']
-      )
-    )
-      throw new CastcleException(
-        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
-        req.$language
-      );
-
-    const platform: string = (req.headers as any).platform;
-    const preferedLangague: string = req.$language;
-    const device: string = (req.headers as any)['device'];
-    console.log(req.headers);
-    console.log(body);
+  async guestLogin(@Req() req: GuestRequest, @Body() body) {
     const deviceUUID = body.deviceUUID;
     const credential = await this.authService.getCredentialFromDeviceUUID(
       deviceUUID
@@ -173,7 +181,7 @@ export class AppController {
       const tokenResult = await credential.renewTokens(
         {
           id: credential.account as unknown as string,
-          preferredLanguage: [preferedLangague, preferedLangague],
+          preferredLanguage: [req.$language, req.$language],
           role: 'guest'
         },
         {
@@ -184,10 +192,10 @@ export class AppController {
       return tokenResult;
     } else {
       const result = await this.authService.createAccount({
-        device: device,
+        device: req.$device,
         deviceUUID: deviceUUID,
-        header: { platform: platform },
-        languagesPreferences: [preferedLangague, preferedLangague]
+        header: { platform: req.$platform },
+        languagesPreferences: [req.$language, req.$language]
       });
       return {
         accessToken: result.credentialDocument.accessToken,

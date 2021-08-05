@@ -20,42 +20,38 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from '@castcle-api/utils/interceptors';
 
-import { ApiProperty } from '@nestjs/swagger';
-export class GuestLoginDto {
-  @ApiProperty()
-  deviceUUID: string;
+export interface GuestRequest extends HeadersRequest {
+  $platform: string;
+  $device: string;
 }
 
-export class CheckEmailExistDto {
-  @ApiProperty()
-  email: string;
-}
-
-export class LoginDto {
-  username: string;
-  password: string;
-}
-
-export class TokenResponse {
-  @ApiProperty()
-  accessToken: string;
-
-  @ApiProperty()
-  refreshToken: string;
-}
-
-export class CheckingResponse {
-  @ApiProperty()
-  message: string;
-
-  @ApiProperty()
-  payload: {
-    exist: boolean;
-  };
-}
-
-export class RefreshTokenResponse {
-  @ApiProperty()
-  accessToken: string;
+@Injectable()
+export class GuestInterceptor extends HeadersInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = super.intercept(context, next);
+    const request = context.switchToHttp().getRequest();
+    request.$device =
+      request.headers && request.headers.device
+        ? request.headers.device
+        : undefined;
+    request.$platform =
+      request.headers && request.headers.platform
+        ? request.headers.platform
+        : undefined;
+    if (request.$device) {
+      return superResult;
+    } else {
+      throw new CastcleException(
+        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
+        request.$language
+      );
+    }
+  }
 }

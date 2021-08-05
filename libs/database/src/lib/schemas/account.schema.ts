@@ -28,6 +28,7 @@ import { TimestampBase } from './base.timestamp.schema';
 import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
+import { Password } from '@castcle-api/utils';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -66,9 +67,9 @@ export interface IAccount extends Document {
   verifyPassword(password: string): boolean;
   getOneCredential(): Promise<CredentialDocument>;
 }
-AccountSchema.methods.verifyPassword = (password: string) => {
-  return password === 'testpassword';
-};
+AccountSchema.methods.verifyPassword = (password: string) =>
+  Password.verify(password, (this as AccountDocument).password);
+
 AccountSchema.methods.getOneCredential =
   function (): Promise<CredentialDocument> {
     const credentialModel: Model<CredentialDocument> = model(
