@@ -27,11 +27,13 @@ import { AuthenticationService } from './services/authentication.service';
 import { AccountSchema } from './schemas/account.schema';
 import { CredentialSchema } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
+import { UserSchema } from './schemas/user.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Account', schema: AccountSchema },
   { name: 'Credential', schema: CredentialSchema },
-  { name: 'AccountActivation', schema: AccountActivationSchema }
+  { name: 'AccountActivation', schema: AccountActivationSchema },
+  { name: 'User', schema: UserSchema }
 ]);
 
 @Global()

@@ -28,7 +28,9 @@ import {
   HeadersRequest,
   HeadersInterceptor,
   TokenInterceptor,
-  TokenRequest
+  TokenRequest,
+  CredentialInterceptor,
+  CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
@@ -46,7 +48,9 @@ import {
   CheckEmailExistDto,
   CheckingResponse,
   RefreshTokenResponse,
-  LoginDto
+  LoginDto,
+  RegisterByEmailDto,
+  CheckIdExistDto
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -114,15 +118,11 @@ export class AppController {
   @UseInterceptors(HeadersInterceptor)
   @Post('login')
   @HttpCode(200)
-  async login(
-    @Req() req: HeadersRequest,
-    @Body('username') email: string,
-    @Body('password') password: string
-  ) {
-    const account = await this.authService.getAccountFromEmail(email);
+  async login(@Req() req: HeadersRequest, @Body() body: LoginDto) {
+    const account = await this.authService.getAccountFromEmail(body.password);
     if (!account)
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
-    if (await account.verifyPassword(password)) {
+    if (await account.verifyPassword(body.password)) {
       return {
         accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
         refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
@@ -204,12 +204,61 @@ export class AppController {
     }
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 201,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
   @Post('register')
-  register() {
-    return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
-    };
+  async register(
+    @Req() req: CredentialRequest,
+    @Body() body: RegisterByEmailDto
+  ) {
+    if (body.channel === 'email') {
+      //check if this account already sign up
+      const currentAccount = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (currentAccount && currentAccount.email)
+        throw new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
+          req.$language
+        );
+      //check if email exist
+      if (await this.authService.getAccountFromEmail(body.payload.email))
+        throw new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
+          req.$language
+        );
+      const accountActivation = await this.authService.signupByEmail(
+        currentAccount,
+        {
+          displayId: body.payload.castcleId,
+          displayName: body.payload.displayName,
+          email: body.payload.email,
+          password: body.payload.password
+        }
+      );
+      //check if display id exist
+      //send an email
+      console.log('send email with token => ', accountActivation.verifyToken);
+      // !!! need to add email survice in here
+      return {
+        accessToken: req.$credential.accessToken,
+        refreshToken: req.$credential.refreshToken
+      } as TokenResponse;
+    }
+    throw new CastcleException(
+      CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+      req.$language
+    );
   }
 
   @ApiHeader({
@@ -280,14 +329,25 @@ export class AppController {
     };
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: CheckingResponse
+  })
   @Post('checkCastcleIdExists')
-  checkCastcleIdExists() {
+  @HttpCode(200)
+  async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
+    const user = await this.authService.getUserFromId(body.castcleId);
     return {
       message: 'success message',
       payload: {
-        exist: true // true=มีในระบบ, false=ไม่มีในระบบ
+        exist: user ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
       }
-    };
+    } as CheckingResponse;
   }
 
   @Post('requestOTP')

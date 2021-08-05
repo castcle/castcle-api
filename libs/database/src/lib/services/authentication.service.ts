@@ -24,8 +24,11 @@ import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, AccountModel } from '../schemas/account.schema';
-import { AccountActivationDocument } from '../schemas/accountActivation.schema';
-import { env } from '../environment';
+import {
+  AccountActivationDocument,
+  AccountActivationModel
+} from '../schemas/accountActivation.schema';
+import { UserDocument, UserType } from '../schemas/user.schema';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
 import {
@@ -63,7 +66,9 @@ export class AuthenticationService {
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
-    public _accountActivationModel: Model<AccountActivationDocument>
+    public _accountActivationModel: AccountActivationModel,
+    @InjectModel('User')
+    public _userModel: Model<UserDocument>
   ) {}
 
   getCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -112,6 +117,11 @@ export class AuthenticationService {
   getAccountFromEmail = (email: string) =>
     this._accountModel.findOne({ email: email }).exec();
 
+  getUserFromId = (id: string) => {
+    console.log('finding', id);
+    return this._userModel.findOne({ displayId: id }).exec();
+  };
+
   validateEmail = (email: string) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -122,21 +132,8 @@ export class AuthenticationService {
     this._credentialModel.generateAccessToken(payload);
   _generateRefreshToken = (payload: RefreshTokenPayload) =>
     this._credentialModel.generateRefreshToken(payload);
-  _generateEmailVerifyToken(payload: EmailVerifyToken) {
-    const now = new Date();
-    const emailVerifyTokenExpireDate = new Date(
-      now.getTime() + Number(env.jwt_verify_expires_in) * 1000
-    );
-    const emailVerifyToken = Token.generateToken(
-      payload,
-      env.jwt_verify_secret,
-      Number(env.jwt_verify_expires_in)
-    );
-    return {
-      emailVerifyToken,
-      emailVerifyTokenExpireDate
-    };
-  }
+  _generateEmailVerifyToken = (payload: EmailVerifyToken) =>
+    this._accountActivationModel.generateVerifyToken(payload);
 
   async verifyAccessToken(accessToken: string) {
     const credentialDocument = await this._credentialModel
@@ -157,11 +154,17 @@ export class AuthenticationService {
     account: AccountDocument,
     requirements: SignupRequirements
   ) {
-    account.email = requirements.email;
-    account.password = requirements.password;
+    //account.email = requirements.email;
+    //account.password =  requirements.password;
+    await account.changePassword(requirements.password, requirements.email);
     //create user here
-
-    await account.save();
+    const user = new this._userModel({
+      ownerAccount: account._id,
+      displayName: requirements.displayName,
+      displayId: requirements.displayId,
+      type: UserType.People
+    });
+    await user.save();
     return this.createAccountActivation(account, 'email');
   }
 
@@ -172,8 +175,8 @@ export class AuthenticationService {
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
-      verifyToken: emailTokenResult.emailVerifyToken,
-      verifyTokenExpireDate: emailTokenResult.emailVerifyTokenExpireDate
+      verifyToken: emailTokenResult.verifyToken,
+      verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate
     });
     return accountActivation.save();
   }
@@ -183,9 +186,9 @@ export class AuthenticationService {
       id: accountActivation.account as unknown as string
     });
     accountActivation.revocationDate = new Date();
-    accountActivation.verifyToken = emailTokenResult.emailVerifyToken;
+    accountActivation.verifyToken = emailTokenResult.verifyToken;
     accountActivation.verifyTokenExpireDate =
-      emailTokenResult.emailVerifyTokenExpireDate;
+      emailTokenResult.verifyTokenExpireDate;
     return accountActivation.save();
   }
 }

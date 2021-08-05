@@ -23,10 +23,12 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
+import { env } from '../environment';
+import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
-import { Environment as env } from '@castcle-api/environments';
+import { EmailVerifyToken } from '../dtos/token.dto';
+import { Token } from '@castcle-api/utils';
 
 export type AccountActivationDocument = AccountActivation & Document;
 
@@ -62,3 +64,30 @@ export class AccountActivation extends TimestampBase {
 
 export const AccountActivationSchema =
   SchemaFactory.createForClass(AccountActivation);
+
+export interface AccountActivationModel
+  extends Model<AccountActivationDocument> {
+  generateVerifyToken(payload: EmailVerifyToken): {
+    verifyToken: string;
+    verifyTokenExpireDate: Date;
+  };
+}
+
+AccountActivationSchema.statics.generateVerifyToken = function (
+  payload: EmailVerifyToken
+) {
+  const now = new Date();
+  const verifyTokenExpireDate = new Date(
+    now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+  );
+  payload.verifyTokenExpiresTime = verifyTokenExpireDate.toISOString();
+  const verifyToken = Token.generateToken(
+    payload,
+    env.jwt_verify_secret,
+    Number(env.jwt_verify_expires_in)
+  );
+  return {
+    verifyToken,
+    verifyTokenExpireDate
+  };
+};
