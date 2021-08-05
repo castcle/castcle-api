@@ -25,7 +25,6 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({

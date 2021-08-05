@@ -133,6 +133,9 @@ export class AuthenticationService {
     return this._userModel.findOne({ displayId: id }).exec();
   };
 
+  getAccountActivationFromVerifyToken = (token: string) =>
+    this._accountActivationModel.findOne({ verifyToken: token }).exec();
+
   validateEmail = (email: string) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -155,10 +158,17 @@ export class AuthenticationService {
     else return false;
   }
 
-  async verifyEmailToken(verificationToken: string) {
-    this._accountActivationModel.findOne({
-      verifyToken: verificationToken
-    });
+  async verifyAccount(accountActivation: AccountActivationDocument) {
+    const now = new Date();
+    accountActivation.activationDate = now;
+    await accountActivation.save();
+    //update ac
+    const account = await this._accountModel.findById(
+      accountActivation.account
+    );
+    account.isGuest = false;
+    account.activateDate = now;
+    return account.save();
   }
 
   async signupByEmail(
