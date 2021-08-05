@@ -81,5 +81,18 @@ export const Environment = {
   jwt_verify_expires_in: process.env.JWT_VERIFY_EXPIRES_IN as unknown as number,
   jwt_signature_secret: process.env.JWT_SIGNATURE_SECRET,
   jwt_signature_expires_in: process.env
-    .JWT_SIGNATURE_EXPIRES_IN as unknown as number
+    .JWT_SIGNATURE_EXPIRES_IN as unknown as number,
+  // Cloudfront
+  cloudfront_access_key_id: process.env.CLOUDFRONT_ACCESS_KEY_ID,
+  cloudfront_private_key: process.env.CLOUDFRONT_PRIVATE_KEY,
+  // Redis
+  redis_host: process.env.REDIS_HOST,
+  redis_port: process.env.REDIS_PORT as unknown as number,
+  // Assets
+  assets_bucket_name: process.env.ASSETS_BUCKET_NAME,
+  assets_host: process.env.ASSETS_HOST,
+  // Social network
+  twitter_key: process.env.TWITTER_KEY,
+  twitter_secret_key: process.env.TWITTER_SECRET_KEY,
+  twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN
 };

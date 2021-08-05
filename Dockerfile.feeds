@@ -19,7 +19,7 @@
 # Thailand 10160, or visit www.castcle.com if you need additional information
 # or have any questions.
 
-FROM node:16.5.0-alpine
+FROM public.ecr.aws/v0u9f4j2/node:latest
 WORKDIR /app
 COPY ./dist/apps/feeds .
 ENV PORT=3000
