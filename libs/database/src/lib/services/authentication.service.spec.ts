@@ -445,5 +445,28 @@ describe('Authentication Service', () => {
         expect(newActivation.revocationDate).toBeDefined();
       });
     });
+    describe('#linkCredentialToAccount()', () => {
+      it('should remove old account from credential and change it to new Account', async () => {
+        const randomAcc = await service.createAccount({
+          device: 'abc',
+          deviceUUID: 'uuid1234',
+          header: {
+            platform: 'ios'
+          },
+          languagesPreferences: ['en', 'en']
+        });
+        expect(randomAcc.accountDocument._id).not.toEqual(
+          createAccountResult.accountDocument._id
+        );
+        const newCredential = await service.linkCredentialToAccount(
+          randomAcc.credentialDocument,
+          createAccountResult.accountDocument
+        );
+        expect(newCredential._id).toEqual(randomAcc.credentialDocument._id);
+        expect(newCredential.account).toEqual(
+          createAccountResult.accountDocument._id
+        );
+      });
+    });
   });
 });

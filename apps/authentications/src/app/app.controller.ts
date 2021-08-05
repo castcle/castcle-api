@@ -110,24 +110,39 @@ export class AppController {
     }
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
   @ApiBody({
     type: LoginDto
   })
   @ApiOkResponse({
+    status: 200,
     type: TokenResponse
   })
-  @UseInterceptors(HeadersInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Post('login')
   @HttpCode(200)
-  async login(@Req() req: HeadersRequest, @Body() body: LoginDto) {
+  async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
     const account = await this.authService.getAccountFromEmail(body.password);
     if (!account)
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     if (await account.verifyPassword(body.password)) {
+      const currentCredentialAccount =
+        await this.authService.getAccountFromCredential(req.$credential);
+      if (currentCredentialAccount._id !== account._id)
+        await this.authService.linkCredentialToAccount(
+          req.$credential,
+          account
+        );
       return {
-        accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-        refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
-      };
+        accessToken: req.$credential.accessToken,
+        refreshToken: req.$credential.refreshToken
+      } as TokenResponse;
     } else
       throw new CastcleException(
         CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
