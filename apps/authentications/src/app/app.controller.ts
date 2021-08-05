@@ -427,7 +427,14 @@ export class AppController {
   @Get('testLink')
   testLink(@Req() req: Request) {
     if (req.query.code) {
-      return `will call post request soon`;
+      return `will call post request soon<script>fetch("http://localhost:3334/authentications/verificationEmail", {
+        headers: {
+          Accept: "*/*",
+          "Accept-Language": "th",
+          Authorization: "Bearer ${req.query.code}"
+        },
+        method: "POST"
+      })</script>`;
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
   }
 }
