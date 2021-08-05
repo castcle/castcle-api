@@ -423,5 +423,27 @@ describe('Authentication Service', () => {
         expect(afterAccountActivation.activationDate).toBeDefined();
       });
     });
+    describe('#revokeAccountActivation()', () => {
+      it('should update revocation date and verifyToken after called()', async () => {
+        const tokenResult = service._accountActivationModel.generateVerifyToken(
+          {
+            id: 'randomId'
+          }
+        );
+        const accountActivation = await new service._accountActivationModel({
+          account: createAccountResult.accountDocument._id,
+          type: 'email',
+          verifyToken: tokenResult.verifyToken,
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+        }).save();
+        expect(accountActivation.revocationDate).not.toBeDefined();
+        const newActivation = await service.revokeAccountActivation(
+          accountActivation
+        );
+        expect(newActivation.verifyToken).toBeDefined();
+        expect(tokenResult.verifyToken).not.toEqual(newActivation.verifyToken);
+        expect(newActivation.revocationDate).toBeDefined();
+      });
+    });
   });
 });

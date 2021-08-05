@@ -349,9 +349,50 @@ export class AppController {
     );
   }
 
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'will reject if token is invalid'
+  })
   @Post('requestLinkVerify')
   @HttpCode(204)
-  requestLinkVerify() {
+  @UseInterceptors(CredentialInterceptor)
+  async requestLinkVerify(@Req() req: CredentialRequest) {
+    const accountActivation =
+      await this.authService.getAccountActivationFromCredential(
+        req.$credential
+      );
+    if (!accountActivation)
+      throw new CastcleException(
+        CastcleStatus.INVALID_REFRESH_TOKEN,
+        req.$language
+      );
+    const newAccountActivation = await this.authService.revokeAccountActivation(
+      accountActivation
+    );
+    if (!accountActivation)
+      throw new CastcleException(
+        CastcleStatus.INVALID_REFRESH_TOKEN,
+        req.$language
+      );
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (!(account && account.email))
+      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    this.appService.sendRegistrationEmail(
+      account.email,
+      newAccountActivation.verifyToken
+    );
     return '';
   }
 

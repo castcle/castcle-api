@@ -125,6 +125,11 @@ export class AuthenticationService {
   getAccountActivationFromVerifyToken = (token: string) =>
     this._accountActivationModel.findOne({ verifyToken: token }).exec();
 
+  getAccountActivationFromCredential = (credential: CredentialDocument) =>
+    this._accountActivationModel
+      .findOne({ account: credential.account })
+      .exec();
+
   validateEmail = (email: string) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
