@@ -256,7 +256,6 @@ export class AppController {
         body.payload.email,
         accountActivation.verifyToken
       );
-      // !!! need to add email survice in here
       return {
         accessToken: req.$credential.accessToken,
         refreshToken: req.$credential.refreshToken
@@ -288,7 +287,7 @@ export class AppController {
   @Post('refreshToken')
   async refreshToken(@Req() req: TokenRequest) {
     /*
-     * !!!
+     * TODO: !!!
      * should embed  account and user for better performance
      */
     const credential = await this.authService.getCredentialFromRefreshToken(
