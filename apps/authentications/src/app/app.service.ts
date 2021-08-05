@@ -24,7 +24,9 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Environment as env } from '@castcle-api/environments';
-
+/*
+ * TODO: !!!
+ */
 const currentHosting = `http://localhost:3334`;
 const transporter = nodemailer.createTransport({
   host: env.smtp_host,
