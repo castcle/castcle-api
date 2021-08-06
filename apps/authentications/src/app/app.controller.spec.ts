@@ -296,4 +296,94 @@ describe('AppController', () => {
       expect(result).toBeDefined();
     });
   });
+  describe('verificationEmail', () => {
+    it('should set verifyDate for both account and accountActivation', async () => {
+      const testId = 'registerId3';
+      const registerEmail = 'sompop3.kulapalanont@gmail.com';
+      const password = 'password12345';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'testLang'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: testId,
+            displayName: 'abc',
+            email: registerEmail,
+            password: password
+          }
+        }
+      );
+      const preAccountActivation =
+        await service.getAccountActivationFromCredential(credentialGuest);
+      expect(preAccountActivation.activationDate).not.toBeDefined();
+      const result = await appController.verificationEmail({
+        $token: preAccountActivation.verifyToken,
+        $language: 'th'
+      } as any);
+      expect(result).toEqual('');
+      const postAccountActivation =
+        await service.getAccountActivationFromCredential(credentialGuest);
+      expect(postAccountActivation.activationDate).toBeDefined();
+      const acc = await service.getAccountFromCredential(credentialGuest);
+      expect(acc.activateDate).toBeDefined();
+      expect(acc.isGuest).toBe(false);
+    });
+  });
+
+  describe('requestLinkVerify', () => {
+    it('should update verifyToken and revocationDate after success', async () => {
+      const testId = 'registerId4';
+      const registerEmail = 'sompop4.kulapalanont@gmail.com';
+      const password = 'password12345';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'testLang'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: testId,
+            displayName: 'abc',
+            email: registerEmail,
+            password: password
+          }
+        }
+      );
+      const preAccountActivationToken =
+        await service.getAccountActivationFromCredential(credentialGuest);
+      const preToken = preAccountActivationToken.verifyToken;
+      expect(preAccountActivationToken.revocationDate).not.toBeDefined();
+      await appController.requestLinkVerify({
+        $credential: credentialGuest,
+        $language: 'th',
+        $token: credentialGuest.accessToken
+      } as any);
+      const postAccountActivationToken =
+        await service.getAccountActivationFromCredential(credentialGuest);
+      expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);
+      expect(postAccountActivationToken.revocationDate).toBeDefined();
+    });
+  });
 });
