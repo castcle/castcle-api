@@ -150,13 +150,14 @@ export class AppController {
       );
   }
 
-  @Post('loginWithSocial')
+  // PLAN : !!!
+  /*@Post('loginWithSocial')
   loginWithSocial() {
     return {
       accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
       refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
     };
-  }
+  }*/
 
   @ApiHeader({
     name: 'Platform',
@@ -415,17 +416,6 @@ export class AppController {
     return '';
   }
 
-  @Post('checkDisplayNameExists')
-  checkDisplayNameExists() {
-    return {
-      message: 'success message',
-      payload: {
-        exist: true, // true=มีในระบบ, false=ไม่มีในระบบ
-        suggestCastcleId: 'castcle-avenger' // กรณีที่ exist=false ให้ ส่ง suggest
-      }
-    };
-  }
-
   @ApiHeader({
     name: 'Accept-Language',
     description: 'Device prefered Language',
@@ -447,7 +437,8 @@ export class AppController {
     } as CheckingResponse;
   }
 
-  @Post('requestOTP')
+  // PLAN : !!!
+  /* @Post('requestOTP')
   requestOTP() {
     return {
       refCode: 'xxxxxxxx', // 8 หลัก
@@ -468,7 +459,7 @@ export class AppController {
       refCode: 'xxxxxxxx', // 8 หลัก
       expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
-  }
+  }*/
 
   @Get()
   getData() {

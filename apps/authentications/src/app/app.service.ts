@@ -29,12 +29,12 @@ import { Environment as env } from '@castcle-api/environments';
  */
 const currentHosting = `http://localhost:3334`;
 const transporter = nodemailer.createTransport({
-  host: env.smtp_host,
-  port: env.smtp_port,
+  host: env.smtp_host ? env.smtp_host : 'http://localhost:3334',
+  port: env.smtp_port ? env.smtp_port : 465,
   secure: true, // true for 465, false for other ports
   auth: {
-    user: env.smtp_username, // generated ethereal user
-    pass: env.smtp_password // generated ethereal password
+    user: env.smtp_username ? env.smtp_username : 'username', // generated ethereal user
+    pass: env.smtp_password ? env.smtp_password : 'password' // generated ethereal password
   }
 });
 
