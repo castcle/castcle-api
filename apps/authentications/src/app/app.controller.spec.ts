@@ -62,6 +62,9 @@ describe('AppController', () => {
     }).compile();
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
+    jest
+      .spyOn(appService, 'sendRegistrationEmail')
+      .mockImplementation(async () => console.log('send email from mock'));
   });
   afterAll(async () => {
     await closeInMongodConnection();
