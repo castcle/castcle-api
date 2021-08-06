@@ -128,7 +128,7 @@ export class AppController {
   @Post('login')
   @HttpCode(200)
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
-    const account = await this.authService.getAccountFromEmail(body.password);
+    const account = await this.authService.getAccountFromEmail(body.username);
     if (!account)
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     if (await account.verifyPassword(body.password)) {
@@ -188,7 +188,7 @@ export class AppController {
   })
   @UseInterceptors(GuestInterceptor)
   @Post('guestLogin')
-  async guestLogin(@Req() req: GuestRequest, @Body() body) {
+  async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
     const credential = await this.authService.getCredentialFromDeviceUUID(
       deviceUUID
@@ -242,12 +242,17 @@ export class AppController {
       const currentAccount = await this.authService.getAccountFromCredential(
         req.$credential
       );
-      if (currentAccount && currentAccount.email)
+      if (
+        currentAccount &&
+        currentAccount.email &&
+        currentAccount.email === body.payload.email
+      )
         throw new CastcleException(
           CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
           req.$language
         );
-      //check if email exist
+      //check if account already activate
+      //check if email exist and not the same
       if (await this.authService.getAccountFromEmail(body.payload.email))
         throw new CastcleException(
           CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
