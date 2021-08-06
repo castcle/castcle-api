@@ -83,7 +83,7 @@ AccountSchema.methods.changePassword = async function (
   } else return null;
 };
 AccountSchema.methods.verifyPassword = function (password: string) {
-  Password.verify(password, (this as AccountDocument).password);
+  return Password.verify(password, (this as AccountDocument).password);
 };
 AccountSchema.methods.getOneCredential =
   function (): Promise<CredentialDocument> {
