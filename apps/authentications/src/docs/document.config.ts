@@ -27,6 +27,5 @@ export const DocumentConfig = new DocumentBuilder()
   .setTitle('Authentications Service')
   .setDescription('The  API description')
   .setVersion('1.0')
-  .addTag('cats')
+  .addBearerAuth()
   .build();
-
