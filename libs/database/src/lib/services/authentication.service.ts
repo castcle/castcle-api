@@ -124,9 +124,18 @@ export class AuthenticationService {
     credential: CredentialDocument,
     account: AccountDocument
   ) {
+    if (account._id === credential.account) {
+      return credential; // already link
+    }
     //remove account old crdentiial
     await this._accountModel.findByIdAndDelete(credential.account);
     credential.account = account._id;
+    const credentialAccount = await this._accountModel.findById(account._id);
+    if (credentialAccount) {
+      if (!credentialAccount.credentials) credentialAccount.credentials = [];
+      credentialAccount.credentials.push(mongoose.Types.ObjectId(account._id));
+      await credentialAccount.save();
+    }
     //set new account credential to current account
     return credential.save();
   }
