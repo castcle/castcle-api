@@ -113,6 +113,10 @@ export class AuthenticationService {
       deviceUUID: accountRequirements.deviceUUID
     } as CreateCredentialDto);
     const credentialDocument = await credential.save();
+    //TODO !!! : how to reduct this
+    if (!newAccount.credentials) newAccount.credentials = [];
+    newAccount.credentials.push(mongoose.Types.ObjectId(accountDocument._id));
+    await newAccount.save();
     return { accountDocument, credentialDocument };
   }
 
@@ -134,7 +138,6 @@ export class AuthenticationService {
     this._accountModel.findOne({ email: email }).exec();
 
   getUserFromId = (id: string) => {
-    console.log('finding', id);
     return this._userModel.findOne({ displayId: id }).exec();
   };
 
@@ -180,9 +183,11 @@ export class AuthenticationService {
     account.activateDate = now;
     const savedAccount = await account.save();
     const credential = await this._credentialModel
-      .findOne({ 'account._id': savedAccount._id })
+      .findOneAndUpdate(
+        { 'account._id': savedAccount._id },
+        { 'account.isGuest': false }
+      )
       .exec();
-    credential.account.isGuest = false;
     return savedAccount;
   }
 

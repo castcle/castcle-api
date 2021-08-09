@@ -60,6 +60,9 @@ export class Account extends TimestampBase {
     countryCode: string;
     number: string;
   };
+
+  @Prop({ type: Array })
+  credentials: any[];
 }
 export const AccountSchema = SchemaFactory.createForClass(Account);
 

@@ -194,6 +194,7 @@ export class AppController {
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
+    console.log('--search credential', credential);
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
