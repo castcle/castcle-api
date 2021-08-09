@@ -69,7 +69,6 @@ export interface IAccount extends Document {
     email?: string
   ): Promise<AccountDocument | null>;
   verifyPassword(password: string): boolean;
-  getOneCredential(): Promise<CredentialDocument>;
 }
 AccountSchema.methods.changePassword = async function (
   password: string,
@@ -84,41 +83,4 @@ AccountSchema.methods.changePassword = async function (
 };
 AccountSchema.methods.verifyPassword = function (password: string) {
   return Password.verify(password, (this as AccountDocument).password);
-};
-AccountSchema.methods.getOneCredential =
-  function (): Promise<CredentialDocument> {
-    const credentialModel: Model<CredentialDocument> = model(
-      'Credential',
-      CredentialSchema
-    );
-    return credentialModel.findOne({ account: this._id }).exec();
-  };
-
-export interface AccountModel extends mongoose.Model<AccountDocument> {
-  createAccountActivation(
-    accountActivationModel: Model<AccountActivationDocument>,
-    accountDocument: AccountDocument,
-    type: 'email' | 'phone'
-  ): Promise<AccountActivationDocument>;
-}
-
-AccountSchema.statics.createAccountActivation = (
-  accountActivationModel: Model<AccountActivationDocument>,
-  accountDocument: AccountDocument,
-  type: 'email' | 'phone'
-) => {
-  const now = new Date();
-  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
-  const payload = {
-    id: accountDocument._id,
-    verifyExpireDate: verifyExpireDate
-  };
-  const token = `${JSON.stringify(payload)}`; //temporary
-  const accountActivation = new accountActivationModel({
-    account: accountDocument._id,
-    type: type,
-    verifyToken: token,
-    verifyExpireDate: verifyExpireDate
-  });
-  return accountActivation.save();
 };

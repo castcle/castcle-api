@@ -186,9 +186,10 @@ describe('Authentication Service', () => {
       });
       it('should create a new Credential with account from above', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
-        expect(createAccountResult.credentialDocument.account).toEqual(
-          createAccountResult.accountDocument._id
-        ); //not sure how to  check
+        expect(createAccountResult.credentialDocument.account).toEqual({
+          _id: createAccountResult.accountDocument._id,
+          isGuest: createAccountResult.accountDocument.isGuest
+        }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
         //check account
@@ -258,9 +259,9 @@ describe('Authentication Service', () => {
       });
     });
 
-    describe('#getCredentialFromDeviceUUID', () => {
+    describe('#getGuestCredentialFromDeviceUUID', () => {
       it('should return credential document when call a function from newly create Account device UUID', async () => {
-        const resultCredential = await service.getCredentialFromDeviceUUID(
+        const resultCredential = await service.getGuestCredentialFromDeviceUUID(
           newDeviceUUID
         );
         expect(resultCredential._id).toEqual(
@@ -268,7 +269,7 @@ describe('Authentication Service', () => {
         );
       });
       it('should return null if there is not found deviceUUID', async () => {
-        const resultCredential = await service.getCredentialFromDeviceUUID(
+        const resultCredential = await service.getGuestCredentialFromDeviceUUID(
           'NOPEEE'
         );
         expect(resultCredential).toBeNull();

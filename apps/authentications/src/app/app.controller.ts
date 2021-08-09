@@ -191,11 +191,11 @@ export class AppController {
   @Post('guestLogin')
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
-    const credential = await this.authService.getCredentialFromDeviceUUID(
+    const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
     if (credential) {
-      const tokenResult = await credential.renewTokens(
+      const tokenResult: TokenResponse = await credential.renewTokens(
         {
           id: credential.account as unknown as string,
           preferredLanguage: [req.$language, req.$language],
@@ -217,7 +217,7 @@ export class AppController {
       return {
         accessToken: result.credentialDocument.accessToken,
         refreshToken: result.credentialDocument.refreshToken
-      };
+      } as TokenResponse;
     }
   }
 
