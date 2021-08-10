@@ -20,18 +20,25 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Model } from 'mongoose';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { AccountDocument } from '../schemas/account.schema';
+import { CredentialDocument, CredentialModel } from '../schemas';
+import { UserDocument } from '../schemas/user.schema';
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Credential')
+    public _credentialModel: CredentialModel,
+    @InjectModel('User')
+    public _userModel: Model<UserDocument>
+  ) {}
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
+  getUserFromCredential = (credential: CredentialDocument) =>
+    this._userModel.findOne({ ownerAccount: credential.account._id }).exec();
 
-@Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+  getUserFromId = (id: string) => this._userModel.findById(id).exec();
+}

@@ -21,17 +21,6 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { UserResponseDto } from './user.dto';
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
-@Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+export { UserResponseDto };

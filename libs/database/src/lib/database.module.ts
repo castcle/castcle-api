@@ -24,6 +24,7 @@ import { Module, Global } from '@nestjs/common';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Environment as env } from '@castcle-api/environments';
 import { AuthenticationService } from './services/authentication.service';
+import { UserService } from './services/user.service';
 import { AccountSchema } from './schemas/account.schema';
 import { CredentialSchema } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
@@ -43,9 +44,9 @@ export const MongooseForFeatures = MongooseModule.forFeature([
     MongooseForFeatures
   ],
   controllers: [],
-  providers: [AuthenticationService],
-  exports: [AuthenticationService]
+  providers: [AuthenticationService, UserService],
+  exports: [AuthenticationService, UserService]
 })
 export class DatabaseModule {}
 
-export { AuthenticationService };
+export { AuthenticationService, UserService };

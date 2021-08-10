@@ -26,8 +26,9 @@ import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
+import { UserResponseDto } from '../dtos/user.dto';
 
-export type UserDocument = User & Document;
+export type UserDocument = User & IUser;
 
 export interface UserProfile {
   birthdate: string;
@@ -79,3 +80,37 @@ export class User extends TimestampBase {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+export interface IUser extends Document {
+  toUserResponse(): UserResponseDto;
+}
+
+UserSchema.methods.toUserResponse = async function () {
+  const self = await (this as UserDocument)
+    .populate('ownerAccount')
+    .execPopulate();
+  const selfSocial: any =
+    self.profile && self.profile.socials ? { ...self.profile.socials } : {};
+  if (self.profile && self.profile.websites && self.profile.websites.length > 0)
+    selfSocial.website = self.profile.websites[0];
+  return {
+    id: self._id,
+    castcleId: self.displayId,
+    dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
+    email: self.ownerAccount.email,
+    followers: {
+      count: 0
+    }, // TODO !!!
+    following: {
+      count: 0
+    }, // TODO !!!
+    images: {
+      avatar: 'http://placehold.it/100x100', // TODO !!! need to check S3 about static url
+      cover: 'http://placehold.it/200x200'
+    },
+    overview:
+      self.profile && self.profile.overview ? self.profile.overview : null,
+    links: selfSocial,
+    verified: self.verified
+  } as UserResponseDto;
+};
