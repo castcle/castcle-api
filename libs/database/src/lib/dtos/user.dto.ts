@@ -20,18 +20,68 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ApiProperty } from '@nestjs/swagger';
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+class UserImage {
+  @ApiProperty()
+  avatar: string;
+  @ApiProperty()
+  cover: string;
+}
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
+class Link {
+  @ApiProperty()
+  facebook?: string;
 
-@Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService]
-})
-export class AppModule {}
+  @ApiProperty()
+  twitter?: string;
+
+  @ApiProperty()
+  youtube?: string;
+
+  @ApiProperty()
+  medium?: string;
+
+  @ApiProperty()
+  website?: string | null;
+}
+
+class Counter {
+  @ApiProperty()
+  count: number;
+}
+
+export class UserResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  castcleId: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  overview: string | null;
+
+  @ApiProperty()
+  dob: string | null;
+
+  @ApiProperty()
+  images: UserImage;
+
+  @ApiProperty()
+  links: Link;
+
+  @ApiProperty()
+  following: Counter;
+
+  @ApiProperty()
+  followers: Counter;
+
+  @ApiProperty()
+  verified: boolean;
+
+  @ApiProperty()
+  followed: boolean;
+}

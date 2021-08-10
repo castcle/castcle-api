@@ -21,21 +21,55 @@
  * or have any questions.
  */
 
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Req, UseInterceptors } from '@nestjs/common';
 import { AppService } from './app.service';
+import { UserService } from '@castcle-api/database';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { UserResponseDto } from '@castcle-api/database/dtos';
+
+let logger: CastLogger;
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(
-    AppController.name,
-    CastLoggerOptions
-  );
+  constructor(
+    private readonly appService: AppService,
+    private userService: UserService
+  ) {
+    logger = new CastLogger(AppController.name, CastLoggerOptions);
+  }
 
   @Get()
   getData() {
-    this.logger.log('Root');
+    logger.log('Root');
     return this.appService.getData();
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Get('me')
+  async getMyData(@Req() req: CredentialRequest) {
+    //UserService
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) return user.toUserResponse();
+    else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
   }
 }

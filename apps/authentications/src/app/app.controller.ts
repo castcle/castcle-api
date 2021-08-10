@@ -145,9 +145,21 @@ export class AppController {
           account
         );
       }
+
+      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+        {
+          id: account as unknown as string,
+          preferredLanguage: [req.$language, req.$language],
+          role: account.activateDate ? 'member' : 'guest'
+        },
+        {
+          id: account as unknown as string,
+          role: account.activateDate ? 'member' : 'guest'
+        }
+      );
       return {
-        accessToken: req.$credential.accessToken,
-        refreshToken: req.$credential.refreshToken
+        accessToken: tokenResult.accessToken,
+        refreshToken: tokenResult.refreshToken
       } as TokenResponse;
     } else
       throw new CastcleException(
