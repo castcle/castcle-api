@@ -36,6 +36,11 @@ export enum AccountRole {
   Guest = 'guest'
 }
 
+interface ICredential {
+  _id: any;
+  deviceUUID: string;
+}
+
 @Schema({ timestamps: true })
 export class Account extends TimestampBase {
   @Prop()
@@ -62,7 +67,7 @@ export class Account extends TimestampBase {
   };
 
   @Prop({ type: Array })
-  credentials: any[];
+  credentials: ICredential[];
 }
 export const AccountSchema = SchemaFactory.createForClass(Account);
 

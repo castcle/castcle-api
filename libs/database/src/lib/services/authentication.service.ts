@@ -115,7 +115,10 @@ export class AuthenticationService {
     const credentialDocument = await credential.save();
     //TODO !!! : how to reduct this
     if (!newAccount.credentials) newAccount.credentials = [];
-    newAccount.credentials.push(mongoose.Types.ObjectId(accountDocument._id));
+    newAccount.credentials.push({
+      _id: mongoose.Types.ObjectId(credentialDocument._id),
+      deviceUUID: credentialDocument.deviceUUID
+    });
     await newAccount.save();
     return { accountDocument, credentialDocument };
   }
@@ -133,7 +136,10 @@ export class AuthenticationService {
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
       if (!credentialAccount.credentials) credentialAccount.credentials = [];
-      credentialAccount.credentials.push(mongoose.Types.ObjectId(account._id));
+      credentialAccount.credentials.push({
+        _id: mongoose.Types.ObjectId(credential._id),
+        deviceUUID: credential.deviceUUID
+      });
       await credentialAccount.save();
     }
     //set new account credential to current account
