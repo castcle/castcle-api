@@ -26,6 +26,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { UserDocument } from '../schemas/user.schema';
+import { UpdateUserDto } from '../dtos/user.dto';
 
 @Injectable()
 export class UserService {
@@ -41,4 +42,28 @@ export class UserService {
     this._userModel.findOne({ ownerAccount: credential.account._id }).exec();
 
   getUserFromId = (id: string) => this._userModel.findById(id).exec();
+
+  updateUser = (user: UserDocument, updateUserDto: UpdateUserDto) => {
+    if (!user.profile) user.profile = {};
+    if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
+    if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
+    if (updateUserDto.links) {
+      if (!user.profile.socials) user.profile.socials = {};
+      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
+      socialNetworks.forEach((social) => {
+        if (updateUserDto.links[social])
+          user.profile.socials[social] = updateUserDto.links[social];
+        if (updateUserDto.links.website)
+          user.profile.websites = [
+            {
+              website: updateUserDto.links.website,
+              detail: updateUserDto.links.website
+            }
+          ];
+      });
+    }
+  };
+
+  deleteUserFromId = (id: string) =>
+    this._userModel.findByIdAndDelete(id).exec();
 }

@@ -31,22 +31,22 @@ import { UserResponseDto } from '../dtos/user.dto';
 export type UserDocument = User & IUser;
 
 export interface UserProfile {
-  birthdate: string;
-  overview: string;
-  works: string[];
-  educations: string[];
-  homeTowns: string[];
-  websites: {
+  birthdate?: string;
+  overview?: string;
+  works?: string[];
+  educations?: string[];
+  homeTowns?: string[];
+  websites?: {
     website: string;
     detail: string;
   }[];
-  socials: {
-    facebook: string;
-    twitter: string;
-    youtube: string;
-    medium: string;
+  socials?: {
+    facebook?: string;
+    twitter?: string;
+    youtube?: string;
+    medium?: string;
   };
-  details: string;
+  details?: string;
 }
 
 export enum UserType {
@@ -70,7 +70,7 @@ export class User extends TimestampBase {
   displayId: string;
 
   @Prop({ type: Object })
-  profile: UserProfile;
+  profile?: UserProfile;
 
   @Prop({ required: true })
   type: string;

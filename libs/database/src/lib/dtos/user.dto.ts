@@ -85,3 +85,17 @@ export class UserResponseDto {
   @ApiProperty()
   followed: boolean;
 }
+
+export class UpdateUserDto {
+  @ApiProperty()
+  overview?: string;
+
+  @ApiProperty()
+  dob?: string;
+
+  @ApiProperty()
+  images?: UserImage;
+
+  @ApiProperty()
+  links?: Link;
+}
