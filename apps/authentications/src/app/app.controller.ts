@@ -132,13 +132,19 @@ export class AppController {
     if (!account)
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     if (await account.verifyPassword(body.password)) {
-      const currentCredentialAccount =
-        await this.authService.getAccountFromCredential(req.$credential);
-      if (currentCredentialAccount._id !== account._id)
+      const embedCredentialByDeviceUUID = account.credentials.find(
+        (item) => item.deviceUUID === req.$credential.deviceUUID
+      );
+      if (embedCredentialByDeviceUUID) {
+        req.$credential = await this.authService._credentialModel
+          .findById(embedCredentialByDeviceUUID._id)
+          .exec();
+      } else {
         await this.authService.linkCredentialToAccount(
           req.$credential,
           account
         );
+      }
       return {
         accessToken: req.$credential.accessToken,
         refreshToken: req.$credential.refreshToken
@@ -191,11 +197,12 @@ export class AppController {
   @Post('guestLogin')
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
-    const credential = await this.authService.getCredentialFromDeviceUUID(
+    const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
+    console.log('--search credential', credential);
     if (credential) {
-      const tokenResult = await credential.renewTokens(
+      const tokenResult: TokenResponse = await credential.renewTokens(
         {
           id: credential.account as unknown as string,
           preferredLanguage: [req.$language, req.$language],
@@ -217,7 +224,7 @@ export class AppController {
       return {
         accessToken: result.credentialDocument.accessToken,
         refreshToken: result.credentialDocument.refreshToken
-      };
+      } as TokenResponse;
     }
   }
 
