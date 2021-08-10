@@ -22,7 +22,10 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseForFeatures } from '@castcle-api/database';
+import {
+  MongooseAsyncFeatures,
+  MongooseForFeatures
+} from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
 import { AppController } from './app.controller';
@@ -53,7 +56,11 @@ describe('AppController', () => {
   let appService: AppService;
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      imports: [rootMongooseTestModule(), MongooseForFeatures],
+      imports: [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ],
       controllers: [AppController],
       providers: [AppService, UserService, AuthenticationService]
     }).compile();

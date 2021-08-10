@@ -197,12 +197,6 @@ export class AuthenticationService {
     account.isGuest = false;
     account.activateDate = now;
     const savedAccount = await account.save();
-    const credential = await this._credentialModel
-      .findOneAndUpdate(
-        { 'account._id': savedAccount._id },
-        { 'account.isGuest': false }
-      )
-      .exec();
     return savedAccount;
   }
 

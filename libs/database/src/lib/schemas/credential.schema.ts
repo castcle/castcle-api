@@ -184,3 +184,7 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
     env.jwt_access_secret
   );
 };
+
+export const CredentialSchemaFactory = (): mongoose.Schema<any> => {
+  return CredentialSchema;
+};
