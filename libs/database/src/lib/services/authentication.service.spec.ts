@@ -30,7 +30,7 @@ import {
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures } from '../database.module';
+import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AccountActivation,
@@ -59,8 +59,12 @@ describe('Authentication Service', () => {
   let service: AuthenticationService;
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
-    ? [MongooseModule.forRoot(env.db_uri, env.db_options), MongooseForFeatures]
-    : [rootMongooseTestModule(), MongooseForFeatures];
+    ? [
+        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ]
+    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [AuthenticationService];
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -416,6 +420,10 @@ describe('Authentication Service', () => {
       it('should change status of account from isGuest to false and have activationDate', async () => {
         expect(createAccountResult.accountDocument.isGuest).toBe(true);
         expect(afterVerifyAccount.isGuest).toBe(false);
+        const postCredential = await service._credentialModel
+          .findById(createAccountResult.credentialDocument._id)
+          .exec();
+        expect(postCredential.account.isGuest).toBe(false);
         expect(beforeVerifyAccount.activateDate).not.toBeDefined();
         expect(afterVerifyAccount.activateDate).toBeDefined();
       });

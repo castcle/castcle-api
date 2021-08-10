@@ -92,3 +92,18 @@ AccountSchema.methods.changePassword = async function (
 AccountSchema.methods.verifyPassword = function (password: string) {
   return Password.verify(password, (this as AccountDocument).password);
 };
+
+export const AccountSchemaFactory = (
+  credentialModel: Model<CredentialDocument>
+): mongoose.Schema<any> => {
+  AccountSchema.post('save', async function (doc, next) {
+    await credentialModel
+      .findOneAndUpdate(
+        { 'account._id': doc._id },
+        { 'account.isGuest': (doc as AccountDocument).isGuest }
+      )
+      .exec();
+    next();
+  });
+  return AccountSchema;
+};
