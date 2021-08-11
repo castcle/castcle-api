@@ -62,6 +62,14 @@ export class UserService {
           ];
       });
     }
+    if (updateUserDto.images) {
+      if (!user.profile.images) user.profile.images = {};
+      if (updateUserDto.images.avatar)
+        user.profile.images.avatar = updateUserDto.images.avatar;
+      if (updateUserDto.images.cover)
+        user.profile.images.cover = updateUserDto.images.cover;
+    }
+    return user.save();
   };
 
   deleteUserFromId = (id: string) =>

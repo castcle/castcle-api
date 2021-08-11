@@ -23,12 +23,17 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
+import { Document, Model } from 'mongoose';
+import { Account, AccountDocument } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
 import { UserResponseDto } from '../dtos/user.dto';
 
 export type UserDocument = User & IUser;
+
+type ProfileImage = {
+  avatar?: string;
+  cover?: string;
+};
 
 export interface UserProfile {
   birthdate?: string;
@@ -47,6 +52,7 @@ export interface UserProfile {
     medium?: string;
   };
   details?: string;
+  images?: ProfileImage;
 }
 
 export enum UserType {
@@ -82,7 +88,7 @@ export class User extends TimestampBase {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
-  toUserResponse(): UserResponseDto;
+  toUserResponse(): Promise<UserResponseDto>;
 }
 
 UserSchema.methods.toUserResponse = async function () {
@@ -92,7 +98,7 @@ UserSchema.methods.toUserResponse = async function () {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
-    selfSocial.website = self.profile.websites[0];
+    selfSocial.website = self.profile.websites[0].website;
   return {
     id: self._id,
     castcleId: self.displayId,
@@ -105,8 +111,14 @@ UserSchema.methods.toUserResponse = async function () {
       count: 0
     }, // TODO !!!
     images: {
-      avatar: 'http://placehold.it/100x100', // TODO !!! need to check S3 about static url
-      cover: 'http://placehold.it/200x200'
+      avatar:
+        self.profile && self.profile.images && self.profile.images.avatar
+          ? self.profile.images.avatar
+          : 'http://placehold.it/100x100', // TODO !!! need to check S3 about static url
+      cover:
+        self.profile && self.profile.images && self.profile.images.cover
+          ? self.profile.images.cover
+          : 'http://placehold.it/200x200'
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,

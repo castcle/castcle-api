@@ -29,6 +29,7 @@ import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
 import { Password } from '@castcle-api/utils';
+import { User } from './user.schema';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
