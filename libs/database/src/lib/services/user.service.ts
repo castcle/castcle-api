@@ -25,7 +25,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument } from '../schemas/user.schema';
+import { UserDocument, UserType } from '../schemas/user.schema';
+import { UpdateUserDto } from '../dtos/user.dto';
 
 @Injectable()
 export class UserService {
@@ -38,7 +39,41 @@ export class UserService {
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
-    this._userModel.findOne({ ownerAccount: credential.account._id }).exec();
+    this._userModel
+      .findOne({ ownerAccount: credential.account._id, type: UserType.People })
+      .exec();
 
   getUserFromId = (id: string) => this._userModel.findById(id).exec();
+
+  updateUser = (user: UserDocument, updateUserDto: UpdateUserDto) => {
+    if (!user.profile) user.profile = {};
+    if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
+    if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
+    if (updateUserDto.links) {
+      if (!user.profile.socials) user.profile.socials = {};
+      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
+      socialNetworks.forEach((social) => {
+        if (updateUserDto.links[social])
+          user.profile.socials[social] = updateUserDto.links[social];
+        if (updateUserDto.links.website)
+          user.profile.websites = [
+            {
+              website: updateUserDto.links.website,
+              detail: updateUserDto.links.website
+            }
+          ];
+      });
+    }
+    if (updateUserDto.images) {
+      if (!user.profile.images) user.profile.images = {};
+      if (updateUserDto.images.avatar)
+        user.profile.images.avatar = updateUserDto.images.avatar;
+      if (updateUserDto.images.cover)
+        user.profile.images.cover = updateUserDto.images.cover;
+    }
+    return user.save();
+  };
+
+  deleteUserFromId = (id: string) =>
+    this._userModel.findByIdAndDelete(id).exec();
 }
