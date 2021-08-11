@@ -21,26 +21,41 @@
  * or have any questions.
  */
 import { Module, Global } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import {
+  getModelToken,
+  MongooseModule,
+  MongooseModuleOptions
+} from '@nestjs/mongoose';
 import { Environment as env } from '@castcle-api/environments';
 import { AuthenticationService } from './services/authentication.service';
 import { UserService } from './services/user.service';
-import { AccountSchema } from './schemas/account.schema';
-import { CredentialSchema } from './schemas/credential.schema';
+import { AccountSchema, AccountSchemaFactory } from './schemas/account.schema';
+import {
+  CredentialSchema,
+  CredentialSchemaFactory
+} from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { UserSchema } from './schemas/user.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
-  { name: 'Account', schema: AccountSchema },
-  { name: 'Credential', schema: CredentialSchema },
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'User', schema: UserSchema }
+]);
+
+export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
+  { name: 'Credential', useFactory: CredentialSchemaFactory },
+  {
+    name: 'Account',
+    useFactory: AccountSchemaFactory,
+    inject: [getModelToken('Credential')]
+  }
 ]);
 
 @Global()
 @Module({
   imports: [
     MongooseModule.forRoot(env.db_uri, env.db_options),
+    MongooseAsyncFeatures,
     MongooseForFeatures
   ],
   controllers: [],
