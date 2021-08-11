@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { Image } from './image';
+import { Uploader, UploadOptions } from './uploader';
 
 @Module({
   controllers: [],
@@ -6,3 +8,5 @@ import { Module } from '@nestjs/common';
   exports: []
 })
 export class UtilsAwsModule {}
+
+export { Image, Uploader, UploadOptions };

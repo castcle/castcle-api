@@ -20,11 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Injectable } from '@nestjs/common';
+
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { UpdateUserDto, UserResponseDto } from '@castcle-api/database/dtos';
+
+import { Image } from '@castcle-api/utils/aws';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
 
 @Injectable()
-export class AppService {
-  getData(): { message: string } {
-    return { message: 'Welcome to users!' };
+export class ImageInterceptor extends CredentialInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = super.intercept(context, next);
+    const req = context.switchToHttp().getRequest() as CredentialRequest;
+    const body = req.body as UpdateUserDto;
+    if (body.images && body.images.avatar) {
+      const avatar = await Image.Upload(body.images.avatar, {
+        filename: `avatar-${req.$credential.account._id}-`
+      });
+      req.body.images.avatar = avatar.uri;
+    }
+    if (body.images && body.images.cover) {
+      const cover = await Image.Upload(body.images.cover, {
+        filename: `cover-${req.$credential.account._id}-`
+      });
+      req.body.images.cover = cover.uri;
+    }
+
+    return superResult;
   }
 }

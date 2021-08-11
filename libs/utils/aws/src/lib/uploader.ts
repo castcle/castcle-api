@@ -25,8 +25,8 @@ import * as AWS from 'aws-sdk';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
 export type UploadOptions = {
-  filename: string;
-  language: string;
+  filename?: string;
+  language?: string;
 };
 
 export class Uploader {

@@ -33,6 +33,7 @@ import {
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import { UserService } from '@castcle-api/database';
+import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -124,7 +125,7 @@ export class AppController {
     type: UserResponseDto
   })
   @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ImageInterceptor)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,

@@ -24,7 +24,6 @@ import * as AWS from 'aws-sdk';
 import * as Configs from '../config';
 import { Environment as env } from '@castcle-api/environments';
 import { Uploader, UploadOptions } from './uploader';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
 export class Image {
   constructor(public uri: string) {}
