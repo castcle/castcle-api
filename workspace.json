@@ -599,26 +599,26 @@
         }
       }
     },
-    "utils-interceptors": {
-      "root": "libs/utils/interceptors",
-      "sourceRoot": "libs/utils/interceptors/src",
+    "utils-aws": {
+      "root": "libs/utils/aws",
+      "sourceRoot": "libs/utils/aws/src",
       "projectType": "library",
       "targets": {
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
             "lintFilePatterns": [
-              "libs/utils/interceptors/**/*.ts"
+              "libs/utils/aws/**/*.ts"
             ]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
           "outputs": [
-            "coverage/libs/utils/interceptors"
+            "coverage/libs/utils/aws"
           ],
           "options": {
-            "jestConfig": "libs/utils/interceptors/jest.config.js",
+            "jestConfig": "libs/utils/aws/jest.config.js",
             "passWithNoTests": true
           }
         }
@@ -644,6 +644,31 @@
           ],
           "options": {
             "jestConfig": "libs/utils/exception/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "utils-interceptors": {
+      "root": "libs/utils/interceptors",
+      "sourceRoot": "libs/utils/interceptors/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/interceptors/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/interceptors"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/interceptors/jest.config.js",
             "passWithNoTests": true
           }
         }

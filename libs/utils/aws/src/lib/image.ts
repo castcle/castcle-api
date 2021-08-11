@@ -20,20 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import * as AWS from 'aws-sdk';
+import * as Configs from '../config';
+import { Environment as env } from '@castcle-api/environments';
+import { Uploader, UploadOptions } from './uploader';
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+export class Image {
+  constructor(public uri: string) {}
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
+  toSignUrl() {
+    const buff = Buffer.from(env.cloudfront_private_key, 'base64');
+    const cloudFrontPrivateKey = buff.toString('ascii');
+    const signer = new AWS.CloudFront.Signer(
+      env.cloudfront_access_key_id,
+      cloudFrontPrivateKey
+    );
+    return signer.getSignedUrl({
+      url: this.uri,
+      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
+    });
+  }
 
-@Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsAwsModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService, ImageInterceptor]
-})
-export class AppModule {}
+  static Upload(base64: string, options?: UploadOptions) {
+    const uploader = new Uploader(
+      env.assets_bucket_name,
+      Configs.IMAGE_BUCKET_FOLDER
+    );
+    return uploader
+      .uploadFromBase64ToS3(base64, options)
+      .then((data) => new Image(data.Location));
+  }
+}

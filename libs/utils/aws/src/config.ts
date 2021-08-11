@@ -21,19 +21,5 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
-@Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsAwsModule],
-  controllers: [AppController, HealthyController],
-  providers: [AppService, ImageInterceptor]
-})
-export class AppModule {}
+export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000; //in milliseconds
+export const IMAGE_BUCKET_FOLDER = 'images';
