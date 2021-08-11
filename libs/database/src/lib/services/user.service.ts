@@ -25,7 +25,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument } from '../schemas/user.schema';
+import { UserDocument, UserType } from '../schemas/user.schema';
 import { UpdateUserDto } from '../dtos/user.dto';
 
 @Injectable()
@@ -39,7 +39,9 @@ export class UserService {
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
-    this._userModel.findOne({ ownerAccount: credential.account._id }).exec();
+    this._userModel
+      .findOne({ ownerAccount: credential.account._id, type: UserType.People })
+      .exec();
 
   getUserFromId = (id: string) => this._userModel.findById(id).exec();
 

@@ -21,7 +21,16 @@
  * or have any questions.
  */
 
-import { Controller, Get, Req, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Put,
+  Req,
+  UseInterceptors
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { UserService } from '@castcle-api/database';
 import {
@@ -30,8 +39,14 @@ import {
 } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
-import { UserResponseDto } from '@castcle-api/database/dtos';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiHeader,
+  ApiOkResponse,
+  ApiResponse
+} from '@nestjs/swagger';
+import { UpdateUserDto, UserResponseDto } from '@castcle-api/database/dtos';
 
 let logger: CastLogger;
 
@@ -65,11 +80,90 @@ export class AppController {
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) return user.toUserResponse();
+    if (user) return await user.toUserResponse();
     else
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Get(':id')
+  async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
+    //UserService
+    const user = await this.userService.getUserFromId(id);
+    if (user) return await user.toUserResponse();
+    else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBody({
+    type: UpdateUserDto
+  })
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Put('me')
+  async updateMyData(
+    @Req() req: CredentialRequest,
+    @Body() body: UpdateUserDto
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) {
+      const afterUpdateUser = await this.userService.updateUser(user, body);
+      const response = await afterUpdateUser.toUserResponse();
+      return response;
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Delete('me')
+  async deleteMyData(@Req() req: CredentialRequest) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) {
+      await user.delete();
+      return '';
+    } else {
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
+    }
   }
 }
