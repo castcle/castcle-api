@@ -20,25 +20,33 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import * as AWS from 'aws-sdk';
+import * as Configs from '../config';
+import { Environment as env } from '@castcle-api/environments';
+import { Uploader, UploadOptions } from './uploader';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws'
-  ]
-};
+export class Image {
+  constructor(public uri: string) {}
+
+  toSignUrl() {
+    const signer = new AWS.CloudFront.Signer(
+      env.cloudfront_access_key_id,
+      env.cloudfront_private_key
+    );
+    return signer.getSignedUrl({
+      url: this.uri,
+      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
+    });
+  }
+
+  static Upload(base64: string, options?: UploadOptions) {
+    const uploader = new Uploader(
+      env.assets_bucket_name,
+      Configs.IMAGE_BUCKET_FOLDER
+    );
+    return uploader
+      .uploadFromBase64ToS3(base64, options)
+      .then((data) => new Image(data.Location));
+  }
+}
