@@ -29,26 +29,36 @@ import {
   CredentialInterceptor,
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
+import { map } from 'rxjs';
 
 @Injectable()
 export class ImageInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
-    const superResult = super.intercept(context, next);
+    const superResult = await super.intercept(context, next);
     const req = context.switchToHttp().getRequest() as CredentialRequest;
     const body = req.body as UpdateUserDto;
     if (body.images && body.images.avatar) {
       const avatar = await Image.Upload(body.images.avatar, {
-        filename: `avatar-${req.$credential.account._id}-`
+        filename: `avatar-${req.$credential.account._id}`
       });
       req.body.images.avatar = avatar.uri;
     }
     if (body.images && body.images.cover) {
       const cover = await Image.Upload(body.images.cover, {
-        filename: `cover-${req.$credential.account._id}-`
+        filename: `cover-${req.$credential.account._id}`
       });
       req.body.images.cover = cover.uri;
     }
 
-    return superResult;
+    return superResult.pipe(
+      map((data: UserResponseDto) => {
+        console.log('from', data);
+        if (data.images && data.images.avatar)
+          data.images.avatar = new Image(data.images.avatar).toSignUrl();
+        if (data.images && data.images.cover)
+          data.images.cover = new Image(data.images.cover).toSignUrl();
+        return data;
+      })
+    );
   }
 }

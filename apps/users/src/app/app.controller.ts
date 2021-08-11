@@ -76,7 +76,7 @@ export class AppController {
     type: UserResponseDto
   })
   @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ImageInterceptor)
   @Get('me')
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
@@ -99,7 +99,7 @@ export class AppController {
     type: UserResponseDto
   })
   @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ImageInterceptor)
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     //UserService

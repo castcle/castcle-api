@@ -29,9 +29,11 @@ export class Image {
   constructor(public uri: string) {}
 
   toSignUrl() {
+    const buff = Buffer.from(env.cloudfront_private_key, 'base64');
+    const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
       env.cloudfront_access_key_id,
-      env.cloudfront_private_key
+      cloudFrontPrivateKey
     );
     return signer.getSignedUrl({
       url: this.uri,

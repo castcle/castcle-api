@@ -27,6 +27,7 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 export type UploadOptions = {
   filename?: string;
   language?: string;
+  addTime?: boolean;
 };
 
 export class Uploader {
@@ -41,10 +42,17 @@ export class Uploader {
         base64.replace(/^data:image\/\w+;base64,/, ''),
         'base64'
       );
+      const extensionName = options && options.addTime ? `-${Date.now()}` : '';
       const saveName =
         options && options.filename
-          ? `${options.filename}-${Date.now()}`
+          ? `${options.filename}${extensionName}`
           : `${Date.now()}`;
+      console.log({
+        Bucket: this.bucket,
+        Body: buffer,
+        ContentEncoding: 'base64',
+        Key: `${this.destination}/${saveName}`
+      });
       return this.s3
         .upload({
           Bucket: this.bucket,

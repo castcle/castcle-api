@@ -29,6 +29,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { Environment as env } from '@castcle-api/environments';
+import * as express from 'express';
 import {
   CastLogger,
   CastLoggerOptions,
@@ -51,7 +52,8 @@ async function bootstrap() {
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.node_env}`);
