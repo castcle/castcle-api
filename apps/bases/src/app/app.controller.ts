@@ -21,13 +21,33 @@
  * or have any questions.
  */
 
-import { Controller, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseInterceptors
+} from '@nestjs/common';
 import { AppService } from './app.service';
+import { AuthenticationService, UserService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { PageDto } from '@castcle-api/database/dtos';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { Image } from '@castcle-api/utils/aws';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private authService: AuthenticationService,
+    private userService: UserService
+  ) {}
   private readonly logger = new CastLogger(
     AppController.name,
     CastLoggerOptions
@@ -37,5 +57,37 @@ export class AppController {
   getData() {
     this.logger.log('Root');
     return this.appService.getData();
+  }
+
+  @ApiBody({
+    type: PageDto
+  })
+  @ApiResponse({
+    status: 201,
+    type: PageDto
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('pages')
+  async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
+    //check if page name exist
+    const namingResult = await this.authService.getUserFromId(body.username);
+    if (namingResult)
+      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
+    //TODO !!! performance issue
+    body.avatar = (
+      await Image.upload(body.avatar, {
+        filename: `page-avatar-${body.username}`
+      })
+    ).uri;
+    body.cover = (
+      await Image.upload(body.cover, {
+        filename: `page-cover-${body.username}`
+      })
+    ).uri;
+    const page = await this.userService.createPageFromCredential(
+      req.$credential,
+      body
+    );
+    return page.toPageResponse();
   }
 }

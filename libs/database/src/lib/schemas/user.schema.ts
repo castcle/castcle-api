@@ -26,7 +26,7 @@ import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { TimestampBase } from './base.timestamp.schema';
-import { UserResponseDto } from '../dtos/user.dto';
+import { PageDto, UserResponseDto } from '../dtos/user.dto';
 
 export type UserDocument = User & IUser;
 
@@ -89,6 +89,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
   toUserResponse(): Promise<UserResponseDto>;
+  toPageResponse(): PageDto;
 }
 
 UserSchema.methods.toUserResponse = async function () {
@@ -125,4 +126,13 @@ UserSchema.methods.toUserResponse = async function () {
     links: selfSocial,
     verified: self.verified
   } as UserResponseDto;
+};
+
+UserSchema.methods.toPageResponse = async function () {
+  return {
+    username: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    avatar: (this as UserDocument).profile.images.avatar,
+    cover: (this as UserDocument).profile.images.cover
+  } as PageDto;
 };

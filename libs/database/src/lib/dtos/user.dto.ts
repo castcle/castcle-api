@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { String } from 'aws-sdk/clients/apigateway';
 
 class UserImage {
   @ApiProperty()
@@ -98,4 +99,18 @@ export class UpdateUserDto {
 
   @ApiProperty()
   links?: Link;
+}
+
+export class PageDto {
+  @ApiProperty()
+  username: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  avatar: string;
+
+  @ApiProperty()
+  cover: string;
 }

@@ -182,4 +182,19 @@ describe('User Service', () => {
       });
     });
   });
+  describe('#createPageFromUser()', () => {
+    it('should create a new user that type page from PageDTO', async () => {
+      const currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const page = await service.createPageFromUser(currentUser, {
+        avatar: 'http://placehold.it/200x200',
+        cover: 'http://placehold.it/900x900',
+        displayName: 'new Page',
+        username: 'npop'
+      });
+      expect(page.type).toEqual('page');
+      expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
+    });
+  });
 });

@@ -26,7 +26,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { UserDocument, UserType } from '../schemas/user.schema';
-import { UpdateUserDto } from '../dtos/user.dto';
+import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 
 @Injectable()
 export class UserService {
@@ -76,4 +76,28 @@ export class UserService {
 
   deleteUserFromId = (id: string) =>
     this._userModel.findByIdAndDelete(id).exec();
+
+  createPageFromCredential = async (
+    credential: CredentialDocument,
+    pageDto: PageDto
+  ) => {
+    const user = await this.getUserFromCredential(credential);
+    return this.createPageFromUser(user, pageDto);
+  };
+
+  createPageFromUser = (user: UserDocument, pageDto: PageDto) => {
+    const newPage = new this._userModel({
+      ownerAccount: user.ownerAccount,
+      type: UserType.Page,
+      displayId: pageDto.username,
+      displayName: pageDto.displayName,
+      profile: {
+        images: {
+          avatar: pageDto.avatar,
+          cover: pageDto.cover
+        }
+      }
+    });
+    return newPage.save();
+  };
 }
