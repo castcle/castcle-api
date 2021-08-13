@@ -72,7 +72,7 @@ export class AppController {
     //check if page name exist
     const namingResult = await this.authService.getUserFromId(body.username);
     if (namingResult)
-      throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST, req.$language);
+      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
       await Image.upload(body.avatar, {
