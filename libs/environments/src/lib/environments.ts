@@ -37,9 +37,7 @@ const db_user_pass =
     ? ''
     : `${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@`;
 const db_query =
-  process.env.DB_HOST === 'localhost'
-    ? ''
-    : `?replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false`;
+  process.env.DB_HOST === 'localhost' ? '' : '?retryWrites=true&w=majority';
 const db_options: MongooseModuleOptions =
   process.env.DB_HOST === 'localhost' &&
   process.env.DB_USERNAME === '' &&
@@ -47,10 +45,7 @@ const db_options: MongooseModuleOptions =
     ? {}
     : {
         useNewUrlParser: true,
-        useUnifiedTopology: true,
-        ssl: true,
-        sslValidate: process.env.DB_HOST !== 'localhost',
-        sslCA
+        useUnifiedTopology: true
       };
 
 export const Environment = {
@@ -61,9 +56,8 @@ export const Environment = {
   db_username: process.env.DB_USERNAME,
   db_password: process.env.DB_PASSWORD,
   db_host: process.env.DB_HOST,
-  db_port: process.env.DB_PORT as unknown as number,
   db_database_name: process.env.DB_DATABASE_NAME,
-  db_uri: `mongodb://${db_user_pass}${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE_NAME}${db_query}`,
+  db_uri: `mongodb+srv://${db_user_pass}${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}${db_query}`,
   db_options,
   db_test_in_db: process.env.DB_TEST_IN_DB === 'yes',
   // Mail Service
