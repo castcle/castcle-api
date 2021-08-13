@@ -21,6 +21,11 @@
  * or have any questions.
  */
 
-import { UserResponseDto, UpdateUserDto, PageDto } from './user.dto';
+import {
+  UserResponseDto,
+  UpdateUserDto,
+  PageDto,
+  UpdatePageDto
+} from './user.dto';
 
-export { UserResponseDto, UpdateUserDto, PageDto };
+export { UserResponseDto, UpdateUserDto, PageDto, UpdatePageDto };

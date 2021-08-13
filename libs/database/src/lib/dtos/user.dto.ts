@@ -114,3 +114,14 @@ export class PageDto {
   @ApiProperty()
   cover: string;
 }
+
+export class UpdatePageDto {
+  @ApiProperty()
+  displayName?: string;
+
+  @ApiProperty()
+  avatar?: string;
+
+  @ApiProperty()
+  cover?: string;
+}
