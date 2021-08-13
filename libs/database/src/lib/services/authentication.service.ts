@@ -23,7 +23,7 @@
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument, AccountModel } from '../schemas/account.schema';
+import { AccountDocument, AccountSchema } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
   AccountActivationModel
@@ -62,7 +62,7 @@ export interface SignupRequirements {
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Account') public _accountModel: AccountModel,
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
@@ -71,8 +71,10 @@ export class AuthenticationService {
     public _userModel: Model<UserDocument>
   ) {}
 
-  getCredentialFromDeviceUUID = (deviceUUID: string) =>
-    this._credentialModel.findOne({ deviceUUID: deviceUUID }).exec();
+  getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
+    this._credentialModel
+      .findOne({ deviceUUID: deviceUUID, 'account.isGuest': true })
+      .exec();
 
   getCredentialFromRefreshToken = (refreshToken: string) =>
     this._credentialModel.findOne({ refreshToken: refreshToken }).exec();
@@ -98,7 +100,10 @@ export class AuthenticationService {
       role: 'guest'
     });
     const credential = new this._credentialModel({
-      account: mongoose.Types.ObjectId(accountDocument._id),
+      account: {
+        _id: mongoose.Types.ObjectId(accountDocument._id),
+        isGuest: true
+      },
       accessToken: accessTokenResult.accessToken,
       accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
       refreshToken: refreshTokenResult.refreshToken,
@@ -108,6 +113,13 @@ export class AuthenticationService {
       deviceUUID: accountRequirements.deviceUUID
     } as CreateCredentialDto);
     const credentialDocument = await credential.save();
+    //TODO !!! : how to reduct this
+    if (!newAccount.credentials) newAccount.credentials = [];
+    newAccount.credentials.push({
+      _id: mongoose.Types.ObjectId(credentialDocument._id),
+      deviceUUID: credentialDocument.deviceUUID
+    });
+    await newAccount.save();
     return { accountDocument, credentialDocument };
   }
 
@@ -115,9 +127,21 @@ export class AuthenticationService {
     credential: CredentialDocument,
     account: AccountDocument
   ) {
+    if (account._id === credential.account) {
+      return credential; // already link
+    }
     //remove account old crdentiial
     await this._accountModel.findByIdAndDelete(credential.account);
     credential.account = account._id;
+    const credentialAccount = await this._accountModel.findById(account._id);
+    if (credentialAccount) {
+      if (!credentialAccount.credentials) credentialAccount.credentials = [];
+      credentialAccount.credentials.push({
+        _id: mongoose.Types.ObjectId(credential._id),
+        deviceUUID: credential.deviceUUID
+      });
+      await credentialAccount.save();
+    }
     //set new account credential to current account
     return credential.save();
   }
@@ -129,7 +153,6 @@ export class AuthenticationService {
     this._accountModel.findOne({ email: email }).exec();
 
   getUserFromId = (id: string) => {
-    console.log('finding', id);
     return this._userModel.findOne({ displayId: id }).exec();
   };
 
@@ -168,12 +191,13 @@ export class AuthenticationService {
     accountActivation.activationDate = now;
     await accountActivation.save();
     //update ac
-    const account = await this._accountModel.findById(
-      accountActivation.account
-    );
+    const account = await this._accountModel
+      .findById(accountActivation.account)
+      .exec();
     account.isGuest = false;
     account.activateDate = now;
-    return account.save();
+    const savedAccount = await account.save();
+    return savedAccount;
   }
 
   async signupByEmail(

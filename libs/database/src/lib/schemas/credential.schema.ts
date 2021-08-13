@@ -35,14 +35,17 @@ import {
 
 export type CredentialDocument = Credential & ICredential;
 
+interface IAccount extends Account {
+  _id?: any;
+}
+
 @Schema({ timestamps: true })
 export class Credential extends TimestampBase {
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    type: Object
   })
-  account: Account;
+  account: IAccount;
 
   @Prop({ required: true })
   accessToken: string;
@@ -180,4 +183,8 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
     (this as CredentialDocument).accessToken,
     env.jwt_access_secret
   );
+};
+
+export const CredentialSchemaFactory = (): mongoose.Schema<any> => {
+  return CredentialSchema;
 };

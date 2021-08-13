@@ -20,41 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as mongoose from 'mongoose';
+import * as AWS from 'aws-sdk';
+import * as Configs from '../config';
+import { Environment as env } from '@castcle-api/environments';
+import { Uploader, UploadOptions } from './uploader';
 
-export class SaveCredentialDto {
-  account?: {
-    _id: mongoose.Types.ObjectId;
-    isGuest: boolean;
-  };
-  accessToken: string;
-  refreshToken?: string;
-  accessTokenExpireDate: Date;
-  refreshTokenExpireDate?: Date;
-  platform?: string;
-  deviceUUID?: string;
-  device?: string;
-}
+export class Image {
+  constructor(public uri: string) {}
 
-export class CreateCredentialDto {
-  account: {
-    _id: mongoose.Types.ObjectId;
-    isGuest: boolean;
-  };
-  accessToken: string;
-  refreshToken: string;
-  accessTokenExpireDate: Date;
-  refreshTokenExpireDate?: Date;
-  platform: string;
-  deviceUUID: string;
-  device: string;
-}
+  toSignUrl() {
+    const buff = Buffer.from(env.cloudfront_private_key, 'base64');
+    const cloudFrontPrivateKey = buff.toString('ascii');
+    const signer = new AWS.CloudFront.Signer(
+      env.cloudfront_access_key_id,
+      cloudFrontPrivateKey
+    );
+    return signer.getSignedUrl({
+      url: this.uri,
+      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
+    });
+  }
 
-export class CreateAccountDto {
-  isGuest: boolean;
-  updateDate: Date;
-  createDate: Date;
-  preferences: {
-    languages: string[];
-  };
+  static upload(base64: string, options?: UploadOptions) {
+    const uploader = new Uploader(
+      env.assets_bucket_name,
+      Configs.IMAGE_BUCKET_FOLDER
+    );
+    return uploader
+      .uploadFromBase64ToS3(base64, options)
+      .then((data) => new Image(data.Location));
+  }
 }

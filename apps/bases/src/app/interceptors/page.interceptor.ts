@@ -20,41 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as mongoose from 'mongoose';
 
-export class SaveCredentialDto {
-  account?: {
-    _id: mongoose.Types.ObjectId;
-    isGuest: boolean;
-  };
-  accessToken: string;
-  refreshToken?: string;
-  accessTokenExpireDate: Date;
-  refreshTokenExpireDate?: Date;
-  platform?: string;
-  deviceUUID?: string;
-  device?: string;
-}
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { PageDto } from '@castcle-api/database/dtos';
 
-export class CreateCredentialDto {
-  account: {
-    _id: mongoose.Types.ObjectId;
-    isGuest: boolean;
-  };
-  accessToken: string;
-  refreshToken: string;
-  accessTokenExpireDate: Date;
-  refreshTokenExpireDate?: Date;
-  platform: string;
-  deviceUUID: string;
-  device: string;
-}
+import { Image } from '@castcle-api/utils/aws';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
+import { map } from 'rxjs';
 
-export class CreateAccountDto {
-  isGuest: boolean;
-  updateDate: Date;
-  createDate: Date;
-  preferences: {
-    languages: string[];
-  };
+@Injectable()
+export class PageInterceptor extends CredentialInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = await super.intercept(context, next);
+    return superResult.pipe(
+      map((data: PageDto) => {
+        data.avatar = new Image(data.avatar).toSignUrl();
+        data.cover = new Image(data.cover).toSignUrl();
+        return data;
+      })
+    );
+  }
 }

@@ -22,7 +22,10 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseForFeatures } from '@castcle-api/database';
+import {
+  MongooseForFeatures,
+  MongooseAsyncFeatures
+} from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from '@castcle-api/database';
 import { AppController } from './app.controller';
@@ -56,7 +59,11 @@ describe('AppController', () => {
   let appService: AppService;
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      imports: [rootMongooseTestModule(), MongooseForFeatures],
+      imports: [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ],
       controllers: [AppController],
       providers: [AppService, AuthenticationService]
     }).compile();
@@ -97,7 +104,7 @@ describe('AppController', () => {
       );
       expect(response).toBeDefined();
       const firstResponseCredentialId = await (
-        await service.getCredentialFromDeviceUUID(deviceUUID)
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID)
       )._id;
       const secondReponse = await appController.guestLogin(
         { $device: 'android', $language: 'en', $platform: 'android' } as any,
@@ -106,9 +113,46 @@ describe('AppController', () => {
       expect(secondReponse).toBeDefined();
       expect(response).not.toEqual(secondReponse);
       const secondResponseCredentialId = await (
-        await service.getCredentialFromDeviceUUID(deviceUUID)
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID)
       )._id;
       expect(firstResponseCredentialId).toEqual(secondResponseCredentialId);
+    });
+    it('should create new credential when the credetnail form this device is already signup', async () => {
+      const response = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: 'sompop12345' }
+      );
+      const currentCredential = await service.getCredentialFromAccessToken(
+        response.accessToken
+      );
+      const currentAccountId = currentCredential.account._id;
+      expect(currentAccountId).toBeDefined();
+      expect(currentCredential.account.isGuest).toBe(true);
+      //signup current Account
+
+      const result = await service._accountModel
+        .findById(currentAccountId)
+        .exec();
+      const accountActivation = await service.signupByEmail(result, {
+        displayId: 'test',
+        displayName: 'testpass',
+        email: 'sp@sp.com',
+        password: '12345677898'
+      });
+      //result.isGuest = false;
+      //await result.save();
+
+      const afterVerify = await service.verifyAccount(accountActivation);
+      expect(afterVerify.isGuest).toBe(false);
+      const response2 = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: 'sompop12345' }
+      );
+      const postCredential = await service.getCredentialFromAccessToken(
+        response2.accessToken
+      );
+      expect(postCredential.account.isGuest).toBe(true);
+      expect(postCredential.account._id === currentAccountId).toBe(false);
     });
   });
   describe('refreshToken', () => {
@@ -132,7 +176,7 @@ describe('AppController', () => {
         refreshTokenResponse.accessToken
       );
       const credentialFromDeviceUUID =
-        await service.getCredentialFromDeviceUUID(deviceUUID);
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID);
       expect(credentialFromDeviceUUID._id).toEqual(credentialFromToken._id);
     });
   });
@@ -170,7 +214,7 @@ describe('AppController', () => {
         { deviceUUID: deviceUUID }
       );
       const randomAccount = await service.getAccountFromCredential(
-        await service.getCredentialFromDeviceUUID(deviceUUID)
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID)
       );
       let result = await appController.checkCastcleIdExists({
         castcleId: testId
@@ -240,9 +284,8 @@ describe('AppController', () => {
       expect(response.payload.exist).toBe(true);
 
       //check if it's the same account
-      const credentialFromDeviceID = await service.getCredentialFromDeviceUUID(
-        deviceUUID
-      );
+      const credentialFromDeviceID =
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID);
       const accountFromEmail = await service.getAccountFromEmail(registerEmail);
       const accountFromDeviceID = await service.getAccountFromCredential(
         credentialFromDeviceID

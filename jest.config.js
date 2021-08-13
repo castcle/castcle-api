@@ -38,6 +38,7 @@ module.exports = {
     '<rootDir>/libs/assets',
     '<rootDir>/libs/utils',
     '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception'
+    '<rootDir>/libs/utils/exception',
+    '<rootDir>/libs/utils/aws'
   ]
 };

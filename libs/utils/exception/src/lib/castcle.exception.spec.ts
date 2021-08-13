@@ -37,6 +37,8 @@ describe('CastcleException', () => {
     'MISSING_AUTHORIZATION_HEADER',
     'INVALID_ACCESS_TOKEN',
     'INVALID_REFRESH_TOKEN',
+    'INVALID_FORMAT',
+    'UPLOAD_FAILED',
     'INVLAID_AUTH_TOKEN',
     'INVALID_EMAIL_OR_PASSWORD',
     'INVALID_EMAIL',
@@ -52,7 +54,7 @@ describe('CastcleException', () => {
     'INVALID_ROLE',
     'EMAIL_OR_PHONE_IS_EXIST',
     'PAGE_IS_EXIST',
-    'USER_ID_IS_EXISIT',
+    'USER_ID_IS_EXIST',
     'FEATURE_NOT_EXIST',
     'PAYLOAD_TYPE_MISMATCH'
   ];
