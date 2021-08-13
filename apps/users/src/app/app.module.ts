@@ -33,7 +33,7 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
   imports: [DatabaseModule, UtilsInterceptorsModule, UtilsAwsModule],
-  controllers: [AppController, HealthyController],
+  controllers: [HealthyController, AppController],
   providers: [AppService, ImageInterceptor]
 })
 export class AppModule {}
