@@ -20,34 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as AWS from 'aws-sdk';
-import * as Configs from '../config';
-import { Environment as env } from '@castcle-api/environments';
-import { Uploader, UploadOptions } from './uploader';
 
-export class Image {
-  constructor(public uri: string) {}
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { PageDto } from '@castcle-api/database/dtos';
 
-  toSignUrl() {
-    const buff = Buffer.from(env.cloudfront_private_key, 'base64');
-    const cloudFrontPrivateKey = buff.toString('ascii');
-    const signer = new AWS.CloudFront.Signer(
-      env.cloudfront_access_key_id,
-      cloudFrontPrivateKey
+import { Image } from '@castcle-api/utils/aws';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
+import { map } from 'rxjs';
+
+@Injectable()
+export class PageInterceptor extends CredentialInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = await super.intercept(context, next);
+    return superResult.pipe(
+      map((data: PageDto) => {
+        data.avatar = new Image(data.avatar).toSignUrl();
+        data.cover = new Image(data.cover).toSignUrl();
+        return data;
+      })
     );
-    return signer.getSignedUrl({
-      url: this.uri,
-      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
-    });
-  }
-
-  static upload(base64: string, options?: UploadOptions) {
-    const uploader = new Uploader(
-      env.assets_bucket_name,
-      Configs.IMAGE_BUCKET_FOLDER
-    );
-    return uploader
-      .uploadFromBase64ToS3(base64, options)
-      .then((data) => new Image(data.Location));
   }
 }

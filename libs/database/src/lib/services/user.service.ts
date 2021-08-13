@@ -77,6 +77,14 @@ export class UserService {
   deleteUserFromId = (id: string) =>
     this._userModel.findByIdAndDelete(id).exec();
 
+  createPageFromCredential = async (
+    credential: CredentialDocument,
+    pageDto: PageDto
+  ) => {
+    const user = await this.getUserFromCredential(credential);
+    return this.createPageFromUser(user, pageDto);
+  };
+
   createPageFromUser = (user: UserDocument, pageDto: PageDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
