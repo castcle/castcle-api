@@ -21,9 +21,10 @@
  * or have any questions.
  */
 import { Prop, Schema } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 
 @Schema()
-export class TimestampBase {
+export class CastcleBase {
   @Prop()
   createdAt?: Date;
 

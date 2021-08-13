@@ -21,34 +21,10 @@
  * or have any questions.
  */
 
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-  Req,
-  UseInterceptors
-} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { PageDto, UpdatePageDto } from '@castcle-api/database/dtos';
-import {
-  CredentialInterceptor,
-  CredentialRequest
-} from '@castcle-api/utils/interceptors';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Image } from '@castcle-api/utils/aws';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiHeader,
-  ApiResponse
-} from '@nestjs/swagger';
 
 @Controller()
 export class AppController {
@@ -66,120 +42,5 @@ export class AppController {
   getData() {
     this.logger.log('Root');
     return this.appService.getData();
-  }
-
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
-  @ApiBearerAuth()
-  @ApiBody({
-    type: PageDto
-  })
-  @ApiResponse({
-    status: 201,
-    type: PageDto
-  })
-  @UseInterceptors(CredentialInterceptor)
-  @Post('pages')
-  async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
-    //check if page name exist
-    const namingResult = await this.authService.getUserFromId(body.username);
-    if (namingResult)
-      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
-    //TODO !!! performance issue
-    body.avatar = (
-      await Image.upload(body.avatar, {
-        filename: `page-avatar-${body.username}`
-      })
-    ).uri;
-    body.cover = (
-      await Image.upload(body.cover, {
-        filename: `page-cover-${body.username}`
-      })
-    ).uri;
-    const page = await this.userService.createPageFromCredential(
-      req.$credential,
-      body
-    );
-    return page.toPageResponse();
-  }
-
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
-  @ApiBearerAuth()
-  @ApiBody({
-    type: UpdatePageDto
-  })
-  @ApiResponse({
-    status: 201,
-    type: PageDto
-  })
-  @HttpCode(201)
-  @UseInterceptors(CredentialInterceptor)
-  @Put('pages/:id')
-  async updatePage(
-    @Req() req: CredentialRequest,
-    @Param('id') id: string,
-    @Body() body: UpdatePageDto
-  ) {
-    //check if page name exist
-    const page = await this.authService.getUserFromId(id);
-    if (!page)
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
-    //TODO !!! performance issue
-    if (body.avatar)
-      page.profile.images.avatar = (
-        await Image.upload(body.avatar, {
-          filename: `page-avatar-${id}`
-        })
-      ).uri;
-    if (body.cover)
-      page.profile.images.cover = (
-        await Image.upload(body.cover, {
-          filename: `page-cover-${id}`
-        })
-      ).uri;
-    if (body.displayName) page.displayName = body.displayName;
-    const afterPage = await page.save();
-    return afterPage.toPageResponse();
-  }
-
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
-  @ApiBearerAuth()
-  @ApiResponse({
-    status: 204
-  })
-  @HttpCode(204)
-  @Delete('pages/:id')
-  async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this.authService.getUserFromId(id);
-    if (page)
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
-    if (page.ownerAccount === req.$credential.account._id) {
-      await page.delete();
-      return '';
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
   }
 }

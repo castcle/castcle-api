@@ -24,7 +24,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model, model } from 'mongoose';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
@@ -43,7 +43,7 @@ interface ICredential {
 }
 
 @Schema({ timestamps: true })
-export class Account extends TimestampBase {
+export class Account extends CastcleBase {
   @Prop()
   email: string;
 

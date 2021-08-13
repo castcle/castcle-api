@@ -23,7 +23,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export interface PostPayload {
   content: string;
@@ -67,7 +67,7 @@ export enum ContentType {
 export type ContentDocument = Content & Document;
 
 @Schema({ timestamps: true })
-export class Content extends TimestampBase {
+export class Content extends CastcleBase {
   @Prop({ required: true, type: Object })
   author: Account | any;
 

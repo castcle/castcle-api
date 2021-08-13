@@ -23,12 +23,12 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type HashtagDocument = Hashtag & Document;
 
 @Schema({ timestamps: true })
-export class Hashtag extends TimestampBase {
+export class Hashtag extends CastcleBase {
   @Prop({ required: true })
   tag: string;
 

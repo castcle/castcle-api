@@ -27,12 +27,12 @@ import * as mongoose from 'mongoose';
 import { Hashtag } from './hashtag.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type HashtagItemDocument = HashtagItem & Document;
 
 @Schema({ timestamps: true })
-export class HashtagItem extends TimestampBase {
+export class HashtagItem extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,

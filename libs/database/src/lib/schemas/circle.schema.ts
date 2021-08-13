@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export enum CircleType {
   Default = 'default',
@@ -33,7 +33,7 @@ export enum CircleType {
 export type CircleDocument = Circle & Document;
 
 @Schema({ timestamps: true })
-export class Circle extends TimestampBase {
+export class Circle extends CastcleBase {
   @Prop({ required: true })
   slug: string;
 
