@@ -27,7 +27,7 @@ import * as mongoose from 'mongoose';
 import { User } from './user.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type EngagementDocument = Engagement & Document;
 
@@ -39,7 +39,7 @@ export enum EngagementType {
 }
 
 @Schema({ timestamps: true })
-export class Engagement extends TimestampBase {
+export class Engagement extends CastcleBase {
   @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   user: User;
 

@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { Account, AccountDocument } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 import { PageDto, UserResponseDto } from '../dtos/user.dto';
 
 export type UserDocument = User & IUser;
@@ -61,7 +61,7 @@ export enum UserType {
 }
 
 @Schema({ timestamps: true })
-export class User extends TimestampBase {
+export class User extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -128,7 +128,7 @@ UserSchema.methods.toUserResponse = async function () {
   } as UserResponseDto;
 };
 
-UserSchema.methods.toPageResponse = async function () {
+UserSchema.methods.toPageResponse = function () {
   return {
     username: (this as UserDocument).displayId,
     displayName: (this as UserDocument).displayName,

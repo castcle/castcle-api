@@ -26,7 +26,7 @@ import * as mongoose from 'mongoose';
 import { env } from '../environment';
 import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils';
 
@@ -38,7 +38,7 @@ export enum AccountActivationType {
 }
 
 @Schema({ timestamps: true })
-export class AccountActivation extends TimestampBase {
+export class AccountActivation extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,

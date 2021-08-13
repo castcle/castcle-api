@@ -80,7 +80,9 @@ export class PageController {
   @Post('pages')
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
-    const namingResult = await this.authService.getUserFromId(body.username);
+    const namingResult = await this.authService.getUserFromCastcleId(
+      body.username
+    );
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
@@ -124,7 +126,8 @@ export class PageController {
     @Body() body: UpdatePageDto
   ) {
     //check if page name exist
-    const page = await this.authService.getUserFromId(id);
+    const page = await this.userService.getUserFromId(id);
+    console.log(id, page);
     if (!page)
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
@@ -161,13 +164,14 @@ export class PageController {
   @HttpCode(204)
   @Delete('pages/:id')
   async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this.authService.getUserFromId(id);
-    if (page)
+    const page = await this.userService.getUserFromId(id);
+    if (!page)
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
-    if (page.ownerAccount === req.$credential.account._id) {
+
+    if (String(page.ownerAccount) === String(req.$credential.account._id)) {
       await page.delete();
       return '';
     } else

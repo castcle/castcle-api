@@ -447,7 +447,7 @@ export class AppController {
   @Post('checkCastcleIdExists')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
-    const user = await this.authService.getUserFromId(body.castcleId);
+    const user = await this.authService.getUserFromCastcleId(body.castcleId);
     return {
       message: 'success message',
       payload: {
