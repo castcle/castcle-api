@@ -71,6 +71,10 @@ export class UserService {
       if (updateUserDto.images.cover)
         user.profile.images.cover = updateUserDto.images.cover;
     }
+    console.log('saving dto', updateUserDto);
+
+    console.log('saving website', user.profile.websites);
+    console.log('saving user', user);
     return user.save();
   };
 
