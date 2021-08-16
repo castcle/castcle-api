@@ -36,10 +36,12 @@ import {
 } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { UserSchema } from './schemas/user.schema';
+import { ContentSchema } from './schemas/content.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'User', schema: UserSchema }
+  { name: 'User', schema: UserSchema },
+  { name: 'Content', schema: ContentSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
