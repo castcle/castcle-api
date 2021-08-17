@@ -70,8 +70,6 @@ export class BlogPayload {
 
 class Feature {
   @ApiProperty()
-  id: string;
-  @ApiProperty()
   slug: 'feed';
   @ApiProperty()
   name: 'Feed';

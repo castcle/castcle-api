@@ -42,7 +42,7 @@ export interface QuotePayload {
   content: string;
 }
 
-export type ContentDocument = Content & Document;
+export type ContentDocument = Content & IContent;
 
 @Schema({ timestamps: true })
 export class Content extends CastcleBase {
@@ -70,4 +70,46 @@ export class Content extends CastcleBase {
   hashtags: any[];
 }
 
+interface IContent extends Document {
+  /**
+   * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
+   */
+  toPagePayload(): ContentPayloadDto;
+}
+
 export const ContentSchema = SchemaFactory.createForClass(Content);
+
+ContentSchema.methods.toPagePayload = function () {
+  //Todo Need to implement recast quote cast later on
+  return {
+    id: (this as ContentDocument)._id,
+    author: (this as ContentDocument).author,
+    commented: {
+      commented: false, //TODO !!! need to update after implement with engagement
+      count:
+        (this as ContentDocument).engagements &&
+        (this as ContentDocument).engagements['comment']
+          ? (this as ContentDocument).engagements['comment'].count
+          : 0,
+      participants: []
+    },
+    payload: (this as ContentDocument).payload,
+    created: (this as ContentDocument).createdAt.toISOString(),
+    updated: (this as ContentDocument).updatedAt.toISOString(),
+    liked: {
+      liked: false,
+      count:
+        (this as ContentDocument).engagements &&
+        (this as ContentDocument).engagements['like']
+          ? (this as ContentDocument).engagements['like'].count
+          : 0,
+      participants: []
+    },
+    type: (this as ContentDocument).type,
+    feature: {
+      slug: 'feed',
+      key: 'feature.feed',
+      name: 'Feed'
+    }
+  } as ContentPayloadDto;
+};

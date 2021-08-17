@@ -93,4 +93,11 @@ export class ContentService {
     const content = new this._contentModel(newContent);
     return content.save();
   }
+
+  /**
+   *
+   * @param {string} id get content from content's id
+   * @returns {ContentDocument}
+   */
+  getContentFromId = (id: string) => this._contentModel.findById(id).exec();
 }
