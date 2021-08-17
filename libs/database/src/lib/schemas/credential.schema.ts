@@ -26,7 +26,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 import {
   AccessTokenPayload,
   RefreshTokenPayload,
@@ -40,7 +40,7 @@ interface IAccount extends Account {
 }
 
 @Schema({ timestamps: true })
-export class Credential extends TimestampBase {
+export class Credential extends CastcleBase {
   @Prop({
     required: true,
     type: Object
@@ -139,7 +139,7 @@ CredentialSchema.methods.renewTokens = async function (
   const credentialModel = mongoose.model(
     'Credential',
     CredentialSchema
-  ) as CredentialModel;
+  ) as unknown as CredentialModel;
   const refreshTokenResult =
     credentialModel.generateRefreshToken(refreshTokenPayload);
   const accessTokenResult =
@@ -163,7 +163,7 @@ CredentialSchema.methods.renewAccessToken = async function (
   const credentialModel = mongoose.model(
     'Credential',
     CredentialSchema
-  ) as CredentialModel;
+  ) as unknown as CredentialModel;
   const result = credentialModel.generateAccessToken(payload);
   (this as CredentialDocument).accessToken = result.accessToken;
   (this as CredentialDocument).accessTokenExpireDate =

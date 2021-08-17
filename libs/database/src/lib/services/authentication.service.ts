@@ -152,7 +152,7 @@ export class AuthenticationService {
   getAccountFromEmail = (email: string) =>
     this._accountModel.findOne({ email: email }).exec();
 
-  getUserFromId = (id: string) => {
+  getUserFromCastcleId = (id: string) => {
     return this._userModel.findOne({ displayId: id }).exec();
   };
 

@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { String } from 'aws-sdk/clients/apigateway';
 
 class UserImage {
   @ApiProperty()

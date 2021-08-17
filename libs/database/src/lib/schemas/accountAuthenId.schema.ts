@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type AccountAuthenIdDocument = AccountAuthenId & Document;
 
@@ -37,7 +37,7 @@ export enum AccountAuthenIdType {
 }
 
 @Schema({ timestamps: true })
-export class AccountAuthenId extends TimestampBase {
+export class AccountAuthenId extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,

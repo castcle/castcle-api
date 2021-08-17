@@ -24,12 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Hashtag } from './hashtag.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type ArchiveHashtagDocument = ArchiveHashtag & Document;
 
 @Schema({ timestamps: true })
-export class ArchiveHashtag extends TimestampBase {
+export class ArchiveHashtag extends CastcleBase {
   @Prop({ required: true, type: Array })
   hashtags: Hashtag[];
 

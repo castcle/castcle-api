@@ -324,7 +324,7 @@ describe('Authentication Service', () => {
     });
     describe('#getUserFromId()', () => {
       it('should return null if non id is exist in user', async () => {
-        const result = await service.getUserFromId('notFoundId');
+        const result = await service.getUserFromCastcleId('notFoundId');
         expect(result).toBeNull();
       });
       it('should return an user when id is match', async () => {
@@ -335,7 +335,7 @@ describe('Authentication Service', () => {
           ownerAccount: createAccountResult.accountDocument._id
         });
         await newUser.save();
-        const result = await service.getUserFromId('testNew');
+        const result = await service.getUserFromCastcleId('testNew');
         expect(result).not.toBeNull();
         expect(result.displayId).toEqual(newUser.displayId);
         console.log(result);
@@ -376,7 +376,7 @@ describe('Authentication Service', () => {
         afterSaveAccount = await service._accountModel.findById(
           createAccountResult.accountDocument._id
         );
-        afterSaveUser = await service.getUserFromId('dudethisisnew');
+        afterSaveUser = await service.getUserFromCastcleId('dudethisisnew');
       });
       it('should update email, password of current account', () => {
         expect(afterSaveAccount.email).toBe(signupRequirements.email);
