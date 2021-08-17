@@ -119,6 +119,8 @@ export class Author {
   @ApiProperty()
   type: 'people' | 'page';
   @ApiProperty()
+  castcleId: string;
+  @ApiProperty()
   displayName: string;
   @ApiProperty()
   avatar: string | null;
@@ -169,7 +171,7 @@ class AuthorDto {
   type: 'people' | 'page';
 }
 
-export class CreateContentDto {
+export class SaveContentDto {
   @ApiProperty()
   type: 'short' | 'blog' | 'image';
 

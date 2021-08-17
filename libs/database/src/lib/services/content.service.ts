@@ -29,11 +29,7 @@ import { CredentialDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
-import {
-  CreateContentDto,
-  ContentPayloadDto,
-  Author
-} from '../dtos/content.dto';
+import { SaveContentDto, ContentPayloadDto, Author } from '../dtos/content.dto';
 
 @Injectable()
 export class ContentService {
@@ -50,13 +46,10 @@ export class ContentService {
   /**
    *
    * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
-   * @param {CreateContentDto} contentDto the content Dto that required for create a conent
+   * @param {SaveContentDto} contentDto the content Dto that required for create a conent
    * @returns {ContentDocument} content.save() result
    */
-  async createContentFromUser(
-    user: UserDocument,
-    contentDto: CreateContentDto
-  ) {
+  async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
     let author: Author;
     if (!contentDto.author)
       author = {
@@ -65,6 +58,7 @@ export class ContentService {
           user.profile && user.profile.images && user.profile.images.avatar
             ? user.profile.images.avatar
             : null,
+        castcleId: user.displayId,
         displayName: user.displayName,
         followed: false,
         type: user.type === UserType.Page ? UserType.Page : UserType.People,
@@ -79,6 +73,7 @@ export class ContentService {
           page.profile && page.profile.images && page.profile.images.avatar
             ? page.profile.images.avatar
             : null,
+        castcleId: page.displayId,
         displayName: page.displayName,
         followed: false,
         verified: page.verified
@@ -100,4 +95,30 @@ export class ContentService {
    * @returns {ContentDocument}
    */
   getContentFromId = (id: string) => this._contentModel.findById(id).exec();
+
+  /**
+   *
+   * @param {string} id
+   * @param {SaveContentDto} contentDto
+   * @returns {ContentDocument}
+   */
+  updateContentFromId = async (id: string, contentDto: SaveContentDto) => {
+    //TODO !!! need to implement with revision
+    const content = await this._contentModel.findById(id).exec();
+    content.revisionCount++;
+    content.payload = contentDto.payload;
+    content.type = contentDto.type;
+    return content.save();
+  };
+
+  /**
+   * check content.author.id === user._id
+   * @param {UserDocument} user
+   * @param {ContentDocument} content
+   * @returns {Promise<boolean>}
+   */
+  checkUserPermissionForEditContent = async (
+    user: UserDocument,
+    content: ContentDocument
+  ) => content.author.id === user._id;
 }
