@@ -40,10 +40,7 @@ import {
   ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  ContentPayloadDto,
-  CreateContentDto
-} from '@castcle-api/database/dtos';
+import { ContentPayloadDto, SaveContentDto } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -58,6 +55,7 @@ import {
   ApiProperty,
   ApiResponse
 } from '@nestjs/swagger';
+import { ContentDocument } from '@castcle-api/database/schemas';
 
 class ContentResponse {
   @ApiProperty()
@@ -85,7 +83,7 @@ export class ContentController {
     required: true
   })
   @ApiBody({
-    type: CreateContentDto
+    type: SaveContentDto
   })
   @ApiResponse({
     status: 201,
@@ -94,7 +92,7 @@ export class ContentController {
   @UseInterceptors(CredentialInterceptor)
   @Post('contents/feed')
   async createFeedContent(
-    @Body() body: CreateContentDto,
+    @Body() body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -114,11 +112,92 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
+  @UseInterceptors(CredentialInterceptor)
   @Get('contents/:id')
-  async getContentFromId(@Param('id') id: string) {
-    const content = await this.contentService.getContentFromId(id);
+  async getContentFromId(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(id, req);
     return {
       payload: content.toPagePayload()
     } as ContentResponse;
+  }
+
+  async _getContentIfExist(id: string, req: CredentialRequest) {
+    const content = await this.contentService.getContentFromId(id);
+    if (content) return content;
+    else
+      throw new CastcleException(
+        CastcleStatus.REQUEST_URL_NOT_FOUND,
+        req.$language
+      );
+  }
+
+  async _checkPermissionForUpdate(
+    content: ContentDocument,
+    req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const result = this.contentService.checkUserPermissionForEditContent(
+      user,
+      content
+    );
+    if (result) return true;
+    else
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+  }
+
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: ContentResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Put('contents/:id')
+  async updateContentFromId(
+    @Param('id') id: string,
+    @Body() body: SaveContentDto,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(id, req);
+    await this._checkPermissionForUpdate(content, req);
+    const updatedContent = await this.contentService.updateContentFromId(
+      content._id,
+      body
+    );
+    return {
+      payload: updatedContent.toPagePayload()
+    } as ContentResponse;
+  }
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @HttpCode(204)
+  @Delete('contents/:id')
+  async deleteContentFromId(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(id, req);
+    await this._checkPermissionForUpdate(content, req);
+    content.delete();
+    return '';
   }
 }

@@ -23,10 +23,12 @@
 import { UserDocument, UserType } from './user.schema';
 import { AccountDocument } from './account.schema';
 import { CredentialDocument, CredentialModel } from './credential.schema';
+import { ContentDocument } from './content.schema';
 export {
   CredentialDocument,
   CredentialModel,
   UserDocument,
   AccountDocument,
-  UserType
+  UserType,
+  ContentDocument
 };

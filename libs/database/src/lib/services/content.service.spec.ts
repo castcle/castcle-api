@@ -32,7 +32,7 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentSchema } from '../schemas/content.schema';
-import { CreateContentDto, ContentType } from '../dtos';
+import { SaveContentDto, ContentType } from '../dtos';
 import { UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
 
@@ -115,6 +115,43 @@ describe('ContentService', () => {
       );
       expect(content.type).toEqual(ContentType.Short);
       expect(content.author.id).toEqual(user._id);
+    });
+  });
+  describe('#updateContentFromId()', () => {
+    it('should update from saveDTO with content id', async () => {
+      const shortPayload: ShortPayload = {
+        message: 'this is test status'
+      };
+      const content = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload
+      });
+      const revisionCount = content.revisionCount;
+      const updatePayload: ShortPayload = {
+        message: 'this is test status2',
+        link: [
+          {
+            type: 'youtube',
+            url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA'
+          }
+        ]
+      };
+      const result = await service.updateContentFromId(content._id, {
+        type: ContentType.Short,
+        payload: updatePayload
+      });
+      expect((result.payload as ShortPayload).message).toEqual(
+        updatePayload.message
+      );
+      expect((result.payload as ShortPayload).link).toEqual(updatePayload.link);
+      const postContent = await service.getContentFromId(content._id);
+      expect((postContent.payload as ShortPayload).message).toEqual(
+        updatePayload.message
+      );
+      expect((postContent.payload as ShortPayload).link).toEqual(
+        updatePayload.link
+      );
+      expect(postContent.revisionCount).toEqual(revisionCount + 1);
     });
   });
 });

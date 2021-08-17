@@ -234,9 +234,58 @@ describe('PageController', () => {
         } as any
       );
       const getResult = await contentController.getContentFromId(
-        result.payload.id
+        result.payload.id,
+        {
+          $language: 'th'
+        } as any
       );
       expect(getResult).toEqual(result);
+    });
+  });
+
+  describe('updateContentFromId', () => {
+    it('should be able to update a posted content', async () => {
+      const shortPayload = {
+        message: 'อุบกขา',
+        link: [
+          {
+            type: 'other',
+            url: 'https://www.facebook.com/watch/?v=345357500470873'
+          }
+        ]
+      } as ShortPayload;
+      const result = await contentController.createFeedContent(
+        {
+          payload: shortPayload,
+          type: ContentType.Short
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
+      const updateContentPayload = {
+        message: 'Hello World'
+      } as ShortPayload;
+      const updateResult = await contentController.updateContentFromId(
+        result.payload.id,
+        {
+          payload: updateContentPayload,
+          type: ContentType.Short
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
+      expect(updateResult.payload.payload).toEqual(updateContentPayload);
+      const getResult = await contentController.getContentFromId(
+        result.payload.id,
+        {
+          $language: 'th'
+        } as any
+      );
+      expect(getResult.payload).toEqual(updateResult.payload);
     });
   });
 });
