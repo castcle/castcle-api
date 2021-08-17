@@ -27,5 +27,18 @@ import {
   PageDto,
   UpdatePageDto
 } from './user.dto';
+import {
+  ContentType,
+  ContentPayloadDto,
+  CreateContentDto
+} from './content.dto';
 
-export { UserResponseDto, UpdateUserDto, PageDto, UpdatePageDto };
+export {
+  UserResponseDto,
+  UpdateUserDto,
+  PageDto,
+  UpdatePageDto,
+  ContentType,
+  ContentPayloadDto,
+  CreateContentDto
+};

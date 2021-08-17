@@ -23,31 +23,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import {
+  ContentPayloadDto,
+  ShortPayload,
+  ContentType,
+  BlogPayload,
+  Author
+} from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 
-export interface PostPayload {
-  content: string;
-  photo: {
-    file: string;
-  }[];
-  link: {
-    type: string;
-    url: string;
-  }[];
-}
-
-export interface BlogPayload {
-  header: string;
-  content: any;
-  photo: {
-    file: string;
-  }[];
-  link: {
-    type: string;
-    url: string;
-  }[];
-}
-
+//TODO: !!!  need to revise this
 export interface RecastPayload {
   source: Content;
 }
@@ -57,27 +42,20 @@ export interface QuotePayload {
   content: string;
 }
 
-export enum ContentType {
-  Post = 'post',
-  Blog = 'blog',
-  Recast = 'recast',
-  Quote = 'quote'
-}
-
 export type ContentDocument = Content & Document;
 
 @Schema({ timestamps: true })
 export class Content extends CastcleBase {
   @Prop({ required: true, type: Object })
-  author: Account | any;
+  author: Author;
 
   @Prop({ required: true })
   type: string;
 
   @Prop({ required: true, type: Object })
-  payload: PostPayload | BlogPayload | RecastPayload | QuotePayload;
+  payload: ShortPayload | BlogPayload | RecastPayload | QuotePayload;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ type: Object })
   engagements: {
     [engagementKey: string]: {
       count: number;
