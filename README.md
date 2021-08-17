@@ -23,7 +23,7 @@ As the rise of blockchain technology, making anyone can trust on digital assets,
 
 ## **Whitepaper**
 
-For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, please see our ***[WHITEPAPER](https://drive.google.com/file/d/116uCmMy_H_5fX02nXHMWqRSN85wxsvp9/view?usp=sharing)*** and ***[PITCH DECK](https://drive.google.com/file/d/1BbIhjiLjt5zyWQk3NsJtpphpw4HBWOtc/view?usp=sharing)*** for more details.
+For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, please see our ***[WHITEPAPER](https://drive.google.com/file/d/1-67KY3kSFyV1YZ1A8Qxv4UAPVxYcTzvJ/view?usp=sharing)*** and ***[PITCH DECK](https://drive.google.com/file/d/1BbIhjiLjt5zyWQk3NsJtpphpw4HBWOtc/view?usp=sharing)*** for more details.
 
 ## **Getting Started**
 
