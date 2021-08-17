@@ -26,7 +26,7 @@ import { Environment as env } from '@castcle-api/environments';
 import { Uploader, UploadOptions } from './uploader';
 
 export class Image {
-  constructor(public uri: string) {}
+  constructor(public uri: string, public order?: number) {}
 
   toSignUrl() {
     const buff = Buffer.from(env.cloudfront_private_key, 'base64');
@@ -50,6 +50,6 @@ export class Image {
     );
     return uploader
       .uploadFromBase64ToS3(base64, options)
-      .then((data) => new Image(data.Location));
+      .then((data) => new Image(data.Location, options.order));
   }
 }

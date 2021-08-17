@@ -22,7 +22,12 @@
  */
 
 import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
-import { SaveContentDto, ContentResponse } from '@castcle-api/database/dtos';
+import {
+  SaveContentDto,
+  ContentResponse,
+  BlogPayload,
+  ContentType
+} from '@castcle-api/database/dtos';
 
 import { Image } from '@castcle-api/utils/aws';
 import {
@@ -32,25 +37,48 @@ import {
 import { map } from 'rxjs';
 
 @Injectable()
-export class ImageInterceptor extends CredentialInterceptor {
+export class ContentInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
     const superResult = await super.intercept(context, next);
     const req = context.switchToHttp().getRequest() as CredentialRequest;
     const body = req.body as SaveContentDto;
     if (body.payload.photo) {
-      const avatar = await Image.upload(body.images.avatar, {
-        filename: `avatar-${req.$credential.account._id}`
+      const contentImages = body.payload.photo.contents.map((url, index) =>
+        Image.upload(url.url, {
+          filename: `${req.$credential._id}-${body.type}-images-${index}`,
+          addTime: true,
+          order: index
+        })
+      );
+      const uploadResult = await Promise.all(contentImages);
+      const uploadedImages = uploadResult.sort((a, b) => {
+        if (a.order > b.order) return -1;
+        else return 1;
       });
-      req.body.images.avatar = avatar.uri;
-    }
-    if (body.images && body.images.cover) {
-      const cover = await Image.upload(body.images.cover, {
-        filename: `cover-${req.$credential.account._id}`
-      });
-      req.body.images.cover = cover.uri;
+      body.payload.photo.contents = body.payload.photo.contents.map(
+        (url, index) => {
+          url.url = uploadedImages[index].uri;
+          return url;
+        }
+      );
+      if (
+        body.type === ContentType.Blog &&
+        (body.payload as BlogPayload).photo.cover
+      ) {
+        const cover = await Image.upload(
+          (body.payload as BlogPayload).photo.cover.url,
+          {
+            filename: `${req.$credential._id}-${body.type}-cover`,
+            addTime: true
+          }
+        );
+        const cover_url = cover.uri;
+        (body.payload as BlogPayload).photo.cover.url = cover_url;
+      }
+      //req.body.images.avatar = avatar.uri;
     }
 
-    return superResult.pipe(
+    return superResult; /*.pipe(
       map((data: ContentResponse) => {
         console.log('from', data);
         if (data.images && data.images.avatar)
@@ -59,6 +87,6 @@ export class ImageInterceptor extends CredentialInterceptor {
           data.images.cover = new Image(data.images.cover).toSignUrl();
         return data;
       })
-    );
+    );*/
   }
 }
