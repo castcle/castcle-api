@@ -36,6 +36,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import { PageDto } from '@castcle-api/database/dtos';
+import { Image } from '@castcle-api/utils/aws';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -98,6 +99,11 @@ describe('PageController', () => {
       }
     );
     userAccount = await authService.verifyAccount(accountActivation);
+    jest.spyOn(pageController, 'uploadImage').mockImplementation(async () => {
+      console.log('---mock uri--image');
+      const mockImage = new Image('mockuri');
+      return mockImage;
+    });
     userCredential = result.credentialDocument;
   });
   afterAll(async () => {
