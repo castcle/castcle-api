@@ -32,7 +32,9 @@ export class Image {
     const buff = Buffer.from(env.cloudfront_private_key, 'base64');
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
-      env.cloudfront_access_key_id,
+      env.cloudfront_access_key_id
+        ? env.cloudfront_access_key_id
+        : 'testCloudKey',
       cloudFrontPrivateKey
     );
     return signer.getSignedUrl({
@@ -43,7 +45,7 @@ export class Image {
 
   static upload(base64: string, options?: UploadOptions) {
     const uploader = new Uploader(
-      env.assets_bucket_name,
+      env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
       Configs.IMAGE_BUCKET_FOLDER
     );
     return uploader
