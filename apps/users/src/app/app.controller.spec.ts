@@ -27,7 +27,11 @@ import {
   MongooseForFeatures
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { UserService, AuthenticationService } from '@castcle-api/database';
+import {
+  UserService,
+  AuthenticationService,
+  ContentService
+} from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -73,7 +77,12 @@ describe('AppController', () => {
         MongooseForFeatures
       ],
       controllers: [AppController],
-      providers: [AppService, UserService, AuthenticationService]
+      providers: [
+        AppService,
+        UserService,
+        AuthenticationService,
+        ContentService
+      ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
