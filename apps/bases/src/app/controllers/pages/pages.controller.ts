@@ -42,7 +42,7 @@ import {
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Image } from '@castcle-api/utils/aws';
+import { Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -61,6 +61,9 @@ export class PageController {
     PageController.name,
     CastLoggerOptions
   );
+
+  uploadImage = (base64: string, options?: UploadOptions) =>
+    Image.upload(base64, options);
 
   @ApiHeader({
     name: 'Accept-Language',
@@ -87,12 +90,12 @@ export class PageController {
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
-      await Image.upload(body.avatar, {
+      await this.uploadImage(body.avatar, {
         filename: `page-avatar-${body.username}`
       })
     ).uri;
     body.cover = (
-      await Image.upload(body.cover, {
+      await this.uploadImage(body.cover, {
         filename: `page-cover-${body.username}`
       })
     ).uri;
@@ -136,13 +139,13 @@ export class PageController {
     //TODO !!! performance issue
     if (body.avatar)
       page.profile.images.avatar = (
-        await Image.upload(body.avatar, {
+        await this.uploadImage(body.avatar, {
           filename: `page-avatar-${id}`
         })
       ).uri;
     if (body.cover)
       page.profile.images.cover = (
-        await Image.upload(body.cover, {
+        await this.uploadImage(body.cover, {
           filename: `page-cover-${id}`
         })
       ).uri;
