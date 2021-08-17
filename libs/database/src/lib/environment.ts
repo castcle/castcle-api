@@ -29,9 +29,9 @@ export const env = {
       ? Environment.db_test_in_db
       : false,
   db_uri:
-    Environment && Environment.db_uri
+    Environment && Environment.db_password
       ? Environment.db_uri
-      : 'http://localhost/test',
+      : 'mongodb://localhost:27017/test',
   db_options:
     Environment && Environment.db_options ? Environment.db_options : {},
   jwt_refresh_expires_in:

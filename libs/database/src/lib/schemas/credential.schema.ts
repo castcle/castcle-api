@@ -139,7 +139,7 @@ CredentialSchema.methods.renewTokens = async function (
   const credentialModel = mongoose.model(
     'Credential',
     CredentialSchema
-  ) as CredentialModel;
+  ) as unknown as CredentialModel;
   const refreshTokenResult =
     credentialModel.generateRefreshToken(refreshTokenPayload);
   const accessTokenResult =
@@ -163,7 +163,7 @@ CredentialSchema.methods.renewAccessToken = async function (
   const credentialModel = mongoose.model(
     'Credential',
     CredentialSchema
-  ) as CredentialModel;
+  ) as unknown as CredentialModel;
   const result = credentialModel.generateAccessToken(payload);
   (this as CredentialDocument).accessToken = result.accessToken;
   (this as CredentialDocument).accessTokenExpireDate =

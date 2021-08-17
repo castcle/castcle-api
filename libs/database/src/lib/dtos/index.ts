@@ -30,7 +30,9 @@ import {
 import {
   ContentType,
   ContentPayloadDto,
-  CreateContentDto
+  CreateContentDto,
+  ShortPayload,
+  BlogPayload
 } from './content.dto';
 
 export {
@@ -40,5 +42,7 @@ export {
   UpdatePageDto,
   ContentType,
   ContentPayloadDto,
-  CreateContentDto
+  CreateContentDto,
+  ShortPayload,
+  BlogPayload
 };
