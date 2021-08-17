@@ -118,16 +118,10 @@ export class ContentController {
     @Param('id') id: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this.contentService.getContentFromId(id);
-    if (content)
-      return {
-        payload: content.toPagePayload()
-      } as ContentResponse;
-    else
-      throw new CastcleException(
-        CastcleStatus.REQUEST_URL_NOT_FOUND,
-        req.$language
-      );
+    const content = await this._getContentIfExist(id, req);
+    return {
+      payload: content.toPagePayload()
+    } as ContentResponse;
   }
 
   async _getContentIfExist(id: string, req: CredentialRequest) {
