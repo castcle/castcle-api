@@ -209,3 +209,8 @@ export const DEFAULT_QUERY_OPTIONS = {
   page: 1,
   limit: 25
 } as QueryOption;
+
+export class ContentResponse {
+  @ApiProperty()
+  payload: ContentPayloadDto;
+}

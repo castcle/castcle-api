@@ -40,7 +40,7 @@ import {
   ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { ContentPayloadDto, SaveContentDto } from '@castcle-api/database/dtos';
+import { ContentResponse, SaveContentDto } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -56,11 +56,6 @@ import {
   ApiResponse
 } from '@nestjs/swagger';
 import { ContentDocument } from '@castcle-api/database/schemas';
-
-class ContentResponse {
-  @ApiProperty()
-  payload: ContentPayloadDto;
-}
 
 @Controller()
 export class ContentController {
