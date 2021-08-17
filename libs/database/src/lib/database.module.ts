@@ -54,9 +54,6 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   }
 ]);
 
-console.log('env.db_uri', env.db_uri);
-console.log('env.db_options', env.db_options);
-//mongodb://localhost:27017/?readPreference=primary&appname=mongodb-vscode%200.6.10&ssl=false
 @Global()
 @Module({
   imports: [
