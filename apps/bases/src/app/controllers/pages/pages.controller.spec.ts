@@ -99,7 +99,7 @@ describe('PageController', () => {
       }
     );
     userAccount = await authService.verifyAccount(accountActivation);
-    jest.spyOn(pageController, 'uploadImage').mockImplementation(async () => {
+    jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image('mockuri');
       return mockImage;
@@ -133,7 +133,7 @@ describe('PageController', () => {
     });
   });
   describe('deletePage', () => {
-    it('shoudl delete a page if user has permission', async () => {
+    it('should delete a page if user has permission', async () => {
       const testPage = await authService.getUserFromCastcleId(pageDto.username);
       const result = await pageController.deletePage(
         { $credential: userCredential, $language: 'th' } as any,
@@ -142,6 +142,28 @@ describe('PageController', () => {
       expect(result).toEqual('');
       const postPage = await authService.getUserFromCastcleId(pageDto.username);
       expect(postPage).toBeNull();
+    });
+  });
+  describe('getPageFromId', () => {
+    it('should be able to get page from user ID', async () => {
+      const newPageResponse = await pageController.createPage(
+        { $credential: userCredential, $language: 'th' } as any,
+        pageDto
+      );
+      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const getResult = await pageController.getPageFromId(
+        { $credential: userCredential, $language: 'th' } as any,
+        testPage._id
+      );
+      expect(getResult).toEqual(testPage.toPageResponse());
+    });
+    it('should be able to get page from CastcleId', async () => {
+      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const getResult = await pageController.getPageFromId(
+        { $credential: userCredential, $language: 'th' } as any,
+        pageDto.username
+      );
+      expect(getResult).toEqual(testPage.toPageResponse());
     });
   });
 });

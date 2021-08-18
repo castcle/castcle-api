@@ -32,7 +32,11 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import { UserService, ContentService } from '@castcle-api/database';
+import {
+  UserService,
+  ContentService,
+  AuthenticationService
+} from '@castcle-api/database';
 import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
@@ -52,6 +56,7 @@ import {
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
+import { UserDocument } from '@castcle-api/database/schemas';
 
 let logger: CastLogger;
 
@@ -64,10 +69,35 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private userService: UserService,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private authService: AuthenticationService
   ) {
     logger = new CastLogger(AppController.name, CastLoggerOptions);
   }
+
+  /**
+   *
+   * @param {string} idOrCastcleId
+   * @param {CredentialRequest} req
+   * @returns {UserDocument} from userService.getUserFromId() or authService.getUserFromCastcleId
+   * @throws {CastcleException} with CastcleStatus.REQUEST_URL_NOT_FOUND
+   */
+  _getUserFromIdOrCastcleId = async (
+    idOrCastcleId: string,
+    req: CredentialRequest
+  ) => {
+    const user = await this.userService.getUserFromId(idOrCastcleId);
+    if (user) return user;
+    const userFromCastcleId = await this.authService.getUserFromCastcleId(
+      idOrCastcleId
+    );
+    if (userFromCastcleId) return userFromCastcleId;
+    else
+      throw new CastcleException(
+        CastcleStatus.REQUEST_URL_NOT_FOUND,
+        req.$language
+      );
+  };
 
   @Get()
   getData() {
@@ -112,13 +142,8 @@ export class AppController {
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     //UserService
-    const user = await this.userService.getUserFromId(id);
-    if (user) return await user.toUserResponse();
-    else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    return await user.toUserResponse();
   }
 
   @ApiHeader({

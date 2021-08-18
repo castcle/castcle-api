@@ -47,8 +47,11 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiHeader,
+  ApiOkResponse,
   ApiResponse
 } from '@nestjs/swagger';
+import { UserDocument } from '@castcle-api/database/schemas';
+import { PageInterceptor } from '../../interceptors/page.interceptor';
 
 @Controller()
 export class PageController {
@@ -62,8 +65,31 @@ export class PageController {
     CastLoggerOptions
   );
 
-  uploadImage = (base64: string, options?: UploadOptions) =>
+  _uploadImage = (base64: string, options?: UploadOptions) =>
     Image.upload(base64, options);
+
+  /**
+   *
+   * @param {string} idOrCastCleId
+   * @param {CredentialRequest} req
+   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
+   */
+  _getPageByIdOrCastcleId = async (
+    idOrCastCleId: string,
+    req: CredentialRequest
+  ) => {
+    const idResult = await this.userService.getUserFromId(idOrCastCleId);
+    if (idResult) return idResult;
+    const castcleIdResult = await this.authService.getUserFromCastcleId(
+      idOrCastCleId
+    );
+    if (castcleIdResult) return castcleIdResult;
+    else
+      throw new CastcleException(
+        CastcleStatus.REQUEST_URL_NOT_FOUND,
+        req.$language
+      );
+  };
 
   @ApiHeader({
     name: 'Accept-Language',
@@ -90,12 +116,12 @@ export class PageController {
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
-      await this.uploadImage(body.avatar, {
+      await this._uploadImage(body.avatar, {
         filename: `page-avatar-${body.username}`
       })
     ).uri;
     body.cover = (
-      await this.uploadImage(body.cover, {
+      await this._uploadImage(body.cover, {
         filename: `page-cover-${body.username}`
       })
     ).uri;
@@ -121,7 +147,7 @@ export class PageController {
     type: PageDto
   })
   @HttpCode(201)
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(PageInterceptor)
   @Put('pages/:id')
   async updatePage(
     @Req() req: CredentialRequest,
@@ -129,23 +155,17 @@ export class PageController {
     @Body() body: UpdatePageDto
   ) {
     //check if page name exist
-    const page = await this.userService.getUserFromId(id);
-    console.log(id, page);
-    if (!page)
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    const page = await this._getPageByIdOrCastcleId(id, req);
     //TODO !!! performance issue
     if (body.avatar)
       page.profile.images.avatar = (
-        await this.uploadImage(body.avatar, {
+        await this._uploadImage(body.avatar, {
           filename: `page-avatar-${id}`
         })
       ).uri;
     if (body.cover)
       page.profile.images.cover = (
-        await this.uploadImage(body.cover, {
+        await this._uploadImage(body.cover, {
           filename: `page-cover-${id}`
         })
       ).uri;
@@ -161,19 +181,31 @@ export class PageController {
     required: true
   })
   @ApiBearerAuth()
+  @ApiOkResponse({
+    type: PageDto
+  })
+  @UseInterceptors(PageInterceptor)
+  @Get('pages/:id')
+  async getPageFromId(@Req() req: CredentialRequest, @Param('id') id: string) {
+    //check if page name exist
+    const page = await this._getPageByIdOrCastcleId(id, req);
+    return page.toPageResponse();
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
   @HttpCode(204)
   @Delete('pages/:id')
   async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this.userService.getUserFromId(id);
-    if (!page)
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
-
+    const page = await this._getPageByIdOrCastcleId(id, req);
     if (String(page.ownerAccount) === String(req.$credential.account._id)) {
       await page.delete();
       return '';
