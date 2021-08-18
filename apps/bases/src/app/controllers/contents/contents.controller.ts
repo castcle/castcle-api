@@ -46,7 +46,7 @@ import {
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Image } from '@castcle-api/utils/aws';
+import { ContentInterceptor } from '../../interceptors/content.interceptor';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -84,7 +84,7 @@ export class ContentController {
     status: 201,
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ContentInterceptor)
   @Post('contents/feed')
   async createFeedContent(
     @Body() body: SaveContentDto,
@@ -156,7 +156,7 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ContentInterceptor)
   @Put('contents/:id')
   async updateContentFromId(
     @Param('id') id: string,

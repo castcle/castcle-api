@@ -42,7 +42,7 @@ export class ContentInterceptor extends CredentialInterceptor {
     const superResult = await super.intercept(context, next);
     const req = context.switchToHttp().getRequest() as CredentialRequest;
     const body = req.body as SaveContentDto;
-    if (body.payload.photo) {
+    if (body && body.payload.photo) {
       const contentImages = body.payload.photo.contents.map((url, index) =>
         Image.upload(url.url, {
           filename: `${req.$credential._id}-${body.type}-images-${index}`,
