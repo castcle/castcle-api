@@ -38,9 +38,16 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   CredentialDocument,
   UserDocument,
-  AccountDocument
+  AccountDocument,
+  ContentDocument
 } from '@castcle-api/database/schemas';
-import { UpdateUserDto } from '@castcle-api/database/dtos';
+import {
+  ContentsResponse,
+  ContentType,
+  SaveContentDto,
+  ShortPayload,
+  UpdateUserDto
+} from '@castcle-api/database/dtos';
 import { CastcleException } from '@castcle-api/utils/exception';
 
 let mongod: MongoMemoryServer;
@@ -65,6 +72,7 @@ describe('AppController', () => {
   let appController: AppController;
   let service: UserService;
   let appService: AppService;
+  let contentService: ContentService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
   let userAccount: AccountDocument;
@@ -87,6 +95,7 @@ describe('AppController', () => {
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
+    contentService = app.get<ContentService>(ContentService);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -179,6 +188,56 @@ describe('AppController', () => {
     });
   });
 
+  describe('- Contents related', () => {
+    let user: UserDocument;
+    const contentDtos: SaveContentDto[] = [
+      {
+        type: ContentType.Short,
+        payload: {
+          message: 'hello'
+        } as ShortPayload
+      },
+      {
+        type: ContentType.Short,
+        payload: {
+          message: 'hi'
+        } as ShortPayload
+      }
+    ];
+    const contents: ContentDocument[] = [];
+    let expectedResponse: ContentsResponse;
+    beforeAll(async () => {
+      user = await service.getUserFromCredential(userCredential);
+      for (let i = 0; i < contentDtos.length; i++)
+        contents.push(
+          await contentService.createContentFromUser(user, contentDtos[i])
+        );
+      expectedResponse = {
+        payload: contents
+          .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
+          .map((c) => c.toPagePayload())
+      };
+    });
+    describe('getMyContents', () => {
+      it('should get all contents from current user credential', async () => {
+        const response = await appController.getMyContents({
+          $credential: userCredential,
+          $language: 'th'
+        } as any);
+        expect(response).toEqual(expectedResponse);
+      });
+    });
+
+    describe('getUserContents', () => {
+      it('should get all contents from user id', async () => {
+        const response = await appController.getUserContents(user._id, {
+          $credential: userCredential,
+          $language: 'th'
+        } as any);
+        expect(response).toEqual(expectedResponse);
+      });
+    });
+  });
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
       await appController.deleteMyData({

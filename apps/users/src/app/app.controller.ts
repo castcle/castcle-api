@@ -40,7 +40,8 @@ import {
 import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
-  CredentialRequest
+  CredentialRequest,
+  ContentsInterceptor
 } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -49,20 +50,18 @@ import {
   ApiBody,
   ApiHeader,
   ApiOkResponse,
+  ApiQuery,
   ApiResponse
 } from '@nestjs/swagger';
 import {
   ContentPayloadDto,
+  ContentType,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
 import { UserDocument } from '@castcle-api/database/schemas';
-
+import { ContentsResponse } from '@castcle-api/database/dtos';
 let logger: CastLogger;
-
-class ContentResponse {
-  payload: ContentPayloadDto[];
-}
 
 @Controller()
 export class AppController {
@@ -209,23 +208,50 @@ export class AppController {
     required: true
   })
   @ApiOkResponse({
-    type: ContentResponse
+    type: ContentsResponse
   })
   @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ContentsInterceptor)
   @Get('me/contents')
-  async getMyContent(@Req() req: CredentialRequest) {
+  async getMyContents(
+    @Req() req: CredentialRequest
+  ): Promise<ContentsResponse> {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user);
       return {
         payload: contents.map((item) => item.toPagePayload())
-      } as ContentResponse;
+      } as ContentsResponse;
     } else
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: ContentsResponse
+  })
+  @ApiQuery({ name: 'type', enum: ContentType })
+  @ApiBearerAuth()
+  @UseInterceptors(ContentsInterceptor)
+  @Get(':id/contents')
+  async getUserContents(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ): Promise<ContentsResponse> {
+    //UserService
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    const contents = await this.contentService.getContentsFromUser(user);
+    return {
+      payload: contents.map((item) => item.toPagePayload())
+    } as ContentsResponse;
   }
 }

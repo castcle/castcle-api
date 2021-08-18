@@ -43,10 +43,10 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { ContentResponse, SaveContentDto } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
-  CredentialRequest
+  CredentialRequest,
+  ContentInterceptor
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { ContentInterceptor } from '../../interceptors/content.interceptor';
 import {
   ApiBearerAuth,
   ApiBody,

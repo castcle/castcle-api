@@ -21,20 +21,61 @@
  * or have any questions.
  */
 
-import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
 import {
-  SaveContentDto,
-  ContentResponse,
   BlogPayload,
-  ContentType
+  ContentPayloadDto,
+  ContentResponse,
+  ContentsResponse,
+  ContentType,
+  SaveContentDto
 } from '@castcle-api/database/dtos';
-
-import { Image } from '@castcle-api/utils/aws';
 import {
   CredentialInterceptor,
   CredentialRequest
-} from '@castcle-api/utils/interceptors';
+} from '../credential/credential.interceptor';
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { Image } from '@castcle-api/utils/aws';
 import { map } from 'rxjs';
+
+const transformContentPayload = (payload: ContentPayloadDto) => {
+  if (
+    payload.type === ContentType.Blog &&
+    (payload.payload as BlogPayload).photo &&
+    (payload.payload as BlogPayload).photo.cover
+  ) {
+    (payload.payload as BlogPayload).photo.cover.url = new Image(
+      (payload.payload as BlogPayload).photo.cover.url
+    ).toSignUrl();
+  }
+  if (
+    payload.payload.photo &&
+    payload.payload.photo.contents &&
+    payload.payload.photo.contents.length > 0
+  ) {
+    (payload.payload as BlogPayload).photo.contents = (
+      payload.payload as BlogPayload
+    ).photo.contents.map((url) => ({
+      url: new Image(url.url).toSignUrl()
+    }));
+  }
+  return payload;
+};
+
+//TO
+@Injectable()
+export class ContentsInterceptor extends CredentialInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = await super.intercept(context, next);
+    return superResult.pipe(
+      map((data: ContentsResponse) => {
+        data.payload = data.payload.map((payload) =>
+          transformContentPayload(payload)
+        );
+        return data;
+      })
+    );
+  }
+}
 
 @Injectable()
 export class ContentInterceptor extends CredentialInterceptor {
@@ -80,26 +121,7 @@ export class ContentInterceptor extends CredentialInterceptor {
     return superResult.pipe(
       map((data: ContentResponse) => {
         console.log('from', data);
-        if (
-          data.payload.type === ContentType.Blog &&
-          (data.payload.payload as BlogPayload).photo &&
-          (data.payload.payload as BlogPayload).photo.cover
-        ) {
-          (data.payload.payload as BlogPayload).photo.cover.url = new Image(
-            (data.payload.payload as BlogPayload).photo.cover.url
-          ).toSignUrl();
-        }
-        if (
-          data.payload.payload.photo &&
-          data.payload.payload.photo.contents &&
-          data.payload.payload.photo.contents.length > 0
-        ) {
-          (data.payload.payload as BlogPayload).photo.contents = (
-            data.payload.payload as BlogPayload
-          ).photo.contents.map((url) => ({
-            url: new Image(url.url).toSignUrl()
-          }));
-        }
+        data.payload = transformContentPayload(data.payload);
         return data;
       })
     );

@@ -184,6 +184,18 @@ describe('ContentService', () => {
       console.log(contents);
       expect(contents[0].payload).toEqual(shortPayload2);
       expect(contents[1].payload).toEqual(shortPayload1);
+      const contentsInverse = await service.getContentsFromUser(user, {
+        sortBy: {
+          field: 'updateAt',
+          type: 'asc'
+        }
+      });
+      expect(contentsInverse[contentsInverse.length - 2].payload).toEqual(
+        shortPayload1
+      );
+      expect(contentsInverse[contentsInverse.length - 1].payload).toEqual(
+        shortPayload2
+      );
     });
   });
 });

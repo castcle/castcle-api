@@ -28,6 +28,10 @@ import {
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import {
+  ContentInterceptor,
+  ContentsInterceptor
+} from './contents/contents.interceptor';
+import {
   CredentialInterceptor,
   CredentialRequest
 } from './credential/credential.interceptor';
@@ -46,5 +50,7 @@ export {
   TokenInterceptor,
   CredentialInterceptor,
   CredentialRequest,
-  TokenRequest
+  TokenRequest,
+  ContentInterceptor,
+  ContentsInterceptor
 };

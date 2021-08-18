@@ -33,7 +33,8 @@ import {
   SaveContentDto,
   ShortPayload,
   BlogPayload,
-  ContentResponse
+  ContentResponse,
+  ContentsResponse
 } from './content.dto';
 
 export {
@@ -46,5 +47,6 @@ export {
   SaveContentDto,
   ShortPayload,
   BlogPayload,
-  ContentResponse
+  ContentResponse,
+  ContentsResponse
 };
