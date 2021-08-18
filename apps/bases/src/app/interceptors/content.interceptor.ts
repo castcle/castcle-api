@@ -75,18 +75,33 @@ export class ContentInterceptor extends CredentialInterceptor {
         const cover_url = cover.uri;
         (body.payload as BlogPayload).photo.cover.url = cover_url;
       }
-      //req.body.images.avatar = avatar.uri;
     }
 
-    return superResult; /*.pipe(
+    return superResult.pipe(
       map((data: ContentResponse) => {
         console.log('from', data);
-        if (data.images && data.images.avatar)
-          data.images.avatar = new Image(data.images.avatar).toSignUrl();
-        if (data.images && data.images.cover)
-          data.images.cover = new Image(data.images.cover).toSignUrl();
+        if (
+          data.payload.type === ContentType.Blog &&
+          (data.payload.payload as BlogPayload).photo &&
+          (data.payload.payload as BlogPayload).photo.cover
+        ) {
+          (data.payload.payload as BlogPayload).photo.cover.url = new Image(
+            (data.payload.payload as BlogPayload).photo.cover.url
+          ).toSignUrl();
+        }
+        if (
+          data.payload.payload.photo &&
+          data.payload.payload.photo.contents &&
+          data.payload.payload.photo.contents.length > 0
+        ) {
+          (data.payload.payload as BlogPayload).photo.contents = (
+            data.payload.payload as BlogPayload
+          ).photo.contents.map((url) => ({
+            url: new Image(url.url).toSignUrl()
+          }));
+        }
         return data;
       })
-    );*/
+    );
   }
 }
