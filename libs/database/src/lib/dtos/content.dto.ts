@@ -214,3 +214,8 @@ export class ContentResponse {
   @ApiProperty()
   payload: ContentPayloadDto;
 }
+
+export class ContentsResponse {
+  @ApiProperty()
+  payload: ContentPayloadDto[];
+}

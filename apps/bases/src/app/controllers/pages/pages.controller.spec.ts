@@ -27,15 +27,26 @@ import {
   MongooseForFeatures
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { UserService, AuthenticationService } from '@castcle-api/database';
+import {
+  UserService,
+  AuthenticationService,
+  ContentService
+} from '@castcle-api/database';
 import { PageController } from '../pages/pages.controller';
 import { AppService } from '../../app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AccountDocument,
-  CredentialDocument
+  ContentDocument,
+  CredentialDocument,
+  UserType
 } from '@castcle-api/database/schemas';
-import { PageDto } from '@castcle-api/database/dtos';
+import {
+  ContentType,
+  PageDto,
+  SaveContentDto,
+  ShortPayload
+} from '@castcle-api/database/dtos';
 import { Image } from '@castcle-api/utils/aws';
 
 let mongod: MongoMemoryServer;
@@ -61,6 +72,7 @@ describe('PageController', () => {
   let service: UserService;
   let appService: AppService;
   let authService: AuthenticationService;
+  let contentService: ContentService;
   let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   const pageDto: PageDto = {
@@ -77,11 +89,17 @@ describe('PageController', () => {
         MongooseForFeatures
       ],
       controllers: [PageController],
-      providers: [AppService, UserService, AuthenticationService]
+      providers: [
+        AppService,
+        UserService,
+        AuthenticationService,
+        ContentService
+      ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
+    contentService = app.get<ContentService>(ContentService);
     pageController = app.get<PageController>(PageController);
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -164,6 +182,51 @@ describe('PageController', () => {
         pageDto.username
       );
       expect(getResult).toEqual(testPage.toPageResponse());
+    });
+  });
+  describe('getPageContents', () => {
+    it('should return ContentsReponse that contain all contain that create by this page', async () => {
+      const page = await authService.getUserFromCastcleId(pageDto.username);
+      const contentDtos: SaveContentDto[] = [
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'hello'
+          } as ShortPayload,
+          author: {
+            id: page._id,
+            type: UserType.Page
+          }
+        },
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'hi'
+          } as ShortPayload,
+          author: {
+            id: page._id,
+            type: UserType.Page
+          }
+        }
+      ];
+      const createResult: ContentDocument[] = [];
+      createResult[0] = await contentService.createContentFromUser(
+        page,
+        contentDtos[0]
+      );
+      createResult[1] = await contentService.createContentFromUser(
+        page,
+        contentDtos[1]
+      );
+      const response = await pageController.getPageContents(page._id, {
+        $credential: userCredential,
+        $language: 'th'
+      } as any);
+      expect(response).toEqual({
+        payload: createResult
+          .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
+          .map((c) => c.toPagePayload())
+      });
     });
   });
 });

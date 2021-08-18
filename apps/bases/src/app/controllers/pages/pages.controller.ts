@@ -34,12 +34,22 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { AppService } from '../../app.service';
-import { AuthenticationService, UserService } from '@castcle-api/database';
+import {
+  AuthenticationService,
+  UserService,
+  ContentService
+} from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { PageDto, UpdatePageDto } from '@castcle-api/database/dtos';
+import {
+  ContentResponse,
+  ContentsResponse,
+  PageDto,
+  UpdatePageDto
+} from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
-  CredentialRequest
+  CredentialRequest,
+  ContentsInterceptor
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Image, UploadOptions } from '@castcle-api/utils/aws';
@@ -50,7 +60,7 @@ import {
   ApiOkResponse,
   ApiResponse
 } from '@nestjs/swagger';
-import { UserDocument } from '@castcle-api/database/schemas';
+import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { PageInterceptor } from '../../interceptors/page.interceptor';
 
 @Controller()
@@ -58,7 +68,8 @@ export class PageController {
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService,
-    private userService: UserService
+    private userService: UserService,
+    private contentService: ContentService
   ) {}
   private readonly logger = new CastLogger(
     PageController.name,
@@ -79,11 +90,12 @@ export class PageController {
     req: CredentialRequest
   ) => {
     const idResult = await this.userService.getUserFromId(idOrCastCleId);
-    if (idResult) return idResult;
+    if (idResult && idResult.type === UserType.Page) return idResult;
     const castcleIdResult = await this.authService.getUserFromCastcleId(
       idOrCastCleId
     );
-    if (castcleIdResult) return castcleIdResult;
+    if (castcleIdResult && castcleIdResult.type === UserType.Page)
+      return castcleIdResult;
     else
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
@@ -214,5 +226,34 @@ export class PageController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  /**
+   *
+   * @param {string} idOrCastcleId of page
+   * @param {CredentialRequest} req that contain current user credential
+   * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
+   */
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    type: ContentResponse
+  })
+  @UseInterceptors(ContentsInterceptor)
+  @Get('pages/:id/contents')
+  async getPageContents(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ): Promise<ContentsResponse> {
+    const page = await this._getPageByIdOrCastcleId(id, req);
+    const contents = await this.contentService.getContentsFromUser(page);
+    return {
+      payload: contents.map((c) => c.toPagePayload())
+    };
   }
 }
