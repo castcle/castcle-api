@@ -40,13 +40,13 @@ import {
   ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { ContentPayloadDto, SaveContentDto } from '@castcle-api/database/dtos';
+import { ContentResponse, SaveContentDto } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Image } from '@castcle-api/utils/aws';
+import { ContentInterceptor } from '../../interceptors/content.interceptor';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -56,11 +56,6 @@ import {
   ApiResponse
 } from '@nestjs/swagger';
 import { ContentDocument } from '@castcle-api/database/schemas';
-
-class ContentResponse {
-  @ApiProperty()
-  payload: ContentPayloadDto;
-}
 
 @Controller()
 export class ContentController {
@@ -89,7 +84,7 @@ export class ContentController {
     status: 201,
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ContentInterceptor)
   @Post('contents/feed')
   async createFeedContent(
     @Body() body: SaveContentDto,
@@ -161,7 +156,7 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(ContentInterceptor)
   @Put('contents/:id')
   async updateContentFromId(
     @Param('id') id: string,

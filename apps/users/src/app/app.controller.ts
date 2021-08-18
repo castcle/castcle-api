@@ -32,7 +32,7 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { AppService } from './app.service';
-import { UserService } from '@castcle-api/database';
+import { UserService, ContentService } from '@castcle-api/database';
 import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
@@ -47,15 +47,24 @@ import {
   ApiOkResponse,
   ApiResponse
 } from '@nestjs/swagger';
-import { UpdateUserDto, UserResponseDto } from '@castcle-api/database/dtos';
+import {
+  ContentPayloadDto,
+  UpdateUserDto,
+  UserResponseDto
+} from '@castcle-api/database/dtos';
 
 let logger: CastLogger;
+
+class ContentResponse {
+  payload: ContentPayloadDto[];
+}
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private userService: UserService
+    private userService: UserService,
+    private contentService: ContentService
   ) {
     logger = new CastLogger(AppController.name, CastLoggerOptions);
   }
@@ -166,5 +175,32 @@ export class AppController {
         req.$language
       );
     }
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: ContentResponse
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Get('me/contents')
+  async getMyContent(@Req() req: CredentialRequest) {
+    //UserService
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) {
+      const contents = await this.contentService.getContentsFromUser(user);
+      return {
+        payload: contents.map((item) => item.toPagePayload())
+      } as ContentResponse;
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
   }
 }

@@ -188,3 +188,29 @@ export enum ContentType {
   Recast = 'recast',
   Quote = 'quote'
 }
+
+export class QueryOption {
+  sortBy?: {
+    field: string;
+    type: 'desc' | 'asc';
+  } = {
+    field: 'updatedAt',
+    type: 'desc'
+  };
+  page?: number = 1;
+  limit?: number = 25;
+}
+
+export const DEFAULT_QUERY_OPTIONS = {
+  sortBy: {
+    field: 'updatedAt',
+    type: 'desc'
+  },
+  page: 1,
+  limit: 25
+} as QueryOption;
+
+export class ContentResponse {
+  @ApiProperty()
+  payload: ContentPayloadDto;
+}
