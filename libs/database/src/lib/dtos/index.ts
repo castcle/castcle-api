@@ -34,7 +34,9 @@ import {
   ShortPayload,
   BlogPayload,
   ContentResponse,
-  ContentsResponse
+  ContentsResponse,
+  QueryOption,
+  DEFAULT_QUERY_OPTIONS
 } from './content.dto';
 
 export {
@@ -48,5 +50,7 @@ export {
   ShortPayload,
   BlogPayload,
   ContentResponse,
-  ContentsResponse
+  ContentsResponse,
+  QueryOption,
+  DEFAULT_QUERY_OPTIONS
 };

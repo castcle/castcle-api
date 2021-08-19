@@ -56,11 +56,20 @@ import {
 import {
   ContentPayloadDto,
   ContentType,
+  DEFAULT_QUERY_OPTIONS,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
+import {
+  SortByPipe,
+  PagePipe,
+  LimitPipe,
+  ContentTypePipe,
+  SortByEnum
+} from '@castcle-api/utils/pipes';
 import { UserDocument } from '@castcle-api/database/schemas';
 import { ContentsResponse } from '@castcle-api/database/dtos';
+import { Query } from '@nestjs/common';
 let logger: CastLogger;
 
 @Controller()
@@ -241,15 +250,50 @@ export class AppController {
   })
   @ApiQuery({ name: 'type', enum: ContentType })
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: ContentType,
+    required: false
+  })
   @UseInterceptors(ContentsInterceptor)
   @Get(':id/contents')
   async getUserContents(
     @Param('id') id: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    @Query('type', ContentTypePipe)
+    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
-    const contents = await this.contentService.getContentsFromUser(user);
+    const contents = await this.contentService.getContentsFromUser(user, {
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: contentTypeOption
+    });
     return {
       payload: contents.map((item) => item.toPagePayload())
     } as ContentsResponse;

@@ -21,10 +21,19 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
+import {
+  SortByPipe,
+  PagePipe,
+  LimitPipe,
+  ContentTypePipe,
+  SortByEnum
+} from './query/query.pipe';
 
 @Module({
   controllers: [],
-  providers: [],
-  exports: []
+  providers: [SortByPipe, PagePipe, LimitPipe],
+  exports: [SortByPipe, PagePipe, LimitPipe]
 })
 export class UtilsPipesModule {}
+
+export { SortByPipe, PagePipe, LimitPipe, ContentTypePipe, SortByEnum };

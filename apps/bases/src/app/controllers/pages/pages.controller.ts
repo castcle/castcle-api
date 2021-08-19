@@ -43,6 +43,8 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
   ContentsResponse,
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
   PageDto,
   UpdatePageDto
 } from '@castcle-api/database/dtos';
@@ -51,6 +53,13 @@ import {
   CredentialRequest,
   ContentsInterceptor
 } from '@castcle-api/utils/interceptors';
+import {
+  SortByPipe,
+  PagePipe,
+  LimitPipe,
+  SortByEnum,
+  ContentTypePipe
+} from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
@@ -58,10 +67,12 @@ import {
   ApiBody,
   ApiHeader,
   ApiOkResponse,
+  ApiQuery,
   ApiResponse
 } from '@nestjs/swagger';
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { PageInterceptor } from '../../interceptors/page.interceptor';
+import { Query } from '@nestjs/common';
 
 @Controller()
 export class PageController {
@@ -245,13 +256,48 @@ export class PageController {
     type: ContentResponse
   })
   @UseInterceptors(ContentsInterceptor)
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: ContentType,
+    required: false
+  })
   @Get('pages/:id/contents')
   async getPageContents(
     @Param('id') id: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    @Query('type', ContentTypePipe)
+    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
-    const contents = await this.contentService.getContentsFromUser(page);
+    const contents = await this.contentService.getContentsFromUser(page, {
+      sortBy: sortByOption,
+      limit: limitOption,
+      page: pageOption,
+      type: contentTypeOption
+    });
     return {
       payload: contents.map((c) => c.toPagePayload())
     };
