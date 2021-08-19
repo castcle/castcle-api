@@ -673,6 +673,31 @@
           }
         }
       }
+    },
+    "utils-pipes": {
+      "root": "libs/utils/pipes",
+      "sourceRoot": "libs/utils/pipes/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/pipes/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/pipes"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/pipes/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
     }
   },
   "cli": {

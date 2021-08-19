@@ -74,6 +74,9 @@
     },
     "utils-interceptors": {
       "tags": []
+    },
+    "utils-pipes": {
+      "tags": []
     }
   }
 }

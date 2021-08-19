@@ -197,6 +197,7 @@ export class QueryOption {
     field: 'updatedAt',
     type: 'desc'
   };
+  type?: ContentType;
   page?: number = 1;
   limit?: number = 25;
 }
@@ -206,6 +207,7 @@ export const DEFAULT_QUERY_OPTIONS = {
     field: 'updatedAt',
     type: 'desc'
   },
+  type: ContentType.Short,
   page: 1,
   limit: 25
 } as QueryOption;

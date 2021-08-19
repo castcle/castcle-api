@@ -20,37 +20,4 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
-} from './content.dto';
-
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
-};
+export * from './lib/utils-pipes.module';

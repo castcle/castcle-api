@@ -39,6 +39,7 @@ module.exports = {
     '<rootDir>/libs/utils',
     '<rootDir>/libs/utils/interceptors',
     '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws'
+    '<rootDir>/libs/utils/aws',
+    '<rootDir>/libs/utils/pipes'
   ]
 };

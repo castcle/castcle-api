@@ -138,11 +138,14 @@ export class ContentService {
     user: UserDocument,
     options: QueryOption = DEFAULT_QUERY_OPTIONS
   ) => {
+    const findFilter: { 'author.id': any; type?: string } = {
+      'author.id': user._id
+    };
+    if (options.type) findFilter.type = options.type;
     const query = this._contentModel
-      .find({ 'author.id': user._id })
+      .find(findFilter)
       .skip(options.page - 1)
       .limit(options.limit);
-
     if (options.sortBy.type === 'desc') {
       return query.sort(`-${options.sortBy.field}`).exec();
     } else return query.sort(`+${options.sortBy.field}`).exec();
