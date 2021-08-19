@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -43,7 +44,15 @@ export class UserService {
       .findOne({ ownerAccount: credential.account._id, type: UserType.People })
       .exec();
 
-  getUserFromId = (id: string) => this._userModel.findById(id).exec();
+  getUserFromId = (id: string) => {
+    try {
+      if (mongoose.Types.ObjectId(id)) {
+        return this._userModel.findById(id).exec();
+      } else return null;
+    } catch (error) {
+      return null;
+    }
+  };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateUserDto) => {
     if (!user.profile) user.profile = {};

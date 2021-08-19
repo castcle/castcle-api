@@ -20,37 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
-} from './content.dto';
-
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
+module.exports = {
+  displayName: 'utils-pipes',
+  preset: '../../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
+  },
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../../coverage/libs/utils/pipes'
 };

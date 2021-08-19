@@ -29,7 +29,13 @@ import { CredentialDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
-import { SaveContentDto, ContentPayloadDto, Author } from '../dtos/content.dto';
+import {
+  SaveContentDto,
+  ContentPayloadDto,
+  Author,
+  QueryOption,
+  DEFAULT_QUERY_OPTIONS
+} from '../dtos/content.dto';
 
 @Injectable()
 export class ContentService {
@@ -121,4 +127,27 @@ export class ContentService {
     user: UserDocument,
     content: ContentDocument
   ) => content.author.id === user._id;
+
+  /**
+   *
+   * @param {UserDocument} user
+   * @param {QueryOption} options contain option for sorting page = skip + 1,
+   * @returns {Promise<ContentDocument[]>}
+   */
+  getContentsFromUser = async (
+    user: UserDocument,
+    options: QueryOption = DEFAULT_QUERY_OPTIONS
+  ) => {
+    const findFilter: { 'author.id': any; type?: string } = {
+      'author.id': user._id
+    };
+    if (options.type) findFilter.type = options.type;
+    const query = this._contentModel
+      .find(findFilter)
+      .skip(options.page - 1)
+      .limit(options.limit);
+    if (options.sortBy.type === 'desc') {
+      return query.sort(`-${options.sortBy.field}`).exec();
+    } else return query.sort(`+${options.sortBy.field}`).exec();
+  };
 }

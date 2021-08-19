@@ -154,4 +154,48 @@ describe('ContentService', () => {
       expect(postContent.revisionCount).toEqual(revisionCount + 1);
     });
   });
+  describe('#getContentsFromUser()', () => {
+    it('should return ContentDocument[] from author', async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+      const shortPayload1: ShortPayload = {
+        message: 'Order 1'
+      };
+      const content = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload1
+      });
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      });
+      const shortPayload2: ShortPayload = {
+        message: 'Order 2'
+      };
+      const content2 = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload2
+      });
+      const contents = await service.getContentsFromUser(user);
+      console.log(contents);
+      expect(contents[0].payload).toEqual(shortPayload2);
+      expect(contents[1].payload).toEqual(shortPayload1);
+      const contentsInverse = await service.getContentsFromUser(user, {
+        sortBy: {
+          field: 'updateAt',
+          type: 'asc'
+        }
+      });
+      expect(contentsInverse[contentsInverse.length - 2].payload).toEqual(
+        shortPayload1
+      );
+      expect(contentsInverse[contentsInverse.length - 1].payload).toEqual(
+        shortPayload2
+      );
+    });
+  });
 });

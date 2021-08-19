@@ -28,6 +28,7 @@ export type UploadOptions = {
   filename?: string;
   language?: string;
   addTime?: boolean;
+  order?: number;
 };
 
 export class Uploader {

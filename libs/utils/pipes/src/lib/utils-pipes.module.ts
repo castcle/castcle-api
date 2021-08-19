@@ -20,37 +20,20 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { Module } from '@nestjs/common';
 import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
-} from './content.dto';
+  SortByPipe,
+  PagePipe,
+  LimitPipe,
+  ContentTypePipe,
+  SortByEnum
+} from './query/query.pipe';
 
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
-};
+@Module({
+  controllers: [],
+  providers: [SortByPipe, PagePipe, LimitPipe],
+  exports: [SortByPipe, PagePipe, LimitPipe]
+})
+export class UtilsPipesModule {}
+
+export { SortByPipe, PagePipe, LimitPipe, ContentTypePipe, SortByEnum };
