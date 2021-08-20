@@ -90,7 +90,10 @@ export class ContentController {
     @Body() body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
-    if (req.$credential.account.isGuest && req.$credential.account.activateDate)
+    if (
+      req.$credential.account.isGuest ||
+      !req.$credential.account.activateDate
+    )
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
@@ -138,7 +141,10 @@ export class ContentController {
     content: ContentDocument,
     req: CredentialRequest
   ) {
-    if (req.$credential.account.isGuest && req.$credential.account.activateDate)
+    if (
+      req.$credential.account.isGuest ||
+      !req.$credential.account.activateDate
+    )
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
