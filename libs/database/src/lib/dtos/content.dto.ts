@@ -57,6 +57,11 @@ export class ShortPayload {
   link?: Link[];
 }
 
+export class ImagePayload {
+  @ApiProperty()
+  photo?: ShortPhoto;
+}
+
 export class BlogPayload {
   @ApiProperty()
   header: string;
@@ -176,7 +181,7 @@ export class SaveContentDto {
   type: 'short' | 'blog' | 'image';
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload;
+  payload: ShortPayload | BlogPayload | ImagePayload;
 
   @ApiProperty()
   author?: AuthorDto;
