@@ -174,7 +174,15 @@ describe('Authentication Service', () => {
         const result = service._generateEmailVerifyToken({
           id: 'randomid'
         });
-        expect(result.verifyTokenExpireDate).toEqual(expectedExpireDate);
+        expect(result.verifyTokenExpireDate.getMinutes()).toEqual(
+          expectedExpireDate.getMinutes()
+        );
+        expect(result.verifyTokenExpireDate.getHours()).toEqual(
+          expectedExpireDate.getHours()
+        );
+        expect(result.verifyTokenExpireDate.getDay()).toEqual(
+          expectedExpireDate.getDay()
+        );
       });
     });
 
