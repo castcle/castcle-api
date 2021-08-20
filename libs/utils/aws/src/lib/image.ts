@@ -38,7 +38,9 @@ export class Image {
       cloudFrontPrivateKey
     );
     return signer.getSignedUrl({
-      url: this.uri,
+      url: `${
+        env.assets_host ? env.assets_host : 'https://assets-dev.castcle.com'
+      }/${this.uri}`,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
     });
   }
@@ -50,6 +52,6 @@ export class Image {
     );
     return uploader
       .uploadFromBase64ToS3(base64, options)
-      .then((data) => new Image(data.Location, options.order));
+      .then((data) => new Image(data.Key, options.order));
   }
 }
