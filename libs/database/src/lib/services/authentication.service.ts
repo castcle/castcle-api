@@ -204,6 +204,7 @@ export class AuthenticationService {
     account: AccountDocument,
     requirements: SignupRequirements
   ) {
+    account.isGuest = false;
     //account.email = requirements.email;
     //account.password =  requirements.password;
     await account.changePassword(requirements.password, requirements.email);

@@ -101,7 +101,10 @@ export const AccountSchemaFactory = (
     await credentialModel
       .findOneAndUpdate(
         { 'account._id': doc._id },
-        { 'account.isGuest': (doc as AccountDocument).isGuest }
+        {
+          'account.isGuest': (doc as AccountDocument).isGuest,
+          'account.activateDate': (doc as AccountDocument).activateDate
+        }
       )
       .exec();
     next();

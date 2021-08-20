@@ -239,7 +239,7 @@ describe('AppController', () => {
     let tokens: TokenResponse;
     const testId = 'registerId';
     const registerEmail = 'sompop.kulapalanont@gmail.com';
-    const deviceUUID = 'sompop12345';
+    const deviceUUID = 'sompo007';
     it('should create new account with email and new user with id ', async () => {
       let result = await appController.checkCastcleIdExists({
         castcleId: testId
@@ -284,8 +284,12 @@ describe('AppController', () => {
       expect(response.payload.exist).toBe(true);
 
       //check if it's the same account
-      const credentialFromDeviceID =
+      const guestCredentialFromDeviceID =
         await service.getGuestCredentialFromDeviceUUID(deviceUUID);
+      expect(guestCredentialFromDeviceID).toBeNull(); //this credential should be null because it's already signup so it's not a guess
+      const credentialFromDeviceID = await service.getCredentialFromAccessToken(
+        tokens.accessToken
+      );
       const accountFromEmail = await service.getAccountFromEmail(registerEmail);
       const accountFromDeviceID = await service.getAccountFromCredential(
         credentialFromDeviceID

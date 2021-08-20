@@ -426,8 +426,11 @@ describe('Authentication Service', () => {
           .exec();
       });
       it('should change status of account from isGuest to false and have activationDate', async () => {
-        expect(createAccountResult.accountDocument.isGuest).toBe(true);
-        expect(afterVerifyAccount.isGuest).toBe(false);
+        expect(createAccountResult.accountDocument.isGuest).toBe(false);
+        expect(
+          createAccountResult.accountDocument.activateDate
+        ).not.toBeDefined();
+        expect(afterVerifyAccount.activateDate).toBeDefined();
         const postCredential = await service._credentialModel
           .findById(createAccountResult.credentialDocument._id)
           .exec();
