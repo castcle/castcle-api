@@ -41,6 +41,21 @@ export const ErrorMessages = {
     code: '1004',
     message: 'Refresh token is expired.'
   },
+  '1005': {
+    statusCode: '401',
+    code: '1005',
+    message: 'รูปแบบไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'
+  },
+  '1006': {
+    statusCode: '401',
+    code: '1006',
+    message: 'อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+  },
+  '1007': {
+    statusCode: '403',
+    code: '1007',
+    message: 'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
+  },
   '3001': {
     statusCode: '400',
     code: '3001',

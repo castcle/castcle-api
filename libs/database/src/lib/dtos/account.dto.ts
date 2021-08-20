@@ -23,7 +23,10 @@
 import * as mongoose from 'mongoose';
 
 export class SaveCredentialDto {
-  account?: mongoose.Types.ObjectId;
+  account?: {
+    _id: mongoose.Types.ObjectId;
+    isGuest: boolean;
+  };
   accessToken: string;
   refreshToken?: string;
   accessTokenExpireDate: Date;
@@ -34,7 +37,10 @@ export class SaveCredentialDto {
 }
 
 export class CreateCredentialDto {
-  account: mongoose.Types.ObjectId;
+  account: {
+    _id: mongoose.Types.ObjectId;
+    isGuest: boolean;
+  };
   accessToken: string;
   refreshToken: string;
   accessTokenExpireDate: Date;

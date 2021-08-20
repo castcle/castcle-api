@@ -30,7 +30,7 @@ import {
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures } from '../database.module';
+import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AccountActivation,
@@ -59,8 +59,12 @@ describe('Authentication Service', () => {
   let service: AuthenticationService;
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
-    ? [MongooseModule.forRoot(env.db_uri, env.db_options), MongooseForFeatures]
-    : [rootMongooseTestModule(), MongooseForFeatures];
+    ? [
+        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ]
+    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [AuthenticationService];
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -170,7 +174,15 @@ describe('Authentication Service', () => {
         const result = service._generateEmailVerifyToken({
           id: 'randomid'
         });
-        expect(result.verifyTokenExpireDate).toEqual(expectedExpireDate);
+        expect(result.verifyTokenExpireDate.getMinutes()).toEqual(
+          expectedExpireDate.getMinutes()
+        );
+        expect(result.verifyTokenExpireDate.getHours()).toEqual(
+          expectedExpireDate.getHours()
+        );
+        expect(result.verifyTokenExpireDate.getDay()).toEqual(
+          expectedExpireDate.getDay()
+        );
       });
     });
 
@@ -186,9 +198,10 @@ describe('Authentication Service', () => {
       });
       it('should create a new Credential with account from above', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
-        expect(createAccountResult.credentialDocument.account).toEqual(
-          createAccountResult.accountDocument._id
-        ); //not sure how to  check
+        expect(createAccountResult.credentialDocument.account).toEqual({
+          _id: createAccountResult.accountDocument._id,
+          isGuest: createAccountResult.accountDocument.isGuest
+        }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
         //check account
@@ -258,9 +271,9 @@ describe('Authentication Service', () => {
       });
     });
 
-    describe('#getCredentialFromDeviceUUID', () => {
+    describe('#getGuestCredentialFromDeviceUUID', () => {
       it('should return credential document when call a function from newly create Account device UUID', async () => {
-        const resultCredential = await service.getCredentialFromDeviceUUID(
+        const resultCredential = await service.getGuestCredentialFromDeviceUUID(
           newDeviceUUID
         );
         expect(resultCredential._id).toEqual(
@@ -268,7 +281,7 @@ describe('Authentication Service', () => {
         );
       });
       it('should return null if there is not found deviceUUID', async () => {
-        const resultCredential = await service.getCredentialFromDeviceUUID(
+        const resultCredential = await service.getGuestCredentialFromDeviceUUID(
           'NOPEEE'
         );
         expect(resultCredential).toBeNull();
@@ -319,7 +332,7 @@ describe('Authentication Service', () => {
     });
     describe('#getUserFromId()', () => {
       it('should return null if non id is exist in user', async () => {
-        const result = await service.getUserFromId('notFoundId');
+        const result = await service.getUserFromCastcleId('notFoundId');
         expect(result).toBeNull();
       });
       it('should return an user when id is match', async () => {
@@ -330,7 +343,7 @@ describe('Authentication Service', () => {
           ownerAccount: createAccountResult.accountDocument._id
         });
         await newUser.save();
-        const result = await service.getUserFromId('testNew');
+        const result = await service.getUserFromCastcleId('testNew');
         expect(result).not.toBeNull();
         expect(result.displayId).toEqual(newUser.displayId);
         console.log(result);
@@ -371,7 +384,7 @@ describe('Authentication Service', () => {
         afterSaveAccount = await service._accountModel.findById(
           createAccountResult.accountDocument._id
         );
-        afterSaveUser = await service.getUserFromId('dudethisisnew');
+        afterSaveUser = await service.getUserFromCastcleId('dudethisisnew');
       });
       it('should update email, password of current account', () => {
         expect(afterSaveAccount.email).toBe(signupRequirements.email);
@@ -413,8 +426,15 @@ describe('Authentication Service', () => {
           .exec();
       });
       it('should change status of account from isGuest to false and have activationDate', async () => {
-        expect(createAccountResult.accountDocument.isGuest).toBe(true);
-        expect(afterVerifyAccount.isGuest).toBe(false);
+        expect(createAccountResult.accountDocument.isGuest).toBe(false);
+        expect(
+          createAccountResult.accountDocument.activateDate
+        ).not.toBeDefined();
+        expect(afterVerifyAccount.activateDate).toBeDefined();
+        const postCredential = await service._credentialModel
+          .findById(createAccountResult.credentialDocument._id)
+          .exec();
+        expect(postCredential.account.isGuest).toBe(false);
         expect(beforeVerifyAccount.activateDate).not.toBeDefined();
         expect(afterVerifyAccount.activateDate).toBeDefined();
       });

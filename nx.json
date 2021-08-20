@@ -66,10 +66,16 @@
     "utils": {
       "tags": []
     },
-    "utils-interceptors": {
+    "utils-aws": {
       "tags": []
     },
     "utils-exception": {
+      "tags": []
+    },
+    "utils-interceptors": {
+      "tags": []
+    },
+    "utils-pipes": {
       "tags": []
     }
   }

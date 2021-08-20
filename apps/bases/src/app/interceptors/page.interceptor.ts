@@ -20,13 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Prop, Schema } from '@nestjs/mongoose';
 
-@Schema()
-export class TimestampBase {
-  @Prop()
-  createdAt?: Date;
+import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
+import { PageDto } from '@castcle-api/database/dtos';
 
-  @Prop()
-  updatedAt?: Date;
+import { Image } from '@castcle-api/utils/aws';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
+import { map } from 'rxjs';
+
+@Injectable()
+export class PageInterceptor extends CredentialInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const superResult = await super.intercept(context, next);
+    return superResult.pipe(
+      map((data: PageDto) => {
+        data.avatar = new Image(data.avatar).toSignUrl();
+        data.cover = new Image(data.cover).toSignUrl();
+        return data;
+      })
+    );
+  }
 }

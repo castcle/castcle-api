@@ -24,12 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 
 export type CommentDocument = Comment & Document;
 
 @Schema({ timestamps: true })
-export class Comment extends TimestampBase {
+export class Comment extends CastcleBase {
   @Prop({ required: true, type: Object })
   author: Account | any;
 

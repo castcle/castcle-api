@@ -23,31 +23,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import {
+  ContentPayloadDto,
+  ShortPayload,
+  ContentType,
+  BlogPayload,
+  Author
+} from '../dtos/content.dto';
+import { CastcleBase } from './base.schema';
 
-export interface PostPayload {
-  content: string;
-  photo: {
-    file: string;
-  }[];
-  link: {
-    type: string;
-    url: string;
-  }[];
-}
-
-export interface BlogPayload {
-  header: string;
-  content: any;
-  photo: {
-    file: string;
-  }[];
-  link: {
-    type: string;
-    url: string;
-  }[];
-}
-
+//TODO: !!!  need to revise this
 export interface RecastPayload {
   source: Content;
 }
@@ -57,27 +42,20 @@ export interface QuotePayload {
   content: string;
 }
 
-export enum ContentType {
-  Post = 'post',
-  Blog = 'blog',
-  Recast = 'recast',
-  Quote = 'quote'
-}
-
-export type ContentDocument = Content & Document;
+export type ContentDocument = Content & IContent;
 
 @Schema({ timestamps: true })
-export class Content extends TimestampBase {
+export class Content extends CastcleBase {
   @Prop({ required: true, type: Object })
-  author: Account | any;
+  author: Author;
 
   @Prop({ required: true })
   type: string;
 
   @Prop({ required: true, type: Object })
-  payload: PostPayload | BlogPayload | RecastPayload | QuotePayload;
+  payload: ShortPayload | BlogPayload | RecastPayload | QuotePayload;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ type: Object })
   engagements: {
     [engagementKey: string]: {
       count: number;
@@ -92,4 +70,46 @@ export class Content extends TimestampBase {
   hashtags: any[];
 }
 
+interface IContent extends Document {
+  /**
+   * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
+   */
+  toPagePayload(): ContentPayloadDto;
+}
+
 export const ContentSchema = SchemaFactory.createForClass(Content);
+
+ContentSchema.methods.toPagePayload = function () {
+  //Todo Need to implement recast quote cast later on
+  return {
+    id: (this as ContentDocument)._id,
+    author: (this as ContentDocument).author,
+    commented: {
+      commented: false, //TODO !!! need to update after implement with engagement
+      count:
+        (this as ContentDocument).engagements &&
+        (this as ContentDocument).engagements['comment']
+          ? (this as ContentDocument).engagements['comment'].count
+          : 0,
+      participants: []
+    },
+    payload: (this as ContentDocument).payload,
+    created: (this as ContentDocument).createdAt.toISOString(),
+    updated: (this as ContentDocument).updatedAt.toISOString(),
+    liked: {
+      liked: false,
+      count:
+        (this as ContentDocument).engagements &&
+        (this as ContentDocument).engagements['like']
+          ? (this as ContentDocument).engagements['like'].count
+          : 0,
+      participants: []
+    },
+    type: (this as ContentDocument).type,
+    feature: {
+      slug: 'feed',
+      key: 'feature.feed',
+      name: 'Feed'
+    }
+  } as ContentPayloadDto;
+};

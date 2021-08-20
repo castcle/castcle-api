@@ -24,11 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model, model } from 'mongoose';
-import { TimestampBase } from './base.timestamp.schema';
+import { CastcleBase } from './base.schema';
 import { AccountActivationDocument } from './accountActivation.schema';
 import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
 import { Password } from '@castcle-api/utils';
+import { User } from './user.schema';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -36,8 +37,13 @@ export enum AccountRole {
   Guest = 'guest'
 }
 
+interface ICredential {
+  _id: any;
+  deviceUUID: string;
+}
+
 @Schema({ timestamps: true })
-export class Account extends TimestampBase {
+export class Account extends CastcleBase {
   @Prop()
   email: string;
 
@@ -60,6 +66,9 @@ export class Account extends TimestampBase {
     countryCode: string;
     number: string;
   };
+
+  @Prop({ type: Array })
+  credentials: ICredential[];
 }
 export const AccountSchema = SchemaFactory.createForClass(Account);
 
@@ -69,7 +78,6 @@ export interface IAccount extends Document {
     email?: string
   ): Promise<AccountDocument | null>;
   verifyPassword(password: string): boolean;
-  getOneCredential(): Promise<CredentialDocument>;
 }
 AccountSchema.methods.changePassword = async function (
   password: string,
@@ -85,40 +93,21 @@ AccountSchema.methods.changePassword = async function (
 AccountSchema.methods.verifyPassword = function (password: string) {
   return Password.verify(password, (this as AccountDocument).password);
 };
-AccountSchema.methods.getOneCredential =
-  function (): Promise<CredentialDocument> {
-    const credentialModel: Model<CredentialDocument> = model(
-      'Credential',
-      CredentialSchema
-    );
-    return credentialModel.findOne({ account: this._id }).exec();
-  };
 
-export interface AccountModel extends mongoose.Model<AccountDocument> {
-  createAccountActivation(
-    accountActivationModel: Model<AccountActivationDocument>,
-    accountDocument: AccountDocument,
-    type: 'email' | 'phone'
-  ): Promise<AccountActivationDocument>;
-}
-
-AccountSchema.statics.createAccountActivation = (
-  accountActivationModel: Model<AccountActivationDocument>,
-  accountDocument: AccountDocument,
-  type: 'email' | 'phone'
-) => {
-  const now = new Date();
-  const verifyExpireDate = new Date(now.getTime() + env.jwt_verify_expires_in);
-  const payload = {
-    id: accountDocument._id,
-    verifyExpireDate: verifyExpireDate
-  };
-  const token = `${JSON.stringify(payload)}`; //temporary
-  const accountActivation = new accountActivationModel({
-    account: accountDocument._id,
-    type: type,
-    verifyToken: token,
-    verifyExpireDate: verifyExpireDate
+export const AccountSchemaFactory = (
+  credentialModel: Model<CredentialDocument>
+): mongoose.Schema<any> => {
+  AccountSchema.post('save', async function (doc, next) {
+    await credentialModel
+      .findOneAndUpdate(
+        { 'account._id': doc._id },
+        {
+          'account.isGuest': (doc as AccountDocument).isGuest,
+          'account.activateDate': (doc as AccountDocument).activateDate
+        }
+      )
+      .exec();
+    next();
   });
-  return accountActivation.save();
+  return AccountSchema;
 };

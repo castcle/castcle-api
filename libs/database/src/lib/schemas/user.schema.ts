@@ -23,29 +23,36 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { TimestampBase } from './base.timestamp.schema';
+import { Document, Model } from 'mongoose';
+import { Account, AccountDocument } from '../schemas/account.schema';
+import { CastcleBase } from './base.schema';
+import { PageDto, UserResponseDto } from '../dtos/user.dto';
 
-export type UserDocument = User & Document;
+export type UserDocument = User & IUser;
+
+type ProfileImage = {
+  avatar?: string;
+  cover?: string;
+};
 
 export interface UserProfile {
-  birthdate: string;
-  overview: string;
-  works: string[];
-  educations: string[];
-  homeTowns: string[];
-  websites: {
+  birthdate?: string;
+  overview?: string;
+  works?: string[];
+  educations?: string[];
+  homeTowns?: string[];
+  websites?: {
     website: string;
     detail: string;
   }[];
-  socials: {
-    facebook: string;
-    twitter: string;
-    youtube: string;
-    medium: string;
+  socials?: {
+    facebook?: string;
+    twitter?: string;
+    youtube?: string;
+    medium?: string;
   };
-  details: string;
+  details?: string;
+  images?: ProfileImage;
 }
 
 export enum UserType {
@@ -54,7 +61,7 @@ export enum UserType {
 }
 
 @Schema({ timestamps: true })
-export class User extends TimestampBase {
+export class User extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -69,7 +76,7 @@ export class User extends TimestampBase {
   displayId: string;
 
   @Prop({ type: Object })
-  profile: UserProfile;
+  profile?: UserProfile;
 
   @Prop({ required: true })
   type: string;
@@ -79,3 +86,53 @@ export class User extends TimestampBase {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+export interface IUser extends Document {
+  toUserResponse(): Promise<UserResponseDto>;
+  toPageResponse(): PageDto;
+}
+
+UserSchema.methods.toUserResponse = async function () {
+  const self = await (this as UserDocument)
+    .populate('ownerAccount')
+    .execPopulate();
+  const selfSocial: any =
+    self.profile && self.profile.socials ? { ...self.profile.socials } : {};
+  if (self.profile && self.profile.websites && self.profile.websites.length > 0)
+    selfSocial.website = self.profile.websites[0].website;
+  return {
+    id: self._id,
+    castcleId: self.displayId,
+    dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
+    email: self.ownerAccount.email,
+    followers: {
+      count: 0
+    }, // TODO !!!
+    following: {
+      count: 0
+    }, // TODO !!!
+    images: {
+      avatar:
+        self.profile && self.profile.images && self.profile.images.avatar
+          ? self.profile.images.avatar
+          : 'http://placehold.it/100x100', // TODO !!! need to check S3 about static url
+      cover:
+        self.profile && self.profile.images && self.profile.images.cover
+          ? self.profile.images.cover
+          : 'http://placehold.it/200x200'
+    },
+    overview:
+      self.profile && self.profile.overview ? self.profile.overview : null,
+    links: selfSocial,
+    verified: self.verified
+  } as UserResponseDto;
+};
+
+UserSchema.methods.toPageResponse = function () {
+  return {
+    username: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    avatar: (this as UserDocument).profile.images.avatar,
+    cover: (this as UserDocument).profile.images.cover
+  } as PageDto;
+};
