@@ -109,7 +109,9 @@ describe('PageController', () => {
       }
     );
     userAccount = await authService.verifyAccount(accountActivation);
-    userCredential = result.credentialDocument;
+    userCredential = await authService.getCredentialFromAccessToken(
+      result.credentialDocument.accessToken
+    ); //result.credentialDocument;
     user = await service.getUserFromCredential(userCredential);
   });
   afterAll(async () => {
