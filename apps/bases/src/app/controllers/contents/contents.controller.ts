@@ -153,6 +153,9 @@ export class ContentController {
     example: 'th',
     required: true
   })
+  @ApiBody({
+    type: SaveContentDto
+  })
   @ApiOkResponse({
     type: ContentResponse
   })
