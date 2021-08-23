@@ -30,6 +30,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseInterceptors
 } from '@nestjs/common';
@@ -40,7 +41,12 @@ import {
   ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { ContentResponse, SaveContentDto } from '@castcle-api/database/dtos';
+import {
+  ContentResponse,
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
+  SaveContentDto
+} from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -56,6 +62,12 @@ import {
   ApiResponse
 } from '@nestjs/swagger';
 import { ContentDocument } from '@castcle-api/database/schemas';
+import {
+  ContentTypePipe,
+  LimitPipe,
+  PagePipe,
+  SortByPipe
+} from '@castcle-api/utils/pipes';
 
 @Controller()
 export class ContentController {
@@ -213,5 +225,37 @@ export class ContentController {
     await this._checkPermissionForUpdate(content, req);
     content.delete();
     return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: ContentResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Get('contents')
+  async getContents(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    @Query('type', ContentTypePipe)
+    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+  ) {
+    const content = await this._getContentIfExist(id, req);
+    return {
+      payload: content.toPagePayload()
+    } as ContentResponse;
   }
 }

@@ -215,7 +215,11 @@ describe('AppController', () => {
       expectedResponse = {
         payload: contents
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toPagePayload())
+          .map((c) => c.toPagePayload()),
+        pagination: {
+          limit: 25,
+          self: 1
+        }
       };
     });
     describe('getMyContents', () => {

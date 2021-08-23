@@ -299,7 +299,8 @@ export class PageController {
       type: contentTypeOption
     });
     return {
-      payload: contents.map((c) => c.toPagePayload())
+      payload: contents.items.map((c) => c.toPagePayload()),
+      pagination: contents.pagination
     };
   }
 }

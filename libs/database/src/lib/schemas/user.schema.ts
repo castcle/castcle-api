@@ -124,7 +124,7 @@ UserSchema.methods.toUserResponse = async function () {
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
-    verified: self.verified
+    verified: self.verified ? true : false
   } as UserResponseDto;
 };
 
