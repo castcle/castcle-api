@@ -25,7 +25,10 @@ import {
   UserResponseDto,
   UpdateUserDto,
   PageDto,
-  UpdatePageDto
+  UpdatePageDto,
+  PagesResponse,
+  PageResponse,
+  PageResponseDto
 } from './user.dto';
 import {
   ContentType,
@@ -52,5 +55,8 @@ export {
   ContentResponse,
   ContentsResponse,
   CastcleQueryOptions,
+  PagesResponse,
+  PageResponse,
+  PageResponseDto,
   DEFAULT_QUERY_OPTIONS
 };
