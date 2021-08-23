@@ -230,7 +230,8 @@ export class AppController {
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user);
       return {
-        payload: contents.map((item) => item.toPagePayload())
+        payload: contents.items.map((item) => item.toPagePayload()),
+        pagination: contents.pagination
       } as ContentsResponse;
     } else
       throw new CastcleException(
@@ -295,7 +296,8 @@ export class AppController {
       type: contentTypeOption
     });
     return {
-      payload: contents.map((item) => item.toPagePayload())
+      payload: contents.items.map((item) => item.toPagePayload()),
+      pagination: contents.pagination
     } as ContentsResponse;
   }
 }

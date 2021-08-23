@@ -28,6 +28,9 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { UserDocument, UserType } from '../schemas/user.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
+import { CastcleQueryOptions } from '../dtos';
+import { createPagination } from '../utils/common';
+import { Pagination } from '../dtos/common.dto';
 
 @Injectable()
 export class UserService {
@@ -112,5 +115,26 @@ export class UserService {
       }
     });
     return newPage.save();
+  };
+
+  /**
+   * getl all pages
+   * @param {CastcleQueryOptions} queryOptions
+   * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
+   */
+  getAllPages = async (queryOptions: CastcleQueryOptions) => {
+    const pagination = createPagination(
+      queryOptions,
+      await this._userModel.count({ type: UserType.Page })
+    );
+    const itemsQuery = this._userModel
+      .find({ type: UserType.Page })
+      .skip(queryOptions.page - 1)
+      .limit(queryOptions.limit);
+    let items: UserDocument[];
+    if (queryOptions.sortBy.type === 'desc')
+      items = await itemsQuery.sort(`-${queryOptions.sortBy.field}`).exec();
+    else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
+    return { items, pagination };
   };
 }

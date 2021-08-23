@@ -182,20 +182,20 @@ describe('ContentService', () => {
       });
       const contents = await service.getContentsFromUser(user);
       console.log(contents);
-      expect(contents[0].payload).toEqual(shortPayload2);
-      expect(contents[1].payload).toEqual(shortPayload1);
+      expect(contents.items[0].payload).toEqual(shortPayload2);
+      expect(contents.items[1].payload).toEqual(shortPayload1);
       const contentsInverse = await service.getContentsFromUser(user, {
         sortBy: {
           field: 'updateAt',
           type: 'asc'
         }
       });
-      expect(contentsInverse[contentsInverse.length - 2].payload).toEqual(
-        shortPayload1
-      );
-      expect(contentsInverse[contentsInverse.length - 1].payload).toEqual(
-        shortPayload2
-      );
+      expect(
+        contentsInverse.items[contentsInverse.items.length - 2].payload
+      ).toEqual(shortPayload1);
+      expect(
+        contentsInverse.items[contentsInverse.items.length - 1].payload
+      ).toEqual(shortPayload2);
     });
   });
 });
