@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Pagination } from './common.dto';
 
 class Url {
   @ApiProperty()
@@ -194,7 +195,7 @@ export enum ContentType {
   Quote = 'quote'
 }
 
-export class QueryOption {
+export class CastcleQueryOptions {
   sortBy?: {
     field: string;
     type: 'desc' | 'asc';
@@ -215,7 +216,7 @@ export const DEFAULT_QUERY_OPTIONS = {
   type: ContentType.Short,
   page: 1,
   limit: 25
-} as QueryOption;
+} as CastcleQueryOptions;
 
 export class ContentResponse {
   @ApiProperty()
@@ -225,4 +226,7 @@ export class ContentResponse {
 export class ContentsResponse {
   @ApiProperty()
   payload: ContentPayloadDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
 }

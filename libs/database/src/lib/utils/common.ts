@@ -21,42 +21,27 @@
  * or have any questions.
  */
 
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
-} from './content.dto';
+import { CastcleQueryOptions } from '../dtos/content.dto';
+import { Pagination } from '../dtos/common.dto';
 
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleQueryOptions,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  DEFAULT_QUERY_OPTIONS
+/**
+ *
+ * @param {CastcleQueryOptions} queryOptions
+ * @param {number} totalDocuments
+ * @returns {Pagination} pagination opject of query object
+ */
+export const createPagination = (
+  queryOptions: CastcleQueryOptions,
+  totalDocuments: number
+): Pagination => {
+  const pagination = new Pagination();
+
+  pagination.self = queryOptions.page;
+  if (queryOptions.page - 1 > 0) {
+    pagination.previous = queryOptions.page - 1;
+  }
+  const totalPages = Math.ceil(totalDocuments / queryOptions.limit);
+  if (queryOptions.page < totalPages) pagination.next = queryOptions.page + 1;
+  pagination.limit = queryOptions.limit;
+  return pagination;
 };

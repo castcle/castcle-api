@@ -26,7 +26,12 @@ import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
-import { PageDto, UserResponseDto } from '../dtos/user.dto';
+import {
+  PageDto,
+  PageResponse,
+  PageResponseDto,
+  UserResponseDto
+} from '../dtos/user.dto';
 
 export type UserDocument = User & IUser;
 
@@ -89,7 +94,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
   toUserResponse(): Promise<UserResponseDto>;
-  toPageResponse(): PageDto;
+  toPageResponse(): PageResponseDto;
 }
 
 UserSchema.methods.toUserResponse = async function () {
@@ -124,7 +129,7 @@ UserSchema.methods.toUserResponse = async function () {
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
-    verified: self.verified
+    verified: self.verified ? true : false
   } as UserResponseDto;
 };
 
@@ -133,6 +138,8 @@ UserSchema.methods.toPageResponse = function () {
     username: (this as UserDocument).displayId,
     displayName: (this as UserDocument).displayName,
     avatar: (this as UserDocument).profile.images.avatar,
-    cover: (this as UserDocument).profile.images.cover
-  } as PageDto;
+    cover: (this as UserDocument).profile.images.cover,
+    updated: (this as UserDocument).updatedAt.toISOString(),
+    created: (this as UserDocument).createdAt.toISOString()
+  } as PageResponseDto;
 };

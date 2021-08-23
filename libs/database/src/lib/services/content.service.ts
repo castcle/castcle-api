@@ -28,12 +28,13 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
+import { createPagination } from '../utils/common';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import {
   SaveContentDto,
   ContentPayloadDto,
   Author,
-  QueryOption,
+  CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS
 } from '../dtos/content.dto';
 
@@ -68,7 +69,7 @@ export class ContentService {
         displayName: user.displayName,
         followed: false,
         type: user.type === UserType.Page ? UserType.Page : UserType.People,
-        verified: user.verified
+        verified: user.verified ? true : false
       };
     else {
       const page = await this._userModel.findById(contentDto.author.id);
@@ -82,7 +83,7 @@ export class ContentService {
         castcleId: page.displayId,
         displayName: page.displayName,
         followed: false,
-        verified: page.verified
+        verified: page.verified ? true : false
       };
     }
     const newContent = {
@@ -131,12 +132,12 @@ export class ContentService {
   /**
    *
    * @param {UserDocument} user
-   * @param {QueryOption} options contain option for sorting page = skip + 1,
-   * @returns {Promise<ContentDocument[]>}
+   * @param {CastcleQueryOptions} options contain option for sorting page = skip + 1,
+   * @returns {Promise<{items:ContentDocument[], total:number, pagination: {Pagination}}>}
    */
   getContentsFromUser = async (
     user: UserDocument,
-    options: QueryOption = DEFAULT_QUERY_OPTIONS
+    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
     const findFilter: { 'author.id': any; type?: string } = {
       'author.id': user._id
@@ -146,8 +147,18 @@ export class ContentService {
       .find(findFilter)
       .skip(options.page - 1)
       .limit(options.limit);
+    const totalDocument = await this._contentModel.count(findFilter).exec();
     if (options.sortBy.type === 'desc') {
-      return query.sort(`-${options.sortBy.field}`).exec();
-    } else return query.sort(`+${options.sortBy.field}`).exec();
+      return {
+        total: totalDocument,
+        items: await query.sort(`-${options.sortBy.field}`).exec(),
+        pagination: createPagination(options, totalDocument)
+      };
+    } else
+      return {
+        total: totalDocument,
+        items: await query.sort(`+${options.sortBy.field}`).exec(),
+        pagination: createPagination(options, totalDocument)
+      };
   };
 }

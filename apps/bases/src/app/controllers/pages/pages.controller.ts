@@ -46,7 +46,10 @@ import {
   ContentType,
   DEFAULT_QUERY_OPTIONS,
   PageDto,
-  UpdatePageDto
+  PagesResponse,
+  UpdatePageDto,
+  PageResponse,
+  PageResponseDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
@@ -122,7 +125,7 @@ export class PageController {
   })
   @ApiBearerAuth()
   @ApiBody({
-    type: PageDto
+    type: PageResponse
   })
   @ApiResponse({
     status: 201,
@@ -205,14 +208,50 @@ export class PageController {
   })
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: PageDto
+    type: PageResponseDto
   })
   @UseInterceptors(PageInterceptor)
   @Get('pages/:id')
-  async getPageFromId(@Req() req: CredentialRequest, @Param('id') id: string) {
+  async getPageFromId(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string
+  ): Promise<PageResponseDto> {
     //check if page name exist
     const page = await this._getPageByIdOrCastcleId(id, req);
     return page.toPageResponse();
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    type: PagesResponse
+  })
+  @UseInterceptors(PageInterceptor)
+  @Get('pages')
+  async getAllPages(
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
+  ): Promise<PagesResponse> {
+    const pages = await this.userService.getAllPages({
+      page: pageOption,
+      sortBy: sortByOption,
+      limit: limitOption
+    });
+    return {
+      payload: pages.items.map((p) => p.toPageResponse()),
+      pagination: pages.pagination
+    };
   }
 
   @ApiHeader({
@@ -299,7 +338,8 @@ export class PageController {
       type: contentTypeOption
     });
     return {
-      payload: contents.map((c) => c.toPagePayload())
+      payload: contents.items.map((c) => c.toPagePayload()),
+      pagination: contents.pagination
     };
   }
 }

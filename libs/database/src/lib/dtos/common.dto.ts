@@ -20,43 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ApiProperty } from '@nestjs/swagger';
 
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
-} from './content.dto';
-
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleQueryOptions,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  DEFAULT_QUERY_OPTIONS
-};
+export class Pagination {
+  @ApiProperty()
+  previous?: number;
+  @ApiProperty()
+  self?: number;
+  @ApiProperty()
+  next?: number;
+  @ApiProperty()
+  limit?: number;
+}

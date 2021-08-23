@@ -134,9 +134,16 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         pageDto
       );
-      expect(newPageResponse).toEqual(pageDto);
+      expect(newPageResponse.avatar).toEqual(pageDto.avatar);
+      expect(newPageResponse.displayName).toEqual(pageDto.displayName);
+      expect(newPageResponse.cover).toEqual(pageDto.cover);
+      expect(newPageResponse.username).toEqual(pageDto.username);
       const testPage = await authService.getUserFromCastcleId(pageDto.username);
-      expect(testPage.toPageResponse()).toEqual(pageDto);
+      const pageResponse = testPage.toPageResponse();
+      expect(pageResponse.avatar).toEqual(pageDto.avatar);
+      expect(pageResponse.displayName).toEqual(pageDto.displayName);
+      expect(pageResponse.cover).toEqual(pageDto.cover);
+      expect(pageResponse.username).toEqual(pageDto.username);
     });
   });
   describe('updatePage', () => {
@@ -147,7 +154,8 @@ describe('PageController', () => {
         testPage._id,
         { displayName: 'change baby' }
       );
-      expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
+      //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
+      expect(result.displayName).toEqual('change baby');
     });
   });
   describe('deletePage', () => {
@@ -222,11 +230,25 @@ describe('PageController', () => {
         $credential: userCredential,
         $language: 'th'
       } as any);
+
       expect(response).toEqual({
         payload: createResult
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toPagePayload())
+          .map((c) => c.toPagePayload()),
+        pagination: {
+          self: 1,
+          limit: 25
+        }
       });
+    });
+  });
+  describe('getAllPages', () => {
+    it('should display all pages that has been created', async () => {
+      const result = await pageController.getAllPages();
+      console.log(result);
+      expect(result.payload.length).toEqual(1);
+      expect(result.pagination.self).toEqual(1);
+      expect(result.pagination.limit).toEqual(25);
     });
   });
 });
