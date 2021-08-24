@@ -32,6 +32,8 @@ import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
 import { UpdateUserDto } from '../dtos/user.dto';
+import { DEFAULT_QUERY_OPTIONS } from '../dtos';
+import { Pagination } from '../dtos/common.dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -195,6 +197,95 @@ describe('User Service', () => {
       });
       expect(page.type).toEqual('page');
       expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
+    });
+  });
+  describe('#getAllPages()', () => {
+    it('should list all created pages', async () => {
+      const currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      expect(allPages.items.length).toEqual(1);
+      expect(allPages.pagination.limit).toEqual(25);
+      const page = await service.createPageFromUser(currentUser, {
+        avatar: 'http://placehold.it/200x200',
+        cover: 'http://placehold.it/900x900',
+        displayName: 'new Page',
+        username: 'npop2'
+      });
+      const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      expect(allPages2.items.length).toEqual(2);
+    });
+  });
+  describe('#follow()', () => {
+    let currentUser: UserDocument;
+    let allPages: {
+      items: UserDocument[];
+      pagination: Pagination;
+    };
+    beforeAll(async () => {
+      currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+    });
+    it('should be able to find document in relationship collection once follow', async () => {
+      expect(currentUser.followedCount).toEqual(0);
+      expect(allPages.items[0].followerCount).toEqual(0);
+      //test follow
+      await currentUser.follow(allPages.items[0]);
+      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(1);
+      const page = await service.getUserFromId(allPages.items[0]._id);
+      expect(page.followerCount).toEqual(1);
+      const relationship = await service._relationshipModel
+        .findOne({ user: afterFollowUser._id, followedUser: page._id })
+        .exec();
+      expect(relationship).not.toBeNull();
+    });
+    it('should not have 2 records if you double follow', async () => {
+      const postUser = await service.getUserFromId(currentUser._id);
+      const postPage = await service.getUserFromId(allPages.items[0]._id);
+      expect(postUser.followedCount).toEqual(1);
+      expect(postPage.followerCount).toEqual(1);
+      await postUser.follow(postPage);
+      const postUser2 = await service.getUserFromId(currentUser._id);
+      const postPage2 = await service.getUserFromId(allPages.items[0]._id);
+      expect(postUser2.followedCount).toEqual(1);
+      expect(postPage2.followerCount).toEqual(1);
+    });
+  });
+  describe('#unfollow()', () => {
+    it('should work the same as follow', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      expect(currentUser.followedCount).toEqual(1); //from above
+      expect(allPages.items[0].followerCount).toEqual(1);
+      //try unfollow
+      await currentUser.unfollow(allPages.items[0]);
+      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(0);
+      const page = await service.getUserFromId(allPages.items[0]._id);
+      expect(page.followerCount).toEqual(0);
+      const relationship = await service._relationshipModel
+        .findOne({ user: afterFollowUser._id, followedUser: page._id })
+        .exec();
+      expect(relationship).toBeNull();
+      //try double unfollow
+      await currentUser.unfollow(allPages.items[0]);
+      const afterFollowUser2 = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(0);
+      const page2 = await service.getUserFromId(allPages.items[0]._id);
+      expect(page2.followerCount).toEqual(0);
+      const relationship2 = await service._relationshipModel
+        .findOne({ user: afterFollowUser2._id, followedUser: page2._id })
+        .exec();
+      expect(relationship2).toBeNull();
     });
   });
 });

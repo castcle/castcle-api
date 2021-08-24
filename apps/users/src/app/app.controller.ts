@@ -50,6 +50,7 @@ import {
   ApiBody,
   ApiHeader,
   ApiOkResponse,
+  ApiProperty,
   ApiQuery,
   ApiResponse
 } from '@nestjs/swagger';
@@ -299,5 +300,61 @@ export class AppController {
       payload: contents.items.map((item) => item.toPagePayload()),
       pagination: contents.pagination
     } as ContentsResponse;
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Put(':id/follow')
+  async follow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('authorId') authorId: string
+  ) {
+    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    if (!currentUser.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await currentUser.follow(followedUser);
+    return '';
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Put(':id/unfollow')
+  async unfollow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('authorId') authorId: string
+  ) {
+    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    if (!currentUser.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await currentUser.unfollow(followedUser);
+    return '';
   }
 }

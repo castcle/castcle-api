@@ -36,21 +36,27 @@ import {
   CredentialSchemaFactory
 } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { UserSchema } from './schemas/user.schema';
+import { UserSchema, UserSchemaFactory } from './schemas/user.schema';
 import { ContentSchema } from './schemas/content.schema';
+import { RelationshipSchemaFactory } from './schemas/relationship.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'User', schema: UserSchema },
   { name: 'Content', schema: ContentSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: CredentialSchemaFactory },
+  { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   {
     name: 'Account',
     useFactory: AccountSchemaFactory,
     inject: [getModelToken('Credential')]
+  },
+  {
+    name: 'User',
+    useFactory: UserSchemaFactory,
+    inject: [getModelToken('Relationship')]
   }
 ]);
 
