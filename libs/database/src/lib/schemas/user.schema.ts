@@ -32,6 +32,7 @@ import {
   PageResponseDto,
   UserResponseDto
 } from '../dtos/user.dto';
+import { RelationshipDocument } from './relationship.schema';
 
 export type UserDocument = User & IUser;
 
@@ -88,6 +89,12 @@ export class User extends CastcleBase {
 
   @Prop()
   verified: boolean;
+
+  @Prop()
+  followerCount: number;
+
+  @Prop()
+  followedCount: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -95,6 +102,8 @@ export const UserSchema = SchemaFactory.createForClass(User);
 export interface IUser extends Document {
   toUserResponse(): Promise<UserResponseDto>;
   toPageResponse(): PageResponseDto;
+  follow(user: UserDocument): Promise<void>;
+  unfollow(user: UserDocument): Promise<void>;
 }
 
 UserSchema.methods.toUserResponse = async function () {
@@ -142,4 +151,66 @@ UserSchema.methods.toPageResponse = function () {
     updated: (this as UserDocument).updatedAt.toISOString(),
     created: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
+};
+
+export const UserSchemaFactory = (
+  relationshipModel: Model<RelationshipDocument>
+): mongoose.Schema<any> => {
+  /**
+   * Make sure all aggregate counter is 0
+   */
+  UserSchema.pre('save', function (next) {
+    if (!(this as UserDocument).followedCount)
+      (this as UserDocument).followedCount = 0;
+    if (!(this as UserDocument).followerCount)
+      (this as UserDocument).followerCount = 0;
+    next();
+  });
+  UserSchema.methods.follow = async function (followedUser: UserDocument) {
+    const session = await relationshipModel.startSession();
+    await session.withTransaction(async () => {
+      const result = await relationshipModel
+        .updateOne(
+          {
+            user: (this as UserDocument)._id,
+            followedUser: followedUser._id
+          },
+          {
+            $setOnInsert: {
+              user: (this as UserDocument)._id,
+              followedUser: followedUser._id
+            }
+          },
+          {
+            upsert: true
+          }
+        )
+        .exec();
+      if (result.upserted) {
+        (this as UserDocument).followedCount++;
+        followedUser.followerCount++;
+        await Promise.all([this.save(), followedUser.save()]);
+      }
+    });
+    session.endSession();
+  };
+
+  UserSchema.methods.unfollow = async function (followedUser: UserDocument) {
+    const session = await relationshipModel.startSession();
+    await session.withTransaction(async () => {
+      const result = await relationshipModel
+        .deleteOne({
+          user: this._id,
+          followedUser: followedUser._id
+        })
+        .exec();
+      if (result.deletedCount === 1) {
+        (this as UserDocument).followedCount--;
+        followedUser.followerCount--;
+        await Promise.all([this.save(), followedUser.save()]);
+      }
+    });
+    session.endSession();
+  };
+  return UserSchema;
 };
