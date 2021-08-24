@@ -27,6 +27,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { UserDocument, UserType } from '../schemas/user.schema';
+import { RelationshipDocument } from '../schemas/relationship.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
@@ -39,7 +40,9 @@ export class UserService {
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>
+    public _userModel: Model<UserDocument>,
+    @InjectModel('Relationship')
+    public _relationshipModel: Model<RelationshipDocument>
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
@@ -118,7 +121,7 @@ export class UserService {
   };
 
   /**
-   * getl all pages
+   * get all pages
    * @param {CastcleQueryOptions} queryOptions
    * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
    */
@@ -137,4 +140,20 @@ export class UserService {
     else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
     return { items, pagination };
   };
+  /**
+   *
+   * @param {UserDocument} user
+   * @param {UserDocument} followedUser
+   * @returns {Promise<void>}
+   */
+  follow = async (user: UserDocument, followedUser: UserDocument) =>
+    user.follow(followedUser);
+  /**
+   *
+   * @param {UserDocument} user
+   * @param {UserDocument} followedUser
+   * @returns {Promise<void>}
+   */
+  unfollow = async (user: UserDocument, followedUser: UserDocument) =>
+    user.unfollow(followedUser);
 }
