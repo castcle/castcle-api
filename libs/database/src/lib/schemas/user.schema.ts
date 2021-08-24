@@ -106,10 +106,11 @@ export interface IUser extends Document {
   unfollow(user: UserDocument): Promise<void>;
 }
 
-UserSchema.methods.toUserResponse = async function () {
-  const self = await (this as UserDocument)
-    .populate('ownerAccount')
-    .execPopulate();
+export interface UserModel extends mongoose.Model<UserDocument> {
+  covertToUserResponse(user: User | UserDocument): UserResponseDto;
+}
+
+const _covertToUserResponse = (self: User | UserDocument) => {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
@@ -118,13 +119,12 @@ UserSchema.methods.toUserResponse = async function () {
     id: self._id,
     castcleId: self.displayId,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
-    email: self.ownerAccount.email,
     followers: {
-      count: 0
-    }, // TODO !!!
+      count: self.followerCount
+    },
     following: {
-      count: 0
-    }, // TODO !!!
+      count: self.followedCount
+    },
     images: {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
@@ -140,6 +140,20 @@ UserSchema.methods.toUserResponse = async function () {
     links: selfSocial,
     verified: self.verified ? true : false
   } as UserResponseDto;
+};
+
+UserSchema.statics.covertToUserResponse = (self: User | UserDocument) =>
+  _covertToUserResponse(self);
+
+UserSchema.methods.toUserResponse = async function () {
+  const self = await (this as UserDocument)
+    .populate('ownerAccount')
+    .execPopulate();
+  const response = _covertToUserResponse(self);
+  response.email = self.ownerAccount.email;
+  const selfSocial: any =
+    self.profile && self.profile.socials ? { ...self.profile.socials } : {};
+  return response;
 };
 
 UserSchema.methods.toPageResponse = function () {
@@ -169,6 +183,14 @@ export const UserSchemaFactory = (
   UserSchema.methods.follow = async function (followedUser: UserDocument) {
     const session = await relationshipModel.startSession();
     await session.withTransaction(async () => {
+      ///TODO !!! Might have to change if relationship is embed
+      const setObject = {
+        user: (this as UserDocument)._id,
+        followedUser: followedUser._id,
+        isFollowPage: false
+      };
+      if ((followedUser as UserDocument).type === UserType.Page)
+        setObject.isFollowPage = true;
       const result = await relationshipModel
         .updateOne(
           {
@@ -176,10 +198,7 @@ export const UserSchemaFactory = (
             followedUser: followedUser._id
           },
           {
-            $setOnInsert: {
-              user: (this as UserDocument)._id,
-              followedUser: followedUser._id
-            }
+            $setOnInsert: setObject
           },
           {
             upsert: true

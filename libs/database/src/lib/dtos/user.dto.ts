@@ -60,7 +60,7 @@ export class UserResponseDto {
   castcleId: string;
 
   @ApiProperty()
-  email: string;
+  email?: string;
 
   @ApiProperty()
   overview: string | null;
@@ -157,4 +157,12 @@ export class PagesResponse {
 export class PageResponse {
   @ApiProperty()
   payload: PageResponseDto;
+}
+
+export class FollowResponse {
+  @ApiProperty()
+  payload: UserResponseDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
 }

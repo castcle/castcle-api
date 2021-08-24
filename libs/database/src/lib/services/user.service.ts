@@ -26,12 +26,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument, UserType } from '../schemas/user.schema';
+import { UserDocument, UserType, UserModel } from '../schemas/user.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { PageDto, UpdateUserDto } from '../dtos/user.dto';
+import { FollowResponse, PageDto, UpdateUserDto } from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
-import { Pagination } from '../dtos/common.dto';
+import { DEFAULT_QUERY_OPTIONS, Pagination } from '../dtos/common.dto';
 
 @Injectable()
 export class UserService {
@@ -40,7 +40,7 @@ export class UserService {
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>,
+    public _userModel: UserModel,
     @InjectModel('Relationship')
     public _relationshipModel: Model<RelationshipDocument>
   ) {}
@@ -156,4 +156,73 @@ export class UserService {
    */
   unfollow = async (user: UserDocument, followedUser: UserDocument) =>
     user.unfollow(followedUser);
+
+  /**
+   *
+   * @param user
+   * @param queryOption
+   * @returns
+   */
+  getFollower = async (
+    user: UserDocument,
+    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+  ) => {
+    console.log('-----getFollower----');
+
+    const filter: { followedUser: any; isFollowPage?: boolean } = {
+      followedUser: user._id
+    };
+    console.log('filter', filter);
+    if (queryOption.type)
+      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+    let query = this._relationshipModel
+      .find(filter)
+      .skip(queryOption.page - 1)
+      .limit(queryOption.limit)
+      .populate('user');
+    if (queryOption.sortBy.type === 'desc')
+      query = query.sort(`-${queryOption.sortBy.field}`);
+    else query = query.sort(`${queryOption.sortBy.field}`);
+    const totalFollower = await this._relationshipModel.count(filter).exec();
+    const relationships = await query.exec();
+    console.log('total', totalFollower);
+    console.log(relationships);
+    return {
+      items: relationships.map((r) =>
+        this._userModel.covertToUserResponse(r.user)
+      ),
+      pagination: createPagination(queryOption, totalFollower)
+    };
+  };
+
+  /**
+   *
+   * @param user
+   * @param queryOption
+   * @returns
+   */
+  getFollowing = async (
+    user: UserDocument,
+    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+  ) => {
+    const filter: { user: any; isFollowPage?: boolean } = { user: user._id };
+    if (queryOption.type)
+      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+    let query = this._relationshipModel
+      .find(filter)
+      .skip(queryOption.page - 1)
+      .limit(queryOption.limit);
+    //      .populate('followedUser');
+    if (queryOption.sortBy.type === 'desc')
+      query = query.sort(`-${queryOption.sortBy.field}`);
+    else query = query.sort(`${queryOption.sortBy.field}`);
+    const totalFollowing = await this._relationshipModel.count(filter).exec();
+    const relationships = await query.exec();
+    return {
+      items: relationships.map((r) =>
+        this._userModel.covertToUserResponse(r.followedUser)
+      ),
+      pagination: createPagination(queryOption, totalFollowing)
+    };
+  };
 }

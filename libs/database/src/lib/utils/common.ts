@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleQueryOptions } from '../dtos/content.dto';
+import { CastcleQueryOptions } from '../dtos/common.dto';
 import { Pagination } from '../dtos/common.dto';
 
 /**

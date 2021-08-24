@@ -28,7 +28,10 @@ import {
   ContentTypePipe,
   LIMIT_MAX
 } from './query.pipe';
-import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS
+} from '@castcle-api/database/dtos';
 
 describe('SortByPipe', () => {
   let pipe: SortByPipe;
@@ -91,7 +94,9 @@ describe('ContentTypePipe', () => {
   it('should return type if it exist in ContentType', () => {
     expect(pipe.transform('blog')).toEqual('blog');
   });
-  it(`should return default type (${DEFAULT_QUERY_OPTIONS.type} when type is not exist`, () => {
-    expect(pipe.transform('heello')).toEqual(DEFAULT_QUERY_OPTIONS.type);
+  it(`should return default type (${DEFAULT_CONTENT_QUERY_OPTIONS.type} when type is not exist`, () => {
+    expect(pipe.transform('heello')).toEqual(
+      DEFAULT_CONTENT_QUERY_OPTIONS.type
+    );
   });
 });

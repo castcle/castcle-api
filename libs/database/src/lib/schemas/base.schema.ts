@@ -25,6 +25,8 @@ import * as mongoose from 'mongoose';
 
 @Schema()
 export class CastcleBase {
+  _id?: any;
+
   @Prop()
   createdAt?: Date;
 

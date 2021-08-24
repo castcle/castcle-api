@@ -57,7 +57,7 @@ import {
 import {
   ContentPayloadDto,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
@@ -281,12 +281,13 @@ export class AppController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);

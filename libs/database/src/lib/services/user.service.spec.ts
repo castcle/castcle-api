@@ -32,8 +32,8 @@ import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
 import { UpdateUserDto } from '../dtos/user.dto';
-import { DEFAULT_QUERY_OPTIONS } from '../dtos';
-import { Pagination } from '../dtos/common.dto';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos';
+import { DEFAULT_QUERY_OPTIONS, Pagination } from '../dtos/common.dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -204,7 +204,7 @@ describe('User Service', () => {
       const currentUser = await service.getUserFromCredential(
         result.credentialDocument
       );
-      const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      const allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
       const page = await service.createPageFromUser(currentUser, {
@@ -213,7 +213,9 @@ describe('User Service', () => {
         displayName: 'new Page',
         username: 'npop2'
       });
-      const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      const allPages2 = await service.getAllPages(
+        DEFAULT_CONTENT_QUERY_OPTIONS
+      );
       expect(allPages2.items.length).toEqual(2);
     });
   });
@@ -227,7 +229,7 @@ describe('User Service', () => {
       currentUser = await service.getUserFromCredential(
         result.credentialDocument
       );
-      allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
     });
     it('should be able to find document in relationship collection once follow', async () => {
       expect(currentUser.followedCount).toEqual(0);
@@ -242,6 +244,8 @@ describe('User Service', () => {
         .findOne({ user: afterFollowUser._id, followedUser: page._id })
         .exec();
       expect(relationship).not.toBeNull();
+      expect(relationship.user).not.toBeNull();
+      expect(relationship.followedUser).not.toBeNull();
     });
     it('should not have 2 records if you double follow', async () => {
       const postUser = await service.getUserFromId(currentUser._id);
@@ -286,6 +290,42 @@ describe('User Service', () => {
         .findOne({ user: afterFollowUser2._id, followedUser: page2._id })
         .exec();
       expect(relationship2).toBeNull();
+    });
+  });
+  describe('#getFollower()', () => {
+    it('should get user detail from followering', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      await currentUser.follow(allPages.items[0]);
+      await currentUser.follow(allPages.items[1]);
+      const followers = await service.getFollower(
+        allPages.items[0],
+        DEFAULT_QUERY_OPTIONS
+      );
+      expect(followers.items.length).toEqual(1);
+      expect(followers.items[0].castcleId).toEqual(
+        (await currentUser.toUserResponse()).castcleId
+      );
+    });
+  });
+  //TODO !!! Need better testing and mock data
+  describe('#getFollowing()', () => {
+    it('should get total of following correctly', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      const following = await service.getFollowing(currentUser);
+      //like in #getFollower
+      expect(following.items.length).toEqual(allPages.items.length);
     });
   });
 });

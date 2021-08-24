@@ -34,8 +34,8 @@ import {
   SaveContentDto,
   ContentPayloadDto,
   Author,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
+  CastcleContentQueryOptions,
+  DEFAULT_CONTENT_QUERY_OPTIONS
 } from '../dtos/content.dto';
 
 @Injectable()
@@ -137,7 +137,7 @@ export class ContentService {
    */
   getContentsFromUser = async (
     user: UserDocument,
-    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
     const findFilter: { 'author.id': any; type?: string } = {
       'author.id': user._id
@@ -157,7 +157,7 @@ export class ContentService {
     } else
       return {
         total: totalDocument,
-        items: await query.sort(`+${options.sortBy.field}`).exec(),
+        items: await query.sort(`${options.sortBy.field}`).exec(),
         pagination: createPagination(options, totalDocument)
       };
   };
