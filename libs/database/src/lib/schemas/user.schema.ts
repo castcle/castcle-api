@@ -158,7 +158,7 @@ UserSchema.methods.toUserResponse = async function () {
 
 UserSchema.methods.toPageResponse = function () {
   return {
-    username: (this as UserDocument).displayId,
+    castcleId: (this as UserDocument).displayId,
     displayName: (this as UserDocument).displayName,
     avatar: (this as UserDocument).profile.images.avatar,
     cover: (this as UserDocument).profile.images.cover,

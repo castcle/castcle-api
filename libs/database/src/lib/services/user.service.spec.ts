@@ -193,7 +193,7 @@ describe('User Service', () => {
         avatar: 'http://placehold.it/200x200',
         cover: 'http://placehold.it/900x900',
         displayName: 'new Page',
-        username: 'npop'
+        castcleId: 'npop'
       });
       expect(page.type).toEqual('page');
       expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
@@ -211,7 +211,7 @@ describe('User Service', () => {
         avatar: 'http://placehold.it/200x200',
         cover: 'http://placehold.it/900x900',
         displayName: 'new Page',
-        username: 'npop2'
+        castcleId: 'npop2'
       });
       const allPages2 = await service.getAllPages(
         DEFAULT_CONTENT_QUERY_OPTIONS

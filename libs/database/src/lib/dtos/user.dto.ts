@@ -103,7 +103,7 @@ export class UpdateUserDto {
 
 export class PageDto {
   @ApiProperty()
-  username: string;
+  castcleId: string;
 
   @ApiProperty()
   displayName: string;
@@ -117,7 +117,7 @@ export class PageDto {
 
 export class PageResponseDto {
   @ApiProperty()
-  username: string;
+  castcleId: string;
 
   @ApiProperty()
   displayName: string;

@@ -136,19 +136,19 @@ export class PageController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
     const namingResult = await this.authService.getUserFromCastcleId(
-      body.username
+      body.castcleId
     );
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
       await this._uploadImage(body.avatar, {
-        filename: `page-avatar-${body.username}`
+        filename: `page-avatar-${body.castcleId}`
       })
     ).uri;
     body.cover = (
       await this._uploadImage(body.cover, {
-        filename: `page-cover-${body.username}`
+        filename: `page-cover-${body.castcleId}`
       })
     ).uri;
     const page = await this.userService.createPageFromCredential(

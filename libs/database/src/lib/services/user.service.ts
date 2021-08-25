@@ -108,7 +108,7 @@ export class UserService {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
       type: UserType.Page,
-      displayId: pageDto.username,
+      displayId: pageDto.castcleId,
       displayName: pageDto.displayName,
       profile: {
         images: {
