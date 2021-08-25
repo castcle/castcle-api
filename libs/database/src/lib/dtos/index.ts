@@ -33,7 +33,8 @@ import {
   UpdatePageDto,
   PagesResponse,
   PageResponse,
-  PageResponseDto
+  PageResponseDto,
+  FollowResponse
 } from './user.dto';
 import {
   ContentType,
@@ -66,5 +67,6 @@ export {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   Pagination,
   CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
+  DEFAULT_QUERY_OPTIONS,
+  FollowResponse
 };
