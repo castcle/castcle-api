@@ -71,7 +71,7 @@ describe('PageController', () => {
     avatar: 'http://placehold.it/100x100',
     cover: 'http://placehold.it/1500x300',
     displayName: 'Super Page',
-    username: 'pageyo'
+    castcleId: 'pageyo'
   };
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -182,7 +182,7 @@ describe('PageController', () => {
         avatar: 'http://placehold.it/200x200',
         cover: 'http://placehold.it/1200x500',
         displayName: 'Whatsupidoo',
-        username: 'whatsup'
+        castcleId: 'whatsup'
       };
       const newPage = await service.createPageFromCredential(
         userCredential,
