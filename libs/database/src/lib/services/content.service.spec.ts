@@ -154,11 +154,7 @@ describe('ContentService', () => {
       expect((postContent.payload as ShortPayload).link).toEqual(
         updatePayload.link
       );
-      //expect(postContent.revisionCount).toEqual(revisionCount + 1);
-
       const revisions = await service.getContentRevisions(postContent);
-      console.log('=====revisions===');
-      console.log(revisions);
       expect(postContent.revisionCount).toEqual(revisions.length);
     });
   });
@@ -189,7 +185,6 @@ describe('ContentService', () => {
         payload: shortPayload2
       });
       const contents = await service.getContentsFromUser(user);
-      console.log(contents);
       expect(contents.items[0].payload).toEqual(shortPayload2);
       expect(contents.items[1].payload).toEqual(shortPayload1);
       const contentsInverse = await service.getContentsFromUser(user, {
