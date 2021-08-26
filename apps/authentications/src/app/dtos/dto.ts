@@ -84,3 +84,13 @@ export class RefreshTokenResponse {
   @ApiProperty()
   accessToken: string;
 }
+
+class suggestCastcleIdPayload {
+  @ApiProperty()
+  suggestCastcleId: string;
+}
+
+export class SuggestCastcleIdReponse {
+  @ApiProperty()
+  payload: suggestCastcleIdPayload;
+}

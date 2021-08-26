@@ -51,7 +51,8 @@ import {
   RefreshTokenResponse,
   LoginDto,
   RegisterByEmailDto,
-  CheckIdExistDto
+  CheckIdExistDto,
+  SuggestCastcleIdReponse
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -506,5 +507,28 @@ export class AppController {
         method: "POST"
       })</script>`;
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: SuggestCastcleIdReponse
+  })
+  @Post('suggestCastcleId')
+  @HttpCode(200)
+  async suggestCastcleId(
+    @Body('displayName') displayName: string,
+    @Req() req: CredentialRequest
+  ): Promise<SuggestCastcleIdReponse> {
+    const suggestId = await this.authService.suggestCastcleId(displayName);
+    return {
+      payload: {
+        suggestCastcleId: suggestId
+      }
+    };
   }
 }
