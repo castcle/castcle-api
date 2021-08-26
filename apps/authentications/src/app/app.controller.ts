@@ -52,7 +52,10 @@ import {
   LoginDto,
   RegisterByEmailDto,
   CheckIdExistDto,
-  SuggestCastcleIdReponse
+  SuggestCastcleIdReponse,
+  VerificationPasswordBody,
+  VerificationPasswordResponse,
+  ChangePasswordBody
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -530,5 +533,74 @@ export class AppController {
         suggestCastcleId: suggestId
       }
     };
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiBody({
+    type: VerificationPasswordBody
+  })
+  @ApiResponse({
+    status: 201,
+    type: VerificationPasswordResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('verificationPassword')
+  async verificationPassword(
+    @Body('password') password: string,
+    @Req() req: CredentialRequest
+  ): Promise<VerificationPasswordResponse> {
+    //req.$credential.
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (account.verifyPassword(password)) {
+      const otp = await this.authService.generateOtp(account);
+      return {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+    } else
+      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @ApiBody({
+    type: ChangePasswordBody
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @Post('changePasswordSubmit')
+  @HttpCode(204)
+  async changePasswordSubmit(
+    @Body('refCode') refCode: string,
+    @Body('newPassword') newPassword: string,
+    @Req() req: CredentialRequest
+  ) {
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const otp = await this.authService.getOtpFromAccount(account, refCode);
+    if (otp && otp.isValid()) {
+      //change password
+      const result = await this.authService.changePassword(
+        account,
+        otp,
+        newPassword
+      );
+      return '';
+    } else
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
   }
 }
