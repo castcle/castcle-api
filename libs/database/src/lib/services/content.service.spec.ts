@@ -115,6 +115,7 @@ describe('ContentService', () => {
       );
       expect(content.type).toEqual(ContentType.Short);
       expect(content.author.id).toEqual(user._id);
+      expect(content.revisionCount).toEqual(1);
     });
   });
   describe('#updateContentFromId()', () => {
@@ -127,6 +128,7 @@ describe('ContentService', () => {
         payload: shortPayload
       });
       const revisionCount = content.revisionCount;
+      expect(content.revisionCount).toEqual(1);
       const updatePayload: ShortPayload = {
         message: 'this is test status2',
         link: [
@@ -143,6 +145,7 @@ describe('ContentService', () => {
       expect((result.payload as ShortPayload).message).toEqual(
         updatePayload.message
       );
+
       expect((result.payload as ShortPayload).link).toEqual(updatePayload.link);
       const postContent = await service.getContentFromId(content._id);
       expect((postContent.payload as ShortPayload).message).toEqual(
@@ -151,7 +154,8 @@ describe('ContentService', () => {
       expect((postContent.payload as ShortPayload).link).toEqual(
         updatePayload.link
       );
-      expect(postContent.revisionCount).toEqual(revisionCount + 1);
+      const revisions = await service.getContentRevisions(postContent);
+      expect(postContent.revisionCount).toEqual(revisions.length);
     });
   });
   describe('#getContentsFromUser()', () => {
@@ -181,7 +185,6 @@ describe('ContentService', () => {
         payload: shortPayload2
       });
       const contents = await service.getContentsFromUser(user);
-      console.log(contents);
       expect(contents.items[0].payload).toEqual(shortPayload2);
       expect(contents.items[1].payload).toEqual(shortPayload1);
       const contentsInverse = await service.getContentsFromUser(user, {

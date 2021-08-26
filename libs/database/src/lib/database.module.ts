@@ -37,19 +37,25 @@ import {
 } from './schemas/credential.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { UserSchema, UserSchemaFactory } from './schemas/user.schema';
-import { ContentSchema } from './schemas/content.schema';
+import { ContentSchema, ContentSchemaFactory } from './schemas/content.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
+import { RevisionchemaFactory } from './schemas/revision.schema';
 import { OtpSchema } from './schemas/otp.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'Otp', schema: OtpSchema },
-  { name: 'Content', schema: ContentSchema }
+  { name: 'Otp', schema: OtpSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: CredentialSchemaFactory },
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
+  { name: 'Revision', useFactory: RevisionchemaFactory },
+  {
+    name: 'Content',
+    useFactory: ContentSchemaFactory,
+    inject: [getModelToken('Revision')]
+  },
   {
     name: 'Account',
     useFactory: AccountSchemaFactory,
