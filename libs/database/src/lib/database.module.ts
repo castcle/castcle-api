@@ -39,9 +39,11 @@ import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { UserSchema, UserSchemaFactory } from './schemas/user.schema';
 import { ContentSchema } from './schemas/content.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
+import { OtpSchema } from './schemas/otp.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
+  { name: 'Otp', schema: OtpSchema },
   { name: 'Content', schema: ContentSchema }
 ]);
 

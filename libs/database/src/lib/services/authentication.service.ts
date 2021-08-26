@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, AccountSchema } from '../schemas/account.schema';
 import {
@@ -29,6 +29,7 @@ import {
   AccountActivationModel
 } from '../schemas/accountActivation.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
+import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
 import {
@@ -68,7 +69,9 @@ export class AuthenticationService {
     @InjectModel('AccountActivation')
     public _accountActivationModel: AccountActivationModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>
+    public _userModel: Model<UserDocument>,
+    @InjectModel('Otp')
+    public _otpModel: OtpModel
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -255,5 +258,52 @@ export class AuthenticationService {
       const totalUser = await this._userModel.countDocuments().exec();
       return name.suggestCastcleId + totalUser;
     } else return name.suggestCastcleId;
+  }
+
+  /**
+   * generate refCode and create Otp Document
+   * @param {AccountDocument} account
+   * @returns {OtpDocument}
+   */
+  async generateOtp(account: AccountDocument) {
+    const otp = await this._otpModel.generate(
+      account._id,
+      OtpObjective.ChangePassword
+    );
+    return otp;
+  }
+
+  /**
+   * find refCode that has the same refCode and
+   * @param {AccountDocument} account
+   * @param {string} refCode
+   * @returns {OtpDocument}
+   */
+  async getOtpFromAccount(account: AccountDocument, refCode: string) {
+    return this._otpModel
+      .findOne({ account: account._id, refCode: refCode })
+      .exec();
+  }
+
+  /**
+   * this will assume that we already check otp is valid. this function will change current account password and delete otp then return newly change password account
+   * @param {AccountDocument} account
+   * @param {OtpDocument} otp
+   * @param {string} newPassword
+   * @returns {Promise<{AccountDocument}>}
+   */
+  async changePassword(
+    account: AccountDocument,
+    otp: OtpDocument,
+    newPassword: string
+  ) {
+    let newAccount: AccountDocument;
+    const session = await this._accountModel.startSession();
+    session.withTransaction(async () => {
+      newAccount = await account.changePassword(newPassword);
+      await otp.delete();
+    });
+    session.endSession();
+    return newAccount;
   }
 }

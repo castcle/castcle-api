@@ -36,4 +36,31 @@ const create = async (password: string) =>
 const verify = async (password: string, encryptPassword: string) =>
   bcrypt.compare(password, encryptPassword);
 
-export const Password = { generate, create, verify, validate };
+/**
+ * random a number 0 - 9
+ * @returns {number}
+ */
+const randomZeroToNine = () => {
+  let randNumber = Math.floor(Math.random() * 10);
+  if (randNumber === 10) randNumber = 9;
+  return randNumber;
+};
+
+/**
+ * Random X digits number
+ * @param {number} digit
+ * @returns {string}
+ */
+const generateRandomDigits = (digit: number) => {
+  let refCode = '';
+  for (let i = 0; i < digit; i++) refCode += randomZeroToNine();
+  return refCode;
+};
+
+export const Password = {
+  generate,
+  create,
+  verify,
+  validate,
+  generateRandomDigits
+};
