@@ -35,7 +35,7 @@ import {
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';
-import { Token } from '@castcle-api/utils';
+import { CastcleName, Token } from '@castcle-api/utils';
 import {
   AccessTokenPayload,
   RefreshTokenPayload,
@@ -241,5 +241,19 @@ export class AuthenticationService {
     accountActivation.verifyTokenExpireDate =
       emailTokenResult.verifyTokenExpireDate;
     return accountActivation.save();
+  }
+
+  /**
+   *
+   * @param {string} displayName this will show suggestName + totalUser(if suggestName is already exist)
+   * @returns {Promise<string>} suggestCastCleId
+   */
+  async suggestCastcleId(displayName: string) {
+    const name = new CastcleName(displayName);
+    const result = await this.getUserFromCastcleId(name.suggestCastcleId);
+    if (result) {
+      const totalUser = await this._userModel.countDocuments().exec();
+      return name.suggestCastcleId + totalUser;
+    } else return name.suggestCastcleId;
   }
 }

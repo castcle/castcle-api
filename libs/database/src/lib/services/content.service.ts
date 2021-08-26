@@ -34,9 +34,10 @@ import {
   SaveContentDto,
   ContentPayloadDto,
   Author,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
+  CastcleContentQueryOptions,
+  DEFAULT_CONTENT_QUERY_OPTIONS
 } from '../dtos/content.dto';
+import { RevisionDocument } from '../schemas/revision.schema';
 
 @Injectable()
 export class ContentService {
@@ -47,7 +48,9 @@ export class ContentService {
     @InjectModel('User')
     public _userModel: Model<UserDocument>,
     @InjectModel('Content')
-    public _contentModel: Model<ContentDocument>
+    public _contentModel: Model<ContentDocument>,
+    @InjectModel('Revision')
+    public _revisionModel: Model<RevisionDocument>
   ) {}
 
   /**
@@ -110,9 +113,7 @@ export class ContentService {
    * @returns {ContentDocument}
    */
   updateContentFromId = async (id: string, contentDto: SaveContentDto) => {
-    //TODO !!! need to implement with revision
     const content = await this._contentModel.findById(id).exec();
-    content.revisionCount++;
     content.payload = contentDto.payload;
     content.type = contentDto.type;
     return content.save();
@@ -137,7 +138,7 @@ export class ContentService {
    */
   getContentsFromUser = async (
     user: UserDocument,
-    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
     const findFilter: { 'author.id': any; type?: string } = {
       'author.id': user._id
@@ -157,8 +158,18 @@ export class ContentService {
     } else
       return {
         total: totalDocument,
-        items: await query.sort(`+${options.sortBy.field}`).exec(),
+        items: await query.sort(`${options.sortBy.field}`).exec(),
         pagination: createPagination(options, totalDocument)
       };
   };
+
+  getContentRevisions = async (content: ContentDocument) =>
+    this._revisionModel
+      .find({
+        objectRef: {
+          $ref: 'content',
+          $id: content._id
+        }
+      })
+      .exec();
 }

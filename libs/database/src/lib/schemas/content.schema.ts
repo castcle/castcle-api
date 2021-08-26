@@ -21,7 +21,8 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import {
   ContentPayloadDto,
@@ -31,6 +32,7 @@ import {
   Author
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
+import { RevisionDocument } from './revision.schema';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -112,4 +114,32 @@ ContentSchema.methods.toPagePayload = function () {
       name: 'Feed'
     }
   } as ContentPayloadDto;
+};
+
+export const ContentSchemaFactory = (
+  revisionModel: Model<RevisionDocument>
+): mongoose.Schema<any> => {
+  ContentSchema.pre('save', function (next) {
+    (this as ContentDocument).revisionCount = (this as ContentDocument)
+      .revisionCount
+      ? (this as ContentDocument).revisionCount + 1
+      : 1;
+    next();
+  });
+  ContentSchema.post('save', async function (doc, next) {
+    const session = await revisionModel.startSession();
+    const self = this as ContentDocument;
+    session.withTransaction(async () => {
+      const newRevison = new revisionModel({
+        objectRef: {
+          $ref: 'content',
+          $id: mongoose.Types.ObjectId((doc as ContentDocument)._id)
+        },
+        payload: doc as Content
+      });
+      const result = await newRevison.save();
+    });
+    session.endSession();
+  });
+  return ContentSchema;
 };

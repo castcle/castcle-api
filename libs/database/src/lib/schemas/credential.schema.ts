@@ -35,17 +35,13 @@ import {
 
 export type CredentialDocument = Credential & ICredential;
 
-interface IAccount extends Account {
-  _id?: any;
-}
-
 @Schema({ timestamps: true })
 export class Credential extends CastcleBase {
   @Prop({
     required: true,
     type: Object
   })
-  account: IAccount;
+  account: Account;
 
   @Prop({ required: true })
   accessToken: string;

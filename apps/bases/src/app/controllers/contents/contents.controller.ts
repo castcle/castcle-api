@@ -44,7 +44,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
   SaveContentDto
 } from '@castcle-api/database/dtos';
 import {
@@ -246,12 +246,13 @@ export class ContentController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ) {
     const content = await this._getContentIfExist(id, req);
     return {

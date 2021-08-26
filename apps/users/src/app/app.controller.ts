@@ -37,7 +37,10 @@ import {
   ContentService,
   AuthenticationService
 } from '@castcle-api/database';
-import { ImageInterceptor } from './interceptors/image.interceptor';
+import {
+  ImageInterceptor,
+  FollowInterceptor
+} from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -57,7 +60,8 @@ import {
 import {
   ContentPayloadDto,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  FollowResponse,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
@@ -68,7 +72,7 @@ import {
   ContentTypePipe,
   SortByEnum
 } from '@castcle-api/utils/pipes';
-import { UserDocument } from '@castcle-api/database/schemas';
+import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { ContentsResponse } from '@castcle-api/database/dtos';
 import { Query } from '@nestjs/common';
 let logger: CastLogger;
@@ -281,12 +285,13 @@ export class AppController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
@@ -356,5 +361,127 @@ export class AppController {
       );
     await currentUser.unfollow(followedUser);
     return '';
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: FollowResponse
+  })
+  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: UserType,
+    required: false
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Get(':id/follower')
+  async getUserFollower(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('type')
+    userTypeOption?: UserType
+  ): Promise<FollowResponse> {
+    //UserService
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    const followers = await this.userService.getFollower(user, {
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: userTypeOption
+    });
+    return {
+      payload: followers.items,
+      pagination: followers.pagination
+    } as FollowResponse;
+  }
+
+  @ApiHeader({
+    name: 'Accept-Language',
+    description: 'Device prefered Language',
+    example: 'th',
+    required: true
+  })
+  @ApiOkResponse({
+    type: FollowResponse
+  })
+  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: UserType,
+    required: false
+  })
+  @UseInterceptors(FollowInterceptor)
+  @Get(':id/following')
+  async getUserFollowing(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('type')
+    userTypeOption?: UserType
+  ): Promise<FollowResponse> {
+    //UserService
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    const followers = await this.userService.getFollowing(user, {
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: userTypeOption
+    });
+    return {
+      payload: followers.items,
+      pagination: followers.pagination
+    } as FollowResponse;
   }
 }

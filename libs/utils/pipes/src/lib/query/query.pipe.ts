@@ -22,7 +22,10 @@
  */
 
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS
+} from '@castcle-api/database/dtos';
 import { ContentType } from '@castcle-api/database/dtos';
 
 //TODO !!! need to move this to somewhere else

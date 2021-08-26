@@ -20,17 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { Token } from './token';
-import { Password } from './password';
-import { CastcleName } from './castcle-name';
 
-@Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsModule {}
-
-export { Token, Password, CastcleName };
+export const RANDOM_SUBJECTS = ['banana', 'cookie', 'apple', 'pineapple'];
+export const RANDOM_ADJECTIVE = ['blaze', 'cooked', 'cool', 'burn'];

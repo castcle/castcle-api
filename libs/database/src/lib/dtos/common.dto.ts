@@ -32,3 +32,25 @@ export class Pagination {
   @ApiProperty()
   limit?: number;
 }
+
+export class CastcleQueryOptions {
+  sortBy?: {
+    field: string;
+    type: 'desc' | 'asc';
+  } = {
+    field: 'updatedAt',
+    type: 'desc'
+  };
+  type?: string;
+  page?: number = 1;
+  limit?: number = 25;
+}
+
+export const DEFAULT_QUERY_OPTIONS = {
+  sortBy: {
+    field: 'updatedAt',
+    type: 'desc'
+  },
+  page: 1,
+  limit: 25
+} as CastcleQueryOptions;

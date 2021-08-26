@@ -44,7 +44,7 @@ import {
   ContentResponse,
   ContentsResponse,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
   PageDto,
   PagesResponse,
   UpdatePageDto,
@@ -136,19 +136,19 @@ export class PageController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
     const namingResult = await this.authService.getUserFromCastcleId(
-      body.username
+      body.castcleId
     );
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
       await this._uploadImage(body.avatar, {
-        filename: `page-avatar-${body.username}`
+        filename: `page-avatar-${body.castcleId}`
       })
     ).uri;
     body.cover = (
       await this._uploadImage(body.cover, {
-        filename: `page-cover-${body.username}`
+        filename: `page-cover-${body.castcleId}`
       })
     ).uri;
     const page = await this.userService.createPageFromCredential(
@@ -238,10 +238,11 @@ export class PageController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
   ): Promise<PagesResponse> {
     const pages = await this.userService.getAllPages({
       page: pageOption,
@@ -323,12 +324,13 @@ export class PageController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page, {

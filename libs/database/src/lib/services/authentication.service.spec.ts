@@ -102,10 +102,6 @@ describe('Authentication Service', () => {
           platform: 'iOs'
         }
       });
-      console.log(
-        'createdAccountDocument ',
-        createAccountResult.accountDocument
-      );
     });
 
     describe('#_generateAccessToken()', () => {
@@ -346,7 +342,7 @@ describe('Authentication Service', () => {
         const result = await service.getUserFromCastcleId('testNew');
         expect(result).not.toBeNull();
         expect(result.displayId).toEqual(newUser.displayId);
-        console.log(result);
+
         expect(result.displayName).toEqual(newUser.displayName);
       });
     });
@@ -486,6 +482,17 @@ describe('Authentication Service', () => {
         expect(newCredential.account).toEqual(
           createAccountResult.accountDocument._id
         );
+      });
+    });
+    describe('#suggestCastcleId()', () => {
+      it('should suggest a name', async () => {
+        const suggestName = await service.suggestCastcleId('Hello Friend');
+        expect(suggestName).toEqual('hellofriend');
+      });
+      it('should suggest a name + totalUser if the id is already exist', async () => {
+        const totalUser = await service._accountModel.countDocuments();
+        const suggestName = await service.suggestCastcleId('Dude this is new');
+        expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
       });
     });
   });
