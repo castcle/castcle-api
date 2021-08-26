@@ -484,5 +484,16 @@ describe('Authentication Service', () => {
         );
       });
     });
+    describe('#suggestCastcleId()', () => {
+      it('should suggest a name', async () => {
+        const suggestName = await service.suggestCastcleId('Hello Friend');
+        expect(suggestName).toEqual('hellofriend');
+      });
+      it('should suggest a name + totalUser if the id is already exist', async () => {
+        const totalUser = await service._accountModel.countDocuments();
+        const suggestName = await service.suggestCastcleId('Dude this is new');
+        expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
+      });
+    });
   });
 });
