@@ -102,10 +102,6 @@ describe('Authentication Service', () => {
           platform: 'iOs'
         }
       });
-      console.log(
-        'createdAccountDocument ',
-        createAccountResult.accountDocument
-      );
     });
 
     describe('#_generateAccessToken()', () => {
@@ -346,7 +342,7 @@ describe('Authentication Service', () => {
         const result = await service.getUserFromCastcleId('testNew');
         expect(result).not.toBeNull();
         expect(result.displayId).toEqual(newUser.displayId);
-        console.log(result);
+
         expect(result.displayName).toEqual(newUser.displayName);
       });
     });

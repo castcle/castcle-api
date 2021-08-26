@@ -37,6 +37,7 @@ import {
   CastcleContentQueryOptions,
   DEFAULT_CONTENT_QUERY_OPTIONS
 } from '../dtos/content.dto';
+import { RevisionDocument } from '../schemas/revision.schema';
 
 @Injectable()
 export class ContentService {
@@ -47,7 +48,9 @@ export class ContentService {
     @InjectModel('User')
     public _userModel: Model<UserDocument>,
     @InjectModel('Content')
-    public _contentModel: Model<ContentDocument>
+    public _contentModel: Model<ContentDocument>,
+    @InjectModel('Revision')
+    public _revisionModel: Model<RevisionDocument>
   ) {}
 
   /**
@@ -110,9 +113,7 @@ export class ContentService {
    * @returns {ContentDocument}
    */
   updateContentFromId = async (id: string, contentDto: SaveContentDto) => {
-    //TODO !!! need to implement with revision
     const content = await this._contentModel.findById(id).exec();
-    content.revisionCount++;
     content.payload = contentDto.payload;
     content.type = contentDto.type;
     return content.save();
@@ -161,4 +162,14 @@ export class ContentService {
         pagination: createPagination(options, totalDocument)
       };
   };
+
+  getContentRevisions = async (content: ContentDocument) =>
+    this._revisionModel
+      .find({
+        objectRef: {
+          $ref: 'content',
+          $id: content._id
+        }
+      })
+      .exec();
 }

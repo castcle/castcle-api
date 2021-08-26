@@ -22,8 +22,11 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { Comment } from './comment.schema';
 
 export type RevisionDocument = Revision & Document;
 
@@ -33,7 +36,10 @@ export class Revision extends CastcleBase {
   objectRef: any;
 
   @Prop({ required: true, type: Object })
-  payload: string;
+  payload: Content | Comment;
 }
 
 export const Revisionchema = SchemaFactory.createForClass(Revision);
+export const RevisionchemaFactory = (): mongoose.Schema<any> => {
+  return Revisionchema;
+};

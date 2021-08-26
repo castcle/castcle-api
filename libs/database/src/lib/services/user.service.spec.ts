@@ -148,8 +148,6 @@ describe('User Service', () => {
         dob: partialDTO.dob
       });
       expect(updatingUser.profile.birthdate).toEqual(partialDTO.dob);
-      console.log('-----');
-      console.log(await updatingUser.toUserResponse());
       expect((await updatingUser.toUserResponse()).dob).toEqual(partialDTO.dob);
       updatingUser = await service.updateUser(userFromCredential, {
         overview: partialDTO.overview
