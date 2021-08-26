@@ -94,3 +94,22 @@ export class SuggestCastcleIdReponse {
   @ApiProperty()
   payload: suggestCastcleIdPayload;
 }
+
+export class ChangePasswordBody {
+  @ApiProperty()
+  refCode: string;
+  @ApiProperty()
+  newPassword: string;
+}
+
+export class VerificationPasswordBody {
+  @ApiProperty()
+  password: string;
+}
+
+export class VerificationPasswordResponse {
+  @ApiProperty()
+  refCode: string;
+  @ApiProperty()
+  expiresTime: string;
+}
