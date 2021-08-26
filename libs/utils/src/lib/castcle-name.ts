@@ -39,11 +39,15 @@ export class CastcleName {
     this.slug = CastcleName.convertToSlug(name);
     this.isBanned = CastcleName.isBannedName(name);
     this.isReserved = CastcleName.isReserveName(name);
-    this.isValid =
-      CastcleName.isValidName(name) && !this.isBanned && !this.isReserved;
+    this.isValid = CastcleName.isValidName(name);
     this.suggestCastcleId = CastcleName.suggestCastcleId(name);
   }
 
+  /**
+   * Change name to lowercase + remove all space
+   * @param {string }name
+   * @returns {string}
+   */
   static convertToSlug(name: string) {
     return name
       .toLowerCase()
@@ -51,27 +55,52 @@ export class CastcleName {
       .replace(/ +/g, '');
   }
 
+  /**
+   * convert name to slug and check if it exist in configs/names/ban.names
+   * @param {string }name
+   * @returns {boolean} return true if the name is ban name
+   */
   static isBannedName(name: string) {
     return BANNED_NAMES.find((str) => str === this.convertToSlug(name))
       ? true
       : false;
   }
 
+  /**
+   * convert name to slug and check if it exist in configs/names/reserve.names
+   * @param {string} name
+   * @returns {boolean}
+   */
   static isReserveName(name: string) {
     return RESERVE_NAMES.find((str) => str === this.convertToSlug(name))
       ? true
       : false;
   }
 
+  /**
+   * convert name to slug and check if length in ranges(in config) and if it has any special character
+   * @param {string} name
+   * @returns {boolean} return true if name is valid
+   */
   static isValidName(name: string) {
     const lengthRule =
       this.convertToSlug(name).length >= LENGTH_MIN &&
       this.convertToSlug(name).length <= LENGTH_MAX;
     const format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
     const specialCharacterRule = !format.test(name);
-    return lengthRule && specialCharacterRule;
+    return (
+      lengthRule &&
+      specialCharacterRule &&
+      !this.isReserveName(name) &&
+      !this.isBannedName(name)
+    );
   }
 
+  /**
+   * remove all special character and if length is more than LENGTH_MAX slice it to the maxium length
+   * @param {string} name
+   * @returns {string}
+   */
   static _preSuggest(name: string) {
     //remove any special character
     let replaceName = name.replace(
@@ -83,6 +112,11 @@ export class CastcleName {
     return replaceName;
   }
 
+  /**
+   * get name from _preSuggest and check
+   * @param {string} name
+   * @returns {string}
+   */
   static suggestCastcleId(name: string) {
     const newName = this._preSuggest(name);
     if (this.isValidName(newName)) return this.convertToSlug(newName);

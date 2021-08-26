@@ -21,4 +21,4 @@
  * or have any questions.
  */
 
-export const BANNED_NAMES = ['forwarding-party'];
+export const BANNED_NAMES = ['sexeducation'];
