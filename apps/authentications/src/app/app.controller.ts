@@ -21,9 +21,17 @@
  * or have any questions.
  */
 
-import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseInterceptors,
+  Version
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
+import { Configs } from '@castcle-api/environments';
 import {
   HeadersRequest,
   HeadersInterceptor,
@@ -64,7 +72,21 @@ import {
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 
-@Controller()
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 export class AppController {
   constructor(
     private readonly appService: AppService,
@@ -75,12 +97,6 @@ export class AppController {
     CastLoggerOptions
   );
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 400,
     description: 'will show if some of header is missing'
@@ -114,12 +130,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
     type: LoginDto
@@ -182,18 +192,6 @@ export class AppController {
   }*/
 
   @ApiHeader({
-    name: 'Platform',
-    description: 'Device platform',
-    example: 'iOS',
-    required: true
-  })
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
-  @ApiHeader({
     name: 'Device',
     description: 'Device name',
     example: 'iPhone',
@@ -244,12 +242,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 201,
@@ -311,12 +303,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 201,
     type: RefreshTokenResponse
@@ -356,12 +342,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -392,12 +372,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -439,12 +413,6 @@ export class AppController {
     return '';
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: CheckingResponse
   })
@@ -495,6 +463,12 @@ export class AppController {
     return this.appService.getData().message + birthDay;
   }
 
+  @Version('beta')
+  @Get()
+  getDataBeta() {
+    return 'hello';
+  }
+
   /*
    * TODO: !!! use for test link verification only will remove in production
    */
@@ -512,12 +486,6 @@ export class AppController {
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: SuggestCastcleIdReponse
   })
@@ -535,12 +503,6 @@ export class AppController {
     };
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBody({
     type: VerificationPasswordBody
   })
@@ -568,12 +530,6 @@ export class AppController {
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @UseInterceptors(CredentialInterceptor)
   @ApiBody({
     type: ChangePasswordBody

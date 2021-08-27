@@ -21,5 +21,20 @@
  * or have any questions.
  */
 
-export * from './lib/environments';
-export * from './lib/configs';
+/**
+ * This is hardcode configureation
+ */
+export const Configs = {
+  RequiredHeaders: {
+    AcceptVersion: {
+      name: 'Accept-Version',
+      description: 'Version of api',
+      example: '1.0'
+    },
+    AcceptLanguague: {
+      name: 'Accept-Language',
+      description: 'Expected language response',
+      example: 'th'
+    }
+  }
+};

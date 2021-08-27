@@ -76,7 +76,23 @@ import {
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { PageInterceptor } from '../../interceptors/page.interceptor';
 import { Query } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 @Controller()
 export class PageController {
   constructor(
@@ -117,12 +133,6 @@ export class PageController {
       );
   };
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
     type: PageResponse
@@ -158,12 +168,6 @@ export class PageController {
     return page.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
     type: UpdatePageDto
@@ -200,12 +204,6 @@ export class PageController {
     return afterPage.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiOkResponse({
     type: PageResponseDto
@@ -221,12 +219,6 @@ export class PageController {
     return page.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiOkResponse({
     type: PagesResponse
@@ -255,12 +247,6 @@ export class PageController {
     };
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -285,12 +271,6 @@ export class PageController {
    * @param {CredentialRequest} req that contain current user credential
    * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
    */
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiOkResponse({
     type: ContentResponse

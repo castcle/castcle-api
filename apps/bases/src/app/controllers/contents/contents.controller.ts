@@ -68,7 +68,23 @@ import {
   PagePipe,
   SortByPipe
 } from '@castcle-api/utils/pipes';
+import { Configs } from '@castcle-api/environments';
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 @Controller()
 export class ContentController {
   constructor(
@@ -83,12 +99,6 @@ export class ContentController {
   );
 
   @ApiBearerAuth()
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBody({
     type: SaveContentDto
   })
@@ -118,12 +128,6 @@ export class ContentController {
   }
 
   @ApiBearerAuth()
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentResponse
   })
@@ -175,12 +179,6 @@ export class ContentController {
   }
 
   @ApiBearerAuth()
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBody({
     type: SaveContentDto
   })
@@ -205,12 +203,6 @@ export class ContentController {
     } as ContentResponse;
   }
   @ApiBearerAuth()
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 204
   })
@@ -228,12 +220,6 @@ export class ContentController {
   }
 
   @ApiBearerAuth()
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentResponse
   })

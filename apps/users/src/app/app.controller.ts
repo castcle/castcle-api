@@ -75,8 +75,24 @@ import {
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { ContentsResponse } from '@castcle-api/database/dtos';
 import { Query } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 let logger: CastLogger;
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 @Controller()
 export class AppController {
   constructor(
@@ -118,12 +134,6 @@ export class AppController {
     return this.appService.getData();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -141,12 +151,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -159,12 +163,6 @@ export class AppController {
     return await user.toUserResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBody({
     type: UpdateUserDto
   })
@@ -190,12 +188,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 204
   })
@@ -215,12 +207,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentsResponse
   })
@@ -245,12 +231,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentsResponse
   })
@@ -307,12 +287,6 @@ export class AppController {
     } as ContentsResponse;
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 204
   })
@@ -335,12 +309,6 @@ export class AppController {
     return '';
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 204
   })
@@ -363,12 +331,6 @@ export class AppController {
     return '';
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: FollowResponse
   })
@@ -424,12 +386,6 @@ export class AppController {
     } as FollowResponse;
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: FollowResponse
   })
