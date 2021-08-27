@@ -36,6 +36,8 @@ import {
 } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
+import { VersioningType } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -47,6 +49,12 @@ async function bootstrap() {
 
   // For Global
   app.setGlobalPrefix(prefix);
+
+  // For versioning
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name
+  });
 
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);

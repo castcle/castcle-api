@@ -23,7 +23,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
-import { Environment as env } from '@castcle-api/environments';
+import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   CastLogger,
   CastLoggerOptions,
@@ -32,6 +32,7 @@ import {
 import { AppModule } from './app/app.module';
 import { DocumentConfig } from './docs/document.config';
 import express = require('express');
+import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -40,9 +41,16 @@ async function bootstrap() {
   });
   const port = process.env.PORT || 3332;
 
+  // For versioning
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name
+  });
+
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup('documentations', app, document);
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   await app.listen(port, () => {
