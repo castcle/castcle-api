@@ -28,6 +28,10 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  EngagementDocument,
+  EngagementType
+} from '../schemas/engagement.schema';
 import { createPagination } from '../utils/common';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import {
@@ -38,6 +42,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
+import { async } from 'rxjs';
 
 @Injectable()
 export class ContentService {
@@ -50,7 +55,9 @@ export class ContentService {
     @InjectModel('Content')
     public _contentModel: Model<ContentDocument>,
     @InjectModel('Revision')
-    public _revisionModel: Model<RevisionDocument>
+    public _revisionModel: Model<RevisionDocument>,
+    @InjectModel('Engagement')
+    public _engagementModel: Model<EngagementDocument>
   ) {}
 
   /**
@@ -172,4 +179,41 @@ export class ContentService {
         }
       })
       .exec();
+
+  likeContent = async (content: ContentDocument, user: UserDocument) => {
+    return this._engagementModel.updateOne(
+      {
+        user: user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        }
+      },
+      {
+        $set: {
+          type: EngagementType.Like,
+          user: user._id,
+          targetRef: {
+            $ref: 'content',
+            $id: content._id
+          },
+          target: content as Content
+        }
+      },
+      {
+        upsert: true
+      }
+    );
+  };
+
+  unLikeContent = async (content: ContentDocument, user: UserDocument) => {
+    return this._engagementModel.deleteOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: content._id
+      },
+      type: EngagementType.Like
+    });
+  };
 }

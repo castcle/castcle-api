@@ -22,11 +22,11 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { User } from './user.schema';
 import { Comment } from './comment.schema';
-import { Content } from './content.schema';
+import { Content, ContentDocument } from './content.schema';
 import { CastcleBase } from './base.schema';
 
 export type EngagementDocument = Engagement & Document;
@@ -54,3 +54,29 @@ export class Engagement extends CastcleBase {
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
+
+export const EngagementSchemaFactory = (
+  contentModel: Model<ContentDocument>
+): mongoose.Schema<any> => {
+  EngagementSchema.post('save', (doc, next) => {
+    const incEngagment: { [key: string]: number } = {};
+    incEngagment[`engagement.${(doc as EngagementDocument).type}`] = 1;
+    contentModel.updateOne(
+      { _id: (doc as EngagementDocument).targetRef.$id },
+      {
+        $inc: incEngagment
+      }
+    );
+  });
+  EngagementSchema.post('deleteOne', (doc, next) => {
+    const incEngagment: { [key: string]: number } = {};
+    incEngagment[`engagement.${(doc as EngagementDocument).type}`] = -1;
+    contentModel.updateOne(
+      { _id: (doc as EngagementDocument).targetRef.$id },
+      {
+        $inc: incEngagment
+      }
+    );
+  });
+  return EngagementSchema;
+};
