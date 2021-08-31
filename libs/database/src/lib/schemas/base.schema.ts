@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Prop, Schema } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import { EntityVisibility } from '../dtos/common.dto';
 
 @Schema()
 export class CastcleBase {
@@ -32,4 +32,7 @@ export class CastcleBase {
 
   @Prop()
   updatedAt?: Date;
+
+  @Prop()
+  visibility?: EntityVisibility;
 }

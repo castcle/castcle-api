@@ -124,11 +124,24 @@ export const ContentSchemaFactory = (
       .revisionCount
       ? (this as ContentDocument).revisionCount + 1
       : 1;
+    if (!(this as ContentDocument).engagements) {
+      (this as ContentDocument).engagements = {
+        like: {
+          count: 0,
+          refs: []
+        },
+        comment: {
+          count: 0,
+          refs: []
+        }
+      };
+    }
     next();
   });
   ContentSchema.post('save', async function (doc, next) {
     const session = await revisionModel.startSession();
     const self = this as ContentDocument;
+    console.log('current content self', self);
     session.withTransaction(async () => {
       const newRevison = new revisionModel({
         objectRef: {
@@ -140,6 +153,7 @@ export const ContentSchemaFactory = (
       const result = await newRevison.save();
     });
     session.endSession();
+    next();
   });
   return ContentSchema;
 };
