@@ -22,7 +22,6 @@
  */
 
 import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { Assets as assets } from '@castcle-api/assets';
 import * as dotenv from 'dotenv';
 
 const env = dotenv.config();
@@ -31,7 +30,6 @@ if (!env) {
 }
 
 // Database
-const sslCA = assets.mongodb_ssl_ca;
 const db_user_pass =
   process.env.DB_USERNAME === '' && process.env.DB_PASSWORD === ''
     ? ''
