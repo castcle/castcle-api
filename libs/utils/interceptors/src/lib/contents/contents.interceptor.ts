@@ -27,7 +27,8 @@ import {
   ContentResponse,
   ContentsResponse,
   ContentType,
-  SaveContentDto
+  SaveContentDto,
+  ShortPayload
 } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,

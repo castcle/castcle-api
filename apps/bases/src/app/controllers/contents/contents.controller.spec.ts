@@ -143,7 +143,7 @@ describe('PageController', () => {
       expect(result.payload.type).toEqual(ContentType.Short);
       expect(result.payload.payload).toEqual(shortPayload);
       const content = await contentService.getContentFromId(result.payload.id);
-      expect(result.payload).toEqual(content.toPagePayload());
+      expect(result.payload).toEqual(content.toContentPayload());
       expect(result.payload.author.id).toEqual(user._id);
     });
     it('should create a new blog content from DTO', async () => {
@@ -174,7 +174,7 @@ describe('PageController', () => {
       expect(result.payload.type).toEqual(ContentType.Blog);
       expect(result.payload.payload).toEqual(blogPayload);
       const content = await contentService.getContentFromId(result.payload.id);
-      expect(result.payload).toEqual(content.toPagePayload());
+      expect(result.payload).toEqual(content.toContentPayload());
       expect(result.payload.author.id).toEqual(user._id);
     });
     it('should be able to create a content by page', async () => {

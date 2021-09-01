@@ -320,7 +320,7 @@ export class PageController {
       type: contentTypeOption
     });
     return {
-      payload: contents.items.map((c) => c.toPagePayload()),
+      payload: contents.items.map((c) => c.toContentPayload()),
       pagination: contents.pagination
     };
   }
