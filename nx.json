@@ -27,9 +27,6 @@
     ]
   },
   "projects": {
-    "assets": {
-      "tags": []
-    },
     "authentications": {
       "tags": []
     },
@@ -39,7 +36,13 @@
     "commonDate": {
       "tags": []
     },
+    "contents": {
+      "tags": []
+    },
     "database": {
+      "tags": []
+    },
+    "engagements": {
       "tags": []
     },
     "environments": {
