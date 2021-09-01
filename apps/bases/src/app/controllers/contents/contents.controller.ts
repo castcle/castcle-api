@@ -245,4 +245,58 @@ export class ContentController {
       payload: content.toPagePayload()
     } as ContentResponse;
   }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @Put('contents/:id/liked')
+  @HttpCode(204)
+  async likeContent(
+    @Param('id') id: string,
+    @Body('authorId') authorId: string,
+    @Req() req: CredentialRequest
+  ) {
+    //TODO !!! has to add feedItem once implement
+    const content = await this._getContentIfExist(id, req);
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const user = await this.userService.getUserFromId(authorId);
+    if (user.ownerAccount !== account._id) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    await this.contentService.likeContent(content, user);
+    return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @Put('contents/:id/unliked')
+  @HttpCode(204)
+  async unLikeContent(
+    @Param('id') id: string,
+    @Body('authorId') authorId: string,
+    @Req() req: CredentialRequest
+  ) {
+    //TODO !!! has to add feedItem once implement
+    const content = await this._getContentIfExist(id, req);
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const user = await this.userService.getUserFromId(authorId);
+    if (user.ownerAccount !== account._id) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    await this.contentService.unLikeContent(content, user);
+    return '';
+  }
 }

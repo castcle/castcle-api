@@ -31,7 +31,7 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { ContentSchema } from '../schemas/content.schema';
+import { ContentDocument, ContentSchema } from '../schemas/content.schema';
 import { SaveContentDto, ContentType } from '../dtos';
 import { UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
@@ -199,6 +199,51 @@ describe('ContentService', () => {
       expect(
         contentsInverse.items[contentsInverse.items.length - 1].payload
       ).toEqual(shortPayload2);
+    });
+  });
+  describe('#likeContent()', () => {
+    let content: ContentDocument;
+    beforeAll(async () => {
+      const shortPayload2: ShortPayload = {
+        message: 'Test Like 2'
+      };
+      content = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload2
+      });
+    });
+    it('should update total like Count after call', async () => {
+      const likeResult = await service.likeContent(content, user);
+      expect(likeResult).toBeDefined();
+      const engagement = await service._engagementModel
+        .findById(likeResult._id)
+        .exec();
+      console.log('newly engagement', engagement);
+      expect(engagement.user).toEqual(user._id);
+      const postContent = await service.getContentFromId(content._id);
+      console.log(postContent.engagements);
+      expect(postContent.engagements['like']).toBeDefined();
+      expect(postContent.engagements['like'].count).toEqual(1);
+    });
+    it('should if have double like should have the same amount of like', async () => {
+      const likeResult = await service.likeContent(content, user);
+      const postContent = await service.getContentFromId(content._id);
+      expect(postContent.engagements['like']).toBeDefined();
+      expect(postContent.engagements['like'].count).toEqual(1);
+    });
+    describe('#unLikeContent()', () => {
+      it('should update total like after call', async () => {
+        await service.unLikeContent(content, user);
+        const postContent = await service.getContentFromId(content._id);
+        expect(postContent.engagements['like']).toBeDefined();
+        expect(postContent.engagements['like'].count).toEqual(0);
+      });
+      it('shold handle double unlike', async () => {
+        await service.unLikeContent(content, user);
+        const postContent = await service.getContentFromId(content._id);
+        expect(postContent.engagements['like']).toBeDefined();
+        expect(postContent.engagements['like'].count).toEqual(0);
+      });
     });
   });
 });

@@ -54,3 +54,9 @@ export const DEFAULT_QUERY_OPTIONS = {
   page: 1,
   limit: 25
 } as CastcleQueryOptions;
+
+export enum EntityVisibility {
+  Hidden = 'hidden',
+  Publish = 'publish',
+  Deleted = 'deleted'
+}
