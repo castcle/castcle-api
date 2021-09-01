@@ -35,11 +35,12 @@ module.exports = {
     '<rootDir>/libs/environments',
     '<rootDir>/libs/database',
     '<rootDir>/libs/logger',
-    '<rootDir>/libs/assets',
     '<rootDir>/libs/utils',
     '<rootDir>/libs/utils/interceptors',
     '<rootDir>/libs/utils/exception',
     '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes'
+    '<rootDir>/libs/utils/pipes',
+    '<rootDir>/apps/contents',
+    '<rootDir>/apps/engagements'
   ]
 };

@@ -20,43 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
 
-export class Pagination {
-  @ApiProperty()
-  previous?: number;
-  @ApiProperty()
-  self?: number;
-  @ApiProperty()
-  next?: number;
-  @ApiProperty()
-  limit?: number;
+import { Environment as env } from '@castcle-api/environments';
+import {
+  CastLogger,
+  CastLoggerLevel,
+  CastLoggerOptions
+} from '@castcle-api/logger';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const app = await NestFactory.create(AppModule, {
+    logger: CastLoggerLevel
+  });
+  const port = process.env.PORT || 3339;
+  const prefix = 'contents';
+
+  // For Global
+  app.setGlobalPrefix(prefix);
+
+  await app.listen(port, () => {
+    logger.log('Listening at http://localhost:' + port);
+    logger.log(`Environment at ${env.node_env}`);
+  });
 }
 
-export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
-  type?: string;
-  page?: number = 1;
-  limit?: number = 25;
-}
-
-export const DEFAULT_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  page: 1,
-  limit: 25
-} as CastcleQueryOptions;
-
-export enum EntityVisibility {
-  Hidden = 'hidden',
-  Publish = 'publish',
-  Deleted = 'deleted'
-}
+bootstrap();

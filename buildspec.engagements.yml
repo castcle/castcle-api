@@ -31,26 +31,26 @@ phases:
       - aws --version
       - BASE_REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $BASE_REPOSITORY_URI
-      - REPOSITORY_URI=$BASE_REPOSITORY_URI/api-feeds
+      - REPOSITORY_URI=$BASE_REPOSITORY_URI/api-engagements
       - IMAGE_TAG=$(echo $NODE_ENV)-$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
   build:
     commands:
       - echo Install npm packages...
       - npm install
       - echo linting...
-      - npm run lint:feeds
+      - npm run lint:engagements
       - echo testing...
-      - npm run test:feeds
-      - echo Build feeds service...
-      - npm run build:feeds
+      - npm run test:engagements
+      - echo Build engagements service...
+      - npm run build:engagements
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:$IMAGE_TAG -f Dockerfile.feeds .
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG -f Dockerfile.engagements .
   post_build:
     commands:
       - bash -c "if [ /"$CODEBUILD_BUILD_SUCCEEDING/" == /"0/" ]; then exit 1; fi"
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"feeds-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"engagements-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files: imagedefinitions.json

@@ -21,17 +21,19 @@
  * or have any questions.
  */
 
-module.exports = {
-  displayName: 'assets',
-  preset: '../../jest.preset.js',
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  transform: {
-    '^.+\\.[tj]sx?$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  coverageDirectory: '../../coverage/libs/assets'
-};
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Controller, Get } from '@nestjs/common';
+
+@Controller('healthy')
+export class HealthyController {
+  private readonly logger = new CastLogger(
+    HealthyController.name,
+    CastLoggerOptions
+  );
+
+  @Get()
+  getData() {
+    this.logger.log('Health Check');
+    return '';
+  }
+}

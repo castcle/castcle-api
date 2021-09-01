@@ -20,43 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
 
-export class Pagination {
-  @ApiProperty()
-  previous?: number;
-  @ApiProperty()
-  self?: number;
-  @ApiProperty()
-  next?: number;
-  @ApiProperty()
-  limit?: number;
-}
-
-export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
-  type?: string;
-  page?: number = 1;
-  limit?: number = 25;
-}
-
-export const DEFAULT_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  page: 1,
-  limit: 25
-} as CastcleQueryOptions;
-
-export enum EntityVisibility {
-  Hidden = 'hidden',
-  Publish = 'publish',
-  Deleted = 'deleted'
-}
+export const environment = {
+  production: false
+};

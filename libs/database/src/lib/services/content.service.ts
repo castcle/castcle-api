@@ -28,6 +28,10 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  EngagementDocument,
+  EngagementType
+} from '../schemas/engagement.schema';
 import { createPagination } from '../utils/common';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import {
@@ -35,9 +39,12 @@ import {
   ContentPayloadDto,
   Author,
   CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  ContentResponse
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
+import { async } from 'rxjs';
+import { EntityVisibility } from '../dtos/common.dto';
 
 @Injectable()
 export class ContentService {
@@ -50,7 +57,9 @@ export class ContentService {
     @InjectModel('Content')
     public _contentModel: Model<ContentDocument>,
     @InjectModel('Revision')
-    public _revisionModel: Model<RevisionDocument>
+    public _revisionModel: Model<RevisionDocument>,
+    @InjectModel('Engagement')
+    public _engagementModel: Model<EngagementDocument>
   ) {}
 
   /**
@@ -172,4 +181,75 @@ export class ContentService {
         }
       })
       .exec();
+
+  likeContent = async (content: ContentDocument, user: UserDocument) => {
+    let engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: content._id
+      }
+    });
+    if (!engagement)
+      engagement = new this._engagementModel({
+        type: EngagementType.Like,
+        user: user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        },
+        target: content as Content,
+        visibility: EntityVisibility.Publish
+      });
+    engagement.type = EngagementType.Like;
+    engagement.visibility = EntityVisibility.Publish;
+    engagement.target = content as Content;
+    return engagement.save();
+  };
+
+  unLikeContent = async (content: ContentDocument, user: UserDocument) => {
+    const engagement = await this._engagementModel
+      .findOne({
+        user: user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        },
+        type: EngagementType.Like
+      })
+      .exec();
+    if (!engagement) return null;
+    return engagement.remove();
+  };
+
+  /**
+   * get how many user like this content by populate user from engagement and filter it with user._id
+   * @param {ContentDocument} content current content
+   * @param {UserDocument} user current user
+   * @returns {liked:boolean, participant:string[]}
+   */
+  getLikeParticipants = async (
+    content: ContentDocument,
+    user: UserDocument
+  ) => {
+    //get whether use is like
+    const likeResult = await this._engagementModel
+      .find({
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        },
+        type: EngagementType.Like,
+        visibility: EntityVisibility.Publish
+      })
+      .populate('user')
+      .exec();
+    const liked = likeResult.find(
+      (engagement) => engagement.user._id === user._id
+    )
+      ? true
+      : false;
+    const participants = likeResult.map((eng) => eng.user.displayName);
+    return { liked, participants };
+  };
 }

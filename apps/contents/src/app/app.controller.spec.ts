@@ -20,43 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
 
-export class Pagination {
-  @ApiProperty()
-  previous?: number;
-  @ApiProperty()
-  self?: number;
-  @ApiProperty()
-  next?: number;
-  @ApiProperty()
-  limit?: number;
-}
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
-export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
-  type?: string;
-  page?: number = 1;
-  limit?: number = 25;
-}
+describe('AppController', () => {
+  let app: TestingModule;
 
-export const DEFAULT_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  page: 1,
-  limit: 25
-} as CastcleQueryOptions;
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService]
+    }).compile();
+  });
 
-export enum EntityVisibility {
-  Hidden = 'hidden',
-  Publish = 'publish',
-  Deleted = 'deleted'
-}
+  describe('getData', () => {
+    it('should return "Welcome to contents!"', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getData()).toEqual({
+        message: 'Welcome to contents!'
+      });
+    });
+  });
+});

@@ -21,12 +21,19 @@
  * or have any questions.
  */
 
-import * as fs from 'fs';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Controller, Get } from '@nestjs/common';
 
-const mongodb_ssl_ca = fs.readFileSync(
-  `${__dirname}/assets/mongodb.pem`
-) as any;
+@Controller('healthy')
+export class HealthyController {
+  private readonly logger = new CastLogger(
+    HealthyController.name,
+    CastLoggerOptions
+  );
 
-export const Assets = {
-  mongodb_ssl_ca
-};
+  @Get()
+  getData() {
+    this.logger.log('Health Check');
+    return '';
+  }
+}

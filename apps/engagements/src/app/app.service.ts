@@ -21,4 +21,11 @@
  * or have any questions.
  */
 
-export * from './lib/assets';
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getData(): { message: string } {
+    return { message: 'Welcome to engagements!' };
+  }
+}
