@@ -33,6 +33,6 @@ export class CastcleBase {
   @Prop()
   updatedAt?: Date;
 
-  @Prop()
+  @Prop({ type: String })
   visibility?: EntityVisibility;
 }
