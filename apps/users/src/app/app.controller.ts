@@ -221,7 +221,7 @@ export class AppController {
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user);
       return {
-        payload: contents.items.map((item) => item.toPagePayload()),
+        payload: contents.items.map((item) => item.toContentPayload()),
         pagination: contents.pagination
       } as ContentsResponse;
     } else
@@ -282,7 +282,7 @@ export class AppController {
       type: contentTypeOption
     });
     return {
-      payload: contents.items.map((item) => item.toPagePayload()),
+      payload: contents.items.map((item) => item.toContentPayload()),
       pagination: contents.pagination
     } as ContentsResponse;
   }

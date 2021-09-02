@@ -246,7 +246,7 @@ describe('PageController', () => {
       expect(response).toEqual({
         payload: createResult
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toPagePayload()),
+          .map((c) => c.toContentPayload()),
         pagination: {
           self: 1,
           limit: 25

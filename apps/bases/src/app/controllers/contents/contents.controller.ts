@@ -123,7 +123,7 @@ export class ContentController {
     const user = await this.userService.getUserFromCredential(req.$credential);
     const content = await this.contentService.createContentFromUser(user, body);
     return {
-      payload: content.toPagePayload()
+      payload: content.toContentPayload()
     } as ContentResponse;
   }
 
@@ -139,7 +139,7 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     return {
-      payload: content.toPagePayload()
+      payload: content.toContentPayload()
     } as ContentResponse;
   }
 
@@ -199,7 +199,7 @@ export class ContentController {
       body
     );
     return {
-      payload: updatedContent.toPagePayload()
+      payload: updatedContent.toContentPayload()
     } as ContentResponse;
   }
   @ApiBearerAuth()
@@ -242,7 +242,7 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     return {
-      payload: content.toPagePayload()
+      payload: content.toContentPayload()
     } as ContentResponse;
   }
 

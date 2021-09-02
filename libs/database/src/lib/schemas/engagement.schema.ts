@@ -47,9 +47,6 @@ export class Engagement extends CastcleBase {
   @Prop({ required: true, type: Object })
   targetRef: any;
 
-  @Prop({ required: true, type: Object })
-  target: Comment | Content | any;
-
   @Prop({ required: true })
   type: string;
 }
