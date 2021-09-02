@@ -107,7 +107,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(ContentInterceptor)
-  @Post('contents/feed')
+  @Post('feed')
   async createFeedContent(
     @Body() body: SaveContentDto,
     @Req() req: CredentialRequest
@@ -132,7 +132,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Get('contents/:id')
+  @Get(':id')
   async getContentFromId(
     @Param('id') id: string,
     @Req() req: CredentialRequest
@@ -186,7 +186,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(ContentInterceptor)
-  @Put('contents/:id')
+  @Put(':id')
   async updateContentFromId(
     @Param('id') id: string,
     @Body() body: SaveContentDto,
@@ -224,7 +224,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Get('contents')
+  @Get('')
   async getContents(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
@@ -251,7 +251,7 @@ export class ContentController {
     status: 204
   })
   @UseInterceptors(CredentialInterceptor)
-  @Put('contents/:id/liked')
+  @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
     @Param('id') id: string,
@@ -279,7 +279,7 @@ export class ContentController {
     status: 204
   })
   @UseInterceptors(CredentialInterceptor)
-  @Put('contents/:id/unliked')
+  @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(
     @Param('id') id: string,
@@ -308,7 +308,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Post('contents/:id/recast')
+  @Post(':id/recast')
   async recastContent(
     @Param('id') id: string,
     @Body('authorId') authorId: string,
@@ -341,7 +341,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Post('contents/:id/quotecast')
+  @Post(':id/quotecast')
   async quoteContent(
     @Param('id') id: string,
     @Body('authorId') authorId: string,
