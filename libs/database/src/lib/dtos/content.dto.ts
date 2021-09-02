@@ -70,11 +70,6 @@ export class BlogPayload {
   link?: Link[];
 }
 
-export class ImagePayload {
-  @ApiProperty()
-  photo?: ShortPhoto;
-}
-
 export class QuotePayload {
   source: any; //contain content._id
   message?: string;
@@ -161,12 +156,7 @@ export class ContentPayloadDto {
     | ContentType.Recast;
 
   @ApiProperty()
-  payload:
-    | ShortPayload
-    | BlogPayload
-    | ImagePayload
-    | QuotePayload
-    | RecastPayload;
+  payload: ShortPayload | BlogPayload | QuotePayload | RecastPayload;
 
   @ApiProperty()
   feature: Feature;

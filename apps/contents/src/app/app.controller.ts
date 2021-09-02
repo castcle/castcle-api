@@ -250,6 +250,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
+  @UseInterceptors(CredentialInterceptor)
   @Put('contents/:id/liked')
   @HttpCode(204)
   async likeContent(
@@ -277,6 +278,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
+  @UseInterceptors(CredentialInterceptor)
   @Put('contents/:id/unliked')
   @HttpCode(204)
   async unLikeContent(
@@ -298,5 +300,73 @@ export class ContentController {
     }
     await this.contentService.unLikeContent(content, user);
     return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('contents/:id/recast')
+  async recastContent(
+    @Param('id') id: string,
+    @Body('authorId') authorId: string,
+    @Req() req: CredentialRequest
+  ) {
+    //TODO !!! has to add feedItem once implement
+    const content = await this._getContentIfExist(id, req);
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const user = await this.userService.getUserFromId(authorId);
+    if (user.ownerAccount !== account._id) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    const result = await this.contentService.recastContentFromUser(
+      content,
+      user
+    );
+    return {
+      payload: result.recastContent.toContentPayload()
+    } as ContentResponse;
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('contents/:id/quotecast')
+  async quoteContent(
+    @Param('id') id: string,
+    @Body('authorId') authorId: string,
+    @Body('message') message: string,
+    @Req() req: CredentialRequest
+  ) {
+    //TODO !!! has to add feedItem once implement
+    const content = await this._getContentIfExist(id, req);
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const user = await this.userService.getUserFromId(authorId);
+    if (user.ownerAccount !== account._id) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    const result = await this.contentService.quoteContentFromUser(
+      content,
+      user,
+      message
+    );
+    return {
+      payload: result.quoteContent.toContentPayload()
+    } as ContentResponse;
   }
 }
