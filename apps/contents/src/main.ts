@@ -45,15 +45,15 @@ async function bootstrap() {
   // For Global
   app.setGlobalPrefix(prefix);
 
+  // For documentations
+  const document = SwaggerModule.createDocument(app, DocumentConfig);
+  SwaggerModule.setup(`${prefix}/documentations`, app, document);
+
   // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name
   });
-
-  // For documentations
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup('documentations', app, document);
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
