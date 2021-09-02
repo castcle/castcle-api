@@ -24,7 +24,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { PageController } from './controllers/pages/pages.controller';
-import { ContentController } from './controllers/contents/contents.controller';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
@@ -33,12 +32,7 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
   imports: [DatabaseModule, UtilsInterceptorsModule, UtilsPipesModule],
-  controllers: [
-    HealthyController,
-    PageController,
-    AppController,
-    ContentController
-  ],
+  controllers: [HealthyController, PageController, AppController],
   providers: [AppService]
 })
 export class AppModule {}
