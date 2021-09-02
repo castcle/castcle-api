@@ -70,6 +70,22 @@ export class BlogPayload {
   link?: Link[];
 }
 
+export class ImagePayload {
+  @ApiProperty()
+  photo?: ShortPhoto;
+}
+
+export class QuotePayload {
+  source: any; //contain content._id
+  message?: string;
+  photo?: ShortPhoto;
+}
+
+export class RecastPayload {
+  source: any; //contain content._id
+  photo?: ShortPhoto;
+}
+
 class Feature {
   @ApiProperty()
   slug: 'feed';
@@ -137,10 +153,20 @@ export class ContentPayloadDto {
   id: string;
 
   @ApiProperty()
-  type: 'short' | 'blog' | 'image';
+  type:
+    | ContentType.Short
+    | ContentType.Blog
+    | ContentType.Image
+    | ContentType.Quote
+    | ContentType.Recast;
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload;
+  payload:
+    | ShortPayload
+    | BlogPayload
+    | ImagePayload
+    | QuotePayload
+    | RecastPayload;
 
   @ApiProperty()
   feature: Feature;
@@ -187,6 +213,7 @@ export class SaveContentDto {
 export enum ContentType {
   Short = 'short',
   Blog = 'blog',
+  Image = 'image',
   Recast = 'recast',
   Quote = 'quote'
 }

@@ -40,10 +40,12 @@ import {
   Author,
   CastcleContentQueryOptions,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  ContentResponse
+  ContentResponse,
+  ContentType,
+  QuotePayload,
+  RecastPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { async } from 'rxjs';
 import { EntityVisibility } from '../dtos/common.dto';
 
 @Injectable()
@@ -70,39 +72,17 @@ export class ContentService {
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
     let author: Author;
-    if (!contentDto.author)
-      author = {
-        id: user._id,
-        avatar:
-          user.profile && user.profile.images && user.profile.images.avatar
-            ? user.profile.images.avatar
-            : null,
-        castcleId: user.displayId,
-        displayName: user.displayName,
-        followed: false,
-        type: user.type === UserType.Page ? UserType.Page : UserType.People,
-        verified: user.verified ? true : false
-      };
+    if (!contentDto.author) author = this._getAuthorFromUser(user);
     else {
       const page = await this._userModel.findById(contentDto.author.id);
-      author = {
-        id: contentDto.author.id,
-        type: UserType.Page,
-        avatar:
-          page.profile && page.profile.images && page.profile.images.avatar
-            ? page.profile.images.avatar
-            : null,
-        castcleId: page.displayId,
-        displayName: page.displayName,
-        followed: false,
-        verified: page.verified ? true : false
-      };
+      author = this._getAuthorFromUser(page);
     }
     const newContent = {
       author: author,
       payload: contentDto.payload,
       revisionCount: 0,
-      type: contentDto.type
+      type: contentDto.type,
+      visibility: EntityVisibility.Publish
     } as Content;
     const content = new this._contentModel(newContent);
     return content.save();
@@ -113,7 +93,48 @@ export class ContentService {
    * @param {string} id get content from content's id
    * @returns {ContentDocument}
    */
-  getContentFromId = (id: string) => this._contentModel.findById(id).exec();
+  getContentFromId = async (id: string) => {
+    const content = await this._contentModel.findById(id).exec();
+    if (content && content.visibility === EntityVisibility.Publish)
+      return content;
+    return null;
+  };
+
+  /**
+   * Set content visibility to deleted
+   * @param {string} id
+   * @returns {ContentDocument}
+   */
+  deleteContentFromId = async (id: string) => {
+    const content = await this._contentModel.findById(id).exec();
+    content.visibility = EntityVisibility.Deleted;
+    if (
+      content.type === ContentType.Quote ||
+      content.type === ContentType.Recast
+    ) {
+      const sourceContent = await this._contentModel
+        .findById((content.payload as RecastPayload).source)
+        .exec();
+      const engagementType =
+        content.type === ContentType.Quote
+          ? EngagementType.Quote
+          : EngagementType.Recast;
+      const incEngagment: { [key: string]: number } = {};
+      incEngagment[`engagements.${engagementType}.count`] = -1;
+      //use update to byPass save hook to prevent recursive and revision api
+      const updateResult = await this._contentModel
+        .updateOne(
+          { _id: sourceContent._id },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+      //if update not success return false
+      console.log(updateResult);
+    }
+    return content.save();
+  };
 
   /**
    *
@@ -149,8 +170,13 @@ export class ContentService {
     user: UserDocument,
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    const findFilter: { 'author.id': any; type?: string } = {
-      'author.id': user._id
+    const findFilter: {
+      'author.id': any;
+      type?: string;
+      visibility: EntityVisibility;
+    } = {
+      'author.id': user._id,
+      visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
     const query = this._contentModel
@@ -188,7 +214,8 @@ export class ContentService {
       targetRef: {
         $ref: 'content',
         $id: content._id
-      }
+      },
+      type: EngagementType.Like
     });
     if (!engagement)
       engagement = new this._engagementModel({
@@ -198,12 +225,10 @@ export class ContentService {
           $ref: 'content',
           $id: content._id
         },
-        target: content as Content,
         visibility: EntityVisibility.Publish
       });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
-    engagement.target = content as Content;
     return engagement.save();
   };
 
@@ -251,5 +276,89 @@ export class ContentService {
       : false;
     const participants = likeResult.map((eng) => eng.user.displayName);
     return { liked, participants };
+  };
+
+  /**
+   * transform User => Author object for create a content and use as DTO
+   * @private
+   * @param {UserDocument} user
+   * @returns {Author}
+   */
+  _getAuthorFromUser = (user: UserDocument) => {
+    const author: Author = {
+      id: user._id,
+      avatar:
+        user.profile && user.profile.images && user.profile.images.avatar
+          ? user.profile.images.avatar
+          : null,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      followed: false,
+      type: user.type === UserType.Page ? UserType.Page : UserType.People,
+      verified: user.verified ? true : false
+    };
+    return author;
+  };
+
+  quoteContentFromUser = async (
+    content: ContentDocument,
+    user: UserDocument,
+    message?: string
+  ) => {
+    const author = this._getAuthorFromUser(user);
+    const sourceContentId =
+      content.type === ContentType.Recast || content.type === ContentType.Quote
+        ? (content.payload as RecastPayload).source
+        : content._id;
+    const newContent = {
+      author: author,
+      payload: {
+        source: sourceContentId,
+        message: message
+      } as QuotePayload,
+      revisionCount: 0,
+      type: ContentType.Quote
+    } as Content;
+    const quoteContent = await new this._contentModel(newContent).save();
+    const engagement = await new this._engagementModel({
+      type: EngagementType.Quote,
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: sourceContentId
+      },
+      visibility: EntityVisibility.Publish
+    }).save();
+    return { quoteContent, engagement };
+  };
+
+  recastContentFromUser = async (
+    content: ContentDocument,
+    user: UserDocument
+  ) => {
+    const author = this._getAuthorFromUser(user);
+    const sourceContentId =
+      content.type === ContentType.Recast || content.type === ContentType.Quote
+        ? (content.payload as RecastPayload).source
+        : content._id;
+    const newContent = {
+      author: author,
+      payload: {
+        source: sourceContentId
+      } as RecastPayload,
+      revisionCount: 0,
+      type: ContentType.Recast
+    } as Content;
+    const recastContent = await new this._contentModel(newContent).save();
+    const engagement = await new this._engagementModel({
+      type: EngagementType.Recast,
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: sourceContentId
+      },
+      visibility: EntityVisibility.Publish
+    }).save();
+    return { recastContent, engagement };
   };
 }
