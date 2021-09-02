@@ -101,6 +101,42 @@ export class ContentService {
   };
 
   /**
+   * Set content visibility to deleted
+   * @param {string} id
+   * @returns {ContentDocument}
+   */
+  deleteContentFromId = async (id: string) => {
+    const content = await this._contentModel.findById(id).exec();
+    content.visibility = EntityVisibility.Deleted;
+    if (
+      content.type === ContentType.Quote ||
+      content.type === ContentType.Recast
+    ) {
+      const sourceContent = await this._contentModel
+        .findById((content.payload as RecastPayload).source)
+        .exec();
+      const engagementType =
+        content.type === ContentType.Quote
+          ? EngagementType.Quote
+          : EngagementType.Recast;
+      const incEngagment: { [key: string]: number } = {};
+      incEngagment[`engagements.${engagementType}.count`] = -1;
+      //use update to byPass save hook to prevent recursive and revision api
+      const updateResult = await this._contentModel
+        .updateOne(
+          { _id: sourceContent._id },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+      //if update not success return false
+      console.log(updateResult);
+    }
+    return content.save();
+  };
+
+  /**
    *
    * @param {string} id
    * @param {SaveContentDto} contentDto
@@ -189,12 +225,10 @@ export class ContentService {
           $ref: 'content',
           $id: content._id
         },
-        target: content as Content,
         visibility: EntityVisibility.Publish
       });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
-    engagement.target = content as Content;
     return engagement.save();
   };
 
@@ -272,24 +306,27 @@ export class ContentService {
     message?: string
   ) => {
     const author = this._getAuthorFromUser(user);
+    const sourceContentId =
+      content.type === ContentType.Recast || content.type === ContentType.Quote
+        ? (content.payload as RecastPayload).source
+        : content._id;
     const newContent = {
       author: author,
       payload: {
-        source: content._id,
+        source: sourceContentId,
         message: message
       } as QuotePayload,
       revisionCount: 0,
       type: ContentType.Quote
     } as Content;
-    const quoteContent = await new this._contentModel(newContent);
+    const quoteContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
       type: EngagementType.Quote,
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: content._id
+        $id: sourceContentId
       },
-      target: content as Content,
       visibility: EntityVisibility.Publish
     }).save();
     return { quoteContent, engagement };
@@ -300,23 +337,26 @@ export class ContentService {
     user: UserDocument
   ) => {
     const author = this._getAuthorFromUser(user);
+    const sourceContentId =
+      content.type === ContentType.Recast || content.type === ContentType.Quote
+        ? (content.payload as RecastPayload).source
+        : content._id;
     const newContent = {
       author: author,
       payload: {
-        source: content._id
+        source: sourceContentId
       } as RecastPayload,
       revisionCount: 0,
       type: ContentType.Recast
     } as Content;
-    const recastContent = await new this._contentModel(newContent);
+    const recastContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
       type: EngagementType.Recast,
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: content._id
+        $id: sourceContentId
       },
-      target: content as Content,
       visibility: EntityVisibility.Publish
     }).save();
     return { recastContent, engagement };

@@ -33,7 +33,7 @@ import {
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
-import { EngagementDocument } from './engagement.schema';
+import { EngagementDocument, EngagementType } from './engagement.schema';
 import { EntityVisibility } from '../dtos/common.dto';
 
 //TODO: !!!  need to revise this
@@ -134,6 +134,11 @@ const removeEngagementAggregateIfDeleted = async (
 export const ContentSchemaFactory = (
   revisionModel: Model<RevisionDocument>
 ): mongoose.Schema<any> => {
+  const contentModel = mongoose.model(
+    'Content',
+    ContentSchema
+  ) as unknown as Model<ContentDocument>;
+
   ContentSchema.pre('save', function (next) {
     //defualt is publish
     (this as ContentDocument).visibility = (this as ContentDocument).visibility
@@ -152,6 +157,14 @@ export const ContentSchemaFactory = (
         comment: {
           count: 0,
           refs: []
+        },
+        recast: {
+          count: 0,
+          refs: []
+        },
+        quote: {
+          count: 0,
+          refs: []
         }
       };
     }
@@ -159,7 +172,9 @@ export const ContentSchemaFactory = (
   });
   ContentSchema.post('save', async function (doc, next) {
     const session = await revisionModel.startSession();
+
     session.withTransaction(async () => {
+      session.abortTransaction();
       //update revision
       const newRevison = new revisionModel({
         objectRef: {
@@ -169,7 +184,10 @@ export const ContentSchemaFactory = (
         payload: doc as Content
       });
       const result = await newRevison.save();
-      //update engagement aggr if
+      //f content not publish go remove all content
+      if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
+        //if this is quote cast
+      }
     });
     session.endSession();
     next();

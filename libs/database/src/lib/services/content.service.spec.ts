@@ -35,6 +35,7 @@ import { ContentDocument, ContentSchema } from '../schemas/content.schema';
 import { SaveContentDto, ContentType } from '../dtos';
 import { UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
+import { EngagementDocument } from '../schemas/engagement.schema';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -238,11 +239,146 @@ describe('ContentService', () => {
         expect(postContent.engagements['like']).toBeDefined();
         expect(postContent.engagements['like'].count).toEqual(0);
       });
-      it('shold handle double unlike', async () => {
+      it('should handle double unlike', async () => {
         await service.unLikeContent(content, user);
         const postContent = await service.getContentFromId(content._id);
         expect(postContent.engagements['like']).toBeDefined();
         expect(postContent.engagements['like'].count).toEqual(0);
+      });
+    });
+  });
+  describe('#recastContent/#quoteContent', () => {
+    const users: UserDocument[] = [];
+    const userInfo = [
+      {
+        accountRequirement: {
+          device: 'iphone',
+          deviceUUID: 'iphone1234',
+          header: {
+            platform: 'iOs'
+          },
+          languagesPreferences: ['th', 'th']
+        },
+        signupRequirement: {
+          displayId: 'npop',
+          displayName: 'npop',
+          email: 'sompop.k@gmail.com',
+          password: '123456789'
+        }
+      },
+      {
+        accountRequirement: {
+          device: 'iphone',
+          deviceUUID: 'iphone5678',
+          header: {
+            platform: 'iOs'
+          },
+          languagesPreferences: ['th', 'th']
+        },
+        signupRequirement: {
+          displayId: 'sompop',
+          displayName: 'sompop',
+          email: 'sompop.ku@gmail.com',
+          password: '123456789'
+        }
+      },
+      {
+        accountRequirement: {
+          device: 'iphone',
+          deviceUUID: 'iphone1234',
+          header: {
+            platform: 'iOs'
+          },
+          languagesPreferences: ['th', 'th']
+        },
+        signupRequirement: {
+          displayId: 'kuku',
+          displayName: 'kuku',
+          email: 'sompop.kuku@gmail.com',
+          password: '123456789789'
+        }
+      }
+    ];
+    let contentA: ContentDocument;
+    beforeAll(async () => {
+      //create user  create content
+      for (let i = 0; i < userInfo.length; i++) {
+        const createAccResult = await authService.createAccount(
+          userInfo[i].accountRequirement
+        );
+        const accountActivation = await authService.signupByEmail(
+          createAccResult.accountDocument,
+          userInfo[i].signupRequirement
+        );
+        users[i] = await userService.getUserFromCredential(
+          createAccResult.credentialDocument
+        );
+      }
+      //userA create a content
+      contentA = await service.createContentFromUser(users[0], {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short
+      });
+    });
+    describe('#recastContentFromUser()', () => {
+      let contentB: ContentDocument;
+      let engagementB: EngagementDocument;
+      let contentC: ContentDocument;
+      let engagementC: EngagementDocument;
+      beforeAll(async () => {
+        //recast a content
+        const resultB = await service.recastContentFromUser(contentA, users[1]);
+        contentB = resultB.recastContent;
+        engagementB = resultB.engagement;
+        const resultC = await service.recastContentFromUser(contentB, users[2]);
+        contentC = resultC.recastContent;
+        engagementC = resultC.engagement;
+      });
+      it('should create new content type as recast', () => {
+        expect(contentB.type).toEqual(ContentType.Recast);
+        expect(contentC.type).toEqual(ContentType.Recast);
+      });
+      it('should update engagement recast at original content', async () => {
+        const postContentA = await service.getContentFromId(contentA._id);
+        expect(postContentA.engagements.recast.count).toEqual(2);
+        const postContentB = await service.getContentFromId(contentB._id);
+        expect(postContentB.engagements.recast.count).toEqual(0);
+      });
+      it('when we delete recast content it should delete engagemnt of original content', async () => {
+        await service.deleteContentFromId(contentC._id);
+        const postContentA = await service.getContentFromId(contentA._id);
+
+        expect(postContentA.engagements.recast.count).toEqual(1);
+      });
+    });
+    describe('#quoteContentFromUser()', () => {
+      let contentB: ContentDocument;
+      let engagementB: EngagementDocument;
+      let contentC: ContentDocument;
+      let engagementC: EngagementDocument;
+      beforeAll(async () => {
+        //recast a content
+        const resultB = await service.recastContentFromUser(contentA, users[1]);
+        contentB = resultB.recastContent;
+        engagementB = resultB.engagement;
+        const resultC = await service.quoteContentFromUser(
+          contentB,
+          users[2],
+          'this is good content'
+        );
+        contentC = resultC.quoteContent;
+        engagementC = resultC.engagement;
+      });
+      it('should create new content type as recast', async () => {
+        const postContentA = await service.getContentFromId(contentA._id);
+        expect(postContentA.engagements.quote.count).toEqual(1);
+      });
+      it('when we delete recast content it should delete enagement of original content', async () => {
+        await service.deleteContentFromId(contentC._id);
+        const postContentA = await service.getContentFromId(contentA._id);
+        expect(postContentA.engagements.quote.count).toEqual(0);
       });
     });
   });
