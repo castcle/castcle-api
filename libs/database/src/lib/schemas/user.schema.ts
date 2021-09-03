@@ -33,6 +33,7 @@ import {
   UserResponseDto
 } from '../dtos/user.dto';
 import { RelationshipDocument } from './relationship.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export type UserDocument = User & IUser;
 
@@ -75,6 +76,10 @@ export class User extends CastcleBase {
   })
   ownerAccount: Account;
 
+  /**
+   * This is the same as castcleId
+   * @field this is field displayName
+   */
   @Prop({ required: true })
   displayName: string;
 
@@ -174,6 +179,8 @@ export const UserSchemaFactory = (
    * Make sure all aggregate counter is 0
    */
   UserSchema.pre('save', function (next) {
+    if (!(this as UserDocument).visibility)
+      (this as UserDocument).visibility = EntityVisibility.Publish;
     if (!(this as UserDocument).followedCount)
       (this as UserDocument).followedCount = 0;
     if (!(this as UserDocument).followerCount)

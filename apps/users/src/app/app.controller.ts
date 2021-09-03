@@ -197,7 +197,8 @@ export class AppController {
   async deleteMyData(@Req() req: CredentialRequest) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      await user.delete();
+      //await user.delete();
+      await this.userService.deactive(user);
       return '';
     } else {
       throw new CastcleException(

@@ -70,7 +70,7 @@ export const EngagementSchemaFactory = (
         )
         .exec();
     } else if (
-      (doc as EngagementDocument).visibility === EntityVisibility.Deleted
+      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
     ) {
       console.log('delete dono ');
       console.log(`engagements.${(doc as EngagementDocument).type}.count`);
