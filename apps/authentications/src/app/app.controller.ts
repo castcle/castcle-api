@@ -31,7 +31,7 @@ import {
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   HeadersRequest,
   HeadersInterceptor,
@@ -44,6 +44,7 @@ import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
+import { Host } from '@castcle-api/utils';
 import {
   ApiResponse,
   ApiOkResponse,
@@ -289,6 +290,7 @@ export class AppController {
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
       await this.appService.sendRegistrationEmail(
+        Host.getHostname(req),
         body.payload.email,
         accountActivation.verifyToken
       );
@@ -407,6 +409,7 @@ export class AppController {
     if (!(account && account.email))
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     this.appService.sendRegistrationEmail(
+      Host.getHostname(req),
       account.email,
       newAccountActivation.verifyToken
     );
@@ -472,10 +475,12 @@ export class AppController {
   /*
    * TODO: !!! use for test link verification only will remove in production
    */
-  @Get('testLink')
-  testLink(@Req() req: Request) {
+  @Get('verify')
+  verify(@Req() req: Request) {
+    const verifyUrl =
+      Host.getHostname(req) + '/authentications/verificationEmail';
     if (req.query.code) {
-      return `will call post request soon<script>fetch("http://localhost:3334/authentications/verificationEmail", {
+      return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
           Accept: "*/*",
           "Accept-Language": "th",
