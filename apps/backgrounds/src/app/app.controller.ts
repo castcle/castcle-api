@@ -21,27 +21,15 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
-  ]
-};
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getData() {
+    return this.appService.getData();
+  }
+}

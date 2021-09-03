@@ -21,27 +21,26 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
-  ]
-};
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+describe('AppController', () => {
+  let app: TestingModule;
+
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService]
+    }).compile();
+  });
+
+  describe('getData', () => {
+    it('should return "Welcome to backgrounds!"', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getData()).toEqual({
+        message: 'Welcome to backgrounds!'
+      });
+    });
+  });
+});

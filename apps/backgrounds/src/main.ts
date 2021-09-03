@@ -21,27 +21,26 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
-  ]
-};
+import { Environment as env } from '@castcle-api/environments';
+import {
+  CastLogger,
+  CastLoggerLevel,
+  CastLoggerOptions
+} from '@castcle-api/logger';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const app = await NestFactory.create(AppModule, {
+    logger: CastLoggerLevel
+  });
+  const port = process.env.PORT || 3341;
+
+  await app.listen(port, () => {
+    logger.log('Listening at http://localhost:' + port);
+    logger.log(`Environment at ${env.node_env}`);
+  });
+}
+
+bootstrap();
