@@ -22,6 +22,7 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import { getSignupHtml } from './configs/signupEmail';
 import * as nodemailer from 'nodemailer';
 import { Environment as env } from '@castcle-api/environments';
 /*
@@ -50,7 +51,11 @@ export class AppService {
       subject: 'Welcome to Castcle',
       to: toEmail,
       text: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`,
-      html: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`
+      html: getSignupHtml(
+        toEmail,
+        `${currentHosting}/testLink?code=${code}`,
+        'admin@castcle.com'
+      )
     });
     console.log(`Email is send `, info.messageId, info);
   }
