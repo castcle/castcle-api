@@ -478,9 +478,7 @@ export class AppController {
   @Get('verify')
   verify(@Req() req: Request) {
     const verifyUrl =
-      env && env.node_env !== 'localhost'
-        ? 'https://api-dev.castcle.com/authentications/verificationEmail'
-        : 'http://localhost:3334/authentications/verificationEmail';
+      Host.getHostname(req) + '/authentications/verificationEmail';
     if (req.query.code) {
       return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
