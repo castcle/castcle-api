@@ -28,7 +28,6 @@ import { Environment as env } from '@castcle-api/environments';
 /*
  * TODO: !!!
  */
-const currentHosting = `http://localhost:3334`;
 const transporter = nodemailer.createTransport({
   host: env.smtp_host ? env.smtp_host : 'http://localhost:3334',
   port: env.smtp_port ? env.smtp_port : 465,
@@ -46,14 +45,18 @@ export class AppService {
   }
 
   async sendRegistrationEmail(toEmail: string, code: string) {
+    const verifyLink =
+      env && env.node_env !== 'localhost'
+        ? 'https://api-dev.castcle.com/authentications/verify'
+        : 'http://localhost:3334/authentications/verify';
     const info = await transporter.sendMail({
       from: 'No Reply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
       to: toEmail,
-      text: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`,
+      text: `Welcome to castcle here is a link embed code ${verifyLink}?code=${code}`,
       html: getSignupHtml(
         toEmail,
-        `${currentHosting}/testLink?code=${code}`,
+        `${verifyLink}?code=${code}`,
         'admin@castcle.com'
       )
     });

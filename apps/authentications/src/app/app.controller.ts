@@ -31,7 +31,7 @@ import {
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   HeadersRequest,
   HeadersInterceptor,
@@ -472,10 +472,14 @@ export class AppController {
   /*
    * TODO: !!! use for test link verification only will remove in production
    */
-  @Get('testLink')
-  testLink(@Req() req: Request) {
+  @Get('verify')
+  verify(@Req() req: Request) {
+    const verifyUrl =
+      env && env.node_env !== 'localhost'
+        ? 'https://api-dev.castcle.com/authentications/verificationEmail'
+        : 'http://localhost:3334/authentications/verificationEmail';
     if (req.query.code) {
-      return `will call post request soon<script>fetch("http://localhost:3334/authentications/verificationEmail", {
+      return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
           Accept: "*/*",
           "Accept-Language": "th",
