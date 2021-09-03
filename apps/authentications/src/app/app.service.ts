@@ -44,11 +44,8 @@ export class AppService {
     return { message: 'Welcome to authentications!' };
   }
 
-  async sendRegistrationEmail(toEmail: string, code: string) {
-    const verifyLink =
-      env && env.node_env !== 'localhost'
-        ? 'https://api-dev.castcle.com/authentications/verify'
-        : 'http://localhost:3334/authentications/verify';
+  async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
+    const verifyLink = `${hostname}/authentications/verify`;
     const info = await transporter.sendMail({
       from: 'No Reply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',

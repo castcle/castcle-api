@@ -44,6 +44,7 @@ import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
+import { Host } from '@castcle-api/utils';
 import {
   ApiResponse,
   ApiOkResponse,
@@ -289,6 +290,7 @@ export class AppController {
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
       await this.appService.sendRegistrationEmail(
+        Host.getHostname(req),
         body.payload.email,
         accountActivation.verifyToken
       );
@@ -407,6 +409,7 @@ export class AppController {
     if (!(account && account.email))
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     this.appService.sendRegistrationEmail(
+      Host.getHostname(req),
       account.email,
       newAccountActivation.verifyToken
     );

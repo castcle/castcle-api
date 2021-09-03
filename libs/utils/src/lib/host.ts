@@ -20,18 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { Token } from './token';
-import { Password } from './password';
-import { CastcleName } from './castcle-name';
-import { Host } from './host';
-
-@Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsModule {}
-
-export { Token, Password, CastcleName, Host };
+import { Request } from 'express';
+export const Host = {
+  getHostname: (req: Request, port?: number) =>
+    port ? `https://${req.hostname}:${port}` : `https://${req.hostname}`
+};
