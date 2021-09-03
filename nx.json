@@ -48,19 +48,10 @@
     "environments": {
       "tags": []
     },
-    "feeds": {
-      "tags": []
-    },
     "logger": {
       "tags": []
     },
     "metadata": {
-      "tags": []
-    },
-    "notifications": {
-      "tags": []
-    },
-    "searches": {
       "tags": []
     },
     "users": {
