@@ -37,6 +37,7 @@ import {
   AccountActivationDocument
 } from '../schemas/accountActivation.schema';
 import { UserDocument } from '../schemas/user.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -196,7 +197,8 @@ describe('Authentication Service', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
         expect(createAccountResult.credentialDocument.account).toEqual({
           _id: createAccountResult.accountDocument._id,
-          isGuest: createAccountResult.accountDocument.isGuest
+          isGuest: createAccountResult.accountDocument.isGuest,
+          visibility: EntityVisibility.Publish
         }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
@@ -226,6 +228,10 @@ describe('Authentication Service', () => {
         expect(createAccountResult.accountDocument.isGuest).toBe(true);
       });
       it('should contain all valid tokens', () => {
+        console.log(createAccountResult.credentialDocument.account);
+        expect(
+          createAccountResult.credentialDocument.account.visibility
+        ).toEqual(EntityVisibility.Publish);
         expect(
           createAccountResult.credentialDocument.isAccessTokenValid()
         ).toBe(true);

@@ -23,6 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  ContentService,
   MongooseAsyncFeatures,
   MongooseForFeatures
 } from '@castcle-api/database';
@@ -62,7 +63,12 @@ describe('AppController', () => {
         MongooseForFeatures
       ],
       controllers: [AppController],
-      providers: [AppService, UserService, AuthenticationService]
+      providers: [
+        AppService,
+        UserService,
+        AuthenticationService,
+        ContentService
+      ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);

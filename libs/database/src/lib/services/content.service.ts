@@ -137,6 +137,45 @@ export class ContentService {
   };
 
   /**
+   * update aggregator of recast/quote and get content status back to publish
+   * @param {streieng} id of content
+   * @returns {ContentDocument | null}
+   */
+  recoverContentFromId = async (id: string) => {
+    const content = await this._contentModel.findById(id).exec();
+    if (content.visibility !== EntityVisibility.Publish) {
+      //recover engagement quote/recast
+      if (
+        content.type === ContentType.Quote ||
+        content.type === ContentType.Recast
+      ) {
+        const sourceContent = await this._contentModel
+          .findById((content.payload as RecastPayload).source)
+          .exec();
+        const engagementType =
+          content.type === ContentType.Quote
+            ? EngagementType.Quote
+            : EngagementType.Recast;
+        const incEngagment: { [key: string]: number } = {};
+        incEngagment[`engagements.${engagementType}.count`] = 1;
+        //use update to byPass save hook to prevent recursive and revision api
+        const updateResult = await this._contentModel
+          .updateOne(
+            { _id: sourceContent._id },
+            {
+              $inc: incEngagment
+            }
+          )
+          .exec();
+        //if update not success return false
+        console.log(updateResult);
+      }
+      content.visibility = EntityVisibility.Publish;
+      return content.save();
+    } else return null; //content already recover;
+  };
+
+  /**
    *
    * @param {string} id
    * @param {SaveContentDto} contentDto

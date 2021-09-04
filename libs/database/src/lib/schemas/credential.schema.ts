@@ -32,6 +32,7 @@ import {
   RefreshTokenPayload,
   MemberAccessTokenPayload
 } from '../dtos/token.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export type CredentialDocument = Credential & ICredential;
 
@@ -169,12 +170,20 @@ CredentialSchema.methods.renewAccessToken = async function (
 };
 
 CredentialSchema.methods.isAccessTokenValid = function () {
+  if (
+    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
+  )
+    return false;
   return Token.isTokenValid(
     (this as CredentialDocument).accessToken,
     env.jwt_access_secret
   );
 };
 CredentialSchema.methods.isRefreshTokenValid = function () {
+  if (
+    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
+  )
+    return false;
   return Token.isTokenValid(
     (this as CredentialDocument).accessToken,
     env.jwt_access_secret

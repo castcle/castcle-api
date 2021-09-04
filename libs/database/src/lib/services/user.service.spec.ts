@@ -24,6 +24,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
@@ -31,9 +32,14 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
-import { UpdateUserDto } from '../dtos/user.dto';
+import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos';
-import { DEFAULT_QUERY_OPTIONS, Pagination } from '../dtos/common.dto';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  Pagination
+} from '../dtos/common.dto';
+import { ContentDocument } from '../schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -57,6 +63,7 @@ const closeInMongodConnection = async () => {
 describe('User Service', () => {
   let service: UserService;
   let authService: AuthenticationService;
+
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
     ? [
@@ -65,7 +72,7 @@ describe('User Service', () => {
         MongooseForFeatures
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [UserService, AuthenticationService];
+  const providers = [UserService, AuthenticationService, ContentService];
   let result: {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
@@ -324,6 +331,98 @@ describe('User Service', () => {
       const following = await service.getFollowing(currentUser);
       //like in #getFollower
       expect(following.items.length).toEqual(allPages.items.length);
+    });
+  });
+  describe('#deactive, reactive', () => {
+    const userInfo = {
+      accountRequirement: {
+        device: 'iphone',
+        deviceUUID: 'iphone1234',
+        header: {
+          platform: 'iOs'
+        },
+        languagesPreferences: ['th', 'th']
+      },
+      signupRequirement: {
+        displayId: 'npop',
+        displayName: 'npop',
+        email: 'sompop.k@gmail.com',
+        password: '123456789'
+      },
+      pages: [
+        {
+          avatar: 'http:/placehold.it/200x200',
+          castcleId: 'test-12345',
+          cover: 'http:/placehold.it/200x200',
+          displayName: 'hello12345'
+        } as PageDto
+      ]
+    };
+
+    let userA: UserDocument;
+    let pageA: UserDocument;
+    let accountA: AccountDocument;
+    beforeAll(async () => {
+      //create new user
+      const result = await authService.createAccount(
+        userInfo.accountRequirement
+      );
+      accountA = result.accountDocument;
+      await authService.signupByEmail(accountA, userInfo.signupRequirement);
+      userA = await service.getUserFromCredential(result.credentialDocument);
+      pageA = await service.createPageFromUser(userA, userInfo.pages[0]);
+    });
+    describe('#deactive()', () => {
+      let postUserAFromModel: UserDocument;
+      let postUserA: UserDocument;
+      let postPageAFromModel: UserDocument;
+      let postPageA: UserDocument;
+      let postAccountA: AccountDocument;
+      beforeAll(async () => {
+        await service.deactive(userA);
+        postUserAFromModel = await service._userModel.findById(userA._id);
+        postUserA = await service.getUserFromId(userA._id);
+        postPageAFromModel = await service._userModel.findById(pageA._id);
+        postPageA = await service.getUserFromId(pageA._id);
+        postAccountA = await authService._accountModel.findById(accountA._id);
+      });
+      it('should set status user to delete', async () => {
+        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Deleted);
+        expect(postUserA).toBeNull();
+      });
+      it('should set all page that user own to delete flag', async () => {
+        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Deleted);
+        expect(postPageA).toBeNull();
+      });
+      it('should set account of user to Delete', () => {
+        expect(postAccountA.visibility).toEqual(EntityVisibility.Deleted);
+      });
+    });
+    describe('#reactive()', () => {
+      let postUserAFromModel: UserDocument;
+      let postUserA: UserDocument;
+      let postPageAFromModel: UserDocument;
+      let postPageA: UserDocument;
+      let postAccountA: AccountDocument;
+      beforeAll(async () => {
+        await service.reactive(userA);
+        postUserAFromModel = await service._userModel.findById(userA._id);
+        postUserA = await service.getUserFromId(userA._id);
+        postPageAFromModel = await service._userModel.findById(pageA._id);
+        postPageA = await service.getUserFromId(pageA._id);
+        postAccountA = await authService._accountModel.findById(accountA._id);
+      });
+      it('should set status user to publish', async () => {
+        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Publish);
+        expect(postUserA).not.toBeNull();
+      });
+      it('should set all page that user own to publish flag', async () => {
+        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Publish);
+        expect(postPageA).not.toBeNull();
+      });
+      it('should set account of user to publish', () => {
+        expect(postAccountA.visibility).toEqual(EntityVisibility.Publish);
+      });
     });
   });
 });

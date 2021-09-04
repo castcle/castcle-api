@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import * as mongoose from 'mongoose';
+import { EntityVisibility } from './common.dto';
 
 export class SaveCredentialDto {
   account?: {
@@ -57,4 +58,5 @@ export class CreateAccountDto {
   preferences: {
     languages: string[];
   };
+  visibility = EntityVisibility.Publish;
 }
