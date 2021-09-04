@@ -21,42 +21,21 @@
  * or have any questions.
  */
 
-import { Configs, Environment as env } from '@castcle-api/environments';
+import { Environment as env } from '@castcle-api/environments';
 import {
   CastLogger,
   CastLoggerLevel,
   CastLoggerOptions
 } from '@castcle-api/logger';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule } from '@nestjs/swagger';
-import { DocumentConfig } from './docs/document.config';
 import { AppModule } from './app/app.module';
-import express = require('express');
-import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
   const app = await NestFactory.create(AppModule, {
     logger: CastLoggerLevel
   });
-  const port = process.env.PORT || 3339;
-  const prefix = 'contents';
-
-  // For Global
-  app.setGlobalPrefix(prefix);
-
-  // For documentations
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup(`${prefix}/documentations`, app, document);
-
-  // For versioning
-  app.enableVersioning({
-    type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
-  });
-
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  const port = process.env.PORT || 3341;
 
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);

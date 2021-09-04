@@ -22,12 +22,12 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import { getSignupHtml } from './configs/signupEmail';
 import * as nodemailer from 'nodemailer';
 import { Environment as env } from '@castcle-api/environments';
 /*
  * TODO: !!!
  */
-const currentHosting = `http://localhost:3334`;
 const transporter = nodemailer.createTransport({
   host: env.smtp_host ? env.smtp_host : 'http://localhost:3334',
   port: env.smtp_port ? env.smtp_port : 465,
@@ -44,13 +44,18 @@ export class AppService {
     return { message: 'Welcome to authentications!' };
   }
 
-  async sendRegistrationEmail(toEmail: string, code: string) {
+  async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
+    const verifyLink = `${hostname}/authentications/verify`;
     const info = await transporter.sendMail({
       from: 'No Reply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
       to: toEmail,
-      text: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`,
-      html: `Welcome to castcle here is a link embed code ${currentHosting}/testLink?code=${code}`
+      text: `Welcome to castcle here is a link embed code ${verifyLink}?code=${code}`,
+      html: getSignupHtml(
+        toEmail,
+        `${verifyLink}?code=${code}`,
+        'admin@castcle.com'
+      )
     });
     console.log(`Email is send `, info.messageId, info);
   }

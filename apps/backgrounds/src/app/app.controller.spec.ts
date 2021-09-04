@@ -22,65 +22,25 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ContentService,
-  MongooseAsyncFeatures,
-  MongooseForFeatures
-} from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { UserService, AuthenticationService } from '@castcle-api/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 describe('AppController', () => {
   let app: TestingModule;
-  let appController: AppController;
-  let service: UserService;
-  let appService: AppService;
+
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      imports: [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ],
       controllers: [AppController],
-      providers: [
-        AppService,
-        UserService,
-        AuthenticationService,
-        ContentService
-      ]
+      providers: [AppService]
     }).compile();
-    service = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
-  });
-  afterAll(async () => {
-    await closeInMongodConnection();
   });
 
   describe('getData', () => {
-    it('should return "Welcome to bases!"', () => {
+    it('should return "Welcome to backgrounds!"', () => {
       const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to bases!' });
+      expect(appController.getData()).toEqual({
+        message: 'Welcome to backgrounds!'
+      });
     });
   });
 });

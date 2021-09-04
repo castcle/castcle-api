@@ -30,6 +30,9 @@
     "authentications": {
       "tags": []
     },
+    "backgrounds": {
+      "tags": []
+    },
     "bases": {
       "tags": []
     },
@@ -48,19 +51,10 @@
     "environments": {
       "tags": []
     },
-    "feeds": {
-      "tags": []
-    },
     "logger": {
       "tags": []
     },
     "metadata": {
-      "tags": []
-    },
-    "notifications": {
-      "tags": []
-    },
-    "searches": {
       "tags": []
     },
     "users": {

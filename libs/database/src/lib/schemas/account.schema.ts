@@ -30,6 +30,7 @@ import { Environment as env } from '@castcle-api/environments';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
 import { Password } from '@castcle-api/utils';
 import { User } from './user.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -97,13 +98,19 @@ AccountSchema.methods.verifyPassword = function (password: string) {
 export const AccountSchemaFactory = (
   credentialModel: Model<CredentialDocument>
 ): mongoose.Schema<any> => {
+  AccountSchema.pre('save', function (next) {
+    if (!(this as AccountDocument).visibility)
+      (this as AccountDocument).visibility = EntityVisibility.Publish;
+    next();
+  });
   AccountSchema.post('save', async function (doc, next) {
     await credentialModel
       .findOneAndUpdate(
         { 'account._id': doc._id },
         {
           'account.isGuest': (doc as AccountDocument).isGuest,
-          'account.activateDate': (doc as AccountDocument).activateDate
+          'account.activateDate': (doc as AccountDocument).activateDate,
+          'account.visibility': (doc as AccountDocument).visibility
         }
       )
       .exec();

@@ -26,12 +26,23 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument, UserType, UserModel } from '../schemas/user.schema';
+import {
+  UserDocument,
+  UserType,
+  UserModel,
+  User
+} from '../schemas/user.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
+import { ContentDocument } from '../schemas/content.schema';
 import { FollowResponse, PageDto, UpdateUserDto } from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
-import { DEFAULT_QUERY_OPTIONS, Pagination } from '../dtos/common.dto';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  Pagination
+} from '../dtos/common.dto';
+import { ContentService } from './content.service';
 
 @Injectable()
 export class UserService {
@@ -42,18 +53,28 @@ export class UserService {
     @InjectModel('User')
     public _userModel: UserModel,
     @InjectModel('Relationship')
-    public _relationshipModel: Model<RelationshipDocument>
+    public _relationshipModel: Model<RelationshipDocument>,
+    private contentService: ContentService
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
     this._userModel
-      .findOne({ ownerAccount: credential.account._id, type: UserType.People })
+      .findOne({
+        ownerAccount: credential.account._id,
+        type: UserType.People,
+        visibility: EntityVisibility.Publish
+      })
       .exec();
 
   getUserFromId = (id: string) => {
     try {
       if (mongoose.Types.ObjectId(id)) {
-        return this._userModel.findById(id).exec();
+        return this._userModel
+          .findOne({
+            _id: id,
+            visibility: EntityVisibility.Publish
+          })
+          .exec();
       } else return null;
     } catch (error) {
       return null;
@@ -224,5 +245,142 @@ export class UserService {
       ),
       pagination: createPagination(queryOption, totalFollowing)
     };
+  };
+
+  /**
+   * TODO !!! need to find a way to put in transaction
+   * Deactivate User account
+   * @param {UserDocument} user
+   * @returns {UserDocument}
+   */
+  deactive = async (user: UserDocument) => {
+    //all page from user has to be delete
+    if (user.type === UserType.People) {
+      //check if he has a page;
+      //each page has to be deactivated
+      const pages = await this._userModel
+        .find({ ownerAccount: user.ownerAccount, type: UserType.Page })
+        .exec();
+      const promiseDeactivatePages = pages.map((p) => this.deactive(p));
+      await Promise.all(promiseDeactivatePages);
+      //all content from page of user has to be delete
+    }
+    //TODO !!! will move this logic to queue
+    /*
+    //all content form user has to be delete
+    //TODO !!! this should move to cron or something to do at background and add pagination
+    const contents = await this.contentService._contentModel
+      .find({ 'author.id': user._id })
+      .exec();
+    const promiseRemoveContents: Promise<ContentDocument>[] = contents.map(
+      (contentItem) => this.contentService.deleteContentFromId(contentItem._id)
+    );
+    await Promise.all(promiseRemoveContents);
+
+    //remove all engagements (like) Aggregator that this user do (quote/requote agg) already remove with deleteContentFromId()
+    //TODO !!! need to improve performance by bypass the engagement save hook and use updateMany instead
+    // but need to find a way to get all engagement contents to be more effective
+    const engagements = await this.contentService._engagementModel
+      .find({ user: user._id, visibility: EntityVisibility.Publish })
+      .exec();
+    const promiseHideEngagements = engagements.map((engagement) => {
+      engagement.visibility = EntityVisibility.Hidden;
+      return engagement.save();
+    });
+    await Promise.all(promiseHideEngagements);
+    //update follower / followee aggregator
+    const relationships = await this._relationshipModel
+      .find({ user: user._id })
+      .populate('followedUser')
+      .exec();
+    //TODO !!! need to improve performance
+    const promiseUpdateFollower = relationships.map((r) =>
+      this._userModel
+        .updateOne(r._id, {
+          $inc: {
+            followerCount: -1
+          }
+        })
+        .exec()
+    );
+    await Promise.all(promiseUpdateFollower);
+    */
+    //change status to delete
+    user.visibility = EntityVisibility.Deleted;
+    const userResult = user.save();
+    //deactive userAccount
+    if (user.type === UserType.Page)
+      await this._accountModel.updateOne(
+        { _id: user.ownerAccount },
+        {
+          visibility: EntityVisibility.Deleted
+        }
+      );
+    return userResult;
+  };
+
+  reactive = async (user: UserDocument) => {
+    //all page from user has to be delete
+    if (user.type === UserType.People) {
+      //check if he has a page;
+      //each page has to be deactivated
+      const pages = await this._userModel
+        .find({ ownerAccount: user.ownerAccount, type: UserType.Page })
+        .exec();
+      const promiseReactivatePages = pages.map((p) => this.reactive(p));
+      await Promise.all(promiseReactivatePages);
+      //all content from page of user has to be delete
+    }
+    //TODO !!! will move this logic to queue
+    /*
+    //all content form user has to be delete
+    //TODO !!! this should move to cron or something to do at background and add pagination
+    const contents = await this.contentService._contentModel
+      .find({ 'author.id': user._id })
+      .exec();
+    const promiseReactiveContents: Promise<ContentDocument>[] = contents.map(
+      (contentItem) => this.contentService.recoverContentFromId(contentItem._id)
+    );
+    await Promise.all(promiseReactiveContents);
+
+    //remove all engagements (like) Aggregator that this user do (quote/requote agg) already remove with deleteContentFromId()
+    //TODO !!! need to improve performance by bypass the engagement save hook and use updateMany instead
+    // but need to find a way to get all engagement contents to be more effective
+    const engagements = await this.contentService._engagementModel
+      .find({ user: user._id, visibility: EntityVisibility.Publish })
+      .exec();
+    const promisePublishEngagements = engagements.map((engagement) => {
+      engagement.visibility = EntityVisibility.Publish;
+      return engagement.save();
+    });
+    await Promise.all(promisePublishEngagements);
+    //update follower / followee aggregator
+    const relationships = await this._relationshipModel
+      .find({ user: user._id })
+      .populate('followedUser')
+      .exec();
+    //TODO !!! need to improve performance
+    const promiseUpdateFollower = relationships.map((r) =>
+      this._userModel
+        .updateOne(r._id, {
+          $inc: {
+            followerCount: 1
+          }
+        })
+        .exec()
+    );
+    await Promise.all(promiseUpdateFollower);
+    */
+    //change status to delete
+    user.visibility = EntityVisibility.Publish;
+    //deactive userAccount
+    if (user.type === UserType.Page)
+      await this._accountModel.updateOne(
+        { _id: user.ownerAccount },
+        {
+          visibility: EntityVisibility.Publish
+        }
+      );
+    return user.save();
   };
 }

@@ -43,6 +43,7 @@ import {
   EmailVerifyToken,
   MemberAccessTokenPayload
 } from '../dtos/token.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export interface AccountRequirements {
   header: {
@@ -92,6 +93,7 @@ export class AuthenticationService {
         languages: accountRequirements.languagesPreferences
       }
     } as CreateAccountDto);
+    newAccount.visibility = EntityVisibility.Publish;
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
@@ -105,7 +107,8 @@ export class AuthenticationService {
     const credential = new this._credentialModel({
       account: {
         _id: mongoose.Types.ObjectId(accountDocument._id),
-        isGuest: true
+        isGuest: true,
+        visibility: EntityVisibility.Publish
       },
       accessToken: accessTokenResult.accessToken,
       accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
@@ -153,7 +156,9 @@ export class AuthenticationService {
     this._accountModel.findById(credential.account).exec();
 
   getAccountFromEmail = (email: string) =>
-    this._accountModel.findOne({ email: email }).exec();
+    this._accountModel
+      .findOne({ email: email, visibility: EntityVisibility.Publish })
+      .exec();
 
   getUserFromCastcleId = (id: string) => {
     return this._userModel.findOne({ displayId: id }).exec();
