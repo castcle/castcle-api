@@ -41,6 +41,7 @@ module.exports = {
     '<rootDir>/libs/utils/aws',
     '<rootDir>/libs/utils/pipes',
     '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements'
+    '<rootDir>/apps/engagements',
+    '<rootDir>/apps/backgrounds'
   ]
 };

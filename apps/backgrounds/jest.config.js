@@ -21,24 +21,18 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
-
-import { AppService } from './app.service';
-
-describe('AppService', () => {
-  let service: AppService;
-
-  beforeAll(async () => {
-    const app = await Test.createTestingModule({
-      providers: [AppService]
-    }).compile();
-
-    service = app.get<AppService>(AppService);
-  });
-
-  describe('getData', () => {
-    it('should return "Welcome to searches!"', () => {
-      expect(service.getData()).toEqual({ message: 'Welcome to searches!' });
-    });
-  });
-});
+module.exports = {
+  displayName: 'backgrounds',
+  preset: '../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
+  },
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]s$': 'ts-jest'
+  },
+  moduleFileExtensions: ['ts', 'js', 'html'],
+  coverageDirectory: '../../coverage/apps/backgrounds'
+};

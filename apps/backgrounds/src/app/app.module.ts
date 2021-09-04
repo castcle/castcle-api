@@ -21,25 +21,13 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-describe('AppController', () => {
-  let app: TestingModule;
-
-  beforeAll(async () => {
-    app = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService]
-    }).compile();
-  });
-
-  describe('getData', () => {
-    it('should return "Welcome to feeds!"', () => {
-      const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to feeds!' });
-    });
-  });
-});
+@Module({
+  imports: [],
+  controllers: [AppController],
+  providers: [AppService]
+})
+export class AppModule {}

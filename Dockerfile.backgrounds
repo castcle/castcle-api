@@ -21,7 +21,7 @@
 
 FROM public.ecr.aws/castcle/node:latest
 WORKDIR /app
-COPY ./dist/apps/searches .
+COPY ./dist/apps/backgrounds .
 ENV PORT=3000
 EXPOSE ${PORT}
 RUN npm install --production

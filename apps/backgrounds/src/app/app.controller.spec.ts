@@ -21,11 +21,26 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
-@Injectable()
-export class AppService {
-  getData(): { message: string } {
-    return { message: 'Welcome to notifications!' };
-  }
-}
+describe('AppController', () => {
+  let app: TestingModule;
+
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService]
+    }).compile();
+  });
+
+  describe('getData', () => {
+    it('should return "Welcome to backgrounds!"', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getData()).toEqual({
+        message: 'Welcome to backgrounds!'
+      });
+    });
+  });
+});

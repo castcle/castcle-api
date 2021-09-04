@@ -22,18 +22,14 @@
  */
 
 import { Controller, Get } from '@nestjs/common';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { AppService } from './app.service';
 
-@Controller('healthy')
-export class HealthyController {
-  private readonly logger = new CastLogger(
-    HealthyController.name,
-    CastLoggerOptions
-  );
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   getData() {
-    this.logger.log('Health Check');
-    return '';
+    return this.appService.getData();
   }
 }

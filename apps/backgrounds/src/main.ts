@@ -21,26 +21,26 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
+import { Environment as env } from '@castcle-api/environments';
+import {
+  CastLogger,
+  CastLoggerLevel,
+  CastLoggerOptions
+} from '@castcle-api/logger';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app/app.module';
 
-import { AppService } from './app.service';
-
-describe('AppService', () => {
-  let service: AppService;
-
-  beforeAll(async () => {
-    const app = await Test.createTestingModule({
-      providers: [AppService]
-    }).compile();
-
-    service = app.get<AppService>(AppService);
+async function bootstrap() {
+  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const app = await NestFactory.create(AppModule, {
+    logger: CastLoggerLevel
   });
+  const port = process.env.PORT || 3341;
 
-  describe('getData', () => {
-    it('should return "Welcome to notifications!"', () => {
-      expect(service.getData()).toEqual({
-        message: 'Welcome to notifications!'
-      });
-    });
+  await app.listen(port, () => {
+    logger.log('Listening at http://localhost:' + port);
+    logger.log(`Environment at ${env.node_env}`);
   });
-});
+}
+
+bootstrap();
