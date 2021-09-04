@@ -37,7 +37,10 @@ import {
   ContentService,
   AuthenticationService
 } from '@castcle-api/database';
-import { ImageInterceptor } from './interceptors/image.interceptor';
+import {
+  ImageInterceptor,
+  FollowInterceptor
+} from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -50,13 +53,15 @@ import {
   ApiBody,
   ApiHeader,
   ApiOkResponse,
+  ApiProperty,
   ApiQuery,
   ApiResponse
 } from '@nestjs/swagger';
 import {
   ContentPayloadDto,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  FollowResponse,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
@@ -67,11 +72,27 @@ import {
   ContentTypePipe,
   SortByEnum
 } from '@castcle-api/utils/pipes';
-import { UserDocument } from '@castcle-api/database/schemas';
+import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { ContentsResponse } from '@castcle-api/database/dtos';
 import { Query } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 let logger: CastLogger;
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 @Controller()
 export class AppController {
   constructor(
@@ -113,12 +134,6 @@ export class AppController {
     return this.appService.getData();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -136,12 +151,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -154,12 +163,6 @@ export class AppController {
     return await user.toUserResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBody({
     type: UpdateUserDto
   })
@@ -185,12 +188,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 204
   })
@@ -200,7 +197,8 @@ export class AppController {
   async deleteMyData(@Req() req: CredentialRequest) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      await user.delete();
+      //await user.delete();
+      await this.userService.deactive(user);
       return '';
     } else {
       throw new CastcleException(
@@ -210,12 +208,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentsResponse
   })
@@ -230,7 +222,8 @@ export class AppController {
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user);
       return {
-        payload: contents.map((item) => item.toPagePayload())
+        payload: contents.items.map((item) => item.toContentPayload()),
+        pagination: contents.pagination
       } as ContentsResponse;
     } else
       throw new CastcleException(
@@ -239,12 +232,6 @@ export class AppController {
       );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: ContentsResponse
   })
@@ -279,12 +266,13 @@ export class AppController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
@@ -295,7 +283,162 @@ export class AppController {
       type: contentTypeOption
     });
     return {
-      payload: contents.map((item) => item.toPagePayload())
+      payload: contents.items.map((item) => item.toContentPayload()),
+      pagination: contents.pagination
     } as ContentsResponse;
+  }
+
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Put(':id/follow')
+  async follow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('authorId') authorId: string
+  ) {
+    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    if (!currentUser.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await currentUser.follow(followedUser);
+    return '';
+  }
+
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(CredentialInterceptor)
+  @Put(':id/unfollow')
+  async unfollow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('authorId') authorId: string
+  ) {
+    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    if (!currentUser.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await currentUser.unfollow(followedUser);
+    return '';
+  }
+
+  @ApiOkResponse({
+    type: FollowResponse
+  })
+  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: UserType,
+    required: false
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Get(':id/follower')
+  async getUserFollower(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('type')
+    userTypeOption?: UserType
+  ): Promise<FollowResponse> {
+    //UserService
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    const followers = await this.userService.getFollower(user, {
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: userTypeOption
+    });
+    return {
+      payload: followers.items,
+      pagination: followers.pagination
+    } as FollowResponse;
+  }
+
+  @ApiOkResponse({
+    type: FollowResponse
+  })
+  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'type',
+    enum: UserType,
+    required: false
+  })
+  @UseInterceptors(FollowInterceptor)
+  @Get(':id/following')
+  async getUserFollowing(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('type')
+    userTypeOption?: UserType
+  ): Promise<FollowResponse> {
+    //UserService
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    const followers = await this.userService.getFollowing(user, {
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: userTypeOption
+    });
+    return {
+      payload: followers.items,
+      pagination: followers.pagination
+    } as FollowResponse;
   }
 }

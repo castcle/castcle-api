@@ -57,5 +57,9 @@ export const env = {
   jwt_verify_secret:
     Environment && Environment.jwt_verify_secret
       ? Environment.jwt_verify_secret
-      : 'secretlen'
+      : 'secretlen',
+  otp_digits:
+    Environment && Environment.otp_digits ? Environment.otp_digits : 8,
+  otp_expires_in:
+    Environment && Environment.otp_expires_in ? Environment.otp_expires_in : 900
 };

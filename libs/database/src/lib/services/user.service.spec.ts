@@ -24,6 +24,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
@@ -31,7 +32,14 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
-import { UpdateUserDto } from '../dtos/user.dto';
+import { PageDto, UpdateUserDto } from '../dtos/user.dto';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  Pagination
+} from '../dtos/common.dto';
+import { ContentDocument } from '../schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -55,6 +63,7 @@ const closeInMongodConnection = async () => {
 describe('User Service', () => {
   let service: UserService;
   let authService: AuthenticationService;
+
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
     ? [
@@ -63,7 +72,7 @@ describe('User Service', () => {
         MongooseForFeatures
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [UserService, AuthenticationService];
+  const providers = [UserService, AuthenticationService, ContentService];
   let result: {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
@@ -146,8 +155,6 @@ describe('User Service', () => {
         dob: partialDTO.dob
       });
       expect(updatingUser.profile.birthdate).toEqual(partialDTO.dob);
-      console.log('-----');
-      console.log(await updatingUser.toUserResponse());
       expect((await updatingUser.toUserResponse()).dob).toEqual(partialDTO.dob);
       updatingUser = await service.updateUser(userFromCredential, {
         overview: partialDTO.overview
@@ -191,10 +198,231 @@ describe('User Service', () => {
         avatar: 'http://placehold.it/200x200',
         cover: 'http://placehold.it/900x900',
         displayName: 'new Page',
-        username: 'npop'
+        castcleId: 'npop'
       });
       expect(page.type).toEqual('page');
       expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
+    });
+  });
+  describe('#getAllPages()', () => {
+    it('should list all created pages', async () => {
+      const currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
+      expect(allPages.items.length).toEqual(1);
+      expect(allPages.pagination.limit).toEqual(25);
+      const page = await service.createPageFromUser(currentUser, {
+        avatar: 'http://placehold.it/200x200',
+        cover: 'http://placehold.it/900x900',
+        displayName: 'new Page',
+        castcleId: 'npop2'
+      });
+      const allPages2 = await service.getAllPages(
+        DEFAULT_CONTENT_QUERY_OPTIONS
+      );
+      expect(allPages2.items.length).toEqual(2);
+    });
+  });
+  describe('#follow()', () => {
+    let currentUser: UserDocument;
+    let allPages: {
+      items: UserDocument[];
+      pagination: Pagination;
+    };
+    beforeAll(async () => {
+      currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
+    });
+    it('should be able to find document in relationship collection once follow', async () => {
+      expect(currentUser.followedCount).toEqual(0);
+      expect(allPages.items[0].followerCount).toEqual(0);
+      //test follow
+      await currentUser.follow(allPages.items[0]);
+      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(1);
+      const page = await service.getUserFromId(allPages.items[0]._id);
+      expect(page.followerCount).toEqual(1);
+      const relationship = await service._relationshipModel
+        .findOne({ user: afterFollowUser._id, followedUser: page._id })
+        .exec();
+      expect(relationship).not.toBeNull();
+      expect(relationship.user).not.toBeNull();
+      expect(relationship.followedUser).not.toBeNull();
+    });
+    it('should not have 2 records if you double follow', async () => {
+      const postUser = await service.getUserFromId(currentUser._id);
+      const postPage = await service.getUserFromId(allPages.items[0]._id);
+      expect(postUser.followedCount).toEqual(1);
+      expect(postPage.followerCount).toEqual(1);
+      await postUser.follow(postPage);
+      const postUser2 = await service.getUserFromId(currentUser._id);
+      const postPage2 = await service.getUserFromId(allPages.items[0]._id);
+      expect(postUser2.followedCount).toEqual(1);
+      expect(postPage2.followerCount).toEqual(1);
+    });
+  });
+  describe('#unfollow()', () => {
+    it('should work the same as follow', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      expect(currentUser.followedCount).toEqual(1); //from above
+      expect(allPages.items[0].followerCount).toEqual(1);
+      //try unfollow
+      await currentUser.unfollow(allPages.items[0]);
+      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(0);
+      const page = await service.getUserFromId(allPages.items[0]._id);
+      expect(page.followerCount).toEqual(0);
+      const relationship = await service._relationshipModel
+        .findOne({ user: afterFollowUser._id, followedUser: page._id })
+        .exec();
+      expect(relationship).toBeNull();
+      //try double unfollow
+      await currentUser.unfollow(allPages.items[0]);
+      const afterFollowUser2 = await service.getUserFromId(currentUser._id);
+      expect(afterFollowUser.followedCount).toEqual(0);
+      const page2 = await service.getUserFromId(allPages.items[0]._id);
+      expect(page2.followerCount).toEqual(0);
+      const relationship2 = await service._relationshipModel
+        .findOne({ user: afterFollowUser2._id, followedUser: page2._id })
+        .exec();
+      expect(relationship2).toBeNull();
+    });
+  });
+  describe('#getFollower()', () => {
+    it('should get user detail from followering', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      await currentUser.follow(allPages.items[0]);
+      await currentUser.follow(allPages.items[1]);
+      const followers = await service.getFollower(
+        allPages.items[0],
+        DEFAULT_QUERY_OPTIONS
+      );
+      expect(followers.items.length).toEqual(1);
+      expect(followers.items[0].castcleId).toEqual(
+        (await currentUser.toUserResponse()).castcleId
+      );
+    });
+  });
+  //TODO !!! Need better testing and mock data
+  describe('#getFollowing()', () => {
+    it('should get total of following correctly', async () => {
+      const currentUser: UserDocument = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const allPages: {
+        items: UserDocument[];
+        pagination: Pagination;
+      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      const following = await service.getFollowing(currentUser);
+      //like in #getFollower
+      expect(following.items.length).toEqual(allPages.items.length);
+    });
+  });
+  describe('#deactive, reactive', () => {
+    const userInfo = {
+      accountRequirement: {
+        device: 'iphone',
+        deviceUUID: 'iphone1234',
+        header: {
+          platform: 'iOs'
+        },
+        languagesPreferences: ['th', 'th']
+      },
+      signupRequirement: {
+        displayId: 'npop',
+        displayName: 'npop',
+        email: 'sompop.k@gmail.com',
+        password: '123456789'
+      },
+      pages: [
+        {
+          avatar: 'http:/placehold.it/200x200',
+          castcleId: 'test-12345',
+          cover: 'http:/placehold.it/200x200',
+          displayName: 'hello12345'
+        } as PageDto
+      ]
+    };
+
+    let userA: UserDocument;
+    let pageA: UserDocument;
+    let accountA: AccountDocument;
+    beforeAll(async () => {
+      //create new user
+      const result = await authService.createAccount(
+        userInfo.accountRequirement
+      );
+      accountA = result.accountDocument;
+      await authService.signupByEmail(accountA, userInfo.signupRequirement);
+      userA = await service.getUserFromCredential(result.credentialDocument);
+      pageA = await service.createPageFromUser(userA, userInfo.pages[0]);
+    });
+    describe('#deactive()', () => {
+      let postUserAFromModel: UserDocument;
+      let postUserA: UserDocument;
+      let postPageAFromModel: UserDocument;
+      let postPageA: UserDocument;
+      let postAccountA: AccountDocument;
+      beforeAll(async () => {
+        await service.deactive(userA);
+        postUserAFromModel = await service._userModel.findById(userA._id);
+        postUserA = await service.getUserFromId(userA._id);
+        postPageAFromModel = await service._userModel.findById(pageA._id);
+        postPageA = await service.getUserFromId(pageA._id);
+        postAccountA = await authService._accountModel.findById(accountA._id);
+      });
+      it('should set status user to delete', async () => {
+        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Deleted);
+        expect(postUserA).toBeNull();
+      });
+      it('should set all page that user own to delete flag', async () => {
+        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Deleted);
+        expect(postPageA).toBeNull();
+      });
+      it('should set account of user to Delete', () => {
+        expect(postAccountA.visibility).toEqual(EntityVisibility.Deleted);
+      });
+    });
+    describe('#reactive()', () => {
+      let postUserAFromModel: UserDocument;
+      let postUserA: UserDocument;
+      let postPageAFromModel: UserDocument;
+      let postPageA: UserDocument;
+      let postAccountA: AccountDocument;
+      beforeAll(async () => {
+        await service.reactive(userA);
+        postUserAFromModel = await service._userModel.findById(userA._id);
+        postUserA = await service.getUserFromId(userA._id);
+        postPageAFromModel = await service._userModel.findById(pageA._id);
+        postPageA = await service.getUserFromId(pageA._id);
+        postAccountA = await authService._accountModel.findById(accountA._id);
+      });
+      it('should set status user to publish', async () => {
+        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Publish);
+        expect(postUserA).not.toBeNull();
+      });
+      it('should set all page that user own to publish flag', async () => {
+        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Publish);
+        expect(postPageA).not.toBeNull();
+      });
+      it('should set account of user to publish', () => {
+        expect(postAccountA.visibility).toEqual(EntityVisibility.Publish);
+      });
     });
   });
 });

@@ -21,13 +21,18 @@
  * or have any questions.
  */
 import { Prop, Schema } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import { EntityVisibility } from '../dtos/common.dto';
 
 @Schema()
 export class CastcleBase {
+  _id?: any;
+
   @Prop()
   createdAt?: Date;
 
   @Prop()
   updatedAt?: Date;
+
+  @Prop({ type: String })
+  visibility?: EntityVisibility;
 }

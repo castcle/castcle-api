@@ -21,7 +21,8 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import {
   ContentPayloadDto,
@@ -31,6 +32,9 @@ import {
   Author
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
+import { RevisionDocument } from './revision.schema';
+import { EngagementDocument, EngagementType } from './engagement.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -74,12 +78,12 @@ interface IContent extends Document {
   /**
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
-  toPagePayload(): ContentPayloadDto;
+  toContentPayload(): ContentPayloadDto;
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
 
-ContentSchema.methods.toPagePayload = function () {
+ContentSchema.methods.toContentPayload = function () {
   //Todo Need to implement recast quote cast later on
   return {
     id: (this as ContentDocument)._id,
@@ -112,4 +116,81 @@ ContentSchema.methods.toPagePayload = function () {
       name: 'Feed'
     }
   } as ContentPayloadDto;
+};
+
+const removeEngagementAggregateIfDeleted = async (
+  doc: ContentDocument,
+  engagementModel: Model<EngagementDocument>
+) => {
+  let payload: QuotePayload | RecastPayload;
+  if (doc.type === ContentType.Recast || doc.type === ContentType.Quote) {
+    payload =
+      doc.type === ContentType.Recast
+        ? (doc.payload as RecastPayload)
+        : (doc.payload as QuotePayload);
+  }
+};
+
+export const ContentSchemaFactory = (
+  revisionModel: Model<RevisionDocument>
+): mongoose.Schema<any> => {
+  const contentModel = mongoose.model(
+    'Content',
+    ContentSchema
+  ) as unknown as Model<ContentDocument>;
+
+  ContentSchema.pre('save', function (next) {
+    //defualt is publish
+    (this as ContentDocument).visibility = (this as ContentDocument).visibility
+      ? (this as ContentDocument).visibility
+      : EntityVisibility.Publish;
+    (this as ContentDocument).revisionCount = (this as ContentDocument)
+      .revisionCount
+      ? (this as ContentDocument).revisionCount + 1
+      : 1;
+    if (!(this as ContentDocument).engagements) {
+      (this as ContentDocument).engagements = {
+        like: {
+          count: 0,
+          refs: []
+        },
+        comment: {
+          count: 0,
+          refs: []
+        },
+        recast: {
+          count: 0,
+          refs: []
+        },
+        quote: {
+          count: 0,
+          refs: []
+        }
+      };
+    }
+    next();
+  });
+  ContentSchema.post('save', async function (doc, next) {
+    const session = await revisionModel.startSession();
+
+    session.withTransaction(async () => {
+      session.abortTransaction();
+      //update revision
+      const newRevison = new revisionModel({
+        objectRef: {
+          $ref: 'content',
+          $id: mongoose.Types.ObjectId((doc as ContentDocument)._id)
+        },
+        payload: doc as Content
+      });
+      const result = await newRevison.save();
+      //f content not publish go remove all content
+      if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
+        //if this is quote cast
+      }
+    });
+    session.endSession();
+    next();
+  });
+  return ContentSchema;
 };

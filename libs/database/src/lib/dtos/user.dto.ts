@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Pagination } from './common.dto';
 
 class UserImage {
   @ApiProperty()
@@ -59,7 +60,7 @@ export class UserResponseDto {
   castcleId: string;
 
   @ApiProperty()
-  email: string;
+  email?: string;
 
   @ApiProperty()
   overview: string | null;
@@ -102,7 +103,7 @@ export class UpdateUserDto {
 
 export class PageDto {
   @ApiProperty()
-  username: string;
+  castcleId: string;
 
   @ApiProperty()
   displayName: string;
@@ -114,6 +115,26 @@ export class PageDto {
   cover: string;
 }
 
+export class PageResponseDto {
+  @ApiProperty()
+  castcleId: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  avatar: string;
+
+  @ApiProperty()
+  cover: string;
+
+  @ApiProperty()
+  updated: string;
+
+  @ApiProperty()
+  created: string;
+}
+
 export class UpdatePageDto {
   @ApiProperty()
   displayName?: string;
@@ -123,4 +144,25 @@ export class UpdatePageDto {
 
   @ApiProperty()
   cover?: string;
+}
+
+export class PagesResponse {
+  @ApiProperty()
+  payload: PageResponseDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
+}
+
+export class PageResponse {
+  @ApiProperty()
+  payload: PageResponseDto;
+}
+
+export class FollowResponse {
+  @ApiProperty()
+  payload: UserResponseDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
 }

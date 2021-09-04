@@ -37,6 +37,7 @@ import {
   AccountActivationDocument
 } from '../schemas/accountActivation.schema';
 import { UserDocument } from '../schemas/user.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -102,10 +103,6 @@ describe('Authentication Service', () => {
           platform: 'iOs'
         }
       });
-      console.log(
-        'createdAccountDocument ',
-        createAccountResult.accountDocument
-      );
     });
 
     describe('#_generateAccessToken()', () => {
@@ -200,7 +197,8 @@ describe('Authentication Service', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
         expect(createAccountResult.credentialDocument.account).toEqual({
           _id: createAccountResult.accountDocument._id,
-          isGuest: createAccountResult.accountDocument.isGuest
+          isGuest: createAccountResult.accountDocument.isGuest,
+          visibility: EntityVisibility.Publish
         }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
@@ -230,6 +228,10 @@ describe('Authentication Service', () => {
         expect(createAccountResult.accountDocument.isGuest).toBe(true);
       });
       it('should contain all valid tokens', () => {
+        console.log(createAccountResult.credentialDocument.account);
+        expect(
+          createAccountResult.credentialDocument.account.visibility
+        ).toEqual(EntityVisibility.Publish);
         expect(
           createAccountResult.credentialDocument.isAccessTokenValid()
         ).toBe(true);
@@ -346,7 +348,7 @@ describe('Authentication Service', () => {
         const result = await service.getUserFromCastcleId('testNew');
         expect(result).not.toBeNull();
         expect(result.displayId).toEqual(newUser.displayId);
-        console.log(result);
+
         expect(result.displayName).toEqual(newUser.displayName);
       });
     });
@@ -486,6 +488,17 @@ describe('Authentication Service', () => {
         expect(newCredential.account).toEqual(
           createAccountResult.accountDocument._id
         );
+      });
+    });
+    describe('#suggestCastcleId()', () => {
+      it('should suggest a name', async () => {
+        const suggestName = await service.suggestCastcleId('Hello Friend');
+        expect(suggestName).toEqual('hellofriend');
+      });
+      it('should suggest a name + totalUser if the id is already exist', async () => {
+        const totalUser = await service._accountModel.countDocuments();
+        const suggestName = await service.suggestCastcleId('Dude this is new');
+        expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
       });
     });
   });

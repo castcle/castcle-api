@@ -44,9 +44,12 @@ import {
   ContentResponse,
   ContentsResponse,
   ContentType,
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
   PageDto,
-  UpdatePageDto
+  PagesResponse,
+  UpdatePageDto,
+  PageResponse,
+  PageResponseDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
@@ -73,7 +76,23 @@ import {
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { PageInterceptor } from '../../interceptors/page.interceptor';
 import { Query } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 @Controller()
 export class PageController {
   constructor(
@@ -114,15 +133,9 @@ export class PageController {
       );
   };
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
-    type: PageDto
+    type: PageResponse
   })
   @ApiResponse({
     status: 201,
@@ -133,19 +146,19 @@ export class PageController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
     const namingResult = await this.authService.getUserFromCastcleId(
-      body.username
+      body.castcleId
     );
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     body.avatar = (
       await this._uploadImage(body.avatar, {
-        filename: `page-avatar-${body.username}`
+        filename: `page-avatar-${body.castcleId}`
       })
     ).uri;
     body.cover = (
       await this._uploadImage(body.cover, {
-        filename: `page-cover-${body.username}`
+        filename: `page-cover-${body.castcleId}`
       })
     ).uri;
     const page = await this.userService.createPageFromCredential(
@@ -155,12 +168,6 @@ export class PageController {
     return page.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
     type: UpdatePageDto
@@ -197,30 +204,49 @@ export class PageController {
     return afterPage.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: PageDto
+    type: PageResponseDto
   })
   @UseInterceptors(PageInterceptor)
   @Get('pages/:id')
-  async getPageFromId(@Req() req: CredentialRequest, @Param('id') id: string) {
+  async getPageFromId(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string
+  ): Promise<PageResponseDto> {
     //check if page name exist
     const page = await this._getPageByIdOrCastcleId(id, req);
     return page.toPageResponse();
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    type: PagesResponse
   })
+  @UseInterceptors(PageInterceptor)
+  @Get('pages')
+  async getAllPages(
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+  ): Promise<PagesResponse> {
+    const pages = await this.userService.getAllPages({
+      page: pageOption,
+      sortBy: sortByOption,
+      limit: limitOption
+    });
+    return {
+      payload: pages.items.map((p) => p.toPageResponse()),
+      pagination: pages.pagination
+    };
+  }
+
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -245,12 +271,6 @@ export class PageController {
    * @param {CredentialRequest} req that contain current user credential
    * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
    */
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiOkResponse({
     type: ContentResponse
@@ -284,12 +304,13 @@ export class PageController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe) pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
     @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_QUERY_OPTIONS.type
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page, {
@@ -299,7 +320,8 @@ export class PageController {
       type: contentTypeOption
     });
     return {
-      payload: contents.map((c) => c.toPagePayload())
+      payload: contents.items.map((c) => c.toContentPayload()),
+      pagination: contents.pagination
     };
   }
 }

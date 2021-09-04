@@ -20,12 +20,21 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  Pagination,
+  CastcleQueryOptions,
+  DEFAULT_QUERY_OPTIONS
+} from './common.dto';
 
 import {
   UserResponseDto,
   UpdateUserDto,
   PageDto,
-  UpdatePageDto
+  UpdatePageDto,
+  PagesResponse,
+  PageResponse,
+  PageResponseDto,
+  FollowResponse
 } from './user.dto';
 import {
   ContentType,
@@ -35,8 +44,8 @@ import {
   BlogPayload,
   ContentResponse,
   ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
+  CastcleContentQueryOptions,
+  DEFAULT_CONTENT_QUERY_OPTIONS
 } from './content.dto';
 
 export {
@@ -51,6 +60,13 @@ export {
   BlogPayload,
   ContentResponse,
   ContentsResponse,
-  QueryOption,
-  DEFAULT_QUERY_OPTIONS
+  CastcleContentQueryOptions,
+  PagesResponse,
+  PageResponse,
+  PageResponseDto,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  Pagination,
+  CastcleQueryOptions,
+  DEFAULT_QUERY_OPTIONS,
+  FollowResponse
 };

@@ -22,12 +22,13 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { User } from './user.schema';
 import { Comment } from './comment.schema';
-import { Content } from './content.schema';
+import { Content, ContentDocument } from './content.schema';
 import { CastcleBase } from './base.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export type EngagementDocument = Engagement & Document;
 
@@ -46,11 +47,65 @@ export class Engagement extends CastcleBase {
   @Prop({ required: true, type: Object })
   targetRef: any;
 
-  @Prop({ required: true, type: Object })
-  target: Comment | Content | any;
-
   @Prop({ required: true })
   type: string;
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
+
+export const EngagementSchemaFactory = (
+  contentModel: Model<ContentDocument>
+): mongoose.Schema<any> => {
+  EngagementSchema.post('save', async function (doc, next) {
+    if ((doc as EngagementDocument).visibility === EntityVisibility.Publish) {
+      const incEngagment: { [key: string]: number } = {};
+      incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = 1;
+      console.log('inc like ', incEngagment);
+      await contentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.$id },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+    } else if (
+      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
+    ) {
+      console.log('delete dono ');
+      console.log(`engagements.${(doc as EngagementDocument).type}.count`);
+      const incEngagment: { [key: string]: number } = {};
+      incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] =
+        -1;
+      console.log(incEngagment);
+      await contentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.$id },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+    }
+    next();
+  });
+  //TODO !!! cant use $id dont know why
+  EngagementSchema.post('remove', async (doc, next) => {
+    const incEngagment: { [key: string]: number } = {};
+    incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
+    const content = await contentModel
+      .findById((doc as EngagementDocument).targetRef.oid)
+      .exec();
+    const result = await contentModel
+      .updateOne(
+        { _id: (doc as EngagementDocument).targetRef.oid },
+        {
+          $inc: incEngagment
+        }
+      )
+      .exec();
+    console.log(result);
+    next();
+  });
+  return EngagementSchema;
+};

@@ -32,12 +32,9 @@ import {
   RefreshTokenPayload,
   MemberAccessTokenPayload
 } from '../dtos/token.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export type CredentialDocument = Credential & ICredential;
-
-interface IAccount extends Account {
-  _id?: any;
-}
 
 @Schema({ timestamps: true })
 export class Credential extends CastcleBase {
@@ -45,7 +42,7 @@ export class Credential extends CastcleBase {
     required: true,
     type: Object
   })
-  account: IAccount;
+  account: Account;
 
   @Prop({ required: true })
   accessToken: string;
@@ -173,12 +170,20 @@ CredentialSchema.methods.renewAccessToken = async function (
 };
 
 CredentialSchema.methods.isAccessTokenValid = function () {
+  if (
+    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
+  )
+    return false;
   return Token.isTokenValid(
     (this as CredentialDocument).accessToken,
     env.jwt_access_secret
   );
 };
 CredentialSchema.methods.isRefreshTokenValid = function () {
+  if (
+    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
+  )
+    return false;
   return Token.isTokenValid(
     (this as CredentialDocument).accessToken,
     env.jwt_access_secret

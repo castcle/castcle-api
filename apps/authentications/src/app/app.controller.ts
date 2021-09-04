@@ -21,9 +21,17 @@
  * or have any questions.
  */
 
-import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseInterceptors,
+  Version
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
+import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   HeadersRequest,
   HeadersInterceptor,
@@ -36,6 +44,7 @@ import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
 import { AuthenticationService } from '@castcle-api/database';
+import { Host } from '@castcle-api/utils';
 import {
   ApiResponse,
   ApiOkResponse,
@@ -51,7 +60,11 @@ import {
   RefreshTokenResponse,
   LoginDto,
   RegisterByEmailDto,
-  CheckIdExistDto
+  CheckIdExistDto,
+  SuggestCastcleIdReponse,
+  VerificationPasswordBody,
+  VerificationPasswordResponse,
+  ChangePasswordBody
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -60,7 +73,21 @@ import {
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 
-@Controller()
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 export class AppController {
   constructor(
     private readonly appService: AppService,
@@ -71,12 +98,6 @@ export class AppController {
     CastLoggerOptions
   );
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 400,
     description: 'will show if some of header is missing'
@@ -110,12 +131,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiBody({
     type: LoginDto
@@ -178,18 +193,6 @@ export class AppController {
   }*/
 
   @ApiHeader({
-    name: 'Platform',
-    description: 'Device platform',
-    example: 'iOS',
-    required: true
-  })
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
-  @ApiHeader({
     name: 'Device',
     description: 'Device name',
     example: 'iPhone',
@@ -240,12 +243,6 @@ export class AppController {
     }
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 201,
@@ -293,6 +290,7 @@ export class AppController {
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
       await this.appService.sendRegistrationEmail(
+        Host.getHostname(req),
         body.payload.email,
         accountActivation.verifyToken
       );
@@ -307,12 +305,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiResponse({
     status: 201,
     type: RefreshTokenResponse
@@ -352,12 +344,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -388,12 +374,6 @@ export class AppController {
     );
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 204
@@ -429,18 +409,13 @@ export class AppController {
     if (!(account && account.email))
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     this.appService.sendRegistrationEmail(
+      Host.getHostname(req),
       account.email,
       newAccountActivation.verifyToken
     );
     return '';
   }
 
-  @ApiHeader({
-    name: 'Accept-Language',
-    description: 'Device prefered Language',
-    example: 'th',
-    required: true
-  })
   @ApiOkResponse({
     type: CheckingResponse
   })
@@ -491,13 +466,21 @@ export class AppController {
     return this.appService.getData().message + birthDay;
   }
 
+  @Version('beta')
+  @Get()
+  getDataBeta() {
+    return 'hello';
+  }
+
   /*
    * TODO: !!! use for test link verification only will remove in production
    */
-  @Get('testLink')
-  testLink(@Req() req: Request) {
+  @Get('verify')
+  verify(@Req() req: Request) {
+    const verifyUrl =
+      Host.getHostname(req) + '/authentications/verificationEmail';
     if (req.query.code) {
-      return `will call post request soon<script>fetch("http://localhost:3334/authentications/verificationEmail", {
+      return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
           Accept: "*/*",
           "Accept-Language": "th",
@@ -506,5 +489,79 @@ export class AppController {
         method: "POST"
       })</script>`;
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+  }
+
+  @ApiOkResponse({
+    type: SuggestCastcleIdReponse
+  })
+  @Post('suggestCastcleId')
+  @HttpCode(200)
+  async suggestCastcleId(
+    @Body('displayName') displayName: string,
+    @Req() req: CredentialRequest
+  ): Promise<SuggestCastcleIdReponse> {
+    const suggestId = await this.authService.suggestCastcleId(displayName);
+    return {
+      payload: {
+        suggestCastcleId: suggestId
+      }
+    };
+  }
+
+  @ApiBody({
+    type: VerificationPasswordBody
+  })
+  @ApiResponse({
+    status: 201,
+    type: VerificationPasswordResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('verificationPassword')
+  async verificationPassword(
+    @Body('password') password: string,
+    @Req() req: CredentialRequest
+  ): Promise<VerificationPasswordResponse> {
+    //req.$credential.
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (account.verifyPassword(password)) {
+      const otp = await this.authService.generateOtp(account);
+      return {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+    } else
+      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
+  }
+
+  @UseInterceptors(CredentialInterceptor)
+  @ApiBody({
+    type: ChangePasswordBody
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @Post('changePasswordSubmit')
+  @HttpCode(204)
+  async changePasswordSubmit(
+    @Body('refCode') refCode: string,
+    @Body('newPassword') newPassword: string,
+    @Req() req: CredentialRequest
+  ) {
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const otp = await this.authService.getOtpFromAccount(account, refCode);
+    if (otp && otp.isValid()) {
+      //change password
+      const result = await this.authService.changePassword(
+        account,
+        otp,
+        newPassword
+      );
+      return '';
+    } else
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
   }
 }

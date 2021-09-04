@@ -21,6 +21,8 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Pagination } from './common.dto';
+import { CastcleQueryOptions } from './common.dto';
 
 class Url {
   @ApiProperty()
@@ -57,6 +59,11 @@ export class ShortPayload {
   link?: Link[];
 }
 
+export class ImagePayload {
+  @ApiProperty()
+  photo?: ShortPhoto;
+}
+
 export class BlogPayload {
   @ApiProperty()
   header: string;
@@ -66,6 +73,17 @@ export class BlogPayload {
   photo?: BlogPhoto;
 
   link?: Link[];
+}
+
+export class QuotePayload {
+  source: any; //contain content._id
+  message?: string;
+  photo?: ShortPhoto;
+}
+
+export class RecastPayload {
+  source: any; //contain content._id
+  photo?: ShortPhoto;
 }
 
 class Feature {
@@ -135,10 +153,15 @@ export class ContentPayloadDto {
   id: string;
 
   @ApiProperty()
-  type: 'short' | 'blog' | 'image';
+  type:
+    | ContentType.Short
+    | ContentType.Blog
+    | ContentType.Image
+    | ContentType.Quote
+    | ContentType.Recast;
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload;
+  payload: ShortPayload | BlogPayload | QuotePayload | RecastPayload;
 
   @ApiProperty()
   feature: Feature;
@@ -176,7 +199,7 @@ export class SaveContentDto {
   type: 'short' | 'blog' | 'image';
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload;
+  payload: ShortPayload | BlogPayload | ImagePayload;
 
   @ApiProperty()
   author?: AuthorDto;
@@ -185,24 +208,16 @@ export class SaveContentDto {
 export enum ContentType {
   Short = 'short',
   Blog = 'blog',
+  Image = 'image',
   Recast = 'recast',
   Quote = 'quote'
 }
 
-export class QueryOption {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
+export class CastcleContentQueryOptions extends CastcleQueryOptions {
   type?: ContentType;
-  page?: number = 1;
-  limit?: number = 25;
 }
 
-export const DEFAULT_QUERY_OPTIONS = {
+export const DEFAULT_CONTENT_QUERY_OPTIONS = {
   sortBy: {
     field: 'updatedAt',
     type: 'desc'
@@ -210,7 +225,7 @@ export const DEFAULT_QUERY_OPTIONS = {
   type: ContentType.Short,
   page: 1,
   limit: 25
-} as QueryOption;
+} as CastcleContentQueryOptions;
 
 export class ContentResponse {
   @ApiProperty()
@@ -220,4 +235,7 @@ export class ContentResponse {
 export class ContentsResponse {
   @ApiProperty()
   payload: ContentPayloadDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
 }

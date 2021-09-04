@@ -23,6 +23,8 @@
 import { Module } from '@nestjs/common';
 import { Token } from './token';
 import { Password } from './password';
+import { CastcleName } from './castcle-name';
+import { Host } from './host';
 
 @Module({
   imports: [],
@@ -32,4 +34,4 @@ import { Password } from './password';
 })
 export class UtilsModule {}
 
-export { Token, Password };
+export { Token, Password, CastcleName, Host };

@@ -27,10 +27,10 @@
     ]
   },
   "projects": {
-    "assets": {
+    "authentications": {
       "tags": []
     },
-    "authentications": {
+    "backgrounds": {
       "tags": []
     },
     "bases": {
@@ -39,25 +39,22 @@
     "commonDate": {
       "tags": []
     },
+    "contents": {
+      "tags": []
+    },
     "database": {
       "tags": []
     },
-    "environments": {
+    "engagements": {
       "tags": []
     },
-    "feeds": {
+    "environments": {
       "tags": []
     },
     "logger": {
       "tags": []
     },
     "metadata": {
-      "tags": []
-    },
-    "notifications": {
-      "tags": []
-    },
-    "searches": {
       "tags": []
     },
     "users": {

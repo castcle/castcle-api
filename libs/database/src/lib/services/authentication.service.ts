@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument, AccountSchema } from '../schemas/account.schema';
 import {
@@ -29,19 +29,21 @@ import {
   AccountActivationModel
 } from '../schemas/accountActivation.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
+import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import * as mongoose from 'mongoose';
 import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
 import {
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';
-import { Token } from '@castcle-api/utils';
+import { CastcleName, Token } from '@castcle-api/utils';
 import {
   AccessTokenPayload,
   RefreshTokenPayload,
   EmailVerifyToken,
   MemberAccessTokenPayload
 } from '../dtos/token.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 
 export interface AccountRequirements {
   header: {
@@ -68,7 +70,9 @@ export class AuthenticationService {
     @InjectModel('AccountActivation')
     public _accountActivationModel: AccountActivationModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>
+    public _userModel: Model<UserDocument>,
+    @InjectModel('Otp')
+    public _otpModel: OtpModel
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -89,6 +93,7 @@ export class AuthenticationService {
         languages: accountRequirements.languagesPreferences
       }
     } as CreateAccountDto);
+    newAccount.visibility = EntityVisibility.Publish;
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
@@ -102,7 +107,8 @@ export class AuthenticationService {
     const credential = new this._credentialModel({
       account: {
         _id: mongoose.Types.ObjectId(accountDocument._id),
-        isGuest: true
+        isGuest: true,
+        visibility: EntityVisibility.Publish
       },
       accessToken: accessTokenResult.accessToken,
       accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
@@ -150,7 +156,9 @@ export class AuthenticationService {
     this._accountModel.findById(credential.account).exec();
 
   getAccountFromEmail = (email: string) =>
-    this._accountModel.findOne({ email: email }).exec();
+    this._accountModel
+      .findOne({ email: email, visibility: EntityVisibility.Publish })
+      .exec();
 
   getUserFromCastcleId = (id: string) => {
     return this._userModel.findOne({ displayId: id }).exec();
@@ -241,5 +249,66 @@ export class AuthenticationService {
     accountActivation.verifyTokenExpireDate =
       emailTokenResult.verifyTokenExpireDate;
     return accountActivation.save();
+  }
+
+  /**
+   *
+   * @param {string} displayName this will show suggestName + totalUser(if suggestName is already exist)
+   * @returns {Promise<string>} suggestCastCleId
+   */
+  async suggestCastcleId(displayName: string) {
+    const name = new CastcleName(displayName);
+    const result = await this.getUserFromCastcleId(name.suggestCastcleId);
+    if (result) {
+      const totalUser = await this._userModel.countDocuments().exec();
+      return name.suggestCastcleId + totalUser;
+    } else return name.suggestCastcleId;
+  }
+
+  /**
+   * generate refCode and create Otp Document
+   * @param {AccountDocument} account
+   * @returns {OtpDocument}
+   */
+  async generateOtp(account: AccountDocument) {
+    const otp = await this._otpModel.generate(
+      account._id,
+      OtpObjective.ChangePassword
+    );
+    return otp;
+  }
+
+  /**
+   * find refCode that has the same refCode and
+   * @param {AccountDocument} account
+   * @param {string} refCode
+   * @returns {OtpDocument}
+   */
+  async getOtpFromAccount(account: AccountDocument, refCode: string) {
+    return this._otpModel
+      .findOne({ account: account._id, refCode: refCode })
+      .exec();
+  }
+
+  /**
+   * this will assume that we already check otp is valid. this function will change current account password and delete otp then return newly change password account
+   * @param {AccountDocument} account
+   * @param {OtpDocument} otp
+   * @param {string} newPassword
+   * @returns {Promise<{AccountDocument}>}
+   */
+  async changePassword(
+    account: AccountDocument,
+    otp: OtpDocument,
+    newPassword: string
+  ) {
+    let newAccount: AccountDocument;
+    const session = await this._accountModel.startSession();
+    session.withTransaction(async () => {
+      newAccount = await account.changePassword(newPassword);
+      await otp.delete();
+    });
+    session.endSession();
+    return newAccount;
   }
 }

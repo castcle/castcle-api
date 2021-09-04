@@ -79,7 +79,7 @@ describe('PageController', () => {
     avatar: 'http://placehold.it/100x100',
     cover: 'http://placehold.it/1500x300',
     displayName: 'Super Page',
-    username: 'pageyo'
+    castcleId: 'pageyo'
   };
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -134,31 +134,47 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         pageDto
       );
-      expect(newPageResponse).toEqual(pageDto);
-      const testPage = await authService.getUserFromCastcleId(pageDto.username);
-      expect(testPage.toPageResponse()).toEqual(pageDto);
+      expect(newPageResponse.avatar).toEqual(pageDto.avatar);
+      expect(newPageResponse.displayName).toEqual(pageDto.displayName);
+      expect(newPageResponse.cover).toEqual(pageDto.cover);
+      expect(newPageResponse.castcleId).toEqual(pageDto.castcleId);
+      const testPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
+      const pageResponse = testPage.toPageResponse();
+      expect(pageResponse.avatar).toEqual(pageDto.avatar);
+      expect(pageResponse.displayName).toEqual(pageDto.displayName);
+      expect(pageResponse.cover).toEqual(pageDto.cover);
+      expect(pageResponse.castcleId).toEqual(pageDto.castcleId);
     });
   });
   describe('updatePage', () => {
     it('should update some properly in updatePageDto to the created page', async () => {
-      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const testPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
       const result = await pageController.updatePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
         { displayName: 'change baby' }
       );
-      expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
+      //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
+      expect(result.displayName).toEqual('change baby');
     });
   });
   describe('deletePage', () => {
     it('should delete a page if user has permission', async () => {
-      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const testPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
       const result = await pageController.deletePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id
       );
       expect(result).toEqual('');
-      const postPage = await authService.getUserFromCastcleId(pageDto.username);
+      const postPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
       expect(postPage).toBeNull();
     });
   });
@@ -168,7 +184,9 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         pageDto
       );
-      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const testPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id
@@ -176,17 +194,19 @@ describe('PageController', () => {
       expect(getResult).toEqual(testPage.toPageResponse());
     });
     it('should be able to get page from CastcleId', async () => {
-      const testPage = await authService.getUserFromCastcleId(pageDto.username);
+      const testPage = await authService.getUserFromCastcleId(
+        pageDto.castcleId
+      );
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto.username
+        pageDto.castcleId
       );
       expect(getResult).toEqual(testPage.toPageResponse());
     });
   });
   describe('getPageContents', () => {
     it('should return ContentsReponse that contain all contain that create by this page', async () => {
-      const page = await authService.getUserFromCastcleId(pageDto.username);
+      const page = await authService.getUserFromCastcleId(pageDto.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
           type: ContentType.Short,
@@ -222,11 +242,25 @@ describe('PageController', () => {
         $credential: userCredential,
         $language: 'th'
       } as any);
+
       expect(response).toEqual({
         payload: createResult
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toPagePayload())
+          .map((c) => c.toContentPayload()),
+        pagination: {
+          self: 1,
+          limit: 25
+        }
       });
+    });
+  });
+  describe('getAllPages', () => {
+    it('should display all pages that has been created', async () => {
+      const result = await pageController.getAllPages();
+      console.log(result);
+      expect(result.payload.length).toEqual(1);
+      expect(result.pagination.self).toEqual(1);
+      expect(result.pagination.limit).toEqual(25);
     });
   });
 });

@@ -22,7 +22,6 @@
  */
 
 import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { Assets as assets } from '@castcle-api/assets';
 import * as dotenv from 'dotenv';
 
 const env = dotenv.config();
@@ -31,7 +30,6 @@ if (!env) {
 }
 
 // Database
-const sslCA = assets.mongodb_ssl_ca;
 const db_user_pass =
   process.env.DB_USERNAME === '' && process.env.DB_PASSWORD === ''
     ? ''
@@ -88,5 +86,8 @@ export const Environment = {
   // Social network
   twitter_key: process.env.TWITTER_KEY,
   twitter_secret_key: process.env.TWITTER_SECRET_KEY,
-  twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN
+  twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
+  // Otp
+  otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
+  otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number //second for otp to expire
 };
