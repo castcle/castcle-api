@@ -208,7 +208,7 @@ export class ContentController {
   })
   @UseInterceptors(CredentialInterceptor)
   @HttpCode(204)
-  @Delete('contents/:id')
+  @Delete(':id')
   async deleteContentFromId(
     @Param('id') id: string,
     @Req() req: CredentialRequest

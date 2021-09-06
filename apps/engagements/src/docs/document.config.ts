@@ -20,56 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
-} from './common.dto';
 
-import { UxEngagementBody } from './ux.engagement.dto';
+import { DocumentBuilder } from '@nestjs/swagger';
 
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  FollowResponse
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS
-} from './content.dto';
-
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  FollowResponse,
-  UxEngagementBody
-};
+export const DocumentConfig = new DocumentBuilder()
+  .setTitle('UX Engagemetn Service Service')
+  .setDescription('The  API description')
+  .setVersion('1.0')
+  .addBearerAuth()
+  .build();
