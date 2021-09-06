@@ -21,14 +21,17 @@
  * or have any questions.
  */
 
-import { Environment as env } from '@castcle-api/environments';
+import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   CastLogger,
   CastLoggerLevel,
   CastLoggerOptions
 } from '@castcle-api/logger';
+import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
+import { DocumentConfig } from './docs/document.config';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -37,7 +40,14 @@ async function bootstrap() {
   });
   const port = process.env.PORT || 3340;
   const prefix = 'engagements';
+  const document = SwaggerModule.createDocument(app, DocumentConfig);
+  SwaggerModule.setup(`${prefix}/documentations`, app, document);
 
+  // For versioning
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name
+  });
   // For Global
   app.setGlobalPrefix(prefix);
 

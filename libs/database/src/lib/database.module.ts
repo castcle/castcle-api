@@ -30,6 +30,7 @@ import { env } from './environment';
 import { AuthenticationService } from './services/authentication.service';
 import { UserService } from './services/user.service';
 import { ContentService } from './services/content.service';
+import { UxEngagementService } from './services/uxengagement.service';
 import { AccountSchema, AccountSchemaFactory } from './schemas/account.schema';
 import {
   CredentialSchema,
@@ -41,11 +42,13 @@ import { ContentSchema, ContentSchemaFactory } from './schemas/content.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { RevisionchemaFactory } from './schemas/revision.schema';
+import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { OtpSchema } from './schemas/otp.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'Otp', schema: OtpSchema }
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -87,4 +90,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 })
 export class DatabaseModule {}
 
-export { AuthenticationService, UserService, ContentService };
+export {
+  AuthenticationService,
+  UserService,
+  ContentService,
+  UxEngagementService
+};

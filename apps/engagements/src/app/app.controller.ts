@@ -21,15 +21,67 @@
  * or have any questions.
  */
 
-import { Controller, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Req,
+  UseInterceptors
+} from '@nestjs/common';
+import { UxEngagementBody } from '@castcle-api/database/dtos';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  CredentialInterceptor,
+  CredentialRequest
+} from '@castcle-api/utils/interceptors';
+import * as mongoose from 'mongoose';
+import { UxEngagementService } from '@castcle-api/database';
 import { AppService } from './app.service';
+import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
+import { Configs } from '@castcle-api/environments';
 
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private uxEngagemenetService: UxEngagementService
+  ) {}
 
   @Get()
   getData() {
     return this.appService.getData();
+  }
+
+  @ApiBody({
+    type: UxEngagementBody
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @HttpCode(204)
+  @Post()
+  async track(@Body() body: UxEngagementBody, @Req() req: CredentialRequest) {
+    //check if they have the same id
+    const accountId = mongoose.Types.ObjectId(body.accountId);
+    if (accountId !== req.$credential.account._id)
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    const result = this.uxEngagemenetService.track(body);
+    if (result) return '';
+    else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
   }
 }

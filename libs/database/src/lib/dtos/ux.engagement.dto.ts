@@ -20,56 +20,44 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
-} from './common.dto';
+import { ApiProperty } from '@nestjs/swagger';
+export class UxEngagementBody {
+  @ApiProperty()
+  'platform': string;
+  @ApiProperty()
+  'client': string;
+  @ApiProperty()
+  'accountId': string;
+  @ApiProperty()
+  'uxSessionId': string;
+  @ApiProperty()
+  'screenId': string;
+  @ApiProperty()
+  'screenInstance': any;
+  @ApiProperty()
+  'feedItemId': string;
+  @ApiProperty()
+  'target': string;
+  @ApiProperty()
+  'targetId': string;
+  @ApiProperty()
+  'eventType': string;
+  @ApiProperty()
+  'eventData': any;
+  @ApiProperty()
+  'timestamp': string; //date time stamp
+}
 
-import { UxEngagementBody } from './ux.engagement.dto';
-
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  FollowResponse
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS
-} from './content.dto';
-
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  FollowResponse,
-  UxEngagementBody
-};
+export class UxEngagementDto {
+  platform: string;
+  client: string;
+  account: any; //will be accountId
+  screenId: string;
+  screenInstance: any;
+  feedItemId: string;
+  target: string;
+  targetId: string;
+  eventType: string;
+  eventData: any;
+  timestamp: Date;
+}
