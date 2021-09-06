@@ -61,14 +61,6 @@ describe('UxEngagement Service', () => {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
   };
-
-  const importModules = env.db_test_in_db
-    ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [
     UxEngagementService,
     AuthenticationService,
@@ -77,7 +69,11 @@ describe('UxEngagement Service', () => {
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
+      imports: [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ],
       providers: providers
     }).compile();
     service = module.get<UxEngagementService>(UxEngagementService);
@@ -99,7 +95,7 @@ describe('UxEngagement Service', () => {
     });
   });
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    await closeInMongodConnection();
   });
 
   describe('#track()', () => {
