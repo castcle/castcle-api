@@ -20,56 +20,52 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
-} from './common.dto';
 
-import { UxEngagementBody } from './ux.engagement.dto';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
 
-import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  FollowResponse
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS
-} from './content.dto';
+export type UxEngagementDocument = UxEngagement & Document;
 
-export {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
-  BlogPayload,
-  ContentResponse,
-  ContentsResponse,
-  CastcleContentQueryOptions,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  Pagination,
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  FollowResponse,
-  UxEngagementBody
-};
+@Schema({ timestamps: true })
+export class UxEngagement extends CastcleBase {
+  @Prop()
+  platform: string;
+
+  @Prop()
+  client: string;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account'
+  })
+  account: Account;
+
+  @Prop()
+  screenId: string;
+
+  @Prop({ type: Object })
+  screenInstance: any;
+
+  @Prop()
+  feedItemId: string;
+
+  @Prop()
+  target: string;
+
+  @Prop()
+  targetId: string;
+
+  @Prop()
+  eventType: string;
+
+  @Prop({ type: Object })
+  eventData: any;
+
+  @Prop()
+  timestamp: Date;
+}
+
+export const UxEngagementSchema = SchemaFactory.createForClass(UxEngagement);
