@@ -21,35 +21,21 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationsController } from './notifications.controller';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 30
-    })
-  ],
-  controllers: [
-    HealthyController,
-    PageController,
-    AppController,
-    NotificationsController
-  ],
-  providers: [AppService]
-})
-export class AppModule {}
+describe('NotificationsController', () => {
+  let controller: NotificationsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [NotificationsController]
+    }).compile();
+
+    controller = module.get<NotificationsController>(NotificationsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});

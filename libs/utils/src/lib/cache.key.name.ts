@@ -20,36 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
-
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 30
-    })
-  ],
-  controllers: [
-    HealthyController,
-    PageController,
-    AppController,
-    NotificationsController
-  ],
-  providers: [AppService]
-})
-export class AppModule {}
+export const CacheKeyName = {
+  NotificationsGet: 'NOTIFICATIONS_GET'
+};

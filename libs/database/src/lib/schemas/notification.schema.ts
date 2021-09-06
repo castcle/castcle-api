@@ -21,35 +21,39 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { CastcleBase } from './base.schema';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 30
-    })
-  ],
-  controllers: [
-    HealthyController,
-    PageController,
-    AppController,
-    NotificationsController
-  ],
-  providers: [AppService]
-})
-export class AppModule {}
+export type NotificationDocument = Notification & Document;
+
+export enum NotificationType {
+  Content = 'Content',
+  Comment = 'comment',
+  System = 'system'
+}
+
+@Schema({ timestamps: true })
+export class Notification extends CastcleBase {
+  @Prop({ required: true })
+  avatar: string;
+
+  @Prop({ required: true })
+  message: number;
+
+  @Prop({ required: true })
+  type: NotificationType;
+
+  @Prop({ required: true, type: Object })
+  targetRef: any;
+
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Credential'
+  })
+  credential: Credential;
+}
+
+export const NotificationSchema = SchemaFactory.createForClass(Notification);

@@ -21,35 +21,28 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
+import {
+  CacheInterceptor,
+  CACHE_KEY_METADATA,
+  ExecutionContext,
+  Injectable
+} from '@nestjs/common';
+import * as util from '../util';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 30
-    })
-  ],
-  controllers: [
-    HealthyController,
-    PageController,
-    AppController,
-    NotificationsController
-  ],
-  providers: [AppService]
-})
-export class AppModule {}
+@Injectable()
+export class HttpCacheInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
+
+    if (cacheKey) {
+      const request = context.switchToHttp().getRequest();
+      const token = util.getTokenFromRequest(request);
+      return `${cacheKey}-${token}-${request._parsedUrl.query}`;
+    }
+
+    return super.trackBy(context);
+  }
+}
