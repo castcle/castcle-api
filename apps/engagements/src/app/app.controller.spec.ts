@@ -58,7 +58,7 @@ describe('AppController', () => {
   it('should work from by pass all the test', () => {
     expect(true).toBe(true);
   });
-  /*let app: TestingModule;
+  let app: TestingModule;
   let uxEngagementService: UxEngagementService;
   let authService: AuthenticationService;
   let accountDocument: AccountDocument;
@@ -130,5 +130,5 @@ describe('AppController', () => {
       );
       expect(result).toEqual('');
     });
-  });*/
+  });
 });
