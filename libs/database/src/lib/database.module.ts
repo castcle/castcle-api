@@ -85,8 +85,18 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseForFeatures
   ],
   controllers: [],
-  providers: [AuthenticationService, UserService, ContentService],
-  exports: [AuthenticationService, UserService, ContentService]
+  providers: [
+    AuthenticationService,
+    UserService,
+    ContentService,
+    UxEngagementService
+  ],
+  exports: [
+    AuthenticationService,
+    UserService,
+    ContentService,
+    UxEngagementService
+  ]
 })
 export class DatabaseModule {}
 
