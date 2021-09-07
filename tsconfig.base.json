@@ -26,6 +26,7 @@
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
       "@castcle-api/utils": ["libs/utils/src/index.ts"],
       "@castcle-api/utils/aws": ["libs/utils/aws/src/index.ts"],
+      "@castcle-api/utils/cache": ["libs/utils/cache/src/index.ts"],
       "@castcle-api/utils/exception": ["libs/utils/exception/src/index.ts"],
       "@castcle-api/utils/interceptors": [
         "libs/utils/interceptors/src/index.ts"

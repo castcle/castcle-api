@@ -42,6 +42,7 @@ module.exports = {
     '<rootDir>/libs/utils/pipes',
     '<rootDir>/apps/contents',
     '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
+    '<rootDir>/apps/backgrounds',
+    '<rootDir>/libs/utils/cache'
   ]
 };
