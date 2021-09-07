@@ -198,6 +198,12 @@ export class AppController {
     example: 'iPhone',
     required: true
   })
+  @ApiHeader({
+    name: 'Platform',
+    description: 'platform',
+    example: 'android',
+    required: true
+  })
   @ApiOkResponse({
     type: TokenResponse
   })

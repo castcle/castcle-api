@@ -224,9 +224,8 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Get('')
+  @Get()
   async getContents(
-    @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
@@ -240,7 +239,13 @@ export class ContentController {
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this.getContents(
+      req,
+      sortByOption,
+      pageOption,
+      limitOption,
+      contentTypeOption
+    );
     return {
       payload: content.toContentPayload()
     } as ContentResponse;
