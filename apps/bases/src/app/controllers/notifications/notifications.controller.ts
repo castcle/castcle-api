@@ -27,7 +27,7 @@ import {
 import {
   DEFAULT_QUERY_OPTIONS,
   NotificationResponse,
-  NotificationType
+  NotificationSource
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -39,7 +39,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   LimitPipe,
-  NotificationTypePipe,
+  NotificationSourcePipe,
   PagePipe,
   SortByEnum,
   SortByPipe
@@ -108,8 +108,8 @@ export class NotificationsController {
     required: false
   })
   @ApiQuery({
-    name: 'type',
-    enum: NotificationType,
+    name: 'source',
+    enum: NotificationSource,
     required: false
   })
   @Get('notifications')
@@ -124,8 +124,8 @@ export class NotificationsController {
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
-    @Query('type', NotificationTypePipe)
-    notificationTypeOption: NotificationType = null
+    @Query('source', NotificationSourcePipe)
+    notificationSourceOption: NotificationSource = NotificationSource.Profile
   ): Promise<NotificationResponse> {
     this.logger.log('Start get all notification');
     const notification = await this.notificationService.getAll(
@@ -134,24 +134,12 @@ export class NotificationsController {
         sortBy: sortByOption,
         limit: limitOption,
         page: pageOption,
-        type: notificationTypeOption
+        source: notificationSourceOption
       }
     );
     return {
       payload: notification.items.map((noti) => noti.toNotificationPayload()),
       pagination: notification.pagination
     };
-  }
-
-  @Get('/mock')
-  async getMock() {
-    const result = await this.authService.createAccount({
-      device: 'iPhone',
-      deviceUUID: 'iphone12345',
-      header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
-    });
-
-    return result.credentialDocument.toJSON();
   }
 }

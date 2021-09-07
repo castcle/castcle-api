@@ -1,7 +1,7 @@
 import {
   ContentType,
   DEFAULT_QUERY_OPTIONS,
-  NotificationType
+  NotificationSource
 } from '@castcle-api/database/dtos';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
@@ -114,20 +114,20 @@ export class ContentTypePipe implements PipeTransform {
 }
 
 @Injectable()
-export class NotificationTypePipe implements PipeTransform {
+export class NotificationSourcePipe implements PipeTransform {
   /**
    *
-   * @param {string} typeQuery
+   * @param {string} sourceQuery
    * @returns {string}
    */
-  transform(typeQuery?: string): NotificationType {
+  transform(sourceQuery?: string): NotificationSource {
     if (
-      typeQuery &&
-      (typeQuery === NotificationType.Comment ||
-        typeQuery === NotificationType.Content ||
-        typeQuery === NotificationType.System)
+      sourceQuery &&
+      (sourceQuery === NotificationSource.Profile ||
+        sourceQuery === NotificationSource.Page ||
+        sourceQuery === NotificationSource.System)
     )
-      return typeQuery;
+      return sourceQuery;
     return null;
   }
 }

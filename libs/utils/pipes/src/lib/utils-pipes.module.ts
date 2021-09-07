@@ -24,7 +24,7 @@ import { Module } from '@nestjs/common';
 import {
   ContentTypePipe,
   LimitPipe,
-  NotificationTypePipe,
+  NotificationSourcePipe,
   PagePipe,
   SortByEnum,
   SortByPipe
@@ -43,5 +43,5 @@ export {
   LimitPipe,
   ContentTypePipe,
   SortByEnum,
-  NotificationTypePipe
+  NotificationSourcePipe
 };

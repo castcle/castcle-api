@@ -1,4 +1,3 @@
-import { CredentialDocument } from '@castcle-api/database/schemas';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,14 +20,16 @@ import { CredentialDocument } from '@castcle-api/database/schemas';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
-  CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
-} from '../dtos/common.dto';
+  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  NotificationQueryOptions
+} from '../dtos/notification.dto';
+import { CredentialDocument } from '../schemas/credential.schema';
+import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
 
@@ -36,22 +37,28 @@ import { NotificationDocument } from './../schemas/notification.schema';
 export class NotificationService {
   constructor(
     @InjectModel('Notification')
-    public _notificationModel: Model<NotificationDocument>
+    public _notificationModel: Model<NotificationDocument>,
+    @InjectModel('User')
+    public _userModel: UserModel
   ) {}
 
   getAll = async (
     credential: CredentialDocument,
-    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
   ) => {
+    const user = await this._userModel
+      .findOne({
+        ownerAccount: credential.account._id
+      })
+      .exec();
+
     const findFilter: {
-      'credential.id': any;
-      type?: string;
-      'account.visibility': EntityVisibility;
+      'sourceUserId.id': any;
+      source: string;
     } = {
-      'credential.id': credential._id,
-      'account.visibility': EntityVisibility.Publish
+      'sourceUserId.id': user._id,
+      source: options.source
     };
-    if (options.type) findFilter.type = options.type;
 
     let query = this._notificationModel
       .find(findFilter)

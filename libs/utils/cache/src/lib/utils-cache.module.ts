@@ -32,7 +32,7 @@ import * as redisStore from 'cache-manager-redis-store';
       store: redisStore,
       host: Environment.redis_host,
       port: Environment.redis_port,
-      ttl: 30
+      ttl: 1000
     })
   ],
   exports: [CacheModule]

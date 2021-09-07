@@ -39,6 +39,7 @@ import {
 import {
   NotificationPayloadDto,
   NotificationResponse,
+  NotificationSource,
   NotificationType
 } from './notification.dto';
 import {
@@ -77,5 +78,6 @@ export {
   UxEngagementBody,
   NotificationPayloadDto,
   NotificationResponse,
-  NotificationType
+  NotificationType,
+  NotificationSource
 };
