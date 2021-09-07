@@ -21,23 +21,41 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
-  ]
-};
+import { Content } from './content.schema';
+import { User } from './user.schema';
+import * as mongoose from 'mongoose';
+import { Prop } from '@nestjs/mongoose';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+
+/**
+ * Intent to use for Datasci
+ */
+export class ContentItem extends CastcleBase {
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Content'
+  })
+  content: Content;
+
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  })
+  author: User;
+
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account'
+  })
+  viewer: Account;
+
+  @Prop({
+    required: true,
+    type: Object
+  })
+  aggregator: any;
+}

@@ -27,7 +27,8 @@ import {
   Get,
   Post,
   UseInterceptors,
-  Version
+  Version,
+  VERSION_NEUTRAL
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CommonDate } from '@castcle-api/commonDate';
@@ -196,6 +197,12 @@ export class AppController {
     name: 'Device',
     description: 'Device name',
     example: 'iPhone',
+    required: true
+  })
+  @ApiHeader({
+    name: 'Platform',
+    description: 'platform',
+    example: 'android',
     required: true
   })
   @ApiOkResponse({
@@ -475,6 +482,7 @@ export class AppController {
   /*
    * TODO: !!! use for test link verification only will remove in production
    */
+  @Version(VERSION_NEUTRAL)
   @Get('verify')
   verify(@Req() req: Request) {
     const verifyUrl =
