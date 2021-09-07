@@ -28,6 +28,8 @@ import {
   NotificationType
 } from '../dtos/notification.dto';
 import { CastcleBase } from './base.schema';
+import { Credential } from './credential.schema';
+import { User } from './user.schema';
 
 export type NotificationDocument = Notification & INotification;
 @Schema({ timestamps: true })
@@ -37,6 +39,16 @@ export class Notification extends CastcleBase {
 
   @Prop({ required: true })
   message: string;
+
+  @Prop({ required: true })
+  source: string;
+
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  })
+  sourceUserId: User;
 
   @Prop({ required: true })
   type: string;
@@ -66,6 +78,7 @@ NotificationSchema.methods.toNotificationPayload = function () {
     id: (this as NotificationDocument)._id,
     avatar: (this as NotificationDocument).avatar,
     message: (this as NotificationDocument).message,
+    source: (this as NotificationDocument).source,
     read: (this as NotificationDocument).read,
     content: {
       id:

@@ -35,7 +35,7 @@ import { CacheKeyName } from '@castcle-api/utils';
 import {
   CredentialInterceptor,
   CredentialRequest,
-  HttpCacheInterceptor
+  HttpCacheIndividualInterceptor
 } from '@castcle-api/utils/interceptors';
 import {
   LimitPipe,
@@ -89,7 +89,7 @@ export class NotificationsController {
   @ApiOkResponse({
     type: NotificationResponse
   })
-  @UseInterceptors(HttpCacheInterceptor)
+  @UseInterceptors(HttpCacheIndividualInterceptor)
   @CacheKey(CacheKeyName.NotificationsGet)
   @UseInterceptors(CredentialInterceptor)
   @ApiQuery({

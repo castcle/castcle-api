@@ -30,7 +30,7 @@ import {
 import * as util from '../util';
 
 @Injectable()
-export class HttpCacheInterceptor extends CacheInterceptor {
+export class HttpCacheIndividualInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,

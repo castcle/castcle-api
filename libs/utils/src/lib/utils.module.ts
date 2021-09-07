@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { CacheKeyName } from './cache.key.name';
+import { CacheKeyName } from '../../cache/src/lib/enum/cache.key.name';
 import { CastcleName } from './castcle-name';
 import { Host } from './host';
 import { Password } from './password';

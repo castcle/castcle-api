@@ -1,4 +1,3 @@
-import { Environment } from '@castcle-api/environments';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,12 +20,11 @@ import { Environment } from '@castcle-api/environments';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
@@ -38,12 +36,7 @@ import { PageController } from './controllers/pages/pages.controller';
     DatabaseModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    CacheModule.register({
-      store: redisStore,
-      host: Environment.redis_host,
-      port: Environment.redis_port,
-      ttl: 60
-    })
+    UtilsCacheModule
   ],
   controllers: [
     HealthyController,

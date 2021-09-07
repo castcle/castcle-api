@@ -22,7 +22,7 @@ import { DatabaseModule } from '@castcle-api/database';
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { HttpCacheInterceptor } from './cache/http.cache.intercapter';
+import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
 import {
   ContentInterceptor,
   ContentsInterceptor
@@ -54,5 +54,5 @@ export {
   TokenRequest,
   ContentInterceptor,
   ContentsInterceptor,
-  HttpCacheInterceptor
+  HttpCacheIndividualInterceptor
 };
