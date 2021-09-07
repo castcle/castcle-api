@@ -22,16 +22,24 @@
  */
 import {
   AuthenticationService,
-  ContentService,
-  UserService
+  NotificationService
 } from '@castcle-api/database';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  NotificationResponse,
+  NotificationType
+} from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils';
-import { HttpCacheInterceptor } from '@castcle-api/utils/interceptors';
 import {
-  ContentTypePipe,
+  CredentialInterceptor,
+  CredentialRequest,
+  HttpCacheInterceptor
+} from '@castcle-api/utils/interceptors';
+import {
   LimitPipe,
+  NotificationTypePipe,
   PagePipe,
   SortByEnum,
   SortByPipe
@@ -40,7 +48,6 @@ import {
   CacheKey,
   Controller,
   Get,
-  Param,
   Query,
   Req,
   UseInterceptors
@@ -51,7 +58,6 @@ import {
   ApiOkResponse,
   ApiQuery
 } from '@nestjs/swagger';
-import { AppService } from '../../app.service';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -68,13 +74,11 @@ import { AppService } from '../../app.service';
 @Controller({
   version: '1.0'
 })
-@Controller('notifications')
+@Controller()
 export class NotificationsController {
   constructor(
-    private readonly appService: AppService,
-    private authService: AuthenticationService,
-    private userService: UserService,
-    private contentService: ContentService
+    private notificationService: NotificationService,
+    private authService: AuthenticationService
   ) {}
   private readonly logger = new CastLogger(
     NotificationsController.name,
@@ -83,11 +87,11 @@ export class NotificationsController {
 
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: ContentResponse
+    type: NotificationResponse
   })
-  //   @UseInterceptors(ContentsInterceptor)
   @UseInterceptors(HttpCacheInterceptor)
   @CacheKey(CacheKeyName.NotificationsGet)
+  @UseInterceptors(CredentialInterceptor)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
@@ -105,35 +109,49 @@ export class NotificationsController {
   })
   @ApiQuery({
     name: 'type',
-    enum: ContentType,
+    enum: NotificationType,
     required: false
   })
-  @Get('pages/:id/contents')
+  @Get('notifications')
   async getPageContents(
-    @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
-    @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
-  ): Promise<ContentsResponse> {
-    const page = await this._getPageByIdOrCastcleId(id, req);
-    const contents = await this.contentService.getContentsFromUser(page, {
-      sortBy: sortByOption,
-      limit: limitOption,
-      page: pageOption,
-      type: contentTypeOption
-    });
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    @Query('type', NotificationTypePipe)
+    notificationTypeOption: NotificationType = null
+  ): Promise<NotificationResponse> {
+    this.logger.log('Start get all notification');
+    const notification = await this.notificationService.getAll(
+      req.$credential,
+      {
+        sortBy: sortByOption,
+        limit: limitOption,
+        page: pageOption,
+        type: notificationTypeOption
+      }
+    );
     return {
-      payload: contents.items.map((c) => c.toContentPayload()),
-      pagination: contents.pagination
+      payload: notification.items.map((noti) => noti.toNotificationPayload()),
+      pagination: notification.pagination
     };
+  }
+
+  @Get('/mock')
+  async getMock() {
+    const result = await this.authService.createAccount({
+      device: 'iPhone',
+      deviceUUID: 'iphone12345',
+      header: { platform: 'iphone' },
+      languagesPreferences: ['th', 'th']
+    });
+
+    return result.credentialDocument.toJSON();
   }
 }

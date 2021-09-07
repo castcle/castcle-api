@@ -1,3 +1,4 @@
+import { Environment } from '@castcle-api/environments';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -39,9 +40,9 @@ import { PageController } from './controllers/pages/pages.controller';
     UtilsPipesModule,
     CacheModule.register({
       store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 30
+      host: Environment.redis_host,
+      port: Environment.redis_port,
+      ttl: 60
     })
   ],
   controllers: [

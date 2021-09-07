@@ -21,34 +21,37 @@
  * or have any questions.
  */
 import {
-  Pagination,
   CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS
+  DEFAULT_QUERY_OPTIONS,
+  Pagination
 } from './common.dto';
-
-import { UxEngagementBody } from './ux.engagement.dto';
-
 import {
-  UserResponseDto,
-  UpdateUserDto,
-  PageDto,
-  UpdatePageDto,
-  PagesResponse,
-  PageResponse,
-  PageResponseDto,
-  FollowResponse
-} from './user.dto';
-import {
-  ContentType,
-  ContentPayloadDto,
-  SaveContentDto,
-  ShortPayload,
   BlogPayload,
+  CastcleContentQueryOptions,
+  ContentPayloadDto,
   ContentResponse,
   ContentsResponse,
-  CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS
+  ContentType,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  SaveContentDto,
+  ShortPayload
 } from './content.dto';
+import {
+  NotificationPayloadDto,
+  NotificationResponse,
+  NotificationType
+} from './notification.dto';
+import {
+  FollowResponse,
+  PageDto,
+  PageResponse,
+  PageResponseDto,
+  PagesResponse,
+  UpdatePageDto,
+  UpdateUserDto,
+  UserResponseDto
+} from './user.dto';
+import { UxEngagementBody } from './ux.engagement.dto';
 
 export {
   UserResponseDto,
@@ -71,5 +74,8 @@ export {
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
-  UxEngagementBody
+  UxEngagementBody,
+  NotificationPayloadDto,
+  NotificationResponse,
+  NotificationType
 };

@@ -22,11 +22,12 @@
  */
 import { Module } from '@nestjs/common';
 import {
-  SortByPipe,
-  PagePipe,
-  LimitPipe,
   ContentTypePipe,
-  SortByEnum
+  LimitPipe,
+  NotificationTypePipe,
+  PagePipe,
+  SortByEnum,
+  SortByPipe
 } from './query/query.pipe';
 
 @Module({
@@ -36,4 +37,11 @@ import {
 })
 export class UtilsPipesModule {}
 
-export { SortByPipe, PagePipe, LimitPipe, ContentTypePipe, SortByEnum };
+export {
+  SortByPipe,
+  PagePipe,
+  LimitPipe,
+  ContentTypePipe,
+  SortByEnum,
+  NotificationTypePipe
+};

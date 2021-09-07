@@ -20,17 +20,48 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AccountDocument } from './account.schema';
-import { ContentDocument } from './content.schema';
-import { CredentialDocument, CredentialModel } from './credential.schema';
-import { NotificationDocument } from './notification.schema';
-import { UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument
-};
+
+import { ApiProperty } from '@nestjs/swagger';
+import { Pagination } from './common.dto';
+
+export enum NotificationType {
+  Content = 'content',
+  Comment = 'comment',
+  System = 'system'
+}
+
+class ObjectRef {
+  @ApiProperty()
+  id: string;
+}
+
+export class NotificationPayloadDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  avatar: string;
+
+  @ApiProperty()
+  message: string;
+
+  @ApiProperty()
+  content?: ObjectRef;
+
+  @ApiProperty()
+  comment?: ObjectRef;
+
+  @ApiProperty()
+  system?: ObjectRef;
+
+  @ApiProperty()
+  read: boolean;
+}
+
+export class NotificationResponse {
+  @ApiProperty({ type: NotificationPayloadDto, isArray: true })
+  payload: NotificationPayloadDto[];
+
+  @ApiProperty()
+  pagination: Pagination;
+}

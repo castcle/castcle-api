@@ -20,33 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
+import {
+  NotificationPayloadDto,
+  NotificationType
+} from '../dtos/notification.dto';
 import { CastcleBase } from './base.schema';
 
-export type NotificationDocument = Notification & Document;
-
-export enum NotificationType {
-  Content = 'Content',
-  Comment = 'comment',
-  System = 'system'
-}
-
+export type NotificationDocument = Notification & INotification;
 @Schema({ timestamps: true })
 export class Notification extends CastcleBase {
-  @Prop({ required: true })
+  @Prop()
   avatar: string;
 
   @Prop({ required: true })
-  message: number;
+  message: string;
 
   @Prop({ required: true })
-  type: NotificationType;
+  type: string;
 
   @Prop({ required: true, type: Object })
   targetRef: any;
+
+  @Prop()
+  read: boolean;
 
   @Prop({
     required: true,
@@ -56,4 +55,35 @@ export class Notification extends CastcleBase {
   credential: Credential;
 }
 
+interface INotification extends Document {
+  toNotificationPayload(): NotificationPayloadDto;
+}
+
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
+
+NotificationSchema.methods.toNotificationPayload = function () {
+  return {
+    id: (this as NotificationDocument)._id,
+    avatar: (this as NotificationDocument).avatar,
+    message: (this as NotificationDocument).message,
+    read: (this as NotificationDocument).read,
+    content: {
+      id:
+        (this as NotificationDocument).type === NotificationType.Content
+          ? (this as NotificationDocument).targetRef.id
+          : null
+    },
+    comment: {
+      id:
+        (this as NotificationDocument).type === NotificationType.Comment
+          ? (this as NotificationDocument).targetRef.id
+          : null
+    },
+    system: {
+      id:
+        (this as NotificationDocument).type === NotificationType.System
+          ? (this as NotificationDocument).targetRef.id
+          : null
+    }
+  } as NotificationPayloadDto;
+};

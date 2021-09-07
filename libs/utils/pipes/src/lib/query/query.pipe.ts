@@ -1,3 +1,8 @@
+import {
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
+  NotificationType
+} from '@castcle-api/database/dtos';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -20,13 +25,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import {
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS
-} from '@castcle-api/database/dtos';
-import { ContentType } from '@castcle-api/database/dtos';
+import { Injectable, PipeTransform } from '@nestjs/common';
 
 //TODO !!! need to move this to somewhere else
 export const LIMIT_MAX = 1000;
@@ -111,5 +110,24 @@ export class ContentTypePipe implements PipeTransform {
     )
       return typeQuery;
     return ContentType.Short;
+  }
+}
+
+@Injectable()
+export class NotificationTypePipe implements PipeTransform {
+  /**
+   *
+   * @param {string} typeQuery
+   * @returns {string}
+   */
+  transform(typeQuery?: string): NotificationType {
+    if (
+      typeQuery &&
+      (typeQuery === NotificationType.Comment ||
+        typeQuery === NotificationType.Content ||
+        typeQuery === NotificationType.System)
+    )
+      return typeQuery;
+    return null;
   }
 }
