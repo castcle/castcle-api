@@ -305,11 +305,12 @@ describe('AppController', () => {
   });
 
   describe('login', () => {
+    const testId = 'registerId2';
+    const registerEmail = 'sompop2.kulapalanont@gmail.com';
+    const password = 'password12345';
+    const deviceUUID = 'sompop12345';
+    const newDeviceUUID = 'sompop54321';
     it('should be able to login after register', async () => {
-      const testId = 'registerId2';
-      const registerEmail = 'sompop2.kulapalanont@gmail.com';
-      const password = 'password12345';
-      const deviceUUID = 'sompop12345';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
@@ -333,7 +334,7 @@ describe('AppController', () => {
           }
         }
       );
-      // TODO !!! find a way to create a test to detect exception in troller
+      // TODO !!! find a way to create a test to detect exception in controller
       const result = await appController.login(
         {
           $credential: credentialGuest,
@@ -346,6 +347,50 @@ describe('AppController', () => {
         }
       );
       expect(result).toBeDefined();
+    });
+    it('should be able to login with different device', async () => {
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: newDeviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const result = await appController.login(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          password: password,
+          username: registerEmail
+        }
+      );
+      const linkAccount = await service.getAccountFromEmail(registerEmail);
+      expect(linkAccount.credentials.length).toEqual(2);
+      const loginCredential = await service.getCredentialFromAccessToken(
+        result.accessToken
+      );
+      const postResult = await appController.login(
+        {
+          $credential: loginCredential,
+          $token: result.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          password: password,
+          username: registerEmail
+        }
+      );
+      expect(postResult).toBeDefined();
+      //that token could be use for refreshToken;
+      const refreshTokenResult = await appController.refreshToken({
+        $token: postResult.refreshToken,
+        $language: 'th'
+      } as any);
+      expect(refreshTokenResult).toBeDefined();
+      expect(refreshTokenResult.accessToken).toBeDefined();
     });
   });
   describe('verificationEmail', () => {

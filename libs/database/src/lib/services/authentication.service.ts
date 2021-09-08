@@ -129,31 +129,68 @@ export class AuthenticationService {
     return { accountDocument, credentialDocument };
   }
 
+  /**
+   * should remove account from credential.account and set it's new account to credential.account
+   * @param {CredentialDocument} credential
+   * @param {AccountDocument} account
+   * @returns {CredentialDocument}
+   */
   async linkCredentialToAccount(
     credential: CredentialDocument,
     account: AccountDocument
   ) {
-    if (account._id === credential.account) {
+    console.log('want to link');
+    console.log(credential, account);
+    if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
     }
+    console.log(
+      'account not match',
+      String(account._id),
+      String(credential.account._id)
+    );
     //remove account old crdentiial
     await this._accountModel.findByIdAndDelete(credential.account);
-    credential.account = account._id;
+    (credential.account as any) = {
+      _id: account._id,
+      visibility: account.visibility,
+      isGuest: account.isGuest
+    };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
       if (!credentialAccount.credentials) credentialAccount.credentials = [];
-      credentialAccount.credentials.push({
+      /*credentialAccount.credentials.push({
         _id: mongoose.Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID
       });
-      await credentialAccount.save();
-    }
+      await credentialAccount.save();*/
+      await this._accountModel
+        .updateOne(
+          { _id: credentialAccount._id },
+          {
+            $push: {
+              credentials: {
+                _id: mongoose.Types.ObjectId(credential._id),
+                deviceUUID: credential.deviceUUID
+              }
+            }
+          }
+        )
+        .exec();
+    } else return null; //this should not happen
+    console.log('-----check after link----');
+    console.log(credentialAccount);
     //set new account credential to current account
     return credential.save();
   }
 
+  /**
+   * get account from credential.account._id
+   * @param {CredentialDocument} credential
+   * @returns {AccountDocument}
+   */
   getAccountFromCredential = (credential: CredentialDocument) =>
-    this._accountModel.findById(credential.account).exec();
+    this._accountModel.findById(credential.account._id).exec();
 
   getAccountFromEmail = (email: string) =>
     this._accountModel
