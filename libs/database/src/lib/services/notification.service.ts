@@ -42,6 +42,12 @@ export class NotificationService {
     public _userModel: UserModel
   ) {}
 
+    /**
+   *
+   * @param {UserDocument} user
+   * @param {NotificationQueryOptions} options contain option for sorting page = skip + 1,
+   * @returns {Promise<{items:NotificationDocument[], total:number, pagination: {Pagination}}>}
+   */
   getAll = async (
     credential: CredentialDocument,
     options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
@@ -53,12 +59,13 @@ export class NotificationService {
       .exec();
 
     const findFilter: {
-      'sourceUserId.id': any;
+      sourceUserId: any;
       source: string;
     } = {
-      'sourceUserId.id': user._id,
+      sourceUserId: user ? user._id : '',
       source: options.source
     };
+    console.log(findFilter);
 
     let query = this._notificationModel
       .find(findFilter)
