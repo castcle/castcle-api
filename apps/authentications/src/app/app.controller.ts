@@ -156,7 +156,7 @@ export class AuthenticationController {
           .findById(embedCredentialByDeviceUUID._id)
           .exec();
       } else {
-        await this.authService.linkCredentialToAccount(
+        const newCredentialDoc = await this.authService.linkCredentialToAccount(
           req.$credential,
           account
         );
