@@ -55,7 +55,7 @@ import { Configs } from '@castcle-api/environments';
   required: true
 })
 @Controller()
-export class AppController {
+export class EngagementController {
   constructor(
     private readonly appService: AppService,
     private uxEngagemenetService: UxEngagementService

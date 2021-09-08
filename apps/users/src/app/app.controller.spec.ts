@@ -32,7 +32,7 @@ import {
   AuthenticationService,
   ContentService
 } from '@castcle-api/database';
-import { AppController } from './app.controller';
+import { UserController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
@@ -69,7 +69,7 @@ const closeInMongodConnection = async () => {
 
 describe('AppController', () => {
   let app: TestingModule;
-  let appController: AppController;
+  let appController: UserController;
   let service: UserService;
   let appService: AppService;
   let contentService: ContentService;
@@ -84,7 +84,7 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures
       ],
-      controllers: [AppController],
+      controllers: [UserController],
       providers: [
         AppService,
         UserService,
@@ -120,7 +120,7 @@ describe('AppController', () => {
   });
   describe('getData', () => {
     it('should return "Welcome to users!"', () => {
-      appController = app.get<AppController>(AppController);
+      appController = app.get<UserController>(UserController);
       expect(appController.getData()).toEqual({ message: 'Welcome to users!' });
     });
   });

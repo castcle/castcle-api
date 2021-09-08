@@ -28,7 +28,7 @@ import {
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from '@castcle-api/database';
-import { AppController } from './app.controller';
+import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -54,7 +54,7 @@ const closeInMongodConnection = async () => {
 
 describe('AppController', () => {
   let app: TestingModule;
-  let appController: AppController;
+  let appController: AuthenticationController;
   let service: AuthenticationService;
   let appService: AppService;
   beforeAll(async () => {
@@ -64,7 +64,7 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures
       ],
-      controllers: [AppController],
+      controllers: [AuthenticationController],
       providers: [AppService, AuthenticationService]
     }).compile();
     service = app.get<AuthenticationService>(AuthenticationService);
@@ -79,7 +79,9 @@ describe('AppController', () => {
 
   describe('getData', () => {
     it('should return "Welcome to authentications!"', () => {
-      appController = app.get<AppController>(AppController);
+      appController = app.get<AuthenticationController>(
+        AuthenticationController
+      );
       expect(appController.getData()).toEqual(
         'Welcome to authentications!10-11-81'
       );
