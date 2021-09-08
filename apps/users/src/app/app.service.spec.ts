@@ -25,7 +25,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseForFeatures } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from '@castcle-api/database';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';

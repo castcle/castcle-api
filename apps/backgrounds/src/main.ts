@@ -28,11 +28,11 @@ import {
   CastLoggerOptions
 } from '@castcle-api/logger';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
+import { BackgroundModule } from './app/app.module';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(BackgroundModule, {
     logger: CastLoggerLevel
   });
   const port = process.env.PORT || 3341;

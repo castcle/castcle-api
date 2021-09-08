@@ -26,10 +26,10 @@ import { AppService } from './app.service';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller()
-export class AppController {
+export class MetadataController {
   constructor(private readonly appService: AppService) {}
   private readonly logger = new CastLogger(
-    AppController.name,
+    MetadataController.name,
     CastLoggerOptions
   );
 

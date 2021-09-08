@@ -94,14 +94,14 @@ let logger: CastLogger;
   version: '1.0'
 })
 @Controller()
-export class AppController {
+export class UserController {
   constructor(
     private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
     private authService: AuthenticationService
   ) {
-    logger = new CastLogger(AppController.name, CastLoggerOptions);
+    logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
 
   /**
