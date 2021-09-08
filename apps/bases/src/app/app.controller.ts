@@ -27,14 +27,14 @@ import { AuthenticationService, UserService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller()
-export class AppController {
+export class BaseController {
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService,
     private userService: UserService
   ) {}
   private readonly logger = new CastLogger(
-    AppController.name,
+    BaseController.name,
     CastLoggerOptions
   );
 

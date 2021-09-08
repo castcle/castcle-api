@@ -23,14 +23,14 @@
 
 import { Module } from '@nestjs/common';
 
-import { AppController } from './app.controller';
+import { MetadataController } from './app.controller';
 import { AppService } from './app.service';
 
 import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
   imports: [],
-  controllers: [AppController, HealthyController],
+  controllers: [MetadataController, HealthyController],
   providers: [AppService]
 })
-export class AppModule {}
+export class MetadataModule {}

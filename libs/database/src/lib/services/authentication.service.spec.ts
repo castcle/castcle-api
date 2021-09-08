@@ -485,9 +485,11 @@ describe('Authentication Service', () => {
           createAccountResult.accountDocument
         );
         expect(newCredential._id).toEqual(randomAcc.credentialDocument._id);
-        expect(newCredential.account).toEqual(
-          createAccountResult.accountDocument._id
-        );
+        expect(newCredential.account).toEqual({
+          _id: createAccountResult.accountDocument._id,
+          isGuest: false,
+          visibility: EntityVisibility.Publish
+        });
       });
     });
     describe('#suggestCastcleId()', () => {

@@ -89,13 +89,13 @@ import { Req } from '@nestjs/common';
 @Controller({
   version: '1.0'
 })
-export class AppController {
+export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService
   ) {}
   private readonly logger = new CastLogger(
-    AppController.name,
+    AuthenticationController.name,
     CastLoggerOptions
   );
 
@@ -156,7 +156,7 @@ export class AppController {
           .findById(embedCredentialByDeviceUUID._id)
           .exec();
       } else {
-        await this.authService.linkCredentialToAccount(
+        const newCredentialDoc = await this.authService.linkCredentialToAccount(
           req.$credential,
           account
         );

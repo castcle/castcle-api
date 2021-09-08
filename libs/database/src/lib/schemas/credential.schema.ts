@@ -187,9 +187,10 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
     (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
   )
     return false;
+  console.log('check refreshtoken------');
   return Token.isTokenValid(
-    (this as CredentialDocument).accessToken,
-    env.jwt_access_secret
+    (this as CredentialDocument).refreshToken,
+    env.jwt_refresh_secret
   );
 };
 

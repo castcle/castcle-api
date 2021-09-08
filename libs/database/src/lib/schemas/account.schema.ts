@@ -105,7 +105,7 @@ export const AccountSchemaFactory = (
   });
   AccountSchema.post('save', async function (doc, next) {
     await credentialModel
-      .findOneAndUpdate(
+      .updateMany(
         { 'account._id': doc._id },
         {
           'account.isGuest': (doc as AccountDocument).isGuest,
