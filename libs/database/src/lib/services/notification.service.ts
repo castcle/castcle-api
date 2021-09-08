@@ -42,9 +42,9 @@ export class NotificationService {
     public _userModel: UserModel
   ) {}
 
-    /**
-   *
-   * @param {UserDocument} user
+  /**
+   * get all notifications
+   * @param {CredentialDocument} credential
    * @param {NotificationQueryOptions} options contain option for sorting page = skip + 1,
    * @returns {Promise<{items:NotificationDocument[], total:number, pagination: {Pagination}}>}
    */
