@@ -22,7 +22,7 @@
  */
 
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
+import { EngagementController } from './app.controller';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { DatabaseModule } from '@castcle-api/database';
 import { AppService } from './app.service';
@@ -30,7 +30,7 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
   imports: [DatabaseModule, UtilsInterceptorsModule],
-  controllers: [AppController, HealthyController],
+  controllers: [EngagementController, HealthyController],
   providers: [AppService]
 })
-export class AppModule {}
+export class EngagementModule {}

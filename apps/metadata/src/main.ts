@@ -27,7 +27,7 @@
  */
 
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
+import { MetadataModule } from './app/app.module';
 import { Configs, Environment as env } from '@castcle-api/environments';
 import {
   CastLogger,
@@ -40,7 +40,7 @@ import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(MetadataModule, {
     logger: CastLoggerLevel
   });
   const port = process.env.PORT || 3333;

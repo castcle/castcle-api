@@ -22,12 +22,12 @@
  */
 
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
+import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
   imports: [],
-  controllers: [AppController],
+  controllers: [BackgroundController],
   providers: [AppService]
 })
-export class AppModule {}
+export class BackgroundModule {}

@@ -30,13 +30,13 @@ import {
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
-import { AppModule } from './app/app.module';
+import { ContentModule } from './app/app.module';
 import express = require('express');
 import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(ContentModule, {
     logger: CastLoggerLevel
   });
   const port = process.env.PORT || 3339;

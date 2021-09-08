@@ -34,4 +34,4 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
   controllers: [HealthyController, ContentController],
   providers: [AppService]
 })
-export class AppModule {}
+export class ContentModule {}

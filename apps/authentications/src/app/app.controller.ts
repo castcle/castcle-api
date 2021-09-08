@@ -89,13 +89,13 @@ import { Req } from '@nestjs/common';
 @Controller({
   version: '1.0'
 })
-export class AppController {
+export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService
   ) {}
   private readonly logger = new CastLogger(
-    AppController.name,
+    AuthenticationController.name,
     CastLoggerOptions
   );
 
