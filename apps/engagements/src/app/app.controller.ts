@@ -77,8 +77,8 @@ export class EngagementController {
   @Post()
   async track(@Body() body: UxEngagementBody, @Req() req: CredentialRequest) {
     //check if they have the same id
-    const accountId = mongoose.Types.ObjectId(body.accountId);
-    if (accountId !== req.$credential.account._id)
+    const accountId = String(body.accountId);
+    if (accountId !== String(req.$credential.account._id))
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     const result = this.uxEngagemenetService.track(body);
     if (result) return '';
