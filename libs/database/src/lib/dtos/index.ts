@@ -37,6 +37,7 @@ import {
   ShortPayload
 } from './content.dto';
 import {
+  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationPayloadDto,
   NotificationResponse,
   NotificationSource,
@@ -79,5 +80,6 @@ export {
   NotificationPayloadDto,
   NotificationResponse,
   NotificationType,
-  NotificationSource
+  NotificationSource,
+  DEFAULT_NOTIFICATION_QUERY_OPTIONS
 };

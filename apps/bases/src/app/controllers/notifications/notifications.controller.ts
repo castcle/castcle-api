@@ -25,7 +25,7 @@ import {
   NotificationService
 } from '@castcle-api/database';
 import {
-  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationResponse,
   NotificationSource
 } from '@castcle-api/database/dtos';
@@ -113,17 +113,17 @@ export class NotificationsController {
     required: false
   })
   @Get('notifications')
-  async getPageContents(
+  async getAll(
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    } = DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
     @Query('source', NotificationSourcePipe)
     notificationSourceOption: NotificationSource = NotificationSource.Profile
   ): Promise<NotificationResponse> {

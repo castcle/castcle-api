@@ -20,22 +20,178 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import {
+  AuthenticationService,
+  ContentService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  NotificationService,
+  UserService
+} from '@castcle-api/database';
+import {
+  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  NotificationSource
+} from '@castcle-api/database/dtos';
+import {
+  AccountDocument,
+  CredentialDocument,
+  UserDocument
+} from '@castcle-api/database/schemas';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { AppService } from '../../app.service';
 import { NotificationsController } from './notifications.controller';
+
+let mongod: MongoMemoryServer;
+const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};
 
 describe('NotificationsController', () => {
   let controller: NotificationsController;
+  let app: TestingModule;
+  let userService: UserService;
+  let appService: AppService;
+  let authService: AuthenticationService;
+  let userCredential: CredentialDocument;
+  let userAccount: AccountDocument;
+  let notification: NotificationService;
+  let user: UserDocument;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [NotificationsController]
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      imports: [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        UtilsCacheModule
+      ],
+      controllers: [NotificationsController],
+      providers: [
+        AppService,
+        UserService,
+        AuthenticationService,
+        ContentService,
+        NotificationService
+      ]
     }).compile();
+    userService = app.get<UserService>(UserService);
+    appService = app.get<AppService>(AppService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
+    notification = app.get<NotificationService>(NotificationService);
+    controller = app.get<NotificationsController>(NotificationsController);
+    const result = await authService.createAccount({
+      device: 'iPhone',
+      deviceUUID: 'iphone12345',
+      header: { platform: 'iphone' },
+      languagesPreferences: ['th', 'th']
+    });
+    const accountActivation = await authService.signupByEmail(
+      result.accountDocument,
+      {
+        email: 'test@gmail.com',
+        displayId: 'test1234',
+        displayName: 'test',
+        password: '1234AbcD'
+      }
+    );
+    userAccount = await authService.verifyAccount(accountActivation);
+    userCredential = result.credentialDocument;
+    user = await userService.getUserFromCredential(result.credentialDocument);
 
-    controller = module.get<NotificationsController>(NotificationsController);
+    const newNoti = new notification._notificationModel({
+      avatar: '',
+      message: 'sample profile',
+      source: 'profile',
+      sourceUserId: user,
+      type: 'comment',
+      targetRef: {
+        id: '6138afa4f616a467b5c4eb72'
+      },
+      read: false,
+      credential: result.credentialDocument
+    });
+    await newNoti.save();
+
+    const newNoti2 = new notification._notificationModel({
+      avatar: '',
+      message: 'sample page',
+      source: 'page',
+      sourceUserId: user,
+      type: 'comment',
+      targetRef: {
+        id: '6138afa4f616a467b5c4eb72'
+      },
+      read: false,
+      credential: result.credentialDocument
+    });
+    await newNoti2.save();
+    const newNoti3 = new notification._notificationModel({
+      avatar: '',
+      message: 'sample page',
+      source: 'profile',
+      sourceUserId: user,
+      type: 'system',
+      targetRef: {
+        id: '6138afa4f616a467b5c4eb72'
+      },
+      read: false,
+      credential: result.credentialDocument
+    });
+    await newNoti3.save();
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  afterAll(async () => {
+    await closeInMongodConnection();
+  });
+  describe('getNotification', () => {
+    it('should return NotificationReponse that contain all notification default option [profile]', async () => {
+      const responseResult = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      console.log(JSON.stringify(responseResult));
+      expect(responseResult.payload.length).toEqual(2);
+      expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
+        1
+      );
+      expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
+        1
+      );
+    });
+
+    it('should return NotificationReponse that contain all notification source page', async () => {
+      const responseResult = await controller.getAll(
+        {
+          $credential: userCredential
+        } as any,
+        DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
+        DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
+        DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+        NotificationSource.Page
+      );
+      console.log(JSON.stringify(responseResult));
+      expect(responseResult.payload.length).toEqual(1);
+      expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
+        1
+      );
+      expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
+        0
+      );
+    });
   });
 });
