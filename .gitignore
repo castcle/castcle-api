@@ -162,3 +162,6 @@ src/app/homepage/pages/**/*.html
 
 #documentations
 documentation
+
+#localDB
+db
