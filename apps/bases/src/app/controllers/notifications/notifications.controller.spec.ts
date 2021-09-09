@@ -39,20 +39,17 @@ import {
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as redisStore from 'cache-manager-redis-store';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { RedisMemoryServer } from 'redis-memory-server';
 import { AppService } from '../../app.service';
 import { NotificationsController } from './notifications.controller';
 
-let mongod: MongoMemoryServer;
-const redisServer = new RedisMemoryServer();
+let mongodMock: MongoMemoryServer;
 
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
     useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
+      mongodMock = await MongoMemoryServer.create();
+      const mongoUri = mongodMock.getUri();
       return {
         uri: mongoUri,
         ...options
@@ -61,11 +58,7 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   });
 
 const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
-const closeInRedis = async () => {
-  if (redisServer.getInstanceInfo()) await redisServer.stop();
+  if (mongodMock) await mongodMock.stop();
 };
 
 describe('NotificationsController', () => {
@@ -78,18 +71,13 @@ describe('NotificationsController', () => {
   let user: UserDocument;
 
   beforeAll(async () => {
-    const host = await redisServer.getHost();
-    const port = await redisServer.getPort();
-
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
-          store: redisStore,
-          host: host,
-          port: port,
+          store: 'memory',
           ttl: 1000
         })
       ],
@@ -168,7 +156,6 @@ describe('NotificationsController', () => {
 
   afterAll(async () => {
     await closeInMongodConnection();
-    await closeInRedis();
   });
   describe('getNotification', () => {
     it('should return NotificationReponse that contain all notification default option [profile]', async () => {
@@ -212,7 +199,7 @@ describe('NotificationsController', () => {
           }
         ]
       };
-      console.log(JSON.stringify(responseResult));
+
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(2);
@@ -255,7 +242,6 @@ describe('NotificationsController', () => {
         ]
       };
 
-      console.log(JSON.stringify(responseResult));
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(1);
