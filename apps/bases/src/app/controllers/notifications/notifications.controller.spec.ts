@@ -33,7 +33,6 @@ import {
   NotificationSource
 } from '@castcle-api/database/dtos';
 import {
-  AccountDocument,
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
@@ -65,10 +64,8 @@ describe('NotificationsController', () => {
   let controller: NotificationsController;
   let app: TestingModule;
   let userService: UserService;
-  let appService: AppService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
-  let userAccount: AccountDocument;
   let notification: NotificationService;
   let user: UserDocument;
 
@@ -90,7 +87,6 @@ describe('NotificationsController', () => {
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
@@ -109,7 +105,6 @@ describe('NotificationsController', () => {
         password: '1234AbcD'
       }
     );
-    userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
     user = await userService.getUserFromCredential(result.credentialDocument);
 
@@ -164,7 +159,45 @@ describe('NotificationsController', () => {
         $credential: userCredential
       } as any);
 
+      const expectResult = {
+        payload: [
+          {
+            id: '',
+            avatar: '',
+            message: 'sample page',
+            source: 'profile',
+            read: false,
+            content: {
+              id: null
+            },
+            comment: {
+              id: null
+            },
+            system: {
+              id: '6138afa4f616a467b5c4eb72'
+            }
+          },
+          {
+            id: '',
+            avatar: '',
+            message: 'sample profile',
+            source: 'profile',
+            read: false,
+            content: {
+              id: null
+            },
+            comment: {
+              id: '6138afa4f616a467b5c4eb72'
+            },
+            system: {
+              id: null
+            }
+          }
+        ]
+      };
       console.log(JSON.stringify(responseResult));
+      responseResult.payload.forEach((x) => (x.id = ''));
+      expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(2);
       expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
         1
@@ -184,7 +217,30 @@ describe('NotificationsController', () => {
         DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
         NotificationSource.Page
       );
+      const expectResult = {
+        payload: [
+          {
+            id: '',
+            avatar: '',
+            message: 'sample page',
+            source: 'page',
+            read: false,
+            content: {
+              id: null
+            },
+            comment: {
+              id: '6138afa4f616a467b5c4eb72'
+            },
+            system: {
+              id: null
+            }
+          }
+        ]
+      };
+
       console.log(JSON.stringify(responseResult));
+      responseResult.payload.forEach((x) => (x.id = ''));
+      expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(1);
       expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
         1
