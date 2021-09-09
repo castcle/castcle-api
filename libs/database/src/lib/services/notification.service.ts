@@ -62,7 +62,7 @@ export class NotificationService {
       sourceUserId: any;
       source: string;
     } = {
-      sourceUserId: user ? user._id : '',
+      sourceUserId: user ? user._id : null,
       source: options.source
     };
     console.log(findFilter);

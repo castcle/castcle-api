@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { CacheKeyName } from '../../cache/src/lib/enum/cache.key.name';
 import { CastcleName } from './castcle-name';
 import { Host } from './host';
 import { Password } from './password';
@@ -35,4 +34,4 @@ import { Token } from './token';
 })
 export class UtilsModule {}
 
-export { Token, Password, CastcleName, Host, CacheKeyName };
+export { Token, Password, CastcleName, Host };

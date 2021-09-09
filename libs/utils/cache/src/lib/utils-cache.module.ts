@@ -23,6 +23,7 @@
 import { Environment } from '@castcle-api/environments';
 import { CacheModule, Module } from '@nestjs/common';
 import * as redisStore from 'cache-manager-redis-store';
+import { CacheKeyName } from './enum/cache.key.name';
 
 @Module({
   controllers: [],
@@ -38,3 +39,5 @@ import * as redisStore from 'cache-manager-redis-store';
   exports: [CacheModule]
 })
 export class UtilsCacheModule {}
+
+export { CacheKeyName };

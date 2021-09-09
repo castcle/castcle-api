@@ -31,7 +31,7 @@ import {
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { CacheKeyName } from '@castcle-api/utils';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -58,7 +58,6 @@ import {
   ApiOkResponse,
   ApiQuery
 } from '@nestjs/swagger';
-
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
   description: Configs.RequiredHeaders.AcceptLanguague.description,
