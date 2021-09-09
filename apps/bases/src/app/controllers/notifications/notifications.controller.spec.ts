@@ -36,14 +36,18 @@ import {
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import * as redisStore from 'cache-manager-redis-store';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { RedisMemoryServer } from 'redis-memory-server';
 import { AppService } from '../../app.service';
 import { NotificationsController } from './notifications.controller';
 
 let mongod: MongoMemoryServer;
+const redisServer = new RedisMemoryServer();
+
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
     useFactory: async () => {
@@ -60,6 +64,10 @@ const closeInMongodConnection = async () => {
   if (mongod) await mongod.stop();
 };
 
+const closeInRedis = async () => {
+  if (redisServer.getInstanceInfo()) await redisServer.stop();
+};
+
 describe('NotificationsController', () => {
   let controller: NotificationsController;
   let app: TestingModule;
@@ -70,12 +78,20 @@ describe('NotificationsController', () => {
   let user: UserDocument;
 
   beforeAll(async () => {
+    const host = await redisServer.getHost();
+    const port = await redisServer.getPort();
+
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        UtilsCacheModule
+        CacheModule.register({
+          store: redisStore,
+          host: host,
+          port: port,
+          ttl: 1000
+        })
       ],
       controllers: [NotificationsController],
       providers: [
@@ -152,6 +168,7 @@ describe('NotificationsController', () => {
 
   afterAll(async () => {
     await closeInMongodConnection();
+    await closeInRedis();
   });
   describe('getNotification', () => {
     it('should return NotificationReponse that contain all notification default option [profile]', async () => {
