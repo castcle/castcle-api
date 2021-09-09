@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { Token } from './token';
-import { Password } from './password';
 import { CastcleName } from './castcle-name';
 import { Host } from './host';
+import { Password } from './password';
+import { Token } from './token';
 
 @Module({
   imports: [],
