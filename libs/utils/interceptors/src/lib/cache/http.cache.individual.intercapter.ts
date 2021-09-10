@@ -20,30 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { Module } from '@nestjs/common';
-import { BaseController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    UtilsCacheModule
-  ],
-  controllers: [
-    HealthyController,
-    PageController,
-    BaseController,
-    NotificationsController
-  ],
-  providers: [AppService]
-})
-export class BaseModule {}
+import {
+  CacheInterceptor,
+  CACHE_KEY_METADATA,
+  ExecutionContext,
+  Injectable
+} from '@nestjs/common';
+import * as util from '../util';
+
+@Injectable()
+export class HttpCacheIndividualInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
+
+    if (cacheKey) {
+      const request = context.switchToHttp().getRequest();
+      const token = util.getTokenFromRequest(request);
+      return `${cacheKey}-${token}-${request._parsedUrl.query}`;
+    }
+
+    return super.trackBy(context);
+  }
+}

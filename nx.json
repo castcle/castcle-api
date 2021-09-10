@@ -66,6 +66,9 @@
     "utils-aws": {
       "tags": []
     },
+    "utils-cache": {
+      "tags": []
+    },
     "utils-exception": {
       "tags": []
     },

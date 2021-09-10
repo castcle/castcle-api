@@ -20,30 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { Module } from '@nestjs/common';
-import { BaseController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
+import { Environment } from '@castcle-api/environments';
+import { CacheModule, Module } from '@nestjs/common';
+import * as redisStore from 'cache-manager-redis-store';
+import { CacheKeyName } from './enum/cache.key.name';
 
 @Module({
+  controllers: [],
+  providers: [],
   imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    UtilsCacheModule
+    CacheModule.register({
+      store: redisStore,
+      host: Environment.redis_host,
+      port: Environment.redis_port,
+      ttl: 1000
+    })
   ],
-  controllers: [
-    HealthyController,
-    PageController,
-    BaseController,
-    NotificationsController
-  ],
-  providers: [AppService]
+  exports: [CacheModule]
 })
-export class BaseModule {}
+export class UtilsCacheModule {}
+
+export { CacheKeyName };
