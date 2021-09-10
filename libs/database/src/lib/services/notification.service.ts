@@ -87,4 +87,39 @@ export class NotificationService {
       pagination: createPagination(options, totalDocument)
     };
   };
+
+  /**
+   *
+   * @param {string} id get notification from notification's id
+   * @returns {NotificationDocument}
+   */
+  getFromId = async (id: string) => {
+    const notification = await this._notificationModel.findById(id).exec();
+    if (notification) return notification;
+    return null;
+  };
+
+  likeContent = async (content: ContentDocument, user: UserDocument) => {
+    let engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: content._id
+      },
+      type: EngagementType.Like
+    });
+    if (!engagement)
+      engagement = new this._engagementModel({
+        type: EngagementType.Like,
+        user: user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        },
+        visibility: EntityVisibility.Publish
+      });
+    engagement.type = EngagementType.Like;
+    engagement.visibility = EntityVisibility.Publish;
+    return engagement.save();
+  };
 }
