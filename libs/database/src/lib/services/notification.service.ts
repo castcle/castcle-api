@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -89,37 +88,29 @@ export class NotificationService {
   };
 
   /**
-   *
-   * @param {string} id get notification from notification's id
+   * get notification from notification's id
+   * @param {string} id notification's id
    * @returns {NotificationDocument}
    */
   getFromId = async (id: string) => {
-    const notification = await this._notificationModel.findById(id).exec();
+    const notification = await this._notificationModel
+      .findById(id ? id : null)
+      .exec();
     if (notification) return notification;
     return null;
   };
 
-  likeContent = async (content: ContentDocument, user: UserDocument) => {
-    let engagement = await this._engagementModel.findOne({
-      user: user._id,
-      targetRef: {
-        $ref: 'content',
-        $id: content._id
-      },
-      type: EngagementType.Like
-    });
-    if (!engagement)
-      engagement = new this._engagementModel({
-        type: EngagementType.Like,
-        user: user._id,
-        targetRef: {
-          $ref: 'content',
-          $id: content._id
-        },
-        visibility: EntityVisibility.Publish
-      });
-    engagement.type = EngagementType.Like;
-    engagement.visibility = EntityVisibility.Publish;
-    return engagement.save();
+  /**
+   * update read flag from notofication
+   * @param {NotificationDocument} notification notofication document
+   * @returns {NotificationDocument}
+   */
+  flagRead = async (notification: NotificationDocument) => {
+    if (notification) {
+      notification.read = true;
+      return notification.save();
+    } else {
+      return null;
+    }
   };
 }
