@@ -20,50 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Content } from './content.schema';
-import { User } from './user.schema';
-import * as mongoose from 'mongoose';
-import { Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Account } from './account.schema';
-import { CastcleBase } from './base.schema';
 import { ContentAggregator } from '../aggregator/content.aggregator';
-import { Document } from 'mongoose';
 
-export type ContentItemDocument = ContentItem & Document;
-/**
- * Intent to use for Datasci
- */
-export class ContentItem extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Content'
-  })
-  content: Content;
-
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  })
-  author: User;
-
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  viewer: Account;
-
-  @Prop({
-    required: true,
-    type: Object
-  })
+export class ContentItemDto {
+  content: any; //contentId
+  author: any; //userId
+  viewer: any; //accountId
   aggregator: ContentAggregator;
 }
-
-export const ContentItemSchema = SchemaFactory.createForClass(ContentItem);
-export const ContentItemSchemaFactory = (): mongoose.Schema<any> => {
-  return ContentItemSchema;
-};

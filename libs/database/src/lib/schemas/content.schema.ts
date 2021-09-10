@@ -35,6 +35,10 @@ import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { postContentSave, preContentSave } from '../hooks/content.save';
+import { ContentItemDocument } from './contentItem.schema';
+import { UserDocument } from '.';
+import { RelationshipDocument } from './relationship.schema';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -118,78 +122,24 @@ ContentSchema.methods.toContentPayload = function () {
   } as ContentPayloadDto;
 };
 
-const removeEngagementAggregateIfDeleted = async (
-  doc: ContentDocument,
-  engagementModel: Model<EngagementDocument>
-) => {
-  let payload: QuotePayload | RecastPayload;
-  if (doc.type === ContentType.Recast || doc.type === ContentType.Quote) {
-    payload =
-      doc.type === ContentType.Recast
-        ? (doc.payload as RecastPayload)
-        : (doc.payload as QuotePayload);
-  }
-};
-
 export const ContentSchemaFactory = (
-  revisionModel: Model<RevisionDocument>
+  revisionModel: Model<RevisionDocument>,
+  contentItemModel: Model<ContentItemDocument>,
+  userModel: Model<UserDocument>,
+  relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
-  const contentModel = mongoose.model(
-    'Content',
-    ContentSchema
-  ) as unknown as Model<ContentDocument>;
-
   ContentSchema.pre('save', function (next) {
     //defualt is publish
-    (this as ContentDocument).visibility = (this as ContentDocument).visibility
-      ? (this as ContentDocument).visibility
-      : EntityVisibility.Publish;
-    (this as ContentDocument).revisionCount = (this as ContentDocument)
-      .revisionCount
-      ? (this as ContentDocument).revisionCount + 1
-      : 1;
-    if (!(this as ContentDocument).engagements) {
-      (this as ContentDocument).engagements = {
-        like: {
-          count: 0,
-          refs: []
-        },
-        comment: {
-          count: 0,
-          refs: []
-        },
-        recast: {
-          count: 0,
-          refs: []
-        },
-        quote: {
-          count: 0,
-          refs: []
-        }
-      };
-    }
+    preContentSave(this as ContentDocument);
     next();
   });
   ContentSchema.post('save', async function (doc, next) {
-    const session = await revisionModel.startSession();
-
-    session.withTransaction(async () => {
-      session.abortTransaction();
-      //update revision
-      const newRevison = new revisionModel({
-        objectRef: {
-          $ref: 'content',
-          $id: mongoose.Types.ObjectId((doc as ContentDocument)._id)
-        },
-        payload: doc as Content
-      });
-      const result = await newRevison.save();
-      //f content not publish go remove all content
-      if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
-        //if this is quote cast
-      }
+    const result = postContentSave(doc as ContentDocument, {
+      revisionModel,
+      contentItemModel,
+      userModel,
+      relationshipModel
     });
-    session.endSession();
     next();
   });
   return ContentSchema;

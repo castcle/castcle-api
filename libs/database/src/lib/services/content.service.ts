@@ -47,6 +47,7 @@ import {
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { ContentItemDocument } from '../schemas/contentItem.schema';
 
 @Injectable()
 export class ContentService {
@@ -61,7 +62,9 @@ export class ContentService {
     @InjectModel('Revision')
     public _revisionModel: Model<RevisionDocument>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<EngagementDocument>
+    public _engagementModel: Model<EngagementDocument>,
+    @InjectModel('ContentItem')
+    public _contentItemModel: Model<ContentItemDocument>
   ) {}
 
   /**
