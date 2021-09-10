@@ -143,6 +143,7 @@ export class NotificationsController {
         source: notificationSourceOption
       }
     );
+    this.logger.log('Success get all notification');
     return {
       payload: notification.items.map((noti) => noti.toNotificationPayload()),
       pagination: notification.pagination
@@ -166,12 +167,11 @@ export class NotificationsController {
   @UseInterceptors(CredentialInterceptor)
   @Put('notifications/:id/read')
   @HttpCode(204)
-  async likeContent(@Param('id') id: string, @Req() req: CredentialRequest) {
-    //TODO !!! has to add feedItem once implement
-    const content = await this._getNotificationIfExist(id, req);
-    // const account = await this.authService.getAccountFromCredential(
-    //   req.$credential
-    // );
+  async notificationRead(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log('Notification mark read. id:' + id);
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
       throw new CastcleException(
@@ -179,7 +179,9 @@ export class NotificationsController {
         req.$language
       );
     }
-    await this.notificationService.likeContent(content, user);
+    const notification = await this._getNotificationIfExist(id, req);
+    await this.notificationService.flagRead(notification);
+    this.logger.log('Success mark read notification');
     return '';
   }
 }

@@ -36,6 +36,7 @@ import {
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -94,14 +95,14 @@ describe('NotificationsController', () => {
     authService = app.get<AuthenticationService>(AuthenticationService);
     notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
-    const result = await authService.createAccount({
+    const resultAccount = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
       languagesPreferences: ['th', 'th']
     });
     const accountActivation = await authService.signupByEmail(
-      result.accountDocument,
+      resultAccount.accountDocument,
       {
         email: 'test@gmail.com',
         displayId: 'test1234',
@@ -109,8 +110,10 @@ describe('NotificationsController', () => {
         password: '1234AbcD'
       }
     );
-    userCredential = result.credentialDocument;
-    user = await userService.getUserFromCredential(result.credentialDocument);
+    userCredential = resultAccount.credentialDocument;
+    user = await userService.getUserFromCredential(
+      resultAccount.credentialDocument
+    );
 
     const newNoti = new notification._notificationModel({
       avatar: '',
@@ -122,7 +125,7 @@ describe('NotificationsController', () => {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: resultAccount.credentialDocument
     });
     await newNoti.save();
 
@@ -136,7 +139,7 @@ describe('NotificationsController', () => {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: resultAccount.credentialDocument
     });
     await newNoti2.save();
     const newNoti3 = new notification._notificationModel({
@@ -149,7 +152,7 @@ describe('NotificationsController', () => {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: resultAccount.credentialDocument
     });
     await newNoti3.save();
   });
@@ -157,6 +160,7 @@ describe('NotificationsController', () => {
   afterAll(async () => {
     await closeInMongodConnection();
   });
+
   describe('getNotification', () => {
     it('should return NotificationReponse that contain all notification default option [profile]', async () => {
       const responseResult = await controller.getAll({
@@ -250,6 +254,51 @@ describe('NotificationsController', () => {
       );
       expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
         0
+      );
+    });
+  });
+
+  describe('notifications read', () => {
+    it('should success update read status', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      const readNoti = allNotification.payload[0];
+      await controller.notificationRead(readNoti.id, {
+        $credential: userCredential
+      } as any);
+
+      const result = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      expect(
+        result.payload.find((x) => x.id.toString() === readNoti.id.toString())
+          .read
+      ).toEqual(true);
+    });
+
+    it('should return Exception as expect', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      await expect(
+        controller.notificationRead('', {
+          $credential: userCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
+      );
+
+      userCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.notificationRead('', {
+          $credential: userCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
     });
   });
