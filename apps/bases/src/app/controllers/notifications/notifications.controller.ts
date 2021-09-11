@@ -184,4 +184,25 @@ export class NotificationsController {
     this.logger.log('Success mark read notification');
     return '';
   }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Put('notifications/readAll')
+  @HttpCode(204)
+  async notificationReadAll(@Req() req: CredentialRequest) {
+    this.logger.log('Notification mark read all.');
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (!user) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    await this.notificationService.flagReadAll(req.$credential);
+    this.logger.log('Success mark read all notification');
+    return '';
+  }
 }
