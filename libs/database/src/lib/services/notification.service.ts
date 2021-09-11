@@ -113,4 +113,41 @@ export class NotificationService {
       return null;
     }
   };
+
+  /**
+   * update read flag all notofication
+   * @param {CredentialDocument} credential
+   * @returns {UpdateWriteOpResult} update result status
+   */
+  flagReadAll = async (credential: CredentialDocument) => {
+    const user = await this._userModel
+      .findOne({
+        ownerAccount:
+          credential.account && credential.account._id
+            ? credential.account._id
+            : null
+      })
+      .exec();
+
+    if (user) {
+      const findFilter: {
+        sourceUserId: any;
+      } = {
+        sourceUserId: user._id
+      };
+      console.log(findFilter);
+
+      return await this._notificationModel
+        .updateMany(findFilter, { read: true }, null, (err: any, docs: any) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log('Updated Docs : ', docs);
+          }
+        })
+        .exec();
+    } else {
+      return null;
+    }
+  };
 }

@@ -201,4 +201,39 @@ describe('NotificationService', () => {
       expect(noti).toBeNull;
     });
   });
+
+  describe('#flagReadAll', () => {
+    it('should update read flag all notification in db', async () => {
+      const resultUpdate = await service.flagReadAll(result.credentialDocument);
+      const profileNoti = await service.getAll(result.credentialDocument);
+      const pageNoti = await service.getAll(result.credentialDocument, {
+        sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
+        limit: DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+        page: DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
+        source: NotificationSource.Page
+      });
+
+      expect(resultUpdate.n).toEqual(3);
+      expect(profileNoti.items.filter((x) => x.read).length).toEqual(
+        profileNoti.items.length
+      );
+      expect(pageNoti.items.filter((x) => x.read).length).toEqual(
+        pageNoti.items.length
+      );
+    });
+
+    it('should not update read flag notification in db with wrong credential', async () => {
+      const mockCredential = result.credentialDocument;
+      mockCredential.account._id = '6138afa4f616a467b5c4eb72';
+      const resultUpdate = await service.flagReadAll(mockCredential);
+      expect(resultUpdate).toBeNull;
+    });
+
+    it('should not update read flag notification in db with empty credential', async () => {
+      const mockCredential = result.credentialDocument;
+      mockCredential.account._id = null;
+      const resultUpdate = await service.flagReadAll(mockCredential);
+      expect(resultUpdate).toBeNull;
+    });
+  });
 });
