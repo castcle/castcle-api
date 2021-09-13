@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Controller, Get, Req, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseInterceptors } from '@nestjs/common';
 import {
   AuthenticationService,
   UserService,
@@ -35,12 +35,39 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   DEFAULT_FEED_QUERY_OPTIONS,
+  FeedItemMode,
   FeedsResponse
 } from '@castcle-api/database/dtos';
-import { ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiOkResponse,
+  ApiQuery
+} from '@nestjs/swagger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { Configs } from '@castcle-api/environments';
+import {
+  LimitPipe,
+  PagePipe,
+  SortByEnum,
+  SortByPipe
+} from '@castcle-api/utils/pipes';
 
-@Controller()
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptLanguague.name,
+  description: Configs.RequiredHeaders.AcceptLanguague.description,
+  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  required: true
+})
+@ApiHeader({
+  name: Configs.RequiredHeaders.AcceptVersion.name,
+  description: Configs.RequiredHeaders.AcceptVersion.description,
+  example: Configs.RequiredHeaders.AcceptVersion.example,
+  required: true
+})
+@Controller({
+  version: '1.0'
+})
 export class FeedController {
   constructor(private rankerService: RankerService) {}
   private readonly logger = new CastLogger(
@@ -52,15 +79,64 @@ export class FeedController {
     type: FeedsResponse
   })
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'mode',
+    enum: FeedItemMode,
+    required: false
+  })
+  @ApiQuery({
+    name: 'hashtag',
+    type: String,
+    required: false
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'exclude',
+    type: String,
+    required: false
+  })
   @UseInterceptors(CredentialInterceptor)
   @UseInterceptors(HttpCacheIndividualInterceptor)
   @Get('feeds/feed/forYou')
-  async getForYouFeed(@Req() req: CredentialRequest) {
+  async getForYouFeed(
+    @Req() req: CredentialRequest,
+    @Query('mode')
+    mode: string = DEFAULT_FEED_QUERY_OPTIONS.mode,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_FEED_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_FEED_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_FEED_QUERY_OPTIONS.limit
+  ) {
     const account = req.$credential.account;
     try {
       const feedItemsResult = await this.rankerService.getFeedItemsFromViewer(
         account,
-        DEFAULT_FEED_QUERY_OPTIONS
+        {
+          mode: mode,
+          sortBy: sortByOption,
+          page: pageOption,
+          limit: limitOption,
+          ...DEFAULT_FEED_QUERY_OPTIONS
+        }
       );
       return {
         payload: feedItemsResult.items.map((t) => t.toFeedItemPayload()),
