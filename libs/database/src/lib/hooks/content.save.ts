@@ -71,8 +71,6 @@ const createRelatedContentItem = async (
   models: HookModels
 ) => {
   //get all author follower
-  console.log('%%%%%%%%%%%%%%%%%%%% CREATE RELATED CONTENT%%%%%%%%%%%%%%');
-  console.log(doc.author.id);
   const relationships = await models.relationshipModel
     .find({ followedUser: doc.author.id as any })
     .exec();
@@ -81,25 +79,20 @@ const createRelatedContentItem = async (
   );
   const feedItemDtos = (
     await convertUserIdsToAccountIds(followerUserIds, models)
-  )
-    .map(
-      (accountId) =>
-        ({
-          viewer: accountId,
-          content: doc.toContentPayload(),
-          called: false,
-          seen: false,
-          aggregator: {
-            createTime: new Date(),
-            following: true
-          } as ContentAggregator
-        } as FeedItemDto)
-    )
-    .map((dto) => new models.feedItemModel(dto).save());
-  console.log('attempt to insert');
-  return Promise.all(feedItemDtos);
-  //console.log(feedItemDtos);
-  //return models.feedItemModel.insertMany(feedItemDtos);
+  ).map(
+    (accountId) =>
+      ({
+        viewer: accountId,
+        content: doc.toContentPayload(),
+        called: false,
+        seen: false,
+        aggregator: {
+          createTime: new Date(),
+          following: true
+        } as ContentAggregator
+      } as FeedItemDto)
+  );
+  return models.feedItemModel.insertMany(feedItemDtos);
 };
 
 /**
@@ -133,9 +126,7 @@ export const postContentSave = async (
   //create contentItem
   //if is new and
   if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
-    const afterCreateResult = await createRelatedContentItem(doc, models);
-    //console.log('8-8-8-8-8-8-8-8-')
-    console.log(afterCreateResult);
+    await createRelatedContentItem(doc, models);
   }
 
   return true;

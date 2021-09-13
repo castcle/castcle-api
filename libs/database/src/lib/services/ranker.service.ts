@@ -64,8 +64,6 @@ export class RankerService {
       viewer: viewer._id,
       seen: options.mode === FeedItemMode.Current ? false : true
     };
-    console.log('ranker filter');
-    console.log(filter);
     const feedItemResult = await this._feedItemModel
       .find(filter)
       .skip(options.page - 1)
