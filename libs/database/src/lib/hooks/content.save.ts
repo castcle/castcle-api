@@ -86,7 +86,7 @@ const createRelatedContentItem = async (
       (accountId) =>
         ({
           viewer: accountId,
-          content: doc as Content,
+          content: doc.toContentPayload(),
           called: false,
           seen: false,
           aggregator: {
