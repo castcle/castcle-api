@@ -39,6 +39,7 @@ module.exports = {
     '<rootDir>/apps/contents',
     '<rootDir>/apps/engagements',
     '<rootDir>/apps/backgrounds',
-    '<rootDir>/libs/utils/cache'
+    '<rootDir>/libs/utils/cache',
+    '<rootDir>/libs/ranker'
   ]
 };

@@ -22,5 +22,6 @@
  */
 
 export class ContentAggregator {
-  createTime: Date;
+  createTime?: Date;
+  following?: boolean;
 }

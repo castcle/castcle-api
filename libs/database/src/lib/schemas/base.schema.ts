@@ -35,4 +35,7 @@ export class CastcleBase {
 
   @Prop({ type: String })
   visibility?: EntityVisibility;
+
+  @Prop()
+  wasNew?: boolean;
 }

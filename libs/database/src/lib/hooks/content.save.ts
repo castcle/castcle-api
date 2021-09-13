@@ -28,14 +28,14 @@ import { AccountDocument, ContentDocument, UserDocument } from '../schemas';
 import { RevisionDocument } from '../schemas/revision.schema';
 import { Content } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { ContentItemDocument } from '../schemas/contentItem.schema';
-import { ContentItemDto } from '../dtos/contentItem.dto';
+import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 
 type HookModels = {
   revisionModel: Model<RevisionDocument>;
+  feedItemModel: Model<FeedItemDocument>;
   relationshipModel: Model<RelationshipDocument>;
-  contentItemModel: Model<ContentItemDocument>;
   userModel: Model<UserDocument>;
 };
 /**
@@ -71,26 +71,35 @@ const createRelatedContentItem = async (
   models: HookModels
 ) => {
   //get all author follower
+  console.log('%%%%%%%%%%%%%%%%%%%% CREATE RELATED CONTENT%%%%%%%%%%%%%%');
+  console.log(doc.author.id);
   const relationships = await models.relationshipModel
     .find({ followedUser: doc.author.id as any })
     .exec();
   const followerUserIds = relationships.map(
     (relation) => relation.user as unknown as mongoose.Schema.Types.ObjectId
   );
-  const contentItemDtos = (
+  const feedItemDtos = (
     await convertUserIdsToAccountIds(followerUserIds, models)
-  ).map(
-    (accountId) =>
-      ({
-        viewer: accountId,
-        author: doc.author.id,
-        content: doc._id,
-        aggregator: {
-          createTime: new Date()
-        } as ContentAggregator
-      } as ContentItemDto)
-  );
-  return models.contentItemModel.insertMany(contentItemDtos);
+  )
+    .map(
+      (accountId) =>
+        ({
+          viewer: accountId,
+          content: doc as Content,
+          called: false,
+          seen: false,
+          aggregator: {
+            createTime: new Date(),
+            following: true
+          } as ContentAggregator
+        } as FeedItemDto)
+    )
+    .map((dto) => new models.feedItemModel(dto).save());
+  console.log('attempt to insert');
+  return Promise.all(feedItemDtos);
+  //console.log(feedItemDtos);
+  //return models.feedItemModel.insertMany(feedItemDtos);
 };
 
 /**
@@ -122,7 +131,13 @@ export const postContentSave = async (
   });
   session.endSession();
   //create contentItem
-  await createRelatedContentItem(doc, models);
+  //if is new and
+  if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
+    const afterCreateResult = await createRelatedContentItem(doc, models);
+    //console.log('8-8-8-8-8-8-8-8-')
+    console.log(afterCreateResult);
+  }
+
   return true;
 };
 
@@ -132,6 +147,7 @@ export const postContentSave = async (
  * @returns
  */
 export const preContentSave = async (doc: ContentDocument) => {
+  doc.wasNew = doc.isNew;
   doc.visibility = doc.visibility ? doc.visibility : EntityVisibility.Publish;
   doc.revisionCount = doc.revisionCount ? doc.revisionCount + 1 : 1;
   if (!doc.engagements) {

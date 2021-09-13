@@ -25,10 +25,6 @@ import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
 import { AccountSchemaFactory } from './schemas/account.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import {
-  ContentItemSchema,
-  ContentItemSchemaFactory
-} from './schemas/contentItem.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
@@ -43,6 +39,11 @@ import { ContentService } from './services/content.service';
 import { NotificationService } from './services/notification.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { RankerService } from './services/ranker.service';
+import {
+  FeedItemSchema,
+  FeedItemSchemaFactory
+} from './schemas/feedItem.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -55,15 +56,18 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: CredentialSchemaFactory },
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   { name: 'Revision', useFactory: RevisionchemaFactory },
-  { name: 'ContentItem', useFactory: ContentItemSchemaFactory },
+  {
+    name: 'FeedItem',
+    useFactory: FeedItemSchemaFactory
+  },
   {
     name: 'Content',
     useFactory: ContentSchemaFactory,
     inject: [
       getModelToken('Revision'),
-      getModelToken('Relationship'),
+      getModelToken('FeedItem'),
       getModelToken('User'),
-      getModelToken('ContentItem')
+      getModelToken('Relationship')
     ]
   },
   {
@@ -96,14 +100,16 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserService,
     ContentService,
     UxEngagementService,
-    NotificationService
+    NotificationService,
+    RankerService
   ],
   exports: [
     AuthenticationService,
     UserService,
     ContentService,
     UxEngagementService,
-    NotificationService
+    NotificationService,
+    RankerService
   ]
 })
 export class DatabaseModule {}
@@ -113,5 +119,6 @@ export {
   UserService,
   ContentService,
   UxEngagementService,
-  NotificationService
+  NotificationService,
+  RankerService
 };

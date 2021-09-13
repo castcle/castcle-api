@@ -25,7 +25,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   ContentService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  RankerService
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
@@ -66,6 +67,7 @@ describe('AppController', () => {
       providers: [
         AppService,
         UserService,
+        RankerService,
         AuthenticationService,
         ContentService
       ]

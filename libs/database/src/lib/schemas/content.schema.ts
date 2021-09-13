@@ -36,9 +36,9 @@ import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
 import { EntityVisibility } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
-import { ContentItemDocument } from './contentItem.schema';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
+import { FeedItemDocument } from './feedItem.schema';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -124,19 +124,20 @@ ContentSchema.methods.toContentPayload = function () {
 
 export const ContentSchemaFactory = (
   revisionModel: Model<RevisionDocument>,
-  contentItemModel: Model<ContentItemDocument>,
+  feedItemModel: Model<FeedItemDocument>,
   userModel: Model<UserDocument>,
   relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
-  ContentSchema.pre('save', function (next) {
+  ContentSchema.pre('save', async function (next) {
     //defualt is publish
-    preContentSave(this as ContentDocument);
+    await preContentSave(this as ContentDocument);
+
     next();
   });
   ContentSchema.post('save', async function (doc, next) {
-    const result = postContentSave(doc as ContentDocument, {
+    const result = await postContentSave(doc as ContentDocument, {
       revisionModel,
-      contentItemModel,
+      feedItemModel,
       userModel,
       relationshipModel
     });

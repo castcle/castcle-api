@@ -20,3 +20,41 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { ContentAggregator } from '../aggregator/content.aggregator';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+
+export type FeedItemDocument = FeedItem & mongoose.Document;
+
+@Schema({ timestamps: true })
+export class FeedItem extends CastcleBase {
+  @Prop({
+    required: true,
+    type: Object
+  })
+  content: Content;
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account'
+  })
+  viewer: Account;
+  @Prop({ required: true })
+  seen: boolean;
+  @Prop({ required: true })
+  called: boolean;
+
+  @Prop({
+    required: true,
+    type: Object
+  })
+  aggregator: ContentAggregator;
+}
+
+export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
+export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
+  return FeedItemSchema;
+};
