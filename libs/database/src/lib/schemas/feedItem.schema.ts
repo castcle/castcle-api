@@ -26,8 +26,10 @@ import { ContentAggregator } from '../aggregator/content.aggregator';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
+import { FeedItemPayload } from '../dtos/feedItem.dto';
+import { ContentPayloadDto } from '../dtos/content.dto';
 
-export type FeedItemDocument = FeedItem & mongoose.Document;
+export type FeedItemDocument = FeedItem & IFeedItem;
 
 @Schema({ timestamps: true })
 export class FeedItem extends CastcleBase {
@@ -35,7 +37,7 @@ export class FeedItem extends CastcleBase {
     required: true,
     type: Object
   })
-  content: Content;
+  content: ContentPayloadDto;
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -55,6 +57,36 @@ export class FeedItem extends CastcleBase {
 }
 
 export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
+
+export interface IFeedItem extends mongoose.Document {
+  toFeedItemPayload(): FeedItemPayload;
+}
+
+FeedItemSchema.methods.toFeedItemPayload = function () {
+  return {
+    id: (this as FeedItemDocument)._id,
+    feature: {
+      id: 'feed',
+      key: 'feature.feed',
+      name: 'Feed',
+      slug: 'feed'
+    },
+    circle: {
+      id: 'for-you',
+      key: 'circle.forYou',
+      name: 'For You',
+      slug: 'forYou'
+    },
+    type: 'content',
+    payload: (this as FeedItemDocument).content,
+    aggregator: {
+      type: 'createTime'
+    },
+    created: (this as FeedItemDocument).createdAt.toISOString(),
+    updated: (this as FeedItemDocument).updatedAt.toISOString()
+  } as FeedItemPayload;
+};
+
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
   return FeedItemSchema;
 };

@@ -25,7 +25,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CastcleQueryOptions, ContentPayloadDto, Pagination } from '.';
 
 export class FeedItemDto {
-  content: any;
+  content: ContentPayloadDto;
   viewer: any;
   seen: boolean;
   called: boolean;

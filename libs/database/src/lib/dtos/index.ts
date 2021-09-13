@@ -36,7 +36,7 @@ import {
   SaveContentDto,
   ShortPayload
 } from './content.dto';
-import { DEFAULT_FEED_QUERY_OPTIONS } from './feedItem.dto';
+import { DEFAULT_FEED_QUERY_OPTIONS, FeedsResponse } from './feedItem.dto';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationPayloadDto,
@@ -83,5 +83,6 @@ export {
   NotificationType,
   NotificationSource,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  DEFAULT_FEED_QUERY_OPTIONS
+  DEFAULT_FEED_QUERY_OPTIONS,
+  FeedsResponse
 };
