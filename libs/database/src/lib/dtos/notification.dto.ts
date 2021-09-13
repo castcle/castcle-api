@@ -88,14 +88,3 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
   page: 1,
   limit: 25
 } as NotificationQueryOptions;
-
-// export class SaveNotificationDto {
-//   @ApiProperty()
-//   type: 'short' | 'blog' | 'image';
-
-//   @ApiProperty()
-//   payload: ShortPayload | BlogPayload | ImagePayload;
-
-//   @ApiProperty()
-//   author?: AuthorDto;
-// }
