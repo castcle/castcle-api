@@ -26,6 +26,26 @@ export interface AccessTokenPayload {
   preferredLanguage: string[];
   role: 'member' | 'guest'; // member or guest
   accessTokenExpiresTime?: string; // 30 นาทีจาก create
+  showAds: boolean;
+}
+
+export interface PageInfoPayload {
+  id: string;
+  castcleId: string;
+  displayName: string;
+  avatar: string;
+  role: 'admin'; // admin or member
+  verified: boolean;
+}
+
+export interface UserAccessTokenPayload extends AccessTokenPayload {
+  castcleId: string;
+  displayName: string;
+  email?: string;
+  avatar?: string;
+  verified: boolean; // ถ้ายังไม่ verify ไม่สามารถ post ได้
+  showAds: boolean;
+  pages: PageInfoPayload[];
 }
 
 export interface MemberAccessTokenPayload extends AccessTokenPayload {
