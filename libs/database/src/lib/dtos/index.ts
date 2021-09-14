@@ -48,6 +48,7 @@ import {
   NotificationSource,
   NotificationType
 } from './notification.dto';
+import { UserAccessTokenPayload } from './token.dto';
 import {
   FollowResponse,
   PageDto,
@@ -87,6 +88,7 @@ export {
   NotificationType,
   NotificationSource,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  UserAccessTokenPayload,
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedsResponse,
   FeedItemMode

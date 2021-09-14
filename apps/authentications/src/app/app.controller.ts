@@ -44,7 +44,7 @@ import {
 import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
-import { AuthenticationService } from '@castcle-api/database';
+import { AuthenticationService, UserService } from '@castcle-api/database';
 import { Host } from '@castcle-api/utils';
 import {
   ApiResponse,
@@ -73,6 +73,7 @@ import {
 } from './interceptors/guest.interceptor';
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
+import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -161,13 +162,12 @@ export class AuthenticationController {
           account
         );
       }
-
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
       const tokenResult: TokenResponse = await req.$credential.renewTokens(
-        {
-          id: account as unknown as string,
-          preferredLanguage: [req.$language, req.$language],
-          role: account.activateDate ? 'member' : 'guest'
-        },
+        accessTokenPayload,
         {
           id: account as unknown as string,
           role: account.activateDate ? 'member' : 'guest'
@@ -228,7 +228,8 @@ export class AuthenticationController {
         {
           id: credential.account as unknown as string,
           preferredLanguage: [req.$language, req.$language],
-          role: 'guest'
+          role: 'guest',
+          showAds: true
         },
         {
           id: credential.account as unknown as string,
@@ -333,14 +334,11 @@ export class AuthenticationController {
       req.$token
     );
     if (credential && credential.isRefreshTokenValid()) {
-      const account = await this.authService.getAccountFromCredential(
-        credential
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(credential);
+      const newAccessToken = await credential.renewAccessToken(
+        accessTokenPayload
       );
-      const newAccessToken = await credential.renewAccessToken({
-        id: account._id,
-        role: account.isGuest ? 'guest' : 'member',
-        preferredLanguage: account.preferences.langagues
-      });
       return {
         accessToken: newAccessToken
       };
