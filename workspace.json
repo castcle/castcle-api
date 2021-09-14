@@ -178,6 +178,31 @@
         }
       }
     },
+    "casl": {
+      "root": "libs/casl",
+      "sourceRoot": "libs/casl/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/casl/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/casl"
+          ],
+          "options": {
+            "jestConfig": "libs/casl/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "commonDate": {
       "root": "libs/commonDate",
       "sourceRoot": "libs/commonDate/src",
