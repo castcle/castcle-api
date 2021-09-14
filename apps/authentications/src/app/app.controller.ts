@@ -285,6 +285,15 @@ export class AuthenticationController {
         );
       if (!this.authService.validateEmail(body.payload.email))
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      //check if castcleId Exist
+      const user = await this.authService.getUserFromCastcleId(
+        body.payload.castcleId
+      );
+      if (user)
+        throw new CastcleException(
+          CastcleStatus.USER_ID_IS_EXIST,
+          req.$language
+        );
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
         {
