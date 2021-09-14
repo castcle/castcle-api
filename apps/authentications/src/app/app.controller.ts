@@ -226,7 +226,7 @@ export class AuthenticationController {
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
-          id: credential.account as unknown as string,
+          id: credential.account._id as unknown as string,
           preferredLanguage: [req.$language, req.$language],
           role: 'guest',
           showAds: true
