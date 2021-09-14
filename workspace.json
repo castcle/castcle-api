@@ -663,6 +663,31 @@
           }
         }
       }
+    },
+    "utils-producers": {
+      "root": "libs/utils/producers",
+      "sourceRoot": "libs/utils/producers/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/producers/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/producers"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/producers/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
     }
   },
   "cli": {

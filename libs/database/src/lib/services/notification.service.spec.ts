@@ -109,7 +109,9 @@ describe('NotificationService', () => {
       avatar: '',
       message: 'sample profile',
       source: 'profile',
-      sourceUserId: user,
+      sourceUserId: {
+        _id: user._id
+      },
       type: 'comment',
       targetRef: {
         id: '6138afa4f616a467b5c4eb72'

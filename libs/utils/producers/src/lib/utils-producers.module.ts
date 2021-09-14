@@ -20,27 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
+import { BullModule } from '@nestjs/bull';
+import { Module } from '@nestjs/common';
+import { TopicName } from './enum/topic.name';
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils/producers'
-  ]
-};
+@Module({
+  imports: [
+    BullModule.forRoot({
+      redis: {
+        host: Environment.redis_host,
+        port: Environment.redis_port
+      }
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Notifications
+    })
+  ],
+  controllers: [],
+  providers: [],
+  exports: [BullModule]
+})
+export class UtilsProducersModule {}
+
+export { TopicName };

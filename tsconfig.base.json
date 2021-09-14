@@ -31,7 +31,8 @@
       "@castcle-api/utils/interceptors": [
         "libs/utils/interceptors/src/index.ts"
       ],
-      "@castcle-api/utils/pipes": ["libs/utils/pipes/src/index.ts"]
+      "@castcle-api/utils/pipes": ["libs/utils/pipes/src/index.ts"],
+      "@castcle-api/utils/producers": ["libs/utils/producers/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
