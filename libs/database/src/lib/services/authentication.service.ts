@@ -100,7 +100,6 @@ export class AuthenticationService {
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
-      preferredLanguage: accountRequirements.languagesPreferences,
       role: 'guest',
       showAds: true
     });
@@ -381,12 +380,11 @@ export class AuthenticationService {
         .exec();
       const payload = {
         id: credential.account._id,
-        preferredLanguage: credential.account.preferences.langagues,
         role: 'member',
         showAds: true,
         castcleId: user.displayId,
         displayName: user.displayName,
-        verified: user.verified,
+        verified: credential.account.activateDate ? true : false, //use account activation
         email: credential.account.email
       } as UserAccessTokenPayload;
       //get SignUrl for avartar

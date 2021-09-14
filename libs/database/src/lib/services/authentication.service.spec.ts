@@ -109,7 +109,6 @@ describe('Authentication Service', () => {
       it('should return  accessToken, accessTokenExpireDate', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
-          preferredLanguage: ['th', 'th'],
           role: 'guest',
           showAds: true
         });
@@ -124,7 +123,6 @@ describe('Authentication Service', () => {
         );
         const result = service._generateAccessToken({
           id: 'randomid',
-          preferredLanguage: ['th', 'th'],
           role: 'guest',
           showAds: true
         });
