@@ -24,6 +24,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+  CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions
 } from '../dtos/notification.dto';
@@ -150,4 +151,73 @@ export class NotificationService {
       return null;
     }
   };
+
+  /**
+   * create notofication
+   * @param {CreateNotification} notificationData notofication document
+   * @returns {NotificationDocument}
+   */
+  notifyToUser = async (notificationData: CreateNotification) => {
+    const createResult = await new this._notificationModel(
+      notificationData
+    ).save();
+    // const newNoti3 = new this._notificationModel({
+    //   avatar: notificationData.avatar,
+    //   message: notificationData.message,
+    //   source: notificationData.source,
+    //   sourceUserId: {
+    //     _id: notificationData.sourceUserId
+    //   },
+    //   type: ,
+    //   targetRef: {
+    //     id: '6138afa4f616a467b5c4eb72'
+    //   },
+    //   read: false,
+    //   credential: result.credentialDocument
+    // });
+    // await newNoti3.save();
+    return createResult;
+    // if (notification) {
+    //   notification.read = true;
+    //   return notification.save();
+    // } else {
+    //   return null;
+    // }
+  };
 }
+
+// const newNoti2 = new service._notificationModel({
+//   avatar: '',
+//   message: 'sample page',
+//   source: 'page',
+//   sourceUserId: {
+//     _id: user._id
+//   },
+//   type: NotificationType.Comment,
+//   targetRef: {
+//     id: '6138afa4f616a467b5c4eb72'
+//   },
+//   read: false,
+//   credential: {
+//     _id: result.credentialDocument.id
+//   }
+// });
+
+// const credential = new this._credentialModel({
+//   account: {
+//     _id: mongoose.Types.ObjectId(accountDocument._id),
+//     isGuest: true,
+//     preferences: {
+//       languages: accountRequirements.languagesPreferences
+//     },
+//     visibility: EntityVisibility.Publish
+//   },
+//   accessToken: accessTokenResult.accessToken,
+//   accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
+//   refreshToken: refreshTokenResult.refreshToken,
+//   refreshTokenExpireDate: refreshTokenResult.refreshTokenExpireDate,
+//   device: accountRequirements.device,
+//   platform: accountRequirements.header.platform,
+//   deviceUUID: accountRequirements.deviceUUID
+// } as CreateCredentialDto);
+// const credentialDocument = await credential.save();

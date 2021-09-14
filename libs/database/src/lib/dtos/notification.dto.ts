@@ -89,48 +89,28 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
   limit: 25
 } as NotificationQueryOptions;
 
-export class CreateNotification {
+export interface CreateNotification {
   avatar: string;
   message: string;
-  source: any;
-  sourceUserId: string;
-  type: any;
+  source: NotificationSource;
+  sourceUserId: {
+    _id: string;
+  };
+  type: NotificationType;
   targetRef: {
-    platform: string;
+    id: string;
   };
-  read: string;
-  credential: string;
+  read: boolean;
+  credential: {
+    _id: string;
+  };
 }
 
-// avatar: '',
-// message: 'sample page',
-// source: 'profile',
-// sourceUserId: user,
-// type: 'system',
-// targetRef: {
-//   id: '6138afa4f616a467b5c4eb72'
-// },
-// read: false,
-// credential: result.credentialDocument
 export interface NotificationMessage {
-  platform: string;
-  client: string;
-  account: any; //will be accountId
-  screenId: string;
-  screenInstance: any;
-  feedItemId: string;
-  target: string;
-  targetId: string;
-  eventType: string;
-  eventData: any;
-  timestamp: Date;
-}
-
-export interface AccountRequirements {
-  header: {
-    platform: string;
-  };
-  device: string;
-  deviceUUID: string;
-  languagesPreferences: string[];
+  id: string;
+  message: string;
+  source: NotificationSource;
+  sourceUserId: string;
+  type: NotificationType;
+  targetRefId: string;
 }

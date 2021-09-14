@@ -20,18 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { NotificationMessage } from '@castcle-api/database/dtos';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import { TopicName } from './enum/topic.name';
-
 @Injectable()
 export class NotificationProducer {
   constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
 
-  async sendMessage(message: string) {
+  async sendMessage(message: NotificationMessage) {
     await this.queue.add({
-      text: message
+      notification: message
     });
   }
 }

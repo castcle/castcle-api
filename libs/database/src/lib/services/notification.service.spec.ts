@@ -26,7 +26,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationSource
+  NotificationSource,
+  NotificationType
 } from '../dtos/notification.dto';
 import { env } from '../environment';
 import { UserDocument } from '../schemas';
@@ -80,6 +81,11 @@ describe('NotificationService', () => {
     credentialDocument: CredentialDocument;
   };
 
+  let mockNewCredential: {
+    accountDocument: AccountDocument;
+    credentialDocument: CredentialDocument;
+  };
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
@@ -108,16 +114,18 @@ describe('NotificationService', () => {
     const newNoti = new service._notificationModel({
       avatar: '',
       message: 'sample profile',
-      source: 'profile',
+      source: NotificationSource.Profile,
       sourceUserId: {
         _id: user._id
       },
-      type: 'comment',
+      type: NotificationType.Comment,
       targetRef: {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: {
+        _id: result.credentialDocument.id
+      }
     });
     await newNoti.save();
 
@@ -125,28 +133,45 @@ describe('NotificationService', () => {
       avatar: '',
       message: 'sample page',
       source: 'page',
-      sourceUserId: user,
-      type: 'comment',
+      sourceUserId: {
+        _id: user._id
+      },
+      type: NotificationType.Comment,
       targetRef: {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: {
+        _id: result.credentialDocument.id
+      }
     });
     await newNoti2.save();
     const newNoti3 = new service._notificationModel({
       avatar: '',
       message: 'sample page',
-      source: 'profile',
-      sourceUserId: user,
-      type: 'system',
+      source: NotificationSource.Profile,
+      sourceUserId: {
+        _id: user._id
+      },
+      type: NotificationType.System,
       targetRef: {
         id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: result.credentialDocument
+      credential: {
+        _id: result.credentialDocument.id
+      }
     });
     await newNoti3.save();
+
+    mockNewCredential = await authService.createAccount({
+      deviceUUID: 'test123545',
+      languagesPreferences: ['th', 'th'],
+      header: {
+        platform: 'ios'
+      },
+      device: 'iPhone'
+    });
   });
   afterAll(async () => {
     if (env.db_test_in_db) await closeInMongodConnection();
@@ -225,17 +250,64 @@ describe('NotificationService', () => {
     });
 
     it('should not update read flag notification in db with wrong credential', async () => {
-      const mockCredential = result.credentialDocument;
-      mockCredential.account._id = '6138afa4f616a467b5c4eb72';
-      const resultUpdate = await service.flagReadAll(mockCredential);
+      const resultUpdate = await service.flagReadAll(
+        mockNewCredential.credentialDocument
+      );
       expect(resultUpdate).toBeNull;
     });
 
     it('should not update read flag notification in db with empty credential', async () => {
-      const mockCredential = result.credentialDocument;
-      mockCredential.account._id = null;
-      const resultUpdate = await service.flagReadAll(mockCredential);
+      const resultUpdate = await service.flagReadAll(
+        mockNewCredential.credentialDocument
+      );
       expect(resultUpdate).toBeNull;
     });
   });
+
+  // describe('#notifyToUser', () => {
+  //   it('should create read flag all notification in db', async () => {
+  //     const newNoti: CreateNotification = {
+  //       avatar: '',
+  //       message: 'sample page',
+  //       source: NotificationSource.Profile,
+  //       sourceUserId: {
+  //         _id: user._id
+  //       },
+  //       type: NotificationType.System,
+  //       targetRef: {
+  //         id: '6138afa4f616a467b5c4eb72'
+  //       },
+  //       read: false,
+  //       credential: {
+  //         _id: result.credentialDocument.id
+  //       }
+  //     };
+  //     const resultData3 = await service.getAll(result.credentialDocument);
+  //     console.log(resultData3);
+
+  //     console.log(newNoti);
+  //     const resultData = await service.notifyToUser(newNoti);
+  //     console.log(resultData);
+
+  //     console.log(result.credentialDocument.account);
+  //     const resultData2 = await service.getAll(result.credentialDocument);
+  //     console.log(resultData2);
+  //     // const resultUpdate = await service.flagReadAll(result.credentialDocument);
+  //     // const profileNoti = await service.getAll(result.credentialDocument);
+  //     // const pageNoti = await service.getAll(result.credentialDocument, {
+  //     //   sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
+  //     //   limit: DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+  //     //   page: DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
+  //     //   source: NotificationSource.Page
+  //     // });
+
+  //     expect(resultData).toEqual(newNoti);
+  //     // expect(profileNoti.items.filter((x) => x.read).length).toEqual(
+  //     //   profileNoti.items.length
+  //     // );
+  //     // expect(pageNoti.items.filter((x) => x.read).length).toEqual(
+  //     //   pageNoti.items.length
+  //     // );
+  //   });
+  // });
 });
