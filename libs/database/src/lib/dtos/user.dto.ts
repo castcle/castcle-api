@@ -60,6 +60,9 @@ export class UserResponseDto {
   castcleId: string;
 
   @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
   email?: string;
 
   @ApiProperty()
