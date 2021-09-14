@@ -110,7 +110,8 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           preferredLanguage: ['th', 'th'],
-          role: 'guest'
+          role: 'guest',
+          showAds: true
         });
         expect(result.accessToken).toBeDefined();
         expect(typeof result.accessToken).toBe('string');
@@ -124,7 +125,8 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           preferredLanguage: ['th', 'th'],
-          role: 'guest'
+          role: 'guest',
+          showAds: true
         });
         expect(result.accessTokenExpireDate).toEqual(expectedExpireDate);
       });
@@ -198,7 +200,10 @@ describe('Authentication Service', () => {
         expect(createAccountResult.credentialDocument.account).toEqual({
           _id: createAccountResult.accountDocument._id,
           isGuest: createAccountResult.accountDocument.isGuest,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
+          preferences: {
+            languages: ['en', 'en']
+          }
         }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
@@ -488,7 +493,10 @@ describe('Authentication Service', () => {
         expect(newCredential.account).toEqual({
           _id: createAccountResult.accountDocument._id,
           isGuest: false,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
+          preferences: {
+            languages: ['en', 'en']
+          }
         });
       });
     });
