@@ -105,12 +105,3 @@ export interface CreateNotification {
     _id: string;
   };
 }
-
-export interface NotificationMessage {
-  id: string;
-  message: string;
-  source: NotificationSource;
-  sourceUserId: string;
-  type: NotificationType;
-  targetRefId: string;
-}

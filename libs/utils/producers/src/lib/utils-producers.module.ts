@@ -24,6 +24,8 @@ import { Environment } from '@castcle-api/environments';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { TopicName } from './enum/topic.name';
+import { NotificationMessage } from './messages/notification.message';
+import { NotificationProducer } from './notification.producer';
 
 @Module({
   imports: [
@@ -38,9 +40,9 @@ import { TopicName } from './enum/topic.name';
     })
   ],
   controllers: [],
-  providers: [],
-  exports: [BullModule]
+  providers: [NotificationProducer],
+  exports: [BullModule, NotificationProducer]
 })
 export class UtilsProducersModule {}
 
-export { TopicName };
+export { TopicName, NotificationProducer, NotificationMessage };

@@ -20,26 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  NotificationMessage,
+  NotificationProducer
+} from '@castcle-api/utils/producers';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationQueryOptions
+  NotificationQueryOptions,
+  NotificationSource,
+  NotificationType
 } from '../dtos/notification.dto';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
-
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectModel('Notification')
     public _notificationModel: Model<NotificationDocument>,
     @InjectModel('User')
-    public _userModel: UserModel
+    public _userModel: UserModel,
+    private readonly notificationProducer: NotificationProducer
   ) {}
 
   /**
@@ -153,7 +159,7 @@ export class NotificationService {
   };
 
   /**
-   * create notofication
+   * create notofication and push to queue
    * @param {CreateNotification} notificationData notofication document
    * @returns {NotificationDocument}
    */
@@ -161,63 +167,18 @@ export class NotificationService {
     const createResult = await new this._notificationModel(
       notificationData
     ).save();
-    // const newNoti3 = new this._notificationModel({
-    //   avatar: notificationData.avatar,
-    //   message: notificationData.message,
-    //   source: notificationData.source,
-    //   sourceUserId: {
-    //     _id: notificationData.sourceUserId
-    //   },
-    //   type: ,
-    //   targetRef: {
-    //     id: '6138afa4f616a467b5c4eb72'
-    //   },
-    //   read: false,
-    //   credential: result.credentialDocument
-    // });
-    // await newNoti3.save();
+
+    if (createResult) {
+      const message: NotificationMessage = {
+        id: createResult._id,
+        message: createResult.message,
+        source: NotificationSource[createResult.source],
+        sourceUserId: createResult.sourceUserId._id,
+        type: NotificationType[createResult.type],
+        targetRefId: createResult.targetRef
+      };
+      this.notificationProducer.sendMessage(message);
+    }
     return createResult;
-    // if (notification) {
-    //   notification.read = true;
-    //   return notification.save();
-    // } else {
-    //   return null;
-    // }
   };
 }
-
-// const newNoti2 = new service._notificationModel({
-//   avatar: '',
-//   message: 'sample page',
-//   source: 'page',
-//   sourceUserId: {
-//     _id: user._id
-//   },
-//   type: NotificationType.Comment,
-//   targetRef: {
-//     id: '6138afa4f616a467b5c4eb72'
-//   },
-//   read: false,
-//   credential: {
-//     _id: result.credentialDocument.id
-//   }
-// });
-
-// const credential = new this._credentialModel({
-//   account: {
-//     _id: mongoose.Types.ObjectId(accountDocument._id),
-//     isGuest: true,
-//     preferences: {
-//       languages: accountRequirements.languagesPreferences
-//     },
-//     visibility: EntityVisibility.Publish
-//   },
-//   accessToken: accessTokenResult.accessToken,
-//   accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
-//   refreshToken: refreshTokenResult.refreshToken,
-//   refreshTokenExpireDate: refreshTokenResult.refreshTokenExpireDate,
-//   device: accountRequirements.device,
-//   platform: accountRequirements.header.platform,
-//   deviceUUID: accountRequirements.deviceUUID
-// } as CreateCredentialDto);
-// const credentialDocument = await credential.save();

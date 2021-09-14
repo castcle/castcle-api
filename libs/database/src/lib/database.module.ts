@@ -20,6 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  NotificationProducer,
+  UtilsProducersModule
+} from '@castcle-api/utils/producers';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
@@ -28,6 +32,7 @@ import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
+import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
 import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
@@ -37,13 +42,9 @@ import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { ContentService } from './services/content.service';
 import { NotificationService } from './services/notification.service';
+import { RankerService } from './services/ranker.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { RankerService } from './services/ranker.service';
-import {
-  FeedItemSchema,
-  FeedItemSchemaFactory
-} from './schemas/feedItem.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -92,7 +93,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   imports: [
     MongooseModule.forRoot(env.db_uri, env.db_options),
     MongooseAsyncFeatures,
-    MongooseForFeatures
+    MongooseForFeatures,
+    UtilsProducersModule
   ],
   controllers: [],
   providers: [
@@ -101,7 +103,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     ContentService,
     UxEngagementService,
     NotificationService,
-    RankerService
+    RankerService,
+    NotificationProducer
   ],
   exports: [
     AuthenticationService,

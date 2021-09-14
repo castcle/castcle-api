@@ -44,7 +44,6 @@ import {
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationMessage,
   NotificationPayloadDto,
   NotificationResponse,
   NotificationSource,
@@ -94,6 +93,5 @@ export {
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedsResponse,
   FeedItemMode,
-  CreateNotification,
-  NotificationMessage
+  CreateNotification
 };
