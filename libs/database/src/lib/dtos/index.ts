@@ -37,6 +37,11 @@ import {
   ShortPayload
 } from './content.dto';
 import {
+  DEFAULT_FEED_QUERY_OPTIONS,
+  FeedItemMode,
+  FeedsResponse
+} from './feedItem.dto';
+import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationPayloadDto,
   NotificationResponse,
@@ -83,5 +88,8 @@ export {
   NotificationType,
   NotificationSource,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  UserAccessTokenPayload
+  UserAccessTokenPayload,
+  DEFAULT_FEED_QUERY_OPTIONS,
+  FeedsResponse,
+  FeedItemMode
 };
