@@ -39,6 +39,11 @@ import { ContentService } from './services/content.service';
 import { NotificationService } from './services/notification.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { RankerService } from './services/ranker.service';
+import {
+  FeedItemSchema,
+  FeedItemSchemaFactory
+} from './schemas/feedItem.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -52,9 +57,18 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   { name: 'Revision', useFactory: RevisionchemaFactory },
   {
+    name: 'FeedItem',
+    useFactory: FeedItemSchemaFactory
+  },
+  {
     name: 'Content',
     useFactory: ContentSchemaFactory,
-    inject: [getModelToken('Revision')]
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItem'),
+      getModelToken('User'),
+      getModelToken('Relationship')
+    ]
   },
   {
     name: 'Account',
@@ -86,14 +100,16 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserService,
     ContentService,
     UxEngagementService,
-    NotificationService
+    NotificationService,
+    RankerService
   ],
   exports: [
     AuthenticationService,
     UserService,
     ContentService,
     UxEngagementService,
-    NotificationService
+    NotificationService,
+    RankerService
   ]
 })
 export class DatabaseModule {}
@@ -103,5 +119,6 @@ export {
   UserService,
   ContentService,
   UxEngagementService,
-  NotificationService
+  NotificationService,
+  RankerService
 };

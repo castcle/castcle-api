@@ -21,41 +21,7 @@
  * or have any questions.
  */
 
-import { Content } from './content.schema';
-import { User } from './user.schema';
-import * as mongoose from 'mongoose';
-import { Prop } from '@nestjs/mongoose';
-import { Account } from './account.schema';
-import { CastcleBase } from './base.schema';
-
-/**
- * Intent to use for Datasci
- */
-export class ContentItem extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Content'
-  })
-  content: Content;
-
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  })
-  author: User;
-
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  viewer: Account;
-
-  @Prop({
-    required: true,
-    type: Object
-  })
-  aggregator: any;
+export class ContentAggregator {
+  createTime?: Date;
+  following?: boolean;
 }
