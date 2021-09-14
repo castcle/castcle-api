@@ -23,6 +23,7 @@
 
 export interface AccessTokenPayload {
   id: string;
+  preferredLanguage: string[];
   role: 'member' | 'guest'; // member or guest
   accessTokenExpiresTime?: string; // 30 นาทีจาก create
   showAds: boolean;

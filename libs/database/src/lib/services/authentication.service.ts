@@ -101,6 +101,7 @@ export class AuthenticationService {
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
       role: 'guest',
+      preferredLanguage: accountRequirements.languagesPreferences,
       showAds: true
     });
     const refreshTokenResult = this._generateRefreshToken({
@@ -381,6 +382,7 @@ export class AuthenticationService {
       const payload = {
         id: credential.account._id,
         role: 'member',
+        preferredLanguage: credential.account.preferences.langagues,
         showAds: true,
         castcleId: user.displayId,
         displayName: user.displayName,

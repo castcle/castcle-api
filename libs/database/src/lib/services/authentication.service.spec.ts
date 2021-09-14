@@ -110,6 +110,7 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
+          preferredLanguage: ['en'],
           showAds: true
         });
         expect(result.accessToken).toBeDefined();
@@ -124,6 +125,7 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
+          preferredLanguage: ['en'],
           showAds: true
         });
         expect(result.accessTokenExpireDate).toEqual(expectedExpireDate);

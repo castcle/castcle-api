@@ -228,7 +228,8 @@ export class AuthenticationController {
         {
           id: credential.account._id as unknown as string,
           role: 'guest',
-          showAds: true
+          showAds: true,
+          preferredLanguage: [req.$language]
         },
         {
           id: credential.account as unknown as string,
@@ -241,7 +242,7 @@ export class AuthenticationController {
         device: req.$device,
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
-        languagesPreferences: [req.$language, req.$language]
+        languagesPreferences: [req.$language]
       });
       return {
         accessToken: result.credentialDocument.accessToken,
