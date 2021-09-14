@@ -123,6 +123,7 @@ const _covertToUserResponse = (self: User | UserDocument) => {
   return {
     id: self._id,
     castcleId: self.displayId,
+    displayName: self.displayName,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
       count: self.followerCount

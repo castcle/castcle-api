@@ -29,6 +29,7 @@ import { BaseController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 import { NotificationsController } from './controllers/notifications/notifications.controller';
+import { FeedController } from './controllers/feeds/feed.controller';
 import { PageController } from './controllers/pages/pages.controller';
 
 @Module({
@@ -42,7 +43,8 @@ import { PageController } from './controllers/pages/pages.controller';
     HealthyController,
     PageController,
     BaseController,
-    NotificationsController
+    NotificationsController,
+    FeedController
   ],
   providers: [AppService]
 })
