@@ -679,5 +679,5 @@
   "cli": {
     "defaultCollection": "@nrwl/nest"
   },
-  "defaultProject": "bases"
+  "defaultProject": "metadata"
 }
