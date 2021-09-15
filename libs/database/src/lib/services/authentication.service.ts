@@ -100,8 +100,8 @@ export class AuthenticationService {
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
-      preferredLanguage: accountRequirements.languagesPreferences,
       role: 'guest',
+      preferredLanguage: accountRequirements.languagesPreferences,
       showAds: true
     });
     const refreshTokenResult = this._generateRefreshToken({
@@ -381,12 +381,12 @@ export class AuthenticationService {
         .exec();
       const payload = {
         id: credential.account._id,
-        preferredLanguage: credential.account.preferences.langagues,
         role: 'member',
+        preferredLanguage: credential.account.preferences.langagues,
         showAds: true,
         castcleId: user.displayId,
         displayName: user.displayName,
-        verified: user.verified,
+        verified: credential.account.activateDate ? true : false, //use account activation
         email: credential.account.email
       } as UserAccessTokenPayload;
       //get SignUrl for avartar
