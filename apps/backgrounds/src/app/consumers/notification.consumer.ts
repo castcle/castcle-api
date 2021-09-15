@@ -1,4 +1,3 @@
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,14 +20,24 @@ import { UtilsQueueModule } from '@castcle-api/utils/queue';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { BackgroundController } from './app.controller';
-import { AppService } from './app.service';
-import { NotificationConsumer } from './consumers/notification.consumer';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { NotificationMessage, TopicName } from '@castcle-api/utils/queue';
+import { Process, Processor } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { Job } from 'bull';
 
-@Module({
-  imports: [UtilsQueueModule],
-  controllers: [BackgroundController],
-  providers: [AppService, NotificationConsumer]
-})
-export class BackgroundModule {}
+@Injectable()
+@Processor(TopicName.Notifications)
+export class NotificationConsumer {
+  private readonly logger = new CastLogger(
+    NotificationConsumer.name,
+    CastLoggerOptions
+  );
+
+  @Process()
+  readOperationJob(job: Job<{ notification: NotificationMessage }>) {
+    this.logger.log(
+      `message '${job.data.notification.message}' from message-job@message-queue`
+    );
+  }
+}
