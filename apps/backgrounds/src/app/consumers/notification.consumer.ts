@@ -34,10 +34,15 @@ export class NotificationConsumer {
     CastLoggerOptions
   );
 
+  /**
+   * consume notofication message from queue
+   * @param {NotificationMessage} NotificationMessage notofication message
+   * @returns {}
+   */
   @Process()
   readOperationJob(job: Job<{ notification: NotificationMessage }>) {
     this.logger.log(
-      `message '${job.data.notification.message}' from message-job@message-queue`
+      `consume message '${JSON.stringify(job.data.notification)}}' `
     );
   }
 }

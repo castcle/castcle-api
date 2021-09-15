@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
@@ -27,11 +28,22 @@ import { TopicName } from '../enum/topic.name';
 import { NotificationMessage } from '../messages/notification.message';
 @Injectable()
 export class NotificationProducer {
+  private readonly logger = new CastLogger(
+    NotificationProducer.name,
+    CastLoggerOptions
+  );
+
   constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
 
+  /**
+   * send notofication message to queue
+   * @param {NotificationMessage} NotificationMessage notofication message
+   * @returns {}
+   */
   async sendMessage(message: NotificationMessage) {
     await this.queue.add({
       notification: message
     });
+    this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }
 }
