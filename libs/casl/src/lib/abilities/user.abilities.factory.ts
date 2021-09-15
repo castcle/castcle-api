@@ -20,17 +20,67 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { UserDocument, ContentDocument } from '@castcle-api/database/schemas';
-import { InferSubjects } from '@casl/ability';
+import {
+  UserDocument,
+  ContentDocument,
+  User,
+  Content,
+  Account
+} from '@castcle-api/database/schemas';
+import {
+  InferSubjects,
+  Ability,
+  AbilityBuilder,
+  AbilityClass,
+  ExtractSubjectType,
+  MongoQuery
+} from '@casl/ability';
 import { Injectable } from '@nestjs/common';
+import { Document } from 'mongoose';
+import { EntityVisibility } from '@castcle-api/database/dtos';
 
-//type Subjects = InferSubjects<typeof User | typeof Content> | 'all';
+type Subjects =
+  | InferSubjects<typeof User | typeof Content | typeof Account>
+  | 'all';
 
-enum Actions {
+enum Action {
   Manage = 'manage',
   Create = 'create',
   Read = 'read',
   Update = 'update',
   Delete = 'delete',
   Engage = 'engage'
+}
+
+export type AppAbility = Ability<[Action, Subjects]>;
+
+@Injectable()
+export class CaslAbilityFactory {
+  createForUser(user: User) {
+    const { can, cannot, build } = new AbilityBuilder<
+      Ability<[Action, Subjects]>
+    >(Ability as AbilityClass<AppAbility>);
+    //User - Content Interaction
+    can(Action.Read, Content);
+    can(Action.Update, Content, {
+      author: {
+        $elemMatch: {
+          id: user._id
+        }
+      }
+    });
+    can(Action.Delete, Content, {
+      author: {
+        $elemMatch: {
+          id: user._id
+        }
+      }
+    });
+    can(Action.Create, Content, {});
+
+    return build({
+      detectSubjectType: (item) =>
+        item.constructor as ExtractSubjectType<Subjects>
+    });
+  }
 }

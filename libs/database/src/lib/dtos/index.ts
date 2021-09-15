@@ -23,6 +23,7 @@
 import {
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
   Pagination
 } from './common.dto';
 import {
@@ -91,5 +92,6 @@ export {
   UserAccessTokenPayload,
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedsResponse,
-  FeedItemMode
+  FeedItemMode,
+  EntityVisibility
 };
