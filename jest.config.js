@@ -41,6 +41,6 @@ module.exports = {
     '<rootDir>/apps/backgrounds',
     '<rootDir>/libs/utils/cache',
     '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils/producers'
+    '<rootDir>/libs/utils/queue'
   ]
 };

@@ -78,7 +78,7 @@
     "utils-pipes": {
       "tags": []
     },
-    "utils-producers": {
+    "utils-queue": {
       "tags": []
     }
   }

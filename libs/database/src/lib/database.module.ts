@@ -22,8 +22,8 @@
  */
 import {
   NotificationProducer,
-  UtilsProducersModule
-} from '@castcle-api/utils/producers';
+  UtilsQueueModule
+} from '@castcle-api/utils/queue';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
@@ -94,7 +94,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseModule.forRoot(env.db_uri, env.db_options),
     MongooseAsyncFeatures,
     MongooseForFeatures,
-    UtilsProducersModule
+    UtilsQueueModule
   ],
   controllers: [],
   providers: [

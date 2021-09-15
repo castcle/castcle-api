@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationProducer, TopicName } from '@castcle-api/utils/producers';
+import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';

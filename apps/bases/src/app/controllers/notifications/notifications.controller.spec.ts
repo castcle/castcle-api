@@ -38,7 +38,7 @@ import {
   UserDocument
 } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { NotificationProducer, TopicName } from '@castcle-api/utils/producers';
+import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';

@@ -20,18 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
+import { Environment } from '@castcle-api/environments';
+import { BullModule } from '@nestjs/bull';
+import { Module } from '@nestjs/common';
 import { TopicName } from './enum/topic.name';
 import { NotificationMessage } from './messages/notification.message';
-@Injectable()
-export class NotificationProducer {
-  constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
+import { NotificationProducer } from './producers/notification.producer';
 
-  async sendMessage(message: NotificationMessage) {
-    await this.queue.add({
-      notification: message
-    });
-  }
-}
+@Module({
+  imports: [
+    BullModule.forRoot({
+      redis: {
+        host: Environment.redis_host,
+        port: Environment.redis_port
+      }
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Notifications
+    })
+  ],
+  controllers: [],
+  providers: [NotificationProducer],
+  exports: [BullModule, NotificationProducer]
+})
+export class UtilsQueueModule {}
+
+export { TopicName, NotificationProducer, NotificationMessage };

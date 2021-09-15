@@ -23,7 +23,7 @@
 import {
   NotificationMessage,
   NotificationProducer
-} from '@castcle-api/utils/producers';
+} from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
