@@ -44,7 +44,7 @@ import {
 import { Request } from 'express';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
-import { AuthenticationService } from '@castcle-api/database';
+import { AuthenticationService, UserService } from '@castcle-api/database';
 import { Host } from '@castcle-api/utils';
 import {
   ApiResponse,
@@ -73,6 +73,7 @@ import {
 } from './interceptors/guest.interceptor';
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
+import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -161,13 +162,12 @@ export class AuthenticationController {
           account
         );
       }
-
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
       const tokenResult: TokenResponse = await req.$credential.renewTokens(
-        {
-          id: account as unknown as string,
-          preferredLanguage: [req.$language, req.$language],
-          role: account.activateDate ? 'member' : 'guest'
-        },
+        accessTokenPayload,
         {
           id: account as unknown as string,
           role: account.activateDate ? 'member' : 'guest'
@@ -226,9 +226,10 @@ export class AuthenticationController {
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
-          id: credential.account as unknown as string,
-          preferredLanguage: [req.$language, req.$language],
-          role: 'guest'
+          id: credential.account._id as unknown as string,
+          role: 'guest',
+          showAds: true,
+          preferredLanguage: [req.$language]
         },
         {
           id: credential.account as unknown as string,
@@ -241,7 +242,7 @@ export class AuthenticationController {
         device: req.$device,
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
-        languagesPreferences: [req.$language, req.$language]
+        languagesPreferences: [req.$language]
       });
       return {
         accessToken: result.credentialDocument.accessToken,
@@ -284,6 +285,15 @@ export class AuthenticationController {
         );
       if (!this.authService.validateEmail(body.payload.email))
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      //check if castcleId Exist
+      const user = await this.authService.getUserFromCastcleId(
+        body.payload.castcleId
+      );
+      if (user)
+        throw new CastcleException(
+          CastcleStatus.USER_ID_IS_EXIST,
+          req.$language
+        );
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
         {
@@ -301,10 +311,19 @@ export class AuthenticationController {
         body.payload.email,
         accountActivation.verifyToken
       );
-      return {
-        accessToken: req.$credential.accessToken,
-        refreshToken: req.$credential.refreshToken
-      } as TokenResponse;
+      //TODO !!! Need to improve this performance
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
+      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+        accessTokenPayload,
+        {
+          id: currentAccount._id as unknown as string,
+          role: 'member'
+        }
+      );
+      return tokenResult;
     }
     throw new CastcleException(
       CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
@@ -333,14 +352,11 @@ export class AuthenticationController {
       req.$token
     );
     if (credential && credential.isRefreshTokenValid()) {
-      const account = await this.authService.getAccountFromCredential(
-        credential
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(credential);
+      const newAccessToken = await credential.renewAccessToken(
+        accessTokenPayload
       );
-      const newAccessToken = await credential.renewAccessToken({
-        id: account._id,
-        role: account.isGuest ? 'guest' : 'member',
-        preferredLanguage: account.preferences.langagues
-      });
       return {
         accessToken: newAccessToken
       };

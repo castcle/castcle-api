@@ -110,7 +110,8 @@ export const AccountSchemaFactory = (
         {
           'account.isGuest': (doc as AccountDocument).isGuest,
           'account.activateDate': (doc as AccountDocument).activateDate,
-          'account.visibility': (doc as AccountDocument).visibility
+          'account.visibility': (doc as AccountDocument).visibility,
+          'account.preferences': (doc as AccountDocument).preferences
         }
       )
       .exec();
