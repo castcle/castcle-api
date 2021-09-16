@@ -168,4 +168,72 @@ describe('NotificationService', () => {
       expect(notification.items[0].source).toEqual(NotificationSource.Page);
     });
   });
+
+  describe('#getFromId', () => {
+    it('should get notification in db with id', async () => {
+      const allNotification = await service.getAll(result.credentialDocument);
+      const notification = await service.getFromId(allNotification.items[0].id);
+      expect(notification).toEqual(allNotification.items[0]);
+      expect(notification).not.toEqual(allNotification.items[1]);
+    });
+    it('should get empty notification in db with wrong id', async () => {
+      const notification = await service.getFromId('6138afa4f616a467b5c4eb72');
+      const notification2 = await service.getFromId(null);
+      const notification3 = await service.getFromId('');
+      expect(notification).toBeNull();
+      expect(notification2).toBeNull();
+      expect(notification3).toBeNull();
+    });
+  });
+
+  describe('#flagRead', () => {
+    it('should update read flag notification in db', async () => {
+      const allNotification = await service.getAll(result.credentialDocument);
+      const updateRead = allNotification.items[0];
+      const notificationId = updateRead.id;
+
+      await service.flagRead(updateRead);
+      const noti = await service.getFromId(notificationId);
+      expect(noti.read).toEqual(true);
+    });
+    it('should get empty notification in db with empty data', async () => {
+      const noti = await service.getFromId(null);
+      expect(noti).toBeNull;
+    });
+  });
+
+  describe('#flagReadAll', () => {
+    it('should update read flag all notification in db', async () => {
+      const resultUpdate = await service.flagReadAll(result.credentialDocument);
+      const profileNoti = await service.getAll(result.credentialDocument);
+      const pageNoti = await service.getAll(result.credentialDocument, {
+        sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
+        limit: DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+        page: DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
+        source: NotificationSource.Page
+      });
+
+      expect(resultUpdate.n).toEqual(3);
+      expect(profileNoti.items.filter((x) => x.read).length).toEqual(
+        profileNoti.items.length
+      );
+      expect(pageNoti.items.filter((x) => x.read).length).toEqual(
+        pageNoti.items.length
+      );
+    });
+
+    it('should not update read flag notification in db with wrong credential', async () => {
+      const mockCredential = result.credentialDocument;
+      mockCredential.account._id = '6138afa4f616a467b5c4eb72';
+      const resultUpdate = await service.flagReadAll(mockCredential);
+      expect(resultUpdate).toBeNull;
+    });
+
+    it('should not update read flag notification in db with empty credential', async () => {
+      const mockCredential = result.credentialDocument;
+      mockCredential.account._id = null;
+      const resultUpdate = await service.flagReadAll(mockCredential);
+      expect(resultUpdate).toBeNull;
+    });
+  });
 });

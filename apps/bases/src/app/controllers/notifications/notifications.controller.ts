@@ -22,7 +22,8 @@
  */
 import {
   AuthenticationService,
-  NotificationService
+  NotificationService,
+  UserService
 } from '@castcle-api/database';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
@@ -32,6 +33,7 @@ import {
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -48,6 +50,9 @@ import {
   CacheKey,
   Controller,
   Get,
+  HttpCode,
+  Param,
+  Put,
   Query,
   Req,
   UseInterceptors
@@ -56,7 +61,8 @@ import {
   ApiBearerAuth,
   ApiHeader,
   ApiOkResponse,
-  ApiQuery
+  ApiQuery,
+  ApiResponse
 } from '@nestjs/swagger';
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -77,7 +83,8 @@ import {
 export class NotificationsController {
   constructor(
     private notificationService: NotificationService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private userService: UserService
   ) {}
   private readonly logger = new CastLogger(
     NotificationsController.name,
@@ -136,9 +143,66 @@ export class NotificationsController {
         source: notificationSourceOption
       }
     );
+    this.logger.log('Success get all notification');
     return {
       payload: notification.items.map((noti) => noti.toNotificationPayload()),
       pagination: notification.pagination
     };
+  }
+
+  async _getNotificationIfExist(id: string, req: CredentialRequest) {
+    const notification = await this.notificationService.getFromId(id);
+    if (notification) return notification;
+    else
+      throw new CastcleException(
+        CastcleStatus.NOTIFICATION_NOT_FOUND,
+        req.$language
+      );
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Put('notifications/:id/read')
+  @HttpCode(204)
+  async notificationRead(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log('Notification mark read. id:' + id);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (!user) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    const notification = await this._getNotificationIfExist(id, req);
+    await this.notificationService.flagRead(notification);
+    this.logger.log('Success mark read notification');
+    return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Put('notifications/readAll')
+  @HttpCode(204)
+  async notificationReadAll(@Req() req: CredentialRequest) {
+    this.logger.log('Notification mark read all.');
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (!user) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+    await this.notificationService.flagReadAll(req.$credential);
+    this.logger.log('Success mark read all notification');
+    return '';
   }
 }
