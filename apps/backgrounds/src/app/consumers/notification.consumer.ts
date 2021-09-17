@@ -46,20 +46,19 @@ export class NotificationConsumer {
    */
   @Process()
   readOperationJob(job: Job<{ notification: NotificationMessage }>) {
+    this.logger.log(
+      `consume message '${JSON.stringify(job.data.notification)}}' `
+    );
     const deviceToken =
       'cjC1mBtCvqs:APA91bHXVsaOOk-FEcSHQXQzli5v_LV-0QVRaIXePqnTcaXWmSHUeCMwBDE2K0CGrb6b-8oech7z_xiyCn1BezgX1clWDqjWgQQBav1DFibdEAyuq6GSe6N_4c3-3EUR2--P9ysEAjB3';
 
     const message = {
       notification: {
-        title: 'Price drop',
         body: job.data.notification.message
       },
       token: job.data.notification.firebaseToken
     };
 
     this.firebase.messaging.send(message);
-    this.logger.log(
-      `consume message '${JSON.stringify(job.data.notification)}}' `
-    );
   }
 }
