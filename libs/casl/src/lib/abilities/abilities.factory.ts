@@ -25,7 +25,8 @@ import {
   ContentDocument,
   User,
   Content,
-  Account
+  Account,
+  Comment
 } from '@castcle-api/database/schemas';
 import {
   InferSubjects,
@@ -41,7 +42,9 @@ import { EntityVisibility } from '@castcle-api/database/dtos';
 import * as mongoose from 'mongoose';
 
 type Subjects =
-  | InferSubjects<typeof User | typeof Content | typeof Account>
+  | InferSubjects<
+      typeof User | typeof Content | typeof Account | typeof Comment
+    >
   | 'all';
 
 export enum Action {
@@ -50,8 +53,15 @@ export enum Action {
   Read = 'read',
   Update = 'update',
   Delete = 'delete',
-  Engage = 'engage',
-  Follow = 'follow'
+  Engagement = 'engagement',
+  Like = 'like',
+  Recast = 'recast',
+  Quote = 'quote',
+  NotInterest = 'notinterest',
+  Reply = 'reply',
+  Report = 'report',
+  Follow = 'follow',
+  Comment = 'comment'
 }
 
 export type AppAbility = Ability<[Action, Subjects]>;
@@ -81,18 +91,33 @@ export class CaslAbilityFactory {
     /**
      * Content Interaction
      */
-    can(Action.Read, Content);
-    //if use has activate date
-
+    can(Action.Read, 'all');
+    can(Action.Engagement, 'all');
     if (user.activated) {
+      //verify user
       can(Action.Update, Content);
       can(Action.Delete, Content);
       can(Action.Create, Content);
-      can(Action.Engage, Content);
+      can(Action.Like, Content);
+      can(Action.Recast, Content);
+      can(Action.Quote, Content);
+      can(Action.NotInterest, Content);
+      can(Action.Comment, Content);
+      //comment
+      can(Action.Update, Comment);
+      can(Action.Delete, Comment);
+      can(Action.Create, Comment);
+      can(Action.Like, Comment);
+      can(Action.Reply, Content);
+      //page
+      can(Action.Update, User);
+      can(Action.Delete, User);
+      can(Action.Create, User);
+      can(Action.Follow, User);
+      can(Action.NotInterest, User);
+
+      can(Action.Report, 'all');
     }
-    /**
-     * Comment
-     */
 
     return build({
       detectSubjectType: (item) =>
