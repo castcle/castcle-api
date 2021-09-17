@@ -89,5 +89,6 @@ export const Environment = {
   twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
   // Otp
   otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
-  otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number //second for otp to expire
+  otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
+  firebase_sdk_file_path: process.env.FIREBASE_SDK_FILE_PATH
 };

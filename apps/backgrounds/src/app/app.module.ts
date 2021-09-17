@@ -1,3 +1,4 @@
+import { Environment } from '@castcle-api/environments';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
@@ -22,12 +23,18 @@ import { UtilsQueueModule } from '@castcle-api/utils/queue';
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
+import { FirebaseModule } from 'nestjs-firebase';
 import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
 
 @Module({
-  imports: [UtilsQueueModule],
+  imports: [
+    UtilsQueueModule,
+    FirebaseModule.forRoot({
+      googleApplicationCredential: Environment.firebase_sdk_file_path
+    })
+  ],
   controllers: [BackgroundController],
   providers: [AppService, NotificationConsumer]
 })
