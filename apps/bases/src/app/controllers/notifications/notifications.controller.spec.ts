@@ -38,6 +38,8 @@ import {
   UserDocument
 } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -128,6 +130,8 @@ describe('NotificationsController', () => {
   let wrongUserCredential: CredentialDocument;
   let notification: NotificationService;
   let user: UserDocument;
+  let producer: NotificationProducer;
+  const fakeProcessor = jest.fn();
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -138,6 +142,14 @@ describe('NotificationsController', () => {
         CacheModule.register({
           store: 'memory',
           ttl: 1000
+        }),
+        BullModule.registerQueue({
+          name: TopicName.Notifications,
+          redis: {
+            host: '0.0.0.0',
+            port: 6380
+          },
+          processors: [fakeProcessor]
         })
       ],
       controllers: [NotificationsController],
@@ -146,13 +158,15 @@ describe('NotificationsController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        NotificationService
+        NotificationService,
+        NotificationProducer
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
+    producer = app.get<NotificationProducer>(NotificationProducer);
     const resultAccount = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',

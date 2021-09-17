@@ -20,25 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  NotificationMessage,
+  NotificationProducer
+} from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+  CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationQueryOptions
+  NotificationQueryOptions,
+  NotificationSource,
+  NotificationType
 } from '../dtos/notification.dto';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
-
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectModel('Notification')
     public _notificationModel: Model<NotificationDocument>,
     @InjectModel('User')
-    public _userModel: UserModel
+    public _userModel: UserModel,
+    private readonly notificationProducer: NotificationProducer
   ) {}
 
   /**
@@ -149,5 +156,29 @@ export class NotificationService {
     } else {
       return null;
     }
+  };
+
+  /**
+   * create notofication and push to queue
+   * @param {CreateNotification} notificationData notofication document
+   * @returns {NotificationDocument}
+   */
+  notifyToUser = async (notificationData: CreateNotification) => {
+    const createResult = await new this._notificationModel(
+      notificationData
+    ).save();
+
+    if (createResult) {
+      const message: NotificationMessage = {
+        id: createResult._id,
+        message: createResult.message,
+        source: NotificationSource[createResult.source],
+        sourceUserId: createResult.sourceUserId._id,
+        type: NotificationType[createResult.type],
+        targetRefId: createResult.targetRef
+      };
+      this.notificationProducer.sendMessage(message);
+    }
+    return createResult;
   };
 }

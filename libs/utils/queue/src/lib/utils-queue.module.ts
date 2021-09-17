@@ -20,34 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { Environment } from '@castcle-api/environments';
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { BaseController } from './app.controller';
-import { AppService } from './app.service';
-import { FeedController } from './controllers/feeds/feed.controller';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { PageController } from './controllers/pages/pages.controller';
+import { TopicName } from './enum/topic.name';
+import { NotificationMessage } from './messages/notification.message';
+import { NotificationProducer } from './producers/notification.producer';
 
 @Module({
   imports: [
-    DatabaseModule,
-    UtilsInterceptorsModule,
-    UtilsPipesModule,
-    UtilsCacheModule,
-    UtilsQueueModule
+    BullModule.forRoot({
+      redis: {
+        host: Environment.redis_host,
+        port: Environment.redis_port
+      }
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Notifications
+    })
   ],
-  controllers: [
-    HealthyController,
-    PageController,
-    BaseController,
-    NotificationsController,
-    FeedController
-  ],
-  providers: [AppService]
+  controllers: [],
+  providers: [NotificationProducer],
+  exports: [BullModule, NotificationProducer]
 })
-export class BaseModule {}
+export class UtilsQueueModule {}
+
+export { TopicName, NotificationProducer, NotificationMessage };
