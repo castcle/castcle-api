@@ -226,10 +226,10 @@ export class AuthenticationController {
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
-          id: credential.account as unknown as string,
-          preferredLanguage: [req.$language, req.$language],
+          id: credential.account._id as unknown as string,
           role: 'guest',
-          showAds: true
+          showAds: true,
+          preferredLanguage: [req.$language]
         },
         {
           id: credential.account as unknown as string,
@@ -242,7 +242,7 @@ export class AuthenticationController {
         device: req.$device,
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
-        languagesPreferences: [req.$language, req.$language]
+        languagesPreferences: [req.$language]
       });
       return {
         accessToken: result.credentialDocument.accessToken,
@@ -311,10 +311,19 @@ export class AuthenticationController {
         body.payload.email,
         accountActivation.verifyToken
       );
-      return {
-        accessToken: req.$credential.accessToken,
-        refreshToken: req.$credential.refreshToken
-      } as TokenResponse;
+      //TODO !!! Need to improve this performance
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
+      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+        accessTokenPayload,
+        {
+          id: currentAccount._id as unknown as string,
+          role: 'member'
+        }
+      );
+      return tokenResult;
     }
     throw new CastcleException(
       CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,

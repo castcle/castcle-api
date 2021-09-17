@@ -30,12 +30,16 @@ import {
 } from '@castcle-api/database';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationSource
+  NotificationSource,
+  NotificationType
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -61,14 +65,73 @@ const closeInMongodConnection = async () => {
   if (mongodMock) await mongodMock.stop();
 };
 
+const buildMockData = async (
+  notification: NotificationService,
+  user: UserDocument,
+  userCredential: CredentialDocument
+) => {
+  await creatMockData(
+    notification,
+    user,
+    NotificationSource.Profile,
+    NotificationType.Comment,
+    '6138afa4f616a467b5c4eb72',
+    userCredential
+  );
+
+  await creatMockData(
+    notification,
+    user,
+    NotificationSource.Page,
+    NotificationType.Comment,
+    '6138afa4f616a467b5c4eb72',
+    userCredential
+  );
+
+  await creatMockData(
+    notification,
+    user,
+    NotificationSource.Profile,
+    NotificationType.System,
+    '6138afa4f616a467b5c4eb72',
+    userCredential
+  );
+};
+
+const creatMockData = async (
+  notification: NotificationService,
+  user: UserDocument,
+  sourceType: NotificationSource,
+  typeNoti: NotificationType,
+  docRefId: string,
+  userCredential: CredentialDocument
+) => {
+  const newNotification = new notification._notificationModel({
+    avatar: '',
+    message: `sample ${sourceType}`,
+    source: sourceType,
+    sourceUserId: user,
+    type: typeNoti,
+    targetRef: {
+      id: docRefId
+    },
+    read: false,
+    credential: userCredential
+  });
+  await newNotification.save();
+};
+
 describe('NotificationsController', () => {
   let controller: NotificationsController;
   let app: TestingModule;
   let userService: UserService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
+  let wrongUserCredential: CredentialDocument;
   let notification: NotificationService;
   let user: UserDocument;
+  let producer: NotificationProducer;
+  const fakeProcessor = jest.fn();
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -79,6 +142,14 @@ describe('NotificationsController', () => {
         CacheModule.register({
           store: 'memory',
           ttl: 1000
+        }),
+        BullModule.registerQueue({
+          name: TopicName.Notifications,
+          redis: {
+            host: '0.0.0.0',
+            port: 6380
+          },
+          processors: [fakeProcessor]
         })
       ],
       controllers: [NotificationsController],
@@ -87,21 +158,29 @@ describe('NotificationsController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        NotificationService
+        NotificationService,
+        NotificationProducer
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
-    const result = await authService.createAccount({
+    producer = app.get<NotificationProducer>(NotificationProducer);
+    const resultAccount = await authService.createAccount({
+      device: 'iPhone',
+      deviceUUID: 'iphone12345',
+      header: { platform: 'iphone' },
+      languagesPreferences: ['th', 'th']
+    });
+    const resultWrongAccount = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
       languagesPreferences: ['th', 'th']
     });
     const accountActivation = await authService.signupByEmail(
-      result.accountDocument,
+      resultAccount.accountDocument,
       {
         email: 'test@gmail.com',
         displayId: 'test1234',
@@ -109,54 +188,19 @@ describe('NotificationsController', () => {
         password: '1234AbcD'
       }
     );
-    userCredential = result.credentialDocument;
-    user = await userService.getUserFromCredential(result.credentialDocument);
+    userCredential = resultAccount.credentialDocument;
+    wrongUserCredential = resultWrongAccount.credentialDocument;
+    user = await userService.getUserFromCredential(
+      resultAccount.credentialDocument
+    );
 
-    const newNoti = new notification._notificationModel({
-      avatar: '',
-      message: 'sample profile',
-      source: 'profile',
-      sourceUserId: user,
-      type: 'comment',
-      targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
-      },
-      read: false,
-      credential: result.credentialDocument
-    });
-    await newNoti.save();
-
-    const newNoti2 = new notification._notificationModel({
-      avatar: '',
-      message: 'sample page',
-      source: 'page',
-      sourceUserId: user,
-      type: 'comment',
-      targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
-      },
-      read: false,
-      credential: result.credentialDocument
-    });
-    await newNoti2.save();
-    const newNoti3 = new notification._notificationModel({
-      avatar: '',
-      message: 'sample page',
-      source: 'profile',
-      sourceUserId: user,
-      type: 'system',
-      targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
-      },
-      read: false,
-      credential: result.credentialDocument
-    });
-    await newNoti3.save();
+    await buildMockData(notification, user, userCredential);
   });
 
   afterAll(async () => {
     await closeInMongodConnection();
   });
+
   describe('getNotification', () => {
     it('should return NotificationReponse that contain all notification default option [profile]', async () => {
       const responseResult = await controller.getAll({
@@ -168,7 +212,7 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample page',
+            message: 'sample profile',
             source: 'profile',
             read: false,
             content: {
@@ -250,6 +294,83 @@ describe('NotificationsController', () => {
       );
       expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
         0
+      );
+    });
+  });
+
+  describe('notifications read', () => {
+    it('should success update read status', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      const readNoti = allNotification.payload[0];
+      await controller.notificationRead(readNoti.id, {
+        $credential: userCredential
+      } as any);
+
+      const result = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      expect(
+        result.payload.find((x) => x.id.toString() === readNoti.id.toString())
+          .read
+      ).toEqual(true);
+    });
+
+    it('should return Exception as expect', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      await expect(
+        controller.notificationRead('', {
+          $credential: userCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
+      );
+
+      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.notificationRead('', {
+          $credential: wrongUserCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('notifications read all', () => {
+    it('should success update all read status', async () => {
+      console.log(userCredential.account._id);
+      await controller.notificationReadAll({
+        $credential: userCredential
+      } as any);
+
+      const result = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      expect(result.payload.filter((x) => x.read).length).toEqual(
+        result.payload.length
+      );
+    });
+
+    it('should return Exception as expect', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.notificationRead('', {
+          $credential: wrongUserCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
     });
   });

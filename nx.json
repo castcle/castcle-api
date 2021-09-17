@@ -80,6 +80,9 @@
     },
     "utils-pipes": {
       "tags": []
+    },
+    "utils-queue": {
+      "tags": []
     }
   }
 }

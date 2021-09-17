@@ -43,6 +43,7 @@ import {
   FeedsResponse
 } from './feedItem.dto';
 import {
+  CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationPayloadDto,
   NotificationResponse,
@@ -93,5 +94,6 @@ export {
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedsResponse,
   FeedItemMode,
-  EntityVisibility
+  EntityVisibility,
+  CreateNotification
 };

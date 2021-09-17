@@ -20,28 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
+import { TopicName } from '../enum/topic.name';
+import { NotificationMessage } from '../messages/notification.message';
+@Injectable()
+export class NotificationProducer {
+  constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/utils/queue'
-  ]
-};
+  async sendMessage(message: NotificationMessage) {
+    await this.queue.add({
+      notification: message
+    });
+  }
+}

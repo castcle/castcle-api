@@ -25,12 +25,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/authentications/src/environments/environment.ts",
-                  "with": "apps/authentications/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/authentications/src/environments/environment.ts",
+                "with": "apps/authentications/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -84,12 +82,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/backgrounds/src/environments/environment.ts",
-                  "with": "apps/backgrounds/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/backgrounds/src/environments/environment.ts",
+                "with": "apps/backgrounds/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -143,12 +139,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/bases/src/environments/environment.ts",
-                  "with": "apps/bases/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/bases/src/environments/environment.ts",
+                "with": "apps/bases/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -252,12 +246,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/contents/src/environments/environment.ts",
-                  "with": "apps/contents/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/contents/src/environments/environment.ts",
+                "with": "apps/contents/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -336,12 +328,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/engagements/src/environments/environment.ts",
-                  "with": "apps/engagements/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/engagements/src/environments/environment.ts",
+                "with": "apps/engagements/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -445,12 +435,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/metadata/src/environments/environment.ts",
-                  "with": "apps/metadata/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/metadata/src/environments/environment.ts",
+                "with": "apps/metadata/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -504,12 +492,10 @@
               "optimization": true,
               "extractLicenses": true,
               "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/users/src/environments/environment.ts",
-                  "with": "apps/users/src/environments/environment.prod.ts"
-                }
-              ]
+              "fileReplacements": [{
+                "replace": "apps/users/src/environments/environment.ts",
+                "with": "apps/users/src/environments/environment.prod.ts"
+              }]
             }
           }
         },
@@ -684,6 +670,31 @@
           ],
           "options": {
             "jestConfig": "libs/utils/pipes/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "utils-queue": {
+      "root": "libs/utils/queue",
+      "sourceRoot": "libs/utils/queue/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/queue/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/queue"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/queue/jest.config.js",
             "passWithNoTests": true
           }
         }

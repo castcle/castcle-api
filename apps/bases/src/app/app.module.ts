@@ -24,12 +24,13 @@ import { DatabaseModule } from '@castcle-api/database';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { BaseController } from './app.controller';
 import { AppService } from './app.service';
+import { FeedController } from './controllers/feeds/feed.controller';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 import { NotificationsController } from './controllers/notifications/notifications.controller';
-import { FeedController } from './controllers/feeds/feed.controller';
 import { PageController } from './controllers/pages/pages.controller';
 
 @Module({
@@ -37,7 +38,8 @@ import { PageController } from './controllers/pages/pages.controller';
     DatabaseModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    UtilsCacheModule
+    UtilsCacheModule,
+    UtilsQueueModule
   ],
   controllers: [
     HealthyController,
