@@ -20,26 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import {
+  NotificationMessage,
+  NotificationProducer
+} from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+  CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
-  NotificationQueryOptions
+  NotificationQueryOptions,
+  NotificationSource,
+  NotificationType
 } from '../dtos/notification.dto';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
-
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectModel('Notification')
     public _notificationModel: Model<NotificationDocument>,
     @InjectModel('User')
-    public _userModel: UserModel
+    public _userModel: UserModel,
+    private readonly notificationProducer: NotificationProducer
   ) {}
 
   /**
@@ -86,5 +92,93 @@ export class NotificationService {
       items: result,
       pagination: createPagination(options, totalDocument)
     };
+  };
+
+  /**
+   * get notification from notification's id
+   * @param {string} id notification's id
+   * @returns {NotificationDocument}
+   */
+  getFromId = async (id: string) => {
+    const notification = await this._notificationModel
+      .findById(id ? id : null)
+      .exec();
+    if (notification) return notification;
+    return null;
+  };
+
+  /**
+   * update read flag from notofication
+   * @param {NotificationDocument} notification notofication document
+   * @returns {NotificationDocument}
+   */
+  flagRead = async (notification: NotificationDocument) => {
+    if (notification) {
+      notification.read = true;
+      return notification.save();
+    } else {
+      return null;
+    }
+  };
+
+  /**
+   * update read flag all notofication
+   * @param {CredentialDocument} credential
+   * @returns {UpdateWriteOpResult} update result status
+   */
+  flagReadAll = async (credential: CredentialDocument) => {
+    const user = await this._userModel
+      .findOne({
+        ownerAccount:
+          credential.account && credential.account._id
+            ? credential.account._id
+            : null
+      })
+      .exec();
+
+    if (user) {
+      const findFilter: {
+        sourceUserId: any;
+      } = {
+        sourceUserId: user._id
+      };
+      console.log(findFilter);
+
+      return await this._notificationModel
+        .updateMany(findFilter, { read: true }, null, (err: any, docs: any) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log('Updated Docs : ', docs);
+          }
+        })
+        .exec();
+    } else {
+      return null;
+    }
+  };
+
+  /**
+   * create notofication and push to queue
+   * @param {CreateNotification} notificationData notofication document
+   * @returns {NotificationDocument}
+   */
+  notifyToUser = async (notificationData: CreateNotification) => {
+    const createResult = await new this._notificationModel(
+      notificationData
+    ).save();
+
+    if (createResult) {
+      const message: NotificationMessage = {
+        id: createResult._id,
+        message: createResult.message,
+        source: NotificationSource[createResult.source],
+        sourceUserId: createResult.sourceUserId._id,
+        type: NotificationType[createResult.type],
+        targetRefId: createResult.targetRef
+      };
+      this.notificationProducer.sendMessage(message);
+    }
+    return createResult;
   };
 }

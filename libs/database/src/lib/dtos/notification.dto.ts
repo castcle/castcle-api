@@ -88,3 +88,20 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
   page: 1,
   limit: 25
 } as NotificationQueryOptions;
+
+export interface CreateNotification {
+  avatar: string;
+  message: string;
+  source: NotificationSource;
+  sourceUserId: {
+    _id: string;
+  };
+  type: NotificationType;
+  targetRef: {
+    id: string;
+  };
+  read: boolean;
+  credential: {
+    _id: string;
+  };
+}
