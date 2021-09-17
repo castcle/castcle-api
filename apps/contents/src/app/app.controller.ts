@@ -43,6 +43,7 @@ import {
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
+  ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   SaveContentDto
@@ -245,16 +246,17 @@ export class ContentController {
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ) {
-    const content = await this.getContents(
-      req,
-      sortByOption,
-      pageOption,
-      limitOption,
-      contentTypeOption
-    );
+    const result = await this.contentService.getContentsForAdmin({
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: contentTypeOption
+    });
+
     return {
-      payload: content.toContentPayload()
-    } as ContentResponse;
+      payload: result.items.map((c) => c.toContentPayload()),
+      pagination: result.pagination
+    } as ContentsResponse;
   }
 
   @ApiBearerAuth()

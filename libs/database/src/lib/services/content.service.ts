@@ -47,6 +47,7 @@ import {
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { async } from 'rxjs';
 
 @Injectable()
 export class ContentService {
@@ -399,5 +400,39 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     }).save();
     return { recastContent, engagement };
+  };
+
+  /**
+   * Get content this was meant to give to admin only
+   * @param {CastcleContentQueryOptions} options
+   * @returns
+   */
+  getContentsForAdmin = async (
+    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
+  ) => {
+    const findFilter: {
+      type?: string;
+      visibility: EntityVisibility;
+    } = {
+      visibility: EntityVisibility.Publish
+    };
+    if (options.type) findFilter.type = options.type;
+    const query = this._contentModel
+      .find(findFilter)
+      .skip(options.page - 1)
+      .limit(options.limit);
+    const totalDocument = await this._contentModel.count(findFilter).exec();
+    if (options.sortBy.type === 'desc') {
+      return {
+        total: totalDocument,
+        items: await query.sort(`-${options.sortBy.field}`).exec(),
+        pagination: createPagination(options, totalDocument)
+      };
+    } else
+      return {
+        total: totalDocument,
+        items: await query.sort(`${options.sortBy.field}`).exec(),
+        pagination: createPagination(options, totalDocument)
+      };
   };
 }
