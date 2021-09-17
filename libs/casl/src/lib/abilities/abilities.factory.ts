@@ -36,47 +36,63 @@ import {
   MongoQuery
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { EntityVisibility } from '@castcle-api/database/dtos';
+import * as mongoose from 'mongoose';
 
 type Subjects =
   | InferSubjects<typeof User | typeof Content | typeof Account>
   | 'all';
 
-enum Action {
+export enum Action {
   Manage = 'manage',
   Create = 'create',
   Read = 'read',
   Update = 'update',
   Delete = 'delete',
-  Engage = 'engage'
+  Engage = 'engage',
+  Follow = 'follow'
 }
 
 export type AppAbility = Ability<[Action, Subjects]>;
 
 @Injectable()
 export class CaslAbilityFactory {
+  getUserManageContentAbility(user: UserDocument, content: ContentDocument) {
+    const { can, cannot, build } = new AbilityBuilder<
+      Ability<[Action, Subjects]>
+    >(Ability as AbilityClass<AppAbility>);
+    if (String(user._id) === String(content.author.id)) {
+      can(Action.Update, Content);
+      can(Action.Delete, Content);
+    }
+
+    return build({
+      detectSubjectType: (item) => {
+        console.log(item);
+        return item.constructor as ExtractSubjectType<Subjects>;
+      }
+    });
+  }
   createForUser(user: User) {
     const { can, cannot, build } = new AbilityBuilder<
       Ability<[Action, Subjects]>
     >(Ability as AbilityClass<AppAbility>);
-    //User - Content Interaction
+    /**
+     * Content Interaction
+     */
     can(Action.Read, Content);
-    can(Action.Update, Content, {
-      author: {
-        $elemMatch: {
-          id: user._id
-        }
-      }
-    });
-    can(Action.Delete, Content, {
-      author: {
-        $elemMatch: {
-          id: user._id
-        }
-      }
-    });
-    can(Action.Create, Content, {});
+    //if use has activate date
+
+    if (user.activated) {
+      can(Action.Update, Content);
+      can(Action.Delete, Content);
+      can(Action.Create, Content);
+      can(Action.Engage, Content);
+    }
+    /**
+     * Comment
+     */
 
     return build({
       detectSubjectType: (item) =>

@@ -73,7 +73,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Account',
     useFactory: AccountSchemaFactory,
-    inject: [getModelToken('Credential')]
+    inject: [getModelToken('Credential'), getModelToken('User')]
   },
   {
     name: 'User',
