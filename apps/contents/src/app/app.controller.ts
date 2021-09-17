@@ -61,7 +61,7 @@ import {
   ApiProperty,
   ApiResponse
 } from '@nestjs/swagger';
-import { ContentDocument } from '@castcle-api/database/schemas';
+import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
 import {
   ContentTypePipe,
   LimitPipe,
@@ -69,7 +69,8 @@ import {
   SortByPipe
 } from '@castcle-api/utils/pipes';
 import { Configs } from '@castcle-api/environments';
-
+import { CaslAbilityFactory, Action } from '@castcle-api/casl';
+import { Model } from 'mongoose';
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
   description: Configs.RequiredHeaders.AcceptLanguague.description,
@@ -91,7 +92,8 @@ export class ContentController {
     private readonly appService: AppService,
     private authService: AuthenticationService,
     private userService: UserService,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private caslAbility: CaslAbilityFactory
   ) {}
   private readonly logger = new CastLogger(
     ContentController.name,
@@ -166,10 +168,14 @@ export class ContentController {
         req.$language
       );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const result = this.contentService.checkUserPermissionForEditContent(
+    console.log('caslUser', user as User);
+    const ability = this.caslAbility.getUserManageContentAbility(user, content);
+    const result = ability.can(Action.Update, Content);
+    console.log('result', result);
+    /*const result = this.contentService.checkUserPermissionForEditContent(
       user,
       content
-    );
+    );*/
     if (result) return true;
     else
       throw new CastcleException(

@@ -32,6 +32,7 @@ import { UserService, AuthenticationService } from '@castcle-api/database';
 import { ContentController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
   AccountDocument,
   CredentialDocument,
@@ -85,7 +86,8 @@ describe('PageController', () => {
         AppService,
         UserService,
         AuthenticationService,
-        ContentService
+        ContentService,
+        CaslAbilityFactory
       ]
     }).compile();
     service = app.get<UserService>(UserService);

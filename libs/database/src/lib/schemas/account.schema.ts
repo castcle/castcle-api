@@ -25,12 +25,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model, model } from 'mongoose';
 import { CastcleBase } from './base.schema';
-import { AccountActivationDocument } from './accountActivation.schema';
-import { Environment as env } from '@castcle-api/environments';
+import { preAccountSave, postAccountSave } from '../hooks/account.save';
 import { CredentialDocument, CredentialSchema } from './credential.schema';
 import { Password } from '@castcle-api/utils';
 import { User } from './user.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { UserDocument } from '.';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -96,25 +96,19 @@ AccountSchema.methods.verifyPassword = function (password: string) {
 };
 
 export const AccountSchemaFactory = (
-  credentialModel: Model<CredentialDocument>
+  credentialModel: Model<CredentialDocument>,
+  userModel: Model<UserDocument>
 ): mongoose.Schema<any> => {
   AccountSchema.pre('save', function (next) {
-    if (!(this as AccountDocument).visibility)
-      (this as AccountDocument).visibility = EntityVisibility.Publish;
+    preAccountSave(this as AccountDocument);
     next();
   });
   AccountSchema.post('save', async function (doc, next) {
-    await credentialModel
-      .updateMany(
-        { 'account._id': doc._id },
-        {
-          'account.isGuest': (doc as AccountDocument).isGuest,
-          'account.activateDate': (doc as AccountDocument).activateDate,
-          'account.visibility': (doc as AccountDocument).visibility,
-          'account.preferences': (doc as AccountDocument).preferences
-        }
-      )
-      .exec();
+    //add activate process
+    await postAccountSave(doc, {
+      credentialModel,
+      userModel
+    });
     next();
   });
   return AccountSchema;

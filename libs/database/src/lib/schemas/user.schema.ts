@@ -96,6 +96,9 @@ export class User extends CastcleBase {
   verified: boolean;
 
   @Prop()
+  activated: boolean;
+
+  @Prop()
   followerCount: number;
 
   @Prop()
@@ -186,6 +189,9 @@ export const UserSchemaFactory = (
       (this as UserDocument).followedCount = 0;
     if (!(this as UserDocument).followerCount)
       (this as UserDocument).followerCount = 0;
+    //add activate state
+    if (!(this as UserDocument).activated)
+      (this as UserDocument).activated = false;
     next();
   });
   UserSchema.methods.follow = async function (followedUser: UserDocument) {
