@@ -1,5 +1,3 @@
-import { Environment } from '@castcle-api/environments';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -22,17 +20,22 @@ import { UtilsQueueModule } from '@castcle-api/utils/queue';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
 import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
-
 @Module({
   imports: [
     UtilsQueueModule,
     FirebaseModule.forRoot({
-      googleApplicationCredential: Environment.firebase_sdk_file_path
+      googleApplicationCredential: {
+        projectId: Environment.firebase_project_id,
+        clientEmail: Environment.firebase_client_email,
+        privateKey: Environment.firebase_private_key
+      }
     })
   ],
   controllers: [BackgroundController],

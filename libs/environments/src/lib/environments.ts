@@ -90,5 +90,7 @@ export const Environment = {
   // Otp
   otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
   otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
-  firebase_sdk_file_path: process.env.FIREBASE_SDK_FILE_PATH
+  firebase_project_id: process.env.PROJECT_ID,
+  firebase_client_email: process.env.CLIENT_EMAIL,
+  firebase_private_key: process.env.PRIVATE_KEY
 };

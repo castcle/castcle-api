@@ -177,7 +177,7 @@ export class NotificationService {
       .findOne({ _id: notificationData.credential._id })
       .exec();
 
-    if (createResult) {
+    if (createResult && credential) {
       const message: NotificationMessage = {
         id: createResult._id,
         message: createResult.message,
