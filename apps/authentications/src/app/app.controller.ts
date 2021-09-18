@@ -145,43 +145,51 @@ export class AuthenticationController {
   @Post('login')
   @HttpCode(200)
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
-    const account = await this.authService.getAccountFromEmail(body.username);
-    if (!account)
-      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
-    if (await account.verifyPassword(body.password)) {
-      const embedCredentialByDeviceUUID = account.credentials.find(
-        (item) => item.deviceUUID === req.$credential.deviceUUID
-      );
-      if (embedCredentialByDeviceUUID) {
-        req.$credential = await this.authService._credentialModel
-          .findById(embedCredentialByDeviceUUID._id)
-          .exec();
-      } else {
-        const newCredentialDoc = await this.authService.linkCredentialToAccount(
-          req.$credential,
-          account
+    try {
+      const account = await this.authService.getAccountFromEmail(body.username);
+      if (!account)
+        throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      if (await account.verifyPassword(body.password)) {
+        const embedCredentialByDeviceUUID = account.credentials.find(
+          (item) => item.deviceUUID === req.$credential.deviceUUID
         );
-      }
-      const accessTokenPayload =
-        await this.authService.getAccessTokenPayloadFromCredential(
-          req.$credential
-        );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
-        accessTokenPayload,
-        {
-          id: account as unknown as string,
-          role: account.activateDate ? 'member' : 'guest'
+        if (embedCredentialByDeviceUUID) {
+          req.$credential = await this.authService._credentialModel
+            .findById(embedCredentialByDeviceUUID._id)
+            .exec();
+        } else {
+          const newCredentialDoc =
+            await this.authService.linkCredentialToAccount(
+              req.$credential,
+              account
+            );
         }
-      );
-      return {
-        accessToken: tokenResult.accessToken,
-        refreshToken: tokenResult.refreshToken
-      } as TokenResponse;
-    } else
+        const accessTokenPayload =
+          await this.authService.getAccessTokenPayloadFromCredential(
+            req.$credential
+          );
+        const tokenResult: TokenResponse = await req.$credential.renewTokens(
+          accessTokenPayload,
+          {
+            id: account as unknown as string,
+            role: account.activateDate ? 'member' : 'guest'
+          }
+        );
+        return {
+          accessToken: tokenResult.accessToken,
+          refreshToken: tokenResult.refreshToken
+        } as TokenResponse;
+      } else
+        throw new CastcleException(
+          CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
+          req.$language
+        );
+    } catch (error) {
       throw new CastcleException(
         CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
         req.$language
       );
+    }
   }
 
   // PLAN : !!!

@@ -83,9 +83,16 @@ interface IContent extends Document {
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
   toContentPayload(): ContentPayloadDto;
+  toContent(): Content;
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
+
+ContentSchema.methods.toContent = function () {
+  const t = new Content();
+  t.author = (this as ContentDocument).author;
+  return t;
+};
 
 ContentSchema.methods.toContentPayload = function () {
   //Todo Need to implement recast quote cast later on
