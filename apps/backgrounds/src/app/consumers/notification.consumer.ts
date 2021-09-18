@@ -46,18 +46,22 @@ export class NotificationConsumer {
    */
   @Process()
   readOperationJob(job: Job<{ notification: NotificationMessage }>) {
-    this.logger.log(
-      `consume message '${JSON.stringify(job.data.notification)}}' `
-    );
+    try {
+      this.logger.log(
+        `consume message '${JSON.stringify(job.data.notification)}}' `
+      );
 
-    const message = {
-      notification: {
-        body: job.data.notification.message
-      },
-      token: job.data.notification.firebaseToken
-    };
+      const message = {
+        notification: {
+          body: job.data.notification.message
+        },
+        token: job.data.notification.firebaseToken
+      };
 
-    this.logger.log(`sending notification. `);
-    this.firebase.messaging.send(message);
+      this.logger.log(`sending notification. `);
+      this.firebase.messaging.send(message);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 }
