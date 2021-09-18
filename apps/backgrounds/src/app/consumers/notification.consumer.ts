@@ -57,6 +57,7 @@ export class NotificationConsumer {
       token: job.data.notification.firebaseToken
     };
 
+    this.logger.log(`sending notification. `);
     this.firebase.messaging.send(message);
   }
 }

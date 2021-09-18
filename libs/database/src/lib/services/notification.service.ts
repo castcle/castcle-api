@@ -169,10 +169,12 @@ export class NotificationService {
    * @returns {NotificationDocument}
    */
   notifyToUser = async (notificationData: CreateNotification) => {
+    console.log('save notification');
     const createResult = await new this._notificationModel(
       notificationData
     ).save();
 
+    console.log('get firebase token');
     const credential = await this._credentialModel
       .findOne({ _id: notificationData.credential._id })
       .exec();
@@ -187,6 +189,7 @@ export class NotificationService {
         targetRefId: createResult.targetRef,
         firebaseToken: credential.firebaseNotificationToken
       };
+      console.log('add to queue');
       this.notificationProducer.sendMessage(message);
     }
     return createResult;
