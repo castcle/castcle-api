@@ -367,7 +367,7 @@ describe('NotificationsController', () => {
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
-        controller.notificationRead('', {
+        controller.notificationReadAll({
           $credential: wrongUserCredential
         } as any)
       ).rejects.toEqual(
@@ -400,15 +400,24 @@ describe('NotificationsController', () => {
     });
 
     it('should return Exception as expect', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
       const allNotification = await controller.getAll({
         $credential: userCredential
       } as any);
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
-        controller.notificationRead('', {
-          $credential: wrongUserCredential
-        } as any)
+        controller.registerToken(
+          {
+            $credential: wrongUserCredential
+          } as any,
+          {
+            deviceUUID: deviceID,
+            firebaseToken: firebaseToken
+          } as RegisterTokenDto
+        )
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
