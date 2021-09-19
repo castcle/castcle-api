@@ -203,6 +203,7 @@ export class NotificationService {
    */
   registerToken = async (registerTokenDto: RegisterTokenDto) => {
     if (registerTokenDto) {
+      console.log('register firebase token');
       return await this._credentialModel
         .updateOne(
           { deviceUUID: registerTokenDto.deviceUUID },
@@ -211,6 +212,33 @@ export class NotificationService {
           }
         )
         .exec();
+    } else {
+      return null;
+    }
+  };
+
+  /**
+   * get total badges from user
+   * @param {CredentialDocument} credential
+   * @returns {string} total number notification
+   */
+  badges = async (credential: CredentialDocument) => {
+    const user = await this._userModel
+      .findOne({
+        ownerAccount: credential.account._id
+      })
+      .exec();
+
+    if (user) {
+      const totalNotification = await this._notificationModel.countDocuments({
+        sourceUserId: user._id,
+        read: false
+      });
+
+      console.log(`total badges : ${totalNotification}`);
+      if (totalNotification === 0) return '';
+      if (totalNotification > 99) return '+99';
+      if (totalNotification <= 99) return totalNotification + '';
     } else {
       return null;
     }

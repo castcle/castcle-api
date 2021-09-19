@@ -355,4 +355,49 @@ describe('NotificationService', () => {
       expect(updateToken).toBeNull();
     });
   });
+
+  describe('#badges', () => {
+    it('should return total notification number when lower than 99', async () => {
+      const badges = await service.badges(result.credentialDocument);
+      expect(badges).toEqual('1');
+    });
+
+    it('should return expty notification when get empty notification', async () => {
+      const credentialData = await authService.createAccount({
+        deviceUUID: '456775345',
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone13'
+      });
+      const badges = await service.badges(credentialData.credentialDocument);
+      expect(badges).toBeNull;
+    });
+
+    it('should return total notification number when more than 99', async () => {
+      for (let i = 0; i < 99; i++) {
+        const newNoti = new service._notificationModel({
+          avatar: '',
+          message: 'sample profile' + i,
+          source: NotificationSource.Profile,
+          sourceUserId: {
+            _id: user._id
+          },
+          type: NotificationType.Comment,
+          targetRef: {
+            id: '6138afa4f616a467b5c4eb72'
+          },
+          read: false,
+          credential: {
+            _id: result.credentialDocument.id
+          }
+        });
+        await newNoti.save();
+      }
+
+      const badges = await service.badges(result.credentialDocument);
+      expect(badges).toEqual('+99');
+    });
+  });
 });
