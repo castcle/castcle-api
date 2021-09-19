@@ -32,7 +32,8 @@ import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '../dtos/notification.dto';
 import {
   CredentialDocument,
@@ -193,5 +194,25 @@ export class NotificationService {
       this.notificationProducer.sendMessage(message);
     }
     return createResult;
+  };
+
+  /**
+   * update firebase token to credential
+   * @param {RegisterTokenDto} registerTokenDto register request
+   * @returns {UpdateWriteOpResult} update result status
+   */
+  registerToken = async (registerTokenDto: RegisterTokenDto) => {
+    if (registerTokenDto) {
+      return await this._credentialModel
+        .updateOne(
+          { deviceUUID: registerTokenDto.deviceUUID },
+          {
+            firebaseNotificationToken: registerTokenDto.firebaseToken
+          }
+        )
+        .exec();
+    } else {
+      return null;
+    }
   };
 }

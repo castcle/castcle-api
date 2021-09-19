@@ -31,7 +31,8 @@ import {
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -164,8 +165,8 @@ describe('NotificationsController', () => {
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
+    notification = app.get<NotificationService>(NotificationService);
     producer = app.get<NotificationProducer>(NotificationProducer);
     const resultAccount = await authService.createAccount({
       device: 'iPhone',
@@ -175,7 +176,7 @@ describe('NotificationsController', () => {
     });
     const resultWrongAccount = await authService.createAccount({
       device: 'iPhone',
-      deviceUUID: 'iphone12345',
+      deviceUUID: 'iphone12345789',
       header: { platform: 'iphone' },
       languagesPreferences: ['th', 'th']
     });
@@ -357,6 +358,45 @@ describe('NotificationsController', () => {
       expect(result.payload.filter((x) => x.read).length).toEqual(
         result.payload.length
       );
+    });
+
+    it('should return Exception as expect', async () => {
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.notificationRead('', {
+          $credential: wrongUserCredential
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('notifications register token', () => {
+    it('should register token successful', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+
+      await controller.registerToken(
+        {
+          $credential: userCredential
+        } as any,
+        {
+          deviceUUID: deviceID,
+          firebaseToken: firebaseToken
+        } as RegisterTokenDto
+      );
+
+      const credentailUpdate = await notification._credentialModel
+        .findOne({ deviceUUID: deviceID })
+        .exec();
+
+      expect(credentailUpdate.firebaseNotificationToken).toEqual(firebaseToken);
     });
 
     it('should return Exception as expect', async () => {

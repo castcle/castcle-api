@@ -30,7 +30,8 @@ import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '../dtos/notification.dto';
 import { env } from '../environment';
 import { UserDocument } from '../schemas';
@@ -203,6 +204,7 @@ describe('NotificationService', () => {
       expect(notification.items[0].source).toEqual(NotificationSource.Profile);
       expect(notification.items[1].source).toEqual(NotificationSource.Profile);
     });
+
     it('should get all notification in db with source as page', async () => {
       const notification = await service.getAll(result.credentialDocument, {
         sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
@@ -222,6 +224,7 @@ describe('NotificationService', () => {
       expect(notification).toEqual(allNotification.items[0]);
       expect(notification).not.toEqual(allNotification.items[1]);
     });
+
     it('should get empty notification in db with wrong id', async () => {
       const notification = await service.getFromId('6138afa4f616a467b5c4eb72');
       const notification2 = await service.getFromId(null);
@@ -242,7 +245,7 @@ describe('NotificationService', () => {
       const noti = await service.getFromId(notificationId);
       expect(noti.read).toEqual(true);
     });
-    it('should get empty notification in db with empty data', async () => {
+    it('should get empty notification with empty data', async () => {
       const noti = await service.getFromId(null);
       expect(noti).toBeNull;
     });
@@ -317,6 +320,39 @@ describe('NotificationService', () => {
       expect(resultData.credential._id.toString()).toEqual(
         newNoti.credential._id
       );
+    });
+  });
+
+  describe('#registerToken', () => {
+    it('should update firebase token fron device uuid in db', async () => {
+      const deviceID = '9999999999';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+      const credentialData = await authService.createAccount({
+        deviceUUID: deviceID,
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone13'
+      });
+
+      const registerData = new RegisterTokenDto();
+      registerData.deviceUUID = deviceID;
+      registerData.firebaseToken = firebaseToken;
+
+      const updateToken = await service.registerToken(registerData);
+      console.log(updateToken);
+      const credentailUpdate = await service._credentialModel
+        .findOne({ deviceUUID: deviceID })
+        .exec();
+
+      expect(credentailUpdate.firebaseNotificationToken).toEqual(firebaseToken);
+    });
+
+    it('should get empty result with empty data', async () => {
+      const updateToken = await service.registerToken(null);
+      expect(updateToken).toBeNull();
     });
   });
 });

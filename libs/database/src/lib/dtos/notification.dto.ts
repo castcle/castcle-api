@@ -105,3 +105,11 @@ export interface CreateNotification {
     _id: string;
   };
 }
+
+export class RegisterTokenDto {
+  @ApiProperty()
+  deviceUUID: string;
+
+  @ApiProperty()
+  firebaseToken: string;
+}

@@ -48,7 +48,8 @@ import {
   NotificationPayloadDto,
   NotificationResponse,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from './notification.dto';
 import { UserAccessTokenPayload } from './token.dto';
 import {
@@ -95,5 +96,6 @@ export {
   FeedsResponse,
   FeedItemMode,
   EntityVisibility,
-  CreateNotification
+  CreateNotification,
+  RegisterTokenDto
 };
