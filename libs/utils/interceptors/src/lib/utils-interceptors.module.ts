@@ -23,6 +23,7 @@ import { DatabaseModule } from '@castcle-api/database';
  */
 import { Module } from '@nestjs/common';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
+import { CaslModule } from '@castcle-api/casl';
 import {
   ContentInterceptor,
   ContentsInterceptor
@@ -38,7 +39,7 @@ import {
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CaslModule],
   controllers: [],
   providers: [],
   exports: []

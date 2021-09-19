@@ -23,6 +23,7 @@
 import {
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
   Pagination
 } from './common.dto';
 import {
@@ -93,5 +94,6 @@ export {
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedsResponse,
   FeedItemMode,
+  EntityVisibility,
   CreateNotification
 };
