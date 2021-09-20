@@ -48,6 +48,7 @@ import {
 } from '@castcle-api/utils/pipes';
 import {
   CacheKey,
+  CacheTTL,
   Controller,
   Get,
   HttpCode,
@@ -96,7 +97,8 @@ export class NotificationsController {
     type: NotificationResponse
   })
   @UseInterceptors(HttpCacheIndividualInterceptor)
-  @CacheKey(CacheKeyName.NotificationsGet)
+  @CacheKey(CacheKeyName.NotificationsGet.Name)
+  @CacheTTL(CacheKeyName.NotificationsGet.Ttl)
   @UseInterceptors(CredentialInterceptor)
   @ApiQuery({
     name: 'sortBy',

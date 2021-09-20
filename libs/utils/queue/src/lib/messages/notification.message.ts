@@ -27,4 +27,5 @@ export interface NotificationMessage {
   sourceUserId: string;
   type: string;
   targetRefId: string;
+  firebaseToken: string;
 }
