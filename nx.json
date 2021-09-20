@@ -30,19 +30,58 @@
     "authentications": {
       "tags": []
     },
-    "feeds": {
+    "backgrounds": {
+      "tags": []
+    },
+    "bases": {
+      "tags": []
+    },
+    "casl": {
+      "tags": []
+    },
+    "commonDate": {
+      "tags": []
+    },
+    "contents": {
+      "tags": []
+    },
+    "database": {
+      "tags": []
+    },
+    "engagements": {
+      "tags": []
+    },
+    "environments": {
+      "tags": []
+    },
+    "logger": {
       "tags": []
     },
     "metadata": {
       "tags": []
     },
-    "notifications": {
-      "tags": []
-    },
-    "searches": {
-      "tags": []
-    },
     "users": {
+      "tags": []
+    },
+    "utils": {
+      "tags": []
+    },
+    "utils-aws": {
+      "tags": []
+    },
+    "utils-cache": {
+      "tags": []
+    },
+    "utils-exception": {
+      "tags": []
+    },
+    "utils-interceptors": {
+      "tags": []
+    },
+    "utils-pipes": {
+      "tags": []
+    },
+    "utils-queue": {
       "tags": []
     }
   }
