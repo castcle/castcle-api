@@ -51,7 +51,7 @@ export class Uploader {
       const saveName =
         options && options.filename
           ? `${options.filename}${extensionName}`
-          : `${Date.now()}`;
+          : `${Date.now()}.${fileType}`;
       console.log({
         Bucket: this.bucket,
         Body: buffer,
