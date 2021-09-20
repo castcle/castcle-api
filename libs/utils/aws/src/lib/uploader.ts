@@ -43,11 +43,15 @@ export class Uploader {
         base64.replace(/^data:image\/\w+;base64,/, ''),
         'base64'
       );
-      const extensionName = options && options.addTime ? `-${Date.now()}` : '';
+      const fileType = base64.match(/[^:/]\w+(?=;|,)/)[0]; //detect file type
+      const extensionName =
+        options && options.addTime
+          ? `-${Date.now()}.${fileType}`
+          : `.${fileType}`;
       const saveName =
         options && options.filename
           ? `${options.filename}${extensionName}`
-          : `${Date.now()}`;
+          : `${Date.now()}.${fileType}`;
       console.log({
         Bucket: this.bucket,
         Body: buffer,
