@@ -56,7 +56,8 @@ describe('CastcleException', () => {
     'PAGE_IS_EXIST',
     'USER_ID_IS_EXIST',
     'FEATURE_NOT_EXIST',
-    'PAYLOAD_TYPE_MISMATCH'
+    'PAYLOAD_TYPE_MISMATCH',
+    'NOTIFICATION_NOT_FOUND'
   ];
   testStatus.forEach((STATUS) => {
     it(`should throw ${STATUS} and code ${

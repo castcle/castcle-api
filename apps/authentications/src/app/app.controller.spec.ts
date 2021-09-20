@@ -28,7 +28,7 @@ import {
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from '@castcle-api/database';
-import { AppController } from './app.controller';
+import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -54,7 +54,7 @@ const closeInMongodConnection = async () => {
 
 describe('AppController', () => {
   let app: TestingModule;
-  let appController: AppController;
+  let appController: AuthenticationController;
   let service: AuthenticationService;
   let appService: AppService;
   beforeAll(async () => {
@@ -64,7 +64,7 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures
       ],
-      controllers: [AppController],
+      controllers: [AuthenticationController],
       providers: [AppService, AuthenticationService]
     }).compile();
     service = app.get<AuthenticationService>(AuthenticationService);
@@ -79,7 +79,9 @@ describe('AppController', () => {
 
   describe('getData', () => {
     it('should return "Welcome to authentications!"', () => {
-      appController = app.get<AppController>(AppController);
+      appController = app.get<AuthenticationController>(
+        AuthenticationController
+      );
       expect(appController.getData()).toEqual(
         'Welcome to authentications!10-11-81'
       );
@@ -303,11 +305,12 @@ describe('AppController', () => {
   });
 
   describe('login', () => {
+    const testId = 'registerId2';
+    const registerEmail = 'sompop2.kulapalanont@gmail.com';
+    const password = 'password12345';
+    const deviceUUID = 'sompop12345';
+    const newDeviceUUID = 'sompop54321';
     it('should be able to login after register', async () => {
-      const testId = 'registerId2';
-      const registerEmail = 'sompop2.kulapalanont@gmail.com';
-      const password = 'password12345';
-      const deviceUUID = 'sompop12345';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
@@ -331,7 +334,7 @@ describe('AppController', () => {
           }
         }
       );
-      // TODO !!! find a way to create a test to detect exception in troller
+      // TODO !!! find a way to create a test to detect exception in controller
       const result = await appController.login(
         {
           $credential: credentialGuest,
@@ -344,6 +347,50 @@ describe('AppController', () => {
         }
       );
       expect(result).toBeDefined();
+    });
+    it('should be able to login with different device', async () => {
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: newDeviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const result = await appController.login(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          password: password,
+          username: registerEmail
+        }
+      );
+      const linkAccount = await service.getAccountFromEmail(registerEmail);
+      expect(linkAccount.credentials.length).toEqual(2);
+      const loginCredential = await service.getCredentialFromAccessToken(
+        result.accessToken
+      );
+      const postResult = await appController.login(
+        {
+          $credential: loginCredential,
+          $token: result.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          password: password,
+          username: registerEmail
+        }
+      );
+      expect(postResult).toBeDefined();
+      //that token could be use for refreshToken;
+      const refreshTokenResult = await appController.refreshToken({
+        $token: postResult.refreshToken,
+        $language: 'th'
+      } as any);
+      expect(refreshTokenResult).toBeDefined();
+      expect(refreshTokenResult.accessToken).toBeDefined();
     });
   });
   describe('verificationEmail', () => {

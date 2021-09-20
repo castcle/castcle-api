@@ -36,6 +36,9 @@
     "bases": {
       "tags": []
     },
+    "casl": {
+      "tags": []
+    },
     "commonDate": {
       "tags": []
     },
@@ -66,6 +69,9 @@
     "utils-aws": {
       "tags": []
     },
+    "utils-cache": {
+      "tags": []
+    },
     "utils-exception": {
       "tags": []
     },
@@ -73,6 +79,9 @@
       "tags": []
     },
     "utils-pipes": {
+      "tags": []
+    },
+    "utils-queue": {
       "tags": []
     }
   }

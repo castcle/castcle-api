@@ -26,11 +26,7 @@ module.exports = {
     '<rootDir>/apps/metadata',
     '<rootDir>/apps/authentications',
     '<rootDir>/apps/users',
-    '<rootDir>/apps/feeds',
-    '<rootDir>/apps/notifications',
-    '<rootDir>/apps/searches',
     '<rootDir>/apps/bases',
-    '<rootDir>/libs/data',
     '<rootDir>/libs/commonDate',
     '<rootDir>/libs/environments',
     '<rootDir>/libs/database',
@@ -42,6 +38,10 @@ module.exports = {
     '<rootDir>/libs/utils/pipes',
     '<rootDir>/apps/contents',
     '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds'
+    '<rootDir>/apps/backgrounds',
+    '<rootDir>/libs/utils/cache',
+    '<rootDir>/libs/ranker',
+    '<rootDir>/libs/casl',
+    '<rootDir>/libs/utils/queue'
   ]
 };

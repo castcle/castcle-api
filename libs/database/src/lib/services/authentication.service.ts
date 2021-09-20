@@ -41,9 +41,12 @@ import {
   AccessTokenPayload,
   RefreshTokenPayload,
   EmailVerifyToken,
-  MemberAccessTokenPayload
+  MemberAccessTokenPayload,
+  UserAccessTokenPayload,
+  PageInfoPayload
 } from '../dtos/token.dto';
 import { EntityVisibility } from '../dtos/common.dto';
+import { Image } from '@castcle-api/utils/aws';
 
 export interface AccountRequirements {
   header: {
@@ -97,8 +100,9 @@ export class AuthenticationService {
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
+      role: 'guest',
       preferredLanguage: accountRequirements.languagesPreferences,
-      role: 'guest'
+      showAds: true
     });
     const refreshTokenResult = this._generateRefreshToken({
       id: accountDocument._id as string,
@@ -108,6 +112,9 @@ export class AuthenticationService {
       account: {
         _id: mongoose.Types.ObjectId(accountDocument._id),
         isGuest: true,
+        preferences: {
+          languages: accountRequirements.languagesPreferences
+        },
         visibility: EntityVisibility.Publish
       },
       accessToken: accessTokenResult.accessToken,
@@ -129,31 +136,68 @@ export class AuthenticationService {
     return { accountDocument, credentialDocument };
   }
 
+  /**
+   * should remove account from credential.account and set it's new account to credential.account
+   * @param {CredentialDocument} credential
+   * @param {AccountDocument} account
+   * @returns {CredentialDocument}
+   */
   async linkCredentialToAccount(
     credential: CredentialDocument,
     account: AccountDocument
   ) {
-    if (account._id === credential.account) {
+    console.log('want to link');
+    console.log(credential, account);
+    if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
     }
+    console.log(
+      'account not match',
+      String(account._id),
+      String(credential.account._id)
+    );
     //remove account old crdentiial
     await this._accountModel.findByIdAndDelete(credential.account);
-    credential.account = account._id;
+    (credential.account as any) = {
+      _id: account._id,
+      visibility: account.visibility,
+      isGuest: account.isGuest,
+      preferences: account.preferences
+    };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
       if (!credentialAccount.credentials) credentialAccount.credentials = [];
-      credentialAccount.credentials.push({
+      /*credentialAccount.credentials.push({
         _id: mongoose.Types.ObjectId(credential._id),
         deviceUUID: credential.deviceUUID
       });
-      await credentialAccount.save();
-    }
+      await credentialAccount.save();*/
+      await this._accountModel
+        .updateOne(
+          { _id: credentialAccount._id },
+          {
+            $push: {
+              credentials: {
+                _id: mongoose.Types.ObjectId(credential._id),
+                deviceUUID: credential.deviceUUID
+              }
+            }
+          }
+        )
+        .exec();
+    } else return null; //this should not happen
+
     //set new account credential to current account
     return credential.save();
   }
 
+  /**
+   * get account from credential.account._id
+   * @param {CredentialDocument} credential
+   * @returns {AccountDocument}
+   */
   getAccountFromCredential = (credential: CredentialDocument) =>
-    this._accountModel.findById(credential.account).exec();
+    this._accountModel.findById(credential.account._id).exec();
 
   getAccountFromEmail = (email: string) =>
     this._accountModel
@@ -310,5 +354,66 @@ export class AuthenticationService {
     });
     session.endSession();
     return newAccount;
+  }
+
+  /**
+   * Generate AccessTokenPayload if user is guest. If user has an account will query Users/Pages to create {UserAccessTokenPayload}
+   * @param {CredentialDocument} credential
+   * @returns {AccessTokenPayload | UserAccessTokenPayload}
+   */
+  async getAccessTokenPayloadFromCredential(credential: CredentialDocument) {
+    //get account
+    //const account = this.getAccountFromCredential(credential);
+    if (credential.account.isGuest) {
+      return {
+        id: credential.account._id,
+        preferredLanguage: credential.account.preferences.langagues,
+        role: credential.account.isGuest ? 'guest' : 'member',
+        showAds: true //TODO !!! need to change this later
+      } as AccessTokenPayload;
+    } else {
+      const user = await this._userModel
+        .findOne({
+          ownerAccount: credential.account._id,
+          type: UserType.People,
+          visibility: EntityVisibility.Publish
+        })
+        .exec();
+      const payload = {
+        id: credential.account._id,
+        role: 'member',
+        preferredLanguage: credential.account.preferences.langagues,
+        showAds: true,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        verified: credential.account.activateDate ? true : false, //use account activation
+        email: credential.account.email
+      } as UserAccessTokenPayload;
+      //get SignUrl for avartar
+      if (user.profile && user.profile.images && user.profile.images.avatar) {
+        const avartar = new Image(user.profile.images.avatar);
+        payload.avatar = avartar.toSignUrl();
+      }
+      //get Pages
+      const pages = await this._userModel
+        .find({
+          ownerAccount: credential.account._id,
+          type: UserType.Page,
+          visibility: EntityVisibility.Publish
+        })
+        .exec();
+      payload.pages = pages.map(
+        (page) =>
+          ({
+            id: page._id,
+            avatar: new Image(page.profile.images.avatar).toSignUrl(),
+            castcleId: page.displayName,
+            displayName: page.displayName,
+            role: 'admin',
+            verified: page.verified
+          } as PageInfoPayload)
+      );
+      return payload;
+    }
   }
 }

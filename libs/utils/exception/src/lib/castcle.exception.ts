@@ -49,7 +49,8 @@ export enum CastcleStatus {
   USER_NAME_IS_EXIST = '3016',
   USER_ID_IS_EXIST = '3017',
   FEATURE_NOT_EXIST = '5001',
-  PAYLOAD_TYPE_MISMATCH = '5002'
+  PAYLOAD_TYPE_MISMATCH = '5002',
+  NOTIFICATION_NOT_FOUND = '6001'
 }
 
 interface ErrorStatus {

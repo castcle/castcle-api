@@ -22,7 +22,7 @@
 FROM public.ecr.aws/castcle/node:latest
 WORKDIR /app
 COPY ./dist/apps/backgrounds .
-ENV PORT=3000
+ENV PORT=80
 EXPOSE ${PORT}
 RUN npm install --production
 # dependencies that nestjs needs

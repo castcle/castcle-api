@@ -23,7 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AppController } from './app.controller';
+import { MetadataController } from './app.controller';
 import { AppService } from './app.service';
 
 describe('AppController', () => {
@@ -31,14 +31,14 @@ describe('AppController', () => {
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      controllers: [AppController],
+      controllers: [MetadataController],
       providers: [AppService]
     }).compile();
   });
 
   describe('getData', () => {
     it('should return "Welcome to metadata!"', () => {
-      const appController = app.get<AppController>(AppController);
+      const appController = app.get<MetadataController>(MetadataController);
       expect(appController.getData()).toEqual({
         message: 'Welcome to metadata!'
       });

@@ -25,11 +25,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   ContentService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  RankerService
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
-import { AppController } from './app.controller';
+import { BaseController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
@@ -52,7 +53,7 @@ const closeInMongodConnection = async () => {
 
 describe('AppController', () => {
   let app: TestingModule;
-  let appController: AppController;
+  let appController: BaseController;
   let service: UserService;
   let appService: AppService;
   beforeAll(async () => {
@@ -62,10 +63,11 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures
       ],
-      controllers: [AppController],
+      controllers: [BaseController],
       providers: [
         AppService,
         UserService,
+        RankerService,
         AuthenticationService,
         ContentService
       ]
@@ -79,7 +81,7 @@ describe('AppController', () => {
 
   describe('getData', () => {
     it('should return "Welcome to bases!"', () => {
-      const appController = app.get<AppController>(AppController);
+      const appController = app.get<BaseController>(BaseController);
       expect(appController.getData()).toEqual({ message: 'Welcome to bases!' });
     });
   });

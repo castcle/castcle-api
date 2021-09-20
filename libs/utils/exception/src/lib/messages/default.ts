@@ -151,5 +151,10 @@ export const ErrorMessages = {
     statusCode: '400',
     code: '5002',
     message: 'type กับ payload ไม่ตรงกัน'
+  },
+  '6001': {
+    statusCode: '400',
+    code: '6001',
+    message: 'ไม่พบการแจ้งเตือน กรุณาลองใหม่อีกครั้ง'
   }
 };

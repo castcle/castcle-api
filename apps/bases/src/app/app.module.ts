@@ -20,19 +20,36 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { PageController } from './controllers/pages/pages.controller';
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { Module } from '@nestjs/common';
+import { BaseController } from './app.controller';
 import { AppService } from './app.service';
+import { FeedController } from './controllers/feeds/feed.controller';
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { NotificationsController } from './controllers/notifications/notifications.controller';
+import { PageController } from './controllers/pages/pages.controller';
+import { CaslModule } from '@castcle-api/casl';
 
 @Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsPipesModule],
-  controllers: [HealthyController, PageController, AppController],
+  imports: [
+    DatabaseModule,
+    CaslModule,
+    UtilsInterceptorsModule,
+    UtilsPipesModule,
+    UtilsCacheModule,
+    UtilsQueueModule
+  ],
+  controllers: [
+    HealthyController,
+    PageController,
+    BaseController,
+    NotificationsController,
+    FeedController
+  ],
   providers: [AppService]
 })
-export class AppModule {}
+export class BaseModule {}

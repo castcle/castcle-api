@@ -23,13 +23,14 @@
 
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
-import { AppController } from './app.controller';
+import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { CaslModule } from '@castcle-api/casl';
 
 @Module({
-  imports: [DatabaseModule],
-  controllers: [AppController, HealthyController],
+  imports: [DatabaseModule, CaslModule],
+  controllers: [AuthenticationController, HealthyController],
   providers: [AppService]
 })
-export class AppModule {}
+export class AuthenticationModule {}

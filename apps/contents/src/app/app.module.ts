@@ -28,10 +28,16 @@ import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { CaslModule } from '@castcle-api/casl';
 
 @Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsPipesModule],
+  imports: [
+    DatabaseModule,
+    CaslModule,
+    UtilsInterceptorsModule,
+    UtilsPipesModule
+  ],
   controllers: [HealthyController, ContentController],
   providers: [AppService]
 })
-export class AppModule {}
+export class ContentModule {}

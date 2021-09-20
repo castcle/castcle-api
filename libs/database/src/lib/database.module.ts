@@ -20,32 +20,37 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module, Global } from '@nestjs/common';
 import {
-  getModelToken,
-  MongooseModule,
-  MongooseModuleOptions
-} from '@nestjs/mongoose';
+  NotificationProducer,
+  UtilsQueueModule
+} from '@castcle-api/utils/queue';
+import { Global, Module } from '@nestjs/common';
+import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
-import { AuthenticationService } from './services/authentication.service';
-import { UserService } from './services/user.service';
-import { ContentService } from './services/content.service';
-import { AccountSchema, AccountSchemaFactory } from './schemas/account.schema';
-import {
-  CredentialSchema,
-  CredentialSchemaFactory
-} from './schemas/credential.schema';
+import { AccountSchemaFactory } from './schemas/account.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { UserSchema, UserSchemaFactory } from './schemas/user.schema';
-import { ContentSchema, ContentSchemaFactory } from './schemas/content.schema';
-import { RelationshipSchemaFactory } from './schemas/relationship.schema';
+import { ContentSchemaFactory } from './schemas/content.schema';
+import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
-import { RevisionchemaFactory } from './schemas/revision.schema';
+import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
+import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
+import { RelationshipSchemaFactory } from './schemas/relationship.schema';
+import { RevisionchemaFactory } from './schemas/revision.schema';
+import { UserSchemaFactory } from './schemas/user.schema';
+import { UxEngagementSchema } from './schemas/uxengagement.schema';
+import { AuthenticationService } from './services/authentication.service';
+import { ContentService } from './services/content.service';
+import { NotificationService } from './services/notification.service';
+import { RankerService } from './services/ranker.service';
+import { UserService } from './services/user.service';
+import { UxEngagementService } from './services/uxengagement.service';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'Otp', schema: OtpSchema }
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'Notification', schema: NotificationSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -53,14 +58,23 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   { name: 'Revision', useFactory: RevisionchemaFactory },
   {
+    name: 'FeedItem',
+    useFactory: FeedItemSchemaFactory
+  },
+  {
     name: 'Content',
     useFactory: ContentSchemaFactory,
-    inject: [getModelToken('Revision')]
+    inject: [
+      getModelToken('Revision'),
+      getModelToken('FeedItem'),
+      getModelToken('User'),
+      getModelToken('Relationship')
+    ]
   },
   {
     name: 'Account',
     useFactory: AccountSchemaFactory,
-    inject: [getModelToken('Credential')]
+    inject: [getModelToken('Credential'), getModelToken('User')]
   },
   {
     name: 'User',
@@ -79,12 +93,35 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   imports: [
     MongooseModule.forRoot(env.db_uri, env.db_options),
     MongooseAsyncFeatures,
-    MongooseForFeatures
+    MongooseForFeatures,
+    UtilsQueueModule
   ],
   controllers: [],
-  providers: [AuthenticationService, UserService, ContentService],
-  exports: [AuthenticationService, UserService, ContentService]
+  providers: [
+    AuthenticationService,
+    UserService,
+    ContentService,
+    UxEngagementService,
+    NotificationService,
+    RankerService,
+    NotificationProducer
+  ],
+  exports: [
+    AuthenticationService,
+    UserService,
+    ContentService,
+    UxEngagementService,
+    NotificationService,
+    RankerService
+  ]
 })
 export class DatabaseModule {}
 
-export { AuthenticationService, UserService, ContentService };
+export {
+  AuthenticationService,
+  UserService,
+  ContentService,
+  UxEngagementService,
+  NotificationService,
+  RankerService
+};

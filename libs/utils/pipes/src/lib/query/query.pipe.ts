@@ -20,13 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import {
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
+  NotificationSource
 } from '@castcle-api/database/dtos';
-import { ContentType } from '@castcle-api/database/dtos';
+import { Injectable, PipeTransform } from '@nestjs/common';
 
 //TODO !!! need to move this to somewhere else
 export const LIMIT_MAX = 1000;
@@ -111,5 +110,24 @@ export class ContentTypePipe implements PipeTransform {
     )
       return typeQuery;
     return ContentType.Short;
+  }
+}
+
+@Injectable()
+export class NotificationSourcePipe implements PipeTransform {
+  /**
+   *
+   * @param {string} sourceQuery
+   * @returns {string}
+   */
+  transform(sourceQuery?: string): NotificationSource {
+    if (
+      sourceQuery &&
+      (sourceQuery === NotificationSource.Profile ||
+        sourceQuery === NotificationSource.Page ||
+        sourceQuery === NotificationSource.System)
+    )
+      return sourceQuery;
+    return null;
   }
 }

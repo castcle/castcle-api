@@ -1,3 +1,4 @@
+import { DatabaseModule } from '@castcle-api/database';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,12 +22,8 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import {
-  HeadersInterceptor,
-  HeadersRequest
-} from './headers/headers.interceptor';
-import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
+import { CaslModule } from '@castcle-api/casl';
 import {
   ContentInterceptor,
   ContentsInterceptor
@@ -35,9 +32,14 @@ import {
   CredentialInterceptor,
   CredentialRequest
 } from './credential/credential.interceptor';
+import {
+  HeadersInterceptor,
+  HeadersRequest
+} from './headers/headers.interceptor';
+import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CaslModule],
   controllers: [],
   providers: [],
   exports: []
@@ -52,5 +54,6 @@ export {
   CredentialRequest,
   TokenRequest,
   ContentInterceptor,
-  ContentsInterceptor
+  ContentsInterceptor,
+  HttpCacheIndividualInterceptor
 };

@@ -96,6 +96,9 @@ export class User extends CastcleBase {
   verified: boolean;
 
   @Prop()
+  activated: boolean;
+
+  @Prop()
   followerCount: number;
 
   @Prop()
@@ -123,6 +126,7 @@ const _covertToUserResponse = (self: User | UserDocument) => {
   return {
     id: self._id,
     castcleId: self.displayId,
+    displayName: self.displayName,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
       count: self.followerCount
@@ -185,6 +189,9 @@ export const UserSchemaFactory = (
       (this as UserDocument).followedCount = 0;
     if (!(this as UserDocument).followerCount)
       (this as UserDocument).followerCount = 0;
+    //add activate state
+    if (!(this as UserDocument).activated)
+      (this as UserDocument).activated = false;
     next();
   });
   UserSchema.methods.follow = async function (followedUser: UserDocument) {

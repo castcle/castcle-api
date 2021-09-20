@@ -21,18 +21,18 @@
  * or have any questions.
  */
 import { Token } from '@castcle-api/utils';
-import { env } from '../environment';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
+import { EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
-  RefreshTokenPayload,
-  MemberAccessTokenPayload
+  MemberAccessTokenPayload,
+  RefreshTokenPayload
 } from '../dtos/token.dto';
-import { EntityVisibility } from '../dtos/common.dto';
+import { env } from '../environment';
+import { Account } from '../schemas/account.schema';
+import { CastcleBase } from './base.schema';
 
 export type CredentialDocument = Credential & ICredential;
 
@@ -64,6 +64,9 @@ export class Credential extends CastcleBase {
 
   @Prop({ required: true })
   device: string;
+
+  @Prop()
+  firebaseNotificationToken?: string;
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
@@ -185,8 +188,8 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
   )
     return false;
   return Token.isTokenValid(
-    (this as CredentialDocument).accessToken,
-    env.jwt_access_secret
+    (this as CredentialDocument).refreshToken,
+    env.jwt_refresh_secret
   );
 };
 

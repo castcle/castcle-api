@@ -23,18 +23,23 @@
 
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { AuthenticationService, UserService } from '@castcle-api/database';
+import {
+  AuthenticationService,
+  UserService,
+  RankerService
+} from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller()
-export class AppController {
+export class BaseController {
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService,
-    private userService: UserService
+    private userService: UserService,
+    private rankerService: RankerService
   ) {}
   private readonly logger = new CastLogger(
-    AppController.name,
+    BaseController.name,
     CastLoggerOptions
   );
 

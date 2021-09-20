@@ -43,6 +43,7 @@ import {
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
+  ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   SaveContentDto
@@ -61,7 +62,7 @@ import {
   ApiProperty,
   ApiResponse
 } from '@nestjs/swagger';
-import { ContentDocument } from '@castcle-api/database/schemas';
+import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
 import {
   ContentTypePipe,
   LimitPipe,
@@ -69,7 +70,8 @@ import {
   SortByPipe
 } from '@castcle-api/utils/pipes';
 import { Configs } from '@castcle-api/environments';
-
+import { CaslAbilityFactory, Action } from '@castcle-api/casl';
+import { Model } from 'mongoose';
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
   description: Configs.RequiredHeaders.AcceptLanguague.description,
@@ -91,7 +93,8 @@ export class ContentController {
     private readonly appService: AppService,
     private authService: AuthenticationService,
     private userService: UserService,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private caslAbility: CaslAbilityFactory
   ) {}
   private readonly logger = new CastLogger(
     ContentController.name,
@@ -166,10 +169,14 @@ export class ContentController {
         req.$language
       );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const result = this.contentService.checkUserPermissionForEditContent(
+    console.log('caslUser', user as User);
+    const ability = this.caslAbility.getUserManageContentAbility(user, content);
+    const result = ability.can(Action.Update, Content);
+    console.log('result', result);
+    /*const result = this.contentService.checkUserPermissionForEditContent(
       user,
       content
-    );
+    );*/
     if (result) return true;
     else
       throw new CastcleException(
@@ -208,7 +215,7 @@ export class ContentController {
   })
   @UseInterceptors(CredentialInterceptor)
   @HttpCode(204)
-  @Delete('contents/:id')
+  @Delete(':id')
   async deleteContentFromId(
     @Param('id') id: string,
     @Req() req: CredentialRequest
@@ -224,9 +231,8 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Get('')
+  @Get()
   async getContents(
-    @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
@@ -240,10 +246,17 @@ export class ContentController {
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const result = await this.contentService.getContentsForAdmin({
+      limit: limitOption,
+      page: pageOption,
+      sortBy: sortByOption,
+      type: contentTypeOption
+    });
+
     return {
-      payload: content.toContentPayload()
-    } as ContentResponse;
+      payload: result.items.map((c) => c.toContentPayload()),
+      pagination: result.pagination
+    } as ContentsResponse;
   }
 
   @ApiBearerAuth()

@@ -47,7 +47,7 @@ export class AppService {
   async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
     const verifyLink = `${hostname}/authentications/verify`;
     const info = await transporter.sendMail({
-      from: 'No Reply" <no-reply@castcle.com>',
+      from: 'castcle-noreply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
       to: toEmail,
       text: `Welcome to castcle here is a link embed code ${verifyLink}?code=${code}`,

@@ -22,7 +22,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppController } from './app.controller';
+import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 
 describe('AppController', () => {
@@ -30,14 +30,14 @@ describe('AppController', () => {
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
-      controllers: [AppController],
+      controllers: [BackgroundController],
       providers: [AppService]
     }).compile();
   });
 
   describe('getData', () => {
     it('should return "Welcome to backgrounds!"', () => {
-      const appController = app.get<AppController>(AppController);
+      const appController = app.get<BackgroundController>(BackgroundController);
       expect(appController.getData()).toEqual({
         message: 'Welcome to backgrounds!'
       });
