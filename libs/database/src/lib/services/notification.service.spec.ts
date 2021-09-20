@@ -358,7 +358,7 @@ describe('NotificationService', () => {
 
   describe('#badges', () => {
     it('should return total notification number when lower than 99', async () => {
-      const badges = await service.badges(result.credentialDocument);
+      const badges = await service.getBadges(result.credentialDocument);
       expect(badges).toEqual('1');
     });
 
@@ -371,7 +371,7 @@ describe('NotificationService', () => {
         },
         device: 'iPhone13'
       });
-      const badges = await service.badges(credentialData.credentialDocument);
+      const badges = await service.getBadges(credentialData.credentialDocument);
       expect(badges).toBeNull;
     });
 
@@ -396,7 +396,7 @@ describe('NotificationService', () => {
         await newNoti.save();
       }
 
-      const badges = await service.badges(result.credentialDocument);
+      const badges = await service.getBadges(result.credentialDocument);
       expect(badges).toEqual('+99');
     });
   });

@@ -423,4 +423,48 @@ describe('NotificationsController', () => {
       );
     });
   });
+
+  describe('notifications get badges', () => {
+    it('should return empty badges', async () => {
+      const expectResult = { payload: { badges: '' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value', async () => {
+      await creatMockData(
+        notification,
+        user,
+        NotificationSource.Profile,
+        NotificationType.Comment,
+        '6138afa4f616a467b5c4eb72',
+        userCredential
+      );
+      const expectResult = { payload: { badges: '1' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value +99 ', async () => {
+      for (let i = 0; i < 99; i++) {
+        await creatMockData(
+          notification,
+          user,
+          NotificationSource.Profile,
+          NotificationType.Comment,
+          '6138afa4f616a467b5c4eb72',
+          userCredential
+        );
+      }
+      const expectResult = { payload: { badges: '+99' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+  });
 });

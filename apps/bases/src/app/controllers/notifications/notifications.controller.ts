@@ -27,6 +27,7 @@ import {
 } from '@castcle-api/database';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  NotificationBadgesResponse,
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto
@@ -237,5 +238,27 @@ export class NotificationsController {
     await this.notificationService.registerToken(body);
     this.logger.log('Success register token');
     return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    type: NotificationResponse
+  })
+  @UseInterceptors(HttpCacheIndividualInterceptor)
+  @CacheKey(CacheKeyName.NotificationsBadges.Name)
+  @CacheTTL(CacheKeyName.NotificationsBadges.Ttl)
+  @UseInterceptors(CredentialInterceptor)
+  @Get('notifications/badges')
+  async badges(
+    @Req() req: CredentialRequest
+  ): Promise<NotificationBadgesResponse> {
+    this.logger.log('Start get notification badges');
+    const result = await this.notificationService.getBadges(req.$credential);
+    this.logger.log('Success get notification badges');
+    return {
+      payload: {
+        badges: result
+      }
+    };
   }
 }

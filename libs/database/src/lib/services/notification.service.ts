@@ -222,7 +222,7 @@ export class NotificationService {
    * @param {CredentialDocument} credential
    * @returns {string} total number notification
    */
-  badges = async (credential: CredentialDocument) => {
+  getBadges = async (credential: CredentialDocument) => {
     const user = await this._userModel
       .findOne({
         ownerAccount: credential.account._id
@@ -240,7 +240,7 @@ export class NotificationService {
       if (totalNotification > 99) return '+99';
       if (totalNotification <= 99) return totalNotification + '';
     } else {
-      return null;
+      return '';
     }
   };
 }

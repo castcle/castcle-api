@@ -45,6 +45,8 @@ import {
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  NotificationBadgesPayloadDto,
+  NotificationBadgesResponse,
   NotificationPayloadDto,
   NotificationResponse,
   NotificationSource,
@@ -97,5 +99,7 @@ export {
   FeedItemMode,
   EntityVisibility,
   CreateNotification,
-  RegisterTokenDto
+  RegisterTokenDto,
+  NotificationBadgesPayloadDto,
+  NotificationBadgesResponse
 };

@@ -113,3 +113,12 @@ export class RegisterTokenDto {
   @ApiProperty()
   firebaseToken: string;
 }
+
+export class NotificationBadgesPayloadDto {
+  @ApiProperty()
+  badges: string;
+}
+export class NotificationBadgesResponse {
+  @ApiProperty({ type: NotificationBadgesPayloadDto, isArray: false })
+  payload: NotificationBadgesPayloadDto;
+}
