@@ -32,10 +32,12 @@ import { FeedController } from './controllers/feeds/feed.controller';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 import { NotificationsController } from './controllers/notifications/notifications.controller';
 import { PageController } from './controllers/pages/pages.controller';
+import { CaslModule } from '@castcle-api/casl';
 
 @Module({
   imports: [
     DatabaseModule,
+    CaslModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsCacheModule,
