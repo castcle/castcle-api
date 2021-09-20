@@ -20,14 +20,25 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { Environment } from '@castcle-api/environments';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
+import { FirebaseModule } from 'nestjs-firebase';
 import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
-
+import { NotificationConsumer } from './consumers/notification.consumer';
 @Module({
-  imports: [],
+  imports: [
+    UtilsQueueModule,
+    FirebaseModule.forRoot({
+      googleApplicationCredential: {
+        projectId: Environment.firebase_project_id,
+        clientEmail: Environment.firebase_client_email,
+        privateKey: Environment.firebase_private_key
+      }
+    })
+  ],
   controllers: [BackgroundController],
-  providers: [AppService]
+  providers: [AppService, NotificationConsumer]
 })
 export class BackgroundModule {}

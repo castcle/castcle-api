@@ -21,29 +21,47 @@
  * or have any questions.
  */
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
+import { NotificationMessage, TopicName } from '@castcle-api/utils/queue';
+import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { TopicName } from '../enum/topic.name';
-import { NotificationMessage } from '../messages/notification.message';
+import { Job } from 'bull';
+import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
+
 @Injectable()
-export class NotificationProducer {
+@Processor(TopicName.Notifications)
+export class NotificationConsumer {
+  constructor(
+    @InjectFirebaseAdmin() private readonly firebase: FirebaseAdmin
+  ) {}
+
   private readonly logger = new CastLogger(
-    NotificationProducer.name,
+    NotificationConsumer.name,
     CastLoggerOptions
   );
 
-  constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
-
   /**
-   * send notofication message to queue
+   * consume notofication message from queue
    * @param {NotificationMessage} NotificationMessage notofication message
    * @returns {}
    */
-  async sendMessage(message: NotificationMessage) {
-    await this.queue.add({
-      notification: message
-    });
-    this.logger.log(`produce message '${JSON.stringify(message)}' `);
+  @Process()
+  readOperationJob(job: Job<{ notification: NotificationMessage }>) {
+    try {
+      this.logger.log(
+        `consume message '${JSON.stringify(job.data.notification)}}' `
+      );
+
+      const message = {
+        notification: {
+          body: job.data.notification.message
+        },
+        token: job.data.notification.firebaseToken
+      };
+
+      this.logger.log(`sending notification. `);
+      this.firebase.messaging.send(message);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 }

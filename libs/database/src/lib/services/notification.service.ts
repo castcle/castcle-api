@@ -34,7 +34,10 @@ import {
   NotificationSource,
   NotificationType
 } from '../dtos/notification.dto';
-import { CredentialDocument } from '../schemas/credential.schema';
+import {
+  CredentialDocument,
+  CredentialModel
+} from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
@@ -45,7 +48,9 @@ export class NotificationService {
     public _notificationModel: Model<NotificationDocument>,
     @InjectModel('User')
     public _userModel: UserModel,
-    private readonly notificationProducer: NotificationProducer
+    private readonly notificationProducer: NotificationProducer,
+    @InjectModel('Credential')
+    public _credentialModel: CredentialModel
   ) {}
 
   /**
@@ -164,19 +169,27 @@ export class NotificationService {
    * @returns {NotificationDocument}
    */
   notifyToUser = async (notificationData: CreateNotification) => {
+    console.log('save notification');
     const createResult = await new this._notificationModel(
       notificationData
     ).save();
 
-    if (createResult) {
+    console.log('get firebase token');
+    const credential = await this._credentialModel
+      .findOne({ _id: notificationData.credential._id })
+      .exec();
+
+    if (createResult && credential) {
       const message: NotificationMessage = {
         id: createResult._id,
         message: createResult.message,
         source: NotificationSource[createResult.source],
         sourceUserId: createResult.sourceUserId._id,
         type: NotificationType[createResult.type],
-        targetRefId: createResult.targetRef
+        targetRefId: createResult.targetRef,
+        firebaseToken: credential.firebaseNotificationToken
       };
+      console.log('add to queue');
       this.notificationProducer.sendMessage(message);
     }
     return createResult;

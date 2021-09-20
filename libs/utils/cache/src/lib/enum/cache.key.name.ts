@@ -21,5 +21,8 @@
  * or have any questions.
  */
 export const CacheKeyName = {
-  NotificationsGet: 'NOTIFICATIONS_GET'
+  NotificationsGet: {
+    Name: 'NOTIFICATIONS_GET',
+    Ttl: 30
+  }
 };
