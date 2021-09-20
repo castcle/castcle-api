@@ -26,9 +26,10 @@ import { DatabaseModule } from '@castcle-api/database';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { CaslModule } from '@castcle-api/casl';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CaslModule],
   controllers: [AuthenticationController, HealthyController],
   providers: [AppService]
 })
