@@ -67,6 +67,16 @@ export enum UserType {
   Page = 'page'
 }
 
+export type UserVerified = {
+  email: boolean;
+  mobile: boolean;
+  official: boolean;
+};
+
+export type PageVerified = {
+  official: boolean;
+};
+
 @Schema({ timestamps: true })
 export class User extends CastcleBase {
   @Prop({
@@ -92,11 +102,8 @@ export class User extends CastcleBase {
   @Prop({ required: true })
   type: string;
 
-  @Prop()
-  verified: boolean;
-
-  @Prop()
-  activated: boolean;
+  @Prop({ type: Object })
+  verified: UserVerified;
 
   @Prop()
   followerCount: number;
@@ -147,7 +154,7 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
-    verified: self.verified ? true : false
+    verified: self.verified //self.verified ? true : false,
   } as UserResponseDto;
 };
 
@@ -190,8 +197,12 @@ export const UserSchemaFactory = (
     if (!(this as UserDocument).followerCount)
       (this as UserDocument).followerCount = 0;
     //add activate state
-    if (!(this as UserDocument).activated)
-      (this as UserDocument).activated = false;
+    if (!(this as UserDocument).verified)
+      (this as UserDocument).verified = {
+        email: false,
+        mobile: false,
+        official: false
+      } as UserVerified;
     next();
   });
   UserSchema.methods.follow = async function (followedUser: UserDocument) {

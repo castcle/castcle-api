@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { PageVerified, UserVerified } from '../schemas/user.schema';
+
 export interface AccessTokenPayload {
   id: string;
   preferredLanguage: string[];
@@ -35,7 +37,7 @@ export interface PageInfoPayload {
   displayName: string;
   avatar: string;
   role: 'admin'; // admin or member
-  verified: boolean;
+  verified: PageVerified;
 }
 
 export interface UserAccessTokenPayload extends AccessTokenPayload {
@@ -43,9 +45,9 @@ export interface UserAccessTokenPayload extends AccessTokenPayload {
   displayName: string;
   email?: string;
   avatar?: string;
-  verified: boolean; // ถ้ายังไม่ verify ไม่สามารถ post ได้
+  verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
   showAds: boolean;
-  pages: PageInfoPayload[];
+  pages?: PageInfoPayload[];
 }
 
 export interface MemberAccessTokenPayload extends AccessTokenPayload {
