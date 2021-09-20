@@ -34,7 +34,9 @@ import { NotificationConsumer } from './consumers/notification.consumer';
       googleApplicationCredential: {
         projectId: Environment.firebase_project_id,
         clientEmail: Environment.firebase_client_email,
-        privateKey: Environment.firebase_private_key
+        privateKey: Buffer.from(Environment.firebase_private_key, 'base64')
+          .toString('ascii')
+          .replace(/\\n/g, '\n')
       }
     })
   ],
