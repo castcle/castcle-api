@@ -328,7 +328,7 @@ describe('Authentication Service', () => {
         )}@testinsert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
-          password: 'sompop',
+          password: 'sompop2@Hello',
           isGuest: true,
           preferences: {
             langagues: ['en', 'en']
@@ -378,7 +378,7 @@ describe('Authentication Service', () => {
         displayId: 'dudethisisnew',
         displayName: 'Dudeee',
         email: 'sompopdude@dudedude.com',
-        password: 'thisshallpassApassword'
+        password: '2@HelloWorld'
       };
       beforeAll(async () => {
         signupResult = await service.signupByEmail(

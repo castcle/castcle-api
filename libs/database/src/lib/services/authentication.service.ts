@@ -386,7 +386,7 @@ export class AuthenticationService {
         showAds: true,
         castcleId: user.displayId,
         displayName: user.displayName,
-        verified: credential.account.activateDate ? true : false, //use account activation
+        verified: user.verified,
         email: credential.account.email
       } as UserAccessTokenPayload;
       //get SignUrl for avartar

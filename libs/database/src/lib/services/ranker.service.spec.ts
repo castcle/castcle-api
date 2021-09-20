@@ -120,7 +120,7 @@ describe('Ranker Service', () => {
       displayId: 'followerNa',
       displayName: 'followerNa002',
       email: 'sompop2.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: '2@Test12345678'
     });
     //let follower follow user
     follower = await userService.getUserFromCredential(
