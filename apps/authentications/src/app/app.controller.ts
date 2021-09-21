@@ -518,6 +518,7 @@ export class AuthenticationController {
     if (req.query.code) {
       return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
+          "Accept-Version": "1.0",
           Accept: "*/*",
           "Accept-Language": "th",
           Authorization: "Bearer ${req.query.code}"
