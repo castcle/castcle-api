@@ -492,11 +492,42 @@ export class ContentService {
     return comment.save();
   };
 
-  /*  likeComment = async( author:UserDocument, comment:CommentDocument) => {
+  likeComment = async (user: UserDocument, comment: CommentDocument) => {
+    let engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id
+      },
+      type: EngagementType.Like
+    });
+    if (!engagement)
+      engagement = new this._engagementModel({
+        type: EngagementType.Like,
+        user: user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id
+        },
+        visibility: EntityVisibility.Publish
+      });
+    engagement.type = EngagementType.Like;
+    engagement.visibility = EntityVisibility.Publish;
+    return engagement.save();
+  };
 
-  }
-
-  unlikeComment = async( author:UserDocument, comment:CommentDocument) => {
-
-  }*/
+  unlikeComment = async (user: UserDocument, comment: CommentDocument) => {
+    const engagement = await this._engagementModel
+      .findOne({
+        user: user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id
+        },
+        type: EngagementType.Like
+      })
+      .exec();
+    if (!engagement) return null;
+    return engagement.remove();
+  };
 }
