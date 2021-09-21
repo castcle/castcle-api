@@ -72,7 +72,9 @@ export class LanguagesController {
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @UseInterceptors(CredentialInterceptor)
   @Get('metadata/languages')
-  async badges(@Req() req: CredentialRequest): Promise<LanguageResponse> {
+  async getAllLanguage(
+    @Req() req: CredentialRequest
+  ): Promise<LanguageResponse> {
     this.logger.log('Start get all language');
     const result = await this.languageService.getAll();
     this.logger.log('Success get all language');
