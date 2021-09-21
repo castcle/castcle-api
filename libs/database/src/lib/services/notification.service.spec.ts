@@ -140,7 +140,7 @@ describe('NotificationService', () => {
       },
       type: NotificationType.Comment,
       targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
       credential: {
@@ -158,7 +158,7 @@ describe('NotificationService', () => {
       },
       type: NotificationType.Comment,
       targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
       credential: {
@@ -175,7 +175,7 @@ describe('NotificationService', () => {
       },
       type: NotificationType.System,
       targetRef: {
-        id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
       credential: {
@@ -287,7 +287,7 @@ describe('NotificationService', () => {
   });
 
   describe('#notifyToUser', () => {
-    it('should create new notification in db', async () => {
+    it('should create new notification with type comment in db', async () => {
       const newNoti: CreateNotification = {
         avatar: 'http://avatar.com/1',
         message: 'sample page',
@@ -295,9 +295,9 @@ describe('NotificationService', () => {
         sourceUserId: {
           _id: user._id
         },
-        type: NotificationType.System,
+        type: NotificationType.Comment,
         targetRef: {
-          id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72'
         },
         read: false,
         credential: {
@@ -315,7 +315,42 @@ describe('NotificationService', () => {
       expect(resultData.source).toEqual(newNoti.source);
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
       expect(resultData.type).toEqual(newNoti.type);
-      expect(resultData.targetRef.id).toEqual(newNoti.targetRef.id);
+      expect(resultData.targetRef.$ref).toEqual(NotificationType.Comment);
+      expect(resultData.read).toEqual(newNoti.read);
+      expect(resultData.credential._id.toString()).toEqual(
+        newNoti.credential._id
+      );
+    });
+
+    it('should create new notification with type system in db', async () => {
+      const newNoti: CreateNotification = {
+        avatar: 'http://avatar.com/1',
+        message: 'sample page',
+        source: NotificationSource.Profile,
+        sourceUserId: {
+          _id: user._id
+        },
+        type: NotificationType.System,
+        targetRef: {
+          _id: '6138afa4f616a467b5c4eb72'
+        },
+        read: false,
+        credential: {
+          _id: result.credentialDocument.id
+        }
+      };
+
+      const resultData = await service.notifyToUser(newNoti);
+      const totalNoti = await service.getAll(result.credentialDocument);
+
+      expect(resultData).toBeDefined();
+      expect(totalNoti.total).toEqual(4);
+      expect(resultData.avatar).toEqual(newNoti.avatar);
+      expect(resultData.message).toEqual(newNoti.message);
+      expect(resultData.source).toEqual(newNoti.source);
+      expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
+      expect(resultData.type).toEqual(newNoti.type);
+      expect(resultData.targetRef.$ref).toBeNull();
       expect(resultData.read).toEqual(newNoti.read);
       expect(resultData.credential._id.toString()).toEqual(
         newNoti.credential._id
@@ -359,7 +394,7 @@ describe('NotificationService', () => {
   describe('#badges', () => {
     it('should return total notification number when lower than 99', async () => {
       const badges = await service.getBadges(result.credentialDocument);
-      expect(badges).toEqual('1');
+      expect(badges).toEqual('2');
     });
 
     it('should return expty notification when get empty notification', async () => {

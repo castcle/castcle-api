@@ -98,7 +98,7 @@ export interface CreateNotification {
   };
   type: NotificationType;
   targetRef: {
-    id: string;
+    _id: string;
   };
   read: boolean;
   credential: {
