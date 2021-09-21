@@ -27,8 +27,10 @@ import {
 } from '@castcle-api/database';
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
+  NotificationBadgesResponse,
   NotificationResponse,
-  NotificationSource
+  NotificationSource,
+  RegisterTokenDto
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -47,12 +49,14 @@ import {
   SortByPipe
 } from '@castcle-api/utils/pipes';
 import {
+  Body,
   CacheKey,
   CacheTTL,
   Controller,
   Get,
   HttpCode,
   Param,
+  Post,
   Put,
   Query,
   Req,
@@ -60,6 +64,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiHeader,
   ApiOkResponse,
   ApiQuery,
@@ -206,5 +211,54 @@ export class NotificationsController {
     await this.notificationService.flagReadAll(req.$credential);
     this.logger.log('Success mark read all notification');
     return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiBody({
+    type: RegisterTokenDto
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('notifications/registerToken')
+  async registerToken(
+    @Req() req: CredentialRequest,
+    @Body() body: RegisterTokenDto
+  ) {
+    this.logger.log('Notification register token. uuid:' + body.deviceUUID);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (!user) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+
+    await this.notificationService.registerToken(body);
+    this.logger.log('Success register token');
+    return '';
+  }
+
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    type: NotificationResponse
+  })
+  @UseInterceptors(HttpCacheIndividualInterceptor)
+  @CacheKey(CacheKeyName.NotificationsBadges.Name)
+  @CacheTTL(CacheKeyName.NotificationsBadges.Ttl)
+  @UseInterceptors(CredentialInterceptor)
+  @Get('notifications/badges')
+  async badges(
+    @Req() req: CredentialRequest
+  ): Promise<NotificationBadgesResponse> {
+    this.logger.log('Start get notification badges');
+    const result = await this.notificationService.getBadges(req.$credential);
+    this.logger.log('Success get notification badges');
+    return {
+      payload: {
+        badges: result
+      }
+    };
   }
 }

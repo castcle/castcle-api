@@ -32,7 +32,8 @@ import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '../dtos/notification.dto';
 import {
   CredentialDocument,
@@ -193,5 +194,53 @@ export class NotificationService {
       this.notificationProducer.sendMessage(message);
     }
     return createResult;
+  };
+
+  /**
+   * update firebase token to credential
+   * @param {RegisterTokenDto} registerTokenDto register request
+   * @returns {UpdateWriteOpResult} update result status
+   */
+  registerToken = async (registerTokenDto: RegisterTokenDto) => {
+    if (registerTokenDto) {
+      console.log('register firebase token');
+      return await this._credentialModel
+        .updateOne(
+          { deviceUUID: registerTokenDto.deviceUUID },
+          {
+            firebaseNotificationToken: registerTokenDto.firebaseToken
+          }
+        )
+        .exec();
+    } else {
+      return null;
+    }
+  };
+
+  /**
+   * get total badges from user
+   * @param {CredentialDocument} credential
+   * @returns {string} total number notification
+   */
+  getBadges = async (credential: CredentialDocument) => {
+    const user = await this._userModel
+      .findOne({
+        ownerAccount: credential.account._id
+      })
+      .exec();
+
+    if (user) {
+      const totalNotification = await this._notificationModel.countDocuments({
+        sourceUserId: user._id,
+        read: false
+      });
+
+      console.log(`total badges : ${totalNotification}`);
+      if (totalNotification === 0) return '';
+      if (totalNotification > 99) return '+99';
+      if (totalNotification <= 99) return totalNotification + '';
+    } else {
+      return '';
+    }
   };
 }
