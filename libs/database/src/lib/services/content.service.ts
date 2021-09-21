@@ -22,10 +22,14 @@
  */
 
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument, CredentialModel } from '../schemas';
+import {
+  CommentDocument,
+  CredentialDocument,
+  CredentialModel
+} from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
 import {
@@ -47,7 +51,8 @@ import {
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
 import { EntityVisibility } from '../dtos/common.dto';
-import { async } from 'rxjs';
+import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
+import { CommentType } from '../schemas/comment.schema';
 
 @Injectable()
 export class ContentService {
@@ -62,7 +67,9 @@ export class ContentService {
     @InjectModel('Revision')
     public _revisionModel: Model<RevisionDocument>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<EngagementDocument>
+    public _engagementModel: Model<EngagementDocument>,
+    @InjectModel('Comment')
+    public _commentModel: Model<CommentDocument>
   ) {}
 
   /**
@@ -435,4 +442,61 @@ export class ContentService {
         pagination: createPagination(options, totalDocument)
       };
   };
+
+  createCommentForContent = async (
+    author: UserDocument,
+    content: ContentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const newComment = new this._commentModel({
+      user: author as User,
+      message: updateCommentDto.message,
+      targetRef: {
+        $id: content._id,
+        $ref: 'content'
+      },
+      type: CommentType.Comment
+    } as CommentDto);
+    return newComment.save();
+  };
+
+  replyComment = async (
+    author: UserDocument,
+    rootComment: CommentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const newComment = new this._commentModel({
+      user: author as User,
+      message: updateCommentDto.message,
+      targetRef: {
+        $id: rootComment._id,
+        $ref: 'comment'
+      },
+      type: CommentType.Reply
+    } as CommentDto);
+    return newComment.save();
+  };
+
+  updateComment = async (
+    rootComment: CommentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const comment = await this._commentModel.findById(rootComment._id);
+    comment.message = updateCommentDto.message;
+    return comment.save();
+  };
+
+  deleteComment = async (rootComment: CommentDocument) => {
+    const comment = await this._commentModel.findById(rootComment._id);
+    comment.visibility = EntityVisibility.Deleted;
+    return comment.save();
+  };
+
+  /*  likeComment = async( author:UserDocument, comment:CommentDocument) => {
+
+  }
+
+  unlikeComment = async( author:UserDocument, comment:CommentDocument) => {
+
+  }*/
 }

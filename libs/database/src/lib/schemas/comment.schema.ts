@@ -22,21 +22,30 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
+import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
+import { ContentDocument, User } from '.';
+import { RevisionDocument } from './revision.schema';
 
 export type CommentDocument = Comment & Document;
+
+export enum CommentType {
+  Comment = 'comment',
+  Reply = 'reply'
+}
 
 @Schema({ timestamps: true })
 export class Comment extends CastcleBase {
   @Prop({ required: true, type: Object })
-  author: Account | any;
+  author: User;
 
   @Prop({ required: true })
   message: string;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ type: Object })
   engagements: {
     [engagementKey: string]: {
       count: number;
@@ -45,10 +54,39 @@ export class Comment extends CastcleBase {
   };
 
   @Prop({ required: true })
+  type: string;
+
+  @Prop({ required: true })
   revisionCount: number;
+
+  @Prop({ required: true, type: Object })
+  targetRef: any; // dbRef of Content or comment
 
   @Prop({ type: Array })
   hashtags: any[];
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
+const commentModel = mongoose.model(
+  'Comment',
+  CommentSchema
+) as unknown as mongoose.Model<CommentDocument>;
+export const CommentSchemaFactory = (
+  revisionModel: Model<RevisionDocument>,
+  contentModel: Model<ContentDocument>
+): mongoose.Schema<any> => {
+  CommentSchema.pre('save', function (next) {
+    preCommentSave(this as CommentDocument);
+    next();
+  });
+
+  CommentSchema.post('save', async function (doc, next) {
+    await postCommentSave(doc as CommentDocument, {
+      commentModel,
+      revisionModel,
+      contentModel
+    });
+    next();
+  });
+  return CommentSchema;
+};
