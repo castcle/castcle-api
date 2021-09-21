@@ -83,19 +83,19 @@ NotificationSchema.methods.toNotificationPayload = function () {
     content: {
       id:
         (this as NotificationDocument).type === NotificationType.Content
-          ? (this as NotificationDocument).targetRef.id
+          ? (this as NotificationDocument).targetRef.$id
           : null
     },
     comment: {
       id:
         (this as NotificationDocument).type === NotificationType.Comment
-          ? (this as NotificationDocument).targetRef.id
+          ? (this as NotificationDocument).targetRef.$id
           : null
     },
     system: {
       id:
         (this as NotificationDocument).type === NotificationType.System
-          ? (this as NotificationDocument).targetRef.id
+          ? (this as NotificationDocument).targetRef.$id
           : null
     }
   } as NotificationPayloadDto;
