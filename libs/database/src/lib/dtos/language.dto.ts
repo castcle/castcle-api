@@ -21,15 +21,20 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { MetadataController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { LanguagesController } from './controllers/languages/languages.controller';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Module({
-  imports: [],
-  controllers: [MetadataController, HealthyController, LanguagesController],
-  providers: [AppService]
-})
-export class MetadataModule {}
+export class LanguagePayloadDto {
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  display: string;
+}
+
+export class LanguageResponse {
+  @ApiProperty({ type: LanguagePayloadDto, isArray: true })
+  payload: LanguagePayloadDto[];
+}

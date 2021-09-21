@@ -21,15 +21,25 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { MetadataController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { LanguagesController } from './controllers/languages/languages.controller';
+import {
+  CacheInterceptor,
+  CACHE_KEY_METADATA,
+  ExecutionContext,
+  Injectable
+} from '@nestjs/common';
 
-@Module({
-  imports: [],
-  controllers: [MetadataController, HealthyController, LanguagesController],
-  providers: [AppService]
-})
-export class MetadataModule {}
+@Injectable()
+export class HttpCacheSharedInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
+
+    if (cacheKey) {
+      return `${cacheKey}`;
+    }
+
+    return super.trackBy(context);
+  }
+}

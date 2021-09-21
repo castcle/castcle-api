@@ -20,16 +20,36 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { LanguagePayloadDto } from '../dtos/language.dto';
+import { LanguageDocument } from './../schemas/language.schema';
 
-import { Module } from '@nestjs/common';
-import { MetadataController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { LanguagesController } from './controllers/languages/languages.controller';
+@Injectable()
+export class LanguageService {
+  constructor(
+    @InjectModel('Language') public _languageModel: Model<LanguageDocument>
+  ) {}
 
-@Module({
-  imports: [],
-  controllers: [MetadataController, HealthyController, LanguagesController],
-  providers: [AppService]
-})
-export class MetadataModule {}
+  /**
+   * get all data from Language Document
+   *
+   * @returns {LanguageDocument[]} return all Language Document
+   */
+  async getAll() {
+    console.log('get all language');
+    return this._languageModel.find().exec();
+  }
+
+  /**
+   * create new language
+   * @param {LanguagePayloadDto} language language payload
+   * @returns {LanguageDocument} return new language document
+   */
+  create = async (language: LanguagePayloadDto) => {
+    console.log('save language');
+    const createResult = await new this._languageModel(language).save();
+    return createResult;
+  };
+}

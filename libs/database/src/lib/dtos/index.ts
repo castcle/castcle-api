@@ -42,6 +42,7 @@ import {
   FeedItemMode,
   FeedsResponse
 } from './feedItem.dto';
+import { LanguagePayloadDto, LanguageResponse } from './language.dto';
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
@@ -101,5 +102,7 @@ export {
   CreateNotification,
   RegisterTokenDto,
   NotificationBadgesPayloadDto,
-  NotificationBadgesResponse
+  NotificationBadgesResponse,
+  LanguagePayloadDto,
+  LanguageResponse
 };

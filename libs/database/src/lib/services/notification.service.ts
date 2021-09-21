@@ -175,6 +175,10 @@ export class NotificationService {
       notificationData
     ).save();
 
+    // targetRef: {
+    //   $ref: 'content',
+    //   $id: sourceContentId
+    // },
     console.log('get firebase token');
     const credential = await this._credentialModel
       .findOne({ _id: notificationData.credential._id })
