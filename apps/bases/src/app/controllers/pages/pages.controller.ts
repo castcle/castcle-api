@@ -151,16 +151,18 @@ export class PageController {
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
-    body.avatar = (
-      await this._uploadImage(body.avatar, {
-        filename: `page-avatar-${body.castcleId}`
-      })
-    ).uri;
-    body.cover = (
-      await this._uploadImage(body.cover, {
-        filename: `page-cover-${body.castcleId}`
-      })
-    ).uri;
+    if (body.avatar)
+      body.avatar = (
+        await this._uploadImage(body.avatar, {
+          filename: `page-avatar-${body.castcleId}`
+        })
+      ).uri;
+    if (body.cover)
+      body.cover = (
+        await this._uploadImage(body.cover, {
+          filename: `page-cover-${body.castcleId}`
+        })
+      ).uri;
     const page = await this.userService.createPageFromCredential(
       req.$credential,
       body

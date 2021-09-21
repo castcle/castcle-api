@@ -147,12 +147,15 @@ export class AuthenticationController {
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
     try {
       const account = await this.authService.getAccountFromEmail(body.username);
+
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      console.log(account, 'password', body, req);
       if (await account.verifyPassword(body.password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
+        console.log('embedCredentialByDeviceUUID', embedCredentialByDeviceUUID);
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
             .findById(embedCredentialByDeviceUUID._id)
@@ -230,7 +233,6 @@ export class AuthenticationController {
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
-    console.log('--search credential', credential);
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
@@ -297,6 +299,8 @@ export class AuthenticationController {
       const user = await this.authService.getUserFromCastcleId(
         body.payload.castcleId
       );
+      //validate password
+      this.appService.validatePassword(body.payload.password, req.$language);
       if (user)
         throw new CastcleException(
           CastcleStatus.USER_ID_IS_EXIST,
@@ -514,6 +518,7 @@ export class AuthenticationController {
     if (req.query.code) {
       return `will call post request soon<script>fetch("${verifyUrl}", {
         headers: {
+          "Accept-Version": "1.0",
           Accept: "*/*",
           "Accept-Language": "th",
           Authorization: "Bearer ${req.query.code}"
@@ -557,6 +562,8 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
+    //add password checker
+    this.appService.validatePassword(password, req.$language);
     if (account.verifyPassword(password)) {
       const otp = await this.authService.generateOtp(account);
       return {
@@ -584,6 +591,7 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
+    this.appService.validatePassword(newPassword, req.$language);
     const otp = await this.authService.getOtpFromAccount(account, refCode);
     if (otp && otp.isValid()) {
       //change password

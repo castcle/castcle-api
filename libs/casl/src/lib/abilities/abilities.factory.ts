@@ -93,7 +93,7 @@ export class CaslAbilityFactory {
      */
     can(Action.Read, 'all');
     can(Action.Engagement, 'all');
-    if (user.activated) {
+    if (user.verified && (user.verified.email || user.verified.mobile)) {
       //verify user
       can(Action.Update, Content);
       can(Action.Delete, Content);

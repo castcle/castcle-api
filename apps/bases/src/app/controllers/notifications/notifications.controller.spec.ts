@@ -31,7 +31,8 @@ import {
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -164,8 +165,8 @@ describe('NotificationsController', () => {
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
+    notification = app.get<NotificationService>(NotificationService);
     producer = app.get<NotificationProducer>(NotificationProducer);
     const resultAccount = await authService.createAccount({
       device: 'iPhone',
@@ -175,7 +176,7 @@ describe('NotificationsController', () => {
     });
     const resultWrongAccount = await authService.createAccount({
       device: 'iPhone',
-      deviceUUID: 'iphone12345',
+      deviceUUID: 'iphone12345789',
       header: { platform: 'iphone' },
       languagesPreferences: ['th', 'th']
     });
@@ -366,12 +367,104 @@ describe('NotificationsController', () => {
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
-        controller.notificationRead('', {
+        controller.notificationReadAll({
           $credential: wrongUserCredential
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
+    });
+  });
+
+  describe('notifications register token', () => {
+    it('should register token successful', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+
+      await controller.registerToken(
+        {
+          $credential: userCredential
+        } as any,
+        {
+          deviceUUID: deviceID,
+          firebaseToken: firebaseToken
+        } as RegisterTokenDto
+      );
+
+      const credentailUpdate = await notification._credentialModel
+        .findOne({ deviceUUID: deviceID })
+        .exec();
+
+      expect(credentailUpdate.firebaseNotificationToken).toEqual(firebaseToken);
+    });
+
+    it('should return Exception as expect', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.registerToken(
+          {
+            $credential: wrongUserCredential
+          } as any,
+          {
+            deviceUUID: deviceID,
+            firebaseToken: firebaseToken
+          } as RegisterTokenDto
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('notifications get badges', () => {
+    it('should return empty badges', async () => {
+      const expectResult = { payload: { badges: '' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value', async () => {
+      await creatMockData(
+        notification,
+        user,
+        NotificationSource.Profile,
+        NotificationType.Comment,
+        '6138afa4f616a467b5c4eb72',
+        userCredential
+      );
+      const expectResult = { payload: { badges: '1' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value +99 ', async () => {
+      for (let i = 0; i < 99; i++) {
+        await creatMockData(
+          notification,
+          user,
+          NotificationSource.Profile,
+          NotificationType.Comment,
+          '6138afa4f616a467b5c4eb72',
+          userCredential
+        );
+      }
+      const expectResult = { payload: { badges: '+99' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
     });
   });
 });

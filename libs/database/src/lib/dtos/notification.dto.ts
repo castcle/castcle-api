@@ -105,3 +105,20 @@ export interface CreateNotification {
     _id: string;
   };
 }
+
+export class RegisterTokenDto {
+  @ApiProperty()
+  deviceUUID: string;
+
+  @ApiProperty()
+  firebaseToken: string;
+}
+
+export class NotificationBadgesPayloadDto {
+  @ApiProperty()
+  badges: string;
+}
+export class NotificationBadgesResponse {
+  @ApiProperty({ type: NotificationBadgesPayloadDto, isArray: false })
+  payload: NotificationBadgesPayloadDto;
+}
