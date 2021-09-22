@@ -174,6 +174,7 @@ export class NotificationService {
     const newNotification = {
       ...notificationData,
       targetRef: {
+        $id: notificationData.targetRef._id,
         $ref:
           notificationData.type !== NotificationType.System
             ? notificationData.type
