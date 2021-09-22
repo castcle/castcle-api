@@ -59,7 +59,7 @@ export const postAccountSave = async (
       await models.userModel
         .updateOne(
           { ownerAccount: doc._id, type: UserType.People },
-          { activated: true }
+          { 'verified.email': true }
         )
         .exec();
     await models.credentialModel
