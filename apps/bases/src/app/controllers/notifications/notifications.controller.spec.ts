@@ -115,7 +115,7 @@ const creatMockData = async (
     type: typeNoti,
     targetRef: {
       $ref: typeNoti !== NotificationType.System ? typeNoti : null,
-      _id: docRefId
+      $id: docRefId
     },
     read: false,
     credential: userCredential

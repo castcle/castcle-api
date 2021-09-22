@@ -316,6 +316,7 @@ describe('NotificationService', () => {
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
       expect(resultData.type).toEqual(newNoti.type);
       expect(resultData.targetRef.$ref).toEqual(NotificationType.Comment);
+      expect(resultData.targetRef.$id).toEqual(newNoti.targetRef._id);
       expect(resultData.read).toEqual(newNoti.read);
       expect(resultData.credential._id.toString()).toEqual(
         newNoti.credential._id

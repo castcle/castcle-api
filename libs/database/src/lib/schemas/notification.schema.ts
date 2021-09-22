@@ -83,13 +83,13 @@ NotificationSchema.methods.toNotificationPayload = function () {
     content: {
       id:
         (this as NotificationDocument).type === NotificationType.Content
-          ? (this as NotificationDocument).targetRef._id
+          ? (this as NotificationDocument).targetRef.oid
           : null
     },
     comment: {
       id:
         (this as NotificationDocument).type === NotificationType.Comment
-          ? (this as NotificationDocument).targetRef._id
+          ? (this as NotificationDocument).targetRef.oid
           : null
     },
     system: {
