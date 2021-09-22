@@ -516,7 +516,7 @@ export class AuthenticationController {
     const verifyUrl =
       Host.getHostname(req) + '/authentications/verificationEmail';
     if (req.query.code) {
-      return `will call post request soon<script>fetch("${verifyUrl}", {
+      return `Verifying you will get a pop up once the process is done.<script>fetch("${verifyUrl}", {
         headers: {
           "Accept-Version": "1.0",
           Accept: "*/*",
@@ -524,7 +524,7 @@ export class AuthenticationController {
           Authorization: "Bearer ${req.query.code}"
         },
         method: "POST"
-      })</script>`;
+      }).then(r => r.json()).then(r => { console.log(r);alert('verification success');})</script>`;
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
   }
 
