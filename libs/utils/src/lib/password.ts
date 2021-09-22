@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 const saltRounds = 10;
 const PASSWORD_MIN = 6;
