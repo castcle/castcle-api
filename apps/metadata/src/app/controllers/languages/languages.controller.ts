@@ -71,7 +71,7 @@ export class LanguagesController {
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
   @UseInterceptors(CredentialInterceptor)
-  @Get('metadata/languages')
+  @Get('languages')
   async getAllLanguage(
     @Req() req: CredentialRequest
   ): Promise<LanguageResponse> {
