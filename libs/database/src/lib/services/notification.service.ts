@@ -171,8 +171,19 @@ export class NotificationService {
    */
   notifyToUser = async (notificationData: CreateNotification) => {
     console.log('save notification');
+    const newNotification = {
+      ...notificationData,
+      targetRef: {
+        $id: notificationData.targetRef._id,
+        $ref:
+          notificationData.type !== NotificationType.System
+            ? notificationData.type
+            : null
+      }
+    };
+
     const createResult = await new this._notificationModel(
-      notificationData
+      newNotification
     ).save();
 
     console.log('get firebase token');

@@ -114,7 +114,8 @@ const creatMockData = async (
     sourceUserId: user,
     type: typeNoti,
     targetRef: {
-      id: docRefId
+      $ref: typeNoti !== NotificationType.System ? typeNoti : null,
+      $id: docRefId
     },
     read: false,
     credential: userCredential
@@ -223,7 +224,7 @@ describe('NotificationsController', () => {
               id: null
             },
             system: {
-              id: '6138afa4f616a467b5c4eb72'
+              id: null
             }
           },
           {
@@ -244,16 +245,19 @@ describe('NotificationsController', () => {
           }
         ]
       };
-
+      console.log(responseResult.payload);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(2);
       expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
         1
       );
-      expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
-        1
-      );
+      expect(
+        responseResult.payload.filter(
+          (x) =>
+            x.system.id == null && x.comment.id == null && x.content.id == null
+        ).length
+      ).toEqual(1);
     });
 
     it('should return NotificationReponse that contain all notification source page', async () => {
@@ -287,6 +291,7 @@ describe('NotificationsController', () => {
         ]
       };
 
+      console.log(responseResult);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(1);
