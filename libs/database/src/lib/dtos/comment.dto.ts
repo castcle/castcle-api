@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { ApiProperty } from '@nestjs/swagger';
+import { Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
 
 export class CommentDto {
@@ -35,4 +37,50 @@ export class CommentDto {
 
 export class UpdateCommentDto {
   message: string;
+}
+
+export class CommentPayload {
+  @ApiProperty()
+  id: string; //commentId
+  @ApiProperty()
+  message: string;
+  @ApiProperty()
+  like: {
+    count: number;
+    liked: boolean;
+    participant: {
+      type: 'people' | 'page'; // people or page
+      id: string; //userId
+      castcleId: string; // @castcle
+      displayName: string;
+    }[];
+  };
+  @ApiProperty()
+  author: {
+    type: 'people' | 'page'; // people or page
+    id: string;
+    castcleId: string; // @castcle
+    displayName: string;
+    avatar: string;
+    verified: boolean;
+    followed: boolean;
+  };
+  @ApiProperty()
+  reply: {
+    id: string;
+    message: string;
+    created: string;
+  }[];
+  @ApiProperty()
+  hasHistory: boolean;
+  @ApiProperty()
+  created: string;
+  @ApiProperty()
+  updated: string;
+}
+
+export class CommentsReponse {
+  message: string;
+  payload: CommentPayload[];
+  pagination: Pagination;
 }

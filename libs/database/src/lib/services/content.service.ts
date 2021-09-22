@@ -50,9 +50,10 @@ import {
   RecastPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleQueryOptions, EntityVisibility } from '../dtos/common.dto';
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
+import { async } from 'rxjs';
 
 @Injectable()
 export class ContentService {
@@ -443,6 +444,13 @@ export class ContentService {
       };
   };
 
+  /**
+   * Creat a comment for content
+   * @param {UserDocument} author
+   * @param {ContentDocument} content
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {Promise<CommentDocument>}
+   */
   createCommentForContent = async (
     author: UserDocument,
     content: ContentDocument,
@@ -460,6 +468,13 @@ export class ContentService {
     return newComment.save();
   };
 
+  /**
+   * Create a comment for comment(reply)
+   * @param {UserDocument} author
+   * @param {CommentDocument} rootComment
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {Promise<CommentDocument>}
+   */
   replyComment = async (
     author: UserDocument,
     rootComment: CommentDocument,
@@ -475,6 +490,41 @@ export class ContentService {
       type: CommentType.Reply
     } as CommentDto);
     return newComment.save();
+  };
+
+  /**
+   * Get Total Comment from content
+   * @param {ContentDocument} content
+   * @param {CastcleQueryOptions} options
+   * @returns {total:number, items:CommentPayload[], pagination:Pagination}
+   */
+  getCommentsFromContent = async (
+    content: ContentDocument,
+    options: CastcleQueryOptions
+  ) => {
+    const filter = {
+      targetRef: {
+        $id: content._id,
+        $ref: 'content'
+      }
+    };
+    const rootComments = await this._commentModel
+      .find(filter)
+      .limit(options.limit)
+      .skip(options.page - 1)
+      .sort(
+        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
+      )
+      .exec();
+    const totalDocument = await this._commentModel.count(filter).exec();
+    const payloads = await Promise.all(
+      rootComments.map((comment) => comment.toCommentPayload())
+    );
+    return {
+      total: totalDocument,
+      items: payloads,
+      pagination: createPagination(options, totalDocument)
+    };
   };
 
   updateComment = async (

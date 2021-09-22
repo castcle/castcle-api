@@ -381,5 +381,15 @@ describe('ContentService', () => {
         expect(postContentA.engagements.quote.count).toEqual(0);
       });
     });
+    describe('Comment Features', () => {
+      beforeAll(async () => {
+        console.log('before comment features');
+      });
+      describe('#createCommentForContent()', () => {
+        it('should be create a document in comment collection', async () => {
+          console.log('create Comment for content');
+        });
+      });
+    });
   });
 });
