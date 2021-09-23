@@ -26,6 +26,7 @@ import { CommentDocument, Comment } from './comment.schema';
 import { CredentialDocument, CredentialModel } from './credential.schema';
 import { NotificationDocument } from './notification.schema';
 import { UserDocument, UserType, User } from './user.schema';
+import { LanguageDocument } from './language.schema';
 export {
   CredentialDocument,
   CredentialModel,
@@ -38,5 +39,6 @@ export {
   Content,
   User,
   Comment,
-  CommentDocument
+  CommentDocument,
+  LanguageDocument
 };

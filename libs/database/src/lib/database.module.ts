@@ -33,6 +33,7 @@ import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
+import { LanguageSchema } from './schemas/language.schema';
 import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
@@ -41,6 +42,7 @@ import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { ContentService } from './services/content.service';
+import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { UserService } from './services/user.service';
@@ -50,7 +52,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'Notification', schema: NotificationSchema }
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Language', schema: LanguageSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -104,7 +107,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
     NotificationService,
     RankerService,
-    NotificationProducer
+    NotificationProducer,
+    LanguageService
   ],
   exports: [
     AuthenticationService,
@@ -112,7 +116,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     ContentService,
     UxEngagementService,
     NotificationService,
-    RankerService
+    RankerService,
+    LanguageService
   ]
 })
 export class DatabaseModule {}
@@ -123,5 +128,6 @@ export {
   ContentService,
   UxEngagementService,
   NotificationService,
-  RankerService
+  RankerService,
+  LanguageService
 };

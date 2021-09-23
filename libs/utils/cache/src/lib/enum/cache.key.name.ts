@@ -28,5 +28,9 @@ export const CacheKeyName = {
   NotificationsBadges: {
     Name: 'NOTIFICATIONS_BADGES',
     Ttl: 30
+  },
+  LanguagesGet: {
+    Name: 'LANGUAGES_GET',
+    Ttl: 3600
   }
 };

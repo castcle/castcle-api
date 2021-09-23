@@ -21,21 +21,25 @@
  * or have any questions.
  */
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import {
+  CacheInterceptor,
+  CACHE_KEY_METADATA,
+  ExecutionContext,
+  Injectable
+} from '@nestjs/common';
 
-@Controller()
-export class MetadataController {
-  constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(
-    MetadataController.name,
-    CastLoggerOptions
-  );
+@Injectable()
+export class HttpCacheSharedInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
 
-  @Get()
-  getData() {
-    this.logger.log('Root');
-    return this.appService.getData();
+    if (cacheKey) {
+      return `${cacheKey}`;
+    }
+
+    return super.trackBy(context);
   }
 }

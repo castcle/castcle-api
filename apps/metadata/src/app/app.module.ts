@@ -20,17 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { DatabaseModule } from '@castcle-api/database';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-
 import { MetadataController } from './app.controller';
 import { AppService } from './app.service';
-
 import { HealthyController } from './controllers/healthy/healthy.controller';
+import { LanguagesController } from './controllers/languages/languages.controller';
 
 @Module({
-  imports: [],
-  controllers: [MetadataController, HealthyController],
+  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsCacheModule],
+  controllers: [MetadataController, HealthyController, LanguagesController],
   providers: [AppService]
 })
 export class MetadataModule {}
