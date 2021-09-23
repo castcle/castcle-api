@@ -23,9 +23,10 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { HashtagPayloadDto } from '../dtos/hashtag.dto';
 import { CastcleBase } from './base.schema';
 
-export type HashtagDocument = Hashtag & Document;
+export type HashtagDocument = Hashtag & IHashtag;
 
 @Schema({ timestamps: true })
 export class Hashtag extends CastcleBase {
@@ -37,6 +38,21 @@ export class Hashtag extends CastcleBase {
 
   @Prop({ required: true, type: Object })
   aggregator: any;
+
+  @Prop()
+  name: string;
+}
+interface IHashtag extends Document {
+  toHashtagPayload(): HashtagPayloadDto;
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
+
+HashtagSchema.methods.toHashtagPayload = function () {
+  return {
+    id: (this as HashtagDocument)._id,
+    slug: (this as HashtagDocument).tag,
+    name: (this as HashtagDocument).name,
+    key: 'hashtag.castcle'
+  } as HashtagPayloadDto;
+};

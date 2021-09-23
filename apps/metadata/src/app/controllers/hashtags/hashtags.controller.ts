@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { LanguageService } from '@castcle-api/database';
-import { LanguageResponse } from '@castcle-api/database/dtos';
+import { HashtagService } from '@castcle-api/database';
+import { HashtagResponse, LanguageResponse } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
@@ -57,7 +57,7 @@ import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 })
 @Controller()
 export class HashtagsController {
-  constructor(private languageService: LanguageService) {}
+  constructor(private hashtagService: HashtagService) {}
   private readonly logger = new CastLogger(
     HashtagsController.name,
     CastLoggerOptions
@@ -74,12 +74,13 @@ export class HashtagsController {
   @Get('hashtags')
   async getAllHashtags(
     @Req() req: CredentialRequest
-  ): Promise<LanguageResponse> {
+  ): Promise<HashtagResponse> {
     this.logger.log('Start get all hashtags');
-    const result = await this.languageService.getAll();
+    const result = await this.hashtagService.getAll();
     this.logger.log('Success get all hashtags');
     return {
-      payload: result.map((lang) => lang.toLanguagePayload())
+      message: 'success',
+      payload: result.map((hashtag) => hashtag.toHashtagPayload())
     };
   }
 }

@@ -20,27 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AccountDocument, Account } from './account.schema';
-import { ContentDocument, Content } from './content.schema';
-import { CommentDocument, Comment } from './comment.schema';
-import { CredentialDocument, CredentialModel } from './credential.schema';
-import { NotificationDocument } from './notification.schema';
-import { UserDocument, UserType, User } from './user.schema';
-import { LanguageDocument } from './language.schema';
-import { HashtagDocument } from './hashtag.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  HashtagDocument
-};
+
+import { ApiProperty } from '@nestjs/swagger';
+
+export class HashtagPayloadDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  key: string;
+}
+
+export class HashtagResponse {
+  @ApiProperty()
+  message: string;
+  @ApiProperty({ type: HashtagPayloadDto, isArray: true })
+  payload: HashtagPayloadDto[];
+}
+
+export interface CreateHashtag {
+  tag: string;
+  score: number;
+  aggregator: {
+    _id: string;
+  };
+  name: string;
+}
