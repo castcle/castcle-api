@@ -21,21 +21,20 @@
  * or have any questions.
  */
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Controller()
-export class MetadataController {
-  constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(
-    MetadataController.name,
-    CastLoggerOptions
-  );
+export class LanguagePayloadDto {
+  @ApiProperty()
+  code: string;
 
-  @Get()
-  getData() {
-    this.logger.log('Root');
-    return this.appService.getData();
-  }
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  display: string;
+}
+
+export class LanguageResponse {
+  @ApiProperty({ type: LanguagePayloadDto, isArray: true })
+  payload: LanguagePayloadDto[];
 }

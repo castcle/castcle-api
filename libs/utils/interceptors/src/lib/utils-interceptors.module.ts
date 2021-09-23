@@ -1,3 +1,4 @@
+import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
@@ -23,7 +24,7 @@ import { DatabaseModule } from '@castcle-api/database';
  */
 import { Module } from '@nestjs/common';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
-import { CaslModule } from '@castcle-api/casl';
+import { HttpCacheSharedInterceptor } from './cache/http.cache.shared.intercapter';
 import {
   ContentInterceptor,
   ContentsInterceptor
@@ -55,5 +56,6 @@ export {
   TokenRequest,
   ContentInterceptor,
   ContentsInterceptor,
-  HttpCacheIndividualInterceptor
+  HttpCacheIndividualInterceptor,
+  HttpCacheSharedInterceptor
 };

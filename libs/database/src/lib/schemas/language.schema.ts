@@ -20,22 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { LanguagePayloadDto } from '../dtos/language.dto';
+import { CastcleBase } from './base.schema';
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+export type LanguageDocument = Language & ILanguage;
+@Schema({ timestamps: true })
+export class Language extends CastcleBase {
+  @Prop()
+  code: string;
 
-@Controller()
-export class MetadataController {
-  constructor(private readonly appService: AppService) {}
-  private readonly logger = new CastLogger(
-    MetadataController.name,
-    CastLoggerOptions
-  );
+  @Prop()
+  title: string;
 
-  @Get()
-  getData() {
-    this.logger.log('Root');
-    return this.appService.getData();
-  }
+  @Prop()
+  display: string;
 }
+
+interface ILanguage extends Document {
+  toLanguagePayload(): LanguagePayloadDto;
+}
+
+export const LanguageSchema = SchemaFactory.createForClass(Language);
+
+LanguageSchema.methods.toLanguagePayload = function () {
+  return {
+    code: (this as LanguageDocument).code,
+    title: (this as LanguageDocument).title,
+    display: (this as LanguageDocument).display
+  } as LanguagePayloadDto;
+};
