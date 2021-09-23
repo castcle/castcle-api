@@ -57,7 +57,7 @@ export class Comment extends CastcleBase {
   @Prop({ required: true })
   type: string;
 
-  @Prop({ required: true })
+  @Prop()
   revisionCount: number;
 
   @Prop({ required: true, type: Object })
@@ -68,19 +68,20 @@ export class Comment extends CastcleBase {
 }
 
 interface IComment extends Document {
-  toCommentPayload(): Promise<CommentPayload>;
+  toCommentPayload(
+    commentModel: Model<CommentDocument>
+  ): Promise<CommentPayload>;
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
-const commentModel = mongoose.model(
-  'Comment',
-  CommentSchema
-) as unknown as mongoose.Model<CommentDocument>;
+
 export const CommentSchemaFactory = (
   revisionModel: Model<RevisionDocument>,
   contentModel: Model<ContentDocument>
 ): mongoose.Schema<any> => {
-  CommentSchema.methods.toCommentPayload = async function () {
+  CommentSchema.methods.toCommentPayload = async function (
+    commentModel: Model<CommentDocument>
+  ) {
     //check if have revision
     const revisionCount = await revisionModel
       .count({
@@ -105,7 +106,9 @@ export const CommentSchemaFactory = (
         participant: [] //TODO !!! need to fix later on
       },
       author: {
-        avatar: (this as CommentDocument).author.profile.images.avatar,
+        avatar: (this as CommentDocument).author.profile
+          ? (this as CommentDocument).author.profile?.images.avatar
+          : null,
         castcleId: (this as CommentDocument).author.displayId,
         displayName: (this as CommentDocument).author.displayName,
         followed: false, //need to check with relationships,
@@ -119,7 +122,16 @@ export const CommentSchemaFactory = (
       reply: replies.map((r) => ({
         id: r._id,
         created: r.createdAt.toISOString(),
-        message: r.message
+        message: r.message,
+        author: {
+          avatar: r.author.profile ? r.author.profile.images.avatar : null,
+          castcleId: r.author.displayId,
+          displayName: r.author.displayName,
+          id: r.author._id,
+          followed: false,
+          verified: r.author.verified.official ? true : false,
+          type: r.author.type
+        }
       })),
       created: (this as CommentDocument).createdAt.toISOString(),
       updated: (this as CommentDocument).updatedAt.toISOString()
@@ -133,7 +145,6 @@ export const CommentSchemaFactory = (
 
   CommentSchema.post('save', async function (doc, next) {
     await postCommentSave(doc as CommentDocument, {
-      commentModel,
       revisionModel,
       contentModel
     });

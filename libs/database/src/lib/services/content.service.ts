@@ -445,6 +445,31 @@ export class ContentService {
   };
 
   /**
+   * Update Comment Engagement from Content or Comment
+   * @param {CommentDocument} replyComment
+   * @returns {true}
+   */
+  _updateCommentCounter = async (replyComment: CommentDocument) => {
+    const incrementComment =
+      replyComment.visibility === EntityVisibility.Publish ? 1 : -1;
+    if (replyComment.type === CommentType.Reply) {
+      await this._commentModel
+        .updateOne(
+          { _id: replyComment.targetRef.$id },
+          { $inc: { 'engagements.comment.count': incrementComment } }
+        )
+        .exec();
+    } else if (replyComment.type === CommentType.Comment)
+      await this._contentModel
+        .updateOne(
+          { _id: replyComment.targetRef.$id },
+          { $inc: { 'engagements.comment.count': incrementComment } }
+        )
+        .exec();
+    return true;
+  };
+
+  /**
    * Creat a comment for content
    * @param {UserDocument} author
    * @param {ContentDocument} content
@@ -457,7 +482,7 @@ export class ContentService {
     updateCommentDto: UpdateCommentDto
   ) => {
     const newComment = new this._commentModel({
-      user: author as User,
+      author: author as User,
       message: updateCommentDto.message,
       targetRef: {
         $id: content._id,
@@ -465,7 +490,10 @@ export class ContentService {
       },
       type: CommentType.Comment
     } as CommentDto);
-    return newComment.save();
+
+    const comment = await newComment.save();
+    await this._updateCommentCounter(comment);
+    return comment;
   };
 
   /**
@@ -481,7 +509,7 @@ export class ContentService {
     updateCommentDto: UpdateCommentDto
   ) => {
     const newComment = new this._commentModel({
-      user: author as User,
+      author: author as User,
       message: updateCommentDto.message,
       targetRef: {
         $id: rootComment._id,
@@ -489,7 +517,9 @@ export class ContentService {
       },
       type: CommentType.Reply
     } as CommentDto);
-    return newComment.save();
+    const comment = await newComment.save();
+    await this._updateCommentCounter(comment);
+    return comment;
   };
 
   /**
@@ -506,7 +536,8 @@ export class ContentService {
       targetRef: {
         $id: content._id,
         $ref: 'content'
-      }
+      },
+      visibility: EntityVisibility.Publish
     };
     const rootComments = await this._commentModel
       .find(filter)
@@ -518,7 +549,9 @@ export class ContentService {
       .exec();
     const totalDocument = await this._commentModel.count(filter).exec();
     const payloads = await Promise.all(
-      rootComments.map((comment) => comment.toCommentPayload())
+      rootComments.map((comment) =>
+        comment.toCommentPayload(this._commentModel)
+      )
     );
     return {
       total: totalDocument,
@@ -527,6 +560,12 @@ export class ContentService {
     };
   };
 
+  /**
+   *
+   * @param {CommentDocument} rootComment
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {CommentDocument}
+   */
   updateComment = async (
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
@@ -536,6 +575,11 @@ export class ContentService {
     return comment.save();
   };
 
+  /**
+   *
+   * @param {CommentDocument} rootComment
+   * @returns {CommentDocument}
+   */
   deleteComment = async (rootComment: CommentDocument) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.visibility = EntityVisibility.Deleted;

@@ -26,7 +26,7 @@ import { Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
 
 export class CommentDto {
-  user: any; //mongooseId
+  author: any; //mongooseId
   message: string;
   type: CommentType;
   targetRef: {
@@ -70,6 +70,15 @@ export class CommentPayload {
     id: string;
     message: string;
     created: string;
+    author: {
+      type: 'people' | 'page'; // people or page
+      id: string;
+      castcleId: string; // @castcle
+      displayName: string;
+      avatar: string;
+      verified: boolean;
+      followed: boolean;
+    };
   }[];
   @ApiProperty()
   hasHistory: boolean;

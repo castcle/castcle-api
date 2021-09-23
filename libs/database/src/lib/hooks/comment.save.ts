@@ -25,10 +25,9 @@ import * as mongoose from 'mongoose';
 import { EntityVisibility } from '../dtos';
 import { CommentDocument, Comment, ContentDocument } from '../schemas';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { CommentType } from '../schemas/comment.schema';
+import { CommentSchema, CommentType } from '../schemas/comment.schema';
 
 type HookModels = {
-  commentModel: Model<CommentDocument>;
   revisionModel: Model<RevisionDocument>;
   contentModel: Model<ContentDocument>;
 };
@@ -56,35 +55,6 @@ export const preCommentSave = async (doc: CommentDocument) => {
   return doc;
 };
 
-/**
- * Update engagement.comment.count if after save it's not
- * @param replyComment
- * @param models
- */
-const updateRootEngagements = async (
-  replyComment: CommentDocument,
-  models: HookModels
-) => {
-  //const rootComment = await  models.commentModel.findById(replyComment.targetRef.$id).exec();
-  //update with bypass save hook
-  const incrementComment =
-    replyComment.visibility === EntityVisibility.Publish ? 1 : -1;
-  if (replyComment.type === CommentType.Reply)
-    await models.commentModel
-      .updateOne(
-        { _id: replyComment.targetRef.$id },
-        { $inc: { 'engagements.comments.count': incrementComment } }
-      )
-      .exec();
-  else if (replyComment.type === CommentType.Comment)
-    await models.contentModel
-      .updateOne(
-        { _id: replyComment.targetRef.$id },
-        { $inc: { 'engagements.comments.count': incrementComment } }
-      )
-      .exec();
-};
-
 export const postCommentSave = async (
   doc: CommentDocument,
   models: HookModels
@@ -107,8 +77,6 @@ export const postCommentSave = async (
     }
   });
   session.endSession();
-  //TODO !!! now only update if delete or just created
-  if (doc.wasNew || doc.visibility === EntityVisibility.Deleted)
-    await updateRootEngagements(doc, models);
+
   return true;
 };
