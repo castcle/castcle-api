@@ -22,10 +22,14 @@
  */
 
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument, CredentialModel } from '../schemas';
+import {
+  CommentDocument,
+  CredentialDocument,
+  CredentialModel
+} from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
 import {
@@ -46,7 +50,9 @@ import {
   RecastPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleQueryOptions, EntityVisibility } from '../dtos/common.dto';
+import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
+import { CommentType } from '../schemas/comment.schema';
 import { async } from 'rxjs';
 
 @Injectable()
@@ -62,7 +68,9 @@ export class ContentService {
     @InjectModel('Revision')
     public _revisionModel: Model<RevisionDocument>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<EngagementDocument>
+    public _engagementModel: Model<EngagementDocument>,
+    @InjectModel('Comment')
+    public _commentModel: Model<CommentDocument>
   ) {}
 
   /**
@@ -435,4 +443,218 @@ export class ContentService {
         pagination: createPagination(options, totalDocument)
       };
   };
+
+  /**
+   * Update Comment Engagement from Content or Comment
+   * @param {CommentDocument} replyComment
+   * @returns {true}
+   */
+  _updateCommentCounter = async (replyComment: CommentDocument) => {
+    const incrementComment =
+      replyComment.visibility === EntityVisibility.Publish ? 1 : -1;
+
+    if (replyComment.type === CommentType.Reply) {
+      await this._commentModel
+        .updateOne(
+          {
+            _id: replyComment.targetRef.$id
+              ? replyComment.targetRef.$id
+              : replyComment.targetRef.oid
+          },
+          { $inc: { 'engagements.comment.count': incrementComment } }
+        )
+        .exec();
+    } else if (replyComment.type === CommentType.Comment)
+      await this._contentModel
+        .updateOne(
+          {
+            _id: replyComment.targetRef.$id
+              ? replyComment.targetRef.$id
+              : replyComment.targetRef.oi
+          },
+          { $inc: { 'engagements.comment.count': incrementComment } }
+        )
+        .exec();
+    return true;
+  };
+
+  /**
+   * Creat a comment for content
+   * @param {UserDocument} author
+   * @param {ContentDocument} content
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {Promise<CommentDocument>}
+   */
+  createCommentForContent = async (
+    author: UserDocument,
+    content: ContentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const newComment = new this._commentModel({
+      author: author as User,
+      message: updateCommentDto.message,
+      targetRef: {
+        $id: content._id,
+        $ref: 'content'
+      },
+      type: CommentType.Comment
+    } as CommentDto);
+
+    const comment = await newComment.save();
+    await this._updateCommentCounter(comment);
+    return comment;
+  };
+
+  /**
+   * Create a comment for comment(reply)
+   * @param {UserDocument} author
+   * @param {CommentDocument} rootComment
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {Promise<CommentDocument>}
+   */
+  replyComment = async (
+    author: UserDocument,
+    rootComment: CommentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const newComment = new this._commentModel({
+      author: author as User,
+      message: updateCommentDto.message,
+      targetRef: {
+        $id: rootComment._id,
+        $ref: 'comment'
+      },
+      type: CommentType.Reply
+    } as CommentDto);
+    const comment = await newComment.save();
+    await this._updateCommentCounter(comment);
+    return comment;
+  };
+
+  /**
+   * Get Total Comment from content
+   * @param {ContentDocument} content
+   * @param {CastcleQueryOptions} options
+   * @returns {total:number, items:CommentPayload[], pagination:Pagination}
+   */
+  getCommentsFromContent = async (
+    content: ContentDocument,
+    options: CastcleQueryOptions
+  ) => {
+    const filter = {
+      targetRef: {
+        $id: content._id,
+        $ref: 'content'
+      },
+      visibility: EntityVisibility.Publish
+    };
+    const rootComments = await this._commentModel
+      .find(filter)
+      .limit(options.limit)
+      .skip(options.page - 1)
+      .sort(
+        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
+      )
+      .exec();
+    const totalDocument = await this._commentModel.count(filter).exec();
+    const payloads = await Promise.all(
+      rootComments.map((comment) =>
+        comment.toCommentPayload(this._commentModel)
+      )
+    );
+    return {
+      total: totalDocument,
+      items: payloads,
+      pagination: createPagination(options, totalDocument)
+    };
+  };
+
+  /**
+   *
+   * @param {CommentDocument} rootComment
+   * @param {UpdateCommentDto} updateCommentDto
+   * @returns {CommentDocument}
+   */
+  updateComment = async (
+    rootComment: CommentDocument,
+    updateCommentDto: UpdateCommentDto
+  ) => {
+    const comment = await this._commentModel.findById(rootComment._id);
+    comment.message = updateCommentDto.message;
+    return comment.save();
+  };
+
+  /**
+   *
+   * @param {CommentDocument} rootComment
+   * @returns {CommentDocument}
+   */
+  deleteComment = async (rootComment: CommentDocument) => {
+    const comment = await this._commentModel.findById(rootComment._id);
+    comment.visibility = EntityVisibility.Deleted;
+    const result = comment.save();
+    await this._updateCommentCounter(comment);
+    return result;
+  };
+
+  /**
+   * Update Engagement.like of the comment
+   * @param {UserDocument} user
+   * @param {CommentDocument} comment
+   * @returns  {EngagementDocument}
+   */
+  likeComment = async (user: UserDocument, comment: CommentDocument) => {
+    let engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id
+      },
+      type: EngagementType.Like
+    });
+    if (!engagement)
+      engagement = new this._engagementModel({
+        type: EngagementType.Like,
+        user: user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id
+        },
+        visibility: EntityVisibility.Publish
+      });
+    engagement.type = EngagementType.Like;
+    engagement.visibility = EntityVisibility.Publish;
+    return engagement.save();
+  };
+
+  /**
+   * Update Engagement.like of the comment
+   * @param {UserDocument} user
+   * @param {CommentDocument} comment
+   * @returns  {EngagementDocument}
+   */
+  unlikeComment = async (user: UserDocument, comment: CommentDocument) => {
+    const engagement = await this._engagementModel
+      .findOne({
+        user: user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id
+        },
+        type: EngagementType.Like
+      })
+      .exec();
+    if (!engagement) return null;
+    return engagement.remove();
+  };
+
+  /**
+   * get content by id that visibilty = equal true
+   * @param commentId
+   * @returns
+   */
+  getCommentById = async (commentId: string) =>
+    this._commentModel
+      .findOne({ _id: commentId, visibility: EntityVisibility.Publish })
+      .exec();
 }
