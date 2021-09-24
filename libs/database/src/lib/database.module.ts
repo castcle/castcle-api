@@ -29,6 +29,7 @@ import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
 import { AccountSchemaFactory } from './schemas/account.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
+import { CommentSchemaFactory } from './schemas/comment.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
@@ -64,6 +65,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   { name: 'Revision', useFactory: RevisionchemaFactory },
   {
+    name: 'Comment',
+    useFactory: CommentSchemaFactory,
+    inject: [getModelToken('Revision'), getModelToken('Content')]
+  },
+  {
     name: 'FeedItem',
     useFactory: FeedItemSchemaFactory
   },
@@ -90,7 +96,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [getModelToken('Content')]
+    inject: [getModelToken('Content'), getModelToken('Comment')]
   }
 ]);
 
