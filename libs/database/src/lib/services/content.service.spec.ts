@@ -32,7 +32,12 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument, ContentSchema } from '../schemas/content.schema';
-import { SaveContentDto, ContentType, DEFAULT_QUERY_OPTIONS } from '../dtos';
+import {
+  SaveContentDto,
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility
+} from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
@@ -60,7 +65,7 @@ describe('ContentService', () => {
   let userService: UserService;
   let authService: AuthenticationService;
   let user: UserDocument;
-  console.log('test in real db = ', env.db_test_in_db);
+  //console.log('test in real db = ', env.db_test_in_db);
   /**
    * For multiple user
    */
@@ -271,10 +276,10 @@ describe('ContentService', () => {
       const engagement = await service._engagementModel
         .findById(likeResult._id)
         .exec();
-      console.log('newly engagement', engagement);
+      //console.log('newly engagement', engagement);
       expect(engagement.user).toEqual(user._id);
       const postContent = await service.getContentFromId(content._id);
-      console.log(postContent.engagements);
+      //console.log(postContent.engagements);
       expect(postContent.engagements['like']).toBeDefined();
       expect(postContent.engagements['like'].count).toEqual(1);
     });
@@ -388,8 +393,9 @@ describe('ContentService', () => {
       let contentA: ContentDocument;
       let userA: UserDocument;
       let rootComment: CommentDocument;
+      let replyComment: CommentDocument;
       beforeAll(async () => {
-        console.log('before comment features');
+        //console.log('before comment features');
         const account = await authService.getAccountFromEmail(
           userInfo[0].signupRequirement.email
         );
@@ -402,11 +408,10 @@ describe('ContentService', () => {
           } as ShortPayload,
           type: ContentType.Short
         });
-        console.log('-------BEFORE ALLL COMMENT----------');
       });
       describe('#createCommentForContent()', () => {
         it('should be create a document in comment collection', async () => {
-          console.log('create Comment for content');
+          //console.log('create Comment for content');
           rootComment = await service.createCommentForContent(user, contentA, {
             message: 'Hello'
           });
@@ -432,7 +437,7 @@ describe('ContentService', () => {
       });
       describe('#replyComment()', () => {
         it('should create a document in comment collection', async () => {
-          //console.log(createResult)
+          ////console.log(createResult)
           const postComment = await service._commentModel
             .findById(rootComment._id)
             .exec();
@@ -453,6 +458,7 @@ describe('ContentService', () => {
           expect(findResult[0].targetRef.$id).toEqual(
             replyResult.targetRef.oid
           );
+          replyComment = findResult[0];
         });
         it('should increase engagement.comment of comment', async () => {
           const postComment = await service._commentModel
@@ -487,11 +493,74 @@ describe('ContentService', () => {
             DEFAULT_QUERY_OPTIONS
           );
           expect(comments.total).toEqual(1);
+          expect(comments.items[0].reply.length).toEqual(1);
         });
       });
-      /*describe('#deleteComment()', () => {});
-      describe('#likeComment()', () => {});
-      describe('#unlikeComment()', () => {});*/
+      describe('#likeComment()', () => {
+        it('should update enagement.like of comment', async () => {
+          await service.likeComment(user, rootComment);
+          const postComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(postComment.engagements.like.count).toEqual(1);
+        });
+        it('should not effected by double like', async () => {
+          await service.likeComment(user, rootComment);
+          const postComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(postComment.engagements.like.count).toEqual(1);
+        });
+      });
+      describe('#unlikeComment()', () => {
+        it('should update enagement.like of comment', async () => {
+          await service.unlikeComment(user, rootComment);
+          const postComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(postComment.engagements.like.count).toEqual(0);
+        });
+        it('should not effected by double like', async () => {
+          await service.unlikeComment(user, rootComment);
+          const postComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(postComment.engagements.like.count).toEqual(0);
+        });
+      });
+      describe('#deleteComment()', () => {
+        it('should remove a reply from comment', async () => {
+          const preComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(preComment.engagements.comment.count).toEqual(1);
+          const result = await service.deleteComment(replyComment);
+          const postReply = await service._commentModel
+            .findById(replyComment._id)
+            .exec();
+          expect(postReply.visibility).toEqual(EntityVisibility.Deleted);
+          const comments = await service.getCommentsFromContent(
+            contentA,
+            DEFAULT_QUERY_OPTIONS
+          );
+          expect(comments.total).toEqual(1);
+          expect(comments.items[0].reply.length).toEqual(0);
+          //expect reply engagement = 0
+          const postComment = await service._commentModel
+            .findById(rootComment._id)
+            .exec();
+          expect(postComment.engagements.comment.count).toEqual(0);
+        });
+
+        it('should remove a comment from content', async () => {
+          const result = await service.deleteComment(rootComment);
+          const comments = await service.getCommentsFromContent(
+            contentA,
+            DEFAULT_QUERY_OPTIONS
+          );
+          expect(comments.total).toEqual(0);
+        });
+      });
     });
   });
 });

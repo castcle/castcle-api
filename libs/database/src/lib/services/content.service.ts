@@ -452,17 +452,26 @@ export class ContentService {
   _updateCommentCounter = async (replyComment: CommentDocument) => {
     const incrementComment =
       replyComment.visibility === EntityVisibility.Publish ? 1 : -1;
+
     if (replyComment.type === CommentType.Reply) {
       await this._commentModel
         .updateOne(
-          { _id: replyComment.targetRef.$id },
+          {
+            _id: replyComment.targetRef.$id
+              ? replyComment.targetRef.$id
+              : replyComment.targetRef.oid
+          },
           { $inc: { 'engagements.comment.count': incrementComment } }
         )
         .exec();
     } else if (replyComment.type === CommentType.Comment)
       await this._contentModel
         .updateOne(
-          { _id: replyComment.targetRef.$id },
+          {
+            _id: replyComment.targetRef.$id
+              ? replyComment.targetRef.$id
+              : replyComment.targetRef.oi
+          },
           { $inc: { 'engagements.comment.count': incrementComment } }
         )
         .exec();
@@ -583,9 +592,17 @@ export class ContentService {
   deleteComment = async (rootComment: CommentDocument) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.visibility = EntityVisibility.Deleted;
-    return comment.save();
+    const result = comment.save();
+    await this._updateCommentCounter(comment);
+    return result;
   };
 
+  /**
+   * Update Engagement.like of the comment
+   * @param {UserDocument} user
+   * @param {CommentDocument} comment
+   * @returns  {EngagementDocument}
+   */
   likeComment = async (user: UserDocument, comment: CommentDocument) => {
     let engagement = await this._engagementModel.findOne({
       user: user._id,
@@ -610,6 +627,12 @@ export class ContentService {
     return engagement.save();
   };
 
+  /**
+   * Update Engagement.like of the comment
+   * @param {UserDocument} user
+   * @param {CommentDocument} comment
+   * @returns  {EngagementDocument}
+   */
   unlikeComment = async (user: UserDocument, comment: CommentDocument) => {
     const engagement = await this._engagementModel
       .findOne({

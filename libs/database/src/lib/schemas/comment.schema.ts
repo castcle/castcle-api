@@ -30,6 +30,7 @@ import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
 import { ContentDocument, User } from '.';
 import { RevisionDocument } from './revision.schema';
+import { EntityVisibility } from '../dtos';
 
 export type CommentDocument = Comment & IComment;
 
@@ -95,7 +96,8 @@ export const CommentSchemaFactory = (
     const replies = await commentModel
       .find({
         type: CommentType.Reply,
-        targetRef: { $id: this._id, $ref: 'comment' }
+        targetRef: { $id: this._id, $ref: 'comment' },
+        visibility: EntityVisibility.Publish
       })
       .exec();
     return {
