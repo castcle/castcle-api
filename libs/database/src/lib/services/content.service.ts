@@ -647,4 +647,14 @@ export class ContentService {
     if (!engagement) return null;
     return engagement.remove();
   };
+
+  /**
+   * get content by id that visibilty = equal true
+   * @param commentId
+   * @returns
+   */
+  getCommentById = async (commentId: string) =>
+    this._commentModel
+      .findOne({ _id: commentId, visibility: EntityVisibility.Publish })
+      .exec();
 }
