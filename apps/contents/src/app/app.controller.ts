@@ -146,6 +146,7 @@ export class ContentController {
     } as ContentResponse;
   }
 
+  //TO BE REMOVED !!! this should be check at interceptor or guards
   async _getContentIfExist(id: string, req: CredentialRequest) {
     const content = await this.contentService.getContentFromId(id);
     if (content) return content;
