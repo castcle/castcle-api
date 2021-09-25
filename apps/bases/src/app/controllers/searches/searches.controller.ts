@@ -106,6 +106,7 @@ export class SearchesController {
       exclude: excludeOption
     });
     this.logger.log('Success get top trends');
+
     return {
       hashtags: result.hashtags.map((hashtag, index) =>
         hashtag.toSearchTopTrendhPayload(index)

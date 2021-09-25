@@ -204,9 +204,10 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       message: ''
     },
     verified:
-      (this as UserDocument).verified.email ||
-      (this as UserDocument).verified.mobile ||
-      (this as UserDocument).verified.official,
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
     count: (this as UserDocument).followerCount
   } as SearchFollowsResponseDto;
 };
@@ -235,9 +236,10 @@ UserSchema.methods.toSearchResponse = function () {
       count: 1234
     },
     verified:
-      (this as UserDocument).verified.email ||
-      (this as UserDocument).verified.mobile ||
-      (this as UserDocument).verified.official,
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
     followed: true
   } as SearchFollowsResponseDto;
 };
