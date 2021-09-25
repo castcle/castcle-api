@@ -54,6 +54,9 @@ export class SearchHashtagResponseDto {
 
   @ApiProperty()
   trends: string;
+
+  @ApiProperty()
+  isTrending: boolean;
 }
 
 export class AggregatorSearchResponseDto {
@@ -68,6 +71,9 @@ export class AggregatorSearchResponseDto {
 
   @ApiProperty()
   message: string;
+
+  @ApiProperty()
+  count: number;
 }
 
 export class SearchFollowsResponseDto {
@@ -97,6 +103,9 @@ export class SearchFollowsResponseDto {
 
   @ApiProperty()
   count: number;
+
+  @ApiProperty()
+  followed: boolean;
 }
 
 export class TopTrendsResponse {
@@ -106,4 +115,21 @@ export class TopTrendsResponse {
   follows: SearchFollowsResponseDto[];
   @ApiProperty()
   topics: [];
+}
+
+export class SearchKeywordResponseDto {
+  @ApiProperty()
+  text: string;
+
+  @ApiProperty()
+  isTrending: boolean;
+}
+
+export class SearchResponse {
+  @ApiProperty({ type: SearchKeywordResponseDto, isArray: true })
+  keyword: SearchKeywordResponseDto[];
+  @ApiProperty({ type: SearchHashtagResponseDto, isArray: true })
+  hashtags: SearchHashtagResponseDto[];
+  @ApiProperty({ type: SearchFollowsResponseDto, isArray: true })
+  follows: SearchFollowsResponseDto[];
 }

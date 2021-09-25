@@ -64,6 +64,8 @@ import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   SearchFollowsResponseDto,
   SearchHashtagResponseDto,
+  SearchKeywordResponseDto,
+  SearchResponse,
   TopTrendsQueryOptions,
   TopTrendsResponse
 } from './search.dto';
@@ -126,5 +128,7 @@ export {
   TopTrendsResponse,
   SearchHashtagResponseDto,
   SearchFollowsResponseDto,
-  AggregatorSearchResponseDto
+  AggregatorSearchResponseDto,
+  SearchResponse,
+  SearchKeywordResponseDto
 };

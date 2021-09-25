@@ -242,7 +242,7 @@ export class NotificationsController {
 
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: NotificationResponse
+    type: NotificationBadgesResponse
   })
   @UseInterceptors(HttpCacheIndividualInterceptor)
   @CacheKey(CacheKeyName.NotificationsBadges.Name)

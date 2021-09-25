@@ -93,7 +93,7 @@ describe('NotificationsController', () => {
       const user = new search._userModel({
         ownerAccount: '6138afa4f616a467b5c4eb72',
         displayName: name,
-        displayId: '6138afa4f616a467b5c4eabc',
+        displayId: name,
         type: type,
         followerCount: follow
       });
@@ -128,6 +128,22 @@ describe('NotificationsController', () => {
       await mockUser(
         `Page ${i}`,
         UserType.Page,
+        Math.floor(Math.random() * 99999)
+      );
+    }
+
+    for (let i = 0; i < 5; i++) {
+      await mockUser(
+        `cPage ${i}`,
+        UserType.Page,
+        Math.floor(Math.random() * 99999)
+      );
+    }
+
+    for (let i = 0; i < 5; i++) {
+      await mockUser(
+        `cUser ${i}`,
+        UserType.People,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -203,6 +219,58 @@ describe('NotificationsController', () => {
 
       expect(responseResult.hashtags.length).toEqual(0);
       expect(responseResult.follows.length).toEqual(0);
+    });
+  });
+
+  describe('getSearches', () => {
+    it('should return SearchesResponse that contain all data', async () => {
+      const responseResult = await controller.getSearches(
+        {
+          $credential: userCredential
+        } as any,
+        10,
+        'c'
+      );
+      console.log(responseResult);
+      expect(responseResult.keyword.length).toEqual(3);
+      expect(responseResult.keyword[0].text).toBeDefined();
+      expect(responseResult.keyword[0].isTrending).toBeDefined();
+
+      expect(responseResult.hashtags.length).toEqual(2);
+      expect(responseResult.hashtags[0].id).toBeDefined();
+      expect(responseResult.hashtags[0].slug).toBeDefined();
+      expect(responseResult.hashtags[0].key).toBeDefined();
+      expect(responseResult.hashtags[0].name).toBeDefined();
+      expect(responseResult.hashtags[0].isTrending).toBeDefined();
+
+      expect(responseResult.follows.length).toEqual(10);
+      expect(responseResult.follows[0].id).toBeDefined();
+      expect(responseResult.follows[0].castcleId).toBeDefined();
+      expect(responseResult.follows[0].displayName).toBeDefined();
+      expect(responseResult.follows[0].overview).toBeDefined();
+      expect(responseResult.follows[0].type).toBeDefined();
+      expect(responseResult.follows[0].avatar).toBeDefined();
+      expect(responseResult.follows[0].aggregator.count).toBeDefined();
+      expect(responseResult.follows[0].aggregator.type).toBeDefined();
+      expect(responseResult.follows[0].aggregator.id).toBeDefined();
+      expect(responseResult.follows[0].aggregator.action).toBeDefined();
+      expect(responseResult.follows[0].aggregator.message).toBeDefined();
+      expect(responseResult.follows[0].verified).toBeDefined();
+      expect(responseResult.follows[0].followed).toBeDefined();
+    });
+
+    it('should return SearchesResponse with empty data', async () => {
+      const responseResult = await controller.getSearches(
+        {
+          $credential: userCredential
+        } as any,
+        10,
+        'abc'
+      );
+
+      expect(responseResult.keyword.length).toEqual(0);
+      expect(responseResult.follows.length).toEqual(0);
+      expect(responseResult.hashtags.length).toEqual(0);
     });
   });
 });

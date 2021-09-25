@@ -40,5 +40,9 @@ export const CacheKeyName = {
   TopTrends: {
     Name: 'TOPTRENDS',
     Ttl: 60
+  },
+  Searches: {
+    Name: 'SEARCHES',
+    Ttl: 60
   }
 };

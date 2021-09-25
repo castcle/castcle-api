@@ -27,7 +27,7 @@ import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   TopTrendsQueryOptions
 } from '../dtos/search.dto';
-import { UserDocument } from '../schemas';
+import { CredentialDocument, UserDocument } from '../schemas';
 import { HashtagDocument } from '../schemas/hashtag.schema';
 
 @Injectable()
@@ -36,6 +36,99 @@ export class SearchService {
     @InjectModel('Hashtag') public _hashtagModel: Model<HashtagDocument>,
     @InjectModel('User') public _userModel: Model<UserDocument>
   ) {}
+
+  private getHashtag(limitFilter, keyword?) {
+    let filter;
+    if (keyword) {
+      const filterHashtag: {
+        name: any;
+      } = {
+        name: { $regex: new RegExp(`^${keyword}`, 'i') }
+      };
+      filter = filterHashtag;
+    }
+
+    return this._hashtagModel
+      .find(filter)
+      .sort({ score: 'desc' })
+      .limit(limitFilter)
+      .exec();
+  }
+
+  private getFollows(limitFilter, keyword?) {
+    let filter;
+    if (keyword) {
+      const filterFollow: {
+        displayId: any;
+      } = {
+        displayId: { $regex: new RegExp(`^${keyword}`, 'i') }
+      };
+      filter = filterFollow;
+    }
+
+    return this._userModel
+      .find(filter)
+      .sort({ followerCount: 'desc' })
+      .limit(limitFilter)
+      .exec();
+  }
+
+  private getKeyword(limitFilter, keyword?) {
+    let filter;
+    if (keyword) {
+      const filterKeyword: {
+        text: any;
+      } = {
+        text: { $regex: new RegExp(`^${keyword}`, 'i') }
+      };
+      filter = filterKeyword;
+    }
+
+    const mockKeyword = [
+      {
+        text: 'castcle',
+        isTrending: true
+      },
+      {
+        text: 'coronavirus',
+        isTrending: true
+      },
+      {
+        text: 'election results',
+        isTrending: false
+      },
+      {
+        text: 'kobe bryant',
+        isTrending: false
+      },
+      {
+        text: 'zoom',
+        isTrending: true
+      },
+      {
+        text: 'IPL',
+        isTrending: false
+      },
+      {
+        text: 'India vs New Zealand',
+        isTrending: true
+      },
+      {
+        text: 'Coronavirus update',
+        isTrending: true
+      },
+      {
+        text: 'Joe Biden',
+        isTrending: true
+      },
+      {
+        text: 'Google Classroom',
+        isTrending: true
+      }
+    ];
+
+    return mockKeyword.filter((x) => x.text.match(filter.text.$regex));
+  }
 
   /**
    * get Top Trend Hashtags, Follows, Topics
@@ -50,25 +143,44 @@ export class SearchService {
     let follow: UserDocument[] = [];
     const skipHashtag = options.exclude && options.exclude.includes('hashtags');
     if (!skipHashtag) {
-      hashtag = await this._hashtagModel
-        .find()
-        .sort({ score: 'desc' })
-        .limit(options.limit)
-        .exec();
+      hashtag = await this.getHashtag(options.limit);
     }
 
     const skipFollows = options.exclude && options.exclude.includes('follows');
     if (!skipFollows) {
-      follow = await this._userModel
-        .find()
-        .sort({ followerCount: 'desc' })
-        .limit(options.limit)
-        .exec();
+      follow = await this.getFollows(options.limit);
     }
     return {
       hashtags: hashtag,
       follows: follow,
       topics: []
+    };
+  }
+
+  /**
+   * get search data from keyword
+   *
+   * @param {CredentialDocument} credential
+   * @param {string} keyword search keyword
+   * @param {number} limitFollow limit follows data,
+   * @returns {keyword,hashtags,follows} return search data keyword,hashtags,follows Document
+   */
+  async getSearch(
+    credential: CredentialDocument,
+    keyword: string,
+    limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
+  ) {
+    const limitHashtag = 2;
+    const limitKeyword = 3;
+
+    const hashtag = await this.getHashtag(limitHashtag, keyword);
+    const follow = await this.getFollows(limitFollow, keyword);
+    const KeywordResult = await this.getKeyword(limitKeyword, keyword);
+
+    return {
+      keywords: KeywordResult,
+      hashtags: hashtag,
+      follows: follow
     };
   }
 }

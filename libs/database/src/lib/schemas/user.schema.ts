@@ -115,6 +115,7 @@ export interface IUser extends Document {
   toPageResponse(): PageResponseDto;
   follow(user: UserDocument): Promise<void>;
   unfollow(user: UserDocument): Promise<void>;
+  toSearchTopTrendResponse(): SearchFollowsResponseDto;
   toSearchResponse(): SearchFollowsResponseDto;
 }
 
@@ -180,7 +181,7 @@ UserSchema.methods.toPageResponse = function () {
   } as PageResponseDto;
 };
 
-UserSchema.methods.toSearchResponse = function () {
+UserSchema.methods.toSearchTopTrendResponse = function () {
   return {
     id: (this as UserDocument)._id,
     castcleId: (this as UserDocument).displayId,
@@ -207,6 +208,37 @@ UserSchema.methods.toSearchResponse = function () {
       (this as UserDocument).verified.mobile ||
       (this as UserDocument).verified.official,
     count: (this as UserDocument).followerCount
+  } as SearchFollowsResponseDto;
+};
+
+UserSchema.methods.toSearchResponse = function () {
+  return {
+    id: (this as UserDocument)._id,
+    castcleId: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : '',
+    avatar:
+      (this as UserDocument).profile &&
+      (this as UserDocument).profile.images &&
+      (this as UserDocument).profile.images.avatar
+        ? (this as UserDocument).profile.images.avatar
+        : '',
+    type: (this as UserDocument).type,
+    aggregator: {
+      type: '',
+      id: '',
+      action: '',
+      message: '',
+      count: 1234
+    },
+    verified:
+      (this as UserDocument).verified.email ||
+      (this as UserDocument).verified.mobile ||
+      (this as UserDocument).verified.official,
+    followed: true
   } as SearchFollowsResponseDto;
 };
 

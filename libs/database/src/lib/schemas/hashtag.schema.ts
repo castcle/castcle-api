@@ -45,7 +45,8 @@ export class Hashtag extends CastcleBase {
 }
 interface IHashtag extends Document {
   toHashtagPayload(): HashtagPayloadDto;
-  toSearchHashtagPayload(index): SearchHashtagResponseDto;
+  toSearchTopTrendhPayload(index): SearchHashtagResponseDto;
+  toSearchPayload(): SearchHashtagResponseDto;
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
@@ -59,7 +60,7 @@ HashtagSchema.methods.toHashtagPayload = function () {
   } as HashtagPayloadDto;
 };
 
-HashtagSchema.methods.toSearchHashtagPayload = function (index) {
+HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
   return {
     rank: index,
     id: (this as HashtagDocument)._id,
@@ -68,5 +69,15 @@ HashtagSchema.methods.toSearchHashtagPayload = function (index) {
     key: 'hashtag.castcle',
     count: (this as HashtagDocument).score,
     trends: 'up'
+  } as SearchHashtagResponseDto;
+};
+
+HashtagSchema.methods.toSearchPayload = function () {
+  return {
+    id: (this as HashtagDocument)._id,
+    slug: (this as HashtagDocument).tag,
+    name: (this as HashtagDocument).name,
+    key: 'hashtag.castcle',
+    isTrending: true
   } as SearchHashtagResponseDto;
 };
