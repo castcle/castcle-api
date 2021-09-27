@@ -115,10 +115,8 @@ export class ContentController {
     @Body() body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
-    if (
-      req.$credential.account.isGuest ||
-      !req.$credential.account.activateDate
-    )
+    const ability = this.caslAbility.createForCredential(req.$credential);
+    if (!ability.can(Action.Create, Content))
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
