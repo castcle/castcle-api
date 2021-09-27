@@ -31,6 +31,11 @@ export type UploadOptions = {
   order?: number;
 };
 
+/**
+ * return content type that could use as extention file / will return '' if not match any know files(png,jpg,gif and webp)
+ * @param {string} char
+ * @returns {string}
+ */
 const getContentTypeFromFirstCharAt = (char: string) => {
   if (char === 'i') return 'png';
   else if (char === '/') return 'jpg';
@@ -39,17 +44,38 @@ const getContentTypeFromFirstCharAt = (char: string) => {
   return '';
 };
 
+/**
+ * get content type to prefix of base64 for example data:image/png;base64,123v... will return png
+ * @param base64
+ * @returns
+ */
+const getFileTypeFromBase64Prefix = (base64: string) => {
+  const matchResult = base64.match(/[^:/]\w+(?=;|,)/);
+  if (matchResult) {
+    return matchResult[0];
+  } else return null;
+};
+
 export class Uploader {
   s3: AWS.S3;
   constructor(public bucket: string, public destination: string) {
     this.s3 = new AWS.S3();
   }
 
+  /**
+   * upload base64 to S3 serer by replace any prefix and find suitable extension file
+   * @param {string} base64
+   * @param {UploadOptions} options
+   * @returns {AWS.S3.ManagedUpload.SendData}
+   */
   uploadFromBase64ToS3 = async (base64: string, options?: UploadOptions) => {
     try {
-      const replaceContent = base64.replace(/^data:image\/\w+;base64,/, '');
+      const replaceContent = base64.replace(/^data:\w+\/\w+;base64,/, '');
       const buffer = Buffer.from(replaceContent, 'base64');
-      const fileType = getContentTypeFromFirstCharAt(replaceContent.charAt(0)); //base64.match(/[^:/]\w+(?=;|,)/)[0]; //detect file type
+      const fileTypeFromPrefixResult = getFileTypeFromBase64Prefix(base64);
+      const fileType = fileTypeFromPrefixResult
+        ? fileTypeFromPrefixResult
+        : getContentTypeFromFirstCharAt(replaceContent.charAt(0));
       const extensionName =
         options && options.addTime
           ? `-${Date.now()}.${fileType}`
