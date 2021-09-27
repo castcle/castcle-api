@@ -23,7 +23,11 @@
 import { AccountDocument, Account } from './account.schema';
 import { ContentDocument, Content } from './content.schema';
 import { CommentDocument, Comment } from './comment.schema';
-import { CredentialDocument, CredentialModel } from './credential.schema';
+import {
+  CredentialDocument,
+  CredentialModel,
+  Credential
+} from './credential.schema';
 import { NotificationDocument } from './notification.schema';
 import { UserDocument, UserType, User } from './user.schema';
 import { LanguageDocument } from './language.schema';
@@ -40,5 +44,6 @@ export {
   User,
   Comment,
   CommentDocument,
-  LanguageDocument
+  LanguageDocument,
+  Credential
 };
