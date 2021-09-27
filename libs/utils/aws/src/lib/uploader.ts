@@ -31,6 +31,14 @@ export type UploadOptions = {
   order?: number;
 };
 
+const getContentTypeFromFirstCharAt = (char: string) => {
+  if (char === 'i') return 'png';
+  else if (char === '/') return 'jpg';
+  else if (char === 'R') return 'gif';
+  else if (char === 'U') return 'webp';
+  return '';
+};
+
 export class Uploader {
   s3: AWS.S3;
   constructor(public bucket: string, public destination: string) {
@@ -39,11 +47,9 @@ export class Uploader {
 
   uploadFromBase64ToS3 = async (base64: string, options?: UploadOptions) => {
     try {
-      const buffer = Buffer.from(
-        base64.replace(/^data:image\/\w+;base64,/, ''),
-        'base64'
-      );
-      const fileType = base64.match(/[^:/]\w+(?=;|,)/)[0]; //detect file type
+      const replaceContent = base64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(replaceContent, 'base64');
+      const fileType = getContentTypeFromFirstCharAt(replaceContent.charAt(0)); //base64.match(/[^:/]\w+(?=;|,)/)[0]; //detect file type
       const extensionName =
         options && options.addTime
           ? `-${Date.now()}.${fileType}`
