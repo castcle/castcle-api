@@ -162,7 +162,8 @@ export class AuthenticationService {
       _id: account._id,
       visibility: account.visibility,
       isGuest: account.isGuest,
-      preferences: account.preferences
+      preferences: account.preferences,
+      activateDate: account.activateDate //this to add activateDate to primary account
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {

@@ -20,39 +20,43 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { CreateHashtag } from '../dtos/hashtag.dto';
+import { HashtagDocument } from '../schemas/hashtag.schema';
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { HashtagPayloadDto } from '../dtos/hashtag.dto';
-import { CastcleBase } from './base.schema';
+@Injectable()
+export class HashtagService {
+  constructor(
+    @InjectModel('Hashtag') public _hashtagModel: Model<HashtagDocument>
+  ) {}
 
-export type HashtagDocument = Hashtag & IHashtag;
+  /**
+   * get all data from Hashtag Document
+   *
+   * @returns {HashtagDocument[]} return all Hashtag Document
+   */
+  async getAll() {
+    console.log('get all hashtag');
+    return this._hashtagModel.find().exec();
+  }
 
-@Schema({ timestamps: true })
-export class Hashtag extends CastcleBase {
-  @Prop({ required: true })
-  tag: string;
+  /**
+   * create new hashtag
+   * @param {CreateHashtag} hashtag Create Hashtag payload
+   * @returns {HashtagDocument} return new hashtag document
+   */
+  create = async (hashtag: CreateHashtag) => {
+    console.log('save hashtag');
+    const newHashtag = {
+      ...hashtag,
+      aggregator: {
+        $id: hashtag.aggregator._id
+      }
+    };
 
-  @Prop({ required: true })
-  score: number;
-
-  @Prop({ required: true, type: Object })
-  aggregator: any;
-
-  @Prop()
-  name: string;
+    const createResult = await new this._hashtagModel(newHashtag).save();
+    return createResult;
+  };
 }
-interface IHashtag extends Document {
-  toHashtagPayload(): HashtagPayloadDto;
-}
-
-export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
-
-HashtagSchema.methods.toHashtagPayload = function () {
-  return {
-    id: (this as HashtagDocument)._id,
-    slug: (this as HashtagDocument).tag,
-    name: (this as HashtagDocument).name,
-    key: 'hashtag.castcle'
-  } as HashtagPayloadDto;
-};

@@ -115,10 +115,8 @@ export class ContentController {
     @Body() body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
-    if (
-      req.$credential.account.isGuest ||
-      !req.$credential.account.activateDate
-    )
+    const ability = this.caslAbility.createForCredential(req.$credential);
+    if (!ability.can(Action.Create, Content))
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
@@ -269,7 +267,7 @@ export class ContentController {
   @HttpCode(204)
   async likeContent(
     @Param('id') id: string,
-    @Body('authorId') authorId: string,
+    @Body('castcleId') castcleId: string,
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
@@ -277,7 +275,7 @@ export class ContentController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    const user = await this.userService.getUserFromId(authorId);
+    const user = await this.authService.getUserFromCastcleId(castcleId);
     if (user.ownerAccount !== account._id) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -297,7 +295,7 @@ export class ContentController {
   @HttpCode(204)
   async unLikeContent(
     @Param('id') id: string,
-    @Body('authorId') authorId: string,
+    @Body('castcleId') castcleId: string,
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
@@ -305,7 +303,7 @@ export class ContentController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    const user = await this.userService.getUserFromId(authorId);
+    const user = await this.authService.getUserFromCastcleId(castcleId);
     if (user.ownerAccount !== account._id) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -325,7 +323,7 @@ export class ContentController {
   @Post(':id/recast')
   async recastContent(
     @Param('id') id: string,
-    @Body('authorId') authorId: string,
+    @Body('castcleId') castcleId: string,
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
@@ -333,7 +331,7 @@ export class ContentController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    const user = await this.userService.getUserFromId(authorId);
+    const user = await this.authService.getUserFromCastcleId(castcleId);
     if (user.ownerAccount !== account._id) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -358,7 +356,7 @@ export class ContentController {
   @Post(':id/quotecast')
   async quoteContent(
     @Param('id') id: string,
-    @Body('authorId') authorId: string,
+    @Body('castcleId') castcleId: string,
     @Body('message') message: string,
     @Req() req: CredentialRequest
   ) {
@@ -367,7 +365,7 @@ export class ContentController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    const user = await this.userService.getUserFromId(authorId);
+    const user = await this.authService.getUserFromCastcleId(castcleId);
     if (user.ownerAccount !== account._id) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,

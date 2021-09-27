@@ -21,38 +21,34 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { HashtagPayloadDto } from '../dtos/hashtag.dto';
-import { CastcleBase } from './base.schema';
+import { ApiProperty } from '@nestjs/swagger';
 
-export type HashtagDocument = Hashtag & IHashtag;
+export class HashtagPayloadDto {
+  @ApiProperty()
+  id: string;
 
-@Schema({ timestamps: true })
-export class Hashtag extends CastcleBase {
-  @Prop({ required: true })
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  key: string;
+}
+
+export class HashtagResponse {
+  @ApiProperty()
+  message: string;
+  @ApiProperty({ type: HashtagPayloadDto, isArray: true })
+  payload: HashtagPayloadDto[];
+}
+
+export interface CreateHashtag {
   tag: string;
-
-  @Prop({ required: true })
   score: number;
-
-  @Prop({ required: true, type: Object })
-  aggregator: any;
-
-  @Prop()
+  aggregator: {
+    _id: string;
+  };
   name: string;
 }
-interface IHashtag extends Document {
-  toHashtagPayload(): HashtagPayloadDto;
-}
-
-export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
-
-HashtagSchema.methods.toHashtagPayload = function () {
-  return {
-    id: (this as HashtagDocument)._id,
-    slug: (this as HashtagDocument).tag,
-    name: (this as HashtagDocument).name,
-    key: 'hashtag.castcle'
-  } as HashtagPayloadDto;
-};
