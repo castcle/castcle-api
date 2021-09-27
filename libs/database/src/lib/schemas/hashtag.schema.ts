@@ -68,6 +68,7 @@ HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
     name: (this as HashtagDocument).name,
     key: 'hashtag.castcle',
     count: (this as HashtagDocument).score,
+    // TODO !!! need implement trends
     trends: 'up'
   } as SearchHashtagResponseDto;
 };
@@ -78,6 +79,7 @@ HashtagSchema.methods.toSearchPayload = function () {
     slug: (this as HashtagDocument).tag,
     name: (this as HashtagDocument).name,
     key: 'hashtag.castcle',
+    // TODO !!! need implement isTrending
     isTrending: true
   } as SearchHashtagResponseDto;
 };

@@ -84,6 +84,7 @@ export class SearchService {
       filter = filterKeyword;
     }
 
+    // TODO !!! need implement keyword collection
     const mockKeyword = [
       {
         text: 'castcle',
@@ -153,6 +154,7 @@ export class SearchService {
     return {
       hashtags: hashtag,
       follows: follow,
+      // TODO !!! need implement topics
       topics: []
     };
   }
@@ -170,6 +172,7 @@ export class SearchService {
     keyword: string,
     limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
   ) {
+    // TODO !!! need implement search content relate to user
     const limitHashtag = 2;
     const limitKeyword = 3;
 

@@ -197,6 +197,7 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
         ? (this as UserDocument).profile.images.avatar
         : '',
     type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
     aggregator: {
       type: '',
       id: '',
@@ -228,6 +229,7 @@ UserSchema.methods.toSearchResponse = function () {
         ? (this as UserDocument).profile.images.avatar
         : '',
     type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
     aggregator: {
       type: '',
       id: '',
@@ -240,6 +242,7 @@ UserSchema.methods.toSearchResponse = function () {
       ((this as UserDocument).verified.email ||
         (this as UserDocument).verified.mobile ||
         (this as UserDocument).verified.official),
+    // TODO !!! need implement followed
     followed: true
   } as SearchFollowsResponseDto;
 };
