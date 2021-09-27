@@ -29,14 +29,14 @@ export class CreateCommentBody {
   @ApiProperty()
   'feedItemId': string;
   @ApiProperty()
-  'authorId': string;
+  'castcleId': string;
 }
 
 export class ReplyCommentBody {
   @ApiProperty()
   'message': string;
   @ApiProperty()
-  'authorId': string;
+  'castcleId': string;
 }
 
 export class EditCommentBody {
@@ -48,5 +48,5 @@ export class LikeCommentBody {
   @ApiProperty()
   'feedItemId': string;
   @ApiProperty()
-  'authorId': string;
+  'castcleId': string;
 }

@@ -26,7 +26,8 @@ import {
   User,
   Content,
   Account,
-  Comment
+  Comment,
+  Credential
 } from '@castcle-api/database/schemas';
 import {
   InferSubjects,
@@ -84,6 +85,48 @@ export class CaslAbilityFactory {
       }
     });
   }
+
+  createForCredential(credential: Credential) {
+    const { can, cannot, build } = new AbilityBuilder<
+      Ability<[Action, Subjects]>
+    >(Ability as AbilityClass<AppAbility>);
+    /**
+     * Credential Interaction
+     */
+    can(Action.Read, 'all');
+    can(Action.Engagement, 'all');
+    if (credential.account.activateDate) {
+      console.log('check Activate', credential.account.activateDate);
+      //verify user
+      can(Action.Update, Content);
+      can(Action.Delete, Content);
+      can(Action.Create, Content);
+      can(Action.Like, Content);
+      can(Action.Recast, Content);
+      can(Action.Quote, Content);
+      can(Action.NotInterest, Content);
+      can(Action.Comment, Content);
+      //comment
+      can(Action.Update, Comment);
+      can(Action.Delete, Comment);
+      can(Action.Create, Comment);
+      can(Action.Like, Comment);
+      can(Action.Reply, Content);
+      //page
+      can(Action.Update, User);
+      can(Action.Delete, User);
+      can(Action.Create, User);
+      can(Action.Follow, User);
+      can(Action.NotInterest, User);
+
+      can(Action.Report, 'all');
+    }
+    return build({
+      detectSubjectType: (item) =>
+        item.constructor as ExtractSubjectType<Subjects>
+    });
+  }
+
   createForUser(user: User) {
     const { can, cannot, build } = new AbilityBuilder<
       Ability<[Action, Subjects]>
