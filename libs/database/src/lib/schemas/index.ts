@@ -31,6 +31,7 @@ import {
 import { NotificationDocument } from './notification.schema';
 import { UserDocument, UserType, User } from './user.schema';
 import { LanguageDocument } from './language.schema';
+import { HashtagDocument } from './hashtag.schema';
 export {
   CredentialDocument,
   CredentialModel,
@@ -45,5 +46,6 @@ export {
   Comment,
   CommentDocument,
   LanguageDocument,
-  Credential
+  Credential,
+  HashtagDocument
 };

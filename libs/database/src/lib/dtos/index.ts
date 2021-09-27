@@ -42,6 +42,7 @@ import {
   FeedItemMode,
   FeedsResponse
 } from './feedItem.dto';
+import { HashtagPayloadDto, HashtagResponse } from './hashtag.dto';
 import { LanguagePayloadDto, LanguageResponse } from './language.dto';
 import {
   CreateNotification,
@@ -104,5 +105,7 @@ export {
   NotificationBadgesPayloadDto,
   NotificationBadgesResponse,
   LanguagePayloadDto,
-  LanguageResponse
+  LanguageResponse,
+  HashtagPayloadDto,
+  HashtagResponse
 };
