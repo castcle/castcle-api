@@ -124,7 +124,9 @@ export class CommentController {
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(contentId, req);
-    const user = await this.userService.getUserFromId(commentBody.authorId);
+    const user = await this.authService.getUserFromCastcleId(
+      commentBody.castcleId
+    );
     const comment = await this.contentService.createCommentForContent(
       user,
       content,
@@ -171,8 +173,8 @@ export class CommentController {
     @Req() req: CredentialRequest
   ) {
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.userService.getUserFromId(
-      replyCommentBody.authorId
+    const user = await this.authService.getUserFromCastcleId(
+      replyCommentBody.castcleId
     );
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message
@@ -225,7 +227,9 @@ export class CommentController {
     @Req() req: CredentialRequest
   ) {
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.userService.getUserFromId(likeCommentBody.authorId);
+    const user = await this.authService.getUserFromCastcleId(
+      likeCommentBody.castcleId
+    );
     await this.contentService.likeComment(user, comment);
     return '';
   }
@@ -239,7 +243,9 @@ export class CommentController {
     @Req() req: CredentialRequest
   ) {
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.userService.getUserFromId(likeCommentBody.authorId);
+    const user = await this.authService.getUserFromCastcleId(
+      likeCommentBody.castcleId
+    );
     await this.contentService.unlikeComment(user, comment);
     return '';
   }

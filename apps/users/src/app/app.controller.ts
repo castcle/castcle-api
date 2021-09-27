@@ -297,10 +297,10 @@ export class UserController {
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('authorId') authorId: string
+    @Body('castcleId') castcleId: string
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -319,10 +319,10 @@ export class UserController {
   async unfollow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('authorId') authorId: string
+    @Body('castcleId') castcleId: string
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
