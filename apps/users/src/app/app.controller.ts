@@ -288,17 +288,26 @@ export class UserController {
     } as ContentsResponse;
   }
 
+  /**
+   * User {castcleId} follow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })
   @ApiBearerAuth()
   @UseInterceptors(CredentialInterceptor)
   @Put(':id/follow')
-  async follow(@Param('id') id: string, @Req() req: CredentialRequest) {
+  async follow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('castcleId') castcleId: string
+  ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this.userService.getUserFromCredential(
-      req.$credential
-    );
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -308,17 +317,26 @@ export class UserController {
     return '';
   }
 
+  /**
+   * User {castcleId} unfollow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })
   @ApiBearerAuth()
   @UseInterceptors(CredentialInterceptor)
   @Put(':id/unfollow')
-  async unfollow(@Param('id') id: string, @Req() req: CredentialRequest) {
+  async unfollow(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body('castcleId') castcleId: string
+  ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this.userService.getUserFromCredential(
-      req.$credential
-    );
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
