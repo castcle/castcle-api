@@ -20,25 +20,3 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Prop, Schema } from '@nestjs/mongoose';
-import { CastcleQueueAction, EntityVisibility } from '../dtos/common.dto';
-
-@Schema()
-export class CastcleBase {
-  _id?: any;
-
-  @Prop()
-  createdAt?: Date;
-
-  @Prop()
-  updatedAt?: Date;
-
-  @Prop({ type: String })
-  visibility?: EntityVisibility;
-
-  @Prop()
-  wasNew?: boolean;
-
-  @Prop({ type: String })
-  queueAction?: CastcleQueueAction;
-}

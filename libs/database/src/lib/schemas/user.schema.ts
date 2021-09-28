@@ -24,16 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { Account, AccountDocument } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
-import {
-  PageDto,
-  PageResponse,
-  PageResponseDto,
-  UserResponseDto
-} from '../dtos/user.dto';
-import { RelationshipDocument } from './relationship.schema';
+import { SearchFollowsResponseDto } from '../dtos';
 import { EntityVisibility } from '../dtos/common.dto';
+import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
+import { Account } from '../schemas/account.schema';
+import { CastcleBase } from './base.schema';
+import { RelationshipDocument } from './relationship.schema';
 
 export type UserDocument = User & IUser;
 
@@ -119,6 +115,8 @@ export interface IUser extends Document {
   toPageResponse(): PageResponseDto;
   follow(user: UserDocument): Promise<void>;
   unfollow(user: UserDocument): Promise<void>;
+  toSearchTopTrendResponse(): SearchFollowsResponseDto;
+  toSearchResponse(): SearchFollowsResponseDto;
 }
 
 export interface UserModel extends mongoose.Model<UserDocument> {
@@ -181,6 +179,72 @@ UserSchema.methods.toPageResponse = function () {
     updated: (this as UserDocument).updatedAt.toISOString(),
     created: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
+};
+
+UserSchema.methods.toSearchTopTrendResponse = function () {
+  return {
+    id: (this as UserDocument)._id,
+    castcleId: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : '',
+    avatar:
+      (this as UserDocument).profile &&
+      (this as UserDocument).profile.images &&
+      (this as UserDocument).profile.images.avatar
+        ? (this as UserDocument).profile.images.avatar
+        : '',
+    type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
+    aggregator: {
+      type: '',
+      id: '',
+      action: '',
+      message: ''
+    },
+    verified:
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
+    count: (this as UserDocument).followerCount
+  } as SearchFollowsResponseDto;
+};
+
+UserSchema.methods.toSearchResponse = function () {
+  return {
+    id: (this as UserDocument)._id,
+    castcleId: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : '',
+    avatar:
+      (this as UserDocument).profile &&
+      (this as UserDocument).profile.images &&
+      (this as UserDocument).profile.images.avatar
+        ? (this as UserDocument).profile.images.avatar
+        : '',
+    type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
+    aggregator: {
+      type: '',
+      id: '',
+      action: '',
+      message: '',
+      count: 1234
+    },
+    verified:
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
+    // TODO !!! need implement followed
+    followed: true
+  } as SearchFollowsResponseDto;
 };
 
 export const UserSchemaFactory = (

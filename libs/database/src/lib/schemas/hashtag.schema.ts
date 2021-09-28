@@ -24,6 +24,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { HashtagPayloadDto } from '../dtos/hashtag.dto';
+import { SearchHashtagResponseDto } from '../dtos/search.dto';
 import { CastcleBase } from './base.schema';
 
 export type HashtagDocument = Hashtag & IHashtag;
@@ -44,6 +45,8 @@ export class Hashtag extends CastcleBase {
 }
 interface IHashtag extends Document {
   toHashtagPayload(): HashtagPayloadDto;
+  toSearchTopTrendhPayload(index): SearchHashtagResponseDto;
+  toSearchPayload(): SearchHashtagResponseDto;
 }
 
 export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
@@ -55,4 +58,28 @@ HashtagSchema.methods.toHashtagPayload = function () {
     name: (this as HashtagDocument).name,
     key: 'hashtag.castcle'
   } as HashtagPayloadDto;
+};
+
+HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
+  return {
+    rank: index,
+    id: (this as HashtagDocument)._id,
+    slug: (this as HashtagDocument).tag,
+    name: (this as HashtagDocument).name,
+    key: 'hashtag.castcle',
+    count: (this as HashtagDocument).score,
+    // TODO !!! need implement trends
+    trends: 'up'
+  } as SearchHashtagResponseDto;
+};
+
+HashtagSchema.methods.toSearchPayload = function () {
+  return {
+    id: (this as HashtagDocument)._id,
+    slug: (this as HashtagDocument).tag,
+    name: (this as HashtagDocument).name,
+    key: 'hashtag.castcle',
+    // TODO !!! need implement isTrending
+    isTrending: true
+  } as SearchHashtagResponseDto;
 };
