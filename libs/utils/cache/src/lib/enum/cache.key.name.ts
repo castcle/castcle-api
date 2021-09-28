@@ -36,5 +36,13 @@ export const CacheKeyName = {
   HashtagsGet: {
     Name: 'HASHTAGS_GET',
     Ttl: 300
+  },
+  TopTrends: {
+    Name: 'TOPTRENDS',
+    Ttl: 60
+  },
+  Searches: {
+    Name: 'SEARCHES',
+    Ttl: 60
   }
 };

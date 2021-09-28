@@ -43,3 +43,20 @@ export class HttpCacheSharedInterceptor extends CacheInterceptor {
     return super.trackBy(context);
   }
 }
+
+@Injectable()
+export class HttpCacheSharedWithQueryInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
+
+    if (cacheKey) {
+      const request = context.switchToHttp().getRequest();
+      return `${cacheKey}-${request._parsedUrl.query}`;
+    }
+
+    return super.trackBy(context);
+  }
+}

@@ -42,7 +42,11 @@ import {
   FeedItemMode,
   FeedsResponse
 } from './feedItem.dto';
-import { HashtagPayloadDto, HashtagResponse } from './hashtag.dto';
+import {
+  CreateHashtag,
+  HashtagPayloadDto,
+  HashtagResponse
+} from './hashtag.dto';
 import { LanguagePayloadDto, LanguageResponse } from './language.dto';
 import {
   CreateNotification,
@@ -55,6 +59,16 @@ import {
   NotificationType,
   RegisterTokenDto
 } from './notification.dto';
+import {
+  AggregatorSearchResponseDto,
+  DEFAULT_TOP_TREND_QUERY_OPTIONS,
+  SearchFollowsResponseDto,
+  SearchHashtagResponseDto,
+  SearchKeywordResponseDto,
+  SearchResponse,
+  TopTrendsQueryOptions,
+  TopTrendsResponse
+} from './search.dto';
 import { UserAccessTokenPayload } from './token.dto';
 import {
   FollowResponse,
@@ -107,5 +121,14 @@ export {
   LanguagePayloadDto,
   LanguageResponse,
   HashtagPayloadDto,
-  HashtagResponse
+  HashtagResponse,
+  CreateHashtag,
+  TopTrendsQueryOptions,
+  DEFAULT_TOP_TREND_QUERY_OPTIONS,
+  TopTrendsResponse,
+  SearchHashtagResponseDto,
+  SearchFollowsResponseDto,
+  AggregatorSearchResponseDto,
+  SearchResponse,
+  SearchKeywordResponseDto
 };

@@ -48,6 +48,7 @@ import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
+import { SearchService } from './services/search.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 
@@ -118,7 +119,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     RankerService,
     NotificationProducer,
     LanguageService,
-    HashtagService
+    HashtagService,
+    SearchService
   ],
   exports: [
     AuthenticationService,
@@ -128,7 +130,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationService,
     RankerService,
     LanguageService,
-    HashtagService
+    HashtagService,
+    SearchService
   ]
 })
 export class DatabaseModule {}
@@ -141,5 +144,6 @@ export {
   NotificationService,
   RankerService,
   LanguageService,
-  HashtagService
+  HashtagService,
+  SearchService
 };
