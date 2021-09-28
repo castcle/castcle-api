@@ -324,6 +324,8 @@ export class AuthenticationController {
         accountActivation.verifyToken
       );
       //TODO !!! Need to improve this performance
+      //make new token isGuest = false
+      req.$credential.account.isGuest = false;
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
