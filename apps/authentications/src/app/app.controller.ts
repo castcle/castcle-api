@@ -242,7 +242,7 @@ export class AuthenticationController {
           preferredLanguage: [req.$language]
         },
         {
-          id: credential.account as unknown as string,
+          id: credential.account._id as unknown as string,
           role: 'guest'
         }
       );
