@@ -294,13 +294,11 @@ export class UserController {
   @ApiBearerAuth()
   @UseInterceptors(CredentialInterceptor)
   @Put(':id/follow')
-  async follow(
-    @Param('id') id: string,
-    @Req() req: CredentialRequest,
-    @Body('castcleId') castcleId: string
-  ) {
+  async follow(@Param('id') id: string, @Req() req: CredentialRequest) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
+    const currentUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -316,13 +314,11 @@ export class UserController {
   @ApiBearerAuth()
   @UseInterceptors(CredentialInterceptor)
   @Put(':id/unfollow')
-  async unfollow(
-    @Param('id') id: string,
-    @Req() req: CredentialRequest,
-    @Body('castcleId') castcleId: string
-  ) {
+  async unfollow(@Param('id') id: string, @Req() req: CredentialRequest) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
+    const currentUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
