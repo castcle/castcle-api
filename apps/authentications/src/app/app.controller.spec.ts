@@ -225,12 +225,19 @@ describe('AppController', () => {
       const newUserResult = await new service._userModel({
         ownerAccount: randomAccount._id,
         displayName: 'random',
-        displayId: testId,
+        displayId: testId.toLowerCase(),
         type: 'people'
       }).save();
       expect(newUserResult).not.toBeNull();
       console.log(newUserResult);
       result = await appController.checkCastcleIdExists({ castcleId: testId });
+      expect(result.payload.exist).toBe(true);
+    });
+    it('should detect case sensitive of castcleId', async () => {
+      const testId = 'ranDomId'; //D is a case sensitive
+      const result = await appController.checkCastcleIdExists({
+        castcleId: testId
+      });
       expect(result.payload.exist).toBe(true);
     });
   });

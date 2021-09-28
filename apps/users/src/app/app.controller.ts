@@ -288,6 +288,13 @@ export class UserController {
     } as ContentsResponse;
   }
 
+  /**
+   * User {castcleId} follow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })
@@ -310,6 +317,13 @@ export class UserController {
     return '';
   }
 
+  /**
+   * User {castcleId} unfollow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })

@@ -206,7 +206,7 @@ export class AuthenticationService {
       .exec();
 
   getUserFromCastcleId = (id: string) => {
-    return this._userModel.findOne({ displayId: id }).exec();
+    return this._userModel.findOne({ displayId: id.toLowerCase() }).exec();
   };
 
   getAccountActivationFromVerifyToken = (token: string) =>
@@ -265,7 +265,7 @@ export class AuthenticationService {
     const user = new this._userModel({
       ownerAccount: account._id,
       displayName: requirements.displayName,
-      displayId: requirements.displayId,
+      displayId: requirements.displayId.toLowerCase(), //make sure all id is lower case
       type: UserType.People
     });
     await user.save();
