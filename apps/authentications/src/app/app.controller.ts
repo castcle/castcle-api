@@ -174,7 +174,7 @@ export class AuthenticationController {
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
-            id: account as unknown as string,
+            id: account._id as unknown as string,
             role: account.activateDate ? 'member' : 'guest'
           }
         );
@@ -242,7 +242,7 @@ export class AuthenticationController {
           preferredLanguage: [req.$language]
         },
         {
-          id: credential.account as unknown as string,
+          id: credential.account._id as unknown as string,
           role: 'guest'
         }
       );
