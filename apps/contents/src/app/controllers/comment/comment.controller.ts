@@ -90,6 +90,7 @@ import {
   example: Configs.RequiredHeaders.AcceptVersion.example,
   required: true
 })
+@ApiBearerAuth()
 @Controller({
   version: '1.0'
 })
@@ -117,6 +118,9 @@ export class CommentController {
       );
   }
 
+  @ApiBody({
+    type: CreateCommentBody
+  })
   @Post('contents/:id/comments')
   async createComment(
     @Param('id') contentId: string,
@@ -142,6 +146,7 @@ export class CommentController {
   @Get('contents/:id/comments')
   async getAllComment(
     @Param('id') contentId: string,
+    @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
@@ -150,8 +155,7 @@ export class CommentController {
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
-    @Req() req: CredentialRequest
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
     const content = await this._getContentIfExist(contentId, req);
     const comments = await this.contentService.getCommentsFromContent(content, {
@@ -165,6 +169,9 @@ export class CommentController {
     };
   }
 
+  @ApiBody({
+    type: ReplyCommentBody
+  })
   @Post('contents/:id/comments/:commentId/reply')
   async replyComment(
     @Param('id') contentId: string,
@@ -186,6 +193,9 @@ export class CommentController {
     };
   }
 
+  @ApiBody({
+    type: EditCommentBody
+  })
   @Put('contents/:id/comments/:commentId')
   async updateComment(
     @Param('id') contentId: string,
@@ -218,6 +228,9 @@ export class CommentController {
     return '';
   }
 
+  @ApiBody({
+    type: LikeCommentBody
+  })
   @HttpCode(204)
   @Put('contents/:id/comments/:commentId/liked')
   async likeComment(
@@ -234,6 +247,9 @@ export class CommentController {
     return '';
   }
 
+  @ApiBody({
+    type: LikeCommentBody
+  })
   @HttpCode(204)
   @Put('contents/:id/comments/:commentId/unliked')
   async unlikeComment(
