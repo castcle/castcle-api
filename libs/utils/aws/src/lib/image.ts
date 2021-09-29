@@ -50,8 +50,9 @@ export class Image {
       env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
       Configs.IMAGE_BUCKET_FOLDER
     );
+    const contentType = Uploader.getImageContentType(base64);
     return uploader
-      .uploadFromBase64ToS3(base64, options)
+      .uploadFromBase64ToS3(base64, { ...options, contentType: contentType })
       .then((data) => new Image(data.Key, options.order));
   }
 }
