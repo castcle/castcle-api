@@ -23,7 +23,7 @@
 
 import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
 import { PageDto } from '@castcle-api/database/dtos';
-
+import { Response } from 'express';
 import { Image } from '@castcle-api/utils/aws';
 import {
   CredentialInterceptor,
@@ -35,6 +35,8 @@ import { map } from 'rxjs';
 export class PageInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
     const superResult = await super.intercept(context, next);
+    const res = context.switchToHttp().getResponse() as Response;
+    res.setHeader('Content-Disposition', 'inline');
     return superResult.pipe(
       map((data: PageDto) => {
         data.avatar = new Image(data.avatar).toSignUrl();

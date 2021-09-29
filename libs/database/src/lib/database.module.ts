@@ -29,10 +29,13 @@ import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
 import { AccountSchemaFactory } from './schemas/account.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
+import { CommentSchemaFactory } from './schemas/comment.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
+import { HashtagSchema } from './schemas/hashtag.schema';
+import { LanguageSchema } from './schemas/language.schema';
 import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
@@ -41,8 +44,11 @@ import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { ContentService } from './services/content.service';
+import { HashtagService } from './services/hashtag.service';
+import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
+import { SearchService } from './services/search.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 
@@ -50,13 +56,20 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'Notification', schema: NotificationSchema }
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Language', schema: LanguageSchema },
+  { name: 'Hashtag', schema: HashtagSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: CredentialSchemaFactory },
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
   { name: 'Revision', useFactory: RevisionchemaFactory },
+  {
+    name: 'Comment',
+    useFactory: CommentSchemaFactory,
+    inject: [getModelToken('Revision'), getModelToken('Content')]
+  },
   {
     name: 'FeedItem',
     useFactory: FeedItemSchemaFactory
@@ -84,7 +97,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [getModelToken('Content')]
+    inject: [getModelToken('Content'), getModelToken('Comment')]
   }
 ]);
 
@@ -104,7 +117,10 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
     NotificationService,
     RankerService,
-    NotificationProducer
+    NotificationProducer,
+    LanguageService,
+    HashtagService,
+    SearchService
   ],
   exports: [
     AuthenticationService,
@@ -112,7 +128,10 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     ContentService,
     UxEngagementService,
     NotificationService,
-    RankerService
+    RankerService,
+    LanguageService,
+    HashtagService,
+    SearchService
   ]
 })
 export class DatabaseModule {}
@@ -123,5 +142,8 @@ export {
   ContentService,
   UxEngagementService,
   NotificationService,
-  RankerService
+  RankerService,
+  LanguageService,
+  HashtagService,
+  SearchService
 };

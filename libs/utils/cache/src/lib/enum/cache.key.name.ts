@@ -24,5 +24,25 @@ export const CacheKeyName = {
   NotificationsGet: {
     Name: 'NOTIFICATIONS_GET',
     Ttl: 30
+  },
+  NotificationsBadges: {
+    Name: 'NOTIFICATIONS_BADGES',
+    Ttl: 30
+  },
+  LanguagesGet: {
+    Name: 'LANGUAGES_GET',
+    Ttl: 3600
+  },
+  HashtagsGet: {
+    Name: 'HASHTAGS_GET',
+    Ttl: 300
+  },
+  TopTrends: {
+    Name: 'TOPTRENDS',
+    Ttl: 60
+  },
+  Searches: {
+    Name: 'SEARCHES',
+    Ttl: 60
   }
 };

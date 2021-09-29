@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
@@ -32,7 +33,7 @@ import { FeedController } from './controllers/feeds/feed.controller';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 import { NotificationsController } from './controllers/notifications/notifications.controller';
 import { PageController } from './controllers/pages/pages.controller';
-import { CaslModule } from '@castcle-api/casl';
+import { SearchesController } from './controllers/searches/searches.controller';
 
 @Module({
   imports: [
@@ -48,7 +49,8 @@ import { CaslModule } from '@castcle-api/casl';
     PageController,
     BaseController,
     NotificationsController,
-    FeedController
+    FeedController,
+    SearchesController
   ],
   providers: [AppService]
 })

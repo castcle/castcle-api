@@ -22,21 +22,32 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { Document, Model } from 'mongoose';
+import { CommentPayload } from '../dtos/comment.dto';
 import { Account } from '../schemas/account.schema';
+import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
+import { ContentDocument, User } from '.';
+import { RevisionDocument } from './revision.schema';
+import { EntityVisibility } from '../dtos';
 
-export type CommentDocument = Comment & Document;
+export type CommentDocument = Comment & IComment;
+
+export enum CommentType {
+  Comment = 'comment',
+  Reply = 'reply'
+}
 
 @Schema({ timestamps: true })
 export class Comment extends CastcleBase {
   @Prop({ required: true, type: Object })
-  author: Account | any;
+  author: User;
 
   @Prop({ required: true })
   message: string;
 
-  @Prop({ required: true, type: Object })
+  @Prop({ type: Object })
   engagements: {
     [engagementKey: string]: {
       count: number;
@@ -45,10 +56,101 @@ export class Comment extends CastcleBase {
   };
 
   @Prop({ required: true })
+  type: string;
+
+  @Prop()
   revisionCount: number;
+
+  @Prop({ required: true, type: Object })
+  targetRef: any; // dbRef of Content or comment
 
   @Prop({ type: Array })
   hashtags: any[];
 }
 
+interface IComment extends Document {
+  toCommentPayload(
+    commentModel: Model<CommentDocument>
+  ): Promise<CommentPayload>;
+}
+
 export const CommentSchema = SchemaFactory.createForClass(Comment);
+
+export const CommentSchemaFactory = (
+  revisionModel: Model<RevisionDocument>,
+  contentModel: Model<ContentDocument>
+): mongoose.Schema<any> => {
+  CommentSchema.methods.toCommentPayload = async function (
+    commentModel: Model<CommentDocument>
+  ) {
+    //check if have revision
+    const revisionCount = await revisionModel
+      .count({
+        objectRef: {
+          $id: (this as CommentDocument)._id,
+          $ref: 'comment'
+        },
+        'payload.author._id': (this as CommentDocument).author._id
+      })
+      .exec();
+    const replies = await commentModel
+      .find({
+        type: CommentType.Reply,
+        targetRef: { $id: this._id, $ref: 'comment' },
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+    return {
+      id: (this as CommentDocument)._id,
+      message: (this as CommentDocument).message,
+      like: {
+        count: (this as CommentDocument).engagements.like.count,
+        participant: [] //TODO !!! need to fix later on
+      },
+      author: {
+        avatar: (this as CommentDocument).author.profile
+          ? (this as CommentDocument).author.profile?.images.avatar
+          : null,
+        castcleId: (this as CommentDocument).author.displayId,
+        displayName: (this as CommentDocument).author.displayName,
+        followed: false, //need to check with relationships,
+        id: (this as CommentDocument).author._id,
+        type: (this as CommentDocument).author.type,
+        verified: (this as CommentDocument).author.verified.official
+          ? true
+          : false
+      },
+      hasHistory: revisionCount > 1 ? true : false,
+      reply: replies.map((r) => ({
+        id: r._id,
+        created: r.createdAt.toISOString(),
+        message: r.message,
+        author: {
+          avatar: r.author.profile ? r.author.profile.images.avatar : null,
+          castcleId: r.author.displayId,
+          displayName: r.author.displayName,
+          id: r.author._id,
+          followed: false,
+          verified: r.author.verified.official ? true : false,
+          type: r.author.type
+        }
+      })),
+      created: (this as CommentDocument).createdAt.toISOString(),
+      updated: (this as CommentDocument).updatedAt.toISOString()
+    } as CommentPayload;
+  };
+
+  CommentSchema.pre('save', function (next) {
+    preCommentSave(this as CommentDocument);
+    next();
+  });
+
+  CommentSchema.post('save', async function (doc, next) {
+    await postCommentSave(doc as CommentDocument, {
+      revisionModel,
+      contentModel
+    });
+    next();
+  });
+  return CommentSchema;
+};

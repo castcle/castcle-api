@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Model } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { User } from './user.schema';
-import { Comment } from './comment.schema';
+import { Comment, CommentDocument } from './comment.schema';
 import { Content, ContentDocument } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
@@ -54,13 +54,24 @@ export class Engagement extends CastcleBase {
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
-  contentModel: Model<ContentDocument>
+  contentModel: Model<ContentDocument>,
+  commentModel: Model<CommentDocument>
 ): mongoose.Schema<any> => {
   EngagementSchema.post('save', async function (doc, next) {
-    if ((doc as EngagementDocument).visibility === EntityVisibility.Publish) {
-      const incEngagment: { [key: string]: number } = {};
-      incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = 1;
-      console.log('inc like ', incEngagment);
+    const incEngagment: { [key: string]: number } = {};
+    incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] =
+      (doc as EngagementDocument).visibility === EntityVisibility.Publish
+        ? 1
+        : -1;
+    console.log(
+      'inc like ',
+      (doc as EngagementDocument).targetRef.$ref,
+      incEngagment
+    );
+    if (
+      (doc as EngagementDocument).targetRef.$ref &&
+      (doc as EngagementDocument).targetRef.$ref === 'content'
+    ) {
       await contentModel
         .updateOne(
           { _id: (doc as EngagementDocument).targetRef.$id },
@@ -70,22 +81,13 @@ export const EngagementSchemaFactory = (
         )
         .exec();
     } else if (
-      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
+      (doc as EngagementDocument).targetRef.$ref &&
+      (doc as EngagementDocument).targetRef.$ref === 'comment'
     ) {
-      console.log('delete dono ');
-      console.log(`engagements.${(doc as EngagementDocument).type}.count`);
-      const incEngagment: { [key: string]: number } = {};
-      incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] =
-        -1;
-      console.log(incEngagment);
-      await contentModel
-        .updateOne(
-          { _id: (doc as EngagementDocument).targetRef.$id },
-          {
-            $inc: incEngagment
-          }
-        )
-        .exec();
+      await commentModel.updateOne(
+        { _id: (doc as EngagementDocument).targetRef.$id },
+        { $inc: incEngagment }
+      );
     }
     next();
   });
@@ -97,6 +99,17 @@ export const EngagementSchemaFactory = (
       .findById((doc as EngagementDocument).targetRef.oid)
       .exec();
     const result = await contentModel
+      .updateOne(
+        { _id: (doc as EngagementDocument).targetRef.oid },
+        {
+          $inc: incEngagment
+        }
+      )
+      .exec();
+    const comment = await commentModel
+      .findById((doc as EngagementDocument).targetRef.oid)
+      .exec();
+    const result2 = await commentModel
       .updateOne(
         { _id: (doc as EngagementDocument).targetRef.oid },
         {

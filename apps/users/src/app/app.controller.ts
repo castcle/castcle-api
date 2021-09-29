@@ -288,6 +288,13 @@ export class UserController {
     } as ContentsResponse;
   }
 
+  /**
+   * User {castcleId} follow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })
@@ -297,10 +304,10 @@ export class UserController {
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('authorId') authorId: string
+    @Body('castcleId') castcleId: string
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -310,6 +317,13 @@ export class UserController {
     return '';
   }
 
+  /**
+   * User {castcleId} unfollow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
   @ApiResponse({
     status: 204
   })
@@ -319,10 +333,10 @@ export class UserController {
   async unfollow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('authorId') authorId: string
+    @Body('castcleId') castcleId: string
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(authorId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,

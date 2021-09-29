@@ -34,5 +34,6 @@ module.exports = {
     '^.+\\.[tj]s$': 'ts-jest'
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/metadata'
+  coverageDirectory: '../../coverage/apps/metadata',
+  collectCoverage: true
 };

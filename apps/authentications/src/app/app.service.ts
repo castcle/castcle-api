@@ -25,6 +25,8 @@ import { Injectable } from '@nestjs/common';
 import { getSignupHtml } from './configs/signupEmail';
 import * as nodemailer from 'nodemailer';
 import { Environment as env } from '@castcle-api/environments';
+import { Password } from '@castcle-api/utils';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 /*
  * TODO: !!!
  */
@@ -58,5 +60,18 @@ export class AppService {
       )
     });
     console.log(`Email is send `, info.messageId, info);
+  }
+
+  /**
+   * Validate if password pass Password.validate() if not will throw CastcleException
+   * @param password
+   * @param langagues en is default
+   * @returns {boolean}
+   */
+  validatePassword(password: string, langagues?: string) {
+    if (Password.validate(password)) return true;
+    else {
+      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, langagues);
+    }
   }
 }

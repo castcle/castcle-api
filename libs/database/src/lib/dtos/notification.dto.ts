@@ -98,10 +98,27 @@ export interface CreateNotification {
   };
   type: NotificationType;
   targetRef: {
-    id: string;
+    _id: string;
   };
   read: boolean;
   credential: {
     _id: string;
   };
+}
+
+export class RegisterTokenDto {
+  @ApiProperty()
+  deviceUUID: string;
+
+  @ApiProperty()
+  firebaseToken: string;
+}
+
+export class NotificationBadgesPayloadDto {
+  @ApiProperty()
+  badges: string;
+}
+export class NotificationBadgesResponse {
+  @ApiProperty({ type: NotificationBadgesPayloadDto, isArray: false })
+  payload: NotificationBadgesPayloadDto;
 }
