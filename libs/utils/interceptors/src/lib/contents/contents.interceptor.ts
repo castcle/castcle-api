@@ -68,8 +68,6 @@ const transformContentPayload = (payload: ContentPayloadDto) => {
 export class ContentsInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
     const superResult = await super.intercept(context, next);
-    const res = context.switchToHttp().getResponse() as Response;
-    res.setHeader('Content-Disposition', 'inline');
     return superResult.pipe(
       map((data: ContentsResponse) => {
         data.payload = data.payload.map((payload) =>
@@ -121,8 +119,6 @@ export class ContentInterceptor extends CredentialInterceptor {
         (body.payload as BlogPayload).photo.cover.url = cover_url;
       }
     }
-    const res = context.switchToHttp().getResponse() as Response;
-    res.setHeader('Content-Disposition', 'inline');
     return superResult.pipe(
       map((data: ContentResponse) => {
         console.log('from', data);

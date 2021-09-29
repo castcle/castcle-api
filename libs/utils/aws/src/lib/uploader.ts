@@ -29,6 +29,7 @@ export type UploadOptions = {
   language?: string;
   addTime?: boolean;
   order?: number;
+  contentDisposition?: string;
 };
 
 /**
@@ -84,18 +85,15 @@ export class Uploader {
         options && options.filename
           ? `${options.filename}${extensionName}`
           : `${Date.now()}.${fileType}`;
-      console.log({
-        Bucket: this.bucket,
-        Body: buffer,
-        ContentEncoding: 'base64',
-        Key: `${this.destination}/${saveName}`
-      });
       return this.s3
         .upload({
           Bucket: this.bucket,
           Body: buffer,
           ContentEncoding: 'base64',
-          Key: `${this.destination}/${saveName}`
+          Key: `${this.destination}/${saveName}`,
+          ContentDisposition: options.contentDisposition
+            ? options.contentDisposition
+            : 'inline'
         })
         .promise();
     } catch (error) {
