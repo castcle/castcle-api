@@ -60,3 +60,8 @@ export enum EntityVisibility {
   Publish = 'publish',
   Deleted = 'deleted'
 }
+
+export enum CastcleQueueAction {
+  Delete = 'delete',
+  Restore = 'restore'
+}

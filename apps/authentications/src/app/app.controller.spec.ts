@@ -139,7 +139,7 @@ describe('AppController', () => {
         displayId: 'test',
         displayName: 'testpass',
         email: 'sp@sp.com',
-        password: '12345677898'
+        password: '2@HelloWorld'
       });
       //result.isGuest = false;
       //await result.save();
@@ -225,12 +225,19 @@ describe('AppController', () => {
       const newUserResult = await new service._userModel({
         ownerAccount: randomAccount._id,
         displayName: 'random',
-        displayId: testId,
+        displayId: testId.toLowerCase(),
         type: 'people'
       }).save();
       expect(newUserResult).not.toBeNull();
       console.log(newUserResult);
       result = await appController.checkCastcleIdExists({ castcleId: testId });
+      expect(result.payload.exist).toBe(true);
+    });
+    it('should detect case sensitive of castcleId', async () => {
+      const testId = 'ranDomId'; //D is a case sensitive
+      const result = await appController.checkCastcleIdExists({
+        castcleId: testId
+      });
       expect(result.payload.exist).toBe(true);
     });
   });
@@ -272,7 +279,7 @@ describe('AppController', () => {
             castcleId: testId,
             displayName: 'abc',
             email: registerEmail,
-            password: 'password12345'
+            password: '2@HelloWorld'
           }
         }
       );
@@ -307,7 +314,7 @@ describe('AppController', () => {
   describe('login', () => {
     const testId = 'registerId2';
     const registerEmail = 'sompop2.kulapalanont@gmail.com';
-    const password = 'password12345';
+    const password = '2@HelloWorld';
     const deviceUUID = 'sompop12345';
     const newDeviceUUID = 'sompop54321';
     it('should be able to login after register', async () => {
@@ -367,6 +374,7 @@ describe('AppController', () => {
           username: registerEmail
         }
       );
+
       const linkAccount = await service.getAccountFromEmail(registerEmail);
       expect(linkAccount.credentials.length).toEqual(2);
       const loginCredential = await service.getCredentialFromAccessToken(
@@ -397,7 +405,7 @@ describe('AppController', () => {
     it('should set verifyDate for both account and accountActivation', async () => {
       const testId = 'registerId3';
       const registerEmail = 'sompop3.kulapalanont@gmail.com';
-      const password = 'password12345';
+      const password = '2@HelloWorld';
       const deviceUUID = 'sompop12341';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
@@ -443,7 +451,7 @@ describe('AppController', () => {
     it('should update verifyToken and revocationDate after success', async () => {
       const testId = 'registerId4';
       const registerEmail = 'sompop4.kulapalanont@gmail.com';
-      const password = 'password12345';
+      const password = '2@HelloWorld';
       const deviceUUID = 'sompop12341';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,

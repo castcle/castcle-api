@@ -38,11 +38,13 @@ import { FollowResponse, PageDto, UpdateUserDto } from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
 import {
+  CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   Pagination
 } from '../dtos/common.dto';
 import { ContentService } from './content.service';
+import { EngagementDocument } from '../schemas/engagement.schema';
 
 @Injectable()
 export class UserService {
@@ -309,14 +311,84 @@ export class UserService {
     user.visibility = EntityVisibility.Deleted;
     const userResult = user.save();
     //deactive userAccount
-    if (user.type === UserType.Page)
+    if (user.type === UserType.People)
       await this._accountModel.updateOne(
         { _id: user.ownerAccount },
         {
-          visibility: EntityVisibility.Deleted
+          visibility: EntityVisibility.Deleted,
+          queueAction: CastcleQueueAction.Delete
         }
       );
     return userResult;
+  };
+
+  /**
+   * get all user account this this account is owned;
+   * @param {AccountDocument} account
+   * @returns {UserDocument[]}
+   */
+  _getAllUserFromAccount = (account: AccountDocument) =>
+    this._userModel.find({ ownerAccount: account._id }).exec();
+
+  /**
+   * flag all contents that this user has create to deleted // this will update the engagement recast/quotecast to -1 if it was recast or quotecast
+   * @param {UserDocument} user
+   * @returns {ContentDocument[]}
+   */
+  _removeAllContentFromUser = async (user: UserDocument) => {
+    const contents = await this.contentService._contentModel
+      .find({ 'author.id': user._id })
+      .exec();
+    const promiseRemoveContents: Promise<ContentDocument>[] = contents.map(
+      (contentItem) => this.contentService.deleteContentFromId(contentItem._id)
+    );
+    return Promise.all(promiseRemoveContents);
+  };
+
+  /**
+   * update engagements flag of this user to hidden this should invoke enagement.post('save') to update like counter
+   * @param {UserDocument} user
+   * @returns {EngagementDocument[]}
+   */
+  _removeAllEngagements = async (user: UserDocument) => {
+    const engagements = await this.contentService._engagementModel
+      .find({ user: user._id, visibility: EntityVisibility.Publish })
+      .exec();
+    const promiseHideEngagements = engagements.map((engagement) => {
+      engagement.visibility = EntityVisibility.Hidden;
+      return engagement.save();
+    });
+    return Promise.all(promiseHideEngagements);
+  };
+
+  _removeAllFollower = async (user: UserDocument) => {
+    const relationships = await this._relationshipModel
+      .find({ user: user._id })
+      .populate('followedUser')
+      .exec();
+    //make all relationship hidden
+    await this._relationshipModel
+      .updateMany({ user: user._id }, { visibility: EntityVisibility.Hidden })
+      .exec();
+    //TODO !!! need to improve performance
+    const promiseUpdateFollower = relationships.map((r) =>
+      this._userModel
+        .updateOne(r._id, {
+          $inc: {
+            followerCount: -1
+          }
+        })
+        .exec()
+    );
+    await Promise.all(promiseUpdateFollower);
+  };
+
+  deactiveQueue = async () => {
+    //get all account that is in the delete queue
+    const accounts = await this._accountModel
+      .find({ queueAction: CastcleQueueAction.Delete })
+      .exec();
+    //accounts.map(account => this._getAllUserFromAccount(account).then(users => users.map(user =>)))
   };
 
   reactive = async (user: UserDocument) => {
@@ -374,7 +446,7 @@ export class UserService {
     //change status to delete
     user.visibility = EntityVisibility.Publish;
     //deactive userAccount
-    if (user.type === UserType.Page)
+    if (user.type === UserType.People)
       await this._accountModel.updateOne(
         { _id: user.ownerAccount },
         {

@@ -118,7 +118,7 @@ export class CastcleName {
    * @returns {string}
    */
   static suggestCastcleId(name: string) {
-    const newName = this._preSuggest(name);
+    const newName = this._preSuggest(name).toLowerCase();
     if (this.isValidName(newName)) return this.convertToSlug(newName);
     const subject =
       RANDOM_SUBJECTS[Math.floor(Math.random() * RANDOM_SUBJECTS.length)];

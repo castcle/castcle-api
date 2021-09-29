@@ -58,7 +58,7 @@ const closeInMongodConnection = async () => {
   if (mongod) await mongod.stop();
 };
 
-describe('PageController', () => {
+describe('ContentController', () => {
   let app: TestingModule;
   let contentController: ContentController;
   let service: UserService;

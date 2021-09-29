@@ -24,16 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { Account, AccountDocument } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
-import {
-  PageDto,
-  PageResponse,
-  PageResponseDto,
-  UserResponseDto
-} from '../dtos/user.dto';
-import { RelationshipDocument } from './relationship.schema';
+import { SearchFollowsResponseDto } from '../dtos';
 import { EntityVisibility } from '../dtos/common.dto';
+import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
+import { Account } from '../schemas/account.schema';
+import { CastcleBase } from './base.schema';
+import { RelationshipDocument } from './relationship.schema';
 
 export type UserDocument = User & IUser;
 
@@ -67,6 +63,16 @@ export enum UserType {
   Page = 'page'
 }
 
+export type UserVerified = {
+  email: boolean;
+  mobile: boolean;
+  official: boolean;
+};
+
+export type PageVerified = {
+  official: boolean;
+};
+
 @Schema({ timestamps: true })
 export class User extends CastcleBase {
   @Prop({
@@ -92,11 +98,8 @@ export class User extends CastcleBase {
   @Prop({ required: true })
   type: string;
 
-  @Prop()
-  verified: boolean;
-
-  @Prop()
-  activated: boolean;
+  @Prop({ type: Object })
+  verified: UserVerified;
 
   @Prop()
   followerCount: number;
@@ -112,6 +115,8 @@ export interface IUser extends Document {
   toPageResponse(): PageResponseDto;
   follow(user: UserDocument): Promise<void>;
   unfollow(user: UserDocument): Promise<void>;
+  toSearchTopTrendResponse(): SearchFollowsResponseDto;
+  toSearchResponse(): SearchFollowsResponseDto;
 }
 
 export interface UserModel extends mongoose.Model<UserDocument> {
@@ -147,7 +152,7 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
-    verified: self.verified ? true : false
+    verified: self.verified //self.verified ? true : false,
   } as UserResponseDto;
 };
 
@@ -176,6 +181,72 @@ UserSchema.methods.toPageResponse = function () {
   } as PageResponseDto;
 };
 
+UserSchema.methods.toSearchTopTrendResponse = function () {
+  return {
+    id: (this as UserDocument)._id,
+    castcleId: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : '',
+    avatar:
+      (this as UserDocument).profile &&
+      (this as UserDocument).profile.images &&
+      (this as UserDocument).profile.images.avatar
+        ? (this as UserDocument).profile.images.avatar
+        : '',
+    type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
+    aggregator: {
+      type: '',
+      id: '',
+      action: '',
+      message: ''
+    },
+    verified:
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
+    count: (this as UserDocument).followerCount
+  } as SearchFollowsResponseDto;
+};
+
+UserSchema.methods.toSearchResponse = function () {
+  return {
+    id: (this as UserDocument)._id,
+    castcleId: (this as UserDocument).displayId,
+    displayName: (this as UserDocument).displayName,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : '',
+    avatar:
+      (this as UserDocument).profile &&
+      (this as UserDocument).profile.images &&
+      (this as UserDocument).profile.images.avatar
+        ? (this as UserDocument).profile.images.avatar
+        : '',
+    type: (this as UserDocument).type,
+    // TODO !!! need implement aggregator
+    aggregator: {
+      type: '',
+      id: '',
+      action: '',
+      message: '',
+      count: 1234
+    },
+    verified:
+      (this as UserDocument).verified &&
+      ((this as UserDocument).verified.email ||
+        (this as UserDocument).verified.mobile ||
+        (this as UserDocument).verified.official),
+    // TODO !!! need implement followed
+    followed: true
+  } as SearchFollowsResponseDto;
+};
+
 export const UserSchemaFactory = (
   relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
@@ -190,8 +261,12 @@ export const UserSchemaFactory = (
     if (!(this as UserDocument).followerCount)
       (this as UserDocument).followerCount = 0;
     //add activate state
-    if (!(this as UserDocument).activated)
-      (this as UserDocument).activated = false;
+    if (!(this as UserDocument).verified)
+      (this as UserDocument).verified = {
+        email: false,
+        mobile: false,
+        official: false
+      } as UserVerified;
     next();
   });
   UserSchema.methods.follow = async function (followedUser: UserDocument) {

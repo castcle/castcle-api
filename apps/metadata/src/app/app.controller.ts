@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Controller()
 export class MetadataController {

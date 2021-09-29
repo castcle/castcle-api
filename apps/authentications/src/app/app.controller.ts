@@ -147,12 +147,15 @@ export class AuthenticationController {
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
     try {
       const account = await this.authService.getAccountFromEmail(body.username);
+
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      console.log(account, 'password', body, req);
       if (await account.verifyPassword(body.password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
+        console.log('embedCredentialByDeviceUUID', embedCredentialByDeviceUUID);
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
             .findById(embedCredentialByDeviceUUID._id)
@@ -171,7 +174,7 @@ export class AuthenticationController {
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
-            id: account as unknown as string,
+            id: account._id as unknown as string,
             role: account.activateDate ? 'member' : 'guest'
           }
         );
@@ -230,7 +233,6 @@ export class AuthenticationController {
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
-    console.log('--search credential', credential);
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
@@ -240,7 +242,7 @@ export class AuthenticationController {
           preferredLanguage: [req.$language]
         },
         {
-          id: credential.account as unknown as string,
+          id: credential.account._id as unknown as string,
           role: 'guest'
         }
       );
@@ -297,6 +299,8 @@ export class AuthenticationController {
       const user = await this.authService.getUserFromCastcleId(
         body.payload.castcleId
       );
+      //validate password
+      this.appService.validatePassword(body.payload.password, req.$language);
       if (user)
         throw new CastcleException(
           CastcleStatus.USER_ID_IS_EXIST,
@@ -320,6 +324,8 @@ export class AuthenticationController {
         accountActivation.verifyToken
       );
       //TODO !!! Need to improve this performance
+      //make new token isGuest = false
+      req.$credential.account.isGuest = false;
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
@@ -512,14 +518,15 @@ export class AuthenticationController {
     const verifyUrl =
       Host.getHostname(req) + '/authentications/verificationEmail';
     if (req.query.code) {
-      return `will call post request soon<script>fetch("${verifyUrl}", {
+      return `Verifying you will get a pop up once the process is done.<script>fetch("${verifyUrl}", {
         headers: {
+          "Accept-Version": "1.0",
           Accept: "*/*",
           "Accept-Language": "th",
           Authorization: "Bearer ${req.query.code}"
         },
         method: "POST"
-      })</script>`;
+      }).then(r => r.json()).then(r => { console.log(r);alert('verification success');})</script>`;
     } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
   }
 
@@ -557,6 +564,8 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
+    //add password checker
+    this.appService.validatePassword(password, req.$language);
     if (account.verifyPassword(password)) {
       const otp = await this.authService.generateOtp(account);
       return {
@@ -584,6 +593,7 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
+    this.appService.validatePassword(newPassword, req.$language);
     const otp = await this.authService.getOtpFromAccount(account, refCode);
     if (otp && otp.isValid()) {
       //change password

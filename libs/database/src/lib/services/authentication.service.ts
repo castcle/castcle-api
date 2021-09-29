@@ -162,7 +162,8 @@ export class AuthenticationService {
       _id: account._id,
       visibility: account.visibility,
       isGuest: account.isGuest,
-      preferences: account.preferences
+      preferences: account.preferences,
+      activateDate: account.activateDate //this to add activateDate to primary account
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
@@ -205,7 +206,7 @@ export class AuthenticationService {
       .exec();
 
   getUserFromCastcleId = (id: string) => {
-    return this._userModel.findOne({ displayId: id }).exec();
+    return this._userModel.findOne({ displayId: id.toLowerCase() }).exec();
   };
 
   getAccountActivationFromVerifyToken = (token: string) =>
@@ -264,7 +265,7 @@ export class AuthenticationService {
     const user = new this._userModel({
       ownerAccount: account._id,
       displayName: requirements.displayName,
-      displayId: requirements.displayId,
+      displayId: requirements.displayId.toLowerCase(), //make sure all id is lower case
       type: UserType.People
     });
     await user.save();
@@ -386,7 +387,7 @@ export class AuthenticationService {
         showAds: true,
         castcleId: user.displayId,
         displayName: user.displayName,
-        verified: credential.account.activateDate ? true : false, //use account activation
+        verified: user.verified,
         email: credential.account.email
       } as UserAccessTokenPayload;
       //get SignUrl for avartar

@@ -31,7 +31,8 @@ import {
 import {
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
-  NotificationType
+  NotificationType,
+  RegisterTokenDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -113,7 +114,8 @@ const creatMockData = async (
     sourceUserId: user,
     type: typeNoti,
     targetRef: {
-      id: docRefId
+      $ref: typeNoti !== NotificationType.System ? typeNoti : null,
+      $id: docRefId
     },
     read: false,
     credential: userCredential
@@ -164,8 +166,8 @@ describe('NotificationsController', () => {
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    notification = app.get<NotificationService>(NotificationService);
     controller = app.get<NotificationsController>(NotificationsController);
+    notification = app.get<NotificationService>(NotificationService);
     producer = app.get<NotificationProducer>(NotificationProducer);
     const resultAccount = await authService.createAccount({
       device: 'iPhone',
@@ -175,7 +177,7 @@ describe('NotificationsController', () => {
     });
     const resultWrongAccount = await authService.createAccount({
       device: 'iPhone',
-      deviceUUID: 'iphone12345',
+      deviceUUID: 'iphone12345789',
       header: { platform: 'iphone' },
       languagesPreferences: ['th', 'th']
     });
@@ -222,7 +224,7 @@ describe('NotificationsController', () => {
               id: null
             },
             system: {
-              id: '6138afa4f616a467b5c4eb72'
+              id: null
             }
           },
           {
@@ -243,16 +245,19 @@ describe('NotificationsController', () => {
           }
         ]
       };
-
+      console.log(responseResult.payload);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(2);
       expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
         1
       );
-      expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
-        1
-      );
+      expect(
+        responseResult.payload.filter(
+          (x) =>
+            x.system.id == null && x.comment.id == null && x.content.id == null
+        ).length
+      ).toEqual(1);
     });
 
     it('should return NotificationReponse that contain all notification source page', async () => {
@@ -286,6 +291,7 @@ describe('NotificationsController', () => {
         ]
       };
 
+      console.log(responseResult);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(1);
@@ -366,12 +372,104 @@ describe('NotificationsController', () => {
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
-        controller.notificationRead('', {
+        controller.notificationReadAll({
           $credential: wrongUserCredential
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
+    });
+  });
+
+  describe('notifications register token', () => {
+    it('should register token successful', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+
+      await controller.registerToken(
+        {
+          $credential: userCredential
+        } as any,
+        {
+          deviceUUID: deviceID,
+          firebaseToken: firebaseToken
+        } as RegisterTokenDto
+      );
+
+      const credentailUpdate = await notification._credentialModel
+        .findOne({ deviceUUID: deviceID })
+        .exec();
+
+      expect(credentailUpdate.firebaseNotificationToken).toEqual(firebaseToken);
+    });
+
+    it('should return Exception as expect', async () => {
+      const deviceID = 'iphone12345';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+      const allNotification = await controller.getAll({
+        $credential: userCredential
+      } as any);
+
+      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
+      await expect(
+        controller.registerToken(
+          {
+            $credential: wrongUserCredential
+          } as any,
+          {
+            deviceUUID: deviceID,
+            firebaseToken: firebaseToken
+          } as RegisterTokenDto
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('notifications get badges', () => {
+    it('should return empty badges', async () => {
+      const expectResult = { payload: { badges: '' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value', async () => {
+      await creatMockData(
+        notification,
+        user,
+        NotificationSource.Profile,
+        NotificationType.Comment,
+        '6138afa4f616a467b5c4eb72',
+        userCredential
+      );
+      const expectResult = { payload: { badges: '1' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should return badges value +99 ', async () => {
+      for (let i = 0; i < 99; i++) {
+        await creatMockData(
+          notification,
+          user,
+          NotificationSource.Profile,
+          NotificationType.Comment,
+          '6138afa4f616a467b5c4eb72',
+          userCredential
+        );
+      }
+      const expectResult = { payload: { badges: '+99' } };
+      const result = await controller.badges({
+        $credential: userCredential
+      } as any);
+      expect(result).toEqual(expectResult);
     });
   });
 });
