@@ -388,7 +388,15 @@ export class UserService {
     const accounts = await this._accountModel
       .find({ queueAction: CastcleQueueAction.Delete })
       .exec();
-    //accounts.map(account => this._getAllUserFromAccount(account).then(users => users.map(user =>)))
+    accounts.map((account) =>
+      this._getAllUserFromAccount(account).then((users) =>
+        users.map((user) => {
+          this._removeAllContentFromUser(user);
+          this._removeAllEngagements(user);
+          this._removeAllFollower(user);
+        })
+      )
+    );
   };
 
   reactive = async (user: UserDocument) => {

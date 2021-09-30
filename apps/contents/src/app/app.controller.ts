@@ -277,7 +277,7 @@ export class ContentController {
       req.$credential
     );
     const user = await this.authService.getUserFromCastcleId(castcleId);
-    if (user.ownerAccount !== account._id) {
+    if (String(user.ownerAccount) !== String(account._id)) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
@@ -301,16 +301,7 @@ export class ContentController {
   ) {
     //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id, req);
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
-    const user = await this.authService.getUserFromCastcleId(castcleId);
-    if (user.ownerAccount !== account._id) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
-    }
+    const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.unLikeContent(content, user);
     return '';
   }
@@ -329,16 +320,7 @@ export class ContentController {
   ) {
     //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id, req);
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
-    const user = await this.authService.getUserFromCastcleId(castcleId);
-    if (user.ownerAccount !== account._id) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
-    }
+    const user = await this.appService.getUserFromBody(req, castcleId);
     const result = await this.contentService.recastContentFromUser(
       content,
       user
