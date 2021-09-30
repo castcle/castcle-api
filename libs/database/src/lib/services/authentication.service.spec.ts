@@ -346,7 +346,7 @@ describe('Authentication Service', () => {
       });
       it('should return an user when id is match', async () => {
         const newUser = new service._userModel({
-          displayId: 'testNew'.toLowerCase(),
+          displayId: 'testNew',
           displayName: 'testName',
           type: 'people',
           ownerAccount: createAccountResult.accountDocument._id
