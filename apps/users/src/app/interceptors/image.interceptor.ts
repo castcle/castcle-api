@@ -71,8 +71,6 @@ export class ImageInterceptor extends CredentialInterceptor {
 export class FollowInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
     const superResult = await super.intercept(context, next);
-    const res = context.switchToHttp().getResponse() as Response;
-    res.setHeader('Content-Disposition', 'inline');
     return superResult.pipe(
       map((data: FollowResponse) => {
         data.payload = data.payload.map((response) => {
