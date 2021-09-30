@@ -20,38 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  NotificationMessage,
-  TopicName,
-  UserMessage
-} from '@castcle-api/utils/queue';
-import { UserService } from '@castcle-api/database';
-import { Process, Processor } from '@nestjs/bull';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Job } from 'bull';
-import { CastcleQueueAction } from '@castcle-api/database/dtos';
+import { Queue } from 'bull';
+import { TopicName } from '../enum/topic.name';
+import { UserMessage } from '../messages/user.message';
 @Injectable()
-@Processor(TopicName.Users)
-export class UserConsumer {
-  constructor(private userService: UserService) {}
-
+export class UserProducer {
   private readonly logger = new CastLogger(
-    UserConsumer.name,
+    UserProducer.name,
     CastLoggerOptions
   );
 
-  @Process()
-  readOperationJob(job: Job<{ user: UserMessage }>) {
-    try {
-      this.logger.log(`consume message '${JSON.stringify(job.data.user)}}' `);
-      //this.userService.deactiveQueue();
-      if (job.data.user.action === CastcleQueueAction.Deleting)
-        this.userService.deactiveBackground(job.data.user.id);
-      this.logger.log(`deleting user ${job.data.user.id}`);
-    } catch (error) {
-      this.logger.error(error);
-    }
+  constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
+
+  /**
+   * send notofication message to queue
+   * @param {UserMessage} NotificationMessage notofication message
+   * @returns {}
+   */
+  async sendMessage(message: UserMessage) {
+    await this.queue.add({
+      user: message
+    });
+    this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }
 }

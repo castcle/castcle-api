@@ -53,7 +53,6 @@ import { RevisionDocument } from '../schemas/revision.schema';
 import { CastcleQueryOptions, EntityVisibility } from '../dtos/common.dto';
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
-import { async } from 'rxjs';
 
 @Injectable()
 export class ContentService {
