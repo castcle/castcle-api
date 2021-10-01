@@ -33,7 +33,18 @@ import { UserService, AuthenticationService } from '@castcle-api/database';
 import { BaseController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { BullModule } from '@nestjs/bull';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
@@ -61,7 +72,8 @@ describe('AppController', () => {
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ],
       controllers: [BaseController],
       providers: [
@@ -69,7 +81,8 @@ describe('AppController', () => {
         UserService,
         RankerService,
         AuthenticationService,
-        ContentService
+        ContentService,
+        UserProducer
       ]
     }).compile();
     service = app.get<UserService>(UserService);
