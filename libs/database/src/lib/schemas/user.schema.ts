@@ -277,7 +277,8 @@ export const UserSchemaFactory = (
       const setObject = {
         user: (this as UserDocument)._id,
         followedUser: followedUser._id,
-        isFollowPage: false
+        isFollowPage: false,
+        visibility: EntityVisibility.Publish
       };
       if ((followedUser as UserDocument).type === UserType.Page)
         setObject.isFollowPage = true;

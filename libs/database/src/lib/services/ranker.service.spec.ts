@@ -37,6 +37,17 @@ import {
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
 import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
   options: MongooseModuleOptions = { useFindAndModify: false }
@@ -70,14 +81,21 @@ describe('Ranker Service', () => {
     ? [
         MongooseModule.forRoot(env.db_uri, env.db_options),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
+    : [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        fakeBull
+      ];
   const providers = [
     ContentService,
     UserService,
     AuthenticationService,
-    RankerService
+    RankerService,
+    UserProducer
   ];
   let result: {
     accountDocument: AccountDocument;

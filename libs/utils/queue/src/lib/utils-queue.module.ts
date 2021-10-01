@@ -26,6 +26,8 @@ import { Module } from '@nestjs/common';
 import { TopicName } from './enum/topic.name';
 import { NotificationMessage } from './messages/notification.message';
 import { NotificationProducer } from './producers/notification.producer';
+import { UserProducer } from './producers/user.producer';
+import { UserMessage } from './messages/user.message';
 
 @Module({
   imports: [
@@ -37,12 +39,21 @@ import { NotificationProducer } from './producers/notification.producer';
     }),
     BullModule.registerQueue({
       name: TopicName.Notifications
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Users
     })
   ],
   controllers: [],
-  providers: [NotificationProducer],
-  exports: [BullModule, NotificationProducer]
+  providers: [NotificationProducer, UserProducer],
+  exports: [BullModule, NotificationProducer, UserProducer]
 })
 export class UtilsQueueModule {}
 
-export { TopicName, NotificationProducer, NotificationMessage };
+export {
+  TopicName,
+  NotificationProducer,
+  NotificationMessage,
+  UserProducer,
+  UserMessage
+};

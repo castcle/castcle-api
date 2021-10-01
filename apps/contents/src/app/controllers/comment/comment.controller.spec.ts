@@ -45,6 +45,18 @@ import {
 } from '@castcle-api/database/dtos';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
+
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
@@ -85,14 +97,16 @@ describe('CommentController', () => {
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ],
       controllers: [CommentController],
       providers: [
         UserService,
         AuthenticationService,
         ContentService,
-        CaslAbilityFactory
+        CaslAbilityFactory,
+        UserProducer
       ]
     }).compile();
     service = app.get<UserService>(UserService);

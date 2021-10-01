@@ -65,7 +65,7 @@ export const EngagementSchemaFactory = (
         : -1;
     console.log(
       'inc like ',
-      (doc as EngagementDocument).targetRef.$ref,
+      (doc as EngagementDocument).targetRef,
       incEngagment
     );
     if (
@@ -84,10 +84,33 @@ export const EngagementSchemaFactory = (
       (doc as EngagementDocument).targetRef.$ref &&
       (doc as EngagementDocument).targetRef.$ref === 'comment'
     ) {
-      await commentModel.updateOne(
-        { _id: (doc as EngagementDocument).targetRef.$id },
-        { $inc: incEngagment }
-      );
+      console.log('updateComment', (doc as EngagementDocument).targetRef.$id);
+      await commentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.$id },
+          { $inc: incEngagment }
+        )
+        .exec();
+    } else if (
+      doc.targetRef.namespace &&
+      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
+    ) {
+      if (doc.targetRef.namespace === 'content')
+        await contentModel
+          .updateOne(
+            { _id: (doc as EngagementDocument).targetRef.oid },
+            {
+              $inc: incEngagment
+            }
+          )
+          .exec();
+      if (doc.targetRef.namespace === 'comment')
+        await commentModel
+          .updateOne(
+            { _id: (doc as EngagementDocument).targetRef.oid },
+            { $inc: incEngagment }
+          )
+          .exec();
     }
     next();
   });

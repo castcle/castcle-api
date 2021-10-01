@@ -20,24 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test } from '@nestjs/testing';
-import { AppService } from './app.service';
-
-describe('AppService', () => {
-  let service: AppService;
-
-  beforeAll(async () => {
-    const app = await Test.createTestingModule({
-      providers: [AppService]
-    }).compile();
-
-    service = app.get<AppService>(AppService);
-  });
-
-  describe('getData', () => {
-    it('should return "Welcome to contents!"', () => {
-      expect(service.getData()).toEqual({ message: 'Welcome to contents!' });
-    });
-  });
-});
+export interface UserMessage {
+  id: any;
+  action: string;
+}

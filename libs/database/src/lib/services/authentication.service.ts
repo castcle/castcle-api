@@ -222,7 +222,11 @@ export class AuthenticationService {
       .exec();
 
   getUserFromCastcleId = (id: string) => {
-    return this._userModel.findOne({ displayId: id.toLowerCase() }).exec();
+    return this._userModel
+      .findOne({
+        displayId: { $regex: new RegExp('^' + id.toLowerCase(), 'i') }
+      })
+      .exec();
   };
 
   getUserFromAccountId = (credential: CredentialDocument) => {
@@ -287,7 +291,7 @@ export class AuthenticationService {
     const user = new this._userModel({
       ownerAccount: account._id,
       displayName: requirements.displayName,
-      displayId: requirements.displayId.toLowerCase(), //make sure all id is lower case
+      displayId: requirements.displayId, //make sure all id is lower case
       type: UserType.People
     });
     await user.save();
