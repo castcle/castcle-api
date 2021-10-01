@@ -20,60 +20,63 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CommonDate } from '@castcle-api/commonDate';
+import { AuthenticationService } from '@castcle-api/database';
+import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+import { Configs } from '@castcle-api/environments';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Host } from '@castcle-api/utils';
+import {
+  FacebookAccessToken,
+  FacebookClient
+} from '@castcle-api/utils/clients';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  CredentialInterceptor,
+  CredentialRequest,
+  HeadersRequest,
+  TokenInterceptor,
+  TokenRequest
+} from '@castcle-api/utils/interceptors';
 import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Post,
+  Req,
   UseInterceptors,
   Version,
   VERSION_NEUTRAL
 } from '@nestjs/common';
-import { AppService } from './app.service';
-import { CommonDate } from '@castcle-api/commonDate';
-import { Configs, Environment as env } from '@castcle-api/environments';
 import {
-  HeadersRequest,
-  HeadersInterceptor,
-  TokenInterceptor,
-  TokenRequest,
-  CredentialInterceptor,
-  CredentialRequest
-} from '@castcle-api/utils/interceptors';
-import { Request } from 'express';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
-import { AuthenticationService, UserService } from '@castcle-api/database';
-import { Host } from '@castcle-api/utils';
-import {
-  ApiResponse,
-  ApiOkResponse,
-  ApiHeader,
+  ApiBearerAuth,
   ApiBody,
-  ApiBearerAuth
+  ApiHeader,
+  ApiOkResponse,
+  ApiResponse
 } from '@nestjs/swagger';
+import { Request } from 'express';
+import { AppService } from './app.service';
 import {
-  GuestLoginDto,
-  TokenResponse,
+  ChangePasswordBody,
   CheckEmailExistDto,
-  CheckingResponse,
-  RefreshTokenResponse,
-  LoginDto,
-  RegisterByEmailDto,
   CheckIdExistDto,
+  CheckingResponse,
+  GuestLoginDto,
+  LoginDto,
+  LoginWithSocialDto,
+  RefreshTokenResponse,
+  RegisterByEmailDto,
   SuggestCastcleIdReponse,
+  TokenResponse,
   VerificationPasswordBody,
-  VerificationPasswordResponse,
-  ChangePasswordBody
+  VerificationPasswordResponse
 } from './dtos/dto';
 import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
-import { HttpCode } from '@nestjs/common';
-import { Req } from '@nestjs/common';
-import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -93,7 +96,8 @@ import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private fbClient: FacebookClient
   ) {}
   private readonly logger = new CastLogger(
     AuthenticationController.name,
@@ -605,5 +609,59 @@ export class AuthenticationController {
       return '';
     } else
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+  }
+
+  // @ApiBearerAuth()
+  @ApiBody({
+    type: LoginWithSocialDto
+  })
+  @ApiOkResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  // @UseInterceptors(CredentialInterceptor)
+  @Post('loginWithSocial')
+  @HttpCode(200)
+  async login2(
+    @Req() req: CredentialRequest,
+    @Body() body: LoginWithSocialDto
+  ) {
+    // try {
+    let token;
+    switch (body.provider) {
+      case AccountAuthenIdType.Facebook: {
+        const fbToken: FacebookAccessToken =
+          await this.fbClient.getAccessToken();
+        const tokenVerify = await this.fbClient.verifyUserToken(
+          fbToken.access_token,
+          body.authToken
+        );
+
+        if (!tokenVerify.is_valid)
+          throw new CastcleException(
+            CastcleStatus.INVALID_ACCESS_TOKEN,
+            req.$language
+          );
+
+        // if (tokenVerify.is_valid) {
+        const dd = await this.fbClient.getUserInfo(body.authToken);
+        const vvv = await this.appService.socailLogin(
+          {
+            socialId: dd.id,
+            email: dd.email,
+            name: dd.name,
+            provider: AccountAuthenIdType.Facebook
+          },
+          req.$credential
+        );
+        console.log(dd);
+        console.log(dd.first_name);
+        // }
+        token = vvv;
+        break;
+      }
+    }
+
+    return token;
   }
 }

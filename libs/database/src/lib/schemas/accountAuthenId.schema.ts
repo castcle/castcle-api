@@ -33,7 +33,8 @@ export enum AccountAuthenIdType {
   Twitter = 'twitter',
   Facebook = 'facebook',
   Google = 'google',
-  Telegram = 'telegram'
+  Telegram = 'telegram',
+  Apple = 'apple'
 }
 
 @Schema({ timestamps: true })
@@ -47,6 +48,9 @@ export class AccountAuthenId extends CastcleBase {
 
   @Prop({ required: true })
   type: string;
+
+  @Prop()
+  socialId: string;
 }
 
 export const AccountAuthenIdSchema =

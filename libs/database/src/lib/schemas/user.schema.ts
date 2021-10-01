@@ -67,6 +67,7 @@ export type UserVerified = {
   email: boolean;
   mobile: boolean;
   official: boolean;
+  social: boolean;
 };
 
 export type PageVerified = {

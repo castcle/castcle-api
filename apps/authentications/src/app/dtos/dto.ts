@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
 export class GuestLoginDto {
   @ApiProperty()
@@ -37,6 +37,13 @@ export class LoginDto {
   username: string;
   @ApiProperty()
   password: string;
+}
+
+export class LoginWithSocialDto {
+  @ApiProperty()
+  provider: AccountAuthenIdType;
+  @ApiProperty()
+  authToken: string;
 }
 
 class RegisterPayload {
@@ -112,4 +119,11 @@ export class VerificationPasswordResponse {
   refCode: string;
   @ApiProperty()
   expiresTime: string;
+}
+
+export interface SocialConnect {
+  socialId: string;
+  email: string;
+  name: string;
+  provider: AccountAuthenIdType;
 }

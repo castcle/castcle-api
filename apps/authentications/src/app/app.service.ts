@@ -20,13 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Injectable } from '@nestjs/common';
-import { getSignupHtml } from './configs/signupEmail';
-import * as nodemailer from 'nodemailer';
+import { AuthenticationService } from '@castcle-api/database';
 import { Environment as env } from '@castcle-api/environments';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { Injectable } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
+import { CredentialDocument } from './../../../../libs/database/src/lib/schemas/credential.schema';
+import { getSignupHtml } from './configs/signupEmail';
+import { SocialConnect, TokenResponse } from './dtos/dto';
 /*
  * TODO: !!!
  */
@@ -42,6 +45,10 @@ const transporter = nodemailer.createTransport({
 
 @Injectable()
 export class AppService {
+  constructor(private authService: AuthenticationService) {}
+
+  private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
+
   getData(): { message: string } {
     return { message: 'Welcome to authentications!' };
   }
@@ -73,5 +80,57 @@ export class AppService {
     else {
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, langagues);
     }
+  }
+
+  /**
+   * Create user and generate token for login social
+   * @param social social response
+   * @param credential
+   * @returns {TokenResponse}
+   */
+  async socailLogin(social: SocialConnect, credential: CredentialDocument) {
+    const currentAccount = await this.authService.getAccountFromCredential(
+      credential
+    );
+
+    const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
+      social.socialId,
+      social.provider
+    );
+
+    const user = await this.authService.getUserFromAccountId(credential);
+    if (!socialAccount) {
+      currentAccount.email = currentAccount.email
+        ? social.email
+        : currentAccount.email;
+      if (!user) {
+        const accountActivation = await this.authService.signupBySocial(
+          currentAccount,
+          {
+            displayName: social.name,
+            socialId: social.socialId,
+            provider: social.provider
+          }
+        );
+      } else {
+        await this.authService.createAccountAuthenId(
+          currentAccount,
+          social.provider,
+          social.socialId
+        );
+      }
+    }
+
+    credential.account.isGuest = false;
+    const accessTokenPayload =
+      await this.authService.getAccessTokenPayloadFromCredential(credential);
+    const tokenResult: TokenResponse = await credential.renewTokens(
+      accessTokenPayload,
+      {
+        id: currentAccount._id as unknown as string,
+        role: 'member'
+      }
+    );
+    return tokenResult;
   }
 }

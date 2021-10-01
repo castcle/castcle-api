@@ -20,16 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { Environment } from '@castcle-api/environments';
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { AuthenticationController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
+import { FacebookClient } from './facebook/facebook.client';
+import {
+  FacebookAccessToken,
+  FacebookTokenData,
+  FacebookUserInfo
+} from './facebook/facebook.message';
+
 @Module({
-  imports: [DatabaseModule, CaslModule, UtilsClientsModule],
-  controllers: [AuthenticationController, HealthyController],
-  providers: [AppService]
+  imports: [
+    HttpModule.register({
+      timeout: Environment.http_time_out
+    })
+  ],
+  controllers: [],
+  providers: [FacebookClient],
+  exports: [HttpModule, FacebookClient]
 })
-export class AuthenticationModule {}
+export class UtilsClientsModule {}
+
+export {
+  FacebookAccessToken,
+  FacebookTokenData,
+  FacebookClient,
+  FacebookUserInfo
+};
