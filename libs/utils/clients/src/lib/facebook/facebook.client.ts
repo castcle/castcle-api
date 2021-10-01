@@ -40,16 +40,17 @@ export class FacebookClient {
   );
 
   constructor(private httpService: HttpService) {}
+  private readonly accessTokenUrl = `${Environment.fb_host}/oauth/access_token?`;
+  private readonly verifyTokenUrl = `${Environment.fb_host}/v12.0/debug_token?`;
+  private readonly userInfoUrl = `${Environment.fb_host}/v12.0/me?`;
 
-  //   /**
-  //    * send notofication message to queue
-  //    * @param {NotificationMessage} NotificationMessage notofication message
-  //    * @returns {}
-  //    */
-
+  /**
+   * Get Authentication token from facebook
+   * @returns {FacebookAccessToken} access token
+   */
   async getAccessToken() {
     const parameter = `client_id=${Environment.fb_client_id}&client_secret=${Environment.fb_client_secret}&grant_type=client_credentials`;
-    const url = `${Environment.fb_host}/oauth/access_token?${parameter}`;
+    const url = `${this.accessTokenUrl}${parameter}`;
     this.logger.log('get facebook access token');
 
     return lastValueFrom(
@@ -59,9 +60,15 @@ export class FacebookClient {
     );
   }
 
+  /**
+   * Validate user token
+   * @param {string} accessToken access token from facebook
+   * @param {string} userToken authorize user token
+   * @returns {FacebookTokenData} token detail
+   */
   async verifyUserToken(accessToken: string, userToken: string) {
     const parameter = `access_token=${accessToken}&input_token=${userToken}`;
-    const url = `${Environment.fb_host}/v12.0/debug_token?${parameter}`;
+    const url = `${this.verifyTokenUrl}${parameter}`;
     this.logger.log('verify user token');
 
     return lastValueFrom(
@@ -71,9 +78,14 @@ export class FacebookClient {
     );
   }
 
-  async getUserInfo(accessToken: string) {
-    const parameter = `access_token=${accessToken}&fields=first_name,last_name,picture,email,name`;
-    const url = `${Environment.fb_host}/v12.0/me?${parameter}`;
+  /**
+   * Get User data from facebook
+   * @param {string} userToken authorize user token
+   * @returns {FacebookUserInfo} user data
+   */
+  async getUserInfo(userToken: string) {
+    const parameter = `access_token=${userToken}&fields=first_name,last_name,picture,email,name`;
+    const url = `${this.userInfoUrl}${parameter}`;
     this.logger.log('get user info');
 
     return lastValueFrom(

@@ -1,3 +1,4 @@
+import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -20,24 +21,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
+import { EntityVisibility } from '../dtos/common.dto';
+import { env } from '../environment';
+import { AccountAuthenIdDocument } from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
+import { AccountActivationDocument } from '../schemas/accountActivation.schema';
+import { CredentialDocument } from '../schemas/credential.schema';
+import { UserDocument } from '../schemas/user.schema';
 import {
   AuthenticationService,
-  SignupRequirements
+  SignupRequirements,
+  SignupSocialRequirements
 } from './authentication.service';
-import { env } from '../environment';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import {
-  AccountActivation,
-  AccountActivationDocument
-} from '../schemas/accountActivation.schema';
-import { UserDocument } from '../schemas/user.schema';
-import { EntityVisibility } from '../dtos/common.dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -511,6 +510,96 @@ describe('Authentication Service', () => {
         const totalUser = await service._accountModel.countDocuments();
         const suggestName = await service.suggestCastcleId('Dude this is new');
         expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
+      });
+    });
+
+    describe('#signupBySocial()', () => {
+      let signupResult: AccountAuthenIdDocument;
+      let mockAccountResult: {
+        accountDocument: AccountDocument;
+        credentialDocument: CredentialDocument;
+      };
+      const signupRequirements: SignupSocialRequirements = {
+        socialId: '7457356332',
+        displayName: 'Dudeee Mock',
+        provider: AccountAuthenIdType.Facebook
+      };
+      beforeAll(async () => {
+        mockAccountResult = await service.createAccount({
+          device: 'iPhone09',
+          deviceUUID: newDeviceUUID,
+          languagesPreferences: ['en', 'en'],
+          header: {
+            platform: 'iOs'
+          }
+        });
+        signupResult = await service.signupBySocial(
+          mockAccountResult.accountDocument,
+          signupRequirements
+        );
+      });
+      it('should create user and authen social correctly', async () => {
+        const afterSaveUser = await service.getUserFromAccountId(
+          mockAccountResult.credentialDocument
+        );
+        const accountSocial = await service.getAccountAuthenIdFromSocialId(
+          signupRequirements.socialId,
+          signupRequirements.provider
+        );
+
+        expect(signupResult).toBeDefined();
+        expect(signupRequirements.displayName).toEqual(
+          afterSaveUser[0].displayName
+        );
+        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
+        expect(signupRequirements.provider).toEqual(accountSocial.type);
+        expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
+      });
+    });
+
+    describe('#createAccountAuthenId()', () => {
+      it('should create account authen with new social provider', async () => {
+        const socialId = '453455242';
+        const result = await service.createAccountAuthenId(
+          createAccountResult.accountDocument,
+          AccountAuthenIdType.Twitter,
+          socialId
+        );
+
+        const accountSocial = await service.getAccountAuthenIdFromSocialId(
+          socialId,
+          AccountAuthenIdType.Twitter
+        );
+
+        expect(result).toBeDefined();
+        expect(accountSocial.socialId).toEqual(result.socialId);
+        expect(accountSocial.type).toEqual(result.type);
+      });
+    });
+
+    describe('#getAccountAuthenIdFromSocialId()', () => {
+      it('should get social account from provider and social id', async () => {
+        const twsocialId = '453455242';
+        const fbsocialId = '453457890';
+        const result = await service.createAccountAuthenId(
+          createAccountResult.accountDocument,
+          AccountAuthenIdType.Facebook,
+          fbsocialId
+        );
+
+        const accountSocialTw = await service.getAccountAuthenIdFromSocialId(
+          twsocialId,
+          AccountAuthenIdType.Twitter
+        );
+        const accountSocialFb = await service.getAccountAuthenIdFromSocialId(
+          fbsocialId,
+          AccountAuthenIdType.Facebook
+        );
+
+        expect(accountSocialTw).toBeDefined();
+        expect(accountSocialFb).toBeDefined();
+        expect(accountSocialFb.socialId).toEqual(fbsocialId);
+        expect(accountSocialTw.socialId).toEqual(twsocialId);
       });
     });
   });

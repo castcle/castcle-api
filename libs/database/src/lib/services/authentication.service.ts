@@ -100,10 +100,19 @@ export class AuthenticationService {
   getCredentialFromAccessToken = (accessToken: string) =>
     this._credentialModel.findOne({ accessToken: accessToken }).exec();
 
+  /**
+   * get account document from social id and social type
+   * @param {string} socialUserId social user id
+   * @param {AccountAuthenIdType} provider enum social type
+   * @returns {AccountAuthenIdDocument}
+   */
   getAccountAuthenIdFromSocialId = (
-    id: string,
+    socialUserId: string,
     provider: AccountAuthenIdType
-  ) => this._accountAuthenId.findOne({ socialId: id, type: provider }).exec();
+  ) =>
+    this._accountAuthenId
+      .findOne({ socialId: socialUserId, type: provider })
+      .exec();
 
   async createAccount(accountRequirements: AccountRequirements) {
     const newAccount = new this._accountModel({
@@ -444,6 +453,12 @@ export class AuthenticationService {
     }
   }
 
+  /**
+   * create new account from social
+   * @param {AccountDocument} account
+   * @param {SignupSocialRequirements} requirements
+   * @returns {AccountAuthenIdDocument}
+   */
   async signupBySocial(
     account: AccountDocument,
     requirements: SignupSocialRequirements
@@ -453,6 +468,7 @@ export class AuthenticationService {
 
     const user = new this._userModel({
       ownerAccount: account._id,
+      displayId: requirements.socialId,
       displayName: requirements.displayName,
       type: UserType.People
     });
@@ -464,15 +480,22 @@ export class AuthenticationService {
     );
   }
 
+  /**
+   * create new account from social
+   * @param {AccountDocument} account
+   * @param {AccountAuthenIdType} provider
+   * @param {string} socialUserId
+   * @returns {AccountAuthenIdDocument}
+   */
   createAccountAuthenId(
     account: AccountDocument,
-    provider: string,
-    userId: string
+    provider: AccountAuthenIdType,
+    socialUserId: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
       type: provider,
-      socialId: userId
+      socialId: socialUserId
     });
     return accountActivation.save();
   }
