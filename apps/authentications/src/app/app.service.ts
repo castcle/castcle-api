@@ -21,13 +21,13 @@
  * or have any questions.
  */
 import { AuthenticationService } from '@castcle-api/database';
+import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { CredentialDocument } from './../../../../libs/database/src/lib/schemas/credential.schema';
 import { getSignupHtml } from './configs/signupEmail';
 import { SocialConnect, TokenResponse } from './dtos/dto';
 /*
@@ -89,21 +89,26 @@ export class AppService {
    * @returns {TokenResponse}
    */
   async socailLogin(social: SocialConnect, credential: CredentialDocument) {
+    this.logger.log('get AccountFromCredential');
     const currentAccount = await this.authService.getAccountFromCredential(
       credential
     );
 
+    this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       social.socialId,
       social.provider
     );
 
+    this.logger.log('get UserFromAccountId');
     const user = await this.authService.getUserFromAccountId(credential);
+
     if (!socialAccount) {
       currentAccount.email = currentAccount.email
         ? social.email
         : currentAccount.email;
-      if (!user) {
+      if (user.length === 0) {
+        this.logger.log('signup by Social');
         const accountActivation = await this.authService.signupBySocial(
           currentAccount,
           {
@@ -122,8 +127,10 @@ export class AppService {
     }
 
     credential.account.isGuest = false;
+    this.logger.log('get AccessTokenPayload FromCredential');
     const accessTokenPayload =
       await this.authService.getAccessTokenPayloadFromCredential(credential);
+    this.logger.log('renew Tokens');
     const tokenResult: TokenResponse = await credential.renewTokens(
       accessTokenPayload,
       {

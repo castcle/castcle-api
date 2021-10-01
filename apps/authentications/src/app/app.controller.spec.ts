@@ -20,20 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
 import {
-  MongooseForFeatures,
-  MongooseAsyncFeatures
+  AuthenticationService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures
 } from '@castcle-api/database';
+import {
+  AccountAuthenIdType,
+  CredentialDocument
+} from '@castcle-api/database/schemas';
+import { FacebookClient } from '@castcle-api/utils/clients';
+import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { AuthenticationService } from '@castcle-api/database';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { TokenResponse } from './dtos/dto';
-import { CredentialDocument } from '@castcle-api/database/schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -52,20 +55,68 @@ const closeInMongodConnection = async () => {
   if (mongod) await mongod.stop();
 };
 
+const mockSocialId = '109364223';
+class FacebookClientMock {
+  getAccessToken() {
+    return {
+      access_token: '210058044|uBgVr1NhacSzS7UtJ387yI',
+      token_type: 'bearer'
+    };
+  }
+  verifyUserToken(accessToken: string, userToken: string) {
+    return {
+      app_id: '210058044',
+      type: 'USER',
+      application: 'Castcle - DEV',
+      data_access_expires_at: 1640877720,
+      expires_at: 1633107600,
+      is_valid: true,
+      metadata: {
+        auth_type: 'rerequest'
+      },
+      scopes: ['email', 'public_profile'],
+      user_id: mockSocialId
+    };
+  }
+  getUserInfo(userToken: string) {
+    return {
+      first_name: 'John',
+      last_name: 'Block',
+      picture: {
+        data: {
+          height: 50,
+          is_silhouette: false,
+          url: 'https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=109364223&height=50&width=50&ext=1635588772&hash=AeQnpX0QDwSuye2Q-ZA',
+          width: 50
+        }
+      },
+      email: 'jb@gmail.com',
+      name: 'John Block',
+      id: mockSocialId
+    };
+  }
+}
+
 describe('AppController', () => {
   let app: TestingModule;
   let appController: AuthenticationController;
   let service: AuthenticationService;
   let appService: AppService;
+
   beforeAll(async () => {
+    const FacebookClientProvider = {
+      provide: FacebookClient,
+      useClass: FacebookClientMock
+    };
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        HttpModule
       ],
       controllers: [AuthenticationController],
-      providers: [AppService, AuthenticationService]
+      providers: [AppService, AuthenticationService, FacebookClientProvider]
     }).compile();
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
@@ -489,6 +540,42 @@ describe('AppController', () => {
         await service.getAccountActivationFromCredential(credentialGuest);
       expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);
       expect(postAccountActivationToken.revocationDate).toBeDefined();
+    });
+  });
+
+  describe('loginWithSocial', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo007';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const result = await appController.loginWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          authToken: 'nbkjhfdghdfgdgfsdfgdshfgd'
+        }
+      );
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        mockSocialId,
+        AccountAuthenIdType.Facebook
+      );
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual(mockSocialId);
     });
   });
 });

@@ -20,17 +20,46 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import {
+  AuthenticationService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures
+} from '@castcle-api/database';
+import { HttpModule } from '@nestjs/axios';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
-
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AppService } from './app.service';
+
+let mongod: MongoMemoryServer;
+const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};
 
 describe('AppService', () => {
   let service: AppService;
 
   beforeAll(async () => {
     const app = await Test.createTestingModule({
-      providers: [AppService]
+      imports: [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        HttpModule
+      ],
+      providers: [AppService, AuthenticationService]
     }).compile();
 
     service = app.get<AppService>(AppService);

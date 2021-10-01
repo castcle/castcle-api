@@ -611,7 +611,7 @@ export class AuthenticationController {
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
   }
 
-  // @ApiBearerAuth()
+  @ApiBearerAuth()
   @ApiBody({
     type: LoginWithSocialDto
   })
@@ -619,45 +619,55 @@ export class AuthenticationController {
     status: 200,
     type: TokenResponse
   })
-  // @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Post('loginWithSocial')
   @HttpCode(200)
-  async login2(
+  async loginWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: LoginWithSocialDto
   ) {
-    // try {
-    let token;
+    let token: TokenResponse;
+    this.logger.log(`login with social: ${body.provider}`);
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
+        this.logger.log(`get facebook access token.`);
         const fbToken: FacebookAccessToken =
           await this.fbClient.getAccessToken();
+
+        this.logger.log(`verify fcaebook user token.`);
         const tokenVerify = await this.fbClient.verifyUserToken(
           fbToken.access_token,
           body.authToken
         );
 
-        if (!tokenVerify.is_valid)
+        if (!tokenVerify.is_valid) {
+          this.logger.error(`Use token expired.`);
           throw new CastcleException(
             CastcleStatus.INVALID_ACCESS_TOKEN,
             req.$language
           );
+        }
 
-        // if (tokenVerify.is_valid) {
-        const dd = await this.fbClient.getUserInfo(body.authToken);
-        const vvv = await this.appService.socailLogin(
-          {
-            socialId: dd.id,
-            email: dd.email,
-            name: dd.name,
-            provider: AccountAuthenIdType.Facebook
-          },
-          req.$credential
-        );
-        console.log(dd);
-        console.log(dd.first_name);
-        // }
-        token = vvv;
+        this.logger.log(`get fcaebook user data.`);
+        const userFB = await this.fbClient.getUserInfo(body.authToken);
+        if (userFB) {
+          this.logger.log(`social login`);
+          token = await this.appService.socailLogin(
+            {
+              socialId: userFB.id,
+              email: userFB.email,
+              name: userFB.name,
+              provider: AccountAuthenIdType.Facebook
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.INVALID_ACCESS_TOKEN,
+            req.$language
+          );
+        }
         break;
       }
     }

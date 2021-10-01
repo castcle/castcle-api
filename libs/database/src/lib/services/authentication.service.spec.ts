@@ -1,4 +1,3 @@
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -30,6 +29,7 @@ import { env } from '../environment';
 import { AccountAuthenIdDocument } from '../schemas';
 import { AccountDocument } from '../schemas/account.schema';
 import { AccountActivationDocument } from '../schemas/accountActivation.schema';
+import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { UserDocument } from '../schemas/user.schema';
 import {
