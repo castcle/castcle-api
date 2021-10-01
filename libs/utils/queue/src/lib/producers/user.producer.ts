@@ -36,8 +36,8 @@ export class UserProducer {
   constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
 
   /**
-   * send notofication message to queue
-   * @param {UserMessage} NotificationMessage notofication message
+   * send user message to queue
+   * @param {UserMessage} UserMessage user message
    * @returns {}
    */
   async sendMessage(message: UserMessage) {

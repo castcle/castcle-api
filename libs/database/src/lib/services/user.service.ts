@@ -193,8 +193,9 @@ export class UserService {
   ) => {
     console.log('-----getFollower----');
 
-    const filter: { followedUser: any; isFollowPage?: boolean } = {
-      followedUser: user._id
+    const filter: any = {
+      followedUser: user._id,
+      visibility: EntityVisibility.Publish
     };
     console.log('filter', filter);
     if (queryOption.type)
@@ -229,7 +230,10 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: { user: any; isFollowPage?: boolean } = { user: user._id };
+    const filter: { user: any; isFollowPage?: boolean; visibility?: any } = {
+      user: user._id,
+      visibility: EntityVisibility.Publish
+    };
     if (queryOption.type)
       filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
     let query = this._relationshipModel
@@ -312,12 +316,14 @@ export class UserService {
 
   _removeAllCommentFromUser = async (user: UserDocument) => {
     const comments = await this.contentService._commentModel
-      .find({ 'author.id': user._id })
+      .find({ 'author._id': user._id })
       .exec();
+    console.log('allcomment from user', comments);
     return Promise.all(
       comments.map(async (comment) => {
-        comment.visibility = EntityVisibility.Deleted;
+        comment.visibility = EntityVisibility.Hidden;
         const result = await comment.save();
+        console.log('resultRemoveComment', result);
         return this.contentService._updateCommentCounter(result);
       })
     );
@@ -332,7 +338,7 @@ export class UserService {
     const engagements = await this.contentService._engagementModel
       .find({ user: user._id, visibility: EntityVisibility.Publish })
       .exec();
-    const promiseHideEngagements = engagements.map((engagement) => {
+    const promiseHideEngagements = engagements.map(async (engagement) => {
       engagement.visibility = EntityVisibility.Hidden;
       return engagement.save();
     });
@@ -346,23 +352,12 @@ export class UserService {
   _removeAllFollower = async (user: UserDocument) => {
     const relationships = await this._relationshipModel
       .find({ user: user._id })
-      .populate('followedUser')
       .exec();
+    console.log('relationships', relationships);
     //make all relationship hidden
-    await this._relationshipModel
+    return await this._relationshipModel
       .updateMany({ user: user._id }, { visibility: EntityVisibility.Hidden })
       .exec();
-    //TODO !!! need to improve performance
-    const promiseUpdateFollower = relationships.map((r) =>
-      this._userModel
-        .updateOne(r._id, {
-          $inc: {
-            followerCount: -1
-          }
-        })
-        .exec()
-    );
-    await Promise.all(promiseUpdateFollower);
   };
 
   /**
@@ -382,18 +377,23 @@ export class UserService {
       )
     );
     //update queueAction to deleted
-    await this._accountModel.updateOne(
-      { _id: account._id },
-      { queueAction: CastcleQueueAction.Deleted }
-    );
+    await this._accountModel
+      .updateOne(
+        { _id: account._id },
+        {
+          queueAction: CastcleQueueAction.Deleted,
+          visibility: EntityVisibility.Deleted
+        }
+      )
+      .exec();
   };
 
   /**
    * Deactivate one account by id
    * @param id
    */
-  deactiveBackground = async (id: any) => {
-    const account = await this._accountModel.findById(id).exec();
+  deactiveBackground = async (accountId: any) => {
+    const account = await this._accountModel.findById(accountId).exec();
     await this._deactiveAccount(account);
   };
 

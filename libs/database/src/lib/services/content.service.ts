@@ -50,7 +50,11 @@ import {
   RecastPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { CastcleQueryOptions, EntityVisibility } from '../dtos/common.dto';
+import {
+  CastcleQueryOptions,
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility
+} from '../dtos/common.dto';
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
 
@@ -469,7 +473,7 @@ export class ContentService {
           {
             _id: replyComment.targetRef.$id
               ? replyComment.targetRef.$id
-              : replyComment.targetRef.oi
+              : replyComment.targetRef.oid
           },
           { $inc: { 'engagements.comment.count': incrementComment } }
         )
@@ -538,7 +542,7 @@ export class ContentService {
    */
   getCommentsFromContent = async (
     content: ContentDocument,
-    options: CastcleQueryOptions
+    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
     const filter = {
       targetRef: {

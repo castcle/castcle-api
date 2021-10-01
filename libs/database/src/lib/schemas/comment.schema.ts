@@ -93,6 +93,7 @@ export const CommentSchemaFactory = (
         'payload.author._id': (this as CommentDocument).author._id
       })
       .exec();
+
     const replies = await commentModel
       .find({
         type: CommentType.Reply,

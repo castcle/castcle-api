@@ -312,7 +312,7 @@ export class ContentController {
     type: ContentResponse
   })
   @UseInterceptors(CredentialInterceptor)
-  @Post(':id/recast')
+  @Post(':id/recasted')
   async recastContent(
     @Param('id') id: string,
     @Body('castcleId') castcleId: string,
