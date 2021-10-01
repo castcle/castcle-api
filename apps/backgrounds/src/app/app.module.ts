@@ -27,6 +27,7 @@ import { FirebaseModule } from 'nestjs-firebase';
 import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
+import { UserConsumer } from './consumers/user.consumer';
 @Module({
   imports: [
     UtilsQueueModule,
@@ -41,6 +42,6 @@ import { NotificationConsumer } from './consumers/notification.consumer';
     })
   ],
   controllers: [BackgroundController],
-  providers: [AppService, NotificationConsumer]
+  providers: [AppService, NotificationConsumer, UserConsumer]
 })
 export class BackgroundModule {}
