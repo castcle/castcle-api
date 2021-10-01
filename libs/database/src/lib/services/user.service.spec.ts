@@ -23,17 +23,23 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { BullModule } from '@nestjs/bull';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos';
+import {
+  ContentType,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  ShortPayload
+} from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
@@ -41,6 +47,15 @@ import {
 } from '../dtos/common.dto';
 import { ContentDocument } from '../schemas';
 
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
   options: MongooseModuleOptions = { useFindAndModify: false }
@@ -63,16 +78,28 @@ const closeInMongodConnection = async () => {
 describe('User Service', () => {
   let service: UserService;
   let authService: AuthenticationService;
+  let contentService: ContentService;
 
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
     ? [
         MongooseModule.forRoot(env.db_uri, env.db_options),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [UserService, AuthenticationService, ContentService];
+    : [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        fakeBull
+      ];
+  const providers = [
+    UserService,
+    AuthenticationService,
+    ContentService,
+    UserProducer
+  ];
   let result: {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
@@ -84,6 +111,7 @@ describe('User Service', () => {
     }).compile();
     service = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
+    contentService = module.get<ContentService>(ContentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -424,5 +452,76 @@ describe('User Service', () => {
         expect(postAccountA.visibility).toEqual(EntityVisibility.Publish);
       });
     });
+  });
+  describe('Deactivated', () => {
+    describe('_removeAllContentFromUser()', () => {
+      let userA: UserDocument;
+      const contents: ContentDocument[] = [];
+      const userInfo = {
+        accountRequirement: {
+          device: 'iphone',
+          deviceUUID: 'iphone1234',
+          header: {
+            platform: 'iOs'
+          },
+          languagesPreferences: ['th', 'th']
+        },
+        signupRequirement: {
+          displayId: 'npop2',
+          displayName: 'npop2',
+          email: 'sompop.kulapalanont@gmail.com',
+          password: '2@HelloWorld'
+        },
+        pages: [
+          {
+            avatar: 'http:/placehold.it/200x200',
+            castcleId: 'testC2345',
+            cover: 'http:/placehold.it/200x200',
+            displayName: 'hello12345'
+          } as PageDto
+        ]
+      };
+      beforeAll(async () => {
+        const result = await authService.createAccount(
+          userInfo.accountRequirement
+        );
+        const accountActiation = await authService.signupByEmail(
+          result.accountDocument,
+          userInfo.signupRequirement
+        );
+        await authService.verifyAccount(accountActiation);
+        userA = await service.getUserFromCredential(result.credentialDocument);
+        contents[0] = await contentService.createContentFromUser(userA, {
+          type: ContentType.Short,
+          payload: {
+            message: 'this is short1'
+          } as ShortPayload
+        });
+        contents[1] = await contentService.createContentFromUser(userA, {
+          type: ContentType.Short,
+          payload: {
+            message: 'this is short2'
+          } as ShortPayload
+        });
+      });
+      it('should flag all content from user to deleted', async () => {
+        //service._removeAllContentFromUser()
+        const preContents = await contentService.getContentsFromUser(userA);
+        expect(preContents.total).toEqual(contents.length);
+        await service._removeAllContentFromUser(userA);
+        const postContents = await contentService.getContentsFromUser(userA);
+        expect(postContents.total).toEqual(0);
+      });
+      // /it('should update the recast counter from original content', async () => {});
+    });
+    /*describe('_removeAllEngagements()', () => {
+      it('should flag all content from user to deleted', async () => {});
+    });
+    describe('_removeAllFollower()', () => {
+      it('should flag all content from user to deleted', async () => {});
+    });
+    describe('_deactiveAccount()', () => {
+      it('should use all remove functions above to completely deactivate account', async () => {});
+    });*/
   });
 });

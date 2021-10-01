@@ -24,7 +24,8 @@ import {
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  Pagination
+  Pagination,
+  CastcleQueueAction
 } from './common.dto';
 import {
   BlogPayload,
@@ -130,5 +131,6 @@ export {
   SearchFollowsResponseDto,
   AggregatorSearchResponseDto,
   SearchResponse,
-  SearchKeywordResponseDto
+  SearchKeywordResponseDto,
+  CastcleQueueAction
 };

@@ -49,7 +49,18 @@ import {
   UpdateUserDto
 } from '@castcle-api/database/dtos';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
 
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
@@ -82,14 +93,16 @@ describe('AppController', () => {
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ],
       controllers: [UserController],
       providers: [
         AppService,
         UserService,
         AuthenticationService,
-        ContentService
+        ContentService,
+        UserProducer
       ]
     }).compile();
     service = app.get<UserService>(UserService);

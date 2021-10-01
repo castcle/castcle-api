@@ -39,7 +39,11 @@ import {
   UserDocument
 } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
+import {
+  NotificationProducer,
+  TopicName,
+  UserProducer
+} from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
@@ -152,6 +156,14 @@ describe('NotificationsController', () => {
             port: 6380
           },
           processors: [fakeProcessor]
+        }),
+        BullModule.registerQueue({
+          name: TopicName.Users,
+          redis: {
+            host: '0.0.0.0',
+            port: 6380
+          },
+          processors: [fakeProcessor]
         })
       ],
       controllers: [NotificationsController],
@@ -161,7 +173,8 @@ describe('NotificationsController', () => {
         AuthenticationService,
         ContentService,
         NotificationService,
-        NotificationProducer
+        NotificationProducer,
+        UserProducer
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
