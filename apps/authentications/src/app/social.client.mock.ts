@@ -1,6 +1,4 @@
 export class FacebookClientMock {
-  public mockSocialId = '109364223';
-
   getAccessToken() {
     return {
       access_token: '210058044|uBgVr1NhacSzS7UtJ387yI',
@@ -21,7 +19,7 @@ export class FacebookClientMock {
           auth_type: 'rerequest'
         },
         scopes: ['email', 'public_profile'],
-        user_id: this.mockSocialId
+        user_id: userToken
       };
     } else {
       return {
@@ -35,7 +33,7 @@ export class FacebookClientMock {
           auth_type: 'rerequest'
         },
         scopes: ['email', 'public_profile'],
-        user_id: this.mockSocialId
+        user_id: userToken
       };
     }
   }
@@ -57,7 +55,7 @@ export class FacebookClientMock {
         },
         email: 'jb@gmail.com',
         name: 'John Block',
-        id: this.mockSocialId
+        id: userToken
       };
     }
   }

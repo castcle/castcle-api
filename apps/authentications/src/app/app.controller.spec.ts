@@ -525,7 +525,7 @@ describe('AppController', () => {
         } as any,
         {
           provider: AccountAuthenIdType.Facebook,
-          authToken: 'nbkjhfdghdfgdgfsdfgdshfgd'
+          authToken: '109364223'
         }
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
@@ -536,6 +536,98 @@ describe('AppController', () => {
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
       expect(accountSocial.socialId).toEqual('109364223');
+    });
+
+    it('should return Exception when invalid user token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            authToken: ''
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            authToken: 'test_empty'
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('connectWithSocial', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo009';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const tokens = await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: 'test123',
+            displayName: 'abc',
+            email: 'test@castcle.com',
+            password: '2@HelloWorld'
+          }
+        }
+      );
+
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        '10936456',
+        AccountAuthenIdType.Facebook
+      );
+      await appController.connectWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          authToken: '10936456'
+        }
+      );
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        '10936456',
+        AccountAuthenIdType.Facebook
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual('10936456');
     });
 
     it('should return Exception when invalid user token', async () => {
