@@ -148,7 +148,7 @@ export class AppService {
     return tokenResult;
   }
 
-  async facebookConnect(authToken: string) {
+  async facebookConnect(authToken: string, language: string) {
     this.logger.log(`get facebook access token.`);
     const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
 
@@ -160,7 +160,7 @@ export class AppService {
 
     if (!tokenVerify.is_valid) {
       this.logger.error(`Use token expired.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, authToken);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
     this.logger.log(`get fcaebook user data.`);
     return this.fbClient.getUserInfo(authToken);

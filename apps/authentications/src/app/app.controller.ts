@@ -627,7 +627,10 @@ export class AuthenticationController {
     this.logger.log(`login with social: ${body.provider}`);
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
-        const userFB = await this.appService.facebookConnect(body.authToken);
+        const userFB = await this.appService.facebookConnect(
+          body.authToken,
+          req.$language
+        );
         if (userFB) {
           this.logger.log(`social login`);
           token = await this.appService.socailLogin(
@@ -673,7 +676,10 @@ export class AuthenticationController {
     );
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
-        const userFB = await this.appService.facebookConnect(body.authToken);
+        const userFB = await this.appService.facebookConnect(
+          body.authToken,
+          req.$language
+        );
         if (userFB) {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =
