@@ -25,6 +25,10 @@ import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
+import {
+  FacebookAccessToken,
+  FacebookClient
+} from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
@@ -45,7 +49,10 @@ const transporter = nodemailer.createTransport({
 
 @Injectable()
 export class AppService {
-  constructor(private authService: AuthenticationService) {}
+  constructor(
+    private authService: AuthenticationService,
+    private fbClient: FacebookClient
+  ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
 
@@ -139,5 +146,23 @@ export class AppService {
       }
     );
     return tokenResult;
+  }
+
+  async facebookConnect(authToken: string) {
+    this.logger.log(`get facebook access token.`);
+    const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
+
+    this.logger.log(`verify fcaebook user token.`);
+    const tokenVerify = await this.fbClient.verifyUserToken(
+      fbToken.access_token,
+      authToken
+    );
+
+    if (!tokenVerify.is_valid) {
+      this.logger.error(`Use token expired.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, authToken);
+    }
+    this.logger.log(`get fcaebook user data.`);
+    return this.fbClient.getUserInfo(authToken);
   }
 }

@@ -39,7 +39,7 @@ export class LoginDto {
   password: string;
 }
 
-export class LoginWithSocialDto {
+export class SocialConnectDto {
   @ApiProperty()
   provider: AccountAuthenIdType;
   @ApiProperty()

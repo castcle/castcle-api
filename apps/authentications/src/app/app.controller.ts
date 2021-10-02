@@ -26,10 +26,7 @@ import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
-import {
-  FacebookAccessToken,
-  FacebookClient
-} from '@castcle-api/utils/clients';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -65,9 +62,9 @@ import {
   CheckingResponse,
   GuestLoginDto,
   LoginDto,
-  LoginWithSocialDto,
   RefreshTokenResponse,
   RegisterByEmailDto,
+  SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
   VerificationPasswordBody,
@@ -613,7 +610,7 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiBody({
-    type: LoginWithSocialDto
+    type: SocialConnectDto
   })
   @ApiOkResponse({
     status: 200,
@@ -624,32 +621,13 @@ export class AuthenticationController {
   @HttpCode(200)
   async loginWithSocial(
     @Req() req: CredentialRequest,
-    @Body() body: LoginWithSocialDto
+    @Body() body: SocialConnectDto
   ) {
     let token: TokenResponse;
     this.logger.log(`login with social: ${body.provider}`);
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
-        this.logger.log(`get facebook access token.`);
-        const fbToken: FacebookAccessToken =
-          await this.fbClient.getAccessToken();
-
-        this.logger.log(`verify fcaebook user token.`);
-        const tokenVerify = await this.fbClient.verifyUserToken(
-          fbToken.access_token,
-          body.authToken
-        );
-
-        if (!tokenVerify.is_valid) {
-          this.logger.error(`Use token expired.`);
-          throw new CastcleException(
-            CastcleStatus.INVALID_ACCESS_TOKEN,
-            req.$language
-          );
-        }
-
-        this.logger.log(`get fcaebook user data.`);
-        const userFB = await this.fbClient.getUserInfo(body.authToken);
+        const userFB = await this.appService.facebookConnect(body.authToken);
         if (userFB) {
           this.logger.log(`social login`);
           token = await this.appService.socailLogin(
@@ -664,14 +642,63 @@ export class AuthenticationController {
         } else {
           this.logger.error(`Can't get user data.`);
           throw new CastcleException(
-            CastcleStatus.INVALID_ACCESS_TOKEN,
+            CastcleStatus.FORBIDDEN_REQUEST,
             req.$language
           );
         }
         break;
       }
     }
-
     return token;
+  }
+
+  @ApiBearerAuth()
+  @ApiBody({
+    type: SocialConnectDto
+  })
+  @ApiOkResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('connectWithSocial')
+  @HttpCode(200)
+  async connectWithSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialConnectDto
+  ) {
+    this.logger.log(`connect with social: ${body.provider}`);
+    const currentAccount = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    switch (body.provider) {
+      case AccountAuthenIdType.Facebook: {
+        const userFB = await this.appService.facebookConnect(body.authToken);
+        if (userFB) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userFB.id,
+              AccountAuthenIdType.Facebook
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Facebook,
+              userFB.id
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
+    }
   }
 }

@@ -25,6 +25,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures
 } from '@castcle-api/database';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -57,7 +58,8 @@ describe('AppService', () => {
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        HttpModule
+        HttpModule,
+        UtilsClientsModule
       ],
       providers: [AppService, AuthenticationService]
     }).compile();
