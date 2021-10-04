@@ -632,7 +632,7 @@ describe('AppController', () => {
 
     it('should return Exception when invalid user token', async () => {
       await expect(
-        appController.loginWithSocial(
+        appController.connectWithSocial(
           {
             $credential: credentialGuest,
             $token: guestResult.accessToken,
@@ -650,7 +650,7 @@ describe('AppController', () => {
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.loginWithSocial(
+        appController.connectWithSocial(
           {
             $credential: credentialGuest,
             $token: guestResult.accessToken,
