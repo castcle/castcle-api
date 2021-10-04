@@ -20,7 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
+import {
+  NotificationProducer,
+  TopicName,
+  UserProducer
+} from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -42,6 +46,15 @@ import { ContentService } from './content.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
   options: MongooseModuleOptions = { useFindAndModify: false }
@@ -67,7 +80,6 @@ describe('NotificationService', () => {
   let authService: AuthenticationService;
   let user: UserDocument;
   let producer: NotificationProducer;
-  const fakeProcessor = jest.fn();
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
     ? [
@@ -86,14 +98,16 @@ describe('NotificationService', () => {
             port: 6380
           },
           processors: [fakeProcessor]
-        })
+        }),
+        fakeBull
       ];
   const providers = [
     ContentService,
     UserService,
     AuthenticationService,
     NotificationService,
-    NotificationProducer
+    NotificationProducer,
+    UserProducer
   ];
   let result: {
     accountDocument: AccountDocument;
