@@ -106,10 +106,12 @@ export class ContentTypePipe implements PipeTransform {
   transform(typeQuery?: string): ContentType {
     if (
       typeQuery &&
-      (typeQuery === ContentType.Short || typeQuery === ContentType.Blog)
+      (typeQuery === ContentType.Short ||
+        typeQuery === ContentType.Blog ||
+        typeQuery === ContentType.Image)
     )
       return typeQuery;
-    return ContentType.Short;
+    return undefined; //
   }
 }
 

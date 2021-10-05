@@ -218,7 +218,6 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
     field: 'updatedAt',
     type: 'desc'
   },
-  type: ContentType.Short,
   page: 1,
   limit: 25
 } as CastcleContentQueryOptions;
