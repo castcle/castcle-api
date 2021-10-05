@@ -583,6 +583,24 @@ describe('AppController', () => {
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
     });
+
+    it('should return Exception when get exception user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            authToken: 'exception'
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
   });
 
   describe('connectWithSocial', () => {
@@ -669,6 +687,24 @@ describe('AppController', () => {
           {
             provider: AccountAuthenIdType.Facebook,
             authToken: 'test_empty'
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+
+    it('should return Exception get exception user data', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            authToken: 'exception'
           }
         )
       ).rejects.toEqual(

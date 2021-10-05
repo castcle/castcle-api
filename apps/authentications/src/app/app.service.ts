@@ -28,7 +28,8 @@ import { Password } from '@castcle-api/utils';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   FacebookAccessToken,
-  FacebookClient
+  FacebookClient,
+  FacebookUserInfo
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -174,6 +175,15 @@ export class AppService {
       throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
     this.logger.log(`get fcaebook user data.`);
-    return this.fbClient.getUserInfo(authToken);
+    let user: FacebookUserInfo;
+    try {
+      user = await this.fbClient.getUserInfo(authToken);
+    } catch (error) {
+      this.logger.error(`Can't get user data.`);
+      this.logger.error(error);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    }
+
+    return user;
   }
 }

@@ -681,6 +681,7 @@ export class AuthenticationController {
           body.authToken,
           req.$language
         );
+
         if (userFB) {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =

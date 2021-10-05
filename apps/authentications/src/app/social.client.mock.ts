@@ -41,6 +41,8 @@ export class FacebookClientMock {
   getUserInfo(userToken: string) {
     if (userToken === 'test_empty') {
       return null;
+    } else if (userToken === 'exception') {
+      throw new String('Error');
     } else {
       return {
         first_name: 'John',
