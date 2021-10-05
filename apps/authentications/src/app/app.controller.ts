@@ -638,7 +638,8 @@ export class AuthenticationController {
               socialId: userFB.id,
               email: userFB.email,
               name: userFB.name,
-              provider: AccountAuthenIdType.Facebook
+              provider: AccountAuthenIdType.Facebook,
+              profileImage: userFB.picture.data.url
             },
             req.$credential
           );

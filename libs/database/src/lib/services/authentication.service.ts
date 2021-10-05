@@ -71,6 +71,7 @@ export interface SignupSocialRequirements {
   displayName: string;
   socialId: string;
   provider: AccountAuthenIdType;
+  avatar: string;
 }
 
 @Injectable()
@@ -470,7 +471,12 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayId: requirements.socialId,
       displayName: requirements.displayName,
-      type: UserType.People
+      type: UserType.People,
+      profile: {
+        images: {
+          avatar: requirements.avatar
+        }
+      }
     });
     await user.save();
     return this.createAccountAuthenId(

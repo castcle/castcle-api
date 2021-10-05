@@ -25,6 +25,7 @@ import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
+import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   FacebookAccessToken,
   FacebookClient
@@ -51,7 +52,8 @@ const transporter = nodemailer.createTransport({
 export class AppService {
   constructor(
     private authService: AuthenticationService,
-    private fbClient: FacebookClient
+    private fbClient: FacebookClient,
+    private download: Downloader
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -115,13 +117,22 @@ export class AppService {
         ? social.email
         : currentAccount.email;
       if (user.length === 0) {
+        this.logger.log(`download avatar from ${social.provider}`);
+        const img = await this.download.getImageFromUrl(social.profileImage);
+
+        this.logger.log('upload avatar to s3');
+        const avatar = await Image.upload(img, {
+          filename: `avatar-${credential.account._id}`
+        });
+
         this.logger.log('signup by Social');
         const accountActivation = await this.authService.signupBySocial(
           currentAccount,
           {
             displayName: social.name,
             socialId: social.socialId,
-            provider: social.provider
+            provider: social.provider,
+            avatar: avatar.uri
           }
         );
       } else {

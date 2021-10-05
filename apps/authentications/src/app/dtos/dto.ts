@@ -40,7 +40,7 @@ export class LoginDto {
 }
 
 export class SocialConnectDto {
-  @ApiProperty()
+  @ApiProperty({ enum: AccountAuthenIdType })
   provider: AccountAuthenIdType;
   @ApiProperty()
   authToken: string;
@@ -126,4 +126,5 @@ export interface SocialConnect {
   email: string;
   name: string;
   provider: AccountAuthenIdType;
+  profileImage: string;
 }

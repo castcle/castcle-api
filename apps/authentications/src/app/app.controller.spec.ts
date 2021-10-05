@@ -29,6 +29,7 @@ import {
   AccountAuthenIdType,
   CredentialDocument
 } from '@castcle-api/database/schemas';
+import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -38,7 +39,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { TokenResponse } from './dtos/dto';
-import { FacebookClientMock } from './social.client.mock';
+import { DownloaderMock, FacebookClientMock } from './social.client.mock';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -68,6 +69,10 @@ describe('AppController', () => {
       provide: FacebookClient,
       useClass: FacebookClientMock
     };
+    const DownloaderProvider = {
+      provide: Downloader,
+      useClass: DownloaderMock
+    };
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
@@ -76,7 +81,12 @@ describe('AppController', () => {
         HttpModule
       ],
       controllers: [AuthenticationController],
-      providers: [AppService, AuthenticationService, FacebookClientProvider]
+      providers: [
+        AppService,
+        AuthenticationService,
+        FacebookClientProvider,
+        DownloaderProvider
+      ]
     }).compile();
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);

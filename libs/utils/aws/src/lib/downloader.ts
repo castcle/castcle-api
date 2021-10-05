@@ -20,17 +20,21 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { Module } from '@nestjs/common';
-import { AuthenticationController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-@Module({
-  imports: [DatabaseModule, CaslModule, UtilsClientsModule, UtilsAwsModule],
-  controllers: [AuthenticationController, HealthyController],
-  providers: [AppService]
-})
-export class AuthenticationModule {}
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
+import { lastValueFrom, map } from 'rxjs';
+
+@Injectable()
+export class Downloader {
+  constructor(private httpService: HttpService) {}
+
+  getImageFromUrl(url: string) {
+    return lastValueFrom(
+      this.httpService
+        .get(url, {
+          responseType: 'arraybuffer'
+        })
+        .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
+    );
+  }
+}

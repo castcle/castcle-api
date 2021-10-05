@@ -522,7 +522,8 @@ describe('Authentication Service', () => {
       const signupRequirements: SignupSocialRequirements = {
         socialId: '7457356332',
         displayName: 'Dudeee Mock',
-        provider: AccountAuthenIdType.Facebook
+        provider: AccountAuthenIdType.Facebook,
+        avatar: '/image/test.jpg'
       };
       beforeAll(async () => {
         mockAccountResult = await service.createAccount({
@@ -554,6 +555,13 @@ describe('Authentication Service', () => {
         expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
+        expect(signupRequirements.avatar).toEqual(
+          afterSaveUser[0].profile.images.avatar
+        );
+        expect(signupRequirements.displayName).toEqual(
+          afterSaveUser[0].displayName
+        );
+        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
       });
     });
 
