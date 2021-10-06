@@ -422,7 +422,7 @@ export class AuthenticationService {
                   page.profile.images &&
                   page.profile.images.avatar
                     ? new Image(page.profile.images.avatar).toSignUrl()
-                    : 'https://cdn2.iconfinder.com/data/icons/picol-vector/32/user_profile-256.png',
+                    : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
                 castcleId: page.displayName,
                 displayName: page.displayName,
                 role: 'admin',
