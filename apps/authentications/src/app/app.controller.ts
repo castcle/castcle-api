@@ -656,6 +656,9 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Telegram: {
+        break;
+      }
     }
     return token;
   }

@@ -21,23 +21,22 @@
  * or have any questions.
  */
 
-import { HttpModule } from '@nestjs/axios';
-import { Test, TestingModule } from '@nestjs/testing';
-import { FacebookClient } from './facebook.client';
+export interface TelegramUserInfo {
+  id: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  photo_url: string;
+  auth_date: string;
+  hash: string;
+}
 
-describe('FacebookClient', () => {
-  let service: FacebookClient;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [FacebookClient],
-      imports: [HttpModule]
-    }).compile();
-
-    service = module.get<FacebookClient>(FacebookClient);
-  });
-
-  it('FacebookClient - should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});
+// const payload = {
+//     id: '424242424242',
+//     first_name: 'John',
+//     last_name: 'Doe',
+//     username: 'username',
+//     photo_url: 'https://t.me/i/userpic/320/username.jpg',
+//     auth_date: '1519400000',
+//     hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
+//   };
