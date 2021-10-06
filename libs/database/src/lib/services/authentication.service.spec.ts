@@ -563,6 +563,7 @@ describe('Authentication Service', () => {
           afterSaveUser[0].displayName
         );
         expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
+        expect(signupRequirements.socialToken).toEqual('testtoken');
       });
     });
 
@@ -611,6 +612,7 @@ describe('Authentication Service', () => {
         expect(accountSocialFb).toBeDefined();
         expect(accountSocialFb.socialId).toEqual(fbsocialId);
         expect(accountSocialTw.socialId).toEqual(twsocialId);
+        expect(accountSocialTw.socialToken).toEqual('testtoken');
       });
     });
   });
