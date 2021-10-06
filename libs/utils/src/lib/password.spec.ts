@@ -62,6 +62,13 @@ describe('Password', () => {
         await Password.verify('thisisawrongpassword', encryptPassword)
       ).toBe(false);
     });
+    it('should return true to P jul password Abcd1@34$ ', async () => {
+      const encryptPassword =
+        '$2a$10$LF1C5E//QPPvPMQTdAlBqO.r/3DyOvdwHLZMuVMzb3PToLf227J8m';
+      const testPasswordPJul = await Password.create('Abcd1@34$');
+      console.log(testPasswordPJul);
+      expect(await Password.verify('Abcd1@34$', encryptPassword)).toBe(true);
+    });
   });
   describe('#validate()', () => {
     it('should return true if password has at least 8 length', () => {
