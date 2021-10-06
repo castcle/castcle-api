@@ -410,7 +410,8 @@ export class AuthenticationService {
           visibility: EntityVisibility.Publish
         })
         .exec();
-      payload.pages = pages
+      console.debug(pages);
+      /*payload.pages = pages
         ? pages.map(
             (page) =>
               ({
@@ -423,7 +424,7 @@ export class AuthenticationService {
               } as PageInfoPayload)
           )
         : [];
-      console.debug('payloadAfter2', payload);
+      console.debug('payloadAfter2', payload);*/
       return payload;
     }
   }
