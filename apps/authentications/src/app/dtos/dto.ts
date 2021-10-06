@@ -39,11 +39,30 @@ export class LoginDto {
   password: string;
 }
 
+export class SocialConnectInfo {
+  @ApiProperty()
+  authToken: string;
+  @ApiProperty()
+  authVerifierToken?: string;
+  @ApiProperty()
+  id?: string;
+  @ApiProperty()
+  first_name?: string;
+  @ApiProperty()
+  last_name?: string;
+  @ApiProperty()
+  username?: string;
+  @ApiProperty()
+  photo_url?: string;
+  @ApiProperty()
+  hash?: string;
+}
+
 export class SocialConnectDto {
   @ApiProperty({ enum: AccountAuthenIdType })
   provider: AccountAuthenIdType;
-  @ApiProperty()
-  authToken: string;
+  @ApiProperty({ type: SocialConnectInfo, isArray: false })
+  payload: SocialConnectInfo;
 }
 
 class RegisterPayload {

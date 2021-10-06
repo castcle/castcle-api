@@ -535,7 +535,9 @@ describe('AppController', () => {
         } as any,
         {
           provider: AccountAuthenIdType.Facebook,
-          authToken: '109364223'
+          payload: {
+            authToken: '109364223'
+          }
         }
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
@@ -558,7 +560,9 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: ''
+            payload: {
+              authToken: ''
+            }
           }
         )
       ).rejects.toEqual(
@@ -576,7 +580,9 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: 'test_empty'
+            payload: {
+              authToken: 'test_empty'
+            }
           }
         )
       ).rejects.toEqual(
@@ -594,11 +600,33 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: 'exception'
+            payload: {
+              authToken: 'exception'
+            }
           }
         )
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+
+    it('should return Exception when get empty authen token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
       );
     });
   });
@@ -646,7 +674,9 @@ describe('AppController', () => {
         } as any,
         {
           provider: AccountAuthenIdType.Facebook,
-          authToken: '10936456'
+          payload: {
+            authToken: '10936456'
+          }
         }
       );
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
@@ -668,7 +698,9 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: ''
+            payload: {
+              authToken: ''
+            }
           }
         )
       ).rejects.toEqual(
@@ -686,7 +718,9 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: 'test_empty'
+            payload: {
+              authToken: 'test_empty'
+            }
           }
         )
       ).rejects.toEqual(
@@ -704,7 +738,9 @@ describe('AppController', () => {
           } as any,
           {
             provider: AccountAuthenIdType.Facebook,
-            authToken: 'exception'
+            payload: {
+              authToken: 'exception'
+            }
           }
         )
       ).rejects.toEqual(

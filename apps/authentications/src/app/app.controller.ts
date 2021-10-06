@@ -628,7 +628,7 @@ export class AuthenticationController {
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
         const userFB = await this.appService.facebookConnect(
-          body.authToken,
+          body.payload.authToken,
           req.$language
         );
         if (userFB) {
@@ -640,7 +640,7 @@ export class AuthenticationController {
               name: userFB.name,
               provider: AccountAuthenIdType.Facebook,
               profileImage: userFB.picture.data.url,
-              socialToken: body.authToken
+              socialToken: body.payload.authToken
             },
             req.$credential
           );
@@ -679,7 +679,7 @@ export class AuthenticationController {
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
         const userFB = await this.appService.facebookConnect(
-          body.authToken,
+          body.payload.authToken,
           req.$language
         );
 
@@ -695,7 +695,7 @@ export class AuthenticationController {
               currentAccount,
               AccountAuthenIdType.Facebook,
               userFB.id,
-              body.authToken
+              body.payload.authToken
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);

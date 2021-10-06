@@ -169,6 +169,11 @@ export class AppService {
    * @returns {FacebookUserInfo}
    */
   async facebookConnect(authToken: string, language: string) {
+    if (!authToken) {
+      this.logger.error(`token missing.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
     this.logger.log(`get facebook access token.`);
     const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
 
