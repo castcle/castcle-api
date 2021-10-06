@@ -69,7 +69,8 @@ export const postAccountSave = async (
           'account.isGuest': doc.isGuest,
           'account.activateDate': doc.activateDate,
           'account.visibility': doc.visibility,
-          'account.preferences': doc.preferences
+          'account.preferences': doc.preferences,
+          'account.email': doc.email
         }
       )
       .exec();
