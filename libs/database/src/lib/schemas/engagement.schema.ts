@@ -49,6 +49,9 @@ export class Engagement extends CastcleBase {
 
   @Prop({ required: true })
   type: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId })
+  itemId?: any; // for recast /quote
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
@@ -63,11 +66,6 @@ export const EngagementSchemaFactory = (
       (doc as EngagementDocument).visibility === EntityVisibility.Publish
         ? 1
         : -1;
-    console.log(
-      'inc like ',
-      (doc as EngagementDocument).targetRef,
-      incEngagment
-    );
     if (
       (doc as EngagementDocument).targetRef.$ref &&
       (doc as EngagementDocument).targetRef.$ref === 'content'
