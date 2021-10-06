@@ -116,29 +116,33 @@ export const EngagementSchemaFactory = (
   EngagementSchema.post('remove', async (doc, next) => {
     const incEngagment: { [key: string]: number } = {};
     incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
-    const content = await contentModel
-      .findById((doc as EngagementDocument).targetRef.oid)
-      .exec();
-    const result = await contentModel
-      .updateOne(
-        { _id: (doc as EngagementDocument).targetRef.oid },
-        {
-          $inc: incEngagment
-        }
-      )
-      .exec();
-    const comment = await commentModel
-      .findById((doc as EngagementDocument).targetRef.oid)
-      .exec();
-    const result2 = await commentModel
-      .updateOne(
-        { _id: (doc as EngagementDocument).targetRef.oid },
-        {
-          $inc: incEngagment
-        }
-      )
-      .exec();
-    console.log(result);
+    if ((doc as EngagementDocument).targetRef.namespace === 'content') {
+      const content = await contentModel
+        .findById((doc as EngagementDocument).targetRef.oid)
+        .exec();
+      const result = await contentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.oid },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+      console.log(result);
+    } else {
+      const comment = await commentModel
+        .findById((doc as EngagementDocument).targetRef.oid)
+        .exec();
+      const result2 = await commentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.oid },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+    }
+
     next();
   });
   return EngagementSchema;

@@ -151,27 +151,30 @@ export class AuthenticationController {
 
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
-      console.log(account, 'password', body, req);
       if (await account.verifyPassword(body.password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
-        console.log('embedCredentialByDeviceUUID', embedCredentialByDeviceUUID);
+        console.debug(
+          'embedCredentialByDeviceUUID',
+          embedCredentialByDeviceUUID
+        );
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
             .findById(embedCredentialByDeviceUUID._id)
             .exec();
         } else {
-          const newCredentialDoc =
-            await this.authService.linkCredentialToAccount(
-              req.$credential,
-              account
-            );
+          req.$credential = await this.authService.linkCredentialToAccount(
+            req.$credential,
+            account
+          );
         }
+        console.debug('afterCredential', req.$credential);
         const accessTokenPayload =
           await this.authService.getAccessTokenPayloadFromCredential(
             req.$credential
           );
+        console.debug('accessTokenPayload', accessTokenPayload);
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
