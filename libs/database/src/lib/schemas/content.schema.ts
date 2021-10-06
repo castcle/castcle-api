@@ -29,7 +29,8 @@ import {
   ShortPayload,
   ContentType,
   BlogPayload,
-  Author
+  Author,
+  ImagePayload
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
@@ -60,8 +61,8 @@ export class Content extends CastcleBase {
   @Prop({ required: true })
   type: string;
 
-  @Prop({ required: true, type: Object })
-  payload: ShortPayload | BlogPayload | RecastPayload | QuotePayload;
+  @Prop({ type: Object })
+  payload: ShortPayload | BlogPayload | ImagePayload;
 
   @Prop({ type: Object })
   engagements: {
@@ -76,58 +77,39 @@ export class Content extends CastcleBase {
 
   @Prop({ type: Array })
   hashtags: any[];
+
+  @Prop()
+  isRecast?: boolean;
+
+  @Prop()
+  isQuote?: boolean;
+
+  @Prop({ type: Object })
+  originalPost?: Content;
 }
 
 interface IContent extends Document {
   /**
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
-  toContentPayload(): ContentPayloadDto;
+  toContentPayload(engagements?: EngagementDocument[]): ContentPayloadDto;
   toContent(): Content;
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
 
-ContentSchema.methods.toContent = function () {
-  const t = new Content();
-  t.author = (this as ContentDocument).author;
-  return t;
-};
-
-ContentSchema.methods.toContentPayload = function () {
-  //Todo Need to implement recast quote cast later on
-  return {
-    id: (this as ContentDocument)._id,
-    author: (this as ContentDocument).author,
-    commented: {
-      commented: false, //TODO !!! need to update after implement with engagement
-      count:
-        (this as ContentDocument).engagements &&
-        (this as ContentDocument).engagements['comment']
-          ? (this as ContentDocument).engagements['comment'].count
-          : 0,
-      participants: []
-    },
-    payload: (this as ContentDocument).payload,
-    created: (this as ContentDocument).createdAt.toISOString(),
-    updated: (this as ContentDocument).updatedAt.toISOString(),
-    liked: {
-      liked: false,
-      count:
-        (this as ContentDocument).engagements &&
-        (this as ContentDocument).engagements['like']
-          ? (this as ContentDocument).engagements['like'].count
-          : 0,
-      participants: []
-    },
-    type: (this as ContentDocument).type,
-    feature: {
-      slug: 'feed',
-      key: 'feature.feed',
-      name: 'Feed'
+type ContentEngagement =
+  | {
+      [key: string]: boolean;
     }
-  } as ContentPayloadDto;
-};
+  | {
+      count: number;
+      participant: {
+        type: string;
+        name: string;
+        id: string;
+      }[];
+    };
 
 export const ContentSchemaFactory = (
   revisionModel: Model<RevisionDocument>,
@@ -135,6 +117,75 @@ export const ContentSchemaFactory = (
   userModel: Model<UserDocument>,
   relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
+  const engagementNameMap = {
+    like: 'liked',
+    comment: 'commented',
+    quote: 'quoteCast',
+    recast: 'recasted'
+  };
+  /**
+   * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
+   * @param doc
+   * @param engagementType
+   * @param userId
+   * @returns
+   */
+  const getEngagementObject = (
+    doc: ContentDocument,
+    engagementType: EngagementType,
+    isEngage: boolean
+  ) => {
+    //get owner relate enagement
+    const engagementObject: ContentEngagement = {
+      count: doc.engagements[engagementType]
+        ? doc.engagements[engagementType].count
+        : 0,
+      participant: []
+    };
+    engagementObject[engagementNameMap[engagementType]] = isEngage;
+    return engagementObject;
+  };
+
+  ContentSchema.methods.toContent = function () {
+    const t = new Content();
+    t.author = (this as ContentDocument).author;
+    return t;
+  };
+
+  ContentSchema.methods.toContentPayload = function (
+    engagements: EngagementDocument[] = []
+  ) {
+    //Todo Need to implement recast quote cast later on
+    const payload = {
+      id: (this as ContentDocument)._id,
+      author: (this as ContentDocument).author,
+      payload: (this as ContentDocument).payload,
+      created: (this as ContentDocument).createdAt.toISOString(),
+      updated: (this as ContentDocument).updatedAt.toISOString(),
+      type: (this as ContentDocument).type,
+      feature: {
+        slug: 'feed',
+        key: 'feature.feed',
+        name: 'Feed'
+      }
+    } as ContentPayloadDto;
+    //get owner relate enagement
+    for (const key in engagementNameMap) {
+      const findEngagement = engagements
+        ? engagements.find((engagement) => engagement.type === key)
+        : null;
+      payload[engagementNameMap[key]] = getEngagementObject(
+        this as ContentDocument,
+        key as EngagementType,
+        findEngagement ? true : false
+      );
+    }
+    //if it's recast or quotecast
+    if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
+      payload.originalPost = (this as ContentDocument).originalPost;
+    return payload;
+  };
+
   ContentSchema.pre('save', async function (next) {
     //defualt is publish
     await preContentSave(this as ContentDocument);

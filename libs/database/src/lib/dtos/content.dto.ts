@@ -153,12 +153,7 @@ export class ContentPayloadDto {
   id: string;
 
   @ApiProperty()
-  type:
-    | ContentType.Short
-    | ContentType.Blog
-    | ContentType.Image
-    | ContentType.Quote
-    | ContentType.Recast;
+  type: ContentType.Short | ContentType.Blog | ContentType.Image;
 
   @ApiProperty()
   payload: ShortPayload | BlogPayload | QuotePayload | RecastPayload;
@@ -174,6 +169,9 @@ export class ContentPayloadDto {
 
   @ApiProperty()
   recasted?: Recast;
+
+  @ApiProperty()
+  originalPost?: any;
 
   @ApiProperty()
   quoteCast?: ContentPayloadDto;
@@ -208,9 +206,7 @@ export class SaveContentDto {
 export enum ContentType {
   Short = 'short',
   Blog = 'blog',
-  Image = 'image',
-  Recast = 'recast',
-  Quote = 'quote'
+  Image = 'image'
 }
 
 export class CastcleContentQueryOptions extends CastcleQueryOptions {
@@ -222,7 +218,6 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
     field: 'updatedAt',
     type: 'desc'
   },
-  type: ContentType.Short,
   page: 1,
   limit: 25
 } as CastcleContentQueryOptions;
