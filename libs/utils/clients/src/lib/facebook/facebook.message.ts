@@ -36,6 +36,7 @@ export interface FacebookUserInfo {
   email: string;
   name: string;
 }
+
 export interface FacebookAccessToken {
   access_token: string;
   token_type: string;
