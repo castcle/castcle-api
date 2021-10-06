@@ -324,7 +324,7 @@ export class UserService {
         comment.visibility = EntityVisibility.Hidden;
         const result = await comment.save();
         console.log('resultRemoveComment', result);
-        return this.contentService._updateCommentCounter(result);
+        this.contentService._updateCommentCounter(result);
       })
     );
   };
