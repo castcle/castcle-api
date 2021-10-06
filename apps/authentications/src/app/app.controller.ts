@@ -154,7 +154,10 @@ export class AuthenticationController {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
-        console.log('embedCredentialByDeviceUUID', embedCredentialByDeviceUUID);
+        console.debug(
+          'embedCredentialByDeviceUUID',
+          embedCredentialByDeviceUUID
+        );
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
             .findById(embedCredentialByDeviceUUID._id)
@@ -165,12 +168,12 @@ export class AuthenticationController {
             account
           );
         }
-        console.log('afterCredential', req.$credential);
+        console.debug('afterCredential', req.$credential);
         const accessTokenPayload =
           await this.authService.getAccessTokenPayloadFromCredential(
             req.$credential
           );
-        console.log('accessTokenPayload', accessTokenPayload);
+        console.debug('accessTokenPayload', accessTokenPayload);
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
