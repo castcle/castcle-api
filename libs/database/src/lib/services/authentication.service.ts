@@ -444,12 +444,18 @@ export class AuthenticationService {
         })
         .exec();
       console.debug(pages);
-      /*payload.pages = pages
+      //TODO !!! has to change the default avartar
+      payload.pages = pages
         ? pages.map(
             (page) =>
               ({
                 id: page._id,
-                avatar: new Image(page.profile.images.avatar).toSignUrl(),
+                avatar:
+                  page.profile &&
+                  page.profile.images &&
+                  page.profile.images.avatar
+                    ? new Image(page.profile.images.avatar).toSignUrl()
+                    : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
                 castcleId: page.displayName,
                 displayName: page.displayName,
                 role: 'admin',
@@ -457,7 +463,7 @@ export class AuthenticationService {
               } as PageInfoPayload)
           )
         : [];
-      console.debug('payloadAfter2', payload);*/
+      console.debug('payloadAfter2', payload);
       return payload;
     }
   }
