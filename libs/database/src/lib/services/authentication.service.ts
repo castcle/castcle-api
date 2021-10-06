@@ -395,13 +395,13 @@ export class AuthenticationService {
         verified: user.verified,
         email: credential.account.email
       } as UserAccessTokenPayload;
-      console.debug('payloadBefore', payload)
+      console.debug('payloadBefore', payload);
       //get SignUrl for avartar
       if (user.profile && user.profile.images && user.profile.images.avatar) {
         const avartar = new Image(user.profile.images.avatar);
         payload.avatar = avartar.toSignUrl();
       }
-      console.debug('payloadAfter1', payload)
+      console.debug('payloadAfter1', payload);
       //get Pages
       const pages = await this._userModel
         .find({
@@ -410,18 +410,20 @@ export class AuthenticationService {
           visibility: EntityVisibility.Publish
         })
         .exec();
-      payload.pages = pages?pages.map(
-        (page) =>
-          ({
-            id: page._id,
-            avatar: new Image(page.profile.images.avatar).toSignUrl(),
-            castcleId: page.displayName,
-            displayName: page.displayName,
-            role: 'admin',
-            verified: page.verified
-          } as PageInfoPayload)
-      ):[];
-      console.debug('payloadAfter2', payload)
+      payload.pages = pages
+        ? pages.map(
+            (page) =>
+              ({
+                id: page._id,
+                avatar: new Image(page.profile.images.avatar).toSignUrl(),
+                castcleId: page.displayName,
+                displayName: page.displayName,
+                role: 'admin',
+                verified: page.verified
+              } as PageInfoPayload)
+          )
+        : [];
+      console.debug('payloadAfter2', payload);
       return payload;
     }
   }
