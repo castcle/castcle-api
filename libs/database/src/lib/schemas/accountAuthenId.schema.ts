@@ -51,6 +51,9 @@ export class AccountAuthenId extends CastcleBase {
 
   @Prop()
   socialId: string;
+
+  @Prop()
+  socialToken: string;
 }
 
 export const AccountAuthenIdSchema =

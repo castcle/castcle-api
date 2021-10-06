@@ -133,14 +133,16 @@ export class AppService {
             displayName: social.name,
             socialId: social.socialId,
             provider: social.provider,
-            avatar: avatar.uri
+            avatar: avatar.uri,
+            socialToken: social.socialToken
           }
         );
       } else {
         await this.authService.createAccountAuthenId(
           currentAccount,
           social.provider,
-          social.socialId
+          social.socialId,
+          social.socialToken
         );
       }
     }

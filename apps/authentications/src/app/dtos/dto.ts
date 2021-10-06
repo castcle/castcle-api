@@ -127,4 +127,5 @@ export interface SocialConnect {
   name: string;
   provider: AccountAuthenIdType;
   profileImage: string;
+  socialToken: string;
 }

@@ -639,7 +639,8 @@ export class AuthenticationController {
               email: userFB.email ? userFB.email : '',
               name: userFB.name,
               provider: AccountAuthenIdType.Facebook,
-              profileImage: userFB.picture.data.url
+              profileImage: userFB.picture.data.url,
+              socialToken: body.authToken
             },
             req.$credential
           );
@@ -693,7 +694,8 @@ export class AuthenticationController {
             await this.authService.createAccountAuthenId(
               currentAccount,
               AccountAuthenIdType.Facebook,
-              userFB.id
+              userFB.id,
+              body.authToken
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);
