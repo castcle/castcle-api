@@ -636,7 +636,7 @@ export class AuthenticationController {
           token = await this.appService.socailLogin(
             {
               socialId: userFB.id,
-              email: userFB.email,
+              email: userFB.email ? userFB.email : '',
               name: userFB.name,
               provider: AccountAuthenIdType.Facebook,
               profileImage: userFB.picture.data.url
