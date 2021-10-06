@@ -456,7 +456,7 @@ export class AuthenticationService {
                   page.profile.images.avatar
                     ? new Image(page.profile.images.avatar).toSignUrl()
                     : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-                castcleId: page.displayName,
+                castcleId: page.displayId,
                 displayName: page.displayName,
                 role: 'admin',
                 verified: page.verified
