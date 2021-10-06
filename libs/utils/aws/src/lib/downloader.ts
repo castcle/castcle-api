@@ -28,6 +28,11 @@ import { lastValueFrom, map } from 'rxjs';
 export class Downloader {
   constructor(private httpService: HttpService) {}
 
+  /**
+   * Download images from url to binary base64
+   * @param {string} url image url
+   * @returns {string} binary base64
+   */
   getImageFromUrl(url: string) {
     return lastValueFrom(
       this.httpService

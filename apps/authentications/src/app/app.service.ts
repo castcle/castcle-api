@@ -94,11 +94,11 @@ export class AppService {
 
   /**
    * Create user and generate token for login social
-   * @param social social response
-   * @param credential
+   * @param {SocialConnect} social social response
+   * @param {CredentialDocument} credential
    * @returns {TokenResponse}
    */
-  async socailLogin(social: SocialConnect, credential: CredentialDocument) {
+  async socialLogin(social: SocialConnect, credential: CredentialDocument) {
     this.logger.log('get AccountFromCredential');
     const currentAccount = await this.authService.getAccountFromCredential(
       credential
@@ -160,6 +160,12 @@ export class AppService {
     return tokenResult;
   }
 
+  /**
+   * Connect Facebook API
+   * @param {string} accessToken access token from facebook
+   * @param {string} language en is default
+   * @returns {FacebookUserInfo}
+   */
   async facebookConnect(authToken: string, language: string) {
     this.logger.log(`get facebook access token.`);
     const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();

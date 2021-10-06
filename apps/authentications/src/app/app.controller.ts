@@ -633,7 +633,7 @@ export class AuthenticationController {
         );
         if (userFB) {
           this.logger.log(`social login`);
-          token = await this.appService.socailLogin(
+          token = await this.appService.socialLogin(
             {
               socialId: userFB.id,
               email: userFB.email ? userFB.email : '',
