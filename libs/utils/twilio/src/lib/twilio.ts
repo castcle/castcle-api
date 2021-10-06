@@ -21,28 +21,32 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/utils/queue',
-    '<rootDir>/libs/utils/twilio'
-  ]
+import { Environment } from '@castcle-api/environments';
+import * as Twilio from 'twilio';
+
+const env = {
+  twilioAccountSid: Environment.twilio_account_sid,
+  twilioAuthToken: Environment.twilio_auth_token,
+  twilioOtpSid: Environment.twilio_otp_sid
 };
+
+const client = Twilio(env.twilioAccountSid, env.twilioAuthToken);
+
+const requestOtp = (email: string) => {
+  client.verify
+    .services(env.twilioOtpSid)
+    .verifications.create({
+      to: email,
+      channel: 'email'
+    })
+    .then((verification) => {
+      return verification;
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
+};
+
+// const verifyOtp = () => {};
+
+export const TwilioService = { requestOtp };

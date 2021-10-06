@@ -65,7 +65,9 @@ import {
   SuggestCastcleIdReponse,
   VerificationPasswordBody,
   VerificationPasswordResponse,
-  ChangePasswordBody
+  ChangePasswordBody,
+  ForgotPasswordRequestOtpDto,
+  ForgotPasswordResponse
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -74,6 +76,7 @@ import {
 import { HttpCode } from '@nestjs/common';
 import { Req } from '@nestjs/common';
 import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
+import { AccountDocument, OtpDocument } from '@castcle-api/database/schemas';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -608,5 +611,47 @@ export class AuthenticationController {
       return '';
     } else
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 201,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('forgotPasswordRequestOTP')
+  async forgotPasswordRequestOTP(
+    @Body() body: ForgotPasswordRequestOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    let account: AccountDocument = null;
+    if (body.channel === 'email') {
+      account = await this.authService.getAccountFromEmail(body.payload.email);
+      // } else if (body.channel === 'mobile') {
+    } else {
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        req.$language
+      );
+    }
+    if (!account) {
+      throw new CastcleException(
+        CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+        req.$language
+      );
+    }
+    const otp: OtpDocument = await this.authService.forgotPasswordRequestOtp(
+      account
+    );
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
   }
 }

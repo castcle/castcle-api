@@ -92,5 +92,10 @@ export const Environment = {
   otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
   firebase_project_id: process.env.FIREBASE_PROJECT_ID,
   firebase_client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  firebase_private_key: process.env.FIREBASE_PRIVATE_KEY
+  firebase_private_key: process.env.FIREBASE_PRIVATE_KEY,
+
+  // Twilio
+  twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
+  twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
+  twilio_otp_sid: process.env.TWILIO_OTP_SID
 };
