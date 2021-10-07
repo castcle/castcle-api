@@ -39,7 +39,7 @@ import { TelegramUserInfo } from './telegram/telegram.message';
     })
   ],
   controllers: [],
-  providers: [FacebookClient],
+  providers: [FacebookClient, TelegramClient],
   exports: [HttpModule, FacebookClient, TelegramClient]
 })
 export class UtilsClientsModule {}

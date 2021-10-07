@@ -204,6 +204,12 @@ export class AppService {
     return user;
   }
 
+  /**
+   * Connect Telegram
+   * @param {SocialConnectInfo} payload response from telegram
+   * @param {string} language en is default
+   * @returns {boolean}
+   */
   async telegramConnect(payload: SocialConnectInfo, language: string) {
     if (
       !payload.id ||

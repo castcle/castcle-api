@@ -30,7 +30,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
-import { FacebookClient } from '@castcle-api/utils/clients';
+import { FacebookClient, TelegramClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
@@ -39,7 +39,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { TokenResponse } from './dtos/dto';
-import { DownloaderMock, FacebookClientMock } from './social.client.mock';
+import {
+  DownloaderMock,
+  FacebookClientMock,
+  TelegramClientMock
+} from './social.client.mock';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -73,6 +77,10 @@ describe('AppController', () => {
       provide: Downloader,
       useClass: DownloaderMock
     };
+    const TelegramClientProvider = {
+      provide: TelegramClient,
+      useClass: TelegramClientMock
+    };
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
@@ -85,7 +93,8 @@ describe('AppController', () => {
         AppService,
         AuthenticationService,
         FacebookClientProvider,
-        DownloaderProvider
+        DownloaderProvider,
+        TelegramClientProvider
       ]
     }).compile();
 

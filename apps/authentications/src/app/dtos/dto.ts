@@ -55,7 +55,7 @@ export class SocialConnectInfo {
   @ApiProperty()
   photo_url?: string;
   @ApiProperty()
-  auth_date: string;
+  auth_date?: string;
   @ApiProperty()
   hash?: string;
 }

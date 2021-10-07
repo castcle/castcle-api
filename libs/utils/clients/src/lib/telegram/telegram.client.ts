@@ -39,13 +39,14 @@ export class TelegramClient {
    * @returns {boolean} valid token (true /false)
    */
   async verifyUserToken({ hash, ...data }: TelegramUserInfo) {
+    this.logger.log('Hash Token');
     const secret = createHash('sha256').update(Environment.tg_token).digest();
-
     const checkString = Object.keys(data)
       .sort()
       .map((x) => `${x}=${data[x]}`)
       .join('\n');
     const hmac = createHmac('sha256', secret).update(checkString).digest('hex');
+    this.logger.log('Compare Token');
     return hmac === hash;
   }
 }
