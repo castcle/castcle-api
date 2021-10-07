@@ -20,9 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
+import { TelegramUserInfo } from './telegram.message';
 
 @Injectable()
 export class TelegramClient {
@@ -31,32 +33,19 @@ export class TelegramClient {
     CastLoggerOptions
   );
 
-  constructor() {}
-
   /**
    * Validate user token
-   * @param {string} accessToken access token from facebook
-   * @param {string} userToken authorize user token
-   * @returns {FacebookTokenData} token detail
+   * @param {TelegramUserInfo} telegramUserInfo
+   * @returns {boolean} valid token (true /false)
    */
-  async verifyUserToken(accessToken: string, userToken: string) {
-    // crypto.createHash('sha256').update(pwd).digest('hex');
-    const secret = createHash('sha256').update(TOKEN).digest();
+  async verifyUserToken({ hash, ...data }: TelegramUserInfo) {
+    const secret = createHash('sha256').update(Environment.tg_token).digest();
 
     const checkString = Object.keys(data)
       .sort()
-      .map((k) => `${k}=${data[k]}`)
+      .map((x) => `${x}=${data[x]}`)
       .join('\n');
     const hmac = createHmac('sha256', secret).update(checkString).digest('hex');
     return hmac === hash;
-    // const parameter = `access_token=${accessToken}&input_token=${userToken}`;
-    // const url = `${this.verifyTokenUrl}${parameter}`;
-    // this.logger.log('verify user token');
-
-    // return lastValueFrom(
-    //   this.httpService
-    //     .get<{ data: FacebookTokenData }>(url)
-    //     .pipe(map(({ data }) => data.data))
-    // );
   }
 }

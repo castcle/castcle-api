@@ -96,5 +96,6 @@ export const Environment = {
   http_time_out: process.env.HTTP_TIME_OUT as unknown as number,
   fb_host: process.env.FB_HOST,
   fb_client_id: process.env.FB_CLIENT_ID,
-  fb_client_secret: process.env.FB_CLIENT_SECRET
+  fb_client_secret: process.env.FB_CLIENT_SECRET,
+  tg_token: process.env.TG_TOKEN
 };

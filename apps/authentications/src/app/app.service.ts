@@ -29,13 +29,15 @@ import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   FacebookAccessToken,
   FacebookClient,
-  FacebookUserInfo
+  FacebookUserInfo,
+  TelegramClient,
+  TelegramUserInfo
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
-import { SocialConnect, TokenResponse } from './dtos/dto';
+import { SocialConnect, SocialConnectInfo, TokenResponse } from './dtos/dto';
 /*
  * TODO: !!!
  */
@@ -54,7 +56,8 @@ export class AppService {
   constructor(
     private authService: AuthenticationService,
     private fbClient: FacebookClient,
-    private download: Downloader
+    private download: Downloader,
+    private telegramService: TelegramClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -127,16 +130,13 @@ export class AppService {
         });
 
         this.logger.log('signup by Social');
-        const accountActivation = await this.authService.signupBySocial(
-          currentAccount,
-          {
-            displayName: social.name,
-            socialId: social.socialId,
-            provider: social.provider,
-            avatar: avatar.uri,
-            socialToken: social.socialToken
-          }
-        );
+        await this.authService.signupBySocial(currentAccount, {
+          displayName: social.name,
+          socialId: social.socialId,
+          provider: social.provider,
+          avatar: avatar.uri,
+          socialToken: social.socialToken
+        });
       } else {
         await this.authService.createAccountAuthenId(
           currentAccount,
@@ -198,5 +198,31 @@ export class AppService {
     }
 
     return user;
+  }
+
+  async telegramConnect(payload: SocialConnectInfo, language: string) {
+    if (
+      !payload.id ||
+      !payload.first_name ||
+      !payload.last_name ||
+      !payload.username ||
+      !payload.photo_url ||
+      !payload.auth_date ||
+      !payload.hash
+    ) {
+      this.logger.error(`payload data missing.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
+    const message: TelegramUserInfo = {
+      id: payload.id,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      username: payload.username,
+      photo_url: payload.photo_url,
+      auth_date: payload.auth_date,
+      hash: payload.hash
+    };
+    return await this.telegramService.verifyUserToken(message);
   }
 }
