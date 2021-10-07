@@ -25,7 +25,7 @@ import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
-import { Downloader, Image } from '@castcle-api/utils/aws';
+import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
   FacebookAccessToken,
   FacebookClient,
@@ -61,6 +61,9 @@ export class AppService {
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
+
+  _uploadImage = (base64: string, options?: UploadOptions) =>
+    Image.upload(base64, options);
 
   getData(): { message: string } {
     return { message: 'Welcome to authentications!' };
@@ -125,7 +128,8 @@ export class AppService {
         const img = await this.download.getImageFromUrl(social.profileImage);
 
         this.logger.log('upload avatar to s3');
-        const avatar = await Image.upload(img, {
+
+        const avatar = await this._uploadImage(img, {
           filename: `avatar-${credential.account._id}`
         });
 

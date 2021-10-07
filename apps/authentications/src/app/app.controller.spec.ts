@@ -29,7 +29,7 @@ import {
   AccountAuthenIdType,
   CredentialDocument
 } from '@castcle-api/database/schemas';
-import { Downloader } from '@castcle-api/utils/aws';
+import { Downloader, Image } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -88,8 +88,14 @@ describe('AppController', () => {
         DownloaderProvider
       ]
     }).compile();
+
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
+    jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
+      console.log('---mock uri--image');
+      const mockImage = new Image('mockuri');
+      return mockImage;
+    });
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
@@ -544,6 +550,7 @@ describe('AppController', () => {
         '109364223',
         AccountAuthenIdType.Facebook
       );
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
