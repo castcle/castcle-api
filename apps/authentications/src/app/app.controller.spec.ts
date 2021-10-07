@@ -88,8 +88,14 @@ describe('AppController', () => {
         DownloaderProvider
       ]
     }).compile();
+
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
+    jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
+      console.log('---mock uri--image');
+      const mockImage = new Image('mockuri');
+      return mockImage;
+    });
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
@@ -518,10 +524,6 @@ describe('AppController', () => {
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo007';
     beforeAll(async () => {
-      jest.mock('@castcle-api/utils/aws');
-      const mockImage = jest.fn().mockReturnValue(new Image('mockuri'));
-      Image.upload = mockImage;
-
       guestResult = await appController.guestLogin(
         { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
@@ -641,10 +643,6 @@ describe('AppController', () => {
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo009';
     beforeAll(async () => {
-      jest.mock('@castcle-api/utils/aws');
-      const mockImage = jest.fn().mockReturnValue(new Image('mockuri'));
-      Image.upload = mockImage;
-
       guestResult = await appController.guestLogin(
         { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
         { deviceUUID: deviceUUID }

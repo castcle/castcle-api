@@ -37,8 +37,7 @@ export class Image {
         : 'testCloudKey',
       cloudFrontPrivateKey
     );
-    console.log('hostt');
-    console.log(env.assets_host);
+
     return signer.getSignedUrl({
       url: `${
         env.assets_host ? env.assets_host : 'https://assets-dev.castcle.com'
