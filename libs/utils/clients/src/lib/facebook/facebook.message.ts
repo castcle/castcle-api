@@ -21,40 +21,39 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
-
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
-
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
+export interface FacebookUserInfo {
+  id: string;
+  first_name: string;
+  last_name: string;
+  picture: {
+    data: {
+      height: number;
+      is_silhouette: boolean;
+      url: string;
+      width: number;
+    };
+  };
+  email: string;
+  name: string;
 }
 
-@Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
+export interface FacebookAccessToken {
+  access_token: string;
+  token_type: string;
+}
 
-  @Prop({ required: true })
+export interface FacebookTokenData {
+  app_id: string;
   type: string;
-
-  @Prop()
-  socialId: string;
-
-  @Prop()
-  socialToken: string;
+  application: string;
+  data_access_expires_at: number;
+  error: {
+    code: number;
+    message: string;
+    subcode: number;
+  };
+  expires_at: number;
+  is_valid: boolean;
+  scopes: string[];
+  user_id: string;
 }
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

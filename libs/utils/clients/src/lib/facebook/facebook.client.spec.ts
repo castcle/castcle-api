@@ -21,40 +21,23 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
+import { HttpModule } from '@nestjs/axios';
+import { Test, TestingModule } from '@nestjs/testing';
+import { FacebookClient } from './facebook.client';
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
+describe('FacebookClient', () => {
+  let service: FacebookClient;
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
-}
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [FacebookClient],
+      imports: [HttpModule]
+    }).compile();
 
-@Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
+    service = module.get<FacebookClient>(FacebookClient);
+  });
 
-  @Prop({ required: true })
-  type: string;
-
-  @Prop()
-  socialId: string;
-
-  @Prop()
-  socialToken: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);
+  it('FacebookClient - should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});

@@ -20,16 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Module } from '@nestjs/common';
+import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { Module } from '@nestjs/common';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
-import { CaslModule } from '@castcle-api/casl';
-
 @Module({
-  imports: [DatabaseModule, CaslModule],
+  imports: [DatabaseModule, CaslModule, UtilsClientsModule, UtilsAwsModule],
   controllers: [AuthenticationController, HealthyController],
   providers: [AppService]
 })
