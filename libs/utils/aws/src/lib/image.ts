@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment as env } from '@castcle-api/environments';
 import * as AWS from 'aws-sdk';
 import * as Configs from '../config';
-import { Environment as env } from '@castcle-api/environments';
 import { Uploader, UploadOptions } from './uploader';
 
 export class Image {
@@ -37,6 +37,7 @@ export class Image {
         : 'testCloudKey',
       cloudFrontPrivateKey
     );
+
     return signer.getSignedUrl({
       url: `${
         env.assets_host ? env.assets_host : 'https://assets-dev.castcle.com'

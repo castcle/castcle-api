@@ -117,7 +117,8 @@ export const postContentSave = async (
       payload: doc as Content
     });
     const result = await newRevison.save();
-    //f content not publish go remove all content
+    //change all embed content from recast/quotecast
+
     if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
       //if this is quote cast
     }

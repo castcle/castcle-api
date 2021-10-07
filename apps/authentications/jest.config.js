@@ -34,5 +34,6 @@ module.exports = {
     '^.+\\.[tj]s$': 'ts-jest'
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/authentications'
+  coverageDirectory: '../../coverage/apps/authentications',
+  collectCoverage: true
 };

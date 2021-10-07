@@ -20,33 +20,36 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Model } from 'mongoose';
-import { Inject, Injectable } from '@nestjs/common';
+import { CastcleName } from '@castcle-api/utils';
+import { Image } from '@castcle-api/utils/aws';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument, AccountSchema } from '../schemas/account.schema';
+import * as mongoose from 'mongoose';
+import { Model } from 'mongoose';
+import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
+import { EntityVisibility } from '../dtos/common.dto';
+import {
+  AccessTokenPayload,
+  EmailVerifyToken,
+  PageInfoPayload,
+  RefreshTokenPayload,
+  UserAccessTokenPayload
+} from '../dtos/token.dto';
+import { AccountDocument } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
   AccountActivationModel
 } from '../schemas/accountActivation.schema';
-import { UserDocument, UserType } from '../schemas/user.schema';
-import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
-import * as mongoose from 'mongoose';
-import { CreateCredentialDto, CreateAccountDto } from '../dtos/account.dto';
+import {
+  AccountAuthenIdDocument,
+  AccountAuthenIdType
+} from '../schemas/accountAuthenId.schema';
 import {
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';
-import { CastcleName, Token } from '@castcle-api/utils';
-import {
-  AccessTokenPayload,
-  RefreshTokenPayload,
-  EmailVerifyToken,
-  MemberAccessTokenPayload,
-  UserAccessTokenPayload,
-  PageInfoPayload
-} from '../dtos/token.dto';
-import { EntityVisibility } from '../dtos/common.dto';
-import { Image } from '@castcle-api/utils/aws';
+import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
+import { UserDocument, UserType } from '../schemas/user.schema';
 
 export interface AccountRequirements {
   header: {
@@ -64,6 +67,14 @@ export interface SignupRequirements {
   displayId: string;
 }
 
+export interface SignupSocialRequirements {
+  displayName: string;
+  socialId: string;
+  provider: AccountAuthenIdType;
+  avatar: string;
+  socialToken: string;
+}
+
 @Injectable()
 export class AuthenticationService {
   constructor(
@@ -75,7 +86,9 @@ export class AuthenticationService {
     @InjectModel('User')
     public _userModel: Model<UserDocument>,
     @InjectModel('Otp')
-    public _otpModel: OtpModel
+    public _otpModel: OtpModel,
+    @InjectModel('AccountAuthenId')
+    public _accountAuthenId: Model<AccountAuthenIdDocument>
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -88,6 +101,20 @@ export class AuthenticationService {
 
   getCredentialFromAccessToken = (accessToken: string) =>
     this._credentialModel.findOne({ accessToken: accessToken }).exec();
+
+  /**
+   * get account document from social id and social type
+   * @param {string} socialUserId social user id
+   * @param {AccountAuthenIdType} provider enum social type
+   * @returns {AccountAuthenIdDocument}
+   */
+  getAccountAuthenIdFromSocialId = (
+    socialUserId: string,
+    provider: AccountAuthenIdType
+  ) =>
+    this._accountAuthenId
+      .findOne({ socialId: socialUserId, type: provider })
+      .exec();
 
   async createAccount(accountRequirements: AccountRequirements) {
     const newAccount = new this._accountModel({
@@ -210,6 +237,12 @@ export class AuthenticationService {
       .findOne({
         displayId: { $regex: new RegExp('^' + id.toLowerCase(), 'i') }
       })
+      .exec();
+  };
+
+  getUserFromAccountId = (credential: CredentialDocument) => {
+    return this._userModel
+      .find({ ownerAccount: credential.account._id })
       .exec();
   };
 
@@ -384,6 +417,7 @@ export class AuthenticationService {
           visibility: EntityVisibility.Publish
         })
         .exec();
+      console.debug('mainUser', user);
       const payload = {
         id: credential.account._id,
         role: 'member',
@@ -394,11 +428,13 @@ export class AuthenticationService {
         verified: user.verified,
         email: credential.account.email
       } as UserAccessTokenPayload;
+      console.debug('payloadBefore', payload);
       //get SignUrl for avartar
       if (user.profile && user.profile.images && user.profile.images.avatar) {
         const avartar = new Image(user.profile.images.avatar);
         payload.avatar = avartar.toSignUrl();
       }
+      console.debug('payloadAfter1', payload);
       //get Pages
       const pages = await this._userModel
         .find({
@@ -407,18 +443,84 @@ export class AuthenticationService {
           visibility: EntityVisibility.Publish
         })
         .exec();
-      payload.pages = pages.map(
-        (page) =>
-          ({
-            id: page._id,
-            avatar: new Image(page.profile.images.avatar).toSignUrl(),
-            castcleId: page.displayName,
-            displayName: page.displayName,
-            role: 'admin',
-            verified: page.verified
-          } as PageInfoPayload)
-      );
+      console.debug(pages);
+      //TODO !!! has to change the default avartar
+      payload.pages = pages
+        ? pages.map(
+            (page) =>
+              ({
+                id: page._id,
+                avatar:
+                  page.profile &&
+                  page.profile.images &&
+                  page.profile.images.avatar
+                    ? new Image(page.profile.images.avatar).toSignUrl()
+                    : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+                castcleId: page.displayId,
+                displayName: page.displayName,
+                role: 'admin',
+                verified: page.verified
+              } as PageInfoPayload)
+          )
+        : [];
+      console.debug('payloadAfter2', payload);
       return payload;
     }
+  }
+
+  /**
+   * create new account from social
+   * @param {AccountDocument} account
+   * @param {SignupSocialRequirements} requirements
+   * @returns {AccountAuthenIdDocument}
+   */
+  async signupBySocial(
+    account: AccountDocument,
+    requirements: SignupSocialRequirements
+  ) {
+    account.isGuest = false;
+    await account.save();
+
+    const user = new this._userModel({
+      ownerAccount: account._id,
+      displayId: requirements.socialId,
+      displayName: requirements.displayName,
+      type: UserType.People,
+      profile: {
+        images: {
+          avatar: requirements.avatar
+        }
+      }
+    });
+    await user.save();
+    return this.createAccountAuthenId(
+      account,
+      requirements.provider,
+      requirements.socialId,
+      requirements.socialToken
+    );
+  }
+
+  /**
+   * create new account from social
+   * @param {AccountDocument} account
+   * @param {AccountAuthenIdType} provider
+   * @param {string} socialUserId
+   * @param {string} socialUserToken
+   * @returns {AccountAuthenIdDocument}
+   */
+  createAccountAuthenId(
+    account: AccountDocument,
+    provider: AccountAuthenIdType,
+    socialUserId: string,
+    socialUserToken: string
+  ) {
+    const accountActivation = new this._accountAuthenId({
+      account: account._id,
+      type: provider,
+      socialId: socialUserId,
+      socialToken: socialUserToken
+    });
+    return accountActivation.save();
   }
 }

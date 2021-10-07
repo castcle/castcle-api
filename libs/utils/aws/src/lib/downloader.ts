@@ -20,41 +20,26 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
+import { lastValueFrom, map } from 'rxjs';
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
+@Injectable()
+export class Downloader {
+  constructor(private httpService: HttpService) {}
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
-
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
+  /**
+   * Download images from url to binary base64
+   * @param {string} url image url
+   * @returns {string} binary base64
+   */
+  getImageFromUrl(url: string) {
+    return lastValueFrom(
+      this.httpService
+        .get(url, {
+          responseType: 'arraybuffer'
+        })
+        .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
+    );
+  }
 }
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-
-  @Prop()
-  socialId: string;
-
-  @Prop()
-  socialToken: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);

@@ -20,20 +20,26 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
 import {
-  MongooseForFeatures,
-  MongooseAsyncFeatures
+  AuthenticationService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures
 } from '@castcle-api/database';
+import {
+  AccountAuthenIdType,
+  CredentialDocument
+} from '@castcle-api/database/schemas';
+import { Downloader, Image } from '@castcle-api/utils/aws';
+import { FacebookClient } from '@castcle-api/utils/clients';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { AuthenticationService } from '@castcle-api/database';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { TokenResponse } from './dtos/dto';
-import { CredentialDocument } from '@castcle-api/database/schemas';
+import { DownloaderMock, FacebookClientMock } from './social.client.mock';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -57,18 +63,41 @@ describe('AppController', () => {
   let appController: AuthenticationController;
   let service: AuthenticationService;
   let appService: AppService;
+
   beforeAll(async () => {
+    const FacebookClientProvider = {
+      provide: FacebookClient,
+      useClass: FacebookClientMock
+    };
+    const DownloaderProvider = {
+      provide: Downloader,
+      useClass: DownloaderMock
+    };
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        HttpModule
       ],
       controllers: [AuthenticationController],
-      providers: [AppService, AuthenticationService]
+      providers: [
+        AppService,
+        AuthenticationService,
+        FacebookClientProvider,
+        DownloaderProvider
+      ]
     }).compile();
+
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
+    appController = app.get<AuthenticationController>(AuthenticationController);
+
+    jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
+      console.log('---mock uri--image');
+      const mockImage = new Image('');
+      return mockImage;
+    });
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
@@ -79,9 +108,6 @@ describe('AppController', () => {
 
   describe('getData', () => {
     it('should return "Welcome to authentications!"', () => {
-      appController = app.get<AuthenticationController>(
-        AuthenticationController
-      );
       expect(appController.getData()).toEqual(
         'Welcome to authentications!10-11-81'
       );
@@ -489,6 +515,243 @@ describe('AppController', () => {
         await service.getAccountActivationFromCredential(credentialGuest);
       expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);
       expect(postAccountActivationToken.revocationDate).toBeDefined();
+    });
+  });
+
+  describe('loginWithSocial', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo007';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const result = await appController.loginWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: '109364223'
+          }
+        }
+      );
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        '109364223',
+        AccountAuthenIdType.Facebook
+      );
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual('109364223');
+    });
+
+    it('should return Exception when invalid user token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: 'test_empty'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+
+    it('should return Exception when get exception user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: 'exception'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+
+    it('should return Exception when get empty authen token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+  });
+
+  describe('connectWithSocial', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo009';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const tokens = await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: 'test123',
+            displayName: 'abc',
+            email: 'test@castcle.com',
+            password: '2@HelloWorld'
+          }
+        }
+      );
+
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        '10936456',
+        AccountAuthenIdType.Facebook
+      );
+      await appController.connectWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: '10936456'
+          }
+        }
+      );
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        '10936456',
+        AccountAuthenIdType.Facebook
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual('10936456');
+    });
+
+    it('should return Exception when invalid user token', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: 'test_empty'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+
+    it('should return Exception get exception user data', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Facebook,
+            payload: {
+              authToken: 'exception'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
     });
   });
 });

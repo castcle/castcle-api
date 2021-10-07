@@ -47,7 +47,8 @@ import {
   ContentResponse,
   ContentType,
   QuotePayload,
-  RecastPayload
+  RecastPayload,
+  ShortPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
 import {
@@ -120,54 +121,32 @@ export class ContentService {
   deleteContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
     content.visibility = EntityVisibility.Deleted;
-    if (
-      content.type === ContentType.Quote ||
-      content.type === ContentType.Recast
-    ) {
-      const sourceContent = await this._contentModel
-        .findById((content.payload as RecastPayload).source)
+    //rmeove enagement
+    if (content.isRecast || content.isQuote) {
+      const engagement = await this._engagementModel
+        .findOne({ itemId: content._id })
         .exec();
-      const engagementType =
-        content.type === ContentType.Quote
-          ? EngagementType.Quote
-          : EngagementType.Recast;
-      const incEngagment: { [key: string]: number } = {};
-      incEngagment[`engagements.${engagementType}.count`] = -1;
-      //use update to byPass save hook to prevent recursive and revision api
-      const updateResult = await this._contentModel
-        .updateOne(
-          { _id: sourceContent._id },
-          {
-            $inc: incEngagment
-          }
-        )
-        .exec();
-      //if update not success return false
-      console.log(updateResult);
+      await engagement.remove();
     }
     return content.save();
   };
 
   /**
    * update aggregator of recast/quote and get content status back to publish
-   * @param {streieng} id of content
+   * @param {string} id of content
    * @returns {ContentDocument | null}
    */
   recoverContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
     if (content.visibility !== EntityVisibility.Publish) {
       //recover engagement quote/recast
-      if (
-        content.type === ContentType.Quote ||
-        content.type === ContentType.Recast
-      ) {
+      if (content.isQuote || content.isRecast) {
         const sourceContent = await this._contentModel
-          .findById((content.payload as RecastPayload).source)
+          .findById(content.originalPost)
           .exec();
-        const engagementType =
-          content.type === ContentType.Quote
-            ? EngagementType.Quote
-            : EngagementType.Recast;
+        const engagementType = content.isQuote
+          ? EngagementType.Quote
+          : EngagementType.Recast;
         const incEngagment: { [key: string]: number } = {};
         incEngagment[`engagements.${engagementType}.count`] = 1;
         //use update to byPass save hook to prevent recursive and revision api
@@ -298,6 +277,44 @@ export class ContentService {
     return engagement.remove();
   };
 
+  getContentEngagement = async (
+    content: ContentDocument,
+    engagementType: EngagementType,
+    user: UserDocument
+  ) => {
+    const engagement = await this._engagementModel
+      .findOne({
+        user: user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id
+        },
+        type: engagementType,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+    return engagement;
+  };
+
+  getCommentEnagement = async (
+    comment: CommentDocument,
+    engagementType: EngagementType,
+    user: UserDocument
+  ) => {
+    const engagement = await this._engagementModel
+      .findOne({
+        user: user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id
+        },
+        type: engagementType,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+    return engagement;
+  };
+
   /**
    * get how many user like this content by populate user from engagement and filter it with user._id
    * @param {ContentDocument} content current content
@@ -351,6 +368,13 @@ export class ContentService {
     return author;
   };
 
+  /**
+   * Create a short content from other content
+   * @param {ContentDocument} content
+   * @param {UserDocument} user
+   * @param {string} message
+   * @returns {ContentDocument, EngagementDocument}
+   */
   quoteContentFromUser = async (
     content: ContentDocument,
     user: UserDocument,
@@ -358,17 +382,23 @@ export class ContentService {
   ) => {
     const author = this._getAuthorFromUser(user);
     const sourceContentId =
+      content.isRecast || content.isQuote
+        ? content.originalPost._id
+        : content._id;
+    /*const sourceContentId =
       content.type === ContentType.Recast || content.type === ContentType.Quote
         ? (content.payload as RecastPayload).source
-        : content._id;
+        : content._id;*/
     const newContent = {
       author: author,
       payload: {
-        source: sourceContentId,
         message: message
-      } as QuotePayload,
+      } as ShortPayload,
       revisionCount: 0,
-      type: ContentType.Quote
+      type: ContentType.Short,
+      isQuote: true,
+      originalPost:
+        content.isQuote || content.isRecast ? content.originalPost : content
     } as Content;
     const quoteContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
@@ -378,27 +408,41 @@ export class ContentService {
         $ref: 'content',
         $id: sourceContentId
       },
+      itemId: quoteContent._id,
       visibility: EntityVisibility.Publish
     }).save();
     return { quoteContent, engagement };
   };
 
+  /**
+   * Recast a content
+   * @param {ContentDocument} content
+   * @param {UserDocument} user
+   * @returns {ContentDocument, EngagementDocument}
+   */
   recastContentFromUser = async (
     content: ContentDocument,
     user: UserDocument
   ) => {
     const author = this._getAuthorFromUser(user);
     const sourceContentId =
-      content.type === ContentType.Recast || content.type === ContentType.Quote
-        ? (content.payload as RecastPayload).source
+      content.isRecast || content.isQuote
+        ? content.originalPost._id
         : content._id;
+    /*const sourceContentId =
+      content.is === ContentType.Recast || content.type === ContentType.Quote
+        ? (content.payload as RecastPayload).source
+        : content._id;*/
     const newContent = {
       author: author,
-      payload: {
-        source: sourceContentId
-      } as RecastPayload,
+      payload: {} as ShortPayload,
       revisionCount: 0,
-      type: ContentType.Recast
+      type: ContentType.Short,
+      originalPost:
+        content.isRecast || content.isQuote
+          ? content.originalPost._id
+          : content._id,
+      isRecast: true
     } as Content;
     const recastContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
@@ -408,6 +452,7 @@ export class ContentService {
         $ref: 'content',
         $id: sourceContentId
       },
+      itemId: recastContent._id,
       visibility: EntityVisibility.Publish
     }).save();
     return { recastContent, engagement };
@@ -452,32 +497,64 @@ export class ContentService {
    * @param {CommentDocument} replyComment
    * @returns {true}
    */
-  _updateCommentCounter = async (replyComment: CommentDocument) => {
-    const incrementComment =
-      replyComment.visibility === EntityVisibility.Publish ? 1 : -1;
-
+  _updateCommentCounter = async (
+    replyComment: CommentDocument,
+    commentByUserId?: any
+  ) => {
     if (replyComment.type === CommentType.Reply) {
-      await this._commentModel
-        .updateOne(
-          {
-            _id: replyComment.targetRef.$id
+      if (replyComment.visibility === EntityVisibility.Publish)
+        await new this._engagementModel({
+          type: EngagementType.Comment,
+          targetRef: {
+            $ref: 'comment',
+            $id: replyComment.targetRef.$id
               ? replyComment.targetRef.$id
               : replyComment.targetRef.oid
           },
-          { $inc: { 'engagements.comment.count': incrementComment } }
-        )
-        .exec();
+          visibility: EntityVisibility.Publish,
+          user: commentByUserId
+        }).save();
+      else {
+        const engagements = await this._engagementModel
+          .find({
+            type: EngagementType.Comment,
+            targetRef: {
+              $ref: 'comment',
+              $id: replyComment.targetRef.$id
+                ? replyComment.targetRef.$id
+                : replyComment.targetRef.oid
+            }
+          })
+          .exec();
+        await Promise.all(engagements.map((e) => e.remove()));
+      }
     } else if (replyComment.type === CommentType.Comment)
-      await this._contentModel
-        .updateOne(
-          {
-            _id: replyComment.targetRef.$id
+      if (replyComment.visibility === EntityVisibility.Publish)
+        await new this._engagementModel({
+          type: EngagementType.Comment,
+          targetRef: {
+            $ref: 'content',
+            $id: replyComment.targetRef.$id
               ? replyComment.targetRef.$id
               : replyComment.targetRef.oid
           },
-          { $inc: { 'engagements.comment.count': incrementComment } }
-        )
-        .exec();
+          visibility: EntityVisibility.Publish,
+          user: commentByUserId
+        }).save();
+      else {
+        const engagements = await this._engagementModel
+          .find({
+            type: EngagementType.Comment,
+            targetRef: {
+              $ref: 'content',
+              $id: replyComment.targetRef.$id
+                ? replyComment.targetRef.$id
+                : replyComment.targetRef.oid
+            }
+          })
+          .exec();
+        await Promise.all(engagements.map((e) => e.remove()));
+      }
     return true;
   };
 
@@ -504,7 +581,7 @@ export class ContentService {
     } as CommentDto);
 
     const comment = await newComment.save();
-    await this._updateCommentCounter(comment);
+    await this._updateCommentCounter(comment, author._id);
     return comment;
   };
 
@@ -530,7 +607,7 @@ export class ContentService {
       type: CommentType.Reply
     } as CommentDto);
     const comment = await newComment.save();
-    await this._updateCommentCounter(comment);
+    await this._updateCommentCounter(comment, author._id);
     return comment;
   };
 
@@ -596,7 +673,7 @@ export class ContentService {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.visibility = EntityVisibility.Deleted;
     const result = comment.save();
-    await this._updateCommentCounter(comment);
+    this._updateCommentCounter(comment);
     return result;
   };
 
@@ -659,5 +736,63 @@ export class ContentService {
   getCommentById = async (commentId: string) =>
     this._commentModel
       .findOne({ _id: commentId, visibility: EntityVisibility.Publish })
+      .exec();
+
+  /**
+   * Get all engagement that this user engage to content (like, cast, recast, quote)
+   * @param {ContentDocument} content
+   * @param {UserDocument} user
+   * @returns {EngagementDocument[]}
+   */
+  getAllEngagementFromContentAndUser = async (
+    content: ContentDocument,
+    user: UserDocument
+  ) =>
+    this._engagementModel
+      .find({
+        targetRef: { $ref: 'content', $id: content._id },
+        user: user._id
+      })
+      .exec();
+
+  /**
+   * Get all engagement that this user engage to contents (like, cast, recast, quote)
+   * @param {ContentDocument[]} contents
+   * @param {UserDocument} user
+   * @returns {EngagementDocument[]}
+   */
+  getAllEngagementFromContentsAndUser = async (
+    contents: ContentDocument[],
+    user: UserDocument
+  ) => {
+    const contentIds = contents.map((c) => c._id);
+    return this._engagementModel
+      .find({
+        targetRef: {
+          $ref: 'content',
+          $id: {
+            $in: contentIds
+          }
+        },
+        user: user._id
+      })
+      .exec();
+  };
+
+  /**
+   * Get all engagement that this user engage to comment (like, cast, recast, quote)
+   * @param {CommentDocument} comment
+   * @param {UserDocument} user
+   * @returns  {EngagementDocument[]}
+   */
+  getAllEngagementFromCommentAndUser = async (
+    comment: CommentDocument,
+    user: UserDocument
+  ) =>
+    this._engagementModel
+      .find({
+        targetRef: { $ref: 'comment', $id: comment._id },
+        user: user._id
+      })
       .exec();
 }

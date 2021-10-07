@@ -367,8 +367,10 @@ describe('ContentService', () => {
         engagementC = resultC.engagement;
       });
       it('should create new content type as recast', () => {
-        expect(contentB.type).toEqual(ContentType.Recast);
-        expect(contentC.type).toEqual(ContentType.Recast);
+        expect(contentB.isRecast).toEqual(true);
+        expect(contentC.isRecast).toEqual(true);
+        expect(contentB.originalPost).toBeDefined();
+        expect(contentC.originalPost).toBeDefined();
       });
       it('should update engagement recast at original content', async () => {
         const postContentA = await service.getContentFromId(contentA._id);
