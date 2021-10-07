@@ -20,3 +20,38 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import {
+  NotificationMessage,
+  TopicName,
+  UserMessage
+} from '@castcle-api/utils/queue';
+import { UserService } from '@castcle-api/database';
+import { Process, Processor } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { Job } from 'bull';
+import { CastcleQueueAction } from '@castcle-api/database/dtos';
+@Injectable()
+@Processor(TopicName.Users)
+export class UserConsumer {
+  constructor(private userService: UserService) {}
+
+  private readonly logger = new CastLogger(
+    UserConsumer.name,
+    CastLoggerOptions
+  );
+
+  @Process()
+  readOperationJob(job: Job<{ user: UserMessage }>) {
+    try {
+      this.logger.log(`consume message '${JSON.stringify(job.data.user)}}' `);
+      //this.userService.deactiveQueue();
+      if (job.data.user.action === CastcleQueueAction.Deleting)
+        this.userService.deactiveBackground(job.data.user.id);
+      this.logger.log(`deleting user ${job.data.user.id}`);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+}

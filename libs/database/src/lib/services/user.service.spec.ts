@@ -23,24 +23,39 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { BullModule } from '@nestjs/bull';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
+import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
 import { PageDto, UpdateUserDto } from '../dtos/user.dto';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos';
+import {
+  ContentType,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  ShortPayload
+} from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   Pagination
 } from '../dtos/common.dto';
-import { ContentDocument } from '../schemas';
+import { CommentDocument, ContentDocument } from '../schemas';
 
+const fakeProcessor = jest.fn();
+const fakeBull = BullModule.registerQueue({
+  name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
   options: MongooseModuleOptions = { useFindAndModify: false }
@@ -63,16 +78,28 @@ const closeInMongodConnection = async () => {
 describe('User Service', () => {
   let service: UserService;
   let authService: AuthenticationService;
+  let contentService: ContentService;
 
   console.log('test in real db = ', env.db_test_in_db);
   const importModules = env.db_test_in_db
     ? [
         MongooseModule.forRoot(env.db_uri, env.db_options),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
+        fakeBull
       ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [UserService, AuthenticationService, ContentService];
+    : [
+        rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        fakeBull
+      ];
+  const providers = [
+    UserService,
+    AuthenticationService,
+    ContentService,
+    UserProducer
+  ];
   let result: {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
@@ -84,6 +111,7 @@ describe('User Service', () => {
     }).compile();
     service = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
+    contentService = module.get<ContentService>(ContentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -422,6 +450,284 @@ describe('User Service', () => {
       });
       it('should set account of user to publish', () => {
         expect(postAccountA.visibility).toEqual(EntityVisibility.Publish);
+      });
+    });
+  });
+  describe('Deactivated', () => {
+    let userA: UserDocument;
+    let userB: UserDocument;
+    let accountB: AccountDocument;
+    let userNotDelete: UserDocument;
+    const contents: ContentDocument[] = [];
+    const contentsB: ContentDocument[] = [];
+    const fixContents: ContentDocument[] = [];
+    const userInfo = {
+      accountRequirement: {
+        device: 'iphone',
+        deviceUUID: 'iphone1234',
+        header: {
+          platform: 'iOs'
+        },
+        languagesPreferences: ['th', 'th']
+      },
+      signupRequirement: {
+        displayId: 'npop2',
+        displayName: 'npop2',
+        email: 'sompop.kulapalanont@gmail.com',
+        password: '2@HelloWorld'
+      },
+      pages: [
+        {
+          avatar: 'http:/placehold.it/200x200',
+          castcleId: 'testC2345',
+          cover: 'http:/placehold.it/200x200',
+          displayName: 'hello12345'
+        } as PageDto
+      ]
+    };
+    const userOverAllInfo = {
+      accountRequirement: {
+        device: 'iphone',
+        deviceUUID: 'iphone1234',
+        header: {
+          platform: 'iOs'
+        },
+        languagesPreferences: ['th', 'th']
+      },
+      signupRequirement: {
+        displayId: 'npop7',
+        displayName: 'npop7',
+        email: 'sompop7.kulapalanont@gmail.com',
+        password: '2@HelloWorld'
+      },
+      pages: [
+        {
+          avatar: 'http:/placehold.it/200x200',
+          castcleId: 'testC2347',
+          cover: 'http:/placehold.it/200x200',
+          displayName: 'hello12347'
+        } as PageDto
+      ]
+    };
+    const userNotDeleteInfo = {
+      accountRequirement: {
+        device: 'iphone',
+        deviceUUID: 'iphone1234',
+        header: {
+          platform: 'iOs'
+        },
+        languagesPreferences: ['th', 'th']
+      },
+      signupRequirement: {
+        displayId: 'npop3',
+        displayName: 'npop3',
+        email: 'sompop3.kulapalanont@gmail.com',
+        password: '2@HelloWorld'
+      },
+      pages: [
+        {
+          avatar: 'http:/placehold.it/200x200',
+          castcleId: 'testYoC2345',
+          cover: 'http:/placehold.it/200x200',
+          displayName: 'hello12345'
+        } as PageDto
+      ]
+    };
+    let testLikeComment: CommentDocument;
+
+    beforeAll(async () => {
+      const result = await authService.createAccount(
+        userInfo.accountRequirement
+      );
+      const accountActiation = await authService.signupByEmail(
+        result.accountDocument,
+        userInfo.signupRequirement
+      );
+      await authService.verifyAccount(accountActiation);
+      userA = await service.getUserFromCredential(result.credentialDocument);
+      const result2 = await authService.createAccount(
+        userNotDeleteInfo.accountRequirement
+      );
+      const accountActiation2 = await authService.signupByEmail(
+        result2.accountDocument,
+        userNotDeleteInfo.signupRequirement
+      );
+      await authService.verifyAccount(accountActiation2);
+      userNotDelete = await service.getUserFromCredential(
+        result2.credentialDocument
+      );
+      //let userA follower UserNotDelete
+      await service.follow(userA, userNotDelete);
+
+      //overall
+      const result3 = await authService.createAccount(
+        userOverAllInfo.accountRequirement
+      );
+      const accountActivation3 = await authService.signupByEmail(
+        result3.accountDocument,
+        userOverAllInfo.signupRequirement
+      );
+      await authService.verifyAccount(accountActivation3);
+      accountB = result3.accountDocument;
+      userB = await service.getUserFromCredential(result3.credentialDocument);
+      await service.follow(userB, userNotDelete);
+
+      contents[0] = await contentService.createContentFromUser(userA, {
+        type: ContentType.Short,
+        payload: {
+          message: 'this is short1'
+        } as ShortPayload
+      });
+      contents[1] = await contentService.createContentFromUser(userA, {
+        type: ContentType.Short,
+        payload: {
+          message: 'this is short2'
+        } as ShortPayload
+      });
+      //b
+      contentsB[0] = await contentService.createContentFromUser(userB, {
+        type: ContentType.Short,
+        payload: {
+          message: 'this is short1'
+        } as ShortPayload
+      });
+      contentsB[1] = await contentService.createContentFromUser(userB, {
+        type: ContentType.Short,
+        payload: {
+          message: 'this is short2'
+        } as ShortPayload
+      });
+
+      fixContents[0] = await contentService.createContentFromUser(
+        userNotDelete,
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'this is short1'
+          } as ShortPayload
+        }
+      );
+
+      fixContents[1] = await contentService.createContentFromUser(
+        userNotDelete,
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'this is short2'
+          } as ShortPayload
+        }
+      );
+
+      testLikeComment = await contentService.createCommentForContent(
+        userNotDelete,
+        fixContents[0],
+        { message: 'testLikeComment' }
+      );
+      await contentService.createCommentForContent(userA, fixContents[0], {
+        message: 'test Comment'
+      });
+      await contentService.createCommentForContent(userB, fixContents[0], {
+        message: 'test Comment'
+      });
+
+      await contentService.likeContent(fixContents[0], userA);
+      await contentService.likeContent(fixContents[1], userA);
+      //B
+      await contentService.likeContent(fixContents[0], userB);
+      await contentService.likeContent(fixContents[1], userB);
+      await contentService.likeComment(userA, testLikeComment);
+      await contentService.likeComment(userB, testLikeComment);
+    });
+    describe('_removeAllContentFromUser()', () => {
+      it('should flag all content from user to deleted', async () => {
+        //service._removeAllContentFromUser()
+        const preContents = await contentService.getContentsFromUser(userA);
+        expect(preContents.total).toEqual(contents.length);
+        await service._removeAllContentFromUser(userA);
+        const postContents = await contentService.getContentsFromUser(userA);
+        expect(postContents.total).toEqual(0);
+      });
+      // /it('should update the recast counter from original content', async () => {});
+    });
+    describe('_removeAllEngagements()', () => {
+      it('should update like amount of contents', async () => {
+        const preContent = await contentService.getContentFromId(
+          fixContents[0]._id
+        );
+        const contentPayload = preContent.toContentPayload();
+        const preComment = await contentService.getCommentById(
+          testLikeComment._id
+        );
+        expect(contentPayload.liked.count).toEqual(2);
+        expect(
+          (await preComment.toCommentPayload(contentService._commentModel)).like
+            .count
+        ).toEqual(2);
+        await service._removeAllEngagements(userA);
+        const postContent = await contentService.getContentFromId(
+          fixContents[0]._id
+        );
+        const postContentPayload = postContent.toContentPayload();
+        expect(postContentPayload.liked.count).toEqual(1);
+        const postComment = await contentService.getCommentById(
+          testLikeComment._id
+        );
+        expect(
+          (await postComment.toCommentPayload(contentService._commentModel))
+            .like.count
+        ).toEqual(1);
+      });
+    });
+    describe('_removeAllFollower()', () => {
+      it('should flag all content from user to deleted', async () => {
+        const preFollower = await service.getFollower(userNotDelete);
+        expect(preFollower.items.length).toEqual(2);
+        await service._removeAllFollower(userA);
+        const postFollower = await service.getFollower(userNotDelete);
+        expect(postFollower.items.length).toEqual(1);
+      });
+    });
+    describe('_removeAllCommentFromUser()', () => {
+      it('should flag all comment from user to hidden', async () => {
+        const comments = await contentService.getCommentsFromContent(
+          fixContents[0]
+        );
+        expect(comments.items.length).toEqual(3);
+        expect(comments.total).toEqual(3);
+        await service._removeAllCommentFromUser(userA);
+        const comments2 = await contentService.getCommentsFromContent(
+          fixContents[0]
+        );
+        expect(comments2.total).toEqual(2);
+        expect(comments2.items.length).toEqual(2);
+      });
+    });
+    describe('_deactiveAccount()', () => {
+      it('should use all remove functions above to completely deactivate account', async () => {
+        await service._deactiveAccount(accountB);
+        const postAccountB = await authService._accountModel
+          .findById(accountB._id)
+          .exec();
+        expect(postAccountB.visibility).toEqual(EntityVisibility.Deleted);
+        //remove all comment / follower and engagement
+        const comments2 = await contentService.getCommentsFromContent(
+          fixContents[0]
+        );
+        expect(comments2.total).toEqual(1);
+        const postFollower = await service.getFollower(userNotDelete);
+        expect(postFollower.items.length).toEqual(0);
+        const postContent = await contentService.getContentFromId(
+          fixContents[0]._id
+        );
+        const postContentPayload = postContent.toContentPayload();
+        expect(postContentPayload.liked.count).toEqual(0);
+        const postComment = await contentService.getCommentById(
+          testLikeComment._id
+        );
+        expect(
+          (await postComment.toCommentPayload(contentService._commentModel))
+            .like.count
+        ).toEqual(0);
       });
     });
   });

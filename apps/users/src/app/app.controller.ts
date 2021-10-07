@@ -215,12 +215,28 @@ export class UserController {
   @UseInterceptors(ContentsInterceptor)
   @Get('me/contents')
   async getMyContents(
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('type', ContentTypePipe)
+    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const contents = await this.contentService.getContentsFromUser(user);
+      const contents = await this.contentService.getContentsFromUser(user, {
+        limit: limitOption,
+        sortBy: sortByOption,
+        page: pageOption,
+        type: contentTypeOption
+      });
       return {
         payload: contents.items.map((item) => item.toContentPayload()),
         pagination: contents.pagination

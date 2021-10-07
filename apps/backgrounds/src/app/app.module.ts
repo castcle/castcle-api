@@ -24,11 +24,14 @@ import { Environment } from '@castcle-api/environments';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
+import { DatabaseModule } from '@castcle-api/database';
 import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
+import { UserConsumer } from './consumers/user.consumer';
 @Module({
   imports: [
+    DatabaseModule,
     UtilsQueueModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
@@ -41,6 +44,6 @@ import { NotificationConsumer } from './consumers/notification.consumer';
     })
   ],
   controllers: [BackgroundController],
-  providers: [AppService, NotificationConsumer]
+  providers: [AppService, NotificationConsumer, UserConsumer]
 })
 export class BackgroundModule {}

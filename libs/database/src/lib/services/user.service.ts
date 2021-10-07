@@ -44,7 +44,7 @@ import {
   Pagination
 } from '../dtos/common.dto';
 import { ContentService } from './content.service';
-import { EngagementDocument } from '../schemas/engagement.schema';
+import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
 
 @Injectable()
 export class UserService {
@@ -56,7 +56,8 @@ export class UserService {
     public _userModel: UserModel,
     @InjectModel('Relationship')
     public _relationshipModel: Model<RelationshipDocument>,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private userProducer: UserProducer
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
@@ -192,8 +193,9 @@ export class UserService {
   ) => {
     console.log('-----getFollower----');
 
-    const filter: { followedUser: any; isFollowPage?: boolean } = {
-      followedUser: user._id
+    const filter: any = {
+      followedUser: user._id,
+      visibility: EntityVisibility.Publish
     };
     console.log('filter', filter);
     if (queryOption.type)
@@ -228,7 +230,10 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: { user: any; isFollowPage?: boolean } = { user: user._id };
+    const filter: { user: any; isFollowPage?: boolean; visibility?: any } = {
+      user: user._id,
+      visibility: EntityVisibility.Publish
+    };
     if (queryOption.type)
       filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
     let query = this._relationshipModel
@@ -267,58 +272,22 @@ export class UserService {
       await Promise.all(promiseDeactivatePages);
       //all content from page of user has to be delete
     }
-    //TODO !!! will move this logic to queue
-    /*
-    //all content form user has to be delete
-    //TODO !!! this should move to cron or something to do at background and add pagination
-    const contents = await this.contentService._contentModel
-      .find({ 'author.id': user._id })
-      .exec();
-    const promiseRemoveContents: Promise<ContentDocument>[] = contents.map(
-      (contentItem) => this.contentService.deleteContentFromId(contentItem._id)
-    );
-    await Promise.all(promiseRemoveContents);
-
-    //remove all engagements (like) Aggregator that this user do (quote/requote agg) already remove with deleteContentFromId()
-    //TODO !!! need to improve performance by bypass the engagement save hook and use updateMany instead
-    // but need to find a way to get all engagement contents to be more effective
-    const engagements = await this.contentService._engagementModel
-      .find({ user: user._id, visibility: EntityVisibility.Publish })
-      .exec();
-    const promiseHideEngagements = engagements.map((engagement) => {
-      engagement.visibility = EntityVisibility.Hidden;
-      return engagement.save();
-    });
-    await Promise.all(promiseHideEngagements);
-    //update follower / followee aggregator
-    const relationships = await this._relationshipModel
-      .find({ user: user._id })
-      .populate('followedUser')
-      .exec();
-    //TODO !!! need to improve performance
-    const promiseUpdateFollower = relationships.map((r) =>
-      this._userModel
-        .updateOne(r._id, {
-          $inc: {
-            followerCount: -1
-          }
-        })
-        .exec()
-    );
-    await Promise.all(promiseUpdateFollower);
-    */
-    //change status to delete
     user.visibility = EntityVisibility.Deleted;
     const userResult = user.save();
     //deactive userAccount
-    if (user.type === UserType.People)
+    if (user.type === UserType.People) {
       await this._accountModel.updateOne(
         { _id: user.ownerAccount },
         {
           visibility: EntityVisibility.Deleted,
-          queueAction: CastcleQueueAction.Delete
+          queueAction: CastcleQueueAction.Deleting
         }
       );
+      this.userProducer.sendMessage({
+        id: user.ownerAccount,
+        action: CastcleQueueAction.Deleting
+      } as UserMessage);
+    }
     return userResult;
   };
 
@@ -345,6 +314,21 @@ export class UserService {
     return Promise.all(promiseRemoveContents);
   };
 
+  _removeAllCommentFromUser = async (user: UserDocument) => {
+    const comments = await this.contentService._commentModel
+      .find({ 'author._id': user._id })
+      .exec();
+    console.log('allcomment from user', comments);
+    return Promise.all(
+      comments.map(async (comment) => {
+        comment.visibility = EntityVisibility.Hidden;
+        const result = await comment.save();
+        console.log('resultRemoveComment', result);
+        return this.contentService._updateCommentCounter(result);
+      })
+    );
+  };
+
   /**
    * update engagements flag of this user to hidden this should invoke enagement.post('save') to update like counter
    * @param {UserDocument} user
@@ -354,49 +338,76 @@ export class UserService {
     const engagements = await this.contentService._engagementModel
       .find({ user: user._id, visibility: EntityVisibility.Publish })
       .exec();
-    const promiseHideEngagements = engagements.map((engagement) => {
+    const promiseHideEngagements = engagements.map(async (engagement) => {
       engagement.visibility = EntityVisibility.Hidden;
       return engagement.save();
     });
     return Promise.all(promiseHideEngagements);
   };
 
+  /**
+   * Update all follower account count to 0
+   * @param user
+   */
   _removeAllFollower = async (user: UserDocument) => {
     const relationships = await this._relationshipModel
       .find({ user: user._id })
-      .populate('followedUser')
       .exec();
+    console.log('relationships', relationships);
     //make all relationship hidden
-    await this._relationshipModel
+    return await this._relationshipModel
       .updateMany({ user: user._id }, { visibility: EntityVisibility.Hidden })
       .exec();
-    //TODO !!! need to improve performance
-    const promiseUpdateFollower = relationships.map((r) =>
-      this._userModel
-        .updateOne(r._id, {
-          $inc: {
-            followerCount: -1
-          }
-        })
-        .exec()
-    );
-    await Promise.all(promiseUpdateFollower);
   };
 
-  deactiveQueue = async () => {
-    //get all account that is in the delete queue
-    const accounts = await this._accountModel
-      .find({ queueAction: CastcleQueueAction.Delete })
-      .exec();
-    accounts.map((account) =>
-      this._getAllUserFromAccount(account).then((users) =>
-        users.map((user) => {
-          this._removeAllContentFromUser(user);
-          this._removeAllEngagements(user);
-          this._removeAllFollower(user);
+  /**
+   * get all user form account and removeAll content, engagement and followers
+   * @param account
+   */
+  _deactiveAccount = async (account: AccountDocument) => {
+    const deactiveUsersResult = await Promise.all(
+      await this._getAllUserFromAccount(account).then((users) =>
+        users.map(async (user) => {
+          await this._removeAllContentFromUser(user);
+          await this._removeAllEngagements(user);
+          await this._removeAllFollower(user);
+          await this._removeAllCommentFromUser(user);
+          return user;
         })
       )
     );
+    //update queueAction to deleted
+    await this._accountModel
+      .updateOne(
+        { _id: account._id },
+        {
+          queueAction: CastcleQueueAction.Deleted,
+          visibility: EntityVisibility.Deleted
+        }
+      )
+      .exec();
+  };
+
+  /**
+   * Deactivate one account by id
+   * @param id
+   */
+  deactiveBackground = async (accountId: any) => {
+    const account = await this._accountModel.findById(accountId).exec();
+    await this._deactiveAccount(account);
+  };
+
+  /**
+   * Deactvate all account that has been flag as Deleting
+   */
+  deactiveQueue = async () => {
+    //get all account that is in the delete queue
+    const accounts = await this._accountModel
+      .find({ queueAction: CastcleQueueAction.Deleting })
+      .exec();
+    accounts.forEach(async (account) => {
+      await this._deactiveAccount(account);
+    });
   };
 
   reactive = async (user: UserDocument) => {

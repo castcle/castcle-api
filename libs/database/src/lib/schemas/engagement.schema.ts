@@ -49,6 +49,9 @@ export class Engagement extends CastcleBase {
 
   @Prop({ required: true })
   type: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId })
+  itemId?: any; // for recast /quote
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
@@ -63,11 +66,6 @@ export const EngagementSchemaFactory = (
       (doc as EngagementDocument).visibility === EntityVisibility.Publish
         ? 1
         : -1;
-    console.log(
-      'inc like ',
-      (doc as EngagementDocument).targetRef.$ref,
-      incEngagment
-    );
     if (
       (doc as EngagementDocument).targetRef.$ref &&
       (doc as EngagementDocument).targetRef.$ref === 'content'
@@ -84,10 +82,33 @@ export const EngagementSchemaFactory = (
       (doc as EngagementDocument).targetRef.$ref &&
       (doc as EngagementDocument).targetRef.$ref === 'comment'
     ) {
-      await commentModel.updateOne(
-        { _id: (doc as EngagementDocument).targetRef.$id },
-        { $inc: incEngagment }
-      );
+      console.log('updateComment', (doc as EngagementDocument).targetRef.$id);
+      await commentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.$id },
+          { $inc: incEngagment }
+        )
+        .exec();
+    } else if (
+      doc.targetRef.namespace &&
+      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
+    ) {
+      if (doc.targetRef.namespace === 'content')
+        await contentModel
+          .updateOne(
+            { _id: (doc as EngagementDocument).targetRef.oid },
+            {
+              $inc: incEngagment
+            }
+          )
+          .exec();
+      if (doc.targetRef.namespace === 'comment')
+        await commentModel
+          .updateOne(
+            { _id: (doc as EngagementDocument).targetRef.oid },
+            { $inc: incEngagment }
+          )
+          .exec();
     }
     next();
   });
@@ -95,29 +116,33 @@ export const EngagementSchemaFactory = (
   EngagementSchema.post('remove', async (doc, next) => {
     const incEngagment: { [key: string]: number } = {};
     incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
-    const content = await contentModel
-      .findById((doc as EngagementDocument).targetRef.oid)
-      .exec();
-    const result = await contentModel
-      .updateOne(
-        { _id: (doc as EngagementDocument).targetRef.oid },
-        {
-          $inc: incEngagment
-        }
-      )
-      .exec();
-    const comment = await commentModel
-      .findById((doc as EngagementDocument).targetRef.oid)
-      .exec();
-    const result2 = await commentModel
-      .updateOne(
-        { _id: (doc as EngagementDocument).targetRef.oid },
-        {
-          $inc: incEngagment
-        }
-      )
-      .exec();
-    console.log(result);
+    if ((doc as EngagementDocument).targetRef.namespace === 'content') {
+      const content = await contentModel
+        .findById((doc as EngagementDocument).targetRef.oid)
+        .exec();
+      const result = await contentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.oid },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+      console.log(result);
+    } else {
+      const comment = await commentModel
+        .findById((doc as EngagementDocument).targetRef.oid)
+        .exec();
+      const result2 = await commentModel
+        .updateOne(
+          { _id: (doc as EngagementDocument).targetRef.oid },
+          {
+            $inc: incEngagment
+          }
+        )
+        .exec();
+    }
+
     next();
   });
   return EngagementSchema;
