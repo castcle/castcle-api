@@ -20,60 +20,60 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CommonDate } from '@castcle-api/commonDate';
+import { AuthenticationService } from '@castcle-api/database';
+import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+import { Configs } from '@castcle-api/environments';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Host } from '@castcle-api/utils';
+import { FacebookClient } from '@castcle-api/utils/clients';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  CredentialInterceptor,
+  CredentialRequest,
+  HeadersRequest,
+  TokenInterceptor,
+  TokenRequest
+} from '@castcle-api/utils/interceptors';
 import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Post,
+  Req,
   UseInterceptors,
   Version,
   VERSION_NEUTRAL
 } from '@nestjs/common';
-import { AppService } from './app.service';
-import { CommonDate } from '@castcle-api/commonDate';
-import { Configs, Environment as env } from '@castcle-api/environments';
 import {
-  HeadersRequest,
-  HeadersInterceptor,
-  TokenInterceptor,
-  TokenRequest,
-  CredentialInterceptor,
-  CredentialRequest
-} from '@castcle-api/utils/interceptors';
-import { Request } from 'express';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { CastcleStatus, CastcleException } from '@castcle-api/utils/exception';
-import { AuthenticationService, UserService } from '@castcle-api/database';
-import { Host } from '@castcle-api/utils';
-import {
-  ApiResponse,
-  ApiOkResponse,
-  ApiHeader,
+  ApiBearerAuth,
   ApiBody,
-  ApiBearerAuth
+  ApiHeader,
+  ApiOkResponse,
+  ApiResponse
 } from '@nestjs/swagger';
+import { Request } from 'express';
+import { AppService } from './app.service';
 import {
-  GuestLoginDto,
-  TokenResponse,
+  ChangePasswordBody,
   CheckEmailExistDto,
-  CheckingResponse,
-  RefreshTokenResponse,
-  LoginDto,
-  RegisterByEmailDto,
   CheckIdExistDto,
+  CheckingResponse,
+  GuestLoginDto,
+  LoginDto,
+  RefreshTokenResponse,
+  RegisterByEmailDto,
+  SocialConnectDto,
   SuggestCastcleIdReponse,
+  TokenResponse,
   VerificationPasswordBody,
-  VerificationPasswordResponse,
-  ChangePasswordBody
+  VerificationPasswordResponse
 } from './dtos/dto';
 import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
-import { HttpCode } from '@nestjs/common';
-import { Req } from '@nestjs/common';
-import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -93,7 +93,8 @@ import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private fbClient: FacebookClient
   ) {}
   private readonly logger = new CastLogger(
     AuthenticationController.name,
@@ -608,5 +609,109 @@ export class AuthenticationController {
       return '';
     } else
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+  }
+
+  @ApiBearerAuth()
+  @ApiBody({
+    type: SocialConnectDto
+  })
+  @ApiOkResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('loginWithSocial')
+  @HttpCode(200)
+  async loginWithSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialConnectDto
+  ) {
+    let token: TokenResponse;
+    this.logger.log(`login with social: ${body.provider}`);
+    switch (body.provider) {
+      case AccountAuthenIdType.Facebook: {
+        const userFB = await this.appService.facebookConnect(
+          body.payload.authToken,
+          req.$language
+        );
+        if (userFB) {
+          this.logger.log(`social login`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: userFB.id,
+              email: userFB.email ? userFB.email : '',
+              name: userFB.name,
+              provider: AccountAuthenIdType.Facebook,
+              profileImage: userFB.picture.data.url,
+              socialToken: body.payload.authToken
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
+    }
+    return token;
+  }
+
+  @ApiBearerAuth()
+  @ApiBody({
+    type: SocialConnectDto
+  })
+  @ApiOkResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('connectWithSocial')
+  @HttpCode(200)
+  async connectWithSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialConnectDto
+  ) {
+    this.logger.log(`connect with social: ${body.provider}`);
+    const currentAccount = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    switch (body.provider) {
+      case AccountAuthenIdType.Facebook: {
+        const userFB = await this.appService.facebookConnect(
+          body.payload.authToken,
+          req.$language
+        );
+
+        if (userFB) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userFB.id,
+              AccountAuthenIdType.Facebook
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Facebook,
+              userFB.id,
+              body.payload.authToken
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
+    }
   }
 }
