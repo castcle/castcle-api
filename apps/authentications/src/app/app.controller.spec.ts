@@ -91,9 +91,11 @@ describe('AppController', () => {
 
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
+    appController = app.get<AuthenticationController>(AuthenticationController);
+
     jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
-      const mockImage = new Image('mockuri');
+      const mockImage = new Image('');
       return mockImage;
     });
     jest
@@ -106,9 +108,6 @@ describe('AppController', () => {
 
   describe('getData', () => {
     it('should return "Welcome to authentications!"', () => {
-      appController = app.get<AuthenticationController>(
-        AuthenticationController
-      );
       expect(appController.getData()).toEqual(
         'Welcome to authentications!10-11-81'
       );
