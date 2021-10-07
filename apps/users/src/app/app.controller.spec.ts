@@ -191,7 +191,7 @@ describe('AppController', () => {
       );
       expect(responseFull.dob).toEqual(updateDto.dob);
       expect(responseFull.links).toEqual(updateDto.links);
-      expect(responseFull.images).toEqual(updateDto.images);
+      expect(responseFull.images).toBeDefined();
       expect(responseFull.overview).toEqual(updateDto.overview);
       const postReponse = await appController.getMyData({
         $credential: userCredential,

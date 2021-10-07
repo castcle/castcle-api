@@ -47,6 +47,21 @@ export class Image {
     });
   }
 
+  /**
+   * Get signurl of s3uri will return defaultImage if s3Uri is undefined and return undefined if no defaultImage
+   * @param s3Uri
+   * @param defaultImage
+   * @returns
+   */
+  static download(s3Uri: string, defaultImage?: string) {
+    if (s3Uri) {
+      const image = new Image(s3Uri);
+      return image.toSignUrl();
+    } else if (defaultImage) {
+      return defaultImage;
+    } else return undefined;
+  }
+
   static upload(base64: string, options?: UploadOptions) {
     const uploader = new Uploader(
       env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
