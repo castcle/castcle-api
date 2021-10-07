@@ -212,6 +212,7 @@ export class AppService {
    */
   async telegramConnect(payload: SocialConnectInfo, language: string) {
     if (
+      !payload ||
       !payload.id ||
       !payload.first_name ||
       !payload.last_name ||
@@ -221,7 +222,7 @@ export class AppService {
       !payload.hash
     ) {
       this.logger.error(`payload data missing.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
     }
 
     const message: TelegramUserInfo = {

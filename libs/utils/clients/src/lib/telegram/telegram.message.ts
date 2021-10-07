@@ -30,13 +30,3 @@ export interface TelegramUserInfo {
   auth_date: string;
   hash: string;
 }
-
-// const payload = {
-//     id: '424242424242',
-//     first_name: 'John',
-//     last_name: 'Doe',
-//     username: 'username',
-//     photo_url: 'https://t.me/i/userpic/320/username.jpg',
-//     auth_date: '1519400000',
-//     hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
-//   };

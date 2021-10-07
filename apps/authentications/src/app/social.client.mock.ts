@@ -94,7 +94,8 @@ export class DownloaderMock {
 
 export class TelegramClientMock {
   verifyUserToken(info: TelegramUserInfo) {
-    if (info.hash === '1') return true;
+    if (info.hash === '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505')
+      return true;
     else return false;
   }
 }

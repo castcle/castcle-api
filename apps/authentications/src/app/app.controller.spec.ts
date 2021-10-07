@@ -527,7 +527,7 @@ describe('AppController', () => {
     });
   });
 
-  describe('loginWithSocial', () => {
+  describe('loginWithSocial Facebook', () => {
     let guestResult: TokenResponse;
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo007';
@@ -646,7 +646,100 @@ describe('AppController', () => {
     });
   });
 
-  describe('connectWithSocial', () => {
+  describe('loginWithSocial Telegram', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo008';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone999', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const socialId = '424242424242';
+      const result = await appController.loginWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            id: socialId,
+            first_name: 'John',
+            last_name: 'Doe',
+            username: 'username',
+            photo_url: 'https://t.me/i/userpic/320/username.jpg',
+            auth_date: '1519400000',
+            hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
+          }
+        }
+      );
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Telegram
+      );
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual('424242424242');
+    });
+
+    it('should return Exception when invalid hash', async () => {
+      const socialId = '424242424242';
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Telegram,
+            payload: {
+              id: socialId,
+              first_name: 'John',
+              last_name: 'Doe',
+              username: 'username',
+              photo_url: 'https://t.me/i/userpic/320/username.jpg',
+              auth_date: '1519400000',
+              hash: '1'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Telegram,
+            payload: {
+              id: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('connectWithSocial Facebook', () => {
     let guestResult: TokenResponse;
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo009';
@@ -755,6 +848,118 @@ describe('AppController', () => {
             provider: AccountAuthenIdType.Facebook,
             payload: {
               authToken: 'exception'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('connectWithSocial Telegram', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo010';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone9999', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const socialId = '12345';
+      const tokens = await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: 'test1234',
+            displayName: 'abc',
+            email: 'test123@castcle.com',
+            password: '2@HelloWorld'
+          }
+        }
+      );
+
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Telegram
+      );
+      await appController.connectWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            id: socialId,
+            first_name: 'John',
+            last_name: 'Doe',
+            username: 'username',
+            photo_url: 'https://t.me/i/userpic/320/username.jpg',
+            auth_date: '1519400000',
+            hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
+          }
+        }
+      );
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Telegram
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual(socialId);
+    });
+
+    it('should return Exception when invalid hash', async () => {
+      const socialId = '12345';
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Telegram,
+            payload: {
+              id: socialId,
+              first_name: 'John',
+              last_name: 'Doe',
+              username: 'username',
+              photo_url: 'https://t.me/i/userpic/320/username.jpg',
+              auth_date: '1519400000',
+              hash: '1'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Telegram,
+            payload: {
+              id: ''
             }
           }
         )
