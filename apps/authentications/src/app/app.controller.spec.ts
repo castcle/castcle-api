@@ -29,7 +29,7 @@ import {
   AccountAuthenIdType,
   CredentialDocument
 } from '@castcle-api/database/schemas';
-import { Downloader } from '@castcle-api/utils/aws';
+import { Downloader, Image } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -518,6 +518,10 @@ describe('AppController', () => {
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo007';
     beforeAll(async () => {
+      jest.mock('@castcle-api/utils/aws');
+      const mockImage = jest.fn().mockReturnValue(new Image('mockuri'));
+      Image.upload = mockImage;
+
       guestResult = await appController.guestLogin(
         { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
@@ -544,6 +548,7 @@ describe('AppController', () => {
         '109364223',
         AccountAuthenIdType.Facebook
       );
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
@@ -636,6 +641,10 @@ describe('AppController', () => {
     let credentialGuest: CredentialDocument;
     const deviceUUID = 'sompo009';
     beforeAll(async () => {
+      jest.mock('@castcle-api/utils/aws');
+      const mockImage = jest.fn().mockReturnValue(new Image('mockuri'));
+      Image.upload = mockImage;
+
       guestResult = await appController.guestLogin(
         { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
         { deviceUUID: deviceUUID }
