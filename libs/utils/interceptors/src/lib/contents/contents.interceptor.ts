@@ -119,12 +119,6 @@ export class ContentInterceptor extends CredentialInterceptor {
         (body.payload as BlogPayload).photo.cover.url = cover_url;
       }
     }
-    return superResult.pipe(
-      map((data: ContentResponse) => {
-        console.log('from', data);
-        data.payload = transformContentPayload(data.payload);
-        return data;
-      })
-    );
+    return superResult;
   }
 }
