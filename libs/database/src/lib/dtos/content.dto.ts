@@ -156,7 +156,7 @@ export class ContentPayloadDto {
   type: ContentType.Short | ContentType.Blog | ContentType.Image;
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload | QuotePayload | RecastPayload;
+  payload: ShortPayload | BlogPayload | ImagePayload;
 
   @ApiProperty()
   feature: Feature;

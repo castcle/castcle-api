@@ -35,12 +35,6 @@ import { map } from 'rxjs';
 export class PageInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {
     const superResult = await super.intercept(context, next);
-    return superResult.pipe(
-      map((data: PageDto) => {
-        data.avatar = new Image(data.avatar).toSignUrl();
-        data.cover = new Image(data.cover).toSignUrl();
-        return data;
-      })
-    );
+    return superResult;
   }
 }
