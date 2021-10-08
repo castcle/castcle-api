@@ -267,7 +267,8 @@ export const UserSchemaFactory = (
       (this as UserDocument).verified = {
         email: false,
         mobile: false,
-        official: false
+        official: false,
+        social: false
       } as UserVerified;
     next();
   });
