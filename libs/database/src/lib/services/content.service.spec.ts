@@ -43,6 +43,7 @@ import { ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import { UserVerified } from '../schemas/user.schema';
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -196,6 +197,12 @@ describe('ContentService', () => {
       expect(content.type).toEqual(ContentType.Short);
       expect(content.author.id).toEqual(user._id);
       expect(content.revisionCount).toEqual(1);
+      expect(content.toContentPayload().author.verified).toEqual({
+        email: false,
+        mobile: false,
+        official: false,
+        social: false
+      } as UserVerified);
     });
   });
   describe('#updateContentFromId()', () => {

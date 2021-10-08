@@ -20,18 +20,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AccountDocument, Account } from './account.schema';
-import { ContentDocument, Content } from './content.schema';
-import { CommentDocument, Comment } from './comment.schema';
+import { Account, AccountDocument } from './account.schema';
 import {
+  AccountAuthenIdDocument,
+  AccountAuthenIdType
+} from './accountAuthenId.schema';
+import { Comment, CommentDocument } from './comment.schema';
+import { Content, ContentDocument } from './content.schema';
+import {
+  Credential,
   CredentialDocument,
-  CredentialModel,
-  Credential
+  CredentialModel
 } from './credential.schema';
-import { NotificationDocument } from './notification.schema';
-import { UserDocument, UserType, User } from './user.schema';
-import { LanguageDocument } from './language.schema';
 import { HashtagDocument } from './hashtag.schema';
+import { LanguageDocument } from './language.schema';
+import { NotificationDocument } from './notification.schema';
+import { User, UserDocument, UserType } from './user.schema';
 import { OtpDocument } from './otp.schema';
 export {
   CredentialDocument,
@@ -49,5 +53,7 @@ export {
   LanguageDocument,
   Credential,
   HashtagDocument,
+  AccountAuthenIdType,
+  AccountAuthenIdDocument,
   OtpDocument
 };

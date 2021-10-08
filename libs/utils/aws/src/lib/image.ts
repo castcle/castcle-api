@@ -20,15 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment as env } from '@castcle-api/environments';
 import * as AWS from 'aws-sdk';
 import * as Configs from '../config';
-import { Environment as env } from '@castcle-api/environments';
 import { Uploader, UploadOptions } from './uploader';
 
 export class Image {
   constructor(public uri: string, public order?: number) {}
 
   toSignUrl() {
+    //for pass no env test
+    if (!env.cloudfront_private_key) return this.uri;
     const buff = Buffer.from(env.cloudfront_private_key, 'base64');
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
@@ -37,12 +39,28 @@ export class Image {
         : 'testCloudKey',
       cloudFrontPrivateKey
     );
+
     return signer.getSignedUrl({
       url: `${
         env.assets_host ? env.assets_host : 'https://assets-dev.castcle.com'
       }/${this.uri}`,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
     });
+  }
+
+  /**
+   * Get signurl of s3uri will return defaultImage if s3Uri is undefined and return undefined if no defaultImage
+   * @param s3Uri
+   * @param defaultImage
+   * @returns
+   */
+  static download(s3Uri: string, defaultImage?: string) {
+    if (s3Uri) {
+      const image = new Image(s3Uri);
+      return image.toSignUrl();
+    } else if (defaultImage) {
+      return defaultImage;
+    } else return undefined;
   }
 
   static upload(base64: string, options?: UploadOptions) {

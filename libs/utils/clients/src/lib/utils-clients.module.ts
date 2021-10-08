@@ -20,41 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
+import { FacebookClient } from './facebook/facebook.client';
+import {
+  FacebookAccessToken,
+  FacebookTokenData,
+  FacebookUserInfo
+} from './facebook/facebook.message';
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
+@Module({
+  imports: [
+    HttpModule.register({
+      timeout: Environment.http_time_out
+    })
+  ],
+  controllers: [],
+  providers: [FacebookClient],
+  exports: [HttpModule, FacebookClient]
+})
+export class UtilsClientsModule {}
 
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
-
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
-}
-
-@Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-
-  @Prop()
-  socialId: string;
-
-  @Prop()
-  socialToken: string;
-}
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);
+export {
+  FacebookAccessToken,
+  FacebookTokenData,
+  FacebookClient,
+  FacebookUserInfo
+};

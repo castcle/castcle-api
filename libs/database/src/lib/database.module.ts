@@ -29,6 +29,7 @@ import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
 import { AccountSchemaFactory } from './schemas/account.schema';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
+import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
 import { CommentSchemaFactory } from './schemas/comment.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
@@ -58,7 +59,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Language', schema: LanguageSchema },
-  { name: 'Hashtag', schema: HashtagSchema }
+  { name: 'Hashtag', schema: HashtagSchema },
+  { name: 'AccountAuthenId', schema: AccountAuthenIdSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

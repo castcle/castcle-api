@@ -526,6 +526,31 @@
         }
       }
     },
+    "utils-clients": {
+      "root": "libs/utils/clients",
+      "sourceRoot": "libs/utils/clients/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "libs/utils/clients/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/utils/clients"
+          ],
+          "options": {
+            "jestConfig": "libs/utils/clients/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "utils-exception": {
       "root": "libs/utils/exception",
       "sourceRoot": "libs/utils/exception/src",
