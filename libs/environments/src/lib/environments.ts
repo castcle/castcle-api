@@ -97,5 +97,5 @@ export const Environment = {
   fb_host: process.env.FB_HOST,
   fb_client_id: process.env.FB_CLIENT_ID,
   fb_client_secret: process.env.FB_CLIENT_SECRET,
-  tg_token: process.env.TG_TOKEN
+  tg_bot_token: process.env.TG_BOT_TOKEN
 };

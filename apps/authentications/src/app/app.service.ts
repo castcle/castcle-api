@@ -211,13 +211,13 @@ export class AppService {
    * @returns {boolean}
    */
   async telegramConnect(payload: SocialConnectInfo, language: string) {
+    this.logger.log('Validate Data');
     if (
       !payload ||
       !payload.id ||
       !payload.first_name ||
       !payload.last_name ||
       !payload.username ||
-      !payload.photo_url ||
       !payload.auth_date ||
       !payload.hash
     ) {
@@ -230,10 +230,11 @@ export class AppService {
       first_name: payload.first_name,
       last_name: payload.last_name,
       username: payload.username,
-      photo_url: payload.photo_url,
+      photo_url: payload.photo_url ? payload.photo_url : '',
       auth_date: payload.auth_date,
       hash: payload.hash
     };
+    this.logger.log('Validate Hash');
     return await this.telegramService.verifyUserToken(message);
   }
 }

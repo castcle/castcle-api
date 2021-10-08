@@ -665,10 +665,12 @@ export class AuthenticationController {
             {
               socialId: body.payload.id,
               email: '',
-              name: body.payload.first_name,
+              name: `${body.payload.first_name} ${body.payload.last_name}`,
               provider: AccountAuthenIdType.Telegram,
-              profileImage: body.payload.photo_url,
-              socialToken: body.payload.authToken
+              profileImage: body.payload.photo_url
+                ? body.payload.photo_url
+                : '',
+              socialToken: body.payload.hash
             },
             req.$credential
           );
@@ -754,7 +756,7 @@ export class AuthenticationController {
               currentAccount,
               AccountAuthenIdType.Telegram,
               body.payload.id,
-              body.payload.authToken
+              body.payload.hash
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);
