@@ -50,6 +50,7 @@ import {
 } from '../schemas/credential.schema';
 import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
+import { TwilioService } from '@castcle-api/utils/twilio';
 
 export interface AccountRequirements {
   header: {
@@ -522,5 +523,16 @@ export class AuthenticationService {
       socialToken: socialUserToken
     });
     return accountActivation.save();
+  }
+
+  async forgotPasswordRequestOtp(
+    account: AccountDocument
+  ): Promise<OtpDocument> {
+    const otp = await this._otpModel.generate(
+      account._id,
+      OtpObjective.ForgotPassword
+    );
+    await TwilioService.requestOtp(account.email);
+    return otp;
   }
 }

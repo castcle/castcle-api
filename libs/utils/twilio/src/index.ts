@@ -21,29 +21,4 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/users',
-    '<rootDir>/apps/bases',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/utils/queue',
-    '<rootDir>/libs/utils/clients',
-    '<rootDir>/libs/utils/twilio'
-  ]
-};
+export * from './lib/utils-twilio.module';

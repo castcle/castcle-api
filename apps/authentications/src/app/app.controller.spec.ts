@@ -40,6 +40,7 @@ import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import { TokenResponse } from './dtos/dto';
 import { DownloaderMock, FacebookClientMock } from './social.client.mock';
+import { ExportContext } from 'twilio/lib/rest/bulkexports/v1/export';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -752,6 +753,38 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
+    });
+  });
+
+  describe('forgotPasswordRequestOTP', () => {
+    it('should get otp email after success', async () => {
+      const channel = 'email';
+      const email = 'sompop3.kulapalanont@gmail.com';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const result = await appController.forgotPasswordRequestOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      expect(result).not.toBeNull;
+      expect(result.refCode).toHaveLength(8);
     });
   });
 });
