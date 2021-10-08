@@ -54,38 +54,6 @@ export class ImageInterceptor extends CredentialInterceptor {
       req.body.images.cover = cover.uri;
     }
 
-    return superResult.pipe(
-      map((data: UserResponseDto) => {
-        console.log('from', data);
-        if (data.images && data.images.avatar)
-          data.images.avatar = new Image(data.images.avatar).toSignUrl();
-        if (data.images && data.images.cover)
-          data.images.cover = new Image(data.images.cover).toSignUrl();
-        return data;
-      })
-    );
-  }
-}
-
-@Injectable()
-export class FollowInterceptor extends CredentialInterceptor {
-  async intercept(context: ExecutionContext, next: CallHandler) {
-    const superResult = await super.intercept(context, next);
-    return superResult.pipe(
-      map((data: FollowResponse) => {
-        data.payload = data.payload.map((response) => {
-          if (response.images && response.images.avatar)
-            response.images.avatar = new Image(
-              response.images.avatar
-            ).toSignUrl();
-          if (response.images && response.images.cover)
-            response.images.cover = new Image(
-              response.images.cover
-            ).toSignUrl();
-          return response;
-        });
-        return data;
-      })
-    );
+    return superResult;
   }
 }

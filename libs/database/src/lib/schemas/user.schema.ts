@@ -30,6 +30,7 @@ import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
+import { Image } from '@castcle-api/utils/aws';
 
 export type UserDocument = User & IUser;
 
@@ -143,11 +144,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     images: {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
-          ? self.profile.images.avatar
-          : 'http://placehold.it/100x100', // TODO !!! need to check S3 about static url
+          ? Image.download(self.profile.images.avatar)
+          : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png', // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
-          ? self.profile.images.cover
+          ? Image.download(self.profile.images.cover)
           : 'http://placehold.it/200x200'
     },
     overview:
@@ -195,7 +196,7 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       (this as UserDocument).profile &&
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
-        ? (this as UserDocument).profile.images.avatar
+        ? Image.download((this as UserDocument).profile.images.avatar)
         : '',
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
@@ -266,7 +267,8 @@ export const UserSchemaFactory = (
       (this as UserDocument).verified = {
         email: false,
         mobile: false,
-        official: false
+        official: false,
+        social: false
       } as UserVerified;
     next();
   });

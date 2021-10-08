@@ -40,6 +40,7 @@ import { postContentSave, preContentSave } from '../hooks/content.save';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
 import { FeedItemDocument } from './feedItem.schema';
+import { Image } from '@castcle-api/utils/aws';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -95,6 +96,21 @@ interface IContent extends Document {
   toContentPayload(engagements?: EngagementDocument[]): ContentPayloadDto;
   toContent(): Content;
 }
+
+const signContentPayload = (payload: ContentPayloadDto) => {
+  if (payload.payload.photo && payload.payload.photo.contents) {
+    payload.payload.photo.contents.map((url) => {
+      url.url = Image.download(url.url);
+      return url;
+    });
+  }
+  if (payload.author && payload.author.avatar)
+    payload.author.avatar = Image.download(
+      payload.author.avatar,
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png'
+    );
+  return payload;
+};
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
 
@@ -183,7 +199,7 @@ export const ContentSchemaFactory = (
     //if it's recast or quotecast
     if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
       payload.originalPost = (this as ContentDocument).originalPost;
-    return payload;
+    return signContentPayload(payload);
   };
 
   ContentSchema.pre('save', async function (next) {

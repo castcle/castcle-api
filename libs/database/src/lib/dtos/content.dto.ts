@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { UserVerified } from '../schemas/user.schema';
 import { Pagination } from './common.dto';
 import { CastcleQueryOptions } from './common.dto';
 
@@ -143,7 +144,7 @@ export class Author {
   @ApiProperty()
   avatar: string | null;
   @ApiProperty()
-  verified: boolean;
+  verified: UserVerified;
   @ApiProperty()
   followed: boolean;
 }
@@ -156,7 +157,7 @@ export class ContentPayloadDto {
   type: ContentType.Short | ContentType.Blog | ContentType.Image;
 
   @ApiProperty()
-  payload: ShortPayload | BlogPayload | QuotePayload | RecastPayload;
+  payload: ShortPayload | BlogPayload | ImagePayload;
 
   @ApiProperty()
   feature: Feature;
