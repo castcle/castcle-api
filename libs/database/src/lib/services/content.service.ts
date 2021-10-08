@@ -363,7 +363,7 @@ export class ContentService {
       displayName: user.displayName,
       followed: false,
       type: user.type === UserType.Page ? UserType.Page : UserType.People,
-      verified: user.verified ? true : false
+      verified: user.verified
     };
     return author;
   };

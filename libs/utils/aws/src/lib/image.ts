@@ -29,7 +29,12 @@ export class Image {
   constructor(public uri: string, public order?: number) {}
 
   toSignUrl() {
-    const buff = Buffer.from(env.cloudfront_private_key, 'base64');
+    const buff = Buffer.from(
+      env.cloudfront_private_key
+        ? env.cloudfront_private_key
+        : 'testEnvKeyForTest',
+      'base64'
+    );
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
       env.cloudfront_access_key_id
@@ -44,6 +49,21 @@ export class Image {
       }/${this.uri}`,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
     });
+  }
+
+  /**
+   * Get signurl of s3uri will return defaultImage if s3Uri is undefined and return undefined if no defaultImage
+   * @param s3Uri
+   * @param defaultImage
+   * @returns
+   */
+  static download(s3Uri: string, defaultImage?: string) {
+    if (s3Uri) {
+      const image = new Image(s3Uri);
+      return image.toSignUrl();
+    } else if (defaultImage) {
+      return defaultImage;
+    } else return undefined;
   }
 
   static upload(base64: string, options?: UploadOptions) {

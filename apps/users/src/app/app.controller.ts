@@ -37,10 +37,7 @@ import {
   ContentService,
   AuthenticationService
 } from '@castcle-api/database';
-import {
-  ImageInterceptor,
-  FollowInterceptor
-} from './interceptors/image.interceptor';
+import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -441,8 +438,8 @@ export class UserController {
     enum: UserType,
     required: false
   })
-  @UseInterceptors(FollowInterceptor)
   @Get(':id/following')
+  @UseInterceptors(CredentialInterceptor)
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
