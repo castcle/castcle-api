@@ -86,6 +86,9 @@
     },
     "utils-queue": {
       "tags": []
+    },
+    "utils-twilio": {
+      "tags": []
     }
   }
 }

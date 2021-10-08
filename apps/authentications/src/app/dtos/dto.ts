@@ -148,3 +148,29 @@ export interface SocialConnect {
   profileImage: string;
   socialToken: string;
 }
+export class ForgotPasswordPayload {
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  countryCode: string;
+
+  @ApiProperty()
+  mobileNumber: string;
+}
+
+export class ForgotPasswordRequestOtpDto {
+  @ApiProperty()
+  channel: string;
+
+  @ApiProperty()
+  payload: ForgotPasswordPayload;
+}
+
+export class ForgotPasswordResponse {
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  expiresTime: string;
+}

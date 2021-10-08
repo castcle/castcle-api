@@ -36,6 +36,7 @@ import { HashtagDocument } from './hashtag.schema';
 import { LanguageDocument } from './language.schema';
 import { NotificationDocument } from './notification.schema';
 import { User, UserDocument, UserType } from './user.schema';
+import { OtpDocument } from './otp.schema';
 export {
   CredentialDocument,
   CredentialModel,
@@ -53,5 +54,6 @@ export {
   Credential,
   HashtagDocument,
   AccountAuthenIdType,
-  AccountAuthenIdDocument
+  AccountAuthenIdDocument,
+  OtpDocument
 };
