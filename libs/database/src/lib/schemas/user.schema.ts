@@ -148,7 +148,7 @@ const _covertToUserResponse = (self: User | UserDocument) => {
           : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png', // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
-          ? self.profile.images.cover
+          ? Image.download(self.profile.images.cover)
           : 'http://placehold.it/200x200'
     },
     overview:
