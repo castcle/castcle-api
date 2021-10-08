@@ -782,9 +782,9 @@ describe('AppController', () => {
           $token: guestResult.accessToken,
           $language: 'th'
         } as any
-        );
-        expect(result).not.toBeNull;
-        expect(result.refCode).toHaveLength(8);
-      });
+      );
+      expect(result).not.toBeNull;
+      expect(result.refCode).toHaveLength(8);
     });
+  });
 });
