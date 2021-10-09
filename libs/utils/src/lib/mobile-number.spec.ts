@@ -20,41 +20,19 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { MobileNumber } from './mobile-number';
 
-import { Environment } from '@castcle-api/environments';
-import * as Twilio from 'twilio';
-import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
-
-const env = {
-  twilioAccountSid: Environment.twilio_account_sid,
-  twilioAuthToken: Environment.twilio_auth_token,
-  twilioOtpSid: Environment.twilio_otp_sid
-};
-
-const client = Twilio(env.twilioAccountSid, env.twilioAuthToken);
-
-export enum EChannelType {
-  EMAIL = 'email',
-  MOBILE = 'sms'
-}
-
-const requestOtp = (receiver: string, channel: EChannelType) => {
-  client.verify
-    .services(env.twilioOtpSid)
-    .verifications.create({
-      to: receiver,
-      channel: channel
-    })
-    .then((verification) => {
-      if (verification.valid && verification.status === 'pending') {
-        return verification;
-      }
-    })
-    .catch((error) => {
-      throw new Error(error);
+describe('MobileNumber', () => {
+  describe('#combineMobileNumber()', () => {
+    it('should return combine mobile number', async () => {
+      const mobileNumber = await MobileNumber.combineMobileNumber("TH", "0804103300");
+      expect(mobileNumber).toBeDefined();
     });
-};
-
-// const verifyOtp = () => {};
-
-export const TwilioService = { requestOtp };
+  });
+  describe('#combineMobileNumber()', () => {
+    it('should return encrypt password', async () => {
+      const mobileNumber = await MobileNumber.getMobileNoWithCountyrCode("+66", "0804103300");
+      expect(mobileNumber).toBeDefined();
+    });
+  });
+});

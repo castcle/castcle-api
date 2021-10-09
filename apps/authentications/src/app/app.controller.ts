@@ -731,33 +731,38 @@ export class AuthenticationController {
     @Req() req: CredentialRequest
   ) {
     let account: AccountDocument = null;
+    let otp: OtpDocument = null;
     if (body.channel === 'email') {
       account = await this.authService.getAccountFromEmail(body.payload.email);
-      // } else if (body.channel === 'mobile') {
+      if (this.checkValidAccount(account, req)) {
+        otp = await this.authService.forgotPasswordRequestOtpByEmail(account);
+      }
+    } else if (body.channel === 'mobile') {
+      this.authService.forgotPasswordRequestByMobile(account);
     } else {
       throw new CastcleException(
         CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
         req.$language
       );
     }
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
+  }
+
+  checkValidAccount(account: AccountDocument, req: CredentialRequest): boolean {
     if (!account) {
       throw new CastcleException(
         CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
         req.$language
       );
     }
-    const otp: OtpDocument = await this.authService.forgotPasswordRequestOtp(
-      account
-    );
-    if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
-        refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
-      };
-
-      return response;
-    } else {
-      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
-    }
+    return true;
   }
 }

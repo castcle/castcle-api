@@ -21,40 +21,33 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import * as Twilio from 'twilio';
-import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import PhoneNumber from 'awesome-phonenumber';
 
-const env = {
-  twilioAccountSid: Environment.twilio_account_sid,
-  twilioAuthToken: Environment.twilio_auth_token,
-  twilioOtpSid: Environment.twilio_otp_sid
+const combineMobileNumber = async (
+  countryCode: string,
+  mobileNo: string
+): Promise<string> => {
+  const pn = await new PhoneNumber(mobileNo, countryCode);
+  if (pn.isValid && pn.isMobile) {
+    return pn.getNumber();
+  } else {
+    throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
+  }
 };
 
-const client = Twilio(env.twilioAccountSid, env.twilioAuthToken);
-
-export enum EChannelType {
-  EMAIL = 'email',
-  MOBILE = 'sms'
-}
-
-const requestOtp = (receiver: string, channel: EChannelType) => {
-  client.verify
-    .services(env.twilioOtpSid)
-    .verifications.create({
-      to: receiver,
-      channel: channel
-    })
-    .then((verification) => {
-      if (verification.valid && verification.status === 'pending') {
-        return verification;
-      }
-    })
-    .catch((error) => {
-      throw new Error(error);
-    });
+const getMobileNoWithCountyrCode = async (
+  countryCode: string,
+  mobileNo: string
+): Promise<string> => {
+  try {
+    const stringCountryCode = await PhoneNumber.getRegionCodeForCountryCode(
+      parseInt(countryCode.replace('+', ''))
+    );
+    return await combineMobileNumber(stringCountryCode, mobileNo);
+  } catch (e) {
+    throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
+  }
 };
 
-// const verifyOtp = () => {};
-
-export const TwilioService = { requestOtp };
+export const MobileNumber = { combineMobileNumber, getMobileNoWithCountyrCode };

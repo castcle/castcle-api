@@ -25,6 +25,7 @@ import { CastcleName } from './castcle-name';
 import { Host } from './host';
 import { Password } from './password';
 import { Token } from './token';
+import { MobileNumber } from './mobile-number';
 
 @Module({
   imports: [],
@@ -34,4 +35,4 @@ import { Token } from './token';
 })
 export class UtilsModule {}
 
-export { Token, Password, CastcleName, Host };
+export { Token, Password, CastcleName, Host, MobileNumber };

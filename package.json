@@ -64,6 +64,7 @@
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.0.4",
     "@nestjs/swagger": "^5.0.4",
+    "awesome-phonenumber": "^2.62.1",
     "aws-sdk": "^2.965.0",
     "bcryptjs": "^2.4.3",
     "bull": "^3.29.2",

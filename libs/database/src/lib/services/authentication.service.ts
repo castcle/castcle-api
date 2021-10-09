@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleName } from '@castcle-api/utils';
+import { CastcleName, MobileNumber } from '@castcle-api/utils';
 import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -50,7 +50,7 @@ import {
 } from '../schemas/credential.schema';
 import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
-import { TwilioService } from '@castcle-api/utils/twilio';
+import { EChannelType, TwilioService } from '@castcle-api/utils/twilio';
 
 export interface AccountRequirements {
   header: {
@@ -525,14 +525,27 @@ export class AuthenticationService {
     return accountActivation.save();
   }
 
-  async forgotPasswordRequestOtp(
+  async forgotPasswordRequestOtpByEmail(
     account: AccountDocument
   ): Promise<OtpDocument> {
     const otp = await this._otpModel.generate(
       account._id,
       OtpObjective.ForgotPassword
     );
-    await TwilioService.requestOtp(account.email);
+    await TwilioService.requestOtp(account.email, EChannelType.EMAIL);
     return otp;
+  }
+
+  async forgotPasswordRequestByMobile(account: AccountDocument) {
+    // const otp = await this._otpModel.generate(
+    //   account._id,
+    //   OtpObjective.ForgotPassword
+    // );
+    const combileMobileNo = await MobileNumber.getMobileNoWithCountyrCode(
+      account.mobile.countryCode,
+      account.mobile.number
+    );
+    await TwilioService.requestOtp(combileMobileNo, EChannelType.MOBILE);
+    // return otp;
   }
 }
