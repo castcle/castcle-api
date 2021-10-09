@@ -31,7 +31,8 @@ import {
   FacebookClient,
   FacebookUserInfo,
   TelegramClient,
-  TelegramUserInfo
+  TelegramUserInfo,
+  TwitterClient
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -57,7 +58,8 @@ export class AppService {
     private authService: AuthenticationService,
     private fbClient: FacebookClient,
     private download: Downloader,
-    private telegramService: TelegramClient
+    private telegramService: TelegramClient,
+    private twitterService: TwitterClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -236,5 +238,43 @@ export class AppService {
     };
     this.logger.log('Validate Hash');
     return await this.telegramService.verifyUserToken(message);
+  }
+
+  //   /**
+  //  * Connect Facebook API
+  //  * @param {string} accessToken access token from facebook
+  //  * @param {string} language en is default
+  //  * @returns {FacebookUserInfo}
+  //  */
+  async twitterConnect(authToken: string, language: string) {
+    // if (!authToken) {
+    //   this.logger.error(`token missing.`);
+    //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    // }
+
+    // this.logger.log(`get facebook access token.`);
+    // const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
+
+    // this.logger.log(`verify fcaebook user token.`);
+    // const tokenVerify = await this.fbClient.verifyUserToken(
+    //   fbToken.access_token,
+    //   authToken
+    // );
+
+    // if (!tokenVerify.is_valid) {
+    //   this.logger.error(`Use token expired.`);
+    //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    // }
+    // this.logger.log(`get fcaebook user data.`);
+    // let user: FacebookUserInfo;
+    // try {
+    //   user = await this.fbClient.getUserInfo(authToken);
+    // } catch (error) {
+    //   this.logger.error(`Can't get user data.`);
+    //   this.logger.error(error);
+    //   throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    // }
+    const result = await this.twitterService.requestToken();
+    return result;
   }
 }

@@ -87,15 +87,22 @@ export const Environment = {
   twitter_key: process.env.TWITTER_KEY,
   twitter_secret_key: process.env.TWITTER_SECRET_KEY,
   twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
+  twitter_host: process.env.TWITTER_HOST,
+  twitter_access_token: process.env.TWITTER_ACCESS_TOKEN,
+  twitter_token_secret: process.env.TWITTER_TOKEN_SECRET,
   // Otp
   otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
   otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
+  // Firebase
   firebase_project_id: process.env.FIREBASE_PROJECT_ID,
   firebase_client_email: process.env.FIREBASE_CLIENT_EMAIL,
   firebase_private_key: process.env.FIREBASE_PRIVATE_KEY,
+  // HTTP
   http_time_out: process.env.HTTP_TIME_OUT as unknown as number,
+  // Facebook
   fb_host: process.env.FB_HOST,
   fb_client_id: process.env.FB_CLIENT_ID,
   fb_client_secret: process.env.FB_CLIENT_SECRET,
+  // Telegram
   tg_bot_token: process.env.TG_BOT_TOKEN
 };

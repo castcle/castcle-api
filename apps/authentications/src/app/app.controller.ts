@@ -772,4 +772,18 @@ export class AuthenticationController {
       }
     }
   }
+
+  @ApiBody({
+    type: SocialConnectDto
+  })
+  @ApiOkResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @Post('test')
+  @HttpCode(200)
+  async test(@Req() req: CredentialRequest, @Body() body: SocialConnectDto) {
+    // this.logger.log(`connect with social: ${body.provider}`);
+    return this.appService.twitterConnect('', '');
+  }
 }

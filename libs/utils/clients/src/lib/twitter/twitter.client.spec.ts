@@ -20,37 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
+
 import { HttpModule } from '@nestjs/axios';
-import { Module } from '@nestjs/common';
-import { FacebookClient } from './facebook/facebook.client';
-import {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookUserInfo
-} from './facebook/facebook.message';
-import { TelegramClient } from './telegram/telegram.client';
-import { TelegramUserInfo } from './telegram/telegram.message';
-import { TwitterClient } from './twitter/twitter.client';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TwitterClient } from './twitter.client';
 
-@Module({
-  imports: [
-    HttpModule.register({
-      timeout: Environment.http_time_out
-    })
-  ],
-  controllers: [],
-  providers: [FacebookClient, TelegramClient, TwitterClient],
-  exports: [HttpModule, FacebookClient, TelegramClient, TwitterClient]
-})
-export class UtilsClientsModule {}
+describe('TwitterClient', () => {
+  let service: TwitterClient;
 
-export {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookClient,
-  FacebookUserInfo,
-  TelegramClient,
-  TelegramUserInfo,
-  TwitterClient
-};
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TwitterClient],
+      imports: [HttpModule]
+    }).compile();
+
+    service = module.get<TwitterClient>(TwitterClient);
+  });
+
+  it('TwitterClient - should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
