@@ -25,13 +25,19 @@ import { MobileNumber } from './mobile-number';
 describe('MobileNumber', () => {
   describe('#combineMobileNumber()', () => {
     it('should return combine mobile number', async () => {
-      const mobileNumber = await MobileNumber.combineMobileNumber("TH", "0804103300");
+      const mobileNumber = await MobileNumber.combineMobileNumber(
+        'TH',
+        '0804103300'
+      );
       expect(mobileNumber).toBeDefined();
     });
   });
   describe('#combineMobileNumber()', () => {
     it('should return encrypt password', async () => {
-      const mobileNumber = await MobileNumber.getMobileNoWithCountyrCode("+66", "0804103300");
+      const mobileNumber = await MobileNumber.getMobileNoWithCountyrCode(
+        '+66',
+        '0804103300'
+      );
       expect(mobileNumber).toBeDefined();
     });
   });
