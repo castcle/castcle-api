@@ -39,5 +39,6 @@ export const Configs = {
   },
   DefaultAvatar:
     'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-  DefaultCover: 'https://placehold.it/100x100'
+  DefaultCover:
+    'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
 };
