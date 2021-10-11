@@ -53,8 +53,7 @@ import {
 } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
-  CredentialRequest,
-  ContentsInterceptor
+  CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import {
   SortByPipe,
@@ -297,7 +296,7 @@ export class PageController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(ContentsInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,

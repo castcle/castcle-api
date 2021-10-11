@@ -58,6 +58,7 @@ import {
 } from '../dtos/common.dto';
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
+import { FeedItemDocument } from '../schemas/feedItem.schema';
 
 @Injectable()
 export class ContentService {
@@ -74,7 +75,9 @@ export class ContentService {
     @InjectModel('Engagement')
     public _engagementModel: Model<EngagementDocument>,
     @InjectModel('Comment')
-    public _commentModel: Model<CommentDocument>
+    public _commentModel: Model<CommentDocument>,
+    @InjectModel('FeedItem')
+    public _feedItemModel: Model<FeedItemDocument>
   ) {}
 
   /**

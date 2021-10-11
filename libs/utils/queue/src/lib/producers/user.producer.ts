@@ -36,7 +36,7 @@ export class UserProducer {
   constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
 
   /**
-   * send user message to queue
+   * send user message to queue !!! if action === Deactivate send account id instead of user id
    * @param {UserMessage} UserMessage user message
    * @returns {}
    */
