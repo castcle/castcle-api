@@ -20,35 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
-import { HttpModule } from '@nestjs/axios';
-import { Module } from '@nestjs/common';
-import { FacebookClient } from './facebook/facebook.client';
-import {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookUserInfo
-} from './facebook/facebook.message';
-import { TelegramClient } from './telegram/telegram.client';
-import { TelegramUserInfo } from './telegram/telegram.message';
 
-@Module({
-  imports: [
-    HttpModule.register({
-      timeout: Environment.http_time_out
-    })
-  ],
-  controllers: [],
-  providers: [FacebookClient, TelegramClient],
-  exports: [HttpModule, FacebookClient, TelegramClient]
-})
-export class UtilsClientsModule {}
-
-export {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookClient,
-  FacebookUserInfo,
-  TelegramClient,
-  TelegramUserInfo
-};
+export interface TelegramUserInfo {
+  id: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  photo_url: string;
+  auth_date: string;
+  hash: string;
+}
