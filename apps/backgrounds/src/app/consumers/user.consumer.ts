@@ -47,9 +47,13 @@ export class UserConsumer {
     try {
       this.logger.log(`consume message '${JSON.stringify(job.data.user)}}' `);
       //this.userService.deactiveQueue();
-      if (job.data.user.action === CastcleQueueAction.Deleting)
+      if (job.data.user.action === CastcleQueueAction.Deleting) {
         this.userService.deactiveBackground(job.data.user.id);
-      this.logger.log(`deleting user ${job.data.user.id}`);
+        this.logger.log(`deleting user ${job.data.user.id}`);
+      } else if (job.data.user.action === CastcleQueueAction.UpdateProfile) {
+        this.userService.updateUserInEmbedContentBackground(job.data.user.id);
+        this.logger.log(`Updating profile of user ${job.data.user.id}`);
+      }
     } catch (error) {
       this.logger.error(error);
     }

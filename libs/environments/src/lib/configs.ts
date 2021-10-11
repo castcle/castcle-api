@@ -36,5 +36,9 @@ export const Configs = {
       description: 'Expected language response',
       example: 'th'
     }
-  }
+  },
+  DefaultAvatar:
+    'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+  DefaultCover:
+    'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
 };

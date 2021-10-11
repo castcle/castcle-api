@@ -51,8 +51,7 @@ import {
 import {
   CredentialInterceptor,
   CredentialRequest,
-  ContentInterceptor,
-  ContentsInterceptor
+  ContentInterceptor
 } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
@@ -230,7 +229,7 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(ContentsInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Get()
   async getContents(
     @Req() req: CredentialRequest,

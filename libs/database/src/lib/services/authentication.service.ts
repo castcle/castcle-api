@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Configs } from '@castcle-api/environments';
 import { CastcleName } from '@castcle-api/utils';
 import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
@@ -455,7 +456,7 @@ export class AuthenticationService {
                   page.profile.images &&
                   page.profile.images.avatar
                     ? new Image(page.profile.images.avatar).toSignUrl()
-                    : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+                    : Configs.DefaultAvatar,
                 castcleId: page.displayId,
                 displayName: page.displayName,
                 role: 'admin',
