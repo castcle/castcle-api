@@ -21,34 +21,34 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { HttpModule } from '@nestjs/axios';
-import { Module } from '@nestjs/common';
-import { FacebookClient } from './facebook/facebook.client';
-import {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookUserInfo
-} from './facebook/facebook.message';
-import { TelegramClient } from './telegram/telegram.client';
-import { TelegramUserInfo } from './telegram/telegram.message';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Injectable } from '@nestjs/common';
+import { createHash, createHmac } from 'crypto';
+import { TelegramUserInfo } from './telegram.message';
 
-@Module({
-  imports: [
-    HttpModule.register({
-      timeout: Environment.http_time_out
-    })
-  ],
-  controllers: [],
-  providers: [FacebookClient, TelegramClient],
-  exports: [HttpModule, FacebookClient, TelegramClient]
-})
-export class UtilsClientsModule {}
+@Injectable()
+export class TelegramClient {
+  private readonly logger = new CastLogger(
+    TelegramClient.name,
+    CastLoggerOptions
+  );
 
-export {
-  FacebookAccessToken,
-  FacebookTokenData,
-  FacebookClient,
-  FacebookUserInfo,
-  TelegramClient,
-  TelegramUserInfo
-};
+  /**
+   * Validate user token
+   * @param {TelegramUserInfo} telegramUserInfo
+   * @returns {boolean} valid token (true /false)
+   */
+  async verifyUserToken({ hash, ...data }: TelegramUserInfo) {
+    this.logger.log('Hash Token');
+    const secret = createHash('sha256')
+      .update(Environment.tg_bot_token)
+      .digest();
+    const checkString = Object.keys(data)
+      .sort()
+      .map((x) => `${x}=${data[x]}`)
+      .join('\n');
+    const hmac = createHmac('sha256', secret).update(checkString).digest('hex');
+    this.logger.log('Compare Token');
+    return hmac === hash;
+  }
+}
