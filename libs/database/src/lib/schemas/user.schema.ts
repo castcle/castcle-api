@@ -32,6 +32,7 @@ import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
 import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 import { CommentDocument, ContentDocument } from '.';
 import { FeedItemDocument } from './feedItem.schema';
 
@@ -150,11 +151,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? Image.download(self.profile.images.avatar)
-          : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png', // TODO !!! need to check S3 about static url
+          : Configs.DefaultAvatar, // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
           ? Image.download(self.profile.images.cover)
-          : 'http://placehold.it/200x200'
+          : Configs.DefaultCover
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
@@ -172,7 +173,7 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     avatar:
       self.profile && self.profile.images && self.profile.images.avatar
         ? Image.download(self.profile.images.avatar)
-        : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+        : Configs.DefaultAvatar,
     castcleId: self.displayId,
     displayName: self.displayName,
     followed: false, //default of followed
@@ -302,7 +303,7 @@ export const UserSchemaFactory = (
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? Image.download(self.profile.images.avatar)
-          : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+          : Configs.DefaultAvatar,
       castcleId: self.displayId,
       displayName: self.displayName,
       followed: false, //default of followed
