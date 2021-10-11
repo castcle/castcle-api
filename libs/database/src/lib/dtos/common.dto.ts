@@ -64,5 +64,6 @@ export enum EntityVisibility {
 export enum CastcleQueueAction {
   Deleting = 'deleting',
   Deleted = 'deleted',
-  Restore = 'restore'
+  Restore = 'restore',
+  UpdateProfile = 'updateProfile'
 }
