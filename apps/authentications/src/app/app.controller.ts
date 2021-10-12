@@ -61,6 +61,7 @@ import {
   CheckingResponse,
   GuestLoginDto,
   LoginDto,
+  OauthTokenResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   SocialConnectDto,
@@ -773,17 +774,18 @@ export class AuthenticationController {
     }
   }
 
-  @ApiBody({
-    type: SocialConnectDto
-  })
+  @ApiBearerAuth()
   @ApiOkResponse({
     status: 200,
-    type: TokenResponse
+    type: OauthTokenResponse
   })
-  @Post('test')
+  @UseInterceptors(CredentialInterceptor)
+  @Get('requestTwitterToken')
   @HttpCode(200)
-  async test(@Req() req: CredentialRequest, @Body() body: SocialConnectDto) {
-    // this.logger.log(`connect with social: ${body.provider}`);
-    return this.appService.twitterConnect('', '');
+  async requestTwitterToken(@Req() req: CredentialRequest) {
+    const result = await this.appService.twitterRequestToken(req.$language);
+    const response = new OauthTokenResponse();
+    response.oauth_token = result.oauth_token;
+    return response;
   }
 }

@@ -150,3 +150,8 @@ export interface SocialConnect {
   profileImage: string;
   socialToken: string;
 }
+
+export class OauthTokenResponse {
+  @ApiProperty()
+  oauth_token: string;
+}

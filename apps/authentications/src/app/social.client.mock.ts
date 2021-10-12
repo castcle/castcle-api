@@ -99,3 +99,13 @@ export class TelegramClientMock {
     else return false;
   }
 }
+
+export class TwitterClientMock {
+  requestToken() {
+    return {
+      oauth_token: '9BC3-wAAAAABUZusAAABfHLxV60',
+      oauth_token_secret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+      oauth_callback_confirmed: 'true'
+    };
+  }
+}

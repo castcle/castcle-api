@@ -26,7 +26,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as Crypto from 'crypto';
 import * as OAuth1a from 'oauth-1.0a';
-import { map } from 'rxjs';
+import { lastValueFrom, map } from 'rxjs';
 
 @Injectable()
 export class TwitterClient {
@@ -38,8 +38,6 @@ export class TwitterClient {
   constructor(private httpService: HttpService) {}
 
   private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
-  //   private readonly verifyTokenUrl = `${Environment.twitter_host}/v12.0/debug_token?`;
-  //   private readonly userInfoUrl = `${Environment.fb_hotwitter_hostst}/v12.0/me?`;
 
   private authHeader(request: OAuth.RequestOptions) {
     const oauth = new OAuth1a({
@@ -62,6 +60,11 @@ export class TwitterClient {
 
     return oauth.toHeader(authorization);
   }
+
+  /**
+   * Request Twitter Access Token
+   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   */
   async requestToken() {
     const request = {
       url: this.accessTokenUrl,
@@ -69,13 +72,24 @@ export class TwitterClient {
     };
 
     const authHeader = this.authHeader(request);
-
-    console.log(this.accessTokenUrl);
-    console.log(authHeader);
-    return await this.httpService
-      .post(request.url, null, {
-        headers: authHeader
-      })
-      .pipe(map(({ data }) => console.log(data)));
+    return lastValueFrom(
+      this.httpService
+        .post(request.url, null, {
+          headers: authHeader
+        })
+        .pipe(
+          map(({ data }) => {
+            const result = data.split('&').reduce((obj, str) => {
+              const splitValue = str.split('=');
+              if (splitValue[0] && splitValue[1]) {
+                console.log(splitValue[0]);
+                obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
+              }
+              return obj;
+            }, {});
+            return result;
+          })
+        )
+    );
   }
 }

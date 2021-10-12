@@ -240,41 +240,52 @@ export class AppService {
     return await this.telegramService.verifyUserToken(message);
   }
 
-  //   /**
-  //  * Connect Facebook API
-  //  * @param {string} accessToken access token from facebook
-  //  * @param {string} language en is default
-  //  * @returns {FacebookUserInfo}
-  //  */
-  async twitterConnect(authToken: string, language: string) {
-    // if (!authToken) {
-    //   this.logger.error(`token missing.`);
-    //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    // }
+  // //   /**
+  // //  * Connect Facebook API
+  // //  * @param {string} accessToken access token from facebook
+  // //  * @param {string} language en is default
+  // //  * @returns {FacebookUserInfo}
+  // //  */
+  // async twitterConnect(authToken: string, language: string) {
+  //   // if (!authToken) {
+  //   //   this.logger.error(`token missing.`);
+  //   //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+  //   // }
 
-    // this.logger.log(`get facebook access token.`);
-    // const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
+  //   // this.logger.log(`get facebook access token.`);
+  //   // const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
 
-    // this.logger.log(`verify fcaebook user token.`);
-    // const tokenVerify = await this.fbClient.verifyUserToken(
-    //   fbToken.access_token,
-    //   authToken
-    // );
+  //   // this.logger.log(`verify fcaebook user token.`);
+  //   // const tokenVerify = await this.fbClient.verifyUserToken(
+  //   //   fbToken.access_token,
+  //   //   authToken
+  //   // );
 
-    // if (!tokenVerify.is_valid) {
-    //   this.logger.error(`Use token expired.`);
-    //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    // }
-    // this.logger.log(`get fcaebook user data.`);
-    // let user: FacebookUserInfo;
-    // try {
-    //   user = await this.fbClient.getUserInfo(authToken);
-    // } catch (error) {
-    //   this.logger.error(`Can't get user data.`);
-    //   this.logger.error(error);
-    //   throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
-    // }
+  //   // if (!tokenVerify.is_valid) {
+  //   //   this.logger.error(`Use token expired.`);
+  //   //   throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+  //   // }
+  //   // this.logger.log(`get fcaebook user data.`);
+  //   // let user: FacebookUserInfo;
+  //   // try {
+  //   //   user = await this.fbClient.getUserInfo(authToken);
+  //   // } catch (error) {
+  //   //   this.logger.error(`Can't get user data.`);
+  //   //   this.logger.error(error);
+  //   //   throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+  //   // }
+  //   const result = await this.twitterService.requestToken();
+  //   return result;
+  // }
+
+  /**
+   * Request Access Twitter Token API
+   * @param {string} language en is default
+   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   */
+  async twitterRequestToken(language: string) {
     const result = await this.twitterService.requestToken();
-    return result;
+    if (result.oauth_callback_confirmed === 'true') return result;
+    else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 }
