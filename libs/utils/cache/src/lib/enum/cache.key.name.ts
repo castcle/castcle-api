@@ -52,5 +52,13 @@ export const CacheKeyName = {
   Feeds: {
     Name: 'FEEDS',
     Ttl: 300
+  },
+  Contents: {
+    Name: 'CONTENTS',
+    Ttl: 300
+  },
+  Comments: {
+    Name: 'COMMENTS',
+    Ttl: 300
   }
 };
