@@ -37,9 +37,14 @@ export class TwitterClient {
 
   constructor(private httpService: HttpService) {}
 
-  private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
+  private readonly requestTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
+  private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/access_token `;
 
-  private authHeader(request: OAuth.RequestOptions) {
+  private authHeader(
+    request: OAuth.RequestOptions,
+    accessToken?: string,
+    tokenSecret?: string
+  ) {
     const oauth = new OAuth1a({
       consumer: {
         key: Environment.twitter_key,
@@ -54,8 +59,8 @@ export class TwitterClient {
     });
 
     const authorization = oauth.authorize(request, {
-      key: Environment.twitter_access_token,
-      secret: Environment.twitter_token_secret
+      key: accessToken ? accessToken : '',
+      secret: tokenSecret ? tokenSecret : ''
     });
 
     return oauth.toHeader(authorization);
@@ -67,11 +72,42 @@ export class TwitterClient {
    */
   async requestToken() {
     const request = {
-      url: this.accessTokenUrl,
+      url: this.requestTokenUrl,
       method: 'POST'
     };
 
     const authHeader = this.authHeader(request);
+    return lastValueFrom(
+      this.httpService
+        .post(request.url, null, {
+          headers: authHeader
+        })
+        .pipe(
+          map(({ data }) => {
+            const result = data.split('&').reduce((obj, str) => {
+              const splitValue = str.split('=');
+              if (splitValue[0] && splitValue[1]) {
+                obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
+              }
+              return obj;
+            }, {});
+            return result;
+          })
+        )
+    );
+  }
+
+  /**
+   * Request Twitter Access Token
+   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   */
+  async requestAccessToken(accessToken: string, oauthVerifier: string) {
+    const request = {
+      url: this.accessTokenUrl,
+      method: 'POST'
+    };
+
+    const authHeader = this.authHeader(request, accessToken, oauthVerifier);
     return lastValueFrom(
       this.httpService
         .post(request.url, null, {
