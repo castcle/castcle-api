@@ -194,8 +194,17 @@ export class UserService {
    * @param {UserDocument} followedUser
    * @returns {Promise<void>}
    */
-  follow = async (user: UserDocument, followedUser: UserDocument) =>
-    user.follow(followedUser);
+  follow = async (user: UserDocument, followedUser: UserDocument) => {
+    this.userProducer.sendMessage({
+      id: user._id,
+      action: CastcleQueueAction.CreateFollowFeedItem,
+      options: {
+        followedId: followedUser._id
+      }
+    });
+    return user.follow(followedUser);
+  };
+
   /**
    *
    * @param {UserDocument} user

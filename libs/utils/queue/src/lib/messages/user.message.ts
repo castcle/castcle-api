@@ -23,4 +23,7 @@
 export interface UserMessage {
   id: any;
   action: string;
+  options?: {
+    followedId?: any;
+  };
 }
