@@ -22,6 +22,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
 import { ContentController } from './app.controller';
 import { CommentController } from './controllers/comment/comment.controller';
 import { DatabaseModule } from '@castcle-api/database';
@@ -36,6 +37,7 @@ import { CaslModule } from '@castcle-api/casl';
     DatabaseModule,
     CaslModule,
     UtilsInterceptorsModule,
+    UtilsDecoratorsModule,
     UtilsPipesModule
   ],
   controllers: [HealthyController, ContentController, CommentController],
