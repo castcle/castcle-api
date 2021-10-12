@@ -51,10 +51,7 @@ import {
   PageResponse,
   PageResponseDto
 } from '@castcle-api/database/dtos';
-import {
-  CredentialInterceptor,
-  CredentialRequest
-} from '@castcle-api/utils/interceptors';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   SortByPipe,
   PagePipe,
@@ -67,31 +64,20 @@ import { Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
   ApiBearerAuth,
   ApiBody,
-  ApiHeader,
   ApiOkResponse,
   ApiQuery,
   ApiResponse
 } from '@nestjs/swagger';
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
-import { PageInterceptor } from '../../interceptors/page.interceptor';
 import { Query } from '@nestjs/common';
-import { Configs } from '@castcle-api/environments';
+import {
+  CastcleAuth,
+  CastcleController,
+  CastcleBasicAuth
+} from '@castcle-api/utils/decorators';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
+@CastcleController('1.0')
 @Controller()
 export class PageController {
   constructor(
@@ -152,7 +138,6 @@ export class PageController {
       );
   };
 
-  @ApiBearerAuth()
   @ApiBody({
     type: PageResponse
   })
@@ -160,7 +145,7 @@ export class PageController {
     status: 201,
     type: PageDto
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post('pages')
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
@@ -189,7 +174,6 @@ export class PageController {
     return page.toPageResponse();
   }
 
-  @ApiBearerAuth()
   @ApiBody({
     type: UpdatePageDto
   })
@@ -198,7 +182,7 @@ export class PageController {
     type: PageDto
   })
   @HttpCode(201)
-  @UseInterceptors(PageInterceptor)
+  @CastcleBasicAuth()
   @Put('pages/:id')
   async updatePage(
     @Req() req: CredentialRequest,
@@ -225,11 +209,10 @@ export class PageController {
     return afterPage.toPageResponse();
   }
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: PageResponseDto
   })
-  @UseInterceptors(PageInterceptor)
+  @CastcleAuth(CacheKeyName.Pages)
   @Get('pages/:id')
   async getPageFromId(
     @Req() req: CredentialRequest,
@@ -240,11 +223,10 @@ export class PageController {
     return page.toPageResponse();
   }
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: PagesResponse
   })
-  @UseInterceptors(PageInterceptor)
+  @CastcleAuth(CacheKeyName.Pages)
   @Get('pages')
   async getAllPages(
     @Query('sortBy', SortByPipe)
@@ -268,11 +250,11 @@ export class PageController {
     };
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
   @HttpCode(204)
+  @CastcleBasicAuth()
   @Delete('pages/:id')
   async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
     const page = await this._getPageByIdOrCastcleId(id, req);
@@ -292,11 +274,11 @@ export class PageController {
    * @param {CredentialRequest} req that contain current user credential
    * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
    */
-  @ApiBearerAuth()
+
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Pages)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
