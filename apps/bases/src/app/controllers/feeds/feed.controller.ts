@@ -106,8 +106,7 @@ export class FeedController {
           mode: mode,
           sortBy: sortByOption,
           page: pageOption,
-          limit: limitOption,
-          ...DEFAULT_FEED_QUERY_OPTIONS
+          limit: limitOption
         }
       );
       return {
