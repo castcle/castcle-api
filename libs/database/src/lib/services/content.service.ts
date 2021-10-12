@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
+import { Model, ObjectId } from 'mongoose';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -58,6 +58,10 @@ import {
 } from '../dtos/common.dto';
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
+import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { async } from 'rxjs';
+import { FeedItemDto } from '../dtos/feedItem.dto';
+import { ContentAggregator } from '../aggregator/content.aggregator';
 
 @Injectable()
 export class ContentService {
@@ -74,7 +78,9 @@ export class ContentService {
     @InjectModel('Engagement')
     public _engagementModel: Model<EngagementDocument>,
     @InjectModel('Comment')
-    public _commentModel: Model<CommentDocument>
+    public _commentModel: Model<CommentDocument>,
+    @InjectModel('FeedItem')
+    public _feedItemModel: Model<FeedItemDocument>
   ) {}
 
   /**
@@ -795,4 +801,47 @@ export class ContentService {
         user: user._id
       })
       .exec();
+
+  /**
+   *
+   * @param {UserDocument} author
+   * @param {UserDocument} viewer
+   * @returns {Promise<FeedItemDocument[]>}
+   */
+  createFeedItemFromAuthorToViewer = async (
+    author: UserDocument,
+    viewer: UserDocument
+  ) => {
+    const contents = await this._contentModel
+      .find({ 'author.id': author._id, visibility: EntityVisibility.Publish })
+      .exec();
+    const promisesFeedItem = contents.map((content) =>
+      new this._feedItemModel({
+        seen: false,
+        called: false,
+        viewer: viewer,
+        content: content.toContentPayload(),
+        aggregator: {
+          createTime: new Date(),
+          following: true
+        } as ContentAggregator
+      } as FeedItemDto).save()
+    );
+    return await Promise.all(promisesFeedItem);
+  };
+
+  /**
+   *
+   * @param {ObjectId} authorId
+   * @param {ObjectId}  viewerId
+   * @returns {Promise<FeedItemDocument[]>}
+   */
+  createFeedItemFromAuthorIdToViewerId = async (
+    authorId: any,
+    viewerId: any
+  ) => {
+    const author = await this._userModel.findById(authorId).exec();
+    const viewer = await this._userModel.findById(viewerId).exec();
+    return this.createFeedItemFromAuthorToViewer(author, viewer);
+  };
 }

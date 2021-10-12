@@ -20,42 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
-import { Module } from '@nestjs/common';
-import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
-import {
-  HttpCacheSharedInterceptor,
-  HttpCacheSharedWithQueryInterceptor
-} from './cache/http.cache.shared.intercapter';
-import { ContentInterceptor } from './contents/contents.interceptor';
 import {
   CredentialInterceptor,
-  CredentialRequest
-} from './credential/credential.interceptor';
+  HttpCacheIndividualInterceptor
+} from '@castcle-api/utils/interceptors';
 import {
-  HeadersInterceptor,
-  HeadersRequest
-} from './headers/headers.interceptor';
-import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+  applyDecorators,
+  CacheKey,
+  CacheTTL,
+  UseInterceptors
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Module({
-  imports: [DatabaseModule, CaslModule],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsInterceptorsModule {}
+export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
+  return applyDecorators(
+    CacheKey(cacheConfig.Name),
+    CacheTTL(cacheConfig.Ttl),
+    UseInterceptors(HttpCacheIndividualInterceptor),
+    ApiBearerAuth(),
+    UseInterceptors(CredentialInterceptor)
+  );
+}
 
-export {
-  HeadersInterceptor,
-  HeadersRequest,
-  TokenInterceptor,
-  CredentialInterceptor,
-  CredentialRequest,
-  TokenRequest,
-  ContentInterceptor,
-  HttpCacheIndividualInterceptor,
-  HttpCacheSharedInterceptor,
-  HttpCacheSharedWithQueryInterceptor
-};
+export function CastcleBasicAuth() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    UseInterceptors(CredentialInterceptor)
+  );
+}

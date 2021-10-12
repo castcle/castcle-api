@@ -27,10 +27,14 @@ import { Document, Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
 import { EntityVisibility } from '../dtos/common.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
+import { Author } from '../dtos/content.dto';
 import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
 import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
+import { CommentDocument, ContentDocument } from '.';
+import { FeedItemDocument } from './feedItem.schema';
 
 export type UserDocument = User & IUser;
 
@@ -119,10 +123,12 @@ export interface IUser extends Document {
   unfollow(user: UserDocument): Promise<void>;
   toSearchTopTrendResponse(): SearchFollowsResponseDto;
   toSearchResponse(): SearchFollowsResponseDto;
+  toAuthor(): Author;
 }
 
 export interface UserModel extends mongoose.Model<UserDocument> {
   covertToUserResponse(user: User | UserDocument): UserResponseDto;
+  toAuthor(user: User | UserDocument): Author;
 }
 
 const _covertToUserResponse = (self: User | UserDocument) => {
@@ -145,11 +151,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? Image.download(self.profile.images.avatar)
-          : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png', // TODO !!! need to check S3 about static url
+          : Configs.DefaultAvatar, // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
           ? Image.download(self.profile.images.cover)
-          : 'http://placehold.it/200x200'
+          : Configs.DefaultCover
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
@@ -160,6 +166,20 @@ const _covertToUserResponse = (self: User | UserDocument) => {
 
 UserSchema.statics.covertToUserResponse = (self: User | UserDocument) =>
   _covertToUserResponse(self);
+
+UserSchema.statics.toAuthor = (self: User | UserDocument) =>
+  ({
+    id: self._id,
+    avatar:
+      self.profile && self.profile.images && self.profile.images.avatar
+        ? Image.download(self.profile.images.avatar)
+        : Configs.DefaultAvatar,
+    castcleId: self.displayId,
+    displayName: self.displayName,
+    followed: false, //default of followed
+    type: self.type,
+    verified: self.verified
+  } as Author);
 
 UserSchema.methods.toUserResponse = async function () {
   const self = await (this as UserDocument)
@@ -251,6 +271,9 @@ UserSchema.methods.toSearchResponse = function () {
 
 export const UserSchemaFactory = (
   relationshipModel: Model<RelationshipDocument>
+  /*contentModel: Model<ContentDocument>,
+  feedModel: Model<FeedItemDocument>,
+  commentModel: Model<CommentDocument>*/
 ): mongoose.Schema<any> => {
   /**
    * Make sure all aggregate counter is 0
@@ -272,6 +295,23 @@ export const UserSchemaFactory = (
       } as UserVerified;
     next();
   });
+
+  UserSchema.methods.toAuthor = function () {
+    const self = this as UserDocument;
+    return {
+      id: self._id,
+      avatar:
+        self.profile && self.profile.images && self.profile.images.avatar
+          ? Image.download(self.profile.images.avatar)
+          : Configs.DefaultAvatar,
+      castcleId: self.displayId,
+      displayName: self.displayName,
+      followed: false, //default of followed
+      type: self.type,
+      verified: self.verified
+    } as Author;
+  };
+
   UserSchema.methods.follow = async function (followedUser: UserDocument) {
     const session = await relationshipModel.startSession();
     await session.withTransaction(async () => {

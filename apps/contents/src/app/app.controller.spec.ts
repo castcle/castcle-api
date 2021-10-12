@@ -43,6 +43,7 @@ import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -90,6 +91,10 @@ describe('ContentController', () => {
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
+        CacheModule.register({
+          store: 'memory',
+          ttl: 1000
+        }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull

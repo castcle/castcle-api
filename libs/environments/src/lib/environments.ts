@@ -101,5 +101,7 @@ export const Environment = {
   // Twilio
   twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
   twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
-  twilio_otp_sid: process.env.TWILIO_OTP_SID
+  twilio_otp_sid: process.env.TWILIO_OTP_SID,
+
+  tg_bot_token: process.env.TG_BOT_TOKEN
 };

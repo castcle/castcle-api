@@ -20,42 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
 import { Module } from '@nestjs/common';
-import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
-import {
-  HttpCacheSharedInterceptor,
-  HttpCacheSharedWithQueryInterceptor
-} from './cache/http.cache.shared.intercapter';
-import { ContentInterceptor } from './contents/contents.interceptor';
-import {
-  CredentialInterceptor,
-  CredentialRequest
-} from './credential/credential.interceptor';
-import {
-  HeadersInterceptor,
-  HeadersRequest
-} from './headers/headers.interceptor';
-import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+import { CastcleController } from './castcle-controller.decorator';
+import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
 
 @Module({
-  imports: [DatabaseModule, CaslModule],
   controllers: [],
   providers: [],
   exports: []
 })
-export class UtilsInterceptorsModule {}
+export class UtilsDecoratorsModule {}
 
-export {
-  HeadersInterceptor,
-  HeadersRequest,
-  TokenInterceptor,
-  CredentialInterceptor,
-  CredentialRequest,
-  TokenRequest,
-  ContentInterceptor,
-  HttpCacheIndividualInterceptor,
-  HttpCacheSharedInterceptor,
-  HttpCacheSharedWithQueryInterceptor
-};
+export { CastcleController, CastcleAuth, CastcleBasicAuth };

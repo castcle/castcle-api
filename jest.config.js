@@ -44,6 +44,7 @@ module.exports = {
     '<rootDir>/libs/casl',
     '<rootDir>/libs/utils/queue',
     '<rootDir>/libs/utils/clients',
-    '<rootDir>/libs/utils/twilio'
+    '<rootDir>/libs/utils/twilio',
+    '<rootDir>/libs/utils/decorators'
   ]
 };

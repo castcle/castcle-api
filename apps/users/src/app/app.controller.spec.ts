@@ -51,6 +51,7 @@ import {
 import { CastcleException } from '@castcle-api/utils/exception';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -92,6 +93,10 @@ describe('AppController', () => {
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
+        CacheModule.register({
+          store: 'memory',
+          ttl: 1000
+        }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull

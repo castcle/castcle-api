@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { CastcleName, MobileNumber } from '@castcle-api/utils';
+import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -456,7 +457,7 @@ export class AuthenticationService {
                   page.profile.images &&
                   page.profile.images.avatar
                     ? new Image(page.profile.images.avatar).toSignUrl()
-                    : 'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+                    : Configs.DefaultAvatar,
                 castcleId: page.displayId,
                 displayName: page.displayName,
                 role: 'admin',

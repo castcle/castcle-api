@@ -21,53 +21,27 @@
  * or have any questions.
  */
 
-import { Controller, Get, Query, Req, UseInterceptors } from '@nestjs/common';
-import {
-  AuthenticationService,
-  UserService,
-  RankerService
-} from '@castcle-api/database';
+import { Get, Query, Req } from '@nestjs/common';
+import { RankerService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  HttpCacheIndividualInterceptor
-} from '@castcle-api/utils/interceptors';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedItemMode,
   FeedsResponse
 } from '@castcle-api/database/dtos';
-import {
-  ApiBearerAuth,
-  ApiHeader,
-  ApiOkResponse,
-  ApiQuery
-} from '@nestjs/swagger';
+import { ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Configs } from '@castcle-api/environments';
 import {
   LimitPipe,
   PagePipe,
   SortByEnum,
   SortByPipe
 } from '@castcle-api/utils/pipes';
+import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
+@CastcleController('1.0')
 export class FeedController {
   constructor(private rankerService: RankerService) {}
   private readonly logger = new CastLogger(
@@ -78,7 +52,6 @@ export class FeedController {
   @ApiOkResponse({
     type: FeedsResponse
   })
-  @ApiBearerAuth()
   @ApiQuery({
     name: 'mode',
     enum: FeedItemMode,
@@ -109,8 +82,7 @@ export class FeedController {
     type: String,
     required: false
   })
-  @UseInterceptors(CredentialInterceptor)
-  @UseInterceptors(HttpCacheIndividualInterceptor)
+  @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/feed/forYou')
   async getForYouFeed(
     @Req() req: CredentialRequest,

@@ -41,7 +41,7 @@ export class LoginDto {
 
 export class SocialConnectInfo {
   @ApiProperty()
-  authToken: string;
+  authToken?: string;
   @ApiProperty()
   authVerifierToken?: string;
   @ApiProperty()
@@ -54,6 +54,8 @@ export class SocialConnectInfo {
   username?: string;
   @ApiProperty()
   photo_url?: string;
+  @ApiProperty()
+  auth_date?: string;
   @ApiProperty()
   hash?: string;
 }
