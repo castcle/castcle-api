@@ -71,15 +71,19 @@ describe('Password', () => {
     });
   });
   describe('#validate()', () => {
-    it('should return true if password has at least 8 length', () => {
+    it('should return true if password has at least 6 length', () => {
       const passPassword = '2@HelloWorld';
       const notPassPassword = '123';
       const notPassPassword2 = '12345678';
       const notPassPassword3 = 'abc1234567';
+      const notPassPassword4 = '2@HELLOWORLD';
+      const passPassword2 = 'helloWorld2';
       expect(Password.validate(passPassword)).toBe(true);
       expect(Password.validate(notPassPassword)).toBe(false);
       expect(Password.validate(notPassPassword2)).toBe(false);
       expect(Password.validate(notPassPassword3)).toBe(false);
+      expect(Password.validate(notPassPassword4)).toBe(false);
+      expect(Password.validate(passPassword2)).toBe(true);
     });
   });
 });
