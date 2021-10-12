@@ -65,5 +65,6 @@ export enum CastcleQueueAction {
   Deleting = 'deleting',
   Deleted = 'deleted',
   Restore = 'restore',
-  UpdateProfile = 'updateProfile'
+  UpdateProfile = 'updateProfile',
+  CreateFollowFeedItem = 'craeteFollowFeedItem'
 }
