@@ -786,6 +786,7 @@ export class AuthenticationController {
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')
+  @HttpCode(200)
   async forgotPasswordRequestOTP(
     @Body() body: ForgotPasswordRequestOtpDto,
     @Req() req: CredentialRequest
@@ -840,6 +841,7 @@ export class AuthenticationController {
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordVerificationOTP')
+  @HttpCode(200)
   async forgotPasswordVerificationOTP(
     @Body() body: ForgotPasswordVerificationOtpDto,
     @Req() req: CredentialRequest
@@ -889,6 +891,7 @@ export class AuthenticationController {
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('resetPasswordSubmit')
+  @HttpCode(204)
   async resetPasswordSubmit(
     @Body() body: ResetPasswordDto,
     @Req() req: CredentialRequest
