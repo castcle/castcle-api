@@ -60,5 +60,9 @@ export const CacheKeyName = {
   Comments: {
     Name: 'COMMENTS',
     Ttl: 300
+  },
+  Users: {
+    Name: 'USERS',
+    Ttl: 300
   }
 };

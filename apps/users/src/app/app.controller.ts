@@ -38,23 +38,11 @@ import {
   AuthenticationService
 } from '@castcle-api/database';
 import { ImageInterceptor } from './interceptors/image.interceptor';
-import {
-  CredentialInterceptor,
-  CredentialRequest
-} from '@castcle-api/utils/interceptors';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiHeader,
-  ApiOkResponse,
-  ApiProperty,
-  ApiQuery,
-  ApiResponse
-} from '@nestjs/swagger';
-import {
-  ContentPayloadDto,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   FollowResponse,
@@ -71,25 +59,16 @@ import {
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
 import { ContentsResponse } from '@castcle-api/database/dtos';
 import { Query } from '@nestjs/common';
-import { Configs } from '@castcle-api/environments';
+import {
+  CastcleAuth,
+  CastcleController,
+  CastcleBasicAuth
+} from '@castcle-api/utils/decorators';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+
 let logger: CastLogger;
 
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
-@Controller()
+@CastcleController('1.0')
 export class UserController {
   constructor(
     private readonly appService: AppService,
@@ -133,8 +112,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @ApiBearerAuth()
-  @UseInterceptors(ImageInterceptor)
+  @CastcleAuth(CacheKeyName.Users)
   @Get('me')
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
@@ -150,8 +128,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @ApiBearerAuth()
-  @UseInterceptors(ImageInterceptor)
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     //UserService
@@ -165,7 +142,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @UseInterceptors(ImageInterceptor)
   @Put('me')
   async updateMyData(
@@ -187,8 +164,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Delete('me')
   async deleteMyData(@Req() req: CredentialRequest) {
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -207,8 +183,7 @@ export class UserController {
   @ApiOkResponse({
     type: ContentsResponse
   })
-  @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Users)
   @Get('me/contents')
   async getMyContents(
     @Req() req: CredentialRequest,
@@ -248,7 +223,6 @@ export class UserController {
     type: ContentsResponse
   })
   @ApiQuery({ name: 'type', enum: ContentType })
-  @ApiBearerAuth()
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
@@ -269,7 +243,7 @@ export class UserController {
     enum: ContentType,
     required: false
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':id/contents')
   async getUserContents(
     @Param('id') id: string,
@@ -310,8 +284,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put(':id/follow')
   async follow(
     @Param('id') id: string,
@@ -339,8 +312,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @ApiBearerAuth()
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put(':id/unfollow')
   async unfollow(
     @Param('id') id: string,
@@ -361,7 +333,7 @@ export class UserController {
   @ApiOkResponse({
     type: FollowResponse
   })
-  @ApiBearerAuth()
+  @CastcleAuth(CacheKeyName.Users)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
@@ -382,7 +354,6 @@ export class UserController {
     enum: UserType,
     required: false
   })
-  @UseInterceptors(CredentialInterceptor)
   @Get(':id/follower')
   async getUserFollower(
     @Param('id') id: string,
@@ -416,7 +387,6 @@ export class UserController {
   @ApiOkResponse({
     type: FollowResponse
   })
-  @ApiBearerAuth()
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
@@ -438,7 +408,7 @@ export class UserController {
     required: false
   })
   @Get(':id/following')
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Users)
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
