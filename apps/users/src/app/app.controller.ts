@@ -40,8 +40,7 @@ import {
 import { ImageInterceptor } from './interceptors/image.interceptor';
 import {
   CredentialInterceptor,
-  CredentialRequest,
-  ContentsInterceptor
+  CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -209,7 +208,7 @@ export class UserController {
     type: ContentsResponse
   })
   @ApiBearerAuth()
-  @UseInterceptors(ContentsInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Get('me/contents')
   async getMyContents(
     @Req() req: CredentialRequest,
@@ -270,7 +269,7 @@ export class UserController {
     enum: ContentType,
     required: false
   })
-  @UseInterceptors(ContentsInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Get(':id/contents')
   async getUserContents(
     @Param('id') id: string,

@@ -53,8 +53,7 @@ import {
 } from '@castcle-api/database/dtos';
 import {
   CredentialInterceptor,
-  CredentialRequest,
-  ContentsInterceptor
+  CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import {
   SortByPipe,
@@ -110,7 +109,7 @@ export class PageController {
     Image.upload(base64, options);
 
   /**
-   *
+   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
    * @param {string} idOrCastCleId
    * @param {CredentialRequest} req
    * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
@@ -120,12 +119,32 @@ export class PageController {
     req: CredentialRequest
   ) => {
     const idResult = await this.userService.getUserFromId(idOrCastCleId);
-    if (idResult && idResult.type === UserType.Page) return idResult;
+    if (
+      idResult &&
+      idResult.type === UserType.Page &&
+      String(idResult.ownerAccount) === String(req.$credential.account._id)
+    )
+      return idResult;
+    else if (idResult && idResult.type === UserType.Page)
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
     const castcleIdResult = await this.authService.getUserFromCastcleId(
       idOrCastCleId
     );
-    if (castcleIdResult && castcleIdResult.type === UserType.Page)
+    if (
+      castcleIdResult &&
+      castcleIdResult.type === UserType.Page &&
+      String(castcleIdResult.ownerAccount) ===
+        String(req.$credential.account._id)
+    )
       return castcleIdResult;
+    else if (castcleIdResult && castcleIdResult.type === UserType.Page)
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
     else
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
@@ -277,7 +296,7 @@ export class PageController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(ContentsInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
