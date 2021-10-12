@@ -853,8 +853,6 @@ export class AuthenticationController {
       //   body.payload.countryCode,
       //   body.payload.mobileNumber
       // );
-      account.mobile.countryCode = body.payload.countryCode;
-      account.mobile.number = body.payload.mobileNumber;
     } else {
       throw new CastcleException(
         CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,

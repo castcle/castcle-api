@@ -582,7 +582,7 @@ export class AuthenticationService {
         action: OtpObjective.ForgotPassword
       })
       .exec();
-    if (otpObj && otpObj.$isValid && otpObj.expireDate <= new Date()) {
+    if (otpObj && otpObj.$isValid && otpObj.expireDate > new Date()) {
       if (channel == 'mobile') {
         receiver = await MobileNumber.getMobileNumberWithCountyrCode(
           account.mobile.countryCode,
@@ -616,7 +616,7 @@ export class AuthenticationService {
         action: OtpObjective.VerifyForgotPassword
       })
       .exec();
-    if (otp && otp.$isValid && otp.expireDate <= new Date()) {
+    if (otp && otp.$isValid && otp.expireDate > new Date()) {
       const account = await this._accountModel
         .findOne({ _id: otp.account._id })
         .exec();
