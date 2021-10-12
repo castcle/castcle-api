@@ -20,49 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 30
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 30
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 300
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 60
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 60
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 300
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 300
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 300
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 300
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 300
-  }
-};
+import {
+  CredentialInterceptor,
+  HttpCacheIndividualInterceptor
+} from '@castcle-api/utils/interceptors';
+import {
+  applyDecorators,
+  CacheKey,
+  CacheTTL,
+  UseInterceptors
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
+  return applyDecorators(
+    CacheKey(cacheConfig.Name),
+    CacheTTL(cacheConfig.Ttl),
+    UseInterceptors(HttpCacheIndividualInterceptor),
+    ApiBearerAuth(),
+    UseInterceptors(CredentialInterceptor)
+  );
+}
+
+export function CastcleBasicAuth() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    UseInterceptors(CredentialInterceptor)
+  );
+}

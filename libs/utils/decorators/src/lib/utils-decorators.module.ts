@@ -20,49 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 30
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 30
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 300
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 60
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 60
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 300
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 300
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 300
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 300
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 300
-  }
-};
+import { Module } from '@nestjs/common';
+import { CastcleController } from './castcle-controller.decorator';
+import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
+
+@Module({
+  controllers: [],
+  providers: [],
+  exports: []
+})
+export class UtilsDecoratorsModule {}
+
+export { CastcleController, CastcleAuth, CastcleBasicAuth };

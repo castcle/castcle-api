@@ -203,6 +203,7 @@ describe('Ranker Service', () => {
         limit: 2
       });
       expect(feedItems.total).toEqual(contents.length);
+      expect(feedItems.pagination.limit).toEqual(2);
       expect(feedItems.items[0].content.payload).toEqual(shortPayload5);
       expect(feedItems.items[1].content.payload).toEqual(shortPayload4);
       expect(feedItems.items[2]).toBeUndefined();
