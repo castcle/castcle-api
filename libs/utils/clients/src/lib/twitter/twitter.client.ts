@@ -84,14 +84,7 @@ export class TwitterClient {
         })
         .pipe(
           map(({ data }) => {
-            const result = data.split('&').reduce((obj, str) => {
-              const splitValue = str.split('=');
-              if (splitValue[0] && splitValue[1]) {
-                obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
-              }
-              return obj;
-            }, {});
-            return result;
+            return this.transformData(data);
           })
         )
     );
@@ -115,17 +108,20 @@ export class TwitterClient {
         })
         .pipe(
           map(({ data }) => {
-            const result = data.split('&').reduce((obj, str) => {
-              const splitValue = str.split('=');
-              if (splitValue[0] && splitValue[1]) {
-                console.log(splitValue[0]);
-                obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
-              }
-              return obj;
-            }, {});
-            return result;
+            return this.transformData(data);
           })
         )
     );
+  }
+
+  private transformData(data: any) {
+    const result = data.split('&').reduce((obj, str) => {
+      const splitValue = str.split('=');
+      if (splitValue[0] && splitValue[1]) {
+        obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
+      }
+      return obj;
+    }, {});
+    return result;
   }
 }
