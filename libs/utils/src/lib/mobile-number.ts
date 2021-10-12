@@ -26,9 +26,9 @@ import PhoneNumber from 'awesome-phonenumber';
 
 const combineMobileNumber = async (
   countryCode: string,
-  mobileNo: string
+  mobileNumber: string
 ): Promise<string> => {
-  const pn = await new PhoneNumber(mobileNo, countryCode);
+  const pn = await new PhoneNumber(mobileNumber, countryCode);
   if (pn.isValid && pn.isMobile) {
     return pn.getNumber();
   } else {
@@ -36,18 +36,21 @@ const combineMobileNumber = async (
   }
 };
 
-const getMobileNoWithCountyrCode = async (
+const getMobileNumberWithCountyrCode = async (
   countryCode: string,
-  mobileNo: string
+  mobileNumber: string
 ): Promise<string> => {
   try {
     const stringCountryCode = await PhoneNumber.getRegionCodeForCountryCode(
       parseInt(countryCode.replace('+', ''))
     );
-    return await combineMobileNumber(stringCountryCode, mobileNo);
+    return await combineMobileNumber(stringCountryCode, mobileNumber);
   } catch (e) {
     throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
   }
 };
 
-export const MobileNumber = { combineMobileNumber, getMobileNoWithCountyrCode };
+export const MobileNumber = {
+  combineMobileNumber,
+  getMobileNumberWithCountyrCode
+};

@@ -174,3 +174,19 @@ export class ForgotPasswordResponse {
   @ApiProperty()
   expiresTime: string;
 }
+
+export class ForgotPasswordVerificationOtpDto extends ForgotPasswordRequestOtpDto {
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  otp: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  newPassword: string;
+}
