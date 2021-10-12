@@ -781,7 +781,7 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
@@ -835,7 +835,7 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
@@ -884,7 +884,7 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: 201,
+    status: 204,
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
