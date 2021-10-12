@@ -63,22 +63,6 @@ const transformContentPayload = (payload: ContentPayloadDto) => {
   return payload;
 };
 
-//TO
-@Injectable()
-export class ContentsInterceptor extends CredentialInterceptor {
-  async intercept(context: ExecutionContext, next: CallHandler) {
-    const superResult = await super.intercept(context, next);
-    return superResult.pipe(
-      map((data: ContentsResponse) => {
-        data.payload = data.payload.map((payload) =>
-          transformContentPayload(payload)
-        );
-        return data;
-      })
-    );
-  }
-}
-
 @Injectable()
 export class ContentInterceptor extends CredentialInterceptor {
   async intercept(context: ExecutionContext, next: CallHandler) {

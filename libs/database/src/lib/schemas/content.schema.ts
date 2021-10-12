@@ -41,6 +41,7 @@ import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
 import { FeedItemDocument } from './feedItem.schema';
 import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 
 //TODO: !!!  need to revise this
 export interface RecastPayload {
@@ -107,7 +108,7 @@ const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.author && payload.author.avatar)
     payload.author.avatar = Image.download(
       payload.author.avatar,
-      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png'
+      Configs.DefaultAvatar
     );
   return payload;
 };

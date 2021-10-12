@@ -30,9 +30,7 @@ const generate = async (password: string) => bcrypt.hash(password, saltRounds);
 
 const validate = (password: string) => {
   //Minimum eight characters, at least one letter, one number and one special character
-  return password.match(
-    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
-  )
+  return password.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/)
     ? true
     : false;
 };
