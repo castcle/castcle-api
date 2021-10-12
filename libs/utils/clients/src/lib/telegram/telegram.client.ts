@@ -20,30 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { TopicName } from '../enum/topic.name';
-import { UserMessage } from '../messages/user.message';
+import { createHash, createHmac } from 'crypto';
+import { TelegramUserInfo } from './telegram.message';
+
 @Injectable()
-export class UserProducer {
+export class TelegramClient {
   private readonly logger = new CastLogger(
-    UserProducer.name,
+    TelegramClient.name,
     CastLoggerOptions
   );
 
-  constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
-
   /**
-   * send user message to queue !!! if action === Deactivate send account id instead of user id
-   * @param {UserMessage} UserMessage user message
-   * @returns {}
+   * Validate user token
+   * @param {TelegramUserInfo} telegramUserInfo
+   * @returns {boolean} valid token (true /false)
    */
-  async sendMessage(message: UserMessage) {
-    await this.queue.add({
-      user: message
-    });
-    this.logger.log(`produce message '${JSON.stringify(message)}' `);
+  async verifyUserToken({ hash, ...data }: TelegramUserInfo) {
+    this.logger.log('Hash Token');
+    const secret = createHash('sha256')
+      .update(Environment.tg_bot_token)
+      .digest();
+    const checkString = Object.keys(data)
+      .sort()
+      .map((x) => `${x}=${data[x]}`)
+      .join('\n');
+    const hmac = createHmac('sha256', secret).update(checkString).digest('hex');
+    this.logger.log('Compare Token');
+    return hmac === hash;
   }
 }
