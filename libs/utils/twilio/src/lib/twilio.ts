@@ -23,7 +23,6 @@
 
 import { Environment } from '@castcle-api/environments';
 import * as Twilio from 'twilio';
-import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
 
 const env = {
   twilioAccountSid: Environment.twilio_account_sid,
@@ -46,15 +45,23 @@ const requestOtp = (receiver: string, channel: EChannelType) => {
       channel: channel
     })
     .then((verification) => {
-      if (verification.valid && verification.status === 'pending') {
-        return verification;
-      }
+      console.log(verification);
     })
     .catch((error) => {
       throw new Error(error);
     });
 };
 
-// const verifyOtp = () => {};
+const verifyOtp = (receiver: string, otp: string) => {
+  client.verify
+    .services(env.twilioOtpSid)
+    .verificationChecks.create({ to: receiver, code: otp })
+    .then((verification) => {
+      console.log(verification);
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
+};
 
-export const TwilioService = { requestOtp };
+export const TwilioService = { requestOtp, verifyOtp };
