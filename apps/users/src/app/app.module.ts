@@ -23,6 +23,7 @@
 
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { ImageInterceptor } from './interceptors/image.interceptor';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
@@ -32,7 +33,12 @@ import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 
 @Module({
-  imports: [DatabaseModule, UtilsInterceptorsModule, UtilsAwsModule],
+  imports: [
+    DatabaseModule,
+    UtilsInterceptorsModule,
+    UtilsDecoratorsModule,
+    UtilsAwsModule
+  ],
   controllers: [HealthyController, UserController],
   providers: [AppService, ImageInterceptor]
 })
