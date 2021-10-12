@@ -20,49 +20,25 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 30
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 30
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 300
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 60
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 60
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 300
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 300
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 300
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 300
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 300
-  }
-};
+
+import { applyDecorators, Controller } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
+import { ApiHeader } from '@nestjs/swagger';
+
+export function CastcleController(defaultVersion: string) {
+  return applyDecorators(
+    ApiHeader({
+      name: Configs.RequiredHeaders.AcceptVersion.name,
+      description: Configs.RequiredHeaders.AcceptVersion.description,
+      example: Configs.RequiredHeaders.AcceptVersion.example,
+      required: true
+    }),
+    ApiHeader({
+      name: Configs.RequiredHeaders.AcceptLanguague.name,
+      description: Configs.RequiredHeaders.AcceptLanguague.description,
+      example: Configs.RequiredHeaders.AcceptLanguague.example,
+      required: true
+    }),
+    Controller(defaultVersion)
+  );
+}

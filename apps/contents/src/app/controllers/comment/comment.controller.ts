@@ -31,8 +31,7 @@ import {
   Post,
   Put,
   Query,
-  Req,
-  UseInterceptors
+  Req
 } from '@nestjs/common';
 import {
   AuthenticationService,
@@ -40,60 +39,26 @@ import {
   ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  ContentResponse,
-  ContentsResponse,
-  ContentType,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS,
-  SaveContentDto
-} from '@castcle-api/database/dtos';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  ContentInterceptor
-} from '@castcle-api/utils/interceptors';
+import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiHeader,
-  ApiOkResponse,
-  ApiProperty,
-  ApiResponse
-} from '@nestjs/swagger';
-import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
-import {
-  ContentTypePipe,
-  LimitPipe,
-  PagePipe,
-  SortByPipe
-} from '@castcle-api/utils/pipes';
-import { Configs } from '@castcle-api/environments';
+import { ApiBody } from '@nestjs/swagger';
+import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
 import { CaslAbilityFactory, Action } from '@castcle-api/casl';
-import { Model } from 'mongoose';
 import {
   CreateCommentBody,
   EditCommentBody,
   LikeCommentBody,
   ReplyCommentBody
 } from '../../dtos/comment.dto';
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@ApiBearerAuth()
-@Controller({
-  version: '1.0'
-})
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  CastcleController,
+  CastcleAuth,
+  CastcleBasicAuth
+} from '@castcle-api/utils/decorators';
+
+@CastcleController('1.0')
 @Controller()
 export class CommentController {
   constructor(
@@ -121,6 +86,7 @@ export class CommentController {
   @ApiBody({
     type: CreateCommentBody
   })
+  @CastcleBasicAuth()
   @Post('contents/:id/comments')
   async createComment(
     @Param('id') contentId: string,
@@ -143,6 +109,7 @@ export class CommentController {
     };
   }
 
+  @CastcleAuth(CacheKeyName.Comments)
   @Get('contents/:id/comments')
   async getAllComment(
     @Param('id') contentId: string,
@@ -172,6 +139,7 @@ export class CommentController {
   @ApiBody({
     type: ReplyCommentBody
   })
+  @CastcleBasicAuth()
   @Post('contents/:id/comments/:commentId/reply')
   async replyComment(
     @Param('id') contentId: string,
@@ -196,6 +164,7 @@ export class CommentController {
   @ApiBody({
     type: EditCommentBody
   })
+  @CastcleBasicAuth()
   @Put('contents/:id/comments/:commentId')
   async updateComment(
     @Param('id') contentId: string,
@@ -216,6 +185,7 @@ export class CommentController {
   }
 
   @HttpCode(204)
+  @CastcleBasicAuth()
   @Delete('contents/:id/comments/:commentId')
   async deleteComment(
     @Param('id') contentId: string,
@@ -232,6 +202,7 @@ export class CommentController {
     type: LikeCommentBody
   })
   @HttpCode(204)
+  @CastcleBasicAuth()
   @Put('contents/:id/comments/:commentId/liked')
   async likeComment(
     @Param('id') contentId: string,
@@ -250,6 +221,7 @@ export class CommentController {
   @ApiBody({
     type: LikeCommentBody
   })
+  @CastcleBasicAuth()
   @HttpCode(204)
   @Put('contents/:id/comments/:commentId/unliked')
   async unlikeComment(

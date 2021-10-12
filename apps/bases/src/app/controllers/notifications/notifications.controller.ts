@@ -32,15 +32,11 @@ import {
   NotificationSource,
   RegisterTokenDto
 } from '@castcle-api/database/dtos';
-import { Configs } from '@castcle-api/environments';
+
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  HttpCacheIndividualInterceptor
-} from '@castcle-api/utils/interceptors';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   LimitPipe,
   NotificationSourcePipe,
@@ -50,42 +46,22 @@ import {
 } from '@castcle-api/utils/pipes';
 import {
   Body,
-  CacheKey,
-  CacheTTL,
-  Controller,
   Get,
   HttpCode,
   Param,
   Post,
   Put,
   Query,
-  Req,
-  UseInterceptors
+  Req
 } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiHeader,
-  ApiOkResponse,
-  ApiQuery,
-  ApiResponse
-} from '@nestjs/swagger';
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
-@Controller()
+  CastcleAuth,
+  CastcleController,
+  CastcleBasicAuth
+} from '@castcle-api/utils/decorators';
+
+@CastcleController('1.0')
 export class NotificationsController {
   constructor(
     private notificationService: NotificationService,
@@ -97,14 +73,10 @@ export class NotificationsController {
     CastLoggerOptions
   );
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: NotificationResponse
   })
-  @UseInterceptors(HttpCacheIndividualInterceptor)
-  @CacheKey(CacheKeyName.NotificationsGet.Name)
-  @CacheTTL(CacheKeyName.NotificationsGet.Ttl)
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.NotificationsGet)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
@@ -167,11 +139,10 @@ export class NotificationsController {
       );
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put('notifications/:id/read')
   @HttpCode(204)
   async notificationRead(
@@ -192,11 +163,10 @@ export class NotificationsController {
     return '';
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put('notifications/readAll')
   @HttpCode(204)
   async notificationReadAll(@Req() req: CredentialRequest) {
@@ -213,14 +183,13 @@ export class NotificationsController {
     return '';
   }
 
-  @ApiBearerAuth()
   @ApiBody({
     type: RegisterTokenDto
   })
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post('notifications/registerToken')
   async registerToken(
     @Req() req: CredentialRequest,
@@ -240,14 +209,10 @@ export class NotificationsController {
     return '';
   }
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: NotificationBadgesResponse
   })
-  @UseInterceptors(HttpCacheIndividualInterceptor)
-  @CacheKey(CacheKeyName.NotificationsBadges.Name)
-  @CacheTTL(CacheKeyName.NotificationsBadges.Ttl)
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.NotificationsBadges)
   @Get('notifications/badges')
   async badges(
     @Req() req: CredentialRequest
