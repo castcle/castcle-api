@@ -979,4 +979,28 @@ describe('AppController', () => {
       );
     });
   });
+
+  describe('requestTwitterToken', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo011';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone99999', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should get access token', async () => {
+      const token = await appController.requestTwitterToken({
+        $credential: credentialGuest,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any);
+      expect(token).toBeDefined;
+      expect(token.oauth_token).toBeDefined;
+    });
+  });
 });
