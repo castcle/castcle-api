@@ -28,8 +28,13 @@ const PASSWORD_MIN = 6;
 
 const generate = async (password: string) => bcrypt.hash(password, saltRounds);
 
+/**
+ * Validate if the password has Minimum eight characters, at least one small letter, one number and one big Letter.
+ * @param {string} password
+ * @returns {boolean}
+ */
 const validate = (password: string) => {
-  //Minimum eight characters, at least one letter, one number and one special character
+  //Minimum eight characters, at least one small letter, one number and one Big Letter
   return password.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/)
     ? true
     : false;
