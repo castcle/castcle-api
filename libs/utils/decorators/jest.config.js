@@ -20,37 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 30
+module.exports = {
+  displayName: 'utils-decorators',
+  preset: '../../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
   },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 30
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
   },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 300
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 60
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 60
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 300
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 300
-  }
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../../coverage/libs/utils/decorators'
 };
