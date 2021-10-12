@@ -44,5 +44,25 @@ export const CacheKeyName = {
   Searches: {
     Name: 'SEARCHES',
     Ttl: 60
+  },
+  Pages: {
+    Name: 'PAGES',
+    Ttl: 300
+  },
+  Feeds: {
+    Name: 'FEEDS',
+    Ttl: 300
+  },
+  Contents: {
+    Name: 'CONTENTS',
+    Ttl: 300
+  },
+  Comments: {
+    Name: 'COMMENTS',
+    Ttl: 300
+  },
+  Users: {
+    Name: 'USERS',
+    Ttl: 300
   }
 };

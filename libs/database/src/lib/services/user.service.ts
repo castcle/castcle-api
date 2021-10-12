@@ -110,11 +110,35 @@ export class UserService {
       if (updateUserDto.images.cover)
         user.profile.images.cover = updateUserDto.images.cover;
     }
-    console.log('saving dto', updateUserDto);
-
-    console.log('saving website', user.profile.websites);
-    console.log('saving user', user);
+    console.debug('saving dto', updateUserDto);
+    console.debug('saving website', user.profile.websites);
+    console.debug('saving user', user);
+    this.userProducer.sendMessage({
+      id: user._id,
+      action: CastcleQueueAction.UpdateProfile
+    });
     return user.save();
+  };
+
+  updateUserInEmbedContent = async (user: UserDocument) => {
+    console.debug('updating contents of user');
+    await this.contentService._contentModel
+      .updateMany({ 'author.id': user._id }, { author: user.toAuthor() })
+      .exec();
+    console.debug('updating comments of user');
+    await this.contentService._commentModel
+      .updateMany({ 'author._id': user._id }, { author: user })
+      .exec();
+    console.debug('updating feedItem of user');
+    await this.contentService._feedItemModel.updateMany(
+      { 'content.author.id': user._id },
+      { 'content.author': user.toAuthor() }
+    );
+  };
+
+  updateUserInEmbedContentBackground = async (userId: any) => {
+    const user = await this._userModel.findById(userId).exec();
+    await this.updateUserInEmbedContent(user);
   };
 
   deleteUserFromId = (id: string) =>
@@ -170,8 +194,17 @@ export class UserService {
    * @param {UserDocument} followedUser
    * @returns {Promise<void>}
    */
-  follow = async (user: UserDocument, followedUser: UserDocument) =>
-    user.follow(followedUser);
+  follow = async (user: UserDocument, followedUser: UserDocument) => {
+    this.userProducer.sendMessage({
+      id: user._id,
+      action: CastcleQueueAction.CreateFollowFeedItem,
+      options: {
+        followedId: followedUser._id
+      }
+    });
+    return user.follow(followedUser);
+  };
+
   /**
    *
    * @param {UserDocument} user

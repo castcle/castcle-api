@@ -534,18 +534,35 @@
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
-            "lintFilePatterns": [
-              "libs/utils/clients/**/*.ts"
-            ]
+            "lintFilePatterns": ["libs/utils/clients/**/*.ts"]
           }
         },
         "test": {
           "executor": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/libs/utils/clients"
-          ],
+          "outputs": ["coverage/libs/utils/clients"],
           "options": {
             "jestConfig": "libs/utils/clients/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "utils-decorators": {
+      "root": "libs/utils/decorators",
+      "sourceRoot": "libs/utils/decorators/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/utils/decorators/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/utils/decorators"],
+          "options": {
+            "jestConfig": "libs/utils/decorators/jest.config.js",
             "passWithNoTests": true
           }
         }

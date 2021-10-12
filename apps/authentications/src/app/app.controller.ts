@@ -26,7 +26,6 @@ import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
-import { FacebookClient } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -99,8 +98,7 @@ import { AccountDocument, OtpDocument } from '@castcle-api/database/schemas';
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService,
-    private fbClient: FacebookClient
+    private authService: AuthenticationService
   ) {}
   private readonly logger = new CastLogger(
     AuthenticationController.name,
@@ -662,6 +660,35 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Telegram: {
+        const isValid = await this.appService.telegramConnect(
+          body.payload,
+          req.$language
+        );
+        if (isValid) {
+          this.logger.log(`social login`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: body.payload.id,
+              email: '',
+              name: `${body.payload.first_name} ${body.payload.last_name}`,
+              provider: AccountAuthenIdType.Telegram,
+              profileImage: body.payload.photo_url
+                ? body.payload.photo_url
+                : '',
+              socialToken: body.payload.hash
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Use token expired.`);
+          throw new CastcleException(
+            CastcleStatus.INVLAID_AUTH_TOKEN,
+            req.$language
+          );
+        }
+        break;
+      }
     }
     return token;
   }
@@ -713,6 +740,37 @@ export class AuthenticationController {
           this.logger.error(`Can't get user data.`);
           throw new CastcleException(
             CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
+      case AccountAuthenIdType.Telegram: {
+        const isValid = await this.appService.telegramConnect(
+          body.payload,
+          req.$language
+        );
+        if (isValid) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              body.payload.id,
+              AccountAuthenIdType.Telegram
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Telegram,
+              body.payload.id,
+              body.payload.hash
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Use token expired.`);
+          throw new CastcleException(
+            CastcleStatus.INVLAID_AUTH_TOKEN,
             req.$language
           );
         }

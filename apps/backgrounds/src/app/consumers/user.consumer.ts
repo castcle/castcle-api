@@ -27,7 +27,7 @@ import {
   TopicName,
   UserMessage
 } from '@castcle-api/utils/queue';
-import { UserService } from '@castcle-api/database';
+import { UserService, ContentService } from '@castcle-api/database';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
@@ -35,7 +35,10 @@ import { CastcleQueueAction } from '@castcle-api/database/dtos';
 @Injectable()
 @Processor(TopicName.Users)
 export class UserConsumer {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private contentService: ContentService
+  ) {}
 
   private readonly logger = new CastLogger(
     UserConsumer.name,
@@ -47,9 +50,25 @@ export class UserConsumer {
     try {
       this.logger.log(`consume message '${JSON.stringify(job.data.user)}}' `);
       //this.userService.deactiveQueue();
-      if (job.data.user.action === CastcleQueueAction.Deleting)
-        this.userService.deactiveBackground(job.data.user.id);
-      this.logger.log(`deleting user ${job.data.user.id}`);
+      switch (job.data.user.action) {
+        case CastcleQueueAction.Deleting:
+          this.userService.deactiveBackground(job.data.user.id);
+          this.logger.log(`deleting user ${job.data.user.id}`);
+          break;
+        case CastcleQueueAction.UpdateProfile:
+          this.userService.updateUserInEmbedContentBackground(job.data.user.id);
+          this.logger.log(`Updating profile of user ${job.data.user.id}`);
+          break;
+        case CastcleQueueAction.CreateFollowFeedItem:
+          this.contentService.createFeedItemFromAuthorToViewer(
+            job.data.user.options.followedId,
+            job.data.user.id
+          );
+          this.logger.log(
+            `Creating feed item for user ${job.data.user.id} from author ${job.data.user.options.followedId}`
+          );
+          break;
+      }
     } catch (error) {
       this.logger.error(error);
     }
