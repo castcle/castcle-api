@@ -21,10 +21,12 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { CastcleController } from './castcle-controller.decorator';
 import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
 
 @Module({
+  imports: [UtilsInterceptorsModule],
   controllers: [],
   providers: [],
   exports: []

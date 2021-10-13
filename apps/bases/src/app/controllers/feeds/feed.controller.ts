@@ -103,11 +103,11 @@ export class FeedController {
       const feedItemsResult = await this.rankerService.getFeedItemsFromViewer(
         account,
         {
+          ...DEFAULT_FEED_QUERY_OPTIONS,
           mode: mode,
           sortBy: sortByOption,
           page: pageOption,
-          limit: limitOption,
-          ...DEFAULT_FEED_QUERY_OPTIONS
+          limit: limitOption
         }
       );
       return {
