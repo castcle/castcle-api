@@ -1000,7 +1000,7 @@ describe('AppController', () => {
         $language: 'th'
       } as any);
       expect(token).toBeDefined;
-      expect(token.oauth_token).toBeDefined;
+      expect(token.oauthToken).toBeDefined;
     });
   });
 });

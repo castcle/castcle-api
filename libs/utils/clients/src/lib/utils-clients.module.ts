@@ -32,6 +32,7 @@ import {
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
 import { TwitterClient } from './twitter/twitter.client';
+import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 
 @Module({
   imports: [
@@ -52,5 +53,7 @@ export {
   FacebookUserInfo,
   TelegramClient,
   TelegramUserInfo,
-  TwitterClient
+  TwitterClient,
+  TwitterAccessToken,
+  TwitterUserData
 };

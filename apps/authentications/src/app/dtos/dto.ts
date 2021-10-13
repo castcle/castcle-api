@@ -43,6 +43,8 @@ export class SocialConnectInfo {
   @ApiProperty()
   authToken?: string;
   @ApiProperty()
+  authTokenSecret?: string;
+  @ApiProperty()
   authVerifierToken?: string;
   @ApiProperty()
   id?: string;
@@ -149,9 +151,12 @@ export interface SocialConnect {
   provider: AccountAuthenIdType;
   profileImage: string;
   socialToken: string;
+  socialSecretToken: string;
 }
 
 export class OauthTokenResponse {
   @ApiProperty()
-  oauth_token: string;
+  oauthToken: string;
+  @ApiProperty()
+  oauthTokenSecret: string;
 }

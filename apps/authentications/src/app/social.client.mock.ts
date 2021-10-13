@@ -103,9 +103,40 @@ export class TelegramClientMock {
 export class TwitterClientMock {
   requestToken() {
     return {
-      oauth_token: '9BC3-wAAAAABUZusAAABfHLxV60',
+      oauth_token: 'wAAAAABUZusAAABfHLxV60',
       oauth_token_secret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-      oauth_callback_confirmed: 'true'
+      results: {
+        oauth_callback_confirmed: 'true'
+      }
+    };
+  }
+
+  requestAccessToken(
+    accessToken: string,
+    tokenSecret: string,
+    oauthVerifier: string
+  ) {
+    return {
+      oauth_token: '999999-CPaQRyUqzyGYleMi3f2TUzEbflahkiT',
+      oauth_token_secret: 'CWxdy113hukVwJ6HgvBZTF1uXHuQXtLLP5A',
+      results: {
+        user_id: '999999',
+        screen_name: 'john'
+      }
+    };
+  }
+
+  requestVerifyToken(accessToken: string, tokenSecret: string) {
+    return {
+      id: 999999,
+      id_str: '999999',
+      name: 'John Wick',
+      screen_name: 'john',
+      profile_image_url:
+        'http://pbs.twimg.com/profile_images/291766490/kzq622-02_normal.jpg',
+      profile_image_url_https:
+        'https://pbs.twimg.com/profile_images/291766490/kzq622-02_normal.jpg',
+      email: 'john@hotmail.com'
     };
   }
 }

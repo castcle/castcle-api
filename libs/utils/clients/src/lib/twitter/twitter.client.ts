@@ -20,14 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import * as Crypto from 'crypto';
-import * as OAuth1a from 'oauth-1.0a';
-import { lastValueFrom, map } from 'rxjs';
-
+import * as OAuth from 'oauth';
+import { TwitterAccessToken, TwitterUserData } from './twitter.message';
 @Injectable()
 export class TwitterClient {
   private readonly logger = new CastLogger(
@@ -35,93 +33,95 @@ export class TwitterClient {
     CastLoggerOptions
   );
 
-  constructor(private httpService: HttpService) {}
-
   private readonly requestTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
   private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/access_token `;
+  private readonly verifyToken = `${Environment.twitter_host}/1.1/account/verify_credentials.json?include_email=true`;
 
-  private authHeader(
-    request: OAuth.RequestOptions,
-    accessToken?: string,
-    tokenSecret?: string
-  ) {
-    const oauth = new OAuth1a({
-      consumer: {
-        key: Environment.twitter_key,
-        secret: Environment.twitter_secret_key
-      },
-      signature_method: 'HMAC-SHA1',
-      hash_function(base_string, key) {
-        return Crypto.createHmac('sha1', key)
-          .update(base_string)
-          .digest('base64');
-      }
-    });
-
-    const authorization = oauth.authorize(request, {
-      key: accessToken ? accessToken : '',
-      secret: tokenSecret ? tokenSecret : ''
-    });
-
-    return oauth.toHeader(authorization);
-  }
+  private readonly oauth = new OAuth.OAuth(
+    this.requestTokenUrl,
+    this.accessTokenUrl,
+    Environment.twitter_key,
+    Environment.twitter_secret_key,
+    '1.0A',
+    null,
+    'HMAC-SHA1'
+  );
 
   /**
    * Request Twitter Access Token
-   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   * @returns {TwitterAccessToken} token data
    */
-  async requestToken() {
-    const request = {
-      url: this.requestTokenUrl,
-      method: 'POST'
-    };
-
-    const authHeader = this.authHeader(request);
-    return lastValueFrom(
-      this.httpService
-        .post(request.url, null, {
-          headers: authHeader
-        })
-        .pipe(
-          map(({ data }) => {
-            return this.transformData(data);
-          })
-        )
-    );
+  async requestToken(): Promise<TwitterAccessToken> {
+    return new Promise((resolve, reject) => {
+      this.oauth.getOAuthRequestToken(
+        (error, oauth_token, oauth_token_secret, results) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve({ oauth_token, oauth_token_secret, results });
+          }
+        }
+      );
+    });
   }
 
   /**
-   * Request Twitter Access Token
-   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   * Acces Twitter API from user token
+   * @param {string} accessToken access token from twitter
+   * @param {string} tokenSecret secret token from twitter
+   * @param {string} oauthVerifier verify token from twitter
+   * @returns {TwitterAccessToken} token data
    */
-  async requestAccessToken(accessToken: string, oauthVerifier: string) {
-    const request = {
-      url: this.accessTokenUrl,
-      method: 'POST'
-    };
-
-    const authHeader = this.authHeader(request, accessToken, oauthVerifier);
-    return lastValueFrom(
-      this.httpService
-        .post(request.url, null, {
-          headers: authHeader
-        })
-        .pipe(
-          map(({ data }) => {
-            return this.transformData(data);
-          })
-        )
-    );
+  async requestAccessToken(
+    accessToken: string,
+    tokenSecret: string,
+    oauthVerifier: string
+  ): Promise<TwitterAccessToken> {
+    return new Promise((resolve, reject) => {
+      this.oauth.getOAuthAccessToken(
+        accessToken,
+        tokenSecret,
+        oauthVerifier,
+        (error, oauth_token, oauth_token_secret, results) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve({
+              oauth_token,
+              oauth_token_secret,
+              results
+            });
+          }
+        }
+      );
+    });
   }
 
-  private transformData(data: any) {
-    const result = data.split('&').reduce((obj, str) => {
-      const splitValue = str.split('=');
-      if (splitValue[0] && splitValue[1]) {
-        obj[splitValue[0].replace(/\s+/g, '')] = splitValue[1].trim();
-      }
-      return obj;
-    }, {});
-    return result;
+  /**
+   * Get User Data from user token
+   * @param {string} accessToken access token from twitter
+   * @param {string} tokenSecret secret token from twitter
+   * @returns {TwitterAccessToken} token data
+   */
+  async requestVerifyToken(
+    accessToken: string,
+    tokenSecret: string
+  ): Promise<TwitterUserData> {
+    return new Promise((resolve, reject) => {
+      this.oauth.getProtectedResource(
+        this.verifyToken,
+        'GET',
+        accessToken,
+        tokenSecret,
+        (error, data, response) => {
+          if (error) {
+            reject(error);
+          } else {
+            const result = JSON.parse(data);
+            resolve(result);
+          }
+        }
+      );
+    });
   }
 }
