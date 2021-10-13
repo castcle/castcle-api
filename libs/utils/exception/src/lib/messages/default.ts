@@ -94,7 +94,7 @@ export const ErrorMessages = {
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'email หรือ mobile ซ้ำ'
+    message: 'otp ไม่ถูกต้อง'
   },
   '3009': {
     statusCode: '400',

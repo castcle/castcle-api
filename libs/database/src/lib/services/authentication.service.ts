@@ -51,7 +51,11 @@ import {
 } from '../schemas/credential.schema';
 import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
-import { EChannelType, TwilioService } from '@castcle-api/utils/twilio';
+import {
+  EChannelType,
+  TwilioService,
+  EOtpStatus
+} from '@castcle-api/utils/twilio';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
 export interface AccountRequirements {
@@ -528,81 +532,6 @@ export class AuthenticationService {
   }
 
   /**
-   * forgot password by email
-   * @param {AccountDocument} account
-   */
-  async forgotPasswordRequestOtpByEmail(
-    account: AccountDocument
-  ): Promise<OtpDocument> {
-    const otp = await this._otpModel.generate(
-      account._id,
-      OtpObjective.ForgotPassword
-    );
-    await TwilioService.requestOtp(account.email, EChannelType.EMAIL);
-    return otp;
-  }
-
-  /**
-   * forgot password by mobile number
-   * @param {AccountDocument} account
-   */
-  async forgotPasswordRequestByMobile(account: AccountDocument) {
-    // TODO !!! wait findAccountByMobileNumber
-    // const otp = await this._otpModel.generate(
-    //   account._id,
-    //   OtpObjective.ForgotPassword
-    // );
-    const combileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
-      account.mobile.countryCode,
-      account.mobile.number
-    );
-    await TwilioService.requestOtp(combileNumber, EChannelType.MOBILE);
-    // TODO !!! wait findAccountByMobileNumber
-    // return otp;
-  }
-
-  /**
-   * forgot password vefication OTP
-   * @param {string} channel
-   * @param {AccountDocument} account
-   * @param {string} refCode
-   * @param {string} otp
-   */
-  async forgotPasswordVerificationOtp(
-    channel: string,
-    account: AccountDocument,
-    refCode: string,
-    otp: string
-  ): Promise<OtpDocument> {
-    let receiver = '';
-    const otpObj = await this._otpModel
-      .findOne({
-        account: account,
-        refCode: refCode,
-        action: OtpObjective.ForgotPassword
-      })
-      .exec();
-    if (otpObj && otpObj.$isValid && otpObj.expireDate > new Date()) {
-      if (channel == 'mobile') {
-        receiver = await MobileNumber.getMobileNumberWithCountyrCode(
-          account.mobile.countryCode,
-          account.mobile.number
-        );
-      } else {
-        receiver = account.email;
-      }
-      await TwilioService.verifyOtp(receiver, otp);
-      const newOtp = await this._otpModel.generate(
-        account._id,
-        OtpObjective.VerifyForgotPassword
-      );
-      return newOtp;
-    } else {
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
-    }
-  }
-
-  /**
    * reset password
    * @param {string} refCode
    * @param {string} newPassword
@@ -613,14 +542,115 @@ export class AuthenticationService {
     const otp = await this._otpModel
       .findOne({
         refCode: refCode,
-        action: OtpObjective.VerifyForgotPassword
+        action: OtpObjective.VerifyForgotPassword.toString()
       })
       .exec();
-    if (otp && otp.$isValid && otp.expireDate > new Date()) {
+    if (otp && otp.$isValid) {
       const account = await this._accountModel
         .findOne({ _id: otp.account._id })
         .exec();
       await this.changePassword(account, otp, newPassword);
+    } else {
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
+    }
+  }
+
+  /**
+   * request OTP by email
+   * @param {AccountDocument} account
+   * @param {OtpObjective} objective
+   */
+  async requestOtpByEmail(
+    account: AccountDocument,
+    objective: OtpObjective
+  ): Promise<OtpDocument> {
+    const otp = await this._otpModel.generate(account._id, objective);
+    const otpResponse = await TwilioService.requestOtp(
+      account.email,
+      EChannelType.EMAIL
+    );
+    if (otpResponse.status == EOtpStatus.PENDING) {
+      return otp;
+    } else {
+      throw new CastcleException(CastcleStatus.INVALID_OTP);
+    }
+  }
+
+  /**
+   * request OTP by mobile number
+   * @param {AccountDocument} account
+   * @param {OtpObjective} objective
+   */
+  async requestOtpByByMobile(
+    account: AccountDocument,
+    objective: OtpObjective
+  ) {
+    // TODO !!! wait findAccountByMobileNumber
+    // const otp = await this._otpModel.generate(
+    //   account._id,
+    //   objective
+    // );
+    const combileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
+      account.mobile.countryCode,
+      account.mobile.number
+    );
+    const otpResponse = await TwilioService.requestOtp(
+      combileNumber,
+      EChannelType.MOBILE
+    );
+    if (otpResponse.status == EOtpStatus.PENDING) {
+      // TODO !!! wait findAccountByMobileNumber
+      // return otp;
+    } else {
+      throw new CastcleException(CastcleStatus.INVALID_OTP);
+    }
+  }
+
+  /**
+   * vefication OTP
+   * @param {string} channel
+   * @param {AccountDocument} account
+   * @param {string} refCode
+   * @param {string} otp
+   * @param {OtpObjective} objective
+   */
+  async verificationOtp(
+    channel: string,
+    account: AccountDocument,
+    refCode: string,
+    otp: string,
+    objective: OtpObjective
+  ) {
+    let receiver = '';
+    const otpObj = await this._otpModel
+      .findOne({
+        account: account,
+        refCode: refCode,
+        action: objective.toString()
+      })
+      .exec();
+    if (otpObj && otpObj.$isValid) {
+      if (channel == 'mobile') {
+        receiver = await MobileNumber.getMobileNumberWithCountyrCode(
+          account.mobile.countryCode,
+          account.mobile.number
+        );
+      } else {
+        receiver = account.email;
+      }
+      const otpResponse = await TwilioService.verifyOtp(receiver, otp);
+      if (otpResponse.valid && otpResponse.status == EOtpStatus.APPROVED) {
+        if (objective == OtpObjective.ForgotPassword) {
+          const newOtp = await this._otpModel.generate(
+            account._id,
+            OtpObjective.VerifyForgotPassword
+          );
+          return newOtp;
+        } else {
+          return;
+        }
+      }
+      throw new CastcleException(CastcleStatus.INVALID_OTP);
     } else {
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }

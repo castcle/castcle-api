@@ -71,14 +71,20 @@ import {
   ForgotPasswordRequestOtpDto,
   ForgotPasswordResponse,
   ForgotPasswordVerificationOtpDto,
-  ResetPasswordDto
+  ResetPasswordDto,
+  RequestOtpDto,
+  RequestOtpResponse,
+  VerificationOtpDto
 } from './dtos/dto';
 import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
-import { UserAccessTokenPayload } from '@castcle-api/database/dtos';
-import { AccountDocument, OtpDocument } from '@castcle-api/database/schemas';
+import {
+  AccountDocument,
+  OtpDocument,
+  OtpObjective
+} from '@castcle-api/database/schemas';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -796,7 +802,10 @@ export class AuthenticationController {
     if (body.channel === 'email') {
       account = await this.authService.getAccountFromEmail(body.payload.email);
       if (this.checkValidAccount(account, req)) {
-        otp = await this.authService.forgotPasswordRequestOtpByEmail(account);
+        otp = await this.authService.requestOtpByEmail(
+          account,
+          OtpObjective.ForgotPassword
+        );
       }
     } else if (body.channel === 'mobile') {
       // TODO !!! wait findAccountByMobileNumber
@@ -867,11 +876,12 @@ export class AuthenticationController {
         req.$language
       );
     }
-    const otp = await this.authService.forgotPasswordVerificationOtp(
+    const otp = await this.authService.verificationOtp(
       body.channel,
       account,
       body.refCode,
-      body.otp
+      body.otp,
+      OtpObjective.ForgotPassword
     );
     if (otp && otp.isValid()) {
       const response: ForgotPasswordResponse = {
@@ -894,8 +904,108 @@ export class AuthenticationController {
   @HttpCode(204)
   async resetPasswordSubmit(
     @Body() body: ResetPasswordDto,
-    @Req() req: CredentialRequest
+    @Req() _: CredentialRequest
   ) {
     await this.authService.resetPassword(body.refCode, body.newPassword);
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('requestOTP')
+  @HttpCode(200)
+  async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
+    if (!(<OtpObjective>body.objective)) {
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+    let account: AccountDocument = null;
+    let otp: OtpDocument = null;
+    if (body.channel === 'email') {
+      account = await this.authService.getAccountFromEmail(body.payload.email);
+      if (this.checkValidAccount(account, req)) {
+        otp = await this.authService.requestOtpByEmail(
+          account,
+          <OtpObjective>body.objective
+        );
+      }
+    } else if (body.channel === 'mobile') {
+      // TODO !!! wait findAccountByMobileNumber
+      // account = await this.authService.getAccountFromMobileNo(
+      //   body.payload.countryCode,
+      //   body.payload.mobileNumber
+      // );
+      // if (this.checkValidAccount(account, req)) {
+      //   otp = await this.authService.forgotPasswordRequestByMobile(account);
+      // }
+    } else {
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        req.$language
+      );
+    }
+    if (otp && otp.isValid()) {
+      const response: RequestOtpResponse = {
+        refCode: otp.refCode,
+        objective: otp.action,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 204,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('verificationOTP')
+  @HttpCode(204)
+  async verificationOTP(
+    @Body() body: VerificationOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    if (!(<OtpObjective>body.objective)) {
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+    let account: AccountDocument = null;
+    if (body.channel === 'email') {
+      account = await this.authService.getAccountFromEmail(body.payload.email);
+    } else if (body.channel === 'mobile') {
+      // TODO !!! wait findAccountByMobileNumber
+      // account = await this.authService.getAccountFromMobileNo(
+      //   body.payload.countryCode,
+      //   body.payload.mobileNumber
+      // );
+    } else {
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        req.$language
+      );
+    }
+    if (!account.$isValid) {
+      throw new CastcleException(
+        CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
+        req.$language
+      );
+    }
+    await this.authService.verificationOtp(
+      body.channel,
+      account,
+      body.refCode,
+      body.otp,
+      <OtpObjective>body.objective
+    );
   }
 }

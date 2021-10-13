@@ -37,31 +37,36 @@ export enum EChannelType {
   MOBILE = 'sms'
 }
 
-const requestOtp = (receiver: string, channel: EChannelType) => {
-  client.verify
-    .services(env.twilioOtpSid)
-    .verifications.create({
-      to: receiver,
-      channel: channel
-    })
-    .then((verification) => {
-      console.log(verification);
-    })
-    .catch((error) => {
-      throw new Error(error);
-    });
+export enum EOtpStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved'
+}
+
+const requestOtp = async (receiver: string, channel: EChannelType) => {
+  try {
+    const verification = await client.verify
+      .services(env.twilioOtpSid)
+      .verifications.create({
+        to: receiver,
+        channel: channel
+      });
+    console.log(verification);
+    return verification;
+  } catch (error) {
+    throw new Error(error);
+  }
 };
 
-const verifyOtp = (receiver: string, otp: string) => {
-  client.verify
-    .services(env.twilioOtpSid)
-    .verificationChecks.create({ to: receiver, code: otp })
-    .then((verification) => {
-      console.log(verification);
-    })
-    .catch((error) => {
-      throw new Error(error);
-    });
+const verifyOtp = async (receiver: string, otp: string) => {
+  try {
+    const verification = await client.verify
+      .services(env.twilioOtpSid)
+      .verificationChecks.create({ to: receiver, code: otp });
+    console.log(verification);
+    return verification;
+  } catch (error) {
+    throw new Error(error);
+  }
 };
 
 export const TwilioService = { requestOtp, verifyOtp };

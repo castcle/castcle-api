@@ -22,7 +22,7 @@
  */
 
 import { Module } from '@nestjs/common';
-import { TwilioService, EChannelType } from './twilio';
+import { TwilioService, EChannelType, EOtpStatus } from './twilio';
 
 @Module({
   controllers: [],
@@ -31,4 +31,4 @@ import { TwilioService, EChannelType } from './twilio';
 })
 export class UtilsTwilioModule {}
 
-export { TwilioService, EChannelType };
+export { TwilioService, EChannelType, EOtpStatus };

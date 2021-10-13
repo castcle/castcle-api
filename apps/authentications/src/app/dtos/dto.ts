@@ -150,7 +150,7 @@ export interface SocialConnect {
   profileImage: string;
   socialToken: string;
 }
-export class ForgotPasswordPayload {
+export class UserPayload {
   @ApiProperty()
   email: string;
 
@@ -166,7 +166,7 @@ export class ForgotPasswordRequestOtpDto {
   channel: string;
 
   @ApiProperty()
-  payload: ForgotPasswordPayload;
+  payload: UserPayload;
 }
 
 export class ForgotPasswordResponse {
@@ -191,4 +191,19 @@ export class ResetPasswordDto {
 
   @ApiProperty()
   newPassword: string;
+}
+
+export class RequestOtpDto extends ForgotPasswordRequestOtpDto {
+  @ApiProperty()
+  objective: string;
+}
+
+export class RequestOtpResponse extends ForgotPasswordResponse {
+  @ApiProperty()
+  objective: string;
+}
+
+export class VerificationOtpDto extends ForgotPasswordVerificationOtpDto {
+  @ApiProperty()
+  objective: string;
 }
