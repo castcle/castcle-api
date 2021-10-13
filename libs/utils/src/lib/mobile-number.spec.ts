@@ -34,7 +34,7 @@ describe('MobileNumber', () => {
   });
   describe('#combineMobileNumber()', () => {
     it('should return encrypt password', async () => {
-      const mobileNumber = await MobileNumber.getMobileNoWithCountyrCode(
+      const mobileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
         '+66',
         '0804103300'
       );
