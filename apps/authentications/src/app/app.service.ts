@@ -268,6 +268,11 @@ export class AppService {
         payload.authVerifierToken
       );
 
+    if (!tokenData) {
+      this.logger.error(`Use token expired.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
     this.logger.log(`verify twitter user token.`);
     const userVerify: TwitterUserData =
       await this.twitterClient.requestVerifyToken(
@@ -276,8 +281,8 @@ export class AppService {
       );
 
     if (!userVerify) {
-      this.logger.error(`Use token expired.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+      this.logger.error(`Can't get user data.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
     }
 
     return { userVerify, tokenData };
