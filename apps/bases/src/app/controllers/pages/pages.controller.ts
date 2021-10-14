@@ -263,7 +263,7 @@ export class PageController {
       return '';
     } else
       throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
+        CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
   }
