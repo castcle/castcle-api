@@ -130,6 +130,18 @@ export class PageResponseDto {
   avatar: string;
 
   @ApiProperty()
+  overview: string | null;
+
+  @ApiProperty()
+  links: {
+    facebook: string | null;
+    twitter: string | null;
+    youtube: string | null;
+    medium: string | null;
+    website: string | null;
+  };
+
+  @ApiProperty()
   cover: string;
 
   @ApiProperty()
