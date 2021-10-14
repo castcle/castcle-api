@@ -22,15 +22,17 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { Injectable } from '@nestjs/common';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import * as Twilio from 'twilio';
+import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
+import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 
 const env = {
   twilioAccountSid: Environment.twilio_account_sid,
   twilioAuthToken: Environment.twilio_auth_token,
   twilioOtpSid: Environment.twilio_otp_sid
 };
-
-const client = Twilio(env.twilioAccountSid, env.twilioAuthToken);
 
 export enum EChannelType {
   EMAIL = 'email',
@@ -42,31 +44,61 @@ export enum EOtpStatus {
   APPROVED = 'approved'
 }
 
-const requestOtp = async (receiver: string, channel: EChannelType) => {
-  try {
-    const verification = await client.verify
-      .services(env.twilioOtpSid)
-      .verifications.create({
-        to: receiver,
-        channel: channel
-      });
-    console.log(verification);
-    return verification;
-  } catch (error) {
-    throw new Error(error);
-  }
-};
+@Injectable()
+export class TwilioService {
+  private readonly logger = new CastLogger(
+    TwilioService.name,
+    CastLoggerOptions
+  );
 
-const verifyOtp = async (receiver: string, otp: string) => {
-  try {
-    const verification = await client.verify
-      .services(env.twilioOtpSid)
-      .verificationChecks.create({ to: receiver, code: otp });
-    console.log(verification);
-    return verification;
-  } catch (error) {
-    throw new Error(error);
-  }
-};
+  private readonly twilioAccountSid: string = Environment.twilio_account_sid;
+  private readonly twilioAuthToken: string = Environment.twilio_auth_token;
+  private readonly twilioOtpSid: string = Environment.twilio_otp_sid;
 
-export const TwilioService = { requestOtp, verifyOtp };
+  /**
+   * Request OTP
+   * @param {string} receiver
+   * @param {EChannelType} channel
+   * @returns {Promise<VerificationInstance>}
+   */
+  async requestOtp(
+    receiver: string,
+    channel: EChannelType
+  ): Promise<VerificationInstance> {
+    const client = Twilio(this.twilioAccountSid, this.twilioAuthToken);
+    try {
+      const verification = await client.verify
+        .services(this.twilioOtpSid)
+        .verifications.create({
+          to: receiver,
+          channel: channel
+        });
+      console.log(verification);
+      return verification;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  /**
+   * Verify OTP
+   * @param {string} receiver
+   * @param {string} otp
+   * @returns {Promise<VerificationCheckInstance>}
+   */
+  async verifyOtp(
+    receiver: string,
+    otp: string
+  ): Promise<VerificationCheckInstance> {
+    const client = Twilio(this.twilioAccountSid, this.twilioAuthToken);
+    try {
+      const verification = await client.verify
+        .services(this.twilioOtpSid)
+        .verificationChecks.create({ to: receiver, code: otp });
+      console.log(verification);
+      return verification;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+}

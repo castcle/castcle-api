@@ -85,6 +85,7 @@ import {
   OtpDocument,
   OtpObjective
 } from '@castcle-api/database/schemas';
+import { EOtpStatus } from '@castcle-api/utils/twilio';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -823,11 +824,19 @@ export class AuthenticationController {
       );
     }
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
-        refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
-      };
-      return response;
+      const otpResponse = await this.appService.requestOtp(
+        body.channel,
+        account
+      );
+      if (otpResponse.status == EOtpStatus.PENDING) {
+        const response: ForgotPasswordResponse = {
+          refCode: otp.refCode,
+          expiresTime: otp.expireDate.toISOString()
+        };
+        return response;
+      } else {
+        throw new CastcleException(CastcleStatus.INVALID_OTP);
+      }
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
@@ -877,18 +886,25 @@ export class AuthenticationController {
       );
     }
     const otp = await this.authService.verificationOtp(
-      body.channel,
       account,
       body.refCode,
-      body.otp,
       OtpObjective.ForgotPassword
     );
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
-        refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
-      };
-      return response;
+      const otpResponse = await this.appService.verificationOtp(
+        body.channel,
+        account,
+        body.otp
+      );
+      if (otpResponse.valid && otpResponse.status === EOtpStatus.APPROVED) {
+        const response: ForgotPasswordResponse = {
+          refCode: otp.refCode,
+          expiresTime: otp.expireDate.toISOString()
+        };
+        return response;
+      } else {
+        throw new CastcleException(CastcleStatus.INVALID_OTP);
+      }
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
@@ -950,12 +966,20 @@ export class AuthenticationController {
       );
     }
     if (otp && otp.isValid()) {
-      const response: RequestOtpResponse = {
-        refCode: otp.refCode,
-        objective: otp.action,
-        expiresTime: otp.expireDate.toISOString()
-      };
-      return response;
+      const otpResponse = await this.appService.requestOtp(
+        body.channel,
+        account
+      );
+      if (otpResponse.status == EOtpStatus.PENDING) {
+        const response: RequestOtpResponse = {
+          refCode: otp.refCode,
+          objective: otp.action,
+          expiresTime: otp.expireDate.toISOString()
+        };
+        return response;
+      } else {
+        throw new CastcleException(CastcleStatus.INVALID_OTP);
+      }
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
@@ -1000,12 +1024,24 @@ export class AuthenticationController {
         req.$language
       );
     }
-    await this.authService.verificationOtp(
-      body.channel,
+    const otp = await this.authService.verificationOtp(
       account,
       body.refCode,
-      body.otp,
       <OtpObjective>body.objective
     );
+    if (otp && otp.isValid()) {
+      const otpResponse = await this.appService.verificationOtp(
+        body.channel,
+        account,
+        body.otp
+      );
+      if (otpResponse.valid && otpResponse.status === EOtpStatus.APPROVED) {
+        return;
+      } else {
+        throw new CastcleException(CastcleStatus.INVALID_OTP);
+      }
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
   }
 }

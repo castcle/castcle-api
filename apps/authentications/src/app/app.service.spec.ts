@@ -27,6 +27,7 @@ import {
 } from '@castcle-api/database';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { UtilsTwilioModule } from '@castcle-api/utils/twilio';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -61,7 +62,8 @@ describe('AppService', () => {
         MongooseForFeatures,
         HttpModule,
         UtilsClientsModule,
-        UtilsAwsModule
+        UtilsAwsModule,
+        UtilsTwilioModule
       ],
       providers: [AppService, AuthenticationService]
     }).compile();

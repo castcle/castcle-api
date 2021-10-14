@@ -20,24 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { UtilsTwilioModule } from '@castcle-api/utils/twilio';
-import { Module } from '@nestjs/common';
-import { AuthenticationController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-@Module({
-  imports: [
-    DatabaseModule,
-    CaslModule,
-    UtilsClientsModule,
-    UtilsAwsModule,
-    UtilsTwilioModule
-  ],
-  controllers: [AuthenticationController, HealthyController],
-  providers: [AppService]
-})
-export class AuthenticationModule {}
+
+import { EOtpStatus } from '@castcle-api/utils/twilio';
+import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
+import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
+
+export class TwilioServiceMock {
+  requestOtp() {
+    return <VerificationInstance>{
+      status: EOtpStatus.PENDING,
+      valid: false
+    };
+  }
+
+  verifyOtp() {
+    return <VerificationCheckInstance>{
+      status: EOtpStatus.APPROVED,
+      valid: true
+    };
+  }
+}

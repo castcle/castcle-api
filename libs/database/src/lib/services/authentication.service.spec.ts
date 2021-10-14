@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
-import { AccountAuthenIdDocument } from '../schemas';
+import { AccountAuthenIdDocument, OtpObjective } from '../schemas';
 import { AccountDocument } from '../schemas/account.schema';
 import { AccountActivationDocument } from '../schemas/accountActivation.schema';
 import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
@@ -613,6 +613,36 @@ describe('Authentication Service', () => {
         expect(accountSocialFb.socialId).toEqual(fbsocialId);
         expect(accountSocialTw.socialId).toEqual(twsocialId);
         expect(accountSocialTw.socialToken).toEqual('testtoken');
+      });
+    });
+    describe('#requestOtpByEmail()', () => {
+      it('should generate otp', async () => {
+        const account: AccountDocument = await service.getAccountFromEmail(
+          'sompopdude@dudedude.com'
+        );
+        console.log(account);
+        const otp = await service.requestOtpByEmail(
+          account,
+          OtpObjective.ForgotPassword
+        );
+        expect(otp).toBeDefined();
+      });
+    });
+    describe('#verificationOtp()', () => {
+      it('should get otp object', async () => {
+        const account: AccountDocument = await service.getAccountFromEmail(
+          'sompopdude@dudedude.com'
+        );
+        const otp = await service.requestOtpByEmail(
+          account,
+          OtpObjective.ForgotPassword
+        );
+        const verify = await service.verificationOtp(
+          account,
+          otp.refCode,
+          OtpObjective.ForgotPassword
+        );
+        expect(verify).toBeDefined();
       });
     });
   });

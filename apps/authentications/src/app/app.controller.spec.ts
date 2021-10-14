@@ -44,7 +44,8 @@ import {
   FacebookClientMock,
   TelegramClientMock
 } from './social.client.mock';
-import { ExportContext } from 'twilio/lib/rest/bulkexports/v1/export';
+import { TwilioServiceMock } from './twilio.mock';
+import { TwilioService } from '@castcle-api/utils/twilio';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -82,6 +83,10 @@ describe('AppController', () => {
       provide: TelegramClient,
       useClass: TelegramClientMock
     };
+    const TwilioProvider = {
+      provide: TwilioService,
+      useClass: TwilioServiceMock
+    };
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
@@ -95,7 +100,8 @@ describe('AppController', () => {
         AuthenticationService,
         FacebookClientProvider,
         DownloaderProvider,
-        TelegramClientProvider
+        TelegramClientProvider,
+        TwilioProvider
       ]
     }).compile();
 
@@ -857,7 +863,6 @@ describe('AppController', () => {
       );
     });
   });
-
   describe('forgotPasswordRequestOTP', () => {
     it('should get otp email after success', async () => {
       const channel = 'email';
@@ -887,6 +892,135 @@ describe('AppController', () => {
       );
       expect(result).not.toBeNull;
       expect(result.refCode).toHaveLength(8);
+    });
+  });
+  describe('forgotPasswordVerifyOtp', () => {
+    it('should verify success', async () => {
+      const channel = 'email';
+      const email = 'sompop3.kulapalanont@gmail.com';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const request = await appController.forgotPasswordRequestOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      const result = await appController.forgotPasswordVerificationOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          },
+          refCode: request.refCode,
+          otp: '222222'
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      expect(result).not.toBeNull;
+      expect(result.refCode).toHaveLength(8);
+    });
+  });
+  describe('requestOTP', () => {
+    it('should get otp email after success', async () => {
+      const channel = 'email';
+      const email = 'sompop3.kulapalanont@gmail.com';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const result = await appController.requestOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          },
+          objective: 'mergeaccount'
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      expect(result).not.toBeNull;
+      expect(result.refCode).toHaveLength(8);
+    });
+  });
+  describe('verifyOtp', () => {
+    it('should verify success', async () => {
+      const channel = 'email';
+      const email = 'sompop3.kulapalanont@gmail.com';
+      const deviceUUID = 'sompop12341';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const request = await appController.requestOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          },
+          objective: 'mergeaccount'
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      const result = await appController.verificationOTP(
+        {
+          channel: channel,
+          payload: {
+            email: email,
+            countryCode: '',
+            mobileNumber: ''
+          },
+          refCode: request.refCode,
+          otp: '222222',
+          objective: 'mergeaccount'
+        },
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
+      );
+      expect(result).toBeUndefined();
     });
   });
   describe('connectWithSocial Telegram', () => {

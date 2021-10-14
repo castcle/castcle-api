@@ -26,8 +26,8 @@ import { TwilioService, EChannelType, EOtpStatus } from './twilio';
 
 @Module({
   controllers: [],
-  providers: [],
-  exports: []
+  providers: [TwilioService],
+  exports: [TwilioService]
 })
 export class UtilsTwilioModule {}
 

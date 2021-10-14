@@ -565,11 +565,7 @@ export class AuthenticationService {
     objective: OtpObjective
   ): Promise<OtpDocument> {
     const otp = await this._otpModel.generate(account._id, objective);
-    const otpResponse = await TwilioService.requestOtp(
-      account.email,
-      EChannelType.EMAIL
-    );
-    if (otpResponse.status == EOtpStatus.PENDING) {
+    if (otp && otp.$isValid) {
       return otp;
     } else {
       throw new CastcleException(CastcleStatus.INVALID_OTP);
@@ -584,23 +580,10 @@ export class AuthenticationService {
   async requestOtpByByMobile(
     account: AccountDocument,
     objective: OtpObjective
-  ) {
-    // TODO !!! wait findAccountByMobileNumber
-    // const otp = await this._otpModel.generate(
-    //   account._id,
-    //   objective
-    // );
-    const combileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
-      account.mobile.countryCode,
-      account.mobile.number
-    );
-    const otpResponse = await TwilioService.requestOtp(
-      combileNumber,
-      EChannelType.MOBILE
-    );
-    if (otpResponse.status == EOtpStatus.PENDING) {
-      // TODO !!! wait findAccountByMobileNumber
-      // return otp;
+  ): Promise<OtpDocument> {
+    const otp = await this._otpModel.generate(account._id, objective);
+    if (otp && otp.$isValid) {
+      return otp;
     } else {
       throw new CastcleException(CastcleStatus.INVALID_OTP);
     }
@@ -608,20 +591,15 @@ export class AuthenticationService {
 
   /**
    * vefication OTP
-   * @param {string} channel
    * @param {AccountDocument} account
    * @param {string} refCode
-   * @param {string} otp
    * @param {OtpObjective} objective
    */
   async verificationOtp(
-    channel: string,
     account: AccountDocument,
     refCode: string,
-    otp: string,
     objective: OtpObjective
-  ) {
-    let receiver = '';
+  ): Promise<OtpDocument> {
     const otpObj = await this._otpModel
       .findOne({
         account: account,
@@ -630,27 +608,7 @@ export class AuthenticationService {
       })
       .exec();
     if (otpObj && otpObj.$isValid) {
-      if (channel == 'mobile') {
-        receiver = await MobileNumber.getMobileNumberWithCountyrCode(
-          account.mobile.countryCode,
-          account.mobile.number
-        );
-      } else {
-        receiver = account.email;
-      }
-      const otpResponse = await TwilioService.verifyOtp(receiver, otp);
-      if (otpResponse.valid && otpResponse.status == EOtpStatus.APPROVED) {
-        if (objective == OtpObjective.ForgotPassword) {
-          const newOtp = await this._otpModel.generate(
-            account._id,
-            OtpObjective.VerifyForgotPassword
-          );
-          return newOtp;
-        } else {
-          return;
-        }
-      }
-      throw new CastcleException(CastcleStatus.INVALID_OTP);
+      return otpObj;
     } else {
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }

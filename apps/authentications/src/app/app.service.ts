@@ -21,10 +21,14 @@
  * or have any questions.
  */
 import { AuthenticationService } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
+import {
+  AccountDocument,
+  CredentialDocument,
+  OtpObjective
+} from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Password } from '@castcle-api/utils';
+import { MobileNumber, Password } from '@castcle-api/utils';
 import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
   FacebookAccessToken,
@@ -34,8 +38,11 @@ import {
   TelegramUserInfo
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { EChannelType, TwilioService } from '@castcle-api/utils/twilio';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification';
+import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 import { getSignupHtml } from './configs/signupEmail';
 import { SocialConnect, SocialConnectInfo, TokenResponse } from './dtos/dto';
 /*
@@ -57,7 +64,8 @@ export class AppService {
     private authService: AuthenticationService,
     private fbClient: FacebookClient,
     private download: Downloader,
-    private telegramService: TelegramClient
+    private telegramService: TelegramClient,
+    private twilioService: TwilioService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -236,5 +244,54 @@ export class AppService {
     };
     this.logger.log('Validate Hash');
     return await this.telegramService.verifyUserToken(message);
+  }
+
+  /**
+   * request OTP
+   * @param {AccountDocument} account
+   * @param {OtpObjective} objective
+   * @return {Promise<VerificationInstance>}
+   */
+  async requestOtp(
+    channel: string,
+    account: AccountDocument
+  ): Promise<VerificationInstance> {
+    if (channel === 'email') {
+      return await this.twilioService.requestOtp(
+        account.email,
+        EChannelType.EMAIL
+      );
+    } else {
+      const combileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
+        account.mobile.countryCode,
+        account.mobile.number
+      );
+      return await this.twilioService.requestOtp(
+        combileNumber,
+        EChannelType.MOBILE
+      );
+    }
+  }
+
+  /**
+   * verification OTP
+   * @param {AccountDocument} account
+   * @param {string} objective
+   * @return {Promise<VerificationCheckInstance>}
+   */
+  async verificationOtp(
+    channel: string,
+    account: AccountDocument,
+    otp: string
+  ): Promise<VerificationCheckInstance> {
+    if (channel === 'email') {
+      return await this.twilioService.verifyOtp(account.email, otp);
+    } else {
+      const combileNumber = await MobileNumber.getMobileNumberWithCountyrCode(
+        account.mobile.countryCode,
+        account.mobile.number
+      );
+      return await this.twilioService.verifyOtp(combileNumber, otp);
+    }
   }
 }
