@@ -39,6 +39,8 @@ export function CastcleController(defaultVersion: string) {
       example: Configs.RequiredHeaders.AcceptLanguague.example,
       required: true
     }),
-    Controller(defaultVersion)
+    Controller({
+      version: defaultVersion
+    })
   );
 }
