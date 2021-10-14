@@ -88,8 +88,6 @@ export const Environment = {
   twitter_secret_key: process.env.TWITTER_SECRET_KEY,
   twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
   twitter_host: process.env.TWITTER_HOST,
-  twitter_access_token: process.env.TWITTER_ACCESS_TOKEN,
-  twitter_token_secret: process.env.TWITTER_TOKEN_SECRET,
   // Otp
   otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
   otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
