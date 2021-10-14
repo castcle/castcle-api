@@ -188,6 +188,32 @@ export class UserService {
     else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
     return { items, pagination };
   };
+
+  /**
+   * Get all user pages
+   * @param {UserDocument} user
+   * @param {CastcleQueryOptions} queryOptions
+   * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
+   */
+  getUserPages = async (
+    user: UserDocument,
+    queryOptions: CastcleQueryOptions
+  ) => {
+    const filter = { ownerAccount: user.ownerAccount, type: UserType.Page };
+    const pages = this._userModel
+      .find(filter)
+      .skip(queryOptions.page - 1)
+      .limit(queryOptions.limit);
+    const pagination = createPagination(
+      queryOptions,
+      await this._userModel.countDocuments(filter)
+    );
+    let items: UserDocument[];
+    if (queryOptions.sortBy.type === 'desc')
+      items = await pages.sort(`-${queryOptions.sortBy.field}`).exec();
+    else items = await pages.sort(`${queryOptions.sortBy.field}`).exec();
+    return { items, pagination };
+  };
   /**
    *
    * @param {UserDocument} user
