@@ -568,7 +568,7 @@ export class AuthenticationService {
     if (otp && otp.$isValid) {
       return otp;
     } else {
-      throw new CastcleException(CastcleStatus.INVALID_OTP);
+      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
     }
   }
 
@@ -585,7 +585,7 @@ export class AuthenticationService {
     if (otp && otp.$isValid) {
       return otp;
     } else {
-      throw new CastcleException(CastcleStatus.INVALID_OTP);
+      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
     }
   }
 

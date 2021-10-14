@@ -800,13 +800,19 @@ export class AuthenticationController {
   ) {
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
-    if (body.channel === 'email') {
-      account = await this.authService.getAccountFromEmail(body.payload.email);
-      if (this.checkValidAccount(account, req)) {
-        otp = await this.authService.requestOtpByEmail(
-          account,
-          OtpObjective.ForgotPassword
+    if (body.payload && body.channel && body.channel === 'email') {
+      if (body.payload.email) {
+        account = await this.authService.getAccountFromEmail(
+          body.payload.email
         );
+        if (this.checkValidAccount(account, req)) {
+          otp = await this.authService.requestOtpByEmail(
+            account,
+            OtpObjective.ForgotPassword
+          );
+        }
+      } else {
+        throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
       }
     } else if (body.channel === 'mobile') {
       // TODO !!! wait findAccountByMobileNumber
@@ -819,7 +825,7 @@ export class AuthenticationController {
       // }
     } else {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         req.$language
       );
     }
@@ -865,8 +871,20 @@ export class AuthenticationController {
     @Req() req: CredentialRequest
   ) {
     let account: AccountDocument = null;
-    if (body.channel === 'email') {
-      account = await this.authService.getAccountFromEmail(body.payload.email);
+    if (!body.refCode) {
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
+    }
+    if (!body.otp) {
+      throw new CastcleException(CastcleStatus.INVALID_OTP);
+    }
+    if (body.payload && body.channel && body.channel === 'email') {
+      if (body.payload.email) {
+        account = await this.authService.getAccountFromEmail(
+          body.payload.email
+        );
+      } else {
+        throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
+      }
     } else if (body.channel === 'mobile') {
       // TODO !!! wait findAccountByMobileNumber
       // account = await this.authService.getAccountFromMobileNo(
@@ -875,7 +893,7 @@ export class AuthenticationController {
       // );
     } else {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         req.$language
       );
     }
@@ -922,7 +940,15 @@ export class AuthenticationController {
     @Body() body: ResetPasswordDto,
     @Req() _: CredentialRequest
   ) {
-    await this.authService.resetPassword(body.refCode, body.newPassword);
+    if (body.refCode) {
+      if (body.newPassword) {
+        await this.authService.resetPassword(body.refCode, body.newPassword);
+      } else {
+        throw new CastcleException(CastcleStatus.INVALID_PASSWORD);
+      }
+    } else {
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
+    }
   }
 
   @ApiBearerAuth()
@@ -934,21 +960,27 @@ export class AuthenticationController {
   @Post('requestOTP')
   @HttpCode(200)
   async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
-    if (!(<OtpObjective>body.objective)) {
+    if (!body.objective || !(<OtpObjective>body.objective)) {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        CastcleStatus.INVALID_OBJECTIVE,
         req.$language
       );
     }
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
-    if (body.channel === 'email') {
-      account = await this.authService.getAccountFromEmail(body.payload.email);
-      if (this.checkValidAccount(account, req)) {
-        otp = await this.authService.requestOtpByEmail(
-          account,
-          <OtpObjective>body.objective
+    if (body.payload && body.channel && body.channel === 'email') {
+      if (body.payload.email) {
+        account = await this.authService.getAccountFromEmail(
+          body.payload.email
         );
+        if (this.checkValidAccount(account, req)) {
+          otp = await this.authService.requestOtpByEmail(
+            account,
+            <OtpObjective>body.objective
+          );
+        }
+      } else {
+        throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
       }
     } else if (body.channel === 'mobile') {
       // TODO !!! wait findAccountByMobileNumber
@@ -961,7 +993,7 @@ export class AuthenticationController {
       // }
     } else {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         req.$language
       );
     }
@@ -997,15 +1029,27 @@ export class AuthenticationController {
     @Body() body: VerificationOtpDto,
     @Req() req: CredentialRequest
   ) {
-    if (!(<OtpObjective>body.objective)) {
+    if (!body.refCode) {
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
+    }
+    if (!body.otp) {
+      throw new CastcleException(CastcleStatus.INVALID_OTP);
+    }
+    if (!body.objective || !(<OtpObjective>body.objective)) {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        CastcleStatus.INVALID_OBJECTIVE,
         req.$language
       );
     }
     let account: AccountDocument = null;
-    if (body.channel === 'email') {
-      account = await this.authService.getAccountFromEmail(body.payload.email);
+    if (body.payload && body.channel && body.channel === 'email') {
+      if (body.payload.email) {
+        account = await this.authService.getAccountFromEmail(
+          body.payload.email
+        );
+      } else {
+        throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND);
+      }
     } else if (body.channel === 'mobile') {
       // TODO !!! wait findAccountByMobileNumber
       // account = await this.authService.getAccountFromMobileNo(
@@ -1014,7 +1058,7 @@ export class AuthenticationController {
       // );
     } else {
       throw new CastcleException(
-        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         req.$language
       );
     }

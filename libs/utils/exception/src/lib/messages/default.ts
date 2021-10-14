@@ -79,12 +79,12 @@ export const ErrorMessages = {
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'password ไม่ถูกต้อง'
+    message: 'channel ไม่ถูกต้อง'
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'refId ไม่ถูกต้อง หรือ หมดอายุ '
+    message: 'ไม่พบ email หรือ mobile number'
   },
   '3007': {
     statusCode: '400',
@@ -99,7 +99,7 @@ export const ErrorMessages = {
   '3009': {
     statusCode: '400',
     code: '3009',
-    message: 'รูปแบบ email ไม่ถูกต้อง'
+    message: 'otp หมดอายุ'
   },
   '3010': {
     statusCode: '400',
@@ -141,6 +141,11 @@ export const ErrorMessages = {
     statusCode: '400',
     code: '3017',
     message: 'มีชื่อผู้ใช้ไอดีนี้แล้ว โปรดเลือกชื่อผู้ใช้อื่น'
+  },
+  '3018': {
+    statusCode: '400',
+    code: '3018',
+    message: 'objective ไม่ถูกต้อง'
   },
   '5001': {
     statusCode: '400',
