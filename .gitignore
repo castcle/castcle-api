@@ -167,4 +167,4 @@ documentation
 db
 
 #localDocker
-docker-compose.local.yml
+docker-compose.yml

@@ -21,27 +21,26 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UserController } from './app.controller';
-import { AppService } from './app.service';
+import { applyDecorators, Controller } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
+import { ApiHeader } from '@nestjs/swagger';
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsCacheModule,
-    UtilsInterceptorsModule,
-    UtilsDecoratorsModule,
-    UtilsAwsModule
-  ],
-  controllers: [HealthyController, UserController],
-  providers: [AppService, ImageInterceptor]
-})
-export class UserModule {}
+export function CastcleController(defaultVersion: string) {
+  return applyDecorators(
+    ApiHeader({
+      name: Configs.RequiredHeaders.AcceptVersion.name,
+      description: Configs.RequiredHeaders.AcceptVersion.description,
+      example: Configs.RequiredHeaders.AcceptVersion.example,
+      required: true
+    }),
+    ApiHeader({
+      name: Configs.RequiredHeaders.AcceptLanguague.name,
+      description: Configs.RequiredHeaders.AcceptLanguague.description,
+      example: Configs.RequiredHeaders.AcceptLanguague.example,
+      required: true
+    }),
+    Controller({
+      version: defaultVersion
+    })
+  );
+}
