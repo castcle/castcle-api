@@ -51,6 +51,7 @@ import { Image } from '@castcle-api/utils/aws';
 
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -97,6 +98,10 @@ describe('PageController', () => {
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
+        CacheModule.register({
+          store: 'memory',
+          ttl: 1000
+        }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull
@@ -148,17 +153,17 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         pageDto
       );
-      expect(newPageResponse.avatar).toEqual(pageDto.avatar);
+      expect(newPageResponse.avatar).toBeDefined();
       expect(newPageResponse.displayName).toEqual(pageDto.displayName);
-      expect(newPageResponse.cover).toEqual(pageDto.cover);
+      expect(newPageResponse.cover).toBeDefined();
       expect(newPageResponse.castcleId).toEqual(pageDto.castcleId);
       const testPage = await authService.getUserFromCastcleId(
         pageDto.castcleId
       );
       const pageResponse = testPage.toPageResponse();
-      expect(pageResponse.avatar).toEqual(pageDto.avatar);
+      expect(pageResponse.avatar).toBeDefined();
       expect(pageResponse.displayName).toEqual(pageDto.displayName);
-      expect(pageResponse.cover).toEqual(pageDto.cover);
+      expect(pageResponse.cover).toBeDefined();
       expect(pageResponse.castcleId).toEqual(pageDto.castcleId);
     });
   });

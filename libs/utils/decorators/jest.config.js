@@ -20,28 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UserController } from './app.controller';
-import { AppService } from './app.service';
-
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
-@Module({
-  imports: [
-    DatabaseModule,
-    UtilsCacheModule,
-    UtilsInterceptorsModule,
-    UtilsDecoratorsModule,
-    UtilsAwsModule
-  ],
-  controllers: [HealthyController, UserController],
-  providers: [AppService, ImageInterceptor]
-})
-export class UserModule {}
+module.exports = {
+  displayName: 'utils-decorators',
+  preset: '../../../jest.preset.js',
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.spec.json'
+    }
+  },
+  testEnvironment: 'node',
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest'
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  coverageDirectory: '../../../coverage/libs/utils/decorators'
+};

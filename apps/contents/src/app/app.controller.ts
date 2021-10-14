@@ -31,8 +31,7 @@ import {
   Post,
   Put,
   Query,
-  Req,
-  UseInterceptors
+  Req
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import {
@@ -48,20 +47,9 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   SaveContentDto
 } from '@castcle-api/database/dtos';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  ContentInterceptor
-} from '@castcle-api/utils/interceptors';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiHeader,
-  ApiOkResponse,
-  ApiProperty,
-  ApiResponse
-} from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
 import {
   ContentTypePipe,
@@ -69,24 +57,15 @@ import {
   PagePipe,
   SortByPipe
 } from '@castcle-api/utils/pipes';
-import { Configs } from '@castcle-api/environments';
 import { CaslAbilityFactory, Action } from '@castcle-api/casl';
-import { Model } from 'mongoose';
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
+import {
+  CastcleAuth,
+  CastcleController,
+  CastcleBasicAuth
+} from '@castcle-api/utils/decorators';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+
+@CastcleController('1.0')
 @Controller()
 export class ContentController {
   constructor(
@@ -101,7 +80,6 @@ export class ContentController {
     CastLoggerOptions
   );
 
-  @ApiBearerAuth()
   @ApiBody({
     type: SaveContentDto
   })
@@ -109,7 +87,7 @@ export class ContentController {
     status: 201,
     type: ContentResponse
   })
-  @UseInterceptors(ContentInterceptor)
+  @CastcleBasicAuth()
   @Post('feed')
   async createFeedContent(
     @Body() body: SaveContentDto,
@@ -128,11 +106,10 @@ export class ContentController {
     } as ContentResponse;
   }
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Contents)
   @Get(':id')
   async getContentFromId(
     @Param('id') id: string,
@@ -184,14 +161,13 @@ export class ContentController {
       );
   }
 
-  @ApiBearerAuth()
   @ApiBody({
     type: SaveContentDto
   })
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(ContentInterceptor)
+  @CastcleBasicAuth()
   @Put(':id')
   async updateContentFromId(
     @Param('id') id: string,
@@ -208,11 +184,11 @@ export class ContentController {
       payload: updatedContent.toContentPayload()
     } as ContentResponse;
   }
-  @ApiBearerAuth()
+
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @HttpCode(204)
   @Delete(':id')
   async deleteContentFromId(
@@ -225,11 +201,10 @@ export class ContentController {
     return '';
   }
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleAuth(CacheKeyName.Contents)
   @Get()
   async getContents(
     @Req() req: CredentialRequest,
@@ -258,11 +233,10 @@ export class ContentController {
     } as ContentsResponse;
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
@@ -277,11 +251,10 @@ export class ContentController {
     return '';
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(
@@ -296,12 +269,11 @@ export class ContentController {
     return '';
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiResponse({
     status: 201,
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
   @Post(':id/recasted')
   async recastContent(
     @Param('id') id: string,
@@ -320,12 +292,11 @@ export class ContentController {
     } as ContentResponse;
   }
 
-  @ApiBearerAuth()
   @ApiResponse({
     status: 201,
     type: ContentResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post(':id/quotecast')
   async quoteContent(
     @Param('id') id: string,

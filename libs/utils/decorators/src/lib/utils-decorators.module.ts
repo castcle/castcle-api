@@ -20,28 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UserController } from './app.controller';
-import { AppService } from './app.service';
-
-import { HealthyController } from './controllers/healthy/healthy.controller';
+import { CastcleController } from './castcle-controller.decorator';
+import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    UtilsCacheModule,
-    UtilsInterceptorsModule,
-    UtilsDecoratorsModule,
-    UtilsAwsModule
-  ],
-  controllers: [HealthyController, UserController],
-  providers: [AppService, ImageInterceptor]
+  imports: [UtilsInterceptorsModule],
+  controllers: [],
+  providers: [],
+  exports: []
 })
-export class UserModule {}
+export class UtilsDecoratorsModule {}
+
+export { CastcleController, CastcleAuth, CastcleBasicAuth };

@@ -43,6 +43,7 @@ module.exports = {
     '<rootDir>/libs/ranker',
     '<rootDir>/libs/casl',
     '<rootDir>/libs/utils/queue',
-    '<rootDir>/libs/utils/clients'
+    '<rootDir>/libs/utils/clients',
+    '<rootDir>/libs/utils/decorators'
   ]
 };
