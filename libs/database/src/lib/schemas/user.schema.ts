@@ -202,6 +202,41 @@ UserSchema.methods.toPageResponse = function () {
       (this as UserDocument).profile.images.avatar
         ? Image.download((this as UserDocument).profile.images.avatar)
         : Configs.DefaultAvatar,
+    overview:
+      (this as UserDocument).profile && (this as UserDocument).profile.overview
+        ? (this as UserDocument).profile.overview
+        : null,
+    links: {
+      facebook:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.socials &&
+        (this as UserDocument).profile.socials.facebook
+          ? (this as UserDocument).profile.socials.facebook
+          : null,
+      medium:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.socials &&
+        (this as UserDocument).profile.socials.medium
+          ? (this as UserDocument).profile.socials.medium
+          : null,
+      twitter:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.socials &&
+        (this as UserDocument).profile.socials.twitter
+          ? (this as UserDocument).profile.socials.twitter
+          : null,
+      youtube:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.socials &&
+        (this as UserDocument).profile.socials.youtube
+          ? (this as UserDocument).profile.socials.youtube
+          : null,
+      website:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.websites
+          ? (this as UserDocument).profile.websites[0].website
+          : null
+    },
     cover:
       (this as UserDocument).profile &&
       (this as UserDocument).profile.images &&
