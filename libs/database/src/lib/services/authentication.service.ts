@@ -233,6 +233,14 @@ export class AuthenticationService {
       .findOne({ email: email, visibility: EntityVisibility.Publish })
       .exec();
 
+  getAccountFromMobileNumber = (countryCode: string, mobileNumber: string) =>
+    this._accountModel
+      .findOne({
+        mobile: { countryCode: countryCode, number: mobileNumber },
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
   getUserFromCastcleId = (id: string) => {
     return this._userModel
       .findOne({

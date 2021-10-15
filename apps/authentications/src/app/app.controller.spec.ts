@@ -242,6 +242,31 @@ describe('AppController', () => {
     });
   });
 
+  describe('checkPhoneExists', () => {
+    it('should check in User if the id is exists', async () => {
+      const countryCode = '+66';
+      const mobileNumber = '0899999999';
+      let response = await appController.checkPhoneExists(
+        { $language: 'th' } as any,
+        { countryCode, mobileNumber }
+      );
+      expect(response.payload.exist).toBe(false);
+      const result = await service.createAccount({
+        device: 'ios',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th', 'th'],
+        deviceUUID: 'test'
+      });
+      result.accountDocument.mobile = { countryCode: countryCode, number: mobileNumber };
+      await result.accountDocument.save();
+      response = await appController.checkPhoneExists(
+        { $language: 'th' } as any,
+        { countryCode, mobileNumber }
+      );
+      expect(response.payload.exist).toBe(true);
+    });
+  });
+
   describe('checkCastcleIdExists', () => {
     it('should check in User if the id is exists', async () => {
       const testId = 'randomId';

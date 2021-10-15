@@ -59,6 +59,7 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
+  CheckPhoneExistDto,
   GuestLoginDto,
   LoginDto,
   RefreshTokenResponse,
@@ -125,6 +126,46 @@ export class AuthenticationController {
         message: 'success message',
         payload: {
           exist: account ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
+        }
+      };
+    } catch (error) {
+      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    }
+  }
+
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing'
+  })
+  @ApiOkResponse({
+    status: 201,
+    type: CheckingResponse
+  })
+  @ApiBody({
+    type: CheckPhoneExistDto
+  })
+  @Post('checkPhoneExists')
+  @HttpCode(200)
+  async checkPhoneExists(
+    @Req() req: HeadersRequest,
+    @Body() body: CheckPhoneExistDto
+  ) {
+    if (!(body.countryCode && body.mobileNumber))
+      // TODO !!! wait function in branch feature/authentications/requestOtp
+      // && await MobileNumber.getMobileNumberWithCountyrCode(body.countryCode, body.mobileNumber)
+      throw new CastcleException(
+        CastcleStatus.INVALID_PHONE_NUMBER,
+        req.$language
+      );
+    try {
+      const account = await this.authService.getAccountFromMobileNumber(
+        body.countryCode,
+        body.mobileNumber
+      );
+      return {
+        message: 'success message',
+        payload: {
+          exist: account ? true : false
         }
       };
     } catch (error) {

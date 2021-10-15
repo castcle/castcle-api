@@ -32,6 +32,14 @@ export class CheckEmailExistDto {
   email: string;
 }
 
+export class CheckPhoneExistDto {
+  @ApiProperty()
+  countryCode: string;
+
+  @ApiProperty()
+  mobileNumber: string;
+}
+
 export class LoginDto {
   @ApiProperty()
   username: string;

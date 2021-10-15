@@ -338,6 +338,39 @@ describe('Authentication Service', () => {
         expect(result._id).toEqual(newAccountResult._id);
       });
     });
+    describe('#getAccountFromMobileNumber()', () => {
+      it('should return null for non exist mobile number in account', async () => {
+        const countryCode = '+66';
+        const mobileNumber = '0899999992';
+        const result = await service.getAccountFromMobileNumber(
+          countryCode,
+          mobileNumber
+        );
+        expect(result).toBeNull();
+      });
+      it('should found an account that have mobile number match', async () => {
+        const countryCode = '+66';
+        const mobileNumber = '0899999999';
+        const newAccount = new service._accountModel({
+          mobile: {
+            countryCode: countryCode,
+            number: mobileNumber
+          },
+          password: 'porsche@Hello',
+          isGuest: true,
+          preferences: {
+            langagues: ['en', 'en']
+          }
+        });
+        const newAccountResult = await newAccount.save();
+        const result = await service.getAccountFromMobileNumber(
+          countryCode,
+          mobileNumber
+        );
+        expect(result._id).toEqual(newAccountResult._id);
+        newAccount.delete();
+      });
+    });
     describe('#getUserFromId()', () => {
       it('should return null if non id is exist in user', async () => {
         const result = await service.getUserFromCastcleId('notFoundId');
