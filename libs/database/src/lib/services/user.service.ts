@@ -88,6 +88,13 @@ export class UserService {
     if (!user.profile) user.profile = {};
     if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
     if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
+    if (updateUserDto.images) {
+      if (!user.profile.images) user.profile.images = {};
+      if (updateUserDto.images.avatar)
+        user.profile.images.avatar = updateUserDto.images.avatar;
+      if (updateUserDto.images.cover)
+        user.profile.images.cover = updateUserDto.images.cover;
+    }
     if (updateUserDto.links) {
       if (!user.profile.socials) user.profile.socials = {};
       const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
