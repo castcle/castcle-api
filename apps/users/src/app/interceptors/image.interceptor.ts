@@ -43,13 +43,15 @@ export class ImageInterceptor extends CredentialInterceptor {
     const body = req.body as UpdateUserDto;
     if (body.images && body.images.avatar) {
       const avatar = await Image.upload(body.images.avatar, {
-        filename: `avatar-${req.$credential.account._id}`
+        filename: `avatar-${req.$credential.account._id}`,
+        addTime: true
       });
       req.body.images.avatar = avatar.uri;
     }
     if (body.images && body.images.cover) {
       const cover = await Image.upload(body.images.cover, {
-        filename: `cover-${req.$credential.account._id}`
+        filename: `cover-${req.$credential.account._id}`,
+        addTime: true
       });
       req.body.images.cover = cover.uri;
     }

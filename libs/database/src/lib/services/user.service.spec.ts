@@ -251,6 +251,19 @@ describe('User Service', () => {
       expect(allPages2.items.length).toEqual(2);
     });
   });
+  describe('#getUserPages()', () => {
+    it('should list all page that user created', async () => {
+      const currentUser = await service.getUserFromCredential(
+        result.credentialDocument
+      );
+      const ownPages = await service.getUserPages(
+        currentUser,
+        DEFAULT_CONTENT_QUERY_OPTIONS
+      );
+      expect(ownPages.items.length).toEqual(2);
+      expect(ownPages.pagination.limit).toEqual(25);
+    });
+  });
   describe('#follow()', () => {
     let currentUser: UserDocument;
     let allPages: {

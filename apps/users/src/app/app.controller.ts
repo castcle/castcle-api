@@ -46,6 +46,7 @@ import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   FollowResponse,
+  PagesResponse,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
@@ -212,6 +213,41 @@ export class UserController {
         payload: contents.items.map((item) => item.toContentPayload()),
         pagination: contents.pagination
       } as ContentsResponse;
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
+  }
+
+  @ApiOkResponse({
+    type: PagesResponse
+  })
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/pages')
+  async getMypages(
+    @Req() req: CredentialRequest,
+    @Query('sortBy', SortByPipe)
+    sortByOption: {
+      field: string;
+      type: 'desc' | 'asc';
+    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+  ): Promise<PagesResponse> {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) {
+      const pages = await this.userService.getUserPages(user, {
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption
+      });
+      return {
+        pagination: pages.pagination,
+        payload: pages.items.map((item) => item.toPageResponse())
+      };
     } else
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
