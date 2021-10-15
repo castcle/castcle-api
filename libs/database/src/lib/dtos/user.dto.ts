@@ -145,6 +145,16 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
+  followers: {
+    count: number;
+  };
+
+  @ApiProperty()
+  following: {
+    count: number;
+  };
+
+  @ApiProperty()
   updated: string;
 
   @ApiProperty()
