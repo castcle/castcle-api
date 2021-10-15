@@ -127,7 +127,10 @@ export class PageResponseDto {
   displayName: string;
 
   @ApiProperty()
-  avatar: string;
+  images: {
+    avatar: string;
+    cover: string;
+  };
 
   @ApiProperty()
   overview: string | null;
@@ -140,9 +143,6 @@ export class PageResponseDto {
     medium: string | null;
     website: string | null;
   };
-
-  @ApiProperty()
-  cover: string;
 
   @ApiProperty()
   updated: string;
