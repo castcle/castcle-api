@@ -65,6 +65,7 @@ export class TwilioService {
     receiver: string,
     channel: EChannelType
   ): Promise<VerificationInstance> {
+    this.logger.log(`twilio request otp to ${receiver}`);
     const client = Twilio(this.twilioAccountSid, this.twilioAuthToken);
     try {
       const verification = await client.verify
@@ -76,6 +77,7 @@ export class TwilioService {
       console.log(verification);
       return verification;
     } catch (error) {
+      this.logger.error(error.message);
       throw new Error(error);
     }
   }
@@ -90,6 +92,7 @@ export class TwilioService {
     receiver: string,
     otp: string
   ): Promise<VerificationCheckInstance> {
+    this.logger.log(`twilio verify otp from ${receiver}`);
     const client = Twilio(this.twilioAccountSid, this.twilioAuthToken);
     try {
       const verification = await client.verify
@@ -98,6 +101,7 @@ export class TwilioService {
       console.log(verification);
       return verification;
     } catch (error) {
+      this.logger.error(error.message);
       throw new Error(error);
     }
   }

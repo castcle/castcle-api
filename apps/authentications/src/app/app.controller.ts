@@ -897,7 +897,7 @@ export class AuthenticationController {
         req.$language
       );
     }
-    if (!account.$isValid) {
+    if (!this.checkValidAccount(account, req)) {
       throw new CastcleException(
         CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
         req.$language
@@ -1062,7 +1062,7 @@ export class AuthenticationController {
         req.$language
       );
     }
-    if (!account.$isValid) {
+    if (!this.checkValidAccount(account, req)) {
       throw new CastcleException(
         CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
         req.$language
