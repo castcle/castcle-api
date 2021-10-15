@@ -160,6 +160,15 @@ export class UpdatePageDto {
 
   @ApiProperty()
   cover?: string;
+
+  @ApiProperty()
+  links?: {
+    facebook?: string | null;
+    twitter?: string | null;
+    youtube?: string | null;
+    medium?: string | null;
+    website?: string | null;
+  };
 }
 
 export class PagesResponse {
