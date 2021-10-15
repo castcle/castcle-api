@@ -110,13 +110,7 @@ export class UserService {
           ];
       });
     }
-    if (updateUserDto.images) {
-      if (!user.profile.images) user.profile.images = {};
-      if (updateUserDto.images.avatar)
-        user.profile.images.avatar = updateUserDto.images.avatar;
-      if (updateUserDto.images.cover)
-        user.profile.images.cover = updateUserDto.images.cover;
-    }
+    user.markModified('profile');
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
@@ -124,6 +118,7 @@ export class UserService {
       id: user._id,
       action: CastcleQueueAction.UpdateProfile
     });
+
     return user.save();
   };
 
