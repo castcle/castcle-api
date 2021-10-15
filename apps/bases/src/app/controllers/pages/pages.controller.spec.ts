@@ -175,10 +175,16 @@ describe('PageController', () => {
       const result = await pageController.updatePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
-        { displayName: 'change baby' }
+        {
+          displayName: 'change baby',
+          links: {
+            website: 'https://castcle.com'
+          }
+        }
       );
       //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
       expect(result.displayName).toEqual('change baby');
+      expect(result.links.website).toEqual('https://castcle.com');
     });
   });
   describe('deletePage', () => {
