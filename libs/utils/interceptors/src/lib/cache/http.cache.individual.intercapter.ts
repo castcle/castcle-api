@@ -40,7 +40,11 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
     if (cacheKey) {
       const request = context.switchToHttp().getRequest();
       const token = util.getTokenFromRequest(request);
-      return `${cacheKey}-${token}-${request._parsedUrl.query}`;
+      console.debug(
+        'cache key:',
+        `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`
+      );
+      return `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
     }
 
     return super.trackBy(context);
