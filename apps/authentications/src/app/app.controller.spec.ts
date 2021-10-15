@@ -257,7 +257,10 @@ describe('AppController', () => {
         languagesPreferences: ['th', 'th'],
         deviceUUID: 'test'
       });
-      result.accountDocument.mobile = { countryCode: countryCode, number: mobileNumber };
+      result.accountDocument.mobile = {
+        countryCode: countryCode,
+        number: mobileNumber
+      };
       await result.accountDocument.save();
       response = await appController.checkPhoneExists(
         { $language: 'th' } as any,
