@@ -196,12 +196,21 @@ UserSchema.methods.toPageResponse = function () {
   return {
     castcleId: (this as UserDocument).displayId,
     displayName: (this as UserDocument).displayName,
-    avatar:
-      (this as UserDocument).profile &&
-      (this as UserDocument).profile.images &&
-      (this as UserDocument).profile.images.avatar
-        ? Image.download((this as UserDocument).profile.images.avatar)
-        : Configs.DefaultAvatar,
+    images: {
+      avatar:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.images &&
+        (this as UserDocument).profile.images.avatar
+          ? Image.download((this as UserDocument).profile.images.avatar)
+          : Configs.DefaultAvatar,
+      cover:
+        (this as UserDocument).profile &&
+        (this as UserDocument).profile.images &&
+        (this as UserDocument).profile.images.cover
+          ? Image.download((this as UserDocument).profile.images.cover)
+          : Configs.DefaultCover
+    },
+
     overview:
       (this as UserDocument).profile && (this as UserDocument).profile.overview
         ? (this as UserDocument).profile.overview
@@ -237,12 +246,6 @@ UserSchema.methods.toPageResponse = function () {
           ? (this as UserDocument).profile.websites[0].website
           : null
     },
-    cover:
-      (this as UserDocument).profile &&
-      (this as UserDocument).profile.images &&
-      (this as UserDocument).profile.images.cover
-        ? Image.download((this as UserDocument).profile.images.cover)
-        : Configs.DefaultCover,
     updated: (this as UserDocument).updatedAt.toISOString(),
     created: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
