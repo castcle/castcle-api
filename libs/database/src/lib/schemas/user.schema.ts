@@ -210,7 +210,12 @@ UserSchema.methods.toPageResponse = function () {
           ? Image.download((this as UserDocument).profile.images.cover)
           : Configs.DefaultCover
     },
-
+    followers: {
+      count: (this as UserDocument).followerCount
+    },
+    following: {
+      count: (this as UserDocument).followedCount
+    },
     overview:
       (this as UserDocument).profile && (this as UserDocument).profile.overview
         ? (this as UserDocument).profile.overview
