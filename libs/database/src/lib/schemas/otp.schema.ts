@@ -56,6 +56,9 @@ export class Otp extends CastcleBase {
 
   @Prop({ required: true })
   expireDate: Date;
+
+  @Prop({ required: true })
+  wasNew: boolean;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
@@ -85,7 +88,8 @@ OtpSchema.statics.generate = async function (
     otpFindingResult = await this.findOne({
       account: accountId,
       action: objective,
-      refCode: newRefCode
+      refCode: newRefCode,
+      wasNew: true
     }).exec();
   } while (otpFindingResult);
   const now = new Date();
@@ -93,7 +97,8 @@ OtpSchema.statics.generate = async function (
     account: accountId,
     action: objective,
     refCode: newRefCode,
-    expireDate: new Date(now.getTime() + env.otp_expires_in * 1000)
+    expireDate: new Date(now.getTime() + env.otp_expires_in * 1000),
+    wasNew: true
   });
   return otp.save();
 };

@@ -601,11 +601,15 @@ export class AuthenticationService {
     objective: OtpObjective
   ): Promise<OtpDocument> {
     const otpObj = await this._otpModel
-      .findOne({
-        account: account,
-        refCode: refCode,
-        action: objective.toString()
-      })
+      .findOneAndUpdate(
+        {
+          account: account,
+          refCode: refCode,
+          action: objective.toString(),
+          wasNew: true
+        },
+        { wasNew: false }
+      )
       .exec();
     if (otpObj && otpObj.$isValid) {
       return otpObj;

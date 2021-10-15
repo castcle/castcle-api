@@ -915,9 +915,13 @@ export class AuthenticationController {
         body.otp
       );
       if (otpResponse.valid && otpResponse.status === EOtpStatus.APPROVED) {
+        const newOtp = await this.authService.requestOtpByByMobile(
+          account,
+          OtpObjective.VerifyForgotPassword
+        );
         const response: ForgotPasswordResponse = {
-          refCode: otp.refCode,
-          expiresTime: otp.expireDate.toISOString()
+          refCode: newOtp.refCode,
+          expiresTime: newOtp.expireDate.toISOString()
         };
         return response;
       } else {
