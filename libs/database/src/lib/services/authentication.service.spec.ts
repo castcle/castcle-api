@@ -524,7 +524,8 @@ describe('Authentication Service', () => {
         displayName: 'Dudeee Mock',
         provider: AccountAuthenIdType.Facebook,
         avatar: '/image/test.jpg',
-        socialToken: 'testtoken'
+        socialToken: 'testtoken',
+        socialSecretToken: ''
       };
       beforeAll(async () => {
         mockAccountResult = await service.createAccount({
@@ -574,7 +575,8 @@ describe('Authentication Service', () => {
           createAccountResult.accountDocument,
           AccountAuthenIdType.Twitter,
           socialId,
-          'testtoken'
+          'testtoken',
+          'secret'
         );
 
         const accountSocial = await service.getAccountAuthenIdFromSocialId(
@@ -596,7 +598,8 @@ describe('Authentication Service', () => {
           createAccountResult.accountDocument,
           AccountAuthenIdType.Facebook,
           fbsocialId,
-          'testtoken'
+          'testtoken',
+          ''
         );
 
         const accountSocialTw = await service.getAccountAuthenIdFromSocialId(
