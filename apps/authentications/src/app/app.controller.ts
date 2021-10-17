@@ -858,4 +858,21 @@ export class AuthenticationController {
     response.oauthTokenSecret = result.oauth_token_secret;
     return response;
   }
+
+  // @ApiBearerAuth()
+  @ApiOkResponse({
+    status: 200,
+    type: OauthTokenResponse
+  })
+  // @UseInterceptors(CredentialInterceptor)
+  @Get('test')
+  @HttpCode(200)
+  async test(@Req() req: CredentialRequest) {
+    this.logger.log(`request twitter token`);
+    await this.appService.testToken(req.$language);
+    // const response = new OauthTokenResponse();
+    // response.oauthToken = result.oauth_token;
+    // response.oauthTokenSecret = result.oauth_token_secret;
+    return '';
+  }
 }

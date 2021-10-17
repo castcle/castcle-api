@@ -30,6 +30,7 @@ import {
   FacebookAccessToken,
   FacebookClient,
   FacebookUserInfo,
+  GoogleClient,
   TelegramClient,
   TelegramUserInfo,
   TwitterAccessToken,
@@ -61,7 +62,8 @@ export class AppService {
     private fbClient: FacebookClient,
     private download: Downloader,
     private telegramClient: TelegramClient,
-    private twitterClient: TwitterClient
+    private twitterClient: TwitterClient,
+    private googleClient: GoogleClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -301,5 +303,23 @@ export class AppService {
 
     if (data.results.oauth_callback_confirmed === 'true') return data;
     else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+  }
+
+  /**
+   * Request Access Twitter Token API
+   * @param {string} language en is default
+   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   */
+  async testToken(language: string) {
+    const data = await this.googleClient.getAccessToken(
+      '4/0AX4XfWg_qtrZ9N5W6HLDyf8WoRPNNiwbgZs9Ng6jjdEposy8irfgg4-IUP1gcLf32fkzuw'
+    );
+    console.log(data);
+    // this.logger.log(
+    //   `Twitter callback confirmed status : ${data.results.oauth_callback_confirmed}`
+    // );
+
+    // if (data.results.oauth_callback_confirmed === 'true') return data;
+    // else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 }

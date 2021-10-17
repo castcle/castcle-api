@@ -29,6 +29,7 @@ import {
   FacebookTokenData,
   FacebookUserInfo
 } from './facebook/facebook.message';
+import { GoogleClient } from './google/google.client';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
 import { TwitterClient } from './twitter/twitter.client';
@@ -41,8 +42,14 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     })
   ],
   controllers: [],
-  providers: [FacebookClient, TelegramClient, TwitterClient],
-  exports: [HttpModule, FacebookClient, TelegramClient, TwitterClient]
+  providers: [FacebookClient, TelegramClient, TwitterClient, GoogleClient],
+  exports: [
+    HttpModule,
+    FacebookClient,
+    TelegramClient,
+    TwitterClient,
+    GoogleClient
+  ]
 })
 export class UtilsClientsModule {}
 
@@ -55,5 +62,6 @@ export {
   TelegramUserInfo,
   TwitterClient,
   TwitterAccessToken,
-  TwitterUserData
+  TwitterUserData,
+  GoogleClient
 };
