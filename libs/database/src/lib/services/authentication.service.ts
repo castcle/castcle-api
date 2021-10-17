@@ -74,6 +74,7 @@ export interface SignupSocialRequirements {
   provider: AccountAuthenIdType;
   avatar: string;
   socialToken: string;
+  socialSecretToken: string;
 }
 
 @Injectable()
@@ -498,7 +499,8 @@ export class AuthenticationService {
       account,
       requirements.provider,
       requirements.socialId,
-      requirements.socialToken
+      requirements.socialToken,
+      requirements.socialSecretToken
     );
   }
 
@@ -514,13 +516,15 @@ export class AuthenticationService {
     account: AccountDocument,
     provider: AccountAuthenIdType,
     socialUserId: string,
-    socialUserToken: string
+    socialUserToken: string,
+    socialSecretToken: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
       type: provider,
       socialId: socialUserId,
-      socialToken: socialUserToken
+      socialToken: socialUserToken,
+      socialSecretToken: socialSecretToken
     });
     return accountActivation.save();
   }

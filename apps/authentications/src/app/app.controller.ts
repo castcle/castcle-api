@@ -61,6 +61,7 @@ import {
   CheckingResponse,
   GuestLoginDto,
   LoginDto,
+  OauthTokenResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   SocialConnectDto,
@@ -633,7 +634,7 @@ export class AuthenticationController {
           req.$language
         );
         if (userFB) {
-          this.logger.log(`social login`);
+          this.logger.log(`social login Facebook`);
           token = await this.appService.socialLogin(
             {
               socialId: userFB.id,
@@ -641,7 +642,8 @@ export class AuthenticationController {
               name: userFB.name,
               provider: AccountAuthenIdType.Facebook,
               profileImage: userFB.picture.data.url,
-              socialToken: body.payload.authToken
+              socialToken: body.payload.authToken,
+              socialSecretToken: ''
             },
             req.$credential
           );
@@ -660,7 +662,7 @@ export class AuthenticationController {
           req.$language
         );
         if (isValid) {
-          this.logger.log(`social login`);
+          this.logger.log(`social login Telegram`);
           token = await this.appService.socialLogin(
             {
               socialId: body.payload.id,
@@ -670,7 +672,8 @@ export class AuthenticationController {
               profileImage: body.payload.photo_url
                 ? body.payload.photo_url
                 : '',
-              socialToken: body.payload.hash
+              socialToken: body.payload.hash,
+              socialSecretToken: ''
             },
             req.$credential
           );
@@ -678,6 +681,34 @@ export class AuthenticationController {
           this.logger.error(`Use token expired.`);
           throw new CastcleException(
             CastcleStatus.INVLAID_AUTH_TOKEN,
+            req.$language
+          );
+        }
+        break;
+      }
+      case AccountAuthenIdType.Twitter: {
+        const userTW = await this.appService.twitterConnect(
+          body.payload,
+          req.$language
+        );
+        if (userTW && userTW.userVerify && userTW.tokenData) {
+          this.logger.log(`social login Twitter`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: userTW.userVerify.id_str,
+              email: userTW.userVerify.email ? userTW.userVerify.email : '',
+              name: userTW.userVerify.screen_name,
+              provider: AccountAuthenIdType.Twitter,
+              profileImage: userTW.userVerify.profile_image_url_https,
+              socialToken: userTW.tokenData.oauth_token,
+              socialSecretToken: userTW.tokenData.oauth_token_secret
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
             req.$language
           );
         }
@@ -708,6 +739,7 @@ export class AuthenticationController {
     );
     switch (body.provider) {
       case AccountAuthenIdType.Facebook: {
+        this.logger.log(`facebook Connect`);
         const userFB = await this.appService.facebookConnect(
           body.payload.authToken,
           req.$language
@@ -725,7 +757,8 @@ export class AuthenticationController {
               currentAccount,
               AccountAuthenIdType.Facebook,
               userFB.id,
-              body.payload.authToken
+              body.payload.authToken,
+              ''
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);
@@ -740,6 +773,7 @@ export class AuthenticationController {
         break;
       }
       case AccountAuthenIdType.Telegram: {
+        this.logger.log(`Telegram Connect`);
         const isValid = await this.appService.telegramConnect(
           body.payload,
           req.$language
@@ -756,7 +790,8 @@ export class AuthenticationController {
               currentAccount,
               AccountAuthenIdType.Telegram,
               body.payload.id,
-              body.payload.hash
+              body.payload.hash,
+              ''
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);
@@ -770,6 +805,57 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Twitter: {
+        this.logger.log(`Twitter Connect`);
+        const userTW = await this.appService.twitterConnect(
+          body.payload,
+          req.$language
+        );
+
+        if (userTW) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userTW.userVerify.id_str,
+              AccountAuthenIdType.Twitter
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Twitter,
+              userTW.userVerify.id_str,
+              userTW.tokenData.oauth_token,
+              userTW.tokenData.oauth_token_secret
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
+  }
+
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    status: 200,
+    type: OauthTokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Get('requestTwitterToken')
+  @HttpCode(200)
+  async requestTwitterToken(@Req() req: CredentialRequest) {
+    this.logger.log(`request twitter token`);
+    const result = await this.appService.twitterRequestToken(req.$language);
+    const response = new OauthTokenResponse();
+    response.oauthToken = result.oauth_token;
+    response.oauthTokenSecret = result.oauth_token_secret;
+    return response;
   }
 }

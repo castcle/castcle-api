@@ -31,7 +31,10 @@ import {
   FacebookClient,
   FacebookUserInfo,
   TelegramClient,
-  TelegramUserInfo
+  TelegramUserInfo,
+  TwitterAccessToken,
+  TwitterClient,
+  TwitterUserData
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -57,7 +60,8 @@ export class AppService {
     private authService: AuthenticationService,
     private fbClient: FacebookClient,
     private download: Downloader,
-    private telegramService: TelegramClient
+    private telegramClient: TelegramClient,
+    private twitterClient: TwitterClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -139,14 +143,16 @@ export class AppService {
           socialId: social.socialId,
           provider: social.provider,
           avatar: avatar.uri,
-          socialToken: social.socialToken
+          socialToken: social.socialToken,
+          socialSecretToken: social.socialSecretToken
         });
       } else {
         await this.authService.createAccountAuthenId(
           currentAccount,
           social.provider,
           social.socialId,
-          social.socialToken
+          social.socialToken,
+          social.socialSecretToken
         );
       }
     }
@@ -235,6 +241,65 @@ export class AppService {
       hash: payload.hash
     };
     this.logger.log('Validate Hash');
-    return await this.telegramService.verifyUserToken(message);
+    return await this.telegramClient.verifyUserToken(message);
+  }
+
+  /**
+   * Connect Twitter API
+   * @param {SocialConnectInfo} payload response from twitter
+   * @param {string} language en is default
+   * @returns {FacebookUserInfo}
+   */
+  async twitterConnect(payload: SocialConnectInfo, language: string) {
+    if (
+      !payload.authToken ||
+      !payload.authTokenSecret ||
+      !payload.authVerifierToken
+    ) {
+      this.logger.error(`token missing.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
+    this.logger.log(`get twitter access token.`);
+    const tokenData: TwitterAccessToken =
+      await this.twitterClient.requestAccessToken(
+        payload.authToken,
+        payload.authTokenSecret,
+        payload.authVerifierToken
+      );
+
+    if (!tokenData) {
+      this.logger.error(`Use token expired.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
+    this.logger.log(`verify twitter user token.`);
+    const userVerify: TwitterUserData =
+      await this.twitterClient.requestVerifyToken(
+        tokenData.oauth_token,
+        tokenData.oauth_token_secret
+      );
+
+    if (!userVerify) {
+      this.logger.error(`Can't get user data.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    }
+
+    return { userVerify, tokenData };
+  }
+
+  /**
+   * Request Access Twitter Token API
+   * @param {string} language en is default
+   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+   */
+  async twitterRequestToken(language: string) {
+    const data = await this.twitterClient.requestToken();
+    this.logger.log(
+      `Twitter callback confirmed status : ${data.results.oauth_callback_confirmed}`
+    );
+
+    if (data.results.oauth_callback_confirmed === 'true') return data;
+    else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 }
