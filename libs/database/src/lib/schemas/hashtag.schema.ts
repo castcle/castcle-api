@@ -62,7 +62,7 @@ HashtagSchema.methods.toHashtagPayload = function () {
 
 HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
   return {
-    rank: index,
+    rank: index + 1,
     id: (this as HashtagDocument)._id,
     slug: (this as HashtagDocument).tag,
     name: (this as HashtagDocument).name,

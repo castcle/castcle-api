@@ -30,7 +30,11 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
-import { FacebookClient, TelegramClient } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  TelegramClient,
+  TwitterClient
+} from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
@@ -42,7 +46,8 @@ import { TokenResponse } from './dtos/dto';
 import {
   DownloaderMock,
   FacebookClientMock,
-  TelegramClientMock
+  TelegramClientMock,
+  TwitterClientMock
 } from './social.client.mock';
 
 let mongod: MongoMemoryServer;
@@ -81,6 +86,11 @@ describe('AppController', () => {
       provide: TelegramClient,
       useClass: TelegramClientMock
     };
+    const TwitterClientProvider = {
+      provide: TwitterClient,
+      useClass: TwitterClientMock
+    };
+
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
@@ -94,7 +104,8 @@ describe('AppController', () => {
         AuthenticationService,
         FacebookClientProvider,
         DownloaderProvider,
-        TelegramClientProvider
+        TelegramClientProvider,
+        TwitterClientProvider
       ]
     }).compile();
 
@@ -739,6 +750,111 @@ describe('AppController', () => {
     });
   });
 
+  describe('loginWithSocial Twitter', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo0070';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone99a', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const result = await appController.loginWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: 'wAAAAABUZusAAABfHLxV60',
+            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+            authVerifierToken: '88888888'
+          }
+        }
+      );
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        '999999',
+        AccountAuthenIdType.Twitter
+      );
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual('999999');
+    });
+
+    it('should return Exception when invalid user token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty authen token', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            payload: {
+              authToken: '55555555',
+              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+              authVerifierToken: '88888888'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get exception user data', async () => {
+      await expect(
+        appController.loginWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            payload: {
+              authToken: '77777777',
+              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+              authVerifierToken: '88888888'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
   describe('connectWithSocial Facebook', () => {
     let guestResult: TokenResponse;
     let credentialGuest: CredentialDocument;
@@ -966,6 +1082,134 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
+    });
+  });
+
+  describe('connectWithSocial Twitter', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo109';
+    beforeAll(async () => {
+      await service._accountAuthenId.deleteMany({ socialId: '999999' });
+
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone9991a', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const tokens = await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: 'twitter01',
+            displayName: 'tw01',
+            email: 'test_twitter@castcle.com',
+            password: '2@HelloWorld'
+          }
+        }
+      );
+
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        '999999',
+        AccountAuthenIdType.Twitter
+      );
+      await appController.connectWithSocial(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: 'wAAAAABUZusAAABfHLxV60',
+            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+            authVerifierToken: '88888888'
+          }
+        }
+      );
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        '999999',
+        AccountAuthenIdType.Twitter
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual('999999');
+    });
+
+    it('should return Exception when invalid user token', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            payload: {
+              authToken: ''
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.connectWithSocial(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            payload: {
+              authToken: '77777777',
+              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+              authVerifierToken: '88888888'
+            }
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+      );
+    });
+  });
+
+  describe('requestTwitterToken', () => {
+    let guestResult: TokenResponse;
+    let credentialGuest: CredentialDocument;
+    const deviceUUID = 'sompo011';
+    beforeAll(async () => {
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone99999', $language: 'th', $platform: 'ios' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+    });
+    it('should get access token', async () => {
+      const token = await appController.requestTwitterToken({
+        $credential: credentialGuest,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any);
+      expect(token).toBeDefined;
+      expect(token.oauthToken).toBeDefined;
     });
   });
 });
