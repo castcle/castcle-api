@@ -205,6 +205,18 @@ export class PageController {
         })
       ).uri;
     if (body.displayName) page.displayName = body.displayName;
+    if (body.links) {
+      if (!page.profile.socials) page.profile.socials = {};
+      if (body.links.facebook)
+        page.profile.socials.facebook = body.links.facebook;
+      if (body.links.medium) page.profile.socials.medium = body.links.medium;
+      if (body.links.twitter) page.profile.socials.twitter = body.links.twitter;
+      if (body.links.youtube) page.profile.socials.youtube = body.links.youtube;
+      if (body.links.website)
+        page.profile.websites = [
+          { website: body.links.website, detail: body.links.website }
+        ];
+    }
     const afterPage = await page.save();
     return afterPage.toPageResponse();
   }
