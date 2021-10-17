@@ -31,6 +31,8 @@ import {
 } from './facebook/facebook.message';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
+import { TwitterClient } from './twitter/twitter.client';
+import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 
 @Module({
   imports: [
@@ -39,8 +41,8 @@ import { TelegramUserInfo } from './telegram/telegram.message';
     })
   ],
   controllers: [],
-  providers: [FacebookClient, TelegramClient],
-  exports: [HttpModule, FacebookClient, TelegramClient]
+  providers: [FacebookClient, TelegramClient, TwitterClient],
+  exports: [HttpModule, FacebookClient, TelegramClient, TwitterClient]
 })
 export class UtilsClientsModule {}
 
@@ -50,5 +52,8 @@ export {
   FacebookClient,
   FacebookUserInfo,
   TelegramClient,
-  TelegramUserInfo
+  TelegramUserInfo,
+  TwitterClient,
+  TwitterAccessToken,
+  TwitterUserData
 };

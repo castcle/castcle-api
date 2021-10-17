@@ -21,43 +21,21 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
-import { CastcleBase } from './base.schema';
-
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
-
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
+export interface TwitterAccessToken {
+  oauth_token: string;
+  oauth_token_secret: string;
+  results: {
+    oauth_callback_confirmed: string;
+    user_id: string;
+    screen_name: string;
+  };
 }
 
-@Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop({ required: true })
-  type: string;
-
-  @Prop()
-  socialId: string;
-
-  @Prop()
-  socialToken: string;
-
-  @Prop()
-  socialSecretToken: string;
+export interface TwitterUserData {
+  id_str: string;
+  name: string;
+  screen_name: string;
+  profile_image_url_https: string;
+  profile_image_url: string;
+  email: string;
 }
-
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);
