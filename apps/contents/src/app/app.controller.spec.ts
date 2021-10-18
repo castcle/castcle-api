@@ -114,6 +114,9 @@ describe('ContentController', () => {
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     contentController = app.get<ContentController>(ContentController);
+    jest
+      .spyOn(appService, 'uploadContentToS3')
+      .mockImplementation(async (body) => body);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
