@@ -66,6 +66,7 @@ import {
   CastcleBasicAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
 
@@ -472,5 +473,42 @@ export class UserController {
       payload: followers.items,
       pagination: followers.pagination
     } as FollowResponse;
+  }
+
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'keyword',
+    type: String,
+    required: true
+  })
+  @Get('mentions')
+  @CastcleAuth(CacheKeyName.Users)
+  async getMentions(
+    @Query('keyword', KeywordPipe) keyword: string,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+  ) {
+    const result = await this.userService.getMentionsFromPublic(keyword, {
+      page: pageOption,
+      limit: limitOption
+    });
+    return {
+      message: 'success message',
+      payload: await Promise.all(
+        result.users.map((user) => user.toUserResponse())
+      ),
+      pagination: result.pagination
+    };
   }
 }
