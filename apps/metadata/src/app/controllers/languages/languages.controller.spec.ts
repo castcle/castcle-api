@@ -96,9 +96,7 @@ describe('LanguagesController', () => {
         title: 'Thai',
         display: 'ภาษาไทย'
       });
-      const result = await appController.getAllLanguage({
-        $credential: userCredential
-      } as any);
+      const result = await appController.getAllLanguage();
       const expectResult = {
         payload: [
           {
