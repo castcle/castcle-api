@@ -46,6 +46,7 @@ import {
   Pagination
 } from '../dtos/common.dto';
 import { CommentDocument, ContentDocument } from '../schemas';
+import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -391,9 +392,9 @@ describe('User Service', () => {
       },
       pages: [
         {
-          avatar: 'http:/placehold.it/200x200',
+          avatar: 'http://placehold.it/200x200',
           castcleId: 'test-12345',
-          cover: 'http:/placehold.it/200x200',
+          cover: 'http://placehold.it/200x200',
           displayName: 'hello12345'
         } as PageDto
       ]
@@ -741,6 +742,48 @@ describe('User Service', () => {
             .like.count
         ).toEqual(0);
       });
+    });
+  });
+  describe('#getMentionsFromPublic()', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(5, 2, {
+        userService: service,
+        accountService: authService
+      });
+      await service.follow(mocksUsers[1].user, mocksUsers[0].user);
+      await service.follow(mocksUsers[2].user, mocksUsers[0].user);
+      await service.follow(mocksUsers[3].user, mocksUsers[0].user);
+      await service.follow(mocksUsers[4].user, mocksUsers[0].user);
+      await service.follow(mocksUsers[0].user, mocksUsers[1].user);
+      await service.follow(mocksUsers[2].user, mocksUsers[1].user);
+      await service.follow(mocksUsers[3].user, mocksUsers[1].user);
+    });
+    it('should get all users and page that order by who has follower the most', async () => {
+      const mentions = await service.getMentionsFromPublic('mock', {
+        limit: 5,
+        page: 1
+      });
+      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
+      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      expect(mentions.users.length).toEqual(5);
+      expect(mentions.users[0]).toEqual(updatedUser);
+      expect(mentions.users[0].followerCount).toEqual(4);
+      expect(mentions.users[1]).toEqual(updatedUser2);
+      expect(mentions.users[1].followerCount).toEqual(3);
+    });
+    it('should get all users if query is empty string', async () => {
+      const mentions = await service.getMentionsFromPublic('', {
+        limit: 2,
+        page: 1
+      });
+      expect(mentions.users.length).toEqual(2);
+      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
+      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      expect(mentions.users[0]).toEqual(updatedUser);
+      expect(mentions.users[0].followerCount).toEqual(4);
+      expect(mentions.users[1]).toEqual(updatedUser2);
+      expect(mentions.users[1].followerCount).toEqual(3);
     });
   });
 });

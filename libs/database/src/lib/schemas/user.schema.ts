@@ -142,10 +142,10 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     displayName: self.displayName,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
-      count: self.followerCount
+      count: self.followerCount ? self.followerCount : 0
     },
     following: {
-      count: self.followedCount
+      count: self.followedCount ? self.followedCount : 0
     },
     images: {
       avatar:
