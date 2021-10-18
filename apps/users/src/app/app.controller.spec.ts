@@ -260,6 +260,16 @@ describe('AppController', () => {
       });
     });
   });
+  describe('getMentions', () => {
+    it('should get all mentions user form system', async () => {
+      const response = await appController.getMentions('', 1, 5);
+      expect(response.payload.length).toEqual(1);
+      expect(response.payload[0].castcleId).toBeDefined();
+      expect(response.payload[0].displayName).toBeDefined();
+      expect(response.payload[0].followers).toBeDefined();
+      expect(response.payload[0].following).toBeDefined();
+    });
+  });
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
       await appController.deleteMyData({
