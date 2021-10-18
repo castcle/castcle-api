@@ -535,4 +535,33 @@ export class UserService {
       );
     return user.save();
   };
+
+  /**
+   * Get all user,pages that could get from the system sort by followerCount
+   * @param {string} query
+   * @param {CastcleQueryOptions} queryOption
+   * @returns {Promise<{users:UserDocument[], pagination:Pagination}>}
+   */
+  getMentionsFromPublic = async (
+    query: string,
+    queryOption: CastcleQueryOptions
+  ) => {
+    const filter = {
+      displayId: { $regex: new RegExp('^' + query.toLowerCase(), 'i') }
+    };
+    const users = await this._userModel
+      .find(filter)
+      .skip(queryOption.page - 1)
+      .limit(queryOption.limit)
+      .sort('-followerCount')
+      .exec();
+    const pagination = createPagination(
+      queryOption,
+      await this._userModel.countDocuments(filter)
+    );
+    return {
+      users: users,
+      pagination: pagination
+    };
+  };
 }
