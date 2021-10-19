@@ -260,12 +260,28 @@ describe('AppController', () => {
       });
     });
   });
+  describe('getMentions', () => {
+    it('should get all mentions user form system', async () => {
+      const response = await appController.getMentions('', 1, 5);
+      expect(response.payload.length).toEqual(1);
+      expect(response.payload[0].castcleId).toBeDefined();
+      expect(response.payload[0].displayName).toBeDefined();
+      expect(response.payload[0].followers).toBeDefined();
+      expect(response.payload[0].following).toBeDefined();
+    });
+  });
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
-      await appController.deleteMyData({
-        $credential: userCredential,
-        $language: 'th'
-      } as any);
+      await appController.deleteMyData(
+        'email',
+        {
+          password: '1234AbcD'
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
       const user = await service.getUserFromCredential(userCredential);
       expect(user).toBeNull();
     });

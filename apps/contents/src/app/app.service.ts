@@ -22,12 +22,10 @@
  */
 
 import { AuthenticationService } from '@castcle-api/database';
-import {
-  CredentialDocument,
-  UserDocument
-} from '@castcle-api/database/schemas';
+import { SaveContentDto } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -58,5 +56,27 @@ export class AppService {
       );
     }
     return user;
+  }
+
+  /**
+   * Upload photo content to s3
+   * @param {SaveContentDto} body
+   * @returns {SaveContentDto} body
+   */
+  async uploadContentToS3(body: SaveContentDto) {
+    if (body.payload.photo) {
+      const newContents = await Promise.all(
+        body.payload.photo.contents.map(async (item) => {
+          const image = await Image.upload(item.url, {
+            addTime: true
+          });
+          return {
+            url: image.toSignUrl()
+          };
+        })
+      );
+      body.payload.photo.contents = newContents;
+    }
+    return body;
   }
 }

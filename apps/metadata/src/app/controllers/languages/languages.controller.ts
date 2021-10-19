@@ -25,20 +25,15 @@ import { LanguageResponse } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  HttpCacheSharedInterceptor
-} from '@castcle-api/utils/interceptors';
+import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
   Controller,
   Get,
-  Req,
   UseInterceptors
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguague.name,
@@ -63,18 +58,14 @@ export class LanguagesController {
     CastLoggerOptions
   );
 
-  @ApiBearerAuth()
   @ApiOkResponse({
     type: LanguageResponse
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.LanguagesGet.Name)
   @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
-  @UseInterceptors(CredentialInterceptor)
   @Get('languages')
-  async getAllLanguage(
-    @Req() req: CredentialRequest
-  ): Promise<LanguageResponse> {
+  async getAllLanguage(): Promise<LanguageResponse> {
     this.logger.log('Start get all language');
     const result = await this.languageService.getAll();
     this.logger.log('Success get all language');
