@@ -272,10 +272,16 @@ describe('AppController', () => {
   });
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
-      await appController.deleteMyData({
-        $credential: userCredential,
-        $language: 'th'
-      } as any);
+      await appController.deleteMyData(
+        'email',
+        {
+          password: '1234AbcD'
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
       const user = await service.getUserFromCredential(userCredential);
       expect(user).toBeNull();
     });
