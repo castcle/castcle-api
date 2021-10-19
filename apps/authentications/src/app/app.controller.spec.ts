@@ -67,6 +67,13 @@ const closeInMongodConnection = async () => {
   if (mongod) await mongod.stop();
 };
 
+const mockResponse: any = {
+  json: jest.fn(),
+  status: (num: number) => ({
+    send: jest.fn()
+  })
+};
+
 describe('AppController', () => {
   let app: TestingModule;
   let appController: AuthenticationController;
@@ -526,11 +533,14 @@ describe('AppController', () => {
         await service.getAccountActivationFromCredential(credentialGuest);
       const preToken = preAccountActivationToken.verifyToken;
       expect(preAccountActivationToken.revocationDate).not.toBeDefined();
-      await appController.requestLinkVerify({
-        $credential: credentialGuest,
-        $language: 'th',
-        $token: credentialGuest.accessToken
-      } as any);
+      await appController.requestLinkVerify(
+        {
+          $credential: credentialGuest,
+          $language: 'th',
+          $token: credentialGuest.accessToken
+        } as any,
+        mockResponse
+      );
       const postAccountActivationToken =
         await service.getAccountActivationFromCredential(credentialGuest);
       expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);

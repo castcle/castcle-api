@@ -41,6 +41,7 @@ import {
   HttpCode,
   Post,
   Req,
+  Res,
   UseInterceptors,
   Version,
   VERSION_NEUTRAL
@@ -52,7 +53,7 @@ import {
   ApiOkResponse,
   ApiResponse
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AppService } from './app.service';
 import {
   ChangePasswordBody,
@@ -424,9 +425,11 @@ export class AuthenticationController {
     description: 'will reject if token is invalid'
   })
   @Post('requestLinkVerify')
-  @HttpCode(204)
   @UseInterceptors(CredentialInterceptor)
-  async requestLinkVerify(@Req() req: CredentialRequest) {
+  async requestLinkVerify(
+    @Req() req: CredentialRequest,
+    @Res() response: Response
+  ) {
     const accountActivation =
       await this.authService.getAccountActivationFromCredential(
         req.$credential
@@ -444,6 +447,13 @@ export class AuthenticationController {
         CastcleStatus.INVALID_REFRESH_TOKEN,
         req.$language
       );
+    if (accountActivation.activationDate) {
+      const returnObj = {
+        message: 'This email has been verified.'
+      };
+      response.status(200).json(returnObj);
+      return returnObj;
+    }
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
@@ -454,6 +464,7 @@ export class AuthenticationController {
       account.email,
       newAccountActivation.verifyToken
     );
+    response.status(204).send();
     return '';
   }
 
