@@ -168,12 +168,29 @@ export class UserController {
   })
   @CastcleBasicAuth()
   @Delete('me')
-  async deleteMyData(@Req() req: CredentialRequest) {
+  async deleteMyData(
+    @Body('channel') channel: string,
+    @Body('payload') passwordPayload: { password: string },
+    @Req() req: CredentialRequest
+  ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      //await user.delete();
-      await this.userService.deactive(user);
-      return '';
+      const account = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (
+        user.verified &&
+        user.verified.email &&
+        channel === 'email' &&
+        account.verifyPassword(passwordPayload.password)
+      ) {
+        await this.userService.deactive(user);
+        return '';
+      } else
+        throw new CastcleException(
+          CastcleStatus.INVALID_PASSWORD,
+          req.$language
+        );
     } else {
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
