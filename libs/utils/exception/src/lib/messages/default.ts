@@ -64,7 +64,7 @@ export const ErrorMessages = {
   '3002': {
     statusCode: '400',
     code: '3002',
-    message: 'channel กับ payload ไม่ตรงกัน'
+    message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3003': {
     statusCode: '400',
