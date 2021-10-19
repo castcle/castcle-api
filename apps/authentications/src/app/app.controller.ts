@@ -146,8 +146,9 @@ export class AuthenticationController {
   @HttpCode(200)
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
     try {
-      const account = await this.authService.getAccountFromEmail(body.username);
-
+      const account = await this.authService.getAccountFromEmail(
+        body.username.toLowerCase()
+      );
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
       if (await account.verifyPassword(body.password)) {
