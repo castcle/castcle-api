@@ -55,7 +55,8 @@ export class AppService {
       const avatar = await Image.upload(body.avatar as string, {
         filename: `page-avatar-${body.castcleId}`,
         addTime: true,
-        sizes: AVARTAR_SIZE_CONFIGS
+        sizes: AVARTAR_SIZE_CONFIGS,
+        subpath: `page_${body.castcleId}`
       });
       pageModelDto.avatar = avatar.image;
     }
@@ -63,7 +64,8 @@ export class AppService {
       const cover = await Image.upload(body.avatar as string, {
         filename: `page-cover-${body.castcleId}`,
         addTime: true,
-        sizes: COMMON_SIZE_CONFIGS
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `page_${body.castcleId}`
       });
       pageModelDto.avatar = cover.image;
     }
