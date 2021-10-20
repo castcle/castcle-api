@@ -68,3 +68,8 @@ export enum CastcleQueueAction {
   UpdateProfile = 'updateProfile',
   CreateFollowFeedItem = 'craeteFollowFeedItem'
 }
+
+export class CastcleImage {
+  original: string;
+  [key: string]: string;
+}

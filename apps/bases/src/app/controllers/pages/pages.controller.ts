@@ -155,21 +155,10 @@ export class PageController {
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
-    if (body.avatar)
-      body.avatar = (
-        await this._uploadImage(body.avatar, {
-          filename: `page-avatar-${body.castcleId}`
-        })
-      ).uri;
-    if (body.cover)
-      body.cover = (
-        await this._uploadImage(body.cover, {
-          filename: `page-cover-${body.castcleId}`
-        })
-      ).uri;
+    const newBody = await this.appService.uploadPage(body);
     const page = await this.userService.createPageFromCredential(
       req.$credential,
-      body
+      newBody
     );
     return page.toPageResponse();
   }
@@ -197,13 +186,13 @@ export class PageController {
         await this._uploadImage(body.avatar, {
           filename: `page-avatar-${id}`
         })
-      ).uri;
+      ).image;
     if (body.cover)
       page.profile.images.cover = (
         await this._uploadImage(body.cover, {
           filename: `page-cover-${id}`
         })
-      ).uri;
+      ).image;
     if (body.displayName) page.displayName = body.displayName;
     if (body.links) {
       if (!page.profile.socials) page.profile.socials = {};
