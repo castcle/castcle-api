@@ -137,7 +137,7 @@ export class Image {
     const fileType = Uploader.getFileTypeFromBase64(base64);
     const buffer = Uploader.getBufferFromBase64(base64);
     //{ ...options, contentType: contentType }
-
+    console.debug(`${options.filename}-${OriginalSuffix}`);
     const image: {
       original: string;
       [key: string]: string;
@@ -158,7 +158,10 @@ export class Image {
           buffer,
           options.sizes[i],
           fileType,
-          options
+          {
+            ...options,
+            contentType: contentType
+          }
         ).then((data) => data.Key);
       }
     }

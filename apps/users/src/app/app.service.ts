@@ -47,20 +47,25 @@ export class AppService {
     req: CredentialRequest
   ): Promise<UpdateModelUserDto> {
     let updateModelUserDto: UpdateModelUserDto = {};
+    console.debug('uploading info', `avatar-${req.$credential.account._id}`);
+    console.debug(body);
     updateModelUserDto.images = {};
     if (body.images && body.images.avatar) {
       const avatar = await Image.upload(body.images.avatar as string, {
         filename: `avatar-${req.$credential.account._id}`,
         addTime: true,
-        sizes: AVARTAR_SIZE_CONFIGS
+        sizes: AVARTAR_SIZE_CONFIGS,
+        subpath: `account_${req.$credential.account._id}`
       });
       updateModelUserDto.images.avatar = avatar.image;
+      console.debug('after update', updateModelUserDto);
     }
     if (body.images && body.images.cover) {
       const cover = await Image.upload(body.images.cover as string, {
         filename: `cover-${req.$credential.account._id}`,
         addTime: true,
-        sizes: COMMON_SIZE_CONFIGS
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `account_${req.$credential.account._id}`
       });
       updateModelUserDto.images.cover = cover.image;
     }
