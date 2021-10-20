@@ -20,11 +20,51 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { UpdateUserDto, UpdateModelUserDto } from '@castcle-api/database/dtos';
+import {
+  Image,
+  AVARTAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS
+} from '@castcle-api/utils/aws';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
   getData(): { message: string } {
     return { message: 'Welcome to users!' };
+  }
+
+  /**
+   * Upload any image in s3 and transform UpdateUserDto to UpdateModelUserDto
+   * @param {UpdateUserDto} body
+   * @param {CredentialRequest} req
+   * @returns {UpdateModelUserDto}
+   */
+  async uploadUserInfo(
+    body: UpdateUserDto,
+    req: CredentialRequest
+  ): Promise<UpdateModelUserDto> {
+    let updateModelUserDto: UpdateModelUserDto = {};
+    updateModelUserDto.images = {};
+    if (body.images && body.images.avatar) {
+      const avatar = await Image.upload(body.images.avatar as string, {
+        filename: `avatar-${req.$credential.account._id}`,
+        addTime: true,
+        sizes: AVARTAR_SIZE_CONFIGS
+      });
+      updateModelUserDto.images.avatar = avatar.image;
+    }
+    if (body.images && body.images.cover) {
+      const cover = await Image.upload(body.images.cover as string, {
+        filename: `cover-${req.$credential.account._id}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS
+      });
+      updateModelUserDto.images.cover = cover.image;
+    }
+    updateModelUserDto = { ...body, images: updateModelUserDto.images };
+    return updateModelUserDto;
   }
 }

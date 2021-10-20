@@ -101,7 +101,7 @@ interface IContent extends Document {
 const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents.map((url) => {
-      url.url = Image.download(url.url);
+      url = Image.download(url);
       return url;
     });
   }

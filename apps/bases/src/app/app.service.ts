@@ -21,11 +21,52 @@
  * or have any questions.
  */
 
+import { PageDto, PageModelDto } from '@castcle-api/database/dtos';
+import { Configs } from '@castcle-api/environments';
+import {
+  Image,
+  COMMON_SIZE_CONFIGS,
+  AVARTAR_SIZE_CONFIGS
+} from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
   getData(): { message: string } {
     return { message: 'Welcome to bases!' };
+  }
+
+  /**
+   *
+   * @param body
+   * @returns
+   */
+  async uploadPage(body: PageDto): Promise<PageModelDto> {
+    const pageModelDto: PageModelDto = {
+      ...body,
+      avatar: {
+        original: Configs.DefaultAvatar
+      },
+      cover: {
+        original: Configs.DefaultCover
+      }
+    };
+    if (body.avatar) {
+      const avatar = await Image.upload(body.avatar as string, {
+        filename: `page-avatar-${body.castcleId}`,
+        addTime: true,
+        sizes: AVARTAR_SIZE_CONFIGS
+      });
+      pageModelDto.avatar = avatar.image;
+    }
+    if (body.cover) {
+      const cover = await Image.upload(body.avatar as string, {
+        filename: `page-cover-${body.castcleId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS
+      });
+      pageModelDto.avatar = cover.image;
+    }
+    return pageModelDto;
   }
 }

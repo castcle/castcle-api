@@ -490,7 +490,9 @@ export class AuthenticationService {
       type: UserType.People,
       profile: {
         images: {
-          avatar: requirements.avatar
+          avatar: {
+            original: requirements.avatar
+          }
         }
       }
     });
