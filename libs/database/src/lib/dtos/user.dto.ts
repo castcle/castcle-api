@@ -147,8 +147,8 @@ export class PageResponseDto {
 
   @ApiProperty()
   images: {
-    avatar: string;
-    cover: string;
+    avatar: CastcleImage;
+    cover: CastcleImage;
   };
 
   @ApiProperty()

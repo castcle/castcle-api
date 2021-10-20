@@ -434,7 +434,7 @@ export class AuthenticationService {
       //get SignUrl for avartar
       if (user.profile && user.profile.images && user.profile.images.avatar) {
         const avartar = new Image(user.profile.images.avatar);
-        payload.avatar = avartar.toSignUrl();
+        payload.avatar = avartar.toSignUrls();
       }
       console.debug('payloadAfter1', payload);
       //get Pages
@@ -456,8 +456,10 @@ export class AuthenticationService {
                   page.profile &&
                   page.profile.images &&
                   page.profile.images.avatar
-                    ? new Image(page.profile.images.avatar).toSignUrl()
-                    : Configs.DefaultAvatar,
+                    ? new Image(page.profile.images.avatar).toSignUrls()
+                    : {
+                        original: Configs.DefaultAvatar
+                      },
                 castcleId: page.displayId,
                 displayName: page.displayName,
                 role: 'admin',

@@ -35,7 +35,7 @@ import {
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
@@ -100,16 +100,14 @@ interface IContent extends Document {
 
 const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.payload.photo && payload.payload.photo.contents) {
-    payload.payload.photo.contents.map((url) => {
-      url = Image.download(url);
-      return url;
+    payload.payload.photo.contents = (
+      payload.payload.photo.contents as CastcleImage[]
+    ).map((url: CastcleImage) => {
+      return new Image(url).toSignUrls();
     });
   }
   if (payload.author && payload.author.avatar)
-    payload.author.avatar = Image.download(
-      payload.author.avatar,
-      Configs.DefaultAvatar
-    );
+    payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   return payload;
 };
 
