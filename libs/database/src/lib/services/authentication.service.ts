@@ -434,38 +434,9 @@ export class AuthenticationService {
       //get SignUrl for avartar
       if (user.profile && user.profile.images && user.profile.images.avatar) {
         const avartar = new Image(user.profile.images.avatar);
-        payload.avatar = avartar.toSignUrl();
+        payload.avatar = avartar.toSignUrls();
       }
       console.debug('payloadAfter1', payload);
-      //get Pages
-      const pages = await this._userModel
-        .find({
-          ownerAccount: credential.account._id,
-          type: UserType.Page,
-          visibility: EntityVisibility.Publish
-        })
-        .exec();
-      console.debug(pages);
-      //TODO !!! has to change the default avartar
-      payload.pages = pages
-        ? pages.map(
-            (page) =>
-              ({
-                id: page._id,
-                avatar:
-                  page.profile &&
-                  page.profile.images &&
-                  page.profile.images.avatar
-                    ? new Image(page.profile.images.avatar).toSignUrl()
-                    : Configs.DefaultAvatar,
-                castcleId: page.displayId,
-                displayName: page.displayName,
-                role: 'admin',
-                verified: page.verified
-              } as PageInfoPayload)
-          )
-        : [];
-      console.debug('payloadAfter2', payload);
       return payload;
     }
   }
@@ -490,7 +461,9 @@ export class AuthenticationService {
       type: UserType.People,
       profile: {
         images: {
-          avatar: requirements.avatar
+          avatar: {
+            original: requirements.avatar
+          }
         }
       }
     });

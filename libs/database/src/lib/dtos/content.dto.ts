@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { CastcleImage } from '.';
 import { UserVerified } from '../schemas/user.schema';
 import { Pagination } from './common.dto';
 import { CastcleQueryOptions } from './common.dto';
-
 class Url {
   @ApiProperty()
   url: string;
@@ -40,15 +40,15 @@ class Link {
 
 class BlogPhoto {
   @ApiProperty()
-  cover: Url;
+  cover: CastcleImage | Url;
 
   @ApiProperty()
-  contents: Url[];
+  contents: CastcleImage[] | Url[];
 }
 
 class ShortPhoto {
   @ApiProperty()
-  contents: Url[];
+  contents: CastcleImage[] | Url[];
 }
 
 export class ShortPayload {
@@ -142,7 +142,7 @@ export class Author {
   @ApiProperty()
   displayName: string;
   @ApiProperty()
-  avatar: string | null;
+  avatar: CastcleImage | null;
   @ApiProperty()
   verified: UserVerified;
   @ApiProperty()

@@ -52,6 +52,7 @@ import { Image } from '@castcle-api/utils/aws';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -138,9 +139,24 @@ describe('PageController', () => {
     userAccount = await authService.verifyAccount(accountActivation);
     jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
-      const mockImage = new Image('mockuri');
+      const mockImage = new Image({
+        original: 'mockUri'
+      });
       return mockImage;
     });
+    jest
+      .spyOn(appService, 'uploadPage')
+      .mockImplementation(async (body: PageDto) => {
+        return {
+          ...body,
+          avatar: {
+            original: Configs.DefaultAvatar
+          },
+          cover: {
+            original: Configs.DefaultCover
+          }
+        };
+      });
     userCredential = result.credentialDocument;
   });
   afterAll(async () => {

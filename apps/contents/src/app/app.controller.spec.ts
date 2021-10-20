@@ -176,11 +176,11 @@ describe('ContentController', () => {
         message: 'Sell quick',
         photo: {
           cover: {
-            url: 'http://placehold.it/500x500'
+            original: 'http://placehold.it/500x500'
           },
           contents: [
-            { url: 'http://placehold.it/200x200' },
-            { url: 'http://placehold.it/300x300' }
+            { original: 'http://placehold.it/200x200' },
+            { original: 'http://placehold.it/300x300' }
           ]
         }
       } as BlogPayload;
@@ -203,8 +203,12 @@ describe('ContentController', () => {
     });
     it('should be able to create a content by page', async () => {
       const pageDto = {
-        avatar: 'http://placehold.it/200x200',
-        cover: 'http://placehold.it/1200x500',
+        avatar: {
+          original: 'http://placehold.it/200x200'
+        },
+        cover: {
+          original: 'http://placehold.it/1200x500'
+        },
         displayName: 'Whatsupidoo',
         castcleId: 'whatsup'
       };

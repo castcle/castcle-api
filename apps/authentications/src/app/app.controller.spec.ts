@@ -122,7 +122,9 @@ describe('AppController', () => {
 
     jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
-      const mockImage = new Image('');
+      const mockImage = new Image({
+        original: 'test'
+      });
       return mockImage;
     });
     jest

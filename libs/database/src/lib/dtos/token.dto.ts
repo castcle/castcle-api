@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleImage } from '.';
 import { PageVerified, UserVerified } from '../schemas/user.schema';
 
 export interface AccessTokenPayload {
@@ -35,7 +36,7 @@ export interface PageInfoPayload {
   id: string;
   castcleId: string;
   displayName: string;
-  avatar: string;
+  avatar: CastcleImage;
   role: 'admin'; // admin or member
   verified: PageVerified;
 }
@@ -44,7 +45,7 @@ export interface UserAccessTokenPayload extends AccessTokenPayload {
   castcleId: string;
   displayName: string;
   email?: string;
-  avatar?: string;
+  avatar?: CastcleImage;
   verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
   showAds: boolean;
   pages?: PageInfoPayload[];
@@ -55,7 +56,7 @@ export interface MemberAccessTokenPayload extends AccessTokenPayload {
   castcleId: string;
   displayName: string;
   email?: string;
-  avatar?: string;
+  avatar?: CastcleImage;
 }
 
 export interface RefreshTokenPayload {

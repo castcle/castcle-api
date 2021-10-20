@@ -34,7 +34,13 @@ import {
 } from '../schemas/user.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { ContentDocument } from '../schemas/content.schema';
-import { FollowResponse, PageDto, UpdateUserDto } from '../dtos/user.dto';
+import {
+  FollowResponse,
+  PageDto,
+  PageModelDto,
+  UpdateModelUserDto,
+  UpdateUserDto
+} from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
 import {
@@ -84,7 +90,7 @@ export class UserService {
     }
   };
 
-  updateUser = (user: UserDocument, updateUserDto: UpdateUserDto) => {
+  updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {
     if (!user.profile) user.profile = {};
     if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
     if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
@@ -148,13 +154,13 @@ export class UserService {
 
   createPageFromCredential = async (
     credential: CredentialDocument,
-    pageDto: PageDto
+    pageDto: PageModelDto
   ) => {
     const user = await this.getUserFromCredential(credential);
     return this.createPageFromUser(user, pageDto);
   };
 
-  createPageFromUser = (user: UserDocument, pageDto: PageDto) => {
+  createPageFromUser = (user: UserDocument, pageDto: PageModelDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
       type: UserType.Page,

@@ -22,15 +22,34 @@
  */
 import { Environment as env } from '@castcle-api/environments';
 import * as AWS from 'aws-sdk';
+import * as sharp from 'sharp';
 import * as Configs from '../config';
 import { Uploader, UploadOptions } from './uploader';
 
-export class Image {
-  constructor(public uri: string, public order?: number) {}
+const OriginalSuffix = 'original';
 
-  toSignUrl() {
+export type Size = {
+  name: string;
+  width: number;
+  height: number;
+};
+
+interface ImageUploadOptions extends UploadOptions {
+  sizes?: Size[];
+}
+
+export class Image {
+  constructor(
+    public image: {
+      original: string;
+      [key: string]: string;
+    },
+    public order?: number
+  ) {}
+
+  toSignUrl(sizeName?: string) {
     //for pass no env test
-    if (!env.cloudfront_private_key) return this.uri;
+    if (!env.cloudfront_private_key) return this.image.original;
     const buff = Buffer.from(env.cloudfront_private_key, 'base64');
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
@@ -43,34 +62,110 @@ export class Image {
     return signer.getSignedUrl({
       url: `${
         env.assets_host ? env.assets_host : 'https://assets-dev.castcle.com'
-      }/${this.uri}`,
+      }/${sizeName ? this.image[sizeName] : this.image.original}`,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
     });
   }
 
+  toSignUrls() {
+    const newImage: {
+      original: string;
+      [key: string]: string;
+    } = {
+      original: this.toSignUrl()
+    };
+    Object.keys(this.image).forEach((sizeName) => {
+      newImage[sizeName] = this.toSignUrl(sizeName);
+    });
+    return newImage;
+  }
+
   /**
-   * Get signurl of s3uri will return defaultImage if s3Uri is undefined and return undefined if no defaultImage
-   * @param s3Uri
-   * @param defaultImage
+   *
+   * @param buffer
+   * @param size
+   * @param fileType
+   * @param options
    * @returns
    */
-  static download(s3Uri: string, defaultImage?: string) {
-    if (s3Uri) {
-      const image = new Image(s3Uri);
-      return image.toSignUrl();
+  static uploadSpecificSizeImage = async (
+    buffer: Buffer,
+    size: Size,
+    fileType: string,
+    options?: ImageUploadOptions
+  ) => {
+    const newFileName = `${options.filename}-${size.name}`;
+    const newBuffer = await sharp(buffer)
+      .resize(size.width, size.height)
+      .toBuffer();
+    const uploader = new Uploader(
+      env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
+      Configs.IMAGE_BUCKET_FOLDER
+    );
+    return uploader.uploadBufferToS3(newBuffer, fileType, {
+      ...options,
+      filename: newFileName
+    });
+  };
+
+  static download(
+    image: {
+      original: string;
+      [key: string]: string;
+    },
+    defaultImage?: string
+  ): {
+    original: string;
+    [key: string]: string;
+  } {
+    if (image) {
+      const imageInstance = new Image(image);
+      return imageInstance.toSignUrls();
     } else if (defaultImage) {
-      return defaultImage;
+      return {
+        original: defaultImage
+      };
     } else return undefined;
   }
 
-  static upload(base64: string, options?: UploadOptions) {
+  static async upload(base64: string, options?: ImageUploadOptions) {
     const uploader = new Uploader(
       env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
       Configs.IMAGE_BUCKET_FOLDER
     );
     const contentType = Uploader.getImageContentType(base64);
-    return uploader
-      .uploadFromBase64ToS3(base64, { ...options, contentType: contentType })
-      .then((data) => new Image(data.Key, options.order));
+    const fileType = Uploader.getFileTypeFromBase64(base64);
+    const buffer = Uploader.getBufferFromBase64(base64);
+    //{ ...options, contentType: contentType }
+    console.debug(`${options.filename}-${OriginalSuffix}`);
+    const image: {
+      original: string;
+      [key: string]: string;
+    } = {
+      original: await uploader
+        .uploadBufferToS3(buffer, fileType, {
+          ...options,
+          filename: `${options.filename}-${OriginalSuffix}`,
+          contentType: contentType
+        })
+        .then((data) => data.Key)
+    };
+
+    //Multisize opton
+    if (options.sizes && options.sizes.length > 0) {
+      for (let i = 0; i < options.sizes.length; i++) {
+        image[options.sizes[i].name] = await Image.uploadSpecificSizeImage(
+          buffer,
+          options.sizes[i],
+          fileType,
+          {
+            ...options,
+            contentType: contentType
+          }
+        ).then((data) => data.Key);
+      }
+    }
+
+    return new Image(image, options.order);
   }
 }

@@ -142,7 +142,7 @@ export class AppService {
           displayName: social.name,
           socialId: social.socialId,
           provider: social.provider,
-          avatar: avatar.uri,
+          avatar: avatar.image.original,
           socialToken: social.socialToken,
           socialSecretToken: social.socialSecretToken
         });

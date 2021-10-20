@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { Author } from '../dtos/content.dto';
 import { Account } from '../schemas/account.schema';
@@ -33,14 +33,12 @@ import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
 import { Image } from '@castcle-api/utils/aws';
 import { Configs } from '@castcle-api/environments';
-import { CommentDocument, ContentDocument } from '.';
-import { FeedItemDocument } from './feedItem.schema';
 
 export type UserDocument = User & IUser;
 
 type ProfileImage = {
-  avatar?: string;
-  cover?: string;
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
 };
 
 export interface UserProfile {
@@ -142,20 +140,20 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     displayName: self.displayName,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
-      count: self.followerCount ? self.followerCount : 0
+      count: self.followerCount
     },
     following: {
-      count: self.followedCount ? self.followedCount : 0
+      count: self.followedCount
     },
     images: {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
-          ? Image.download(self.profile.images.avatar)
-          : Configs.DefaultAvatar, // TODO !!! need to check S3 about static url
+          ? new Image(self.profile.images.avatar).toSignUrls()
+          : { original: Configs.DefaultAvatar }, // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
-          ? Image.download(self.profile.images.cover)
-          : Configs.DefaultCover
+          ? new Image(self.profile.images.cover).toSignUrls()
+          : { original: Configs.DefaultCover }
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
@@ -172,8 +170,10 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     id: self._id,
     avatar:
       self.profile && self.profile.images && self.profile.images.avatar
-        ? Image.download(self.profile.images.avatar)
-        : Configs.DefaultAvatar,
+        ? new Image(self.profile.images.avatar).toSignUrls()
+        : {
+            original: Configs.DefaultAvatar
+          },
     castcleId: self.displayId,
     displayName: self.displayName,
     followed: false, //default of followed
@@ -201,14 +201,18 @@ UserSchema.methods.toPageResponse = function () {
         (this as UserDocument).profile &&
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.avatar
-          ? Image.download((this as UserDocument).profile.images.avatar)
-          : Configs.DefaultAvatar,
+          ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+          : {
+              original: Configs.DefaultCover
+            },
       cover:
         (this as UserDocument).profile &&
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.cover
-          ? Image.download((this as UserDocument).profile.images.cover)
-          : Configs.DefaultCover
+          ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
+          : {
+              original: Configs.DefaultCover
+            }
     },
     followers: {
       count: (this as UserDocument).followerCount
@@ -269,8 +273,10 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       (this as UserDocument).profile &&
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
-        ? Image.download((this as UserDocument).profile.images.avatar)
-        : '',
+        ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+        : {
+            original: Configs.DefaultAvatar
+          },
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
