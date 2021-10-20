@@ -148,11 +148,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     images: {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
-          ? Image.download(self.profile.images.avatar)
+          ? new Image(self.profile.images.avatar).toSignUrls()
           : { original: Configs.DefaultAvatar }, // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
-          ? Image.download(self.profile.images.cover)
+          ? new Image(self.profile.images.cover).toSignUrls()
           : { original: Configs.DefaultCover }
     },
     overview:
@@ -170,8 +170,10 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     id: self._id,
     avatar:
       self.profile && self.profile.images && self.profile.images.avatar
-        ? Image.download(self.profile.images.avatar)
-        : Configs.DefaultAvatar,
+        ? new Image(self.profile.images.avatar).toSignUrls()
+        : {
+            original: Configs.DefaultAvatar
+          },
     castcleId: self.displayId,
     displayName: self.displayName,
     followed: false, //default of followed
@@ -199,14 +201,18 @@ UserSchema.methods.toPageResponse = function () {
         (this as UserDocument).profile &&
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.avatar
-          ? Image.download((this as UserDocument).profile.images.avatar)
-          : Configs.DefaultAvatar,
+          ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+          : {
+              original: Configs.DefaultCover
+            },
       cover:
         (this as UserDocument).profile &&
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.cover
-          ? Image.download((this as UserDocument).profile.images.cover)
-          : Configs.DefaultCover
+          ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
+          : {
+              original: Configs.DefaultCover
+            }
     },
     followers: {
       count: (this as UserDocument).followerCount
@@ -267,8 +273,10 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       (this as UserDocument).profile &&
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
-        ? Image.download((this as UserDocument).profile.images.avatar)
-        : '',
+        ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+        : {
+            original: Configs.DefaultAvatar
+          },
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
