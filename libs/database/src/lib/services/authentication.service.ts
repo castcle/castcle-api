@@ -437,37 +437,6 @@ export class AuthenticationService {
         payload.avatar = avartar.toSignUrls();
       }
       console.debug('payloadAfter1', payload);
-      //get Pages
-      const pages = await this._userModel
-        .find({
-          ownerAccount: credential.account._id,
-          type: UserType.Page,
-          visibility: EntityVisibility.Publish
-        })
-        .exec();
-      console.debug(pages);
-      //TODO !!! has to change the default avartar
-      payload.pages = pages
-        ? pages.map(
-            (page) =>
-              ({
-                id: page._id,
-                avatar:
-                  page.profile &&
-                  page.profile.images &&
-                  page.profile.images.avatar
-                    ? new Image(page.profile.images.avatar).toSignUrls()
-                    : {
-                        original: Configs.DefaultAvatar
-                      },
-                castcleId: page.displayId,
-                displayName: page.displayName,
-                role: 'admin',
-                verified: page.verified
-              } as PageInfoPayload)
-          )
-        : [];
-      console.debug('payloadAfter2', payload);
       return payload;
     }
   }
