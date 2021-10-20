@@ -52,6 +52,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { Configs } from '@castcle-api/environments';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -131,6 +132,21 @@ describe('AppController', () => {
     );
     userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
+    jest
+      .spyOn(appService, 'uploadUserInfo')
+      .mockImplementation(async (body: UpdateUserDto, req: any) => {
+        return {
+          ...body,
+          images: {
+            avatar: {
+              original: Configs.DefaultAvatar
+            },
+            cover: {
+              original: Configs.DefaultCover
+            }
+          }
+        };
+      });
   });
 
   afterAll(async () => {
@@ -272,10 +288,16 @@ describe('AppController', () => {
   });
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
-      await appController.deleteMyData({
-        $credential: userCredential,
-        $language: 'th'
-      } as any);
+      await appController.deleteMyData(
+        'email',
+        {
+          password: '1234AbcD'
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
       const user = await service.getUserFromCredential(userCredential);
       expect(user).toBeNull();
     });

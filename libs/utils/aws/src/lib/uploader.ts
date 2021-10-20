@@ -22,6 +22,7 @@
  */
 
 import * as AWS from 'aws-sdk';
+
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
 export type UploadOptions = {
@@ -30,6 +31,7 @@ export type UploadOptions = {
   addTime?: boolean;
   order?: number;
   contentType?: string;
+  subpath?: string;
 };
 
 export class Uploader {
@@ -81,33 +83,72 @@ export class Uploader {
   };
 
   /**
-   * upload base64 to S3 serer by replace any prefix and find suitable extension file
+   * get Buffer from base64
    * @param {string} base64
-   * @param {UploadOptions} options
-   * @returns {AWS.S3.ManagedUpload.SendData}
+   * @returns {Buffer}
    */
-  uploadFromBase64ToS3 = async (base64: string, options?: UploadOptions) => {
+  static getBufferFromBase64 = (base64: string) => {
+    const replaceContent = base64.replace(/^data:\w+\/\w+;base64,/, '');
+    const buffer = Buffer.from(replaceContent, 'base64');
+    return buffer;
+  };
+
+  /**
+   * get file type from base64
+   * @param {string} base64
+   * @returns {string}
+   */
+  static getFileTypeFromBase64 = (base64: string) => {
+    const replaceContent = base64.replace(/^data:\w+\/\w+;base64,/, '');
+    const fileTypeFromPrefixResult =
+      Uploader.getFileTypeFromBase64Prefix(base64);
+    return fileTypeFromPrefixResult
+      ? fileTypeFromPrefixResult
+      : Uploader.getContentTypeFromFirstCharAt(replaceContent.charAt(0));
+  };
+
+  /**
+   * get file save name from fileType will check if there is subpath and will generate DateTime as timestamp for file if there is no name
+   * @param fileType
+   * @param options
+   * @returns
+   */
+  static getFileSavedNameFromOptions = (
+    fileType: string,
+    options?: UploadOptions
+  ) => {
+    const extensionName =
+      options && options.addTime
+        ? `-${Date.now()}.${fileType}`
+        : `.${fileType}`;
+    let saveName =
+      options && options.filename
+        ? `${options.filename}${extensionName}`
+        : `${Date.now()}.${fileType}`;
+    if (options.subpath) saveName = `${options.subpath}/${saveName}`;
+    return saveName;
+  };
+
+  /**
+   * upload buffer to S3 with file type and subpath in options
+   * @param {Buffer} buffer
+   * @param {string} fileType
+   * @param {UploadOptions} options
+   * @returns
+   */
+  uploadBufferToS3 = async (
+    buffer: Buffer,
+    fileType: string,
+    options?: UploadOptions
+  ) => {
     try {
-      const replaceContent = base64.replace(/^data:\w+\/\w+;base64,/, '');
-      const buffer = Buffer.from(replaceContent, 'base64');
-      const fileTypeFromPrefixResult =
-        Uploader.getFileTypeFromBase64Prefix(base64);
-      const fileType = fileTypeFromPrefixResult
-        ? fileTypeFromPrefixResult
-        : Uploader.getContentTypeFromFirstCharAt(replaceContent.charAt(0));
-      const extensionName =
-        options && options.addTime
-          ? `-${Date.now()}.${fileType}`
-          : `.${fileType}`;
-      const saveName =
-        options && options.filename
-          ? `${options.filename}${extensionName}`
-          : `${Date.now()}.${fileType}`;
+      const saveName = Uploader.getFileSavedNameFromOptions(fileType, options);
+      console.debug('bucket', this.bucket);
+      console.debug('key', `${this.destination}/${saveName}`);
       return this.s3
         .upload({
           Bucket: this.bucket,
           Body: buffer,
-          ContentEncoding: 'base64',
           Key: `${this.destination}/${saveName}`,
           ContentType: options.contentType
         })
@@ -117,5 +158,17 @@ export class Uploader {
         options && options.language ? options.language : 'en';
       throw new CastcleException(CastcleStatus.UPLOAD_FAILED, errorLanguage);
     }
+  };
+
+  /**
+   * upload base64 to S3 serer by replace any prefix and find suitable extension file
+   * @param {string} base64
+   * @param {UploadOptions} options
+   * @returns {AWS.S3.ManagedUpload.SendData}
+   */
+  uploadFromBase64ToS3 = async (base64: string, options?: UploadOptions) => {
+    const buffer = Uploader.getBufferFromBase64(base64);
+    const fileType = Uploader.getFileTypeFromBase64(base64);
+    return this.uploadBufferToS3(buffer, fileType, options);
   };
 }

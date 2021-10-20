@@ -37,7 +37,6 @@ import {
   ContentService,
   AuthenticationService
 } from '@castcle-api/database';
-import { ImageInterceptor } from './interceptors/image.interceptor';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -145,7 +144,6 @@ export class UserController {
     type: UserResponseDto
   })
   @CastcleBasicAuth()
-  @UseInterceptors(ImageInterceptor)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -153,7 +151,8 @@ export class UserController {
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const afterUpdateUser = await this.userService.updateUser(user, body);
+      const newBody = await this.appService.uploadUserInfo(body, req);
+      const afterUpdateUser = await this.userService.updateUser(user, newBody);
       const response = await afterUpdateUser.toUserResponse();
       return response;
     } else
@@ -168,12 +167,29 @@ export class UserController {
   })
   @CastcleBasicAuth()
   @Delete('me')
-  async deleteMyData(@Req() req: CredentialRequest) {
+  async deleteMyData(
+    @Body('channel') channel: string,
+    @Body('payload') passwordPayload: { password: string },
+    @Req() req: CredentialRequest
+  ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      //await user.delete();
-      await this.userService.deactive(user);
-      return '';
+      const account = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (
+        user.verified &&
+        user.verified.email &&
+        channel === 'email' &&
+        account.verifyPassword(passwordPayload.password)
+      ) {
+        await this.userService.deactive(user);
+        return '';
+      } else
+        throw new CastcleException(
+          CastcleStatus.INVALID_PASSWORD,
+          req.$language
+        );
     } else {
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,

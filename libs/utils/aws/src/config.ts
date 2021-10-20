@@ -21,5 +21,19 @@
  * or have any questions.
  */
 
+import { Size } from './lib/image';
+
 export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000; //in milliseconds
 export const IMAGE_BUCKET_FOLDER = 'images';
+
+export const AVARTAR_SIZE_CONFIGS: Size[] = [
+  { name: 'thumbnail', width: 120, height: 120 },
+  { name: 'large', width: 1080, height: 1080 },
+  { name: 'fullHd', width: 1920, height: 1920 }
+];
+
+export const COMMON_SIZE_CONFIGS: Size[] = [
+  { name: 'thumbnail', width: 368, height: 207 },
+  { name: 'large', width: 1280, height: 720 },
+  { name: 'fullHd', width: 1920, height: 1080 }
+];

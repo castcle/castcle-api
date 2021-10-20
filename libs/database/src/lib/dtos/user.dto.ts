@@ -22,13 +22,18 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { UserVerified } from '../schemas/user.schema';
-import { Pagination } from './common.dto';
+import { CastcleImage, Pagination } from './common.dto';
 
 class UserImage {
   @ApiProperty()
-  avatar: string;
+  avatar: string | CastcleImage;
   @ApiProperty()
-  cover: string;
+  cover: string | CastcleImage;
+}
+
+class UserModelImage {
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
 }
 
 class Link {
@@ -105,6 +110,13 @@ export class UpdateUserDto {
   links?: Link;
 }
 
+export class UpdateModelUserDto {
+  overview?: string;
+  dob?: string;
+  links?: Link;
+  images?: UserModelImage;
+}
+
 export class PageDto {
   @ApiProperty()
   castcleId: string;
@@ -119,6 +131,13 @@ export class PageDto {
   cover: string;
 }
 
+export class PageModelDto {
+  castcleId: string;
+  displayName: string;
+  avatar: CastcleImage;
+  cover: CastcleImage;
+}
+
 export class PageResponseDto {
   @ApiProperty()
   castcleId: string;
@@ -128,8 +147,8 @@ export class PageResponseDto {
 
   @ApiProperty()
   images: {
-    avatar: string;
-    cover: string;
+    avatar: CastcleImage;
+    cover: CastcleImage;
   };
 
   @ApiProperty()

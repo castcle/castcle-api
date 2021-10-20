@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { Downloader } from './downloader';
 import { Image } from './image';
 import { Uploader, UploadOptions } from './uploader';
+import { AVARTAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
 
 @Module({
   imports: [
@@ -17,4 +18,11 @@ import { Uploader, UploadOptions } from './uploader';
 })
 export class UtilsAwsModule {}
 
-export { Image, Uploader, UploadOptions, Downloader };
+export {
+  Image,
+  Uploader,
+  UploadOptions,
+  Downloader,
+  AVARTAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS
+};

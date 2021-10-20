@@ -25,7 +25,6 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { ImageInterceptor } from './interceptors/image.interceptor';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UserController } from './app.controller';
@@ -42,6 +41,6 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
     UtilsAwsModule
   ],
   controllers: [HealthyController, UserController],
-  providers: [AppService, ImageInterceptor]
+  providers: [AppService]
 })
 export class UserModule {}
