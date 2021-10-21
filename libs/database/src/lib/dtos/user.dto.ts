@@ -125,17 +125,17 @@ export class PageDto {
   displayName: string;
 
   @ApiProperty()
-  avatar: string;
+  avatar?: string;
 
   @ApiProperty()
-  cover: string;
+  cover?: string;
 }
 
 export class PageModelDto {
   castcleId: string;
   displayName: string;
-  avatar: CastcleImage;
-  cover: CastcleImage;
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
 }
 
 export class PageResponseDto {
