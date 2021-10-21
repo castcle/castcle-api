@@ -94,7 +94,6 @@ export class Image {
     fileType: string,
     options?: ImageUploadOptions
   ) => {
-    const newFileName = `${options.filename}-${size.name}`;
     const newBuffer = await sharp(buffer)
       .resize(size.width, size.height)
       .toBuffer();
@@ -104,7 +103,7 @@ export class Image {
     );
     return uploader.uploadBufferToS3(newBuffer, fileType, {
       ...options,
-      filename: newFileName
+      suffix: size.name
     });
   };
 
@@ -137,7 +136,7 @@ export class Image {
     const fileType = Uploader.getFileTypeFromBase64(base64);
     const buffer = Uploader.getBufferFromBase64(base64);
     //{ ...options, contentType: contentType }
-    console.debug(`${options.filename}-${OriginalSuffix}`);
+    //console.debug(`${options.filename}-${OriginalSuffix}`);
     const image: {
       original: string;
       [key: string]: string;
@@ -145,8 +144,8 @@ export class Image {
       original: await uploader
         .uploadBufferToS3(buffer, fileType, {
           ...options,
-          filename: `${options.filename}-${OriginalSuffix}`,
-          contentType: contentType
+          contentType: contentType,
+          suffix: OriginalSuffix
         })
         .then((data) => data.Key)
     };
