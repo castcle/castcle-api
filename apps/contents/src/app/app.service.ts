@@ -22,11 +22,18 @@
  */
 
 import { AuthenticationService } from '@castcle-api/database';
-import { SaveContentDto, ShortPayload } from '@castcle-api/database/dtos';
+import {
+  BlogPayload,
+  ContentType,
+  SaveContentDto,
+  ShortPayload,
+  Url
+} from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
+import { UserDocument } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {
@@ -63,19 +70,34 @@ export class AppService {
    * @param {SaveContentDto} body
    * @returns {SaveContentDto} body
    */
-  async uploadContentToS3(body: SaveContentDto) {
+  async uploadContentToS3(body: SaveContentDto, uploader: UserDocument) {
     if (body.payload.photo) {
       const newContents = await Promise.all(
-        body.payload.photo.contents.map(async (item) => {
-          const image = await Image.upload(item.url, {
+        (body.payload.photo.contents as Url[]).map(async (item) => {
+          const image = await Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${body.author.id}}`
+            subpath: `contents/${uploader._id}`
           });
           return image.image;
         })
       );
       body.payload.photo.contents = newContents;
+    }
+    if (
+      body.type === ContentType.Blog &&
+      (body.payload as BlogPayload).photo.cover
+    ) {
+      (body.payload as BlogPayload).photo.cover = (
+        await Image.upload(
+          ((body.payload as BlogPayload).photo.cover as Url).image,
+          {
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${uploader._id}`
+          }
+        )
+      ).image;
     }
     return body;
   }

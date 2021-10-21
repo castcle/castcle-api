@@ -99,15 +99,25 @@ export class ContentController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const newBody = await this.appService.uploadContentToS3(body);
-    const content = await this.contentService.createContentFromUser(
-      user,
-      newBody
+    const credentialUser = await this.userService.getUserFromCredential(
+      req.$credential
     );
-    return {
-      payload: content.toContentPayload()
-    } as ContentResponse;
+    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
+      const newBody = await this.appService.uploadContentToS3(body, user);
+      const content = await this.contentService.createContentFromUser(
+        user,
+        newBody
+      );
+      return {
+        payload: content.toContentPayload()
+      } as ContentResponse;
+    } else {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
   }
 
   @ApiOkResponse({
@@ -180,11 +190,14 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     await this._checkPermissionForUpdate(content, req);
-    const newBody = await this.appService.uploadContentToS3(body);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const newBody = await this.appService.uploadContentToS3(body, user);
+    console.debug('newBody', newBody);
     const updatedContent = await this.contentService.updateContentFromId(
       content._id,
       newBody
     );
+    console.debug('updatedContent', updatedContent);
     return {
       payload: updatedContent.toContentPayload()
     } as ContentResponse;
