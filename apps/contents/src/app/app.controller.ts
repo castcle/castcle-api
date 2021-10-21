@@ -100,7 +100,7 @@ export class ContentController {
         req.$language
       );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const newBody = await this.appService.uploadContentToS3(body);
+    const newBody = await this.appService.uploadContentToS3(body, user);
     const content = await this.contentService.createContentFromUser(
       user,
       newBody
@@ -180,11 +180,14 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     await this._checkPermissionForUpdate(content, req);
-    const newBody = await this.appService.uploadContentToS3(body);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const newBody = await this.appService.uploadContentToS3(body, user);
+    console.debug('newBody', newBody);
     const updatedContent = await this.contentService.updateContentFromId(
       content._id,
       newBody
     );
+    console.debug('updatedContent', updatedContent);
     return {
       payload: updatedContent.toContentPayload()
     } as ContentResponse;
