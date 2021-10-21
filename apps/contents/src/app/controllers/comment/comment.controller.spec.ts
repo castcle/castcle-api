@@ -142,7 +142,8 @@ describe('CommentController', () => {
       type: ContentType.Short,
       payload: {
         message: 'Hi Jack'
-      } as ShortPayload
+      } as ShortPayload,
+      castcleId: user.displayId
     });
     userCredentialRequest = {
       $credential: userCredential,

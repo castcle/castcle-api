@@ -172,23 +172,28 @@ describe('Ranker Service', () => {
     beforeAll(async () => {
       contents[0] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload
+        payload: shortPayload,
+        castcleId: user.displayId
       });
       contents[1] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload2
+        payload: shortPayload2,
+        castcleId: user.displayId
       });
       contents[2] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload3
+        payload: shortPayload3,
+        castcleId: user.displayId
       });
       contents[2] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload4
+        payload: shortPayload4,
+        castcleId: user.displayId
       });
       contents[4] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload5
+        payload: shortPayload5,
+        castcleId: user.displayId
       });
     });
     it('should create feedItem after create a content', async () => {
