@@ -614,26 +614,30 @@ describe('User Service', () => {
         type: ContentType.Short,
         payload: {
           message: 'this is short1'
-        } as ShortPayload
+        } as ShortPayload,
+        castcleId: userA.displayId
       });
       contents[1] = await contentService.createContentFromUser(userA, {
         type: ContentType.Short,
         payload: {
           message: 'this is short2'
-        } as ShortPayload
+        } as ShortPayload,
+        castcleId: userA.displayId
       });
       //b
       contentsB[0] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
           message: 'this is short1'
-        } as ShortPayload
+        } as ShortPayload,
+        castcleId: userB.displayId
       });
       contentsB[1] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
           message: 'this is short2'
-        } as ShortPayload
+        } as ShortPayload,
+        castcleId: userB.displayId
       });
 
       fixContents[0] = await contentService.createContentFromUser(
@@ -642,7 +646,8 @@ describe('User Service', () => {
           type: ContentType.Short,
           payload: {
             message: 'this is short1'
-          } as ShortPayload
+          } as ShortPayload,
+          castcleId: userNotDelete.displayId
         }
       );
 
@@ -652,7 +657,8 @@ describe('User Service', () => {
           type: ContentType.Short,
           payload: {
             message: 'this is short2'
-          } as ShortPayload
+          } as ShortPayload,
+          castcleId: userNotDelete.displayId
         }
       );
 

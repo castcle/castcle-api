@@ -90,12 +90,12 @@ export class ContentService {
    * @returns {ContentDocument} content.save() result
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
-    let author: Author;
-    if (!contentDto.author) author = this._getAuthorFromUser(user);
+    /*if (!contentDto.author) author = this._getAuthorFromUser(user);
     else {
       const page = await this._userModel.findById(contentDto.author.id);
       author = this._getAuthorFromUser(page);
-    }
+    }*/
+    const author = this._getAuthorFromUser(user);
     const newContent = {
       author: author,
       payload: contentDto.payload,
