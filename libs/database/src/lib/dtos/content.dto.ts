@@ -204,7 +204,7 @@ export class SaveContentDto {
   payload: ShortPayload | BlogPayload | ImagePayload;
 
   @ApiProperty()
-  author?: AuthorDto;
+  castcleId: string;
 }
 
 export enum ContentType {

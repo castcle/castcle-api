@@ -224,24 +224,27 @@ describe('AppController', () => {
 
   describe('- Contents related', () => {
     let user: UserDocument;
-    const contentDtos: SaveContentDto[] = [
-      {
-        type: ContentType.Short,
-        payload: {
-          message: 'hello'
-        } as ShortPayload
-      },
-      {
-        type: ContentType.Short,
-        payload: {
-          message: 'hi'
-        } as ShortPayload
-      }
-    ];
+    let contentDtos: SaveContentDto[];
     const contents: ContentDocument[] = [];
     let expectedResponse: ContentsResponse;
     beforeAll(async () => {
       user = await service.getUserFromCredential(userCredential);
+      contentDtos = [
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'hello'
+          } as ShortPayload,
+          castcleId: user.displayId
+        },
+        {
+          type: ContentType.Short,
+          payload: {
+            message: 'hi'
+          } as ShortPayload,
+          castcleId: user.displayId
+        }
+      ];
       for (let i = 0; i < contentDtos.length; i++)
         contents.push(
           await contentService.createContentFromUser(user, contentDtos[i])

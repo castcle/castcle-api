@@ -99,15 +99,25 @@ export class ContentController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const newBody = await this.appService.uploadContentToS3(body, user);
-    const content = await this.contentService.createContentFromUser(
-      user,
-      newBody
+    const credentialUser = await this.userService.getUserFromCredential(
+      req.$credential
     );
-    return {
-      payload: content.toContentPayload()
-    } as ContentResponse;
+    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
+      const newBody = await this.appService.uploadContentToS3(body, user);
+      const content = await this.contentService.createContentFromUser(
+        user,
+        newBody
+      );
+      return {
+        payload: content.toContentPayload()
+      } as ContentResponse;
+    } else {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
   }
 
   @ApiOkResponse({
