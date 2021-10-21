@@ -25,6 +25,7 @@ import { UserService } from '../services/user.service';
 import { AuthenticationService } from '../services/authentication.service';
 import { PageDto } from '../dtos';
 import { AccountDocument, UserDocument } from '../schemas';
+import { PageModelDto } from '../dtos/user.dto';
 
 type Models = {
   userService: UserService;
@@ -46,7 +47,7 @@ type UserInfo = {
     email: string;
     password: string;
   };
-  pages: PageDto[];
+  pages: PageModelDto[];
 };
 
 export type MockUserDetail = {
@@ -56,11 +57,15 @@ export type MockUserDetail = {
 };
 
 const _generatePageDto = (pagePerAccountAmount: number) => {
-  const pageDtos: PageDto[] = [];
+  const pageDtos: PageModelDto[] = [];
   for (let i = 0; i < pagePerAccountAmount; i++) {
     pageDtos[i] = {
-      avatar: '/testBase64',
-      cover: '/testCover64',
+      avatar: {
+        original: '/testBase64'
+      },
+      cover: {
+        original: '/testCover64'
+      },
       castcleId: `page-${i}-${new Date().getTime()}`,
       displayName: `Page-${i}`
     };

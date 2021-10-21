@@ -557,9 +557,9 @@ describe('Authentication Service', () => {
         expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
-        expect(signupRequirements.avatar).toEqual(
-          afterSaveUser[0].profile.images.avatar
-        );
+        expect({
+          original: signupRequirements.avatar
+        }).toEqual(afterSaveUser[0].profile.images.avatar);
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );

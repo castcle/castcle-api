@@ -22,10 +22,10 @@
  */
 
 import { AuthenticationService } from '@castcle-api/database';
-import { SaveContentDto } from '@castcle-api/database/dtos';
+import { SaveContentDto, ShortPayload } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Image } from '@castcle-api/utils/aws';
+import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -68,11 +68,11 @@ export class AppService {
       const newContents = await Promise.all(
         body.payload.photo.contents.map(async (item) => {
           const image = await Image.upload(item.url, {
-            addTime: true
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${body.author.id}}`
           });
-          return {
-            url: image.toSignUrl()
-          };
+          return image.image;
         })
       );
       body.payload.photo.contents = newContents;

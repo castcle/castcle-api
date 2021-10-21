@@ -25,7 +25,8 @@ import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   Pagination,
-  CastcleQueueAction
+  CastcleQueueAction,
+  CastcleImage
 } from './common.dto';
 import {
   BlogPayload,
@@ -74,9 +75,11 @@ import { UserAccessTokenPayload } from './token.dto';
 import {
   FollowResponse,
   PageDto,
+  PageModelDto,
   PageResponse,
   PageResponseDto,
   PagesResponse,
+  UpdateModelUserDto,
   UpdatePageDto,
   UpdateUserDto,
   UserResponseDto
@@ -132,5 +135,8 @@ export {
   AggregatorSearchResponseDto,
   SearchResponse,
   SearchKeywordResponseDto,
-  CastcleQueueAction
+  CastcleQueueAction,
+  CastcleImage,
+  UpdateModelUserDto,
+  PageModelDto
 };
