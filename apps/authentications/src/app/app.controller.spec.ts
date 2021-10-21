@@ -220,6 +220,7 @@ describe('AppController', () => {
       expect(postCredential.account._id === currentAccountId).toBe(false);
     });
   });
+
   describe('refreshToken', () => {
     it('should get new accessToken with refreshToken', async () => {
       const deviceUUID = 'abc1345';
@@ -234,6 +235,8 @@ describe('AppController', () => {
       } as any);
       expect(refreshTokenResponse).toBeDefined();
       expect(refreshTokenResponse.accessToken).toBeDefined();
+      expect(refreshTokenResponse.profile).toBeDefined();
+      expect(refreshTokenResponse.pages).toBeDefined();
       expect(response.accessToken).not.toEqual(
         refreshTokenResponse.accessToken
       );
@@ -243,6 +246,18 @@ describe('AppController', () => {
       const credentialFromDeviceUUID =
         await service.getGuestCredentialFromDeviceUUID(deviceUUID);
       expect(credentialFromDeviceUUID._id).toEqual(credentialFromToken._id);
+    });
+
+    it('should get Exception Refresh token is expired', async () => {
+      const language = 'th';
+      await expect(
+        appController.refreshToken({
+          $token: '123',
+          $language: language
+        } as any)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVALID_REFRESH_TOKEN, language)
+      );
     });
   });
 
@@ -436,6 +451,7 @@ describe('AppController', () => {
       expect(result.profile).toBeDefined();
       expect(result.pages).toBeDefined();
     });
+
     it('should be able to login with different device', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
@@ -474,6 +490,10 @@ describe('AppController', () => {
       );
 
       expect(postResult).toBeDefined();
+      expect(postResult.accessToken).toBeDefined();
+      expect(postResult.refreshToken).toBeDefined();
+      expect(postResult.profile).toBeDefined();
+      expect(postResult.pages).toBeDefined();
       //that token could be use for refreshToken;
       const refreshTokenResult = await appController.refreshToken({
         $token: postResult.refreshToken,
@@ -481,8 +501,62 @@ describe('AppController', () => {
       } as any);
       expect(refreshTokenResult).toBeDefined();
       expect(refreshTokenResult.accessToken).toBeDefined();
+      expect(refreshTokenResult.profile).toBeDefined();
+      expect(refreshTokenResult.pages).toBeDefined();
+    });
+
+    it('should get Exception when wrong email', async () => {
+      const language = 'th';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await expect(
+        appController.login(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: language
+          } as any,
+          {
+            password: password,
+            username: 'error'
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
+      );
+    });
+    it('should get Exception when wrong password', async () => {
+      const language = 'th';
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await expect(
+        appController.login(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: language
+          } as any,
+          {
+            password: '1234',
+            username: registerEmail
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
+      );
     });
   });
+
   describe('verificationEmail', () => {
     it('should set verifyDate for both account and accountActivation', async () => {
       const testId = 'registerId3';

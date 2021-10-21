@@ -21,8 +21,7 @@
  * or have any questions.
  */
 import { CommonDate } from '@castcle-api/commonDate';
-import { AuthenticationService, UserService } from '@castcle-api/database';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import { AuthenticationService } from '@castcle-api/database';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -96,8 +95,7 @@ import {
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService,
-    private userService: UserService
+    private authService: AuthenticationService
   ) {}
   private readonly logger = new CastLogger(
     AuthenticationController.name,
@@ -143,7 +141,7 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     status: 200,
-    type: TokenResponse
+    type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('login')
@@ -174,17 +172,9 @@ export class AuthenticationController {
           );
         }
         console.debug('afterCredential', req.$credential);
-
-        const user = await this.userService.getUserFromCredential(
+        const userProfile = await this.appService.getUserProfile(
           req.$credential
         );
-        const pages = user
-          ? await this.userService.getUserPages(user, {
-              limit: DEFAULT_CONTENT_QUERY_OPTIONS.page,
-              page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
-              sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
-            })
-          : null;
 
         const accessTokenPayload =
           await this.authService.getAccessTokenPayloadFromCredential(
@@ -201,9 +191,11 @@ export class AuthenticationController {
         const result = new LoginResponse();
         result.accessToken = tokenResult.accessToken;
         result.refreshToken = tokenResult.refreshToken;
-        result.profile = user ? await user.toUserResponse() : null;
-        result.pages = pages
-          ? pages.items.map((item) => item.toPageResponse())
+        result.profile = userProfile.profile
+          ? await userProfile.profile.toUserResponse()
+          : null;
+        result.pages = userProfile.pages
+          ? userProfile.pages.items.map((item) => item.toPageResponse())
           : null;
 
         return result;
@@ -391,14 +383,22 @@ export class AuthenticationController {
       req.$token
     );
     if (credential && credential.isRefreshTokenValid()) {
+      const userProfile = await this.appService.getUserProfile(credential);
+
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(credential);
       const newAccessToken = await credential.renewAccessToken(
         accessTokenPayload
       );
       return {
+        profile: userProfile.profile
+          ? await userProfile.profile.toUserResponse()
+          : null,
+        pages: userProfile.pages
+          ? userProfile.pages.items.map((item) => item.toPageResponse())
+          : null,
         accessToken: newAccessToken
-      };
+      } as RefreshTokenResponse;
     }
     throw new CastcleException(
       CastcleStatus.INVALID_REFRESH_TOKEN,
