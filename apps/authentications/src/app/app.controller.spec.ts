@@ -22,8 +22,10 @@
  */
 import {
   AuthenticationService,
+  ContentService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  UserService
 } from '@castcle-api/database';
 import {
   AccountAuthenIdType,
@@ -36,6 +38,7 @@ import {
   TwitterClient
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -79,6 +82,7 @@ describe('AppController', () => {
   let appController: AuthenticationController;
   let service: AuthenticationService;
   let appService: AppService;
+  let userService: UserService;
 
   beforeAll(async () => {
     const FacebookClientProvider = {
@@ -103,7 +107,8 @@ describe('AppController', () => {
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        HttpModule
+        HttpModule,
+        UtilsQueueModule
       ],
       controllers: [AuthenticationController],
       providers: [
@@ -112,13 +117,16 @@ describe('AppController', () => {
         FacebookClientProvider,
         DownloaderProvider,
         TelegramClientProvider,
-        TwitterClientProvider
+        TwitterClientProvider,
+        UserService,
+        ContentService
       ]
     }).compile();
 
     service = app.get<AuthenticationService>(AuthenticationService);
     appService = app.get<AppService>(AppService);
     appController = app.get<AuthenticationController>(AuthenticationController);
+    userService = app.get<UserService>(UserService);
 
     jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
@@ -396,6 +404,19 @@ describe('AppController', () => {
           }
         }
       );
+      const currentUser = await userService.getUserFromCredential(
+        credentialGuest
+      );
+      const page = await userService.createPageFromUser(currentUser, {
+        avatar: {
+          original: 'http://placehold.it/200x200'
+        },
+        cover: {
+          original: 'http://placehold.it/200x200'
+        },
+        displayName: 'new Page',
+        castcleId: 'npop2'
+      });
       // TODO !!! find a way to create a test to detect exception in controller
       const result = await appController.login(
         {
@@ -408,7 +429,12 @@ describe('AppController', () => {
           username: registerEmail
         }
       );
+
       expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(result.profile).toBeDefined();
+      expect(result.pages).toBeDefined();
     });
     it('should be able to login with different device', async () => {
       const guestResult = await appController.guestLogin(
@@ -446,6 +472,7 @@ describe('AppController', () => {
           username: registerEmail
         }
       );
+
       expect(postResult).toBeDefined();
       //that token could be use for refreshToken;
       const refreshTokenResult = await appController.refreshToken({
