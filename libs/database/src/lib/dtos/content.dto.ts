@@ -25,9 +25,9 @@ import { CastcleImage } from '.';
 import { UserVerified } from '../schemas/user.schema';
 import { Pagination } from './common.dto';
 import { CastcleQueryOptions } from './common.dto';
-class Url {
+export class Url {
   @ApiProperty()
-  url: string;
+  image: string;
 }
 
 class Link {
@@ -36,6 +36,9 @@ class Link {
 
   @ApiProperty()
   url: string;
+
+  @ApiProperty()
+  image: string;
 }
 
 class BlogPhoto {

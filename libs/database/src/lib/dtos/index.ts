@@ -37,7 +37,8 @@ import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   SaveContentDto,
-  ShortPayload
+  ShortPayload,
+  Url
 } from './content.dto';
 import {
   DEFAULT_FEED_QUERY_OPTIONS,
@@ -138,5 +139,6 @@ export {
   CastcleQueueAction,
   CastcleImage,
   UpdateModelUserDto,
-  PageModelDto
+  PageModelDto,
+  Url
 };

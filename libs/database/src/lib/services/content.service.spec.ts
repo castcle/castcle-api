@@ -221,7 +221,8 @@ describe('ContentService', () => {
         link: [
           {
             type: 'youtube',
-            url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA'
+            url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA',
+            image: 'base64Test'
           }
         ]
       };
