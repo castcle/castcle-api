@@ -102,5 +102,10 @@ export const Environment = {
   fb_client_id: process.env.FB_CLIENT_ID,
   fb_client_secret: process.env.FB_CLIENT_SECRET,
   // Telegram
-  tg_bot_token: process.env.TG_BOT_TOKEN
+  tg_bot_token: process.env.TG_BOT_TOKEN,
+  // Apple
+  apple_client_id: process.env.APPLE_CLIENT_ID,
+  apple_team_id: process.env.APPLE_TEAM_ID,
+  apple_key_identifier: process.env.APPLE_KEY_IDENTIFIER,
+  apple_private_key: process.env.APPLE_PRIVATE_KEY
 };

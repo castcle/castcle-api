@@ -23,6 +23,7 @@
 import { Environment } from '@castcle-api/environments';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
+import { AppleClient } from './apple/apple.client';
 import { FacebookClient } from './facebook/facebook.client';
 import {
   FacebookAccessToken,
@@ -41,8 +42,14 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     })
   ],
   controllers: [],
-  providers: [FacebookClient, TelegramClient, TwitterClient],
-  exports: [HttpModule, FacebookClient, TelegramClient, TwitterClient]
+  providers: [FacebookClient, TelegramClient, TwitterClient, AppleClient],
+  exports: [
+    HttpModule,
+    FacebookClient,
+    TelegramClient,
+    TwitterClient,
+    AppleClient
+  ]
 })
 export class UtilsClientsModule {}
 
@@ -55,5 +62,6 @@ export {
   TelegramUserInfo,
   TwitterClient,
   TwitterAccessToken,
-  TwitterUserData
+  TwitterUserData,
+  AppleClient
 };
