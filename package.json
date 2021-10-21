@@ -65,6 +65,7 @@
     "@nestjs/platform-express": "^8.0.4",
     "@nestjs/swagger": "^5.0.4",
     "apple-sign-in-rest": "^1.0.3",
+    "@types/sharp": "^0.29.2",
     "aws-sdk": "^2.965.0",
     "bcryptjs": "^2.4.3",
     "bull": "^3.29.2",
@@ -82,6 +83,7 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
+    "sharp": "^0.29.1",
     "swagger-ui-express": "^4.1.6",
     "tslib": "^2.0.0"
   },

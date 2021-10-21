@@ -28,7 +28,6 @@ import {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor
 } from './cache/http.cache.shared.intercapter';
-import { ContentInterceptor } from './contents/contents.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -54,7 +53,6 @@ export {
   CredentialInterceptor,
   CredentialRequest,
   TokenRequest,
-  ContentInterceptor,
   HttpCacheIndividualInterceptor,
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor

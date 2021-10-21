@@ -34,7 +34,12 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
-import { PageDto, UpdateUserDto } from '../dtos/user.dto';
+import {
+  PageDto,
+  PageModelDto,
+  UpdateModelUserDto,
+  UpdateUserDto
+} from '../dtos/user.dto';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -150,8 +155,12 @@ describe('User Service', () => {
         dob: '1987-12-01',
         overview: 'this is short overview',
         images: {
-          avatar: '/agogo.jpg',
-          cover: '/arovela.com'
+          avatar: {
+            original: 'http://placehold.it/200x200'
+          },
+          cover: {
+            original: 'http://placehold.it/200x200'
+          }
         },
         links: {
           website: 'https://djjam.app',
@@ -160,13 +169,17 @@ describe('User Service', () => {
           twitter: 'https://twitter.com/npop',
           youtube: ' https://youtube.com/channel/abcd'
         }
-      } as UpdateUserDto;
+      } as UpdateModelUserDto;
       const FullDTO = {
         dob: '1987-01-01',
         overview: 'long overview',
         images: {
-          avatar: 'http://agogo1.com',
-          cover: 'http://arovela1.com'
+          avatar: {
+            original: 'http://placehold.it/200x200'
+          },
+          cover: {
+            original: 'http://placehold.it/200x200'
+          }
         },
         links: {
           website: 'https://ddjjam.app',
@@ -175,7 +188,7 @@ describe('User Service', () => {
           twitter: 'https://twitter.com/npop3',
           youtube: ' https://youtube.com/channel/abcd4'
         }
-      } as UpdateUserDto;
+      } as UpdateModelUserDto;
       const userFromCredential = await service.getUserFromCredential(
         result.credentialDocument
       );
@@ -223,8 +236,12 @@ describe('User Service', () => {
         result.credentialDocument
       );
       const page = await service.createPageFromUser(currentUser, {
-        avatar: 'http://placehold.it/200x200',
-        cover: 'http://placehold.it/900x900',
+        avatar: {
+          original: 'http://placehold.it/200x200'
+        },
+        cover: {
+          original: 'http://placehold.it/200x200'
+        },
         displayName: 'new Page',
         castcleId: 'npop'
       });
@@ -241,8 +258,12 @@ describe('User Service', () => {
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
       const page = await service.createPageFromUser(currentUser, {
-        avatar: 'http://placehold.it/200x200',
-        cover: 'http://placehold.it/900x900',
+        avatar: {
+          original: 'http://placehold.it/200x200'
+        },
+        cover: {
+          original: 'http://placehold.it/200x200'
+        },
         displayName: 'new Page',
         castcleId: 'npop2'
       });
@@ -392,11 +413,15 @@ describe('User Service', () => {
       },
       pages: [
         {
-          avatar: 'http://placehold.it/200x200',
+          avatar: {
+            original: 'http://placehold.it/200x200'
+          },
           castcleId: 'test-12345',
-          cover: 'http://placehold.it/200x200',
+          cover: {
+            original: 'http://placehold.it/200x200'
+          },
           displayName: 'hello12345'
-        } as PageDto
+        } as PageModelDto
       ]
     };
 

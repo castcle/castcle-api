@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { CastcleImage } from './common.dto';
 
 export class TopTrendsQueryOptions {
   exclude?: string = '';
@@ -93,7 +94,7 @@ export class SearchFollowsResponseDto {
   type: string;
 
   @ApiProperty()
-  avatar: string;
+  avatar: CastcleImage;
 
   @ApiProperty()
   aggregator: AggregatorSearchResponseDto;

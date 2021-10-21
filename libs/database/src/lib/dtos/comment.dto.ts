@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { Pagination } from '.';
+import { CastcleImage, Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
 
 export class CommentDto {
@@ -61,7 +61,7 @@ export class CommentPayload {
     id: string;
     castcleId: string; // @castcle
     displayName: string;
-    avatar: string;
+    avatar: CastcleImage;
     verified: boolean;
     followed: boolean;
   };
@@ -75,7 +75,7 @@ export class CommentPayload {
       id: string;
       castcleId: string; // @castcle
       displayName: string;
-      avatar: string;
+      avatar: CastcleImage;
       verified: boolean;
       followed: boolean;
     };

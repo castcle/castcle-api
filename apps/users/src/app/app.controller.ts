@@ -37,7 +37,6 @@ import {
   ContentService,
   AuthenticationService
 } from '@castcle-api/database';
-import { ImageInterceptor } from './interceptors/image.interceptor';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -145,7 +144,6 @@ export class UserController {
     type: UserResponseDto
   })
   @CastcleBasicAuth()
-  @UseInterceptors(ImageInterceptor)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -153,7 +151,8 @@ export class UserController {
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const afterUpdateUser = await this.userService.updateUser(user, body);
+      const newBody = await this.appService.uploadUserInfo(body, req);
+      const afterUpdateUser = await this.userService.updateUser(user, newBody);
       const response = await afterUpdateUser.toUserResponse();
       return response;
     } else
