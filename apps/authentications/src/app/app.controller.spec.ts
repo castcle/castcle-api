@@ -45,7 +45,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { TokenResponse } from './dtos/dto';
+import { LoginResponse, TokenResponse } from './dtos/dto';
 import {
   DownloaderMock,
   FacebookClientMock,
@@ -323,7 +323,7 @@ describe('AppController', () => {
   describe('register', () => {
     let guestResult: TokenResponse;
     let credentialGuest: CredentialDocument;
-    let tokens: TokenResponse;
+    let tokens: LoginResponse;
     const testId = 'registerId';
     const registerEmail = 'sompop.kulapalanont@gmail.com';
     const deviceUUID = 'sompo007';
@@ -361,6 +361,13 @@ describe('AppController', () => {
           }
         }
       );
+
+      expect(tokens).toBeDefined();
+      expect(tokens.accessToken).toBeDefined();
+      expect(tokens.refreshToken).toBeDefined();
+      expect(tokens.profile).toBeDefined();
+      expect(tokens.pages).toBeDefined();
+
       //after register
       result = await appController.checkCastcleIdExists({ castcleId: testId });
       expect(result.payload.exist).toBe(true);

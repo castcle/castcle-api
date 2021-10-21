@@ -281,7 +281,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 201,
-    type: TokenResponse
+    type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('register')
@@ -347,14 +347,26 @@ export class AuthenticationController {
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
         );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+
+      const userProfile = await this.appService.getUserProfile(req.$credential);
+      const tokenResult = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: currentAccount._id as unknown as string,
           role: 'member'
         }
       );
-      return tokenResult;
+
+      const result = new LoginResponse();
+      result.accessToken = tokenResult.accessToken;
+      result.refreshToken = tokenResult.refreshToken;
+      result.profile = userProfile.profile
+        ? await userProfile.profile.toUserResponse()
+        : null;
+      result.pages = userProfile.pages
+        ? userProfile.pages.items.map((item) => item.toPageResponse())
+        : null;
+      return result;
     }
     throw new CastcleException(
       CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
