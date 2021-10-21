@@ -21,7 +21,11 @@
  * or have any questions.
  */
 
-import { PageDto, PageModelDto } from '@castcle-api/database/dtos';
+import {
+  PageDto,
+  PageModelDto,
+  UpdatePageDto
+} from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import {
   Image,
@@ -43,13 +47,8 @@ export class AppService {
    */
   async uploadPage(body: PageDto): Promise<PageModelDto> {
     const pageModelDto: PageModelDto = {
-      ...body,
-      avatar: {
-        original: Configs.DefaultAvatar
-      },
-      cover: {
-        original: Configs.DefaultCover
-      }
+      castcleId: body.castcleId,
+      displayName: body.displayName
     };
     if (body.avatar) {
       const avatar = await Image.upload(body.avatar as string, {
