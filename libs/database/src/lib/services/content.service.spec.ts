@@ -189,7 +189,8 @@ describe('ContentService', () => {
       };
       const content = await service.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload
+        payload: shortPayload,
+        castcleId: user.displayId
       });
       expect((content.payload as ShortPayload).message).toEqual(
         shortPayload.message
@@ -212,7 +213,8 @@ describe('ContentService', () => {
       };
       const content = await service.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload
+        payload: shortPayload,
+        castcleId: user.displayId
       });
       const revisionCount = content.revisionCount;
       expect(content.revisionCount).toEqual(1);
@@ -221,13 +223,15 @@ describe('ContentService', () => {
         link: [
           {
             type: 'youtube',
-            url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA'
+            url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA',
+            image: 'base64Test'
           }
         ]
       };
       const result = await service.updateContentFromId(content._id, {
         type: ContentType.Short,
-        payload: updatePayload
+        payload: updatePayload,
+        castcleId: user.displayId
       });
       expect((result.payload as ShortPayload).message).toEqual(
         updatePayload.message
@@ -257,7 +261,8 @@ describe('ContentService', () => {
       };
       const content = await service.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload1
+        payload: shortPayload1,
+        castcleId: user.displayId
       });
       await new Promise<void>((resolve) => {
         setTimeout(() => {
@@ -269,7 +274,8 @@ describe('ContentService', () => {
       };
       const content2 = await service.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload2
+        payload: shortPayload2,
+        castcleId: user.displayId
       });
       const contents = await service.getContentsFromUser(user);
       expect(contents.items[0].payload).toEqual(shortPayload2);
@@ -296,7 +302,8 @@ describe('ContentService', () => {
       };
       content = await service.createContentFromUser(user, {
         type: ContentType.Short,
-        payload: shortPayload2
+        payload: shortPayload2,
+        castcleId: user.displayId
       });
     });
     it('should update total like Count after call', async () => {
@@ -356,7 +363,8 @@ describe('ContentService', () => {
         payload: {
           message: 'hello world'
         } as ShortPayload,
-        type: ContentType.Short
+        type: ContentType.Short,
+        castcleId: user.displayId
       });
     });
     describe('#recastContentFromUser()', () => {
@@ -437,7 +445,8 @@ describe('ContentService', () => {
           payload: {
             message: 'hi'
           } as ShortPayload,
-          type: ContentType.Short
+          type: ContentType.Short,
+          castcleId: user.displayId
         });
       });
       describe('#createCommentForContent()', () => {
