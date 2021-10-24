@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
 export class GuestLoginDto {
@@ -159,4 +160,18 @@ export class OauthTokenResponse {
   oauthToken: string;
   @ApiProperty()
   oauthTokenSecret: string;
+}
+
+export class LoginResponse {
+  @ApiProperty()
+  profile: UserResponseDto;
+
+  @ApiProperty()
+  pages: PageResponseDto[];
+
+  @ApiProperty()
+  accessToken: string;
+
+  @ApiProperty()
+  refreshToken: string;
 }

@@ -21,7 +21,8 @@
  * or have any questions.
  */
 import { CommonDate } from '@castcle-api/commonDate';
-import { AuthenticationService } from '@castcle-api/database';
+import { AuthenticationService, UserService } from '@castcle-api/database';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -62,6 +63,7 @@ import {
   CheckingResponse,
   GuestLoginDto,
   LoginDto,
+  LoginResponse,
   OauthTokenResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
@@ -94,7 +96,8 @@ import {
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private userService: UserService
   ) {}
   private readonly logger = new CastLogger(
     AuthenticationController.name,
@@ -171,6 +174,18 @@ export class AuthenticationController {
           );
         }
         console.debug('afterCredential', req.$credential);
+
+        const user = await this.userService.getUserFromCredential(
+          req.$credential
+        );
+        const pages = user
+          ? await this.userService.getUserPages(user, {
+              limit: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+              page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+              sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+            })
+          : null;
+
         const accessTokenPayload =
           await this.authService.getAccessTokenPayloadFromCredential(
             req.$credential
@@ -183,10 +198,15 @@ export class AuthenticationController {
             role: account.activateDate ? 'member' : 'guest'
           }
         );
-        return {
-          accessToken: tokenResult.accessToken,
-          refreshToken: tokenResult.refreshToken
-        } as TokenResponse;
+        const result = new LoginResponse();
+        result.accessToken = tokenResult.accessToken;
+        result.refreshToken = tokenResult.refreshToken;
+        result.profile = user ? await user.toUserResponse() : null;
+        result.pages = pages
+          ? pages.items.map((item) => item.toPageResponse())
+          : null;
+
+        return result;
       } else
         throw new CastcleException(
           CastcleStatus.INVALID_EMAIL_OR_PASSWORD,

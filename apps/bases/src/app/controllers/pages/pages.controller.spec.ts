@@ -254,20 +254,14 @@ describe('PageController', () => {
           payload: {
             message: 'hello'
           } as ShortPayload,
-          author: {
-            id: page._id,
-            type: UserType.Page
-          }
+          castcleId: page.displayId
         },
         {
           type: ContentType.Short,
           payload: {
             message: 'hi'
           } as ShortPayload,
-          author: {
-            id: page._id,
-            type: UserType.Page
-          }
+          castcleId: page.displayId
         }
       ];
       const createResult: ContentDocument[] = [];

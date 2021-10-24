@@ -32,6 +32,7 @@ export type UploadOptions = {
   order?: number;
   contentType?: string;
   subpath?: string;
+  suffix?: string;
 };
 
 export class Uploader {
@@ -122,9 +123,9 @@ export class Uploader {
         ? `-${Date.now()}.${fileType}`
         : `.${fileType}`;
     let saveName =
-      options && options.filename
-        ? `${options.filename}${extensionName}`
-        : `${Date.now()}.${fileType}`;
+      options && options.filename ? `${options.filename}` : `${Date.now()}`;
+    if (options.suffix) saveName = saveName + `-${options.suffix}`;
+    saveName = saveName + extensionName;
     if (options.subpath) saveName = `${options.subpath}/${saveName}`;
     return saveName;
   };
@@ -143,8 +144,10 @@ export class Uploader {
   ) => {
     try {
       const saveName = Uploader.getFileSavedNameFromOptions(fileType, options);
+      console.debug('saveName', saveName);
       console.debug('bucket', this.bucket);
       console.debug('key', `${this.destination}/${saveName}`);
+
       return this.s3
         .upload({
           Bucket: this.bucket,
