@@ -169,8 +169,7 @@ export class AppService {
     const tokenResult: TokenResponse = await credential.renewTokens(
       accessTokenPayload,
       {
-        id: currentAccount._id as unknown as string,
-        role: 'member'
+        id: currentAccount._id as unknown as string
       }
     );
     return tokenResult;
