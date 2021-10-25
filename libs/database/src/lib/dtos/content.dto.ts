@@ -184,9 +184,9 @@ export class ContentPayloadDto {
   author: Author;
 
   @ApiProperty()
-  created: string;
+  createAt: string;
   @ApiProperty()
-  updated: string;
+  updateAt: string;
 }
 
 class AuthorDto {
