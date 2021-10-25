@@ -40,8 +40,8 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
-  CastcleBasicAuth,
-  CastcleController
+  CastcleController,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -134,7 +134,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -156,7 +156,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   async deleteMyData(
     @Body('channel') channel: string,
@@ -331,7 +331,7 @@ export class UserController {
   @ApiBody({
     type: TargetCastcleDto
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/follow')
   async follow(
     @Param('id') id: string,
@@ -365,7 +365,7 @@ export class UserController {
   @ApiBody({
     type: TargetCastcleDto
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
   async unfollow(
     @Param('id') id: string,

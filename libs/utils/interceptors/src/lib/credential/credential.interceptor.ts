@@ -47,6 +47,11 @@ export class CredentialInterceptor implements NestInterceptor {
     request.$credential = await this.authService.getCredentialFromAccessToken(
       accessToken
     );
+    console.debug('Credential', request.$credential);
+    console.debug(
+      'isAccessTokenValid',
+      request.$credential.isAccessTokenValid()
+    );
     if (request.$credential && request.$credential.isAccessTokenValid()) {
       return next.handle();
     } else {
