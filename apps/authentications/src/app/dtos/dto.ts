@@ -113,6 +113,12 @@ export class CheckingResponse {
 
 export class RefreshTokenResponse {
   @ApiProperty()
+  profile: UserResponseDto;
+
+  @ApiProperty({ type: PageResponseDto, isArray: true })
+  pages: PageResponseDto[];
+
+  @ApiProperty()
   accessToken: string;
 }
 
@@ -166,7 +172,7 @@ export class LoginResponse {
   @ApiProperty()
   profile: UserResponseDto;
 
-  @ApiProperty()
+  @ApiProperty({ type: PageResponseDto, isArray: true })
   pages: PageResponseDto[];
 
   @ApiProperty()

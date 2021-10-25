@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { AuthenticationService } from '@castcle-api/database';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -63,7 +64,8 @@ export class AppService {
     private download: Downloader,
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
-    private googleClient: GoogleClient
+    private googleClient: GoogleClient,
+    private userService: UserService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -305,21 +307,23 @@ export class AppService {
     else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 
-  /**
-   * Request Access Twitter Token API
-   * @param {string} language en is default
-   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
+  /**User Profile and Pages
+   * @param {CredentialDocument} credential
+   * @returns {profile,pages} profile data
    */
-  async testToken(language: string) {
-    const data = await this.googleClient.getAccessToken(
-      '4/0AX4XfWg_qtrZ9N5W6HLDyf8WoRPNNiwbgZs9Ng6jjdEposy8irfgg4-IUP1gcLf32fkzuw'
-    );
-    console.log(data);
-    // this.logger.log(
-    //   `Twitter callback confirmed status : ${data.results.oauth_callback_confirmed}`
-    // );
+  async getUserProfile(credential: CredentialDocument) {
+    const user = await this.userService.getUserFromCredential(credential);
+    const pages = user
+      ? await this.userService.getUserPages(user, {
+          limit: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+        })
+      : null;
 
-    // if (data.results.oauth_callback_confirmed === 'true') return data;
-    // else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    return {
+      profile: user,
+      pages: pages
+    };
   }
 }
