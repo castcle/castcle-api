@@ -26,7 +26,6 @@ import { PageVerified, UserVerified } from '../schemas/user.schema';
 
 export interface AccessTokenPayload {
   id: string;
-  preferredLanguage: string[];
   role: 'member' | 'guest'; // member or guest
   accessTokenExpiresTime?: string; // 30 นาทีจาก create
   showAds: boolean;
@@ -42,9 +41,6 @@ export interface PageInfoPayload {
 }
 
 export interface UserAccessTokenPayload extends AccessTokenPayload {
-  castcleId: string;
-  displayName: string;
-  email?: string;
   avatar?: CastcleImage;
   verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
   showAds: boolean;
@@ -53,15 +49,11 @@ export interface UserAccessTokenPayload extends AccessTokenPayload {
 
 export interface MemberAccessTokenPayload extends AccessTokenPayload {
   role: 'member';
-  castcleId: string;
-  displayName: string;
-  email?: string;
   avatar?: CastcleImage;
 }
 
 export interface RefreshTokenPayload {
   id: string;
-  role: 'member' | 'guest';
   refreshTokenExpiresTime?: string;
 }
 
