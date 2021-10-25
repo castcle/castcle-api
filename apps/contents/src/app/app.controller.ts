@@ -61,7 +61,8 @@ import { CaslAbilityFactory, Action } from '@castcle-api/casl';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastcleBasicAuth,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 
@@ -181,7 +182,7 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
   async updateContentFromId(
     @Param('id') id: string,
@@ -206,7 +207,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @HttpCode(204)
   @Delete(':id')
   async deleteContentFromId(
@@ -254,7 +255,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
@@ -272,7 +273,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(
