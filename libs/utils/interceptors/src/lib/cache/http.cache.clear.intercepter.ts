@@ -32,6 +32,7 @@ import {
   NestInterceptor
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import * as util from '../util';
 
 @Injectable()
 export class HttpCacheClearInterceptor implements NestInterceptor {
@@ -45,7 +46,17 @@ export class HttpCacheClearInterceptor implements NestInterceptor {
       CACHE_KEY_METADATA,
       context.getHandler()
     );
-    await this.cacheManager.delete(cacheKey);
+    if (cacheKey) {
+      const request = context.switchToHttp().getRequest();
+      const token = util.getTokenFromRequest(request);
+      console.debug(
+        'del cache key:',
+        `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`
+      );
+      await this.cacheManager.del(
+        `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`
+      );
+    }
 
     return next.handle();
   }

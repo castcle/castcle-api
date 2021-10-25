@@ -100,13 +100,7 @@ export class PageController {
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
-  /**
-   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
-   * @param {string} idOrCastCleId
-   * @param {CredentialRequest} req
-   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
-   */
-  _getPageByIdOrCastcleId = async (
+  _getOwnPageByIdOrCastcleId = async (
     idOrCastCleId: string,
     req: CredentialRequest
   ) => {
@@ -137,6 +131,30 @@ export class PageController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+    else
+      throw new CastcleException(
+        CastcleStatus.REQUEST_URL_NOT_FOUND,
+        req.$language
+      );
+  };
+
+  /**
+   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
+   * @param {string} idOrCastCleId
+   * @param {CredentialRequest} req
+   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
+   */
+  _getPageByIdOrCastcleId = async (
+    idOrCastCleId: string,
+    req: CredentialRequest
+  ) => {
+    const idResult = await this.userService.getUserFromId(idOrCastCleId);
+    if (idResult && idResult.type === UserType.Page) return idResult;
+    const castcleIdResult = await this.authService.getUserFromCastcleId(
+      idOrCastCleId
+    );
+    if (castcleIdResult && castcleIdResult.type === UserType.Page)
+      return castcleIdResult;
     else
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
@@ -186,7 +204,8 @@ export class PageController {
     @Body() body: UpdatePageDto
   ) {
     //check if page name exist
-    const page = await this._getPageByIdOrCastcleId(id, req);
+    const page = await this._getOwnPageByIdOrCastcleId(id, req);
+    console.debug('updatePage', page);
     if (!page.profile) page.profile = {};
     if (!page.profile.images) page.profile.images = {};
     //TODO !!! performance issue
@@ -269,7 +288,7 @@ export class PageController {
   @CastleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
   async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this._getPageByIdOrCastcleId(id, req);
+    const page = await this._getOwnPageByIdOrCastcleId(id, req);
     if (String(page.ownerAccount) === String(req.$credential.account._id)) {
       await page.delete();
       return '';
