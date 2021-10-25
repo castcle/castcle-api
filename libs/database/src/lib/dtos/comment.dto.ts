@@ -69,7 +69,7 @@ export class CommentPayload {
   reply: {
     id: string;
     message: string;
-    created: string;
+    createAt: string;
     author: {
       type: 'people' | 'page'; // people or page
       id: string;
@@ -83,9 +83,9 @@ export class CommentPayload {
   @ApiProperty()
   hasHistory: boolean;
   @ApiProperty()
-  created: string;
+  createAt: string;
   @ApiProperty()
-  updated: string;
+  updateAt: string;
 }
 
 export class CommentsReponse {
