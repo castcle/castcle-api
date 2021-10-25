@@ -109,7 +109,6 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          preferredLanguage: ['en'],
           showAds: true
         });
         expect(result.accessToken).toBeDefined();
@@ -124,7 +123,6 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          preferredLanguage: ['en'],
           showAds: true
         });
         expect(result.accessTokenExpireDate).toBeDefined();
@@ -135,8 +133,7 @@ describe('Authentication Service', () => {
     describe('#_generateRefreshToken()', () => {
       it('should return  refreshToken and refreshTokenExpireDate', () => {
         const result = service._generateRefreshToken({
-          id: 'randomid',
-          role: 'guest'
+          id: 'randomid'
         });
         expect(result.refreshToken).toBeDefined();
         expect(typeof result.refreshToken).toBe('string');
@@ -148,8 +145,7 @@ describe('Authentication Service', () => {
           now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
         );
         const result = service._generateRefreshToken({
-          id: 'randomid',
-          role: 'guest'
+          id: 'randomid'
         });
         expect(result.refreshTokenExpireDate).toBeDefined();
         //expect(result.refreshTokenExpireDate).toEqual(expectedExpireDate);

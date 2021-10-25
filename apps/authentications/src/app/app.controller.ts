@@ -184,8 +184,7 @@ export class AuthenticationController {
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
-            id: account._id as unknown as string,
-            role: account.activateDate ? 'member' : 'guest'
+            id: account._id as unknown as string
           }
         );
         const result = new LoginResponse();
@@ -255,12 +254,10 @@ export class AuthenticationController {
         {
           id: credential.account._id as unknown as string,
           role: 'guest',
-          showAds: true,
-          preferredLanguage: [req.$language]
+          showAds: true
         },
         {
-          id: credential.account._id as unknown as string,
-          role: 'guest'
+          id: credential.account._id as unknown as string
         }
       );
       return tokenResult;
@@ -352,8 +349,7 @@ export class AuthenticationController {
       const tokenResult = await req.$credential.renewTokens(
         accessTokenPayload,
         {
-          id: currentAccount._id as unknown as string,
-          role: 'member'
+          id: currentAccount._id as unknown as string
         }
       );
 
