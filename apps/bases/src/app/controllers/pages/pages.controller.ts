@@ -60,7 +60,12 @@ import {
   ContentTypePipe
 } from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { Image, UploadOptions } from '@castcle-api/utils/aws';
+import {
+  AVARTAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Image,
+  ImageUploadOptions
+} from '@castcle-api/utils/aws';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -91,7 +96,7 @@ export class PageController {
     CastLoggerOptions
   );
 
-  _uploadImage = (base64: string, options?: UploadOptions) =>
+  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
   /**
@@ -156,6 +161,7 @@ export class PageController {
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
     //TODO !!! performance issue
     const newBody = await this.appService.uploadPage(body);
+    console.debug('newBody', newBody);
     const page = await this.userService.createPageFromCredential(
       req.$credential,
       newBody
@@ -180,17 +186,21 @@ export class PageController {
   ) {
     //check if page name exist
     const page = await this._getPageByIdOrCastcleId(id, req);
+    if (!page.profile) page.profile = {};
+    if (!page.profile.images) page.profile.images = {};
     //TODO !!! performance issue
     if (body.avatar)
       page.profile.images.avatar = (
         await this._uploadImage(body.avatar, {
-          filename: `page-avatar-${id}`
+          filename: `page-avatar-${id}`,
+          sizes: AVARTAR_SIZE_CONFIGS
         })
       ).image;
     if (body.cover)
       page.profile.images.cover = (
         await this._uploadImage(body.cover, {
-          filename: `page-cover-${id}`
+          filename: `page-cover-${id}`,
+          sizes: COMMON_SIZE_CONFIGS
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;

@@ -34,7 +34,7 @@ export type Size = {
   height: number;
 };
 
-interface ImageUploadOptions extends UploadOptions {
+export interface ImageUploadOptions extends UploadOptions {
   sizes?: Size[];
 }
 
