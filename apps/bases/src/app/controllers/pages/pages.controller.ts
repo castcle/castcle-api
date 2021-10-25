@@ -78,7 +78,8 @@ import { Query } from '@nestjs/common';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastcleBasicAuth,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 
@@ -177,7 +178,7 @@ export class PageController {
     type: PageDto
   })
   @HttpCode(201)
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Pages)
   @Put('pages/:id')
   async updatePage(
     @Req() req: CredentialRequest,
@@ -265,7 +266,7 @@ export class PageController {
     status: 204
   })
   @HttpCode(204)
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
   async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
     const page = await this._getPageByIdOrCastcleId(id, req);

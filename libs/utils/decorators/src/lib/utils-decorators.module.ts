@@ -23,7 +23,11 @@
 import { Module } from '@nestjs/common';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { CastcleController } from './castcle-controller.decorator';
-import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastleClearCacheAuth
+} from './castcle-auth.decorator';
 
 @Module({
   imports: [UtilsInterceptorsModule],
@@ -33,4 +37,9 @@ import { CastcleAuth, CastcleBasicAuth } from './castcle-auth.decorator';
 })
 export class UtilsDecoratorsModule {}
 
-export { CastcleController, CastcleAuth, CastcleBasicAuth };
+export {
+  CastcleController,
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastleClearCacheAuth
+};

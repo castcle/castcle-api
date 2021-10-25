@@ -20,44 +20,33 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import {
-  CredentialInterceptor,
-  HttpCacheClearInterceptor,
-  HttpCacheIndividualInterceptor
-} from '@castcle-api/utils/interceptors';
-import {
-  applyDecorators,
-  CacheKey,
-  CacheTTL,
-  UseInterceptors
+  CacheInterceptor,
+  CACHE_KEY_METADATA,
+  CACHE_MANAGER,
+  CallHandler,
+  ExecutionContext,
+  Inject,
+  Injectable,
+  NestInterceptor
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { Reflector } from '@nestjs/core';
 
-export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
-  return applyDecorators(
-    CacheKey(cacheConfig.Name),
-    CacheTTL(cacheConfig.Ttl),
-    UseInterceptors(HttpCacheIndividualInterceptor),
-    ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor)
-  );
-}
+@Injectable()
+export class HttpCacheClearInterceptor implements NestInterceptor {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager,
+    private reflector: Reflector
+  ) {}
+  async intercept(context: ExecutionContext, next: CallHandler<any>) {
+    //throw new Error('Method not implemented.');
+    const cacheKey = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler()
+    );
+    await this.cacheManager.delete(cacheKey);
 
-export function CastcleBasicAuth() {
-  return applyDecorators(
-    ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor)
-  );
-}
-
-export function CastleClearCacheAuth(cacheConfig: {
-  Name: string;
-  Ttl: number;
-}) {
-  return applyDecorators(
-    CacheKey(cacheConfig.Name),
-    ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor),
-    UseInterceptors(HttpCacheClearInterceptor)
-  );
+    return next.handle();
+  }
 }

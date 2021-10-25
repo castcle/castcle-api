@@ -62,7 +62,8 @@ import { Query } from '@nestjs/common';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastcleBasicAuth,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { KeywordPipe } from './pipes/keyword.pipe';
@@ -143,7 +144,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -165,7 +166,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   async deleteMyData(
     @Body('channel') channel: string,
@@ -337,7 +338,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/follow')
   async follow(
     @Param('id') id: string,
@@ -365,7 +366,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
   async unfollow(
     @Param('id') id: string,
