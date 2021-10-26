@@ -113,7 +113,7 @@ describe('NotificationsController', () => {
     };
 
     for (let i = 0; i < 30; i++) {
-      await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
+      await mockHashtag(`castcle${i}`, `Castcle ${i}`, 90 - i);
     }
 
     for (let i = 0; i < 15; i++) {
