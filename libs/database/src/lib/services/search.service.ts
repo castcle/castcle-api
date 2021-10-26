@@ -40,14 +40,13 @@ export class SearchService {
   private getHashtag(limitFilter, keyword?) {
     let filter;
     if (keyword) {
-      const filterHashtag: {
-        name: any;
-      } = {
-        name: { $regex: new RegExp(`^${keyword}`, 'i') }
+      filter = {
+        $or: [
+          { name: { $regex: new RegExp(`^${keyword}`, 'i') } },
+          { type: { $regex: new RegExp(`^${keyword}`, 'i') } }
+        ]
       };
-      filter = filterHashtag;
     }
-
     return this._hashtagModel
       .find(filter)
       .sort({ score: 'desc' })
@@ -176,10 +175,21 @@ export class SearchService {
     const limitHashtag = 2;
     const limitKeyword = 3;
 
-    const hashtag = await this.getHashtag(limitHashtag, keyword);
-    const follow = await this.getFollows(limitFollow, keyword);
-    const KeywordResult = await this.getKeyword(limitKeyword, keyword);
-
+    let follow: UserDocument[] = [];
+    let hashtag: HashtagDocument[] = [];
+    let KeywordResult: { text: string; isTrending: boolean }[] = [];
+    if (keyword) {
+      const sign = keyword.charAt(0);
+      if (sign === '@') {
+        follow = await this.getFollows(limitFollow, keyword.slice(1));
+      } else if (sign === '#') {
+        hashtag = await this.getHashtag(limitHashtag, keyword.slice(1));
+      } else {
+        hashtag = await this.getHashtag(limitHashtag, keyword);
+        follow = await this.getFollows(limitFollow, keyword);
+        KeywordResult = await this.getKeyword(limitKeyword, keyword);
+      }
+    }
     return {
       keywords: KeywordResult,
       hashtags: hashtag,
