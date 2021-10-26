@@ -255,8 +255,11 @@ UserSchema.methods.toPageResponse = function () {
           ? (this as UserDocument).profile.websites[0].website
           : null
     },
-    updated: (this as UserDocument).updatedAt.toISOString(),
-    created: (this as UserDocument).createdAt.toISOString()
+    verified: {
+      official: (this as UserDocument).verified.official
+    } as PageVerified,
+    updateAt: (this as UserDocument).updatedAt.toISOString(),
+    createAt: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
 };
 
@@ -361,8 +364,8 @@ export const UserSchemaFactory = (
       id: self._id,
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
-          ? Image.download(self.profile.images.avatar)
-          : Configs.DefaultAvatar,
+          ? new Image(self.profile.images.avatar).toSignUrls()
+          : { original: Configs.DefaultAvatar },
       castcleId: self.displayId,
       displayName: self.displayName,
       followed: false, //default of followed

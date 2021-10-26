@@ -20,44 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ApiProperty } from '@nestjs/swagger';
 
-import { CastcleImage } from '.';
-import { PageVerified, UserVerified } from '../schemas/user.schema';
-
-export interface AccessTokenPayload {
-  id: string;
-  role: 'member' | 'guest'; // member or guest
-  accessTokenExpiresTime?: string; // 30 นาทีจาก create
-  showAds: boolean;
-}
-
-export interface PageInfoPayload {
-  id: string;
-  castcleId: string;
-  displayName: string;
-  avatar: CastcleImage;
-  role: 'admin'; // admin or member
-  verified: PageVerified;
-}
-
-export interface UserAccessTokenPayload extends AccessTokenPayload {
-  avatar?: CastcleImage;
-  verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
-  showAds: boolean;
-  pages?: PageInfoPayload[];
-}
-
-export interface MemberAccessTokenPayload extends AccessTokenPayload {
-  role: 'member';
-  avatar?: CastcleImage;
-}
-
-export interface RefreshTokenPayload {
-  id: string;
-  refreshTokenExpiresTime?: string;
-}
-
-export interface EmailVerifyToken {
-  id: string;
-  verifyTokenExpiresTime?: string;
+export class TargetCastcleDto {
+  @ApiProperty()
+  targetCastcleId: string;
 }

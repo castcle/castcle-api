@@ -106,6 +106,11 @@ const signContentPayload = (payload: ContentPayloadDto) => {
       return new Image(url).toSignUrls();
     });
   }
+  if (payload.payload.photo && (payload.payload as BlogPayload).photo.cover) {
+    (payload.payload as BlogPayload).photo.cover = new Image(
+      (payload.payload as BlogPayload).photo.cover as CastcleImage
+    ).toSignUrls();
+  }
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   return payload;
@@ -175,8 +180,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: (this as ContentDocument).author,
       payload: (this as ContentDocument).payload,
-      created: (this as ContentDocument).createdAt.toISOString(),
-      updated: (this as ContentDocument).updatedAt.toISOString(),
+      createAt: (this as ContentDocument).createdAt.toISOString(),
+      updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',

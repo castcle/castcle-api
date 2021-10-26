@@ -22,26 +22,12 @@
  */
 
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Put,
-  Req,
-  UseInterceptors
-} from '@nestjs/common';
-import { AppService } from './app.service';
-import {
-  UserService,
+  AuthenticationService,
   ContentService,
-  AuthenticationService
+  UserService
 } from '@castcle-api/database';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
+  ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   FollowResponse,
@@ -49,22 +35,27 @@ import {
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import {
-  SortByPipe,
-  PagePipe,
-  LimitPipe,
-  ContentTypePipe,
-  SortByEnum
-} from '@castcle-api/utils/pipes';
 import { UserDocument, UserType } from '@castcle-api/database/schemas';
-import { ContentsResponse } from '@castcle-api/database/dtos';
-import { Query } from '@nestjs/common';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
-import { CacheKeyName } from '@castcle-api/utils/cache';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import {
+  ContentTypePipe,
+  LimitPipe,
+  PagePipe,
+  SortByEnum,
+  SortByPipe
+} from '@castcle-api/utils/pipes';
+import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { AppService } from './app.service';
+import { TargetCastcleDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -143,7 +134,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -165,7 +156,7 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   async deleteMyData(
     @Body('channel') channel: string,
@@ -337,15 +328,21 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @ApiBody({
+    type: TargetCastcleDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/follow')
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('castcleId') castcleId: string
+    @Body() body: TargetCastcleDto
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(
+      body.targetCastcleId,
+      req
+    );
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -365,15 +362,21 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @ApiBody({
+    type: TargetCastcleDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
   async unfollow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body('castcleId') castcleId: string
+    @Body() body: TargetCastcleDto
   ) {
     const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(castcleId, req);
+    const currentUser = await this._getUserFromIdOrCastcleId(
+      body.targetCastcleId,
+      req
+    );
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,

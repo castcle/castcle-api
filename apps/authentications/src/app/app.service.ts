@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AuthenticationService } from '@castcle-api/database';
+import { AuthenticationService, UserService } from '@castcle-api/database';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -61,7 +62,8 @@ export class AppService {
     private fbClient: FacebookClient,
     private download: Downloader,
     private telegramClient: TelegramClient,
-    private twitterClient: TwitterClient
+    private twitterClient: TwitterClient,
+    private userService: UserService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -165,8 +167,7 @@ export class AppService {
     const tokenResult: TokenResponse = await credential.renewTokens(
       accessTokenPayload,
       {
-        id: currentAccount._id as unknown as string,
-        role: 'member'
+        id: currentAccount._id as unknown as string
       }
     );
     return tokenResult;
@@ -301,5 +302,26 @@ export class AppService {
 
     if (data.results.oauth_callback_confirmed === 'true') return data;
     else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+  }
+
+  /**
+   * Get User Profile and Pages
+   * @param {CredentialDocument} credential
+   * @returns {profile,pages} profile data
+   */
+  async getUserProfile(credential: CredentialDocument) {
+    const user = await this.userService.getUserFromCredential(credential);
+    const pages = user
+      ? await this.userService.getUserPages(user, {
+          limit: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+        })
+      : null;
+
+    return {
+      profile: user,
+      pages: pages
+    };
   }
 }
