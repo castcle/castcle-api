@@ -70,8 +70,8 @@ export interface FeedItemPayload {
   };
   type: 'content'; // content or suggestion or reminder or ads
   payload: ContentPayloadDto;
-  created: string;
-  updated: string;
+  createAt: string;
+  updateAt: string;
 }
 
 export class FeedsResponse {

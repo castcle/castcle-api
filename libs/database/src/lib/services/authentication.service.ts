@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Configs } from '@castcle-api/environments';
 import { CastcleName } from '@castcle-api/utils';
 import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
@@ -32,7 +31,6 @@ import { EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
   EmailVerifyToken,
-  PageInfoPayload,
   RefreshTokenPayload,
   UserAccessTokenPayload
 } from '../dtos/token.dto';
@@ -130,12 +128,10 @@ export class AuthenticationService {
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
       role: 'guest',
-      preferredLanguage: accountRequirements.languagesPreferences,
       showAds: true
     });
     const refreshTokenResult = this._generateRefreshToken({
-      id: accountDocument._id as string,
-      role: 'guest'
+      id: accountDocument._id as string
     });
     const credential = new this._credentialModel({
       account: {
@@ -423,12 +419,8 @@ export class AuthenticationService {
       const payload = {
         id: credential.account._id,
         role: 'member',
-        preferredLanguage: credential.account.preferences.langagues,
         showAds: true,
-        castcleId: user.displayId,
-        displayName: user.displayName,
-        verified: user.verified,
-        email: credential.account.email
+        verified: user.verified
       } as UserAccessTokenPayload;
       console.debug('payloadBefore', payload);
       //get SignUrl for avartar
