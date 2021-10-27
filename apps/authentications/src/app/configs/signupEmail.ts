@@ -35,7 +35,6 @@ export const getSignupHtml = (
 <!-- End of Google Fonts Import -->
 <div style="width: 100%; background-color: #22252c; text-align: center;">
   <div style="display: inline-block; max-width: 400px; margin: 30px;">
-    in case of <link rel=""> is not working -->
     <table cellspacing="0" cellpadding="0" style="color: #e4e4e4; font-family: Kanit, sans-serif;">
       <tr>
         <td style="max-width: 80px;">
@@ -80,7 +79,7 @@ export const getSignupHtml = (
       <tr>
         <td colspan="2">
           <a href="${activationLink}" style="display: block; text-decoration: none; border-radius: 30px; height: 30px; background-color: #2dc2e3; padding: 12px; color: #fff; font-weight: 300; font-size: 18px; text-align: center;">
-            Comfirm Email
+            Confirm Email
           </a>
         </td>
       </tr>
