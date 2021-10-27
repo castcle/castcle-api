@@ -82,6 +82,7 @@ import {
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { DeletePageDto } from '../../dtos/delete.page.dto';
 
 @CastcleController('1.0')
 @Controller()
@@ -163,7 +164,7 @@ export class PageController {
   };
 
   @ApiBody({
-    type: PageResponse
+    type: PageDto
   })
   @ApiResponse({
     status: 201,
@@ -172,6 +173,7 @@ export class PageController {
   @CastcleBasicAuth()
   @Post('pages')
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
+    console.debug('create body', body);
     //check if page name exist
     const namingResult = await this.authService.getUserFromCastcleId(
       body.castcleId
@@ -208,6 +210,8 @@ export class PageController {
     console.debug('updatePage', page);
     if (!page.profile) page.profile = {};
     if (!page.profile.images) page.profile.images = {};
+    if (!page.profile.socials) page.profile.socials = {};
+
     //TODO !!! performance issue
     if (body.avatar)
       page.profile.images.avatar = (
@@ -224,8 +228,8 @@ export class PageController {
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;
+    if (body.overview) page.profile.overview = body.overview;
     if (body.links) {
-      if (!page.profile.socials) page.profile.socials = {};
       if (body.links.facebook)
         page.profile.socials.facebook = body.links.facebook;
       if (body.links.medium) page.profile.socials.medium = body.links.medium;
@@ -236,6 +240,8 @@ export class PageController {
           { website: body.links.website, detail: body.links.website }
         ];
     }
+    console.debug('preUpdatePage', page);
+    page.markModified('profile');
     const afterPage = await page.save();
     return afterPage.toPageResponse();
   }
@@ -287,16 +293,39 @@ export class PageController {
   @HttpCode(204)
   @CastleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
-  async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this._getOwnPageByIdOrCastcleId(id, req);
-    if (String(page.ownerAccount) === String(req.$credential.account._id)) {
-      await page.delete();
-      return '';
-    } else
+  async deletePage(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Body() deletePageDto: DeletePageDto
+  ) {
+    try {
+      const page = await this._getOwnPageByIdOrCastcleId(id, req);
+      //TODO !!! need guard later on
+      const password = deletePageDto.payload.password;
+      const account = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (!(await account.verifyPassword(password))) {
+        throw new CastcleException(
+          CastcleStatus.INVALID_PASSWORD,
+          req.$language
+        );
+      }
+      if (String(page.ownerAccount) === String(req.$credential.account._id)) {
+        await this.userService.deleteUserFromId(page._id);
+        //await page.delete();
+        return '';
+      } else
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+    } catch (e) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
+    }
   }
 
   /**
