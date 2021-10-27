@@ -109,6 +109,7 @@ export class ContentController {
     const user = await this.authService.getUserFromCastcleId(body.castcleId);
     if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
       const newBody = await this.appService.uploadContentToS3(body, user);
+      console.log('uploadedBody', newBody);
       const content = await this.contentService.createContentFromUser(
         user,
         newBody

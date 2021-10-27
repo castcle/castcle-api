@@ -48,7 +48,9 @@ export class UserConsumer {
   @Process()
   readOperationJob(job: Job<{ user: UserMessage }>) {
     try {
-      this.logger.log(`consume message '${JSON.stringify(job.data.user)}}' `);
+      this.logger.log(
+        `consume user message '${JSON.stringify(job.data.user)}' `
+      );
       //this.userService.deactiveQueue();
       switch (job.data.user.action) {
         case CastcleQueueAction.Deleting:
