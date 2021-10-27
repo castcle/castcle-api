@@ -82,6 +82,7 @@ import {
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { DeletePageDto } from '../../dtos/delete.page.dto';
 
 @CastcleController('1.0')
 @Controller()
@@ -292,17 +293,39 @@ export class PageController {
   @HttpCode(204)
   @CastleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
-  async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this._getOwnPageByIdOrCastcleId(id, req);
-    if (String(page.ownerAccount) === String(req.$credential.account._id)) {
-      await this.userService.deleteUserFromId(page._id);
-      //await page.delete();
-      return '';
-    } else
+  async deletePage(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Body() deletePageDto: DeletePageDto
+  ) {
+    try {
+      const page = await this._getOwnPageByIdOrCastcleId(id, req);
+      //TODO !!! need guard later on
+      const password = deletePageDto.payload.password;
+      const account = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (!(await account.verifyPassword(password))) {
+        throw new CastcleException(
+          CastcleStatus.INVALID_PASSWORD,
+          req.$language
+        );
+      }
+      if (String(page.ownerAccount) === String(req.$credential.account._id)) {
+        await this.userService.deleteUserFromId(page._id);
+        //await page.delete();
+        return '';
+      } else
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+    } catch (e) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
+    }
   }
 
   /**

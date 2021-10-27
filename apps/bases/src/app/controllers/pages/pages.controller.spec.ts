@@ -220,7 +220,13 @@ describe('PageController', () => {
       );
       const result = await pageController.deletePage(
         { $credential: userCredential, $language: 'th' } as any,
-        testPage._id
+        testPage._id,
+        {
+          channel: 'email',
+          payload: {
+            password: '1234AbcD'
+          }
+        }
       );
       expect(result).toEqual('');
       const postPage = await authService.getUserFromCastcleId(
