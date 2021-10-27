@@ -844,7 +844,7 @@ export class ContentService {
         seen: false,
         called: false,
         viewer: viewer,
-        content: content.toContentPayload(),
+        content: content.toUnsignedContentPayload(),
         aggregator: {
           createTime: new Date(),
           following: true
