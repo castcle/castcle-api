@@ -41,6 +41,7 @@ import {
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
+  CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
   ContentType,
@@ -65,6 +66,7 @@ import {
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { ContentProducer } from '@castcle-api/utils/queue';
 
 @CastcleController('1.0')
 @Controller()
@@ -74,7 +76,8 @@ export class ContentController {
     private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
-    private caslAbility: CaslAbilityFactory
+    private caslAbility: CaslAbilityFactory,
+    private contentProducer: ContentProducer
   ) {}
   private readonly logger = new CastLogger(
     ContentController.name,
@@ -110,6 +113,11 @@ export class ContentController {
         user,
         newBody
       );
+      //TODO !!! need to remove after done feed
+      this.contentProducer.sendMessage({
+        action: CastcleQueueAction.CreateFeedItemToEveryOne,
+        id: content._id
+      });
       return {
         payload: content.toContentPayload()
       } as ContentResponse;
