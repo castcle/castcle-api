@@ -55,6 +55,14 @@ const fakeBull = BullModule.registerQueue({
   },
   processors: [fakeProcessor]
 });
+const fakeBull2 = BullModule.registerQueue({
+  name: TopicName.Contents,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
   MongooseModule.forRootAsync({
@@ -98,7 +106,8 @@ describe('ContentController', () => {
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
+        fakeBull2
       ],
       controllers: [ContentController],
       providers: [

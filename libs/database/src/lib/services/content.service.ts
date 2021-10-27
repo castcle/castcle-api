@@ -851,7 +851,9 @@ export class ContentService {
         } as ContentAggregator
       } as FeedItemDto).save();
     });
-    return await Promise.all(promisesFeedItem);
+    const result = await Promise.all(promisesFeedItem);
+    console.debug('result feed ', result);
+    return result;
   };
 
   /**
@@ -862,6 +864,7 @@ export class ContentService {
   createFeedItemFromAuthorToEveryone = async (content: ContentDocument) => {
     //TODO !!! should do pagination later on
     const viewers = await this._userModel.find().exec();
+    console.debug('publish to ', viewers);
     return this._createFeedItemFromAuthorToViewers(content, viewers);
   };
 
@@ -872,7 +875,8 @@ export class ContentService {
    */
   createFeedItemFromAuthorIdToEveryone = async (contentId: any) => {
     const content = await this._contentModel.findById(contentId).exec();
-    return this.createFeedItemFromAuthorIdToEveryone(content);
+    console.debug('create feed with content', content);
+    return this.createFeedItemFromAuthorToEveryone(content);
   };
 
   /**

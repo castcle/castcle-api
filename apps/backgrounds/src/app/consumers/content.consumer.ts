@@ -46,7 +46,7 @@ export class ContentConsumer {
   readOperationJob(job: Job<{ content: ContentMessage }>) {
     try {
       this.logger.log(
-        `consume message '${JSON.stringify(job.data.content)}}' `
+        `consume content message '${JSON.stringify(job.data.content)}}' `
       );
       //this.userService.deactiveQueue();
       switch (job.data.content.action) {
