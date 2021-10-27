@@ -193,14 +193,24 @@ describe('PageController', () => {
         testPage._id,
         {
           displayName: 'change baby',
+          overview: 'yo',
           links: {
-            website: 'https://castcle.com'
+            website: 'https://castcle.com',
+            facebook: 'https://facebook.com',
+            twitter: 'https://twitter.com',
+            youtube: 'https://youtube.com',
+            medium: 'https://medium.com'
           }
         }
       );
       //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
       expect(result.displayName).toEqual('change baby');
       expect(result.links.website).toEqual('https://castcle.com');
+      expect(result.links.facebook).toEqual('https://facebook.com');
+      expect(result.links.twitter).toEqual('https://twitter.com');
+      expect(result.links.youtube).toEqual('https://youtube.com');
+      expect(result.links.medium).toEqual('https://medium.com');
+      expect(result.overview).toEqual('yo');
     });
   });
   describe('deletePage', () => {
