@@ -79,7 +79,7 @@ export const getSignupHtml = (
       <tr>
         <td colspan="2">
           <a href="${activationLink}" style="display: block; text-decoration: none; border-radius: 30px; height: 30px; background-color: #2dc2e3; padding: 12px; color: #fff; font-weight: 300; font-size: 18px; text-align: center;">
-            Comfirm Email
+            Confirm Email
           </a>
         </td>
       </tr>
