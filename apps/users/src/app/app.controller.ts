@@ -410,7 +410,7 @@ export class UserController {
     enum: UserType,
     required: false
   })
-  @Get(':id/follower')
+  @Get(':id/followers')
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
