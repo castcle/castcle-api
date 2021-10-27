@@ -44,10 +44,19 @@ import { UserType } from '@castcle-api/database/schemas';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { ContentProducer } from '@castcle-api/utils/queue';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
+const fakeBull2 = BullModule.registerQueue({
+  name: TopicName.Contents,
   redis: {
     host: '0.0.0.0',
     port: 6380
@@ -97,7 +106,8 @@ describe('ContentController', () => {
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
+        fakeBull2
       ],
       controllers: [ContentController],
       providers: [
@@ -106,7 +116,8 @@ describe('ContentController', () => {
         AuthenticationService,
         ContentService,
         CaslAbilityFactory,
-        UserProducer
+        UserProducer,
+        ContentProducer
       ]
     }).compile();
     service = app.get<UserService>(UserService);

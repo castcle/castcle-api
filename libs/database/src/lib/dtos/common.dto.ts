@@ -66,7 +66,8 @@ export enum CastcleQueueAction {
   Deleted = 'deleted',
   Restore = 'restore',
   UpdateProfile = 'updateProfile',
-  CreateFollowFeedItem = 'craeteFollowFeedItem'
+  CreateFollowFeedItem = 'craeteFollowFeedItem',
+  CreateFeedItemToEveryOne = 'createFeedItemToEveryone'
 }
 
 export class CastcleImage {

@@ -20,31 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
+import { TopicName } from '../enum/topic.name';
+import { ContentMessage } from '../messages/content.message';
+@Injectable()
+export class ContentProducer {
+  private readonly logger = new CastLogger(
+    ContentProducer.name,
+    CastLoggerOptions
+  );
 
-import { Module } from '@nestjs/common';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
-import { ContentController } from './app.controller';
-import { CommentController } from './controllers/comment/comment.controller';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { CaslModule } from '@castcle-api/casl';
+  constructor(@InjectQueue(TopicName.Contents) private queue: Queue) {}
 
-@Module({
-  imports: [
-    DatabaseModule,
-    CaslModule,
-    UtilsInterceptorsModule,
-    UtilsQueueModule,
-    UtilsCacheModule,
-    UtilsDecoratorsModule,
-    UtilsPipesModule
-  ],
-  controllers: [HealthyController, ContentController, CommentController],
-  providers: [AppService]
-})
-export class ContentModule {}
+  /**
+   * send user message to queue !!! if action === Deactivate send account id instead of user id
+   * @param {ContentMessage} ContentMessage user message
+   * @returns {}
+   */
+  async sendMessage(message: ContentMessage) {
+    await this.queue.add({
+      content: message
+    });
+    this.logger.log(`produce message '${JSON.stringify(message)}' `);
+  }
+}
