@@ -28,6 +28,7 @@ import { CommentController } from './controllers/comment/comment.controller';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { AppService } from './app.service';
 import { HealthyController } from './controllers/healthy/healthy.controller';
@@ -38,6 +39,7 @@ import { CaslModule } from '@castcle-api/casl';
     DatabaseModule,
     CaslModule,
     UtilsInterceptorsModule,
+    UtilsQueueModule,
     UtilsCacheModule,
     UtilsDecoratorsModule,
     UtilsPipesModule
