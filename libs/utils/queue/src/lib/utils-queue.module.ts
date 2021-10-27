@@ -44,11 +44,14 @@ import { ContentMessage } from './messages/content.message';
     }),
     BullModule.registerQueue({
       name: TopicName.Users
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Contents
     })
   ],
   controllers: [],
-  providers: [NotificationProducer, UserProducer],
-  exports: [BullModule, NotificationProducer, UserProducer]
+  providers: [NotificationProducer, UserProducer, ContentProducer],
+  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer]
 })
 export class UtilsQueueModule {}
 
