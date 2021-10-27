@@ -40,5 +40,25 @@ export const Configs = {
   DefaultAvatar:
     'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
   DefaultCover:
-    'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
+    'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
+  DefaultAvatarImages: {
+    original:
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+    thumbnail:
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+    large:
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+    fullHd:
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png'
+  },
+  DefaultAvatarCovers: {
+    original:
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
+    thumbnail:
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
+    large:
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
+    fullHd:
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
+  }
 };

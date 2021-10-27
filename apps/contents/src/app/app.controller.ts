@@ -41,6 +41,7 @@ import {
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
+  CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
   ContentType,
@@ -61,9 +62,11 @@ import { CaslAbilityFactory, Action } from '@castcle-api/casl';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastcleBasicAuth,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { ContentProducer } from '@castcle-api/utils/queue';
 
 @CastcleController('1.0')
 @Controller()
@@ -73,7 +76,8 @@ export class ContentController {
     private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
-    private caslAbility: CaslAbilityFactory
+    private caslAbility: CaslAbilityFactory,
+    private contentProducer: ContentProducer
   ) {}
   private readonly logger = new CastLogger(
     ContentController.name,
@@ -105,10 +109,16 @@ export class ContentController {
     const user = await this.authService.getUserFromCastcleId(body.castcleId);
     if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
       const newBody = await this.appService.uploadContentToS3(body, user);
+      console.log('uploadedBody', newBody);
       const content = await this.contentService.createContentFromUser(
         user,
         newBody
       );
+      //TODO !!! need to remove after done feed
+      this.contentProducer.sendMessage({
+        action: CastcleQueueAction.CreateFeedItemToEveryOne,
+        id: content._id
+      });
       return {
         payload: content.toContentPayload()
       } as ContentResponse;
@@ -181,7 +191,7 @@ export class ContentController {
   @ApiOkResponse({
     type: ContentResponse
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
   async updateContentFromId(
     @Param('id') id: string,
@@ -206,7 +216,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @HttpCode(204)
   @Delete(':id')
   async deleteContentFromId(
@@ -254,7 +264,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
@@ -272,7 +282,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(

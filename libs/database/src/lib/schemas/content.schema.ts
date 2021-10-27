@@ -95,6 +95,9 @@ interface IContent extends Document {
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
   toContentPayload(engagements?: EngagementDocument[]): ContentPayloadDto;
+  toUnsignedContentPayload(
+    engagements?: EngagementDocument[]
+  ): ContentPayloadDto;
   toContent(): Content;
 }
 
@@ -105,6 +108,11 @@ const signContentPayload = (payload: ContentPayloadDto) => {
     ).map((url: CastcleImage) => {
       return new Image(url).toSignUrls();
     });
+  }
+  if (payload.payload.photo && (payload.payload as BlogPayload).photo.cover) {
+    (payload.payload as BlogPayload).photo.cover = new Image(
+      (payload.payload as BlogPayload).photo.cover as CastcleImage
+    ).toSignUrls();
   }
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
@@ -167,6 +175,39 @@ export const ContentSchemaFactory = (
     return t;
   };
 
+  ContentSchema.methods.toUnsignedContentPayload = function (
+    engagements: EngagementDocument[] = []
+  ) {
+    const payload = {
+      id: (this as ContentDocument)._id,
+      author: (this as ContentDocument).author,
+      payload: (this as ContentDocument).payload,
+      createAt: (this as ContentDocument).createdAt.toISOString(),
+      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      type: (this as ContentDocument).type,
+      feature: {
+        slug: 'feed',
+        key: 'feature.feed',
+        name: 'Feed'
+      }
+    } as ContentPayloadDto;
+    //get owner relate enagement
+    for (const key in engagementNameMap) {
+      const findEngagement = engagements
+        ? engagements.find((engagement) => engagement.type === key)
+        : null;
+      payload[engagementNameMap[key]] = getEngagementObject(
+        this as ContentDocument,
+        key as EngagementType,
+        findEngagement ? true : false
+      );
+    }
+    //if it's recast or quotecast
+    if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
+      payload.originalPost = (this as ContentDocument).originalPost;
+    return payload;
+  };
+
   ContentSchema.methods.toContentPayload = function (
     engagements: EngagementDocument[] = []
   ) {
@@ -175,8 +216,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: (this as ContentDocument).author,
       payload: (this as ContentDocument).payload,
-      created: (this as ContentDocument).createdAt.toISOString(),
-      updated: (this as ContentDocument).updatedAt.toISOString(),
+      createAt: (this as ContentDocument).createdAt.toISOString(),
+      updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',

@@ -314,7 +314,7 @@ export class AppService {
     const user = await this.userService.getUserFromCredential(credential);
     const pages = user
       ? await this.userService.getUserPages(user, {
-          limit: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          limit: DEFAULT_CONTENT_QUERY_OPTIONS.limit,
           page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
           sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
         })

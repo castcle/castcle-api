@@ -78,9 +78,11 @@ import { Query } from '@nestjs/common';
 import {
   CastcleAuth,
   CastcleController,
-  CastcleBasicAuth
+  CastcleBasicAuth,
+  CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { DeletePageDto } from '../../dtos/delete.page.dto';
 
 @CastcleController('1.0')
 @Controller()
@@ -99,13 +101,7 @@ export class PageController {
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
-  /**
-   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
-   * @param {string} idOrCastCleId
-   * @param {CredentialRequest} req
-   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
-   */
-  _getPageByIdOrCastcleId = async (
+  _getOwnPageByIdOrCastcleId = async (
     idOrCastCleId: string,
     req: CredentialRequest
   ) => {
@@ -143,8 +139,32 @@ export class PageController {
       );
   };
 
+  /**
+   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
+   * @param {string} idOrCastCleId
+   * @param {CredentialRequest} req
+   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
+   */
+  _getPageByIdOrCastcleId = async (
+    idOrCastCleId: string,
+    req: CredentialRequest
+  ) => {
+    const idResult = await this.userService.getUserFromId(idOrCastCleId);
+    if (idResult && idResult.type === UserType.Page) return idResult;
+    const castcleIdResult = await this.authService.getUserFromCastcleId(
+      idOrCastCleId
+    );
+    if (castcleIdResult && castcleIdResult.type === UserType.Page)
+      return castcleIdResult;
+    else
+      throw new CastcleException(
+        CastcleStatus.REQUEST_URL_NOT_FOUND,
+        req.$language
+      );
+  };
+
   @ApiBody({
-    type: PageResponse
+    type: PageDto
   })
   @ApiResponse({
     status: 201,
@@ -153,6 +173,7 @@ export class PageController {
   @CastcleBasicAuth()
   @Post('pages')
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
+    console.debug('create body', body);
     //check if page name exist
     const namingResult = await this.authService.getUserFromCastcleId(
       body.castcleId
@@ -177,7 +198,7 @@ export class PageController {
     type: PageDto
   })
   @HttpCode(201)
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Pages)
   @Put('pages/:id')
   async updatePage(
     @Req() req: CredentialRequest,
@@ -185,9 +206,12 @@ export class PageController {
     @Body() body: UpdatePageDto
   ) {
     //check if page name exist
-    const page = await this._getPageByIdOrCastcleId(id, req);
+    const page = await this._getOwnPageByIdOrCastcleId(id, req);
+    console.debug('updatePage', page);
     if (!page.profile) page.profile = {};
     if (!page.profile.images) page.profile.images = {};
+    if (!page.profile.socials) page.profile.socials = {};
+
     //TODO !!! performance issue
     if (body.avatar)
       page.profile.images.avatar = (
@@ -204,8 +228,8 @@ export class PageController {
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;
+    if (body.overview) page.profile.overview = body.overview;
     if (body.links) {
-      if (!page.profile.socials) page.profile.socials = {};
       if (body.links.facebook)
         page.profile.socials.facebook = body.links.facebook;
       if (body.links.medium) page.profile.socials.medium = body.links.medium;
@@ -216,6 +240,8 @@ export class PageController {
           { website: body.links.website, detail: body.links.website }
         ];
     }
+    console.debug('preUpdatePage', page);
+    page.markModified('profile');
     const afterPage = await page.save();
     return afterPage.toPageResponse();
   }
@@ -265,18 +291,41 @@ export class PageController {
     status: 204
   })
   @HttpCode(204)
-  @CastcleBasicAuth()
+  @CastleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
-  async deletePage(@Req() req: CredentialRequest, @Param('id') id: string) {
-    const page = await this._getPageByIdOrCastcleId(id, req);
-    if (String(page.ownerAccount) === String(req.$credential.account._id)) {
-      await page.delete();
-      return '';
-    } else
+  async deletePage(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Body() deletePageDto: DeletePageDto
+  ) {
+    try {
+      const page = await this._getOwnPageByIdOrCastcleId(id, req);
+      //TODO !!! need guard later on
+      const password = deletePageDto.payload.password;
+      const account = await this.authService.getAccountFromCredential(
+        req.$credential
+      );
+      if (!(await account.verifyPassword(password))) {
+        throw new CastcleException(
+          CastcleStatus.INVALID_PASSWORD,
+          req.$language
+        );
+      }
+      if (String(page.ownerAccount) === String(req.$credential.account._id)) {
+        await this.userService.deleteUserFromId(page._id);
+        //await page.delete();
+        return '';
+      } else
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+    } catch (e) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
+    }
   }
 
   /**

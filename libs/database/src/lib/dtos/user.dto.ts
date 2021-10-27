@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { UserVerified } from '../schemas/user.schema';
+import { PageVerified, UserVerified } from '../schemas/user.schema';
 import { CastcleImage, Pagination } from './common.dto';
 
 class UserImage {
@@ -164,6 +164,9 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
+  verified: PageVerified;
+
+  @ApiProperty()
   followers: {
     count: number;
   };
@@ -174,10 +177,10 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
-  updated: string;
+  updateAt: string;
 
   @ApiProperty()
-  created: string;
+  createAt: string;
 }
 
 export class UpdatePageDto {
@@ -189,6 +192,9 @@ export class UpdatePageDto {
 
   @ApiProperty()
   cover?: string;
+
+  @ApiProperty()
+  overview?: string;
 
   @ApiProperty()
   links?: {

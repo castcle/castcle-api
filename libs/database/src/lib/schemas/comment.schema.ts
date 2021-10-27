@@ -124,7 +124,7 @@ export const CommentSchemaFactory = (
       hasHistory: revisionCount > 1 ? true : false,
       reply: replies.map((r) => ({
         id: r._id,
-        created: r.createdAt.toISOString(),
+        createAt: r.createdAt.toISOString(),
         message: r.message,
         author: {
           avatar: r.author.profile ? r.author.profile.images.avatar : null,
@@ -136,8 +136,8 @@ export const CommentSchemaFactory = (
           type: r.author.type
         }
       })),
-      created: (this as CommentDocument).createdAt.toISOString(),
-      updated: (this as CommentDocument).updatedAt.toISOString()
+      createAt: (this as CommentDocument).createdAt.toISOString(),
+      updateAt: (this as CommentDocument).updatedAt.toISOString()
     } as CommentPayload;
   };
 

@@ -138,12 +138,8 @@ describe('AppController', () => {
         return {
           ...body,
           images: {
-            avatar: {
-              original: Configs.DefaultAvatar
-            },
-            cover: {
-              original: Configs.DefaultCover
-            }
+            avatar: Configs.DefaultAvatarImages,
+            cover: Configs.DefaultAvatarCovers
           }
         };
       });
