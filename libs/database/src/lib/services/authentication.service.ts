@@ -232,7 +232,8 @@ export class AuthenticationService {
   getUserFromCastcleId = (id: string) => {
     return this._userModel
       .findOne({
-        displayId: { $regex: new RegExp('^' + id.toLowerCase(), 'i') }
+        displayId: { $regex: new RegExp('^' + id.toLowerCase() + '$', 'i') },
+        visibility: EntityVisibility.Publish
       })
       .exec();
   };

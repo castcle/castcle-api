@@ -28,6 +28,8 @@ import { NotificationMessage } from './messages/notification.message';
 import { NotificationProducer } from './producers/notification.producer';
 import { UserProducer } from './producers/user.producer';
 import { UserMessage } from './messages/user.message';
+import { ContentProducer } from './producers/content.producer';
+import { ContentMessage } from './messages/content.message';
 
 @Module({
   imports: [
@@ -42,11 +44,14 @@ import { UserMessage } from './messages/user.message';
     }),
     BullModule.registerQueue({
       name: TopicName.Users
+    }),
+    BullModule.registerQueue({
+      name: TopicName.Contents
     })
   ],
   controllers: [],
-  providers: [NotificationProducer, UserProducer],
-  exports: [BullModule, NotificationProducer, UserProducer]
+  providers: [NotificationProducer, UserProducer, ContentProducer],
+  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer]
 })
 export class UtilsQueueModule {}
 
@@ -55,5 +60,7 @@ export {
   NotificationProducer,
   NotificationMessage,
   UserProducer,
-  UserMessage
+  UserMessage,
+  ContentProducer,
+  ContentMessage
 };

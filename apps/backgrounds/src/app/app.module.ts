@@ -29,6 +29,7 @@ import { BackgroundController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
+import { ContentConsumer } from './consumers/content.consumer';
 @Module({
   imports: [
     DatabaseModule,
@@ -44,6 +45,6 @@ import { UserConsumer } from './consumers/user.consumer';
     })
   ],
   controllers: [BackgroundController],
-  providers: [AppService, NotificationConsumer, UserConsumer]
+  providers: [AppService, NotificationConsumer, UserConsumer, ContentConsumer]
 })
 export class BackgroundModule {}
