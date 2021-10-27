@@ -59,7 +59,6 @@ import {
 import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { async } from 'rxjs';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 
@@ -828,6 +827,56 @@ export class ContentService {
       } as FeedItemDto).save()
     );
     return await Promise.all(promisesFeedItem);
+  };
+
+  /**
+   * Convert content => feedItem to group of viewers
+   * @param {ContentDocument} content
+   * @param {UserDocument[]} viewers
+   * @returns {Promise<FeedItemDocument[]>}
+   */
+  _createFeedItemFromAuthorToViewers = async (
+    content: ContentDocument,
+    viewers: UserDocument[]
+  ) => {
+    const promisesFeedItem = viewers.map((viewer) => {
+      return new this._feedItemModel({
+        seen: false,
+        called: false,
+        viewer: viewer,
+        content: content.toUnsignedContentPayload(),
+        aggregator: {
+          createTime: new Date(),
+          following: true
+        } as ContentAggregator
+      } as FeedItemDto).save();
+    });
+    const result = await Promise.all(promisesFeedItem);
+    console.debug('result feed ', result);
+    return result;
+  };
+
+  /**
+   * Create a feed item to every user in the system
+   * @param {ContentDocument} content
+   * @returns {Promise<FeedItemDocument[]>}
+   */
+  createFeedItemFromAuthorToEveryone = async (content: ContentDocument) => {
+    //TODO !!! should do pagination later on
+    const viewers = await this._userModel.find().exec();
+    console.debug('publish to ', viewers);
+    return this._createFeedItemFromAuthorToViewers(content, viewers);
+  };
+
+  /**
+   * Create a feed item to every user in the system
+   * @param {ObjectId} contentId
+   * @returns {Promise<FeedItemDocument[]>}
+   */
+  createFeedItemFromAuthorIdToEveryone = async (contentId: any) => {
+    const content = await this._contentModel.findById(contentId).exec();
+    console.debug('create feed with content', content);
+    return this.createFeedItemFromAuthorToEveryone(content);
   };
 
   /**

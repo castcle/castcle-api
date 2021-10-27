@@ -21,30 +21,9 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
-import { ContentController } from './app.controller';
-import { CommentController } from './controllers/comment/comment.controller';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
-import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
-import { CaslModule } from '@castcle-api/casl';
-
-@Module({
-  imports: [
-    DatabaseModule,
-    CaslModule,
-    UtilsInterceptorsModule,
-    UtilsQueueModule,
-    UtilsCacheModule,
-    UtilsDecoratorsModule,
-    UtilsPipesModule
-  ],
-  controllers: [HealthyController, ContentController, CommentController],
-  providers: [AppService]
-})
-export class ContentModule {}
+export class DeletePageDto {
+  channel: 'email';
+  payload: {
+    password: string;
+  };
+}

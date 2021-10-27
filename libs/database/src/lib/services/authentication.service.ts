@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { CastcleName } from '@castcle-api/utils';
-import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -233,7 +232,8 @@ export class AuthenticationService {
   getUserFromCastcleId = (id: string) => {
     return this._userModel
       .findOne({
-        displayId: { $regex: new RegExp('^' + id.toLowerCase(), 'i') }
+        displayId: { $regex: new RegExp('^' + id.toLowerCase() + '$', 'i') },
+        visibility: EntityVisibility.Publish
       })
       .exec();
   };
@@ -422,13 +422,7 @@ export class AuthenticationService {
         showAds: true,
         verified: user.verified
       } as UserAccessTokenPayload;
-      console.debug('payloadBefore', payload);
-      //get SignUrl for avartar
-      if (user.profile && user.profile.images && user.profile.images.avatar) {
-        const avartar = new Image(user.profile.images.avatar);
-        payload.avatar = avartar.toSignUrls();
-      }
-      console.debug('payloadAfter1', payload);
+      console.debug('payload', payload);
       return payload;
     }
   }

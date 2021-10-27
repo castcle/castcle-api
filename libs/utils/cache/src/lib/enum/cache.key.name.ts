@@ -51,7 +51,7 @@ export const CacheKeyName = {
   },
   Feeds: {
     Name: 'FEEDS',
-    Ttl: 300
+    Ttl: 30
   },
   Contents: {
     Name: 'CONTENTS',

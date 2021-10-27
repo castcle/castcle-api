@@ -22,5 +22,6 @@
  */
 export const TopicName = {
   Notifications: 'notifications-message',
-  Users: 'users'
+  Users: 'users',
+  Contents: 'contents'
 };
