@@ -33,7 +33,7 @@ export class ContentProducer {
     CastLoggerOptions
   );
 
-  constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
+  constructor(@InjectQueue(TopicName.Contents) private queue: Queue) {}
 
   /**
    * send user message to queue !!! if action === Deactivate send account id instead of user id

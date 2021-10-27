@@ -149,11 +149,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? new Image(self.profile.images.avatar).toSignUrls()
-          : { original: Configs.DefaultAvatar }, // TODO !!! need to check S3 about static url
+          : Configs.DefaultAvatarImages, // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
           ? new Image(self.profile.images.cover).toSignUrls()
-          : { original: Configs.DefaultCover }
+          : Configs.DefaultAvatarCovers
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
@@ -171,9 +171,7 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     avatar:
       self.profile && self.profile.images && self.profile.images.avatar
         ? new Image(self.profile.images.avatar).toSignUrls()
-        : {
-            original: Configs.DefaultAvatar
-          },
+        : Configs.DefaultAvatarImages,
     castcleId: self.displayId,
     displayName: self.displayName,
     followed: false, //default of followed
@@ -277,9 +275,7 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
         ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
-        : {
-            original: Configs.DefaultAvatar
-          },
+        : Configs.DefaultAvatarImages,
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
@@ -365,7 +361,7 @@ export const UserSchemaFactory = (
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? new Image(self.profile.images.avatar).toSignUrls()
-          : { original: Configs.DefaultAvatar },
+          : Configs.DefaultAvatarImages,
       castcleId: self.displayId,
       displayName: self.displayName,
       followed: false, //default of followed
