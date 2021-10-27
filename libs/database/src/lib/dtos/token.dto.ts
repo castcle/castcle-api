@@ -41,15 +41,12 @@ export interface PageInfoPayload {
 }
 
 export interface UserAccessTokenPayload extends AccessTokenPayload {
-  avatar?: CastcleImage;
   verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
   showAds: boolean;
-  pages?: PageInfoPayload[];
 }
 
 export interface MemberAccessTokenPayload extends AccessTokenPayload {
   role: 'member';
-  avatar?: CastcleImage;
 }
 
 export interface RefreshTokenPayload {
