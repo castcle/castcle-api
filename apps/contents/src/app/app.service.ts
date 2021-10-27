@@ -74,6 +74,8 @@ export class AppService {
     if (body.payload.photo && body.payload.photo.contents) {
       const newContents = await Promise.all(
         (body.payload.photo.contents as Url[]).map(async (item) => {
+          console.debug('uploading----');
+          console.debug(item);
           const image = await Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
@@ -83,6 +85,7 @@ export class AppService {
         })
       );
       body.payload.photo.contents = newContents;
+      console.debug('photo contents', newContents);
     }
     if (
       body.type === ContentType.Blog &&
