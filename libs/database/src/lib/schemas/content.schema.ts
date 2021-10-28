@@ -126,6 +126,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
   }
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
+  else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
   return payload;
 };
 
