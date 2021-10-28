@@ -110,6 +110,7 @@ export class FeedController {
           limit: limitOption
         }
       );
+      console.debug('rankerFeeds', feedItemsResult);
       return {
         payload: feedItemsResult.items.map((t) => t.toFeedItemPayload()),
         pagination: feedItemsResult.pagination
