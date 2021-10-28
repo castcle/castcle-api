@@ -60,7 +60,17 @@ describe('NotificationsController', () => {
   let search: SearchService;
   let userCredential: CredentialDocument;
   let authService: AuthenticationService;
-
+  const mockHashtag = async (slug, hName, hScore) => {
+    const newHashtag: CreateHashtag = {
+      tag: slug,
+      score: hScore,
+      aggregator: {
+        _id: '6138afa4f616a467b5c4eb72'
+      },
+      name: hName
+    };
+    await hashtagService.create(newHashtag);
+  };
   beforeAll(async () => {
     app = await Test.createTestingModule({
       imports: [
@@ -100,20 +110,8 @@ describe('NotificationsController', () => {
       await user.save();
     };
 
-    const mockHashtag = async (slug, hName, hScore) => {
-      const newHashtag: CreateHashtag = {
-        tag: slug,
-        score: hScore,
-        aggregator: {
-          _id: '6138afa4f616a467b5c4eb72'
-        },
-        name: hName
-      };
-      await hashtagService.create(newHashtag);
-    };
-
     for (let i = 0; i < 30; i++) {
-      await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
+      await mockHashtag(`castcle${i}`, `Castcle ${i}`, 90 - i);
     }
 
     for (let i = 0; i < 15; i++) {
@@ -257,6 +255,41 @@ describe('NotificationsController', () => {
       expect(responseResult.follows[0].aggregator.message).toBeDefined();
       expect(responseResult.follows[0].verified).toBeDefined();
       expect(responseResult.follows[0].followed).toBeDefined();
+    });
+
+    it('should return SearchesResponse that only hashtag', async () => {
+      const responseResult = await controller.getSearches(
+        {
+          $credential: userCredential
+        } as any,
+        10,
+        '#ca'
+      );
+      console.log(responseResult);
+      expect(responseResult.keyword.length).toEqual(0);
+
+      expect(responseResult.hashtags.length).toEqual(2);
+      expect(responseResult.hashtags[0].id).toBeDefined();
+      expect(responseResult.hashtags[0].slug).toBeDefined();
+      expect(responseResult.hashtags[0].key).toBeDefined();
+      expect(responseResult.hashtags[0].name).toBeDefined();
+      expect(responseResult.hashtags[0].isTrending).toBeDefined();
+
+      expect(responseResult.follows.length).toEqual(0);
+    });
+
+    it('should return SearchesResponse that only follower', async () => {
+      const responseResult = await controller.getSearches(
+        {
+          $credential: userCredential
+        } as any,
+        10,
+        '@cuse'
+      );
+      console.log(responseResult);
+      expect(responseResult.keyword.length).toEqual(0);
+      expect(responseResult.hashtags.length).toEqual(0);
+      expect(responseResult.follows.length).toEqual(5);
     });
 
     it('should return SearchesResponse with empty data', async () => {

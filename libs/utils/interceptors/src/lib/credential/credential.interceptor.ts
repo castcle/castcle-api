@@ -20,17 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { AuthenticationService } from '@castcle-api/database';
+import { CredentialDocument } from '@castcle-api/database/schemas';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor
 } from '@nestjs/common';
-import { AuthenticationService } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import * as util from '../util';
 import { TokenRequest } from '../token/token.interceptor';
+import * as util from '../util';
 //for delete
 export interface CredentialRequest extends TokenRequest {
   $credential: CredentialDocument;
@@ -50,7 +50,7 @@ export class CredentialInterceptor implements NestInterceptor {
     console.debug('Credential', request.$credential);
     console.debug(
       'isAccessTokenValid',
-      request.$credential.isAccessTokenValid()
+      request.$credential ? request.$credential.isAccessTokenValid() : null
     );
     if (request.$credential && request.$credential.isAccessTokenValid()) {
       return next.handle();
