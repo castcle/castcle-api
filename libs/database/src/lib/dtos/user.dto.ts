@@ -194,6 +194,9 @@ export class UpdatePageDto {
   cover?: string;
 
   @ApiProperty()
+  overview?: string;
+
+  @ApiProperty()
   links?: {
     facebook?: string | null;
     twitter?: string | null;

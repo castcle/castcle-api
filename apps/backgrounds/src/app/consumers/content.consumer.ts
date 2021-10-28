@@ -23,51 +23,39 @@
 
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
-  NotificationMessage,
+  ContentMessage,
   TopicName,
   UserMessage
 } from '@castcle-api/utils/queue';
-import { UserService, ContentService } from '@castcle-api/database';
+import { ContentService } from '@castcle-api/database';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
 import { CastcleQueueAction } from '@castcle-api/database/dtos';
 @Injectable()
-@Processor(TopicName.Users)
-export class UserConsumer {
-  constructor(
-    private userService: UserService,
-    private contentService: ContentService
-  ) {}
+@Processor(TopicName.Contents)
+export class ContentConsumer {
+  constructor(private contentService: ContentService) {}
 
   private readonly logger = new CastLogger(
-    UserConsumer.name,
+    ContentConsumer.name,
     CastLoggerOptions
   );
 
   @Process()
-  readOperationJob(job: Job<{ user: UserMessage }>) {
+  readOperationJob(job: Job<{ content: ContentMessage }>) {
     try {
       this.logger.log(
-        `consume user message '${JSON.stringify(job.data.user)}' `
+        `consume content message '${JSON.stringify(job.data.content)}}' `
       );
       //this.userService.deactiveQueue();
-      switch (job.data.user.action) {
-        case CastcleQueueAction.Deleting:
-          this.userService.deactiveBackground(job.data.user.id);
-          this.logger.log(`deleting user ${job.data.user.id}`);
-          break;
-        case CastcleQueueAction.UpdateProfile:
-          this.userService.updateUserInEmbedContentBackground(job.data.user.id);
-          this.logger.log(`Updating profile of user ${job.data.user.id}`);
-          break;
-        case CastcleQueueAction.CreateFollowFeedItem:
-          this.contentService.createFeedItemFromAuthorToViewer(
-            job.data.user.options.followedId,
-            job.data.user.id
+      switch (job.data.content.action) {
+        case CastcleQueueAction.CreateFeedItemToEveryOne:
+          this.contentService.createFeedItemFromAuthorIdToEveryone(
+            job.data.content.id
           );
           this.logger.log(
-            `Creating feed item for user ${job.data.user.id} from author ${job.data.user.options.followedId}`
+            `Creating feed item for user ${job.data.content.id} `
           );
           break;
       }

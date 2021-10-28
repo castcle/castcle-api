@@ -149,8 +149,11 @@ export class UserService {
     await this.updateUserInEmbedContent(user);
   };
 
-  deleteUserFromId = (id: string) =>
-    this._userModel.findByIdAndDelete(id).exec();
+  deleteUserFromId = async (id: string) => {
+    const user = await this._userModel.findById(id).exec();
+    user.visibility = EntityVisibility.Deleted;
+    return user.save();
+  };
 
   createPageFromCredential = async (
     credential: CredentialDocument,
@@ -187,7 +190,7 @@ export class UserService {
       await this._userModel.count({ type: UserType.Page })
     );
     const itemsQuery = this._userModel
-      .find({ type: UserType.Page })
+      .find({ type: UserType.Page, visibility: EntityVisibility.Publish })
       .skip(queryOptions.page - 1)
       .limit(queryOptions.limit);
     let items: UserDocument[];

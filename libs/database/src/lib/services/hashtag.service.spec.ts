@@ -74,7 +74,7 @@ describe('HashtagService', () => {
   describe('#create and get all hashtags', () => {
     it('should create new hashtag in db', async () => {
       const newHashtag: CreateHashtag = {
-        tag: '#castcle',
+        tag: 'castcle',
         score: 90,
         aggregator: {
           _id: '6138afa4f616a467b5c4eb72'
