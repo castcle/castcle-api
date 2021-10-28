@@ -832,12 +832,12 @@ export class ContentService {
   /**
    * Convert content => feedItem to group of viewers
    * @param {ContentDocument} content
-   * @param {UserDocument[]} viewers
+   * @param {AccountDocument[]} viewers
    * @returns {Promise<FeedItemDocument[]>}
    */
   _createFeedItemFromAuthorToViewers = async (
     content: ContentDocument,
-    viewers: UserDocument[]
+    viewers: AccountDocument[]
   ) => {
     const promisesFeedItem = viewers.map((viewer) => {
       return new this._feedItemModel({
@@ -863,7 +863,7 @@ export class ContentService {
    */
   createFeedItemFromAuthorToEveryone = async (content: ContentDocument) => {
     //TODO !!! should do pagination later on
-    const viewers = await this._userModel.find().exec();
+    const viewers = await this._accountModel.find().exec();
     console.debug('publish to ', viewers);
     return this._createFeedItemFromAuthorToViewers(content, viewers);
   };

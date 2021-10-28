@@ -101,7 +101,7 @@ interface IContent extends Document {
   toContent(): Content;
 }
 
-const signContentPayload = (payload: ContentPayloadDto) => {
+export const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
@@ -113,6 +113,16 @@ const signContentPayload = (payload: ContentPayloadDto) => {
     (payload.payload as BlogPayload).photo.cover = new Image(
       (payload.payload as BlogPayload).photo.cover as CastcleImage
     ).toSignUrls();
+  }
+  if ((payload.payload as BlogPayload).link) {
+    (payload.payload as BlogPayload).link = (
+      payload.payload as BlogPayload
+    ).link.map((item) => {
+      if (item.image) {
+        item.image = new Image(item.image as CastcleImage).toSignUrls();
+      }
+      return item;
+    });
   }
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
