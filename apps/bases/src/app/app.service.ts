@@ -27,11 +27,13 @@ import {
   UpdatePageDto
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
+import { Password } from '@castcle-api/utils';
 import {
   Image,
   COMMON_SIZE_CONFIGS,
   AVARTAR_SIZE_CONFIGS
 } from '@castcle-api/utils/aws';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

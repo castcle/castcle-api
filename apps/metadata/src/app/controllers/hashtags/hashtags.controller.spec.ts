@@ -92,7 +92,7 @@ describe('HashtagsController', () => {
   describe('getAllHashtags', () => {
     it('should get all hashtag in db', async () => {
       await hashtagService.create({
-        tag: '#castcle',
+        tag: 'castcle',
         score: 90,
         aggregator: {
           _id: '6138afa4f616a467b5c4eb72'
@@ -107,7 +107,7 @@ describe('HashtagsController', () => {
         payload: [
           {
             id: '',
-            slug: '#castcle',
+            slug: 'castcle',
             name: 'Castcle',
             key: 'hashtag.castcle'
           }

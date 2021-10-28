@@ -38,7 +38,7 @@ class Link {
   url: string;
 
   @ApiProperty()
-  image: string;
+  image: string | CastcleImage;
 }
 
 class BlogPhoto {
