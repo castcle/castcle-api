@@ -25,7 +25,7 @@ import * as mongoose from 'mongoose';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import { Content } from './content.schema';
+import { signContentPayload } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { ContentPayloadDto } from '../dtos/content.dto';
 
@@ -78,7 +78,7 @@ FeedItemSchema.methods.toFeedItemPayload = function () {
       slug: 'forYou'
     },
     type: 'content',
-    payload: (this as FeedItemDocument).content,
+    payload: signContentPayload((this as FeedItemDocument).content),
     aggregator: {
       type: 'createTime'
     },

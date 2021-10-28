@@ -101,7 +101,7 @@ interface IContent extends Document {
   toContent(): Content;
 }
 
-const signContentPayload = (payload: ContentPayloadDto) => {
+export const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
