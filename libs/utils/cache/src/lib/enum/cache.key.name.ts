@@ -64,5 +64,9 @@ export const CacheKeyName = {
   Users: {
     Name: 'USERS',
     Ttl: 300
+  },
+  Country: {
+    Name: 'COUNTRY',
+    Ttl: 3600
   }
 };

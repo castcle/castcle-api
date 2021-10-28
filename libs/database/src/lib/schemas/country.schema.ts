@@ -20,40 +20,38 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Account, AccountDocument } from './account.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from './accountAuthenId.schema';
-import { Comment, CommentDocument } from './comment.schema';
-import { Content, ContentDocument } from './content.schema';
-import { CountryDocument } from './country.schema';
-import {
-  Credential,
-  CredentialDocument,
-  CredentialModel
-} from './credential.schema';
-import { HashtagDocument } from './hashtag.schema';
-import { LanguageDocument } from './language.schema';
-import { NotificationDocument } from './notification.schema';
-import { User, UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  Credential,
-  HashtagDocument,
-  AccountAuthenIdType,
-  AccountAuthenIdDocument,
-  CountryDocument
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { CountryPayloadDto } from '../dtos/country.dto';
+import { CastcleBase } from './base.schema';
+
+export type CountryDocument = Country & ICountry;
+@Schema({ timestamps: true })
+export class Country extends CastcleBase {
+  @Prop()
+  code: string;
+
+  @Prop()
+  dialCode: string;
+
+  @Prop()
+  name: string;
+
+  @Prop()
+  flag: string;
+}
+
+interface ICountry extends Document {
+  toCountryPayload(): CountryPayloadDto;
+}
+
+export const CountrySchema = SchemaFactory.createForClass(Country);
+
+CountrySchema.methods.toCountryPayload = function () {
+  return {
+    code: (this as CountryDocument).code,
+    dialCode: (this as CountryDocument).dialCode,
+    name: (this as CountryDocument).name,
+    flag: (this as CountryDocument).flag
+  } as CountryPayloadDto;
 };
