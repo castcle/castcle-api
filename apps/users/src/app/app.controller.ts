@@ -95,6 +95,44 @@ export class UserController {
       );
   };
 
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'keyword',
+    type: String,
+    required: true
+  })
+  @Get('mentions')
+  @CastcleAuth(CacheKeyName.Users)
+  async getMentions(
+    @Query('keyword', KeywordPipe) keyword: string,
+    @Query('page', PagePipe)
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    @Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+  ) {
+    console.debug('Call Get mention');
+    const result = await this.userService.getMentionsFromPublic(keyword, {
+      page: pageOption,
+      limit: limitOption
+    });
+    return {
+      message: 'success message',
+      payload: await Promise.all(
+        result.users.map((user) => user.toUserResponse())
+      ),
+      pagination: result.pagination
+    };
+  }
+
   @Get()
   getData() {
     logger.log('Root');
@@ -217,8 +255,18 @@ export class UserController {
         page: pageOption,
         type: contentTypeOption
       });
+      const engagements =
+        await this.contentService.getAllEngagementFromContentsAndUser(
+          contents.items,
+          user
+        );
       return {
-        payload: contents.items.map((item) => item.toContentPayload()),
+        payload: contents.items.map((item) => {
+          const subEngagements = engagements.filter(
+            (eng) => eng.targetRef.$id === item._id
+          );
+          return item.toContentPayload(subEngagements);
+        }),
         pagination: contents.pagination
       } as ContentsResponse;
     } else
@@ -338,8 +386,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(
+    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
+    const followedUser = await this._getUserFromIdOrCastcleId(
       body.targetCastcleId,
       req
     );
@@ -372,8 +420,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(
+    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
+    const followedUser = await this._getUserFromIdOrCastcleId(
       body.targetCastcleId,
       req
     );
@@ -492,42 +540,5 @@ export class UserController {
       payload: followers.items,
       pagination: followers.pagination
     } as FollowResponse;
-  }
-
-  @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'keyword',
-    type: String,
-    required: true
-  })
-  @Get('mentions')
-  @CastcleAuth(CacheKeyName.Users)
-  async getMentions(
-    @Query('keyword', KeywordPipe) keyword: string,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
-  ) {
-    const result = await this.userService.getMentionsFromPublic(keyword, {
-      page: pageOption,
-      limit: limitOption
-    });
-    return {
-      message: 'success message',
-      payload: await Promise.all(
-        result.users.map((user) => user.toUserResponse())
-      ),
-      pagination: result.pagination
-    };
   }
 }

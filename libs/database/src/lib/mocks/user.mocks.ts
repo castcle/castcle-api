@@ -24,7 +24,7 @@
 import { UserService } from '../services/user.service';
 import { AuthenticationService } from '../services/authentication.service';
 import { PageDto } from '../dtos';
-import { AccountDocument, UserDocument } from '../schemas';
+import { AccountDocument, CredentialDocument, UserDocument } from '../schemas';
 import { PageModelDto } from '../dtos/user.dto';
 
 type Models = {
@@ -54,6 +54,7 @@ export type MockUserDetail = {
   account: AccountDocument;
   user: UserDocument;
   pages: UserDocument[];
+  credential: CredentialDocument;
 };
 
 const _generatePageDto = (pagePerAccountAmount: number) => {
@@ -132,21 +133,25 @@ export const generateMockUsers = async (
     const user = await model.accountService.getUserFromCastcleId(
       info.signupRequirement.displayId
     );
+
     const pages: UserDocument[] = [];
     for (let i = 0; i < info.pages.length; i++) {
       pages.push(
         await model.userService.createPageFromUser(user, info.pages[i])
       );
     }
+
     console.log('---->', {
       account: verifyAcc,
       user: user,
-      pages: pages
+      pages: pages,
+      credential: result.credentialDocument
     });
     mockUsers.push({
       account: verifyAcc,
       user: user,
-      pages: pages
+      pages: pages,
+      credential: result.credentialDocument
     });
   }
   console.log('----MOCK users---');
