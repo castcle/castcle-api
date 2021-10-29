@@ -386,8 +386,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(
+    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
+    const followedUser = await this._getUserFromIdOrCastcleId(
       body.targetCastcleId,
       req
     );
@@ -420,8 +420,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const followedUser = await this._getUserFromIdOrCastcleId(id, req);
-    const currentUser = await this._getUserFromIdOrCastcleId(
+    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
+    const followedUser = await this._getUserFromIdOrCastcleId(
       body.targetCastcleId,
       req
     );
