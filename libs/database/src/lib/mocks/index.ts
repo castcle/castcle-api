@@ -21,6 +21,6 @@
  * or have any questions.
  */
 
-export class DeletePageDto {
-  password: string;
-}
+import { MockUserDetail, generateMockUsers } from './user.mocks';
+
+export { MockUserDetail, generateMockUsers };

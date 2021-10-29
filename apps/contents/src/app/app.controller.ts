@@ -140,8 +140,14 @@ export class ContentController {
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const engagements =
+      await this.contentService.getAllEngagementFromContentAndUser(
+        content,
+        user
+      );
     return {
-      payload: content.toContentPayload()
+      payload: content.toContentPayload(engagements)
     } as ContentResponse;
   }
 

@@ -279,6 +279,7 @@ describe('ContentController', () => {
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {
+          $credential: userCredential,
           $language: 'th'
         } as any
       );
@@ -327,6 +328,7 @@ describe('ContentController', () => {
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {
+          $credential: userCredential,
           $language: 'th'
         } as any
       );
