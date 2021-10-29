@@ -21,18 +21,18 @@
  * or have any questions.
  */
 
+import { Configs } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
-import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { Author } from '../dtos/content.dto';
+import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
-import { Image } from '@castcle-api/utils/aws';
-import { Configs } from '@castcle-api/environments';
 
 export type UserDocument = User & IUser;
 
@@ -306,8 +306,8 @@ UserSchema.methods.toSearchResponse = function () {
       (this as UserDocument).profile &&
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
-        ? (this as UserDocument).profile.images.avatar
-        : '',
+        ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
