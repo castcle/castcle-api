@@ -147,13 +147,20 @@ export class ContentController {
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
   async _getContentIfExist(id: string, req: CredentialRequest) {
-    const content = await this.contentService.getContentFromId(id);
-    if (content) return content;
-    else
+    try {
+      const content = await this.contentService.getContentFromId(id);
+      if (content) return content;
+      else
+        throw new CastcleException(
+          CastcleStatus.REQUEST_URL_NOT_FOUND,
+          req.$language
+        );
+    } catch (e) {
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
         req.$language
       );
+    }
   }
 
   async _checkPermissionForUpdate(
