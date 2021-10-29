@@ -23,6 +23,9 @@
       "@castcle-api/database/schemas": [
         "libs/database/src/lib/schemas/index.ts"
       ],
+      "@castcle-api/database/mocks": [
+        "libs/database/src/lib/mocks/index.ts"
+      ],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
       "@castcle-api/utils": ["libs/utils/src/index.ts"],

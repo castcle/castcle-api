@@ -308,6 +308,7 @@ export class UserService {
       filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
     let query = this._relationshipModel
       .find(filter)
+      .populate('followedUser')
       .skip(queryOption.page - 1)
       .limit(queryOption.limit);
     //      .populate('followedUser');
