@@ -35,6 +35,7 @@ import {
 import { UserController } from './app.controller';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   CredentialDocument,
   UserDocument,
@@ -283,6 +284,40 @@ describe('AppController', () => {
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
       expect(response.payload[0].following).toBeDefined();
+    });
+  });
+  describe('getUserFollowing', () => {
+    let mocks: MockUserDetail[];
+    beforeAll(async () => {
+      mocks = await generateMockUsers(5, 2, {
+        accountService: authService,
+        userService: service
+      });
+
+      const result = await appController.follow(
+        mocks[1].user._id,
+        {
+          $credential: mocks[0].credential,
+          $language: 'th'
+        } as any,
+        {
+          targetCastcleId: mocks[0].user.displayId
+        }
+      );
+    });
+    it('should show all user following from the system', async () => {
+      const followingResult = await appController.getUserFollowing(
+        mocks[0].user.displayId,
+        {
+          $credential: mocks[0].credential,
+          $language: 'th'
+        } as any
+      );
+      expect(followingResult.payload.length).toEqual(1);
+      console.log(followingResult);
+      expect(followingResult.payload[0].castcleId).toEqual(
+        mocks[1].user.displayId
+      );
     });
   });
   describe('deleteMyData', () => {
