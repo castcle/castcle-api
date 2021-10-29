@@ -255,8 +255,18 @@ export class UserController {
         page: pageOption,
         type: contentTypeOption
       });
+      const engagements =
+        await this.contentService.getAllEngagementFromContentsAndUser(
+          contents.items,
+          user
+        );
       return {
-        payload: contents.items.map((item) => item.toContentPayload()),
+        payload: contents.items.map((item) => {
+          const subEngagements = engagements.filter(
+            (eng) => eng.targetRef.$id === item._id
+          );
+          return item.toContentPayload(subEngagements);
+        }),
         pagination: contents.pagination
       } as ContentsResponse;
     } else
