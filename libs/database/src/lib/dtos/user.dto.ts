@@ -188,10 +188,10 @@ export class UpdatePageDto {
   displayName?: string;
 
   @ApiProperty()
-  avatar?: string;
-
-  @ApiProperty()
-  cover?: string;
+  image?: {
+    avatar?: string;
+    cover?: string;
+  };
 
   @ApiProperty()
   overview?: string;

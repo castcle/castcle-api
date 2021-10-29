@@ -218,10 +218,7 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
         {
-          channel: 'email',
-          payload: {
-            password: '1234AbcD'
-          }
+          password: '1234AbcD'
         }
       );
       expect(result).toEqual('');
