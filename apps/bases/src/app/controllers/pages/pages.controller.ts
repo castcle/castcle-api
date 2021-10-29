@@ -301,7 +301,7 @@ export class PageController {
     try {
       const page = await this._getOwnPageByIdOrCastcleId(id, req);
       //TODO !!! need guard later on
-      const password = deletePageDto.payload.password;
+      const password = deletePageDto.password;
       const account = await this.authService.getAccountFromCredential(
         req.$credential
       );
