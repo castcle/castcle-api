@@ -52,24 +52,7 @@ export class AppService {
       castcleId: body.castcleId,
       displayName: body.displayName
     };
-    if (body.avatar) {
-      const avatar = await Image.upload(body.avatar as string, {
-        filename: `page-avatar-${body.castcleId}`,
-        addTime: true,
-        sizes: AVARTAR_SIZE_CONFIGS,
-        subpath: `page_${body.castcleId}`
-      });
-      pageModelDto.avatar = avatar.image;
-    }
-    if (body.cover) {
-      const cover = await Image.upload(body.avatar as string, {
-        filename: `page-cover-${body.castcleId}`,
-        addTime: true,
-        sizes: COMMON_SIZE_CONFIGS,
-        subpath: `page_${body.castcleId}`
-      });
-      pageModelDto.avatar = cover.image;
-    }
+
     return pageModelDto;
   }
 }

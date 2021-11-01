@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { CastcleImage } from '.';
 import { UserVerified } from '../schemas/user.schema';
 import { Pagination } from './common.dto';
@@ -197,12 +198,17 @@ class AuthorDto {
 }
 
 export class SaveContentDto {
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   type: 'short' | 'blog' | 'image';
 
+  @IsNotEmpty()
   @ApiProperty()
   payload: ShortPayload | BlogPayload | ImagePayload;
 
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   castcleId: string;
 }
