@@ -771,6 +771,19 @@ export class ContentService {
     user: UserDocument
   ) => {
     const contentIds = contents.map((c) => c._id);
+    return this.getAllEngagementFromContentIdsAndUser(contentIds, user);
+  };
+
+  /**
+   *
+   * @param contentIds
+   * @param user
+   * @returns
+   */
+  getAllEngagementFromContentIdsAndUser = async (
+    contentIds: any[],
+    user: UserDocument
+  ) => {
     return this._engagementModel
       .find({
         targetRef: {

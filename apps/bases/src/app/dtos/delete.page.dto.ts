@@ -22,8 +22,5 @@
  */
 
 export class DeletePageDto {
-  channel: 'email';
-  payload: {
-    password: string;
-  };
+  password: string;
 }

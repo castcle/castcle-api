@@ -140,20 +140,33 @@ export class ContentController {
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const engagements =
+      await this.contentService.getAllEngagementFromContentAndUser(
+        content,
+        user
+      );
     return {
-      payload: content.toContentPayload()
+      payload: content.toContentPayload(engagements)
     } as ContentResponse;
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
   async _getContentIfExist(id: string, req: CredentialRequest) {
-    const content = await this.contentService.getContentFromId(id);
-    if (content) return content;
-    else
+    try {
+      const content = await this.contentService.getContentFromId(id);
+      if (content) return content;
+      else
+        throw new CastcleException(
+          CastcleStatus.REQUEST_URL_NOT_FOUND,
+          req.$language
+        );
+    } catch (e) {
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
         req.$language
       );
+    }
   }
 
   async _checkPermissionForUpdate(

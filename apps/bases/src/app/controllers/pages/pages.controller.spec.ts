@@ -90,8 +90,6 @@ describe('PageController', () => {
   let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   const pageDto: PageDto = {
-    avatar: 'http://placehold.it/100x100',
-    cover: 'http://placehold.it/1500x300',
     displayName: 'Super Page',
     castcleId: 'pageyo'
   };
@@ -218,10 +216,7 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
         {
-          channel: 'email',
-          payload: {
-            password: '1234AbcD'
-          }
+          password: '1234AbcD'
         }
       );
       expect(result).toEqual('');
