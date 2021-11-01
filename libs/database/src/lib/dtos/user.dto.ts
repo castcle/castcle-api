@@ -23,6 +23,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PageVerified, UserVerified } from '../schemas/user.schema';
 import { CastcleImage, Pagination } from './common.dto';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 class UserImage {
   @ApiProperty()
@@ -118,17 +119,15 @@ export class UpdateModelUserDto {
 }
 
 export class PageDto {
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   castcleId: string;
 
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   displayName: string;
-
-  @ApiProperty()
-  avatar?: string;
-
-  @ApiProperty()
-  cover?: string;
 }
 
 export class PageModelDto {
@@ -188,7 +187,7 @@ export class UpdatePageDto {
   displayName?: string;
 
   @ApiProperty()
-  image?: {
+  images?: {
     avatar?: string;
     cover?: string;
   };

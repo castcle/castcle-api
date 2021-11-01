@@ -37,7 +37,7 @@ import {
 } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
-import { VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -60,6 +60,7 @@ async function bootstrap() {
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.useGlobalPipes(new ValidationPipe());
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.node_env}`);
