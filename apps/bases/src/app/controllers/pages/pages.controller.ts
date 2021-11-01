@@ -213,18 +213,20 @@ export class PageController {
     if (!page.profile.socials) page.profile.socials = {};
 
     //TODO !!! performance issue
-    if (body.image && body.image.avatar)
+    if (body.images && body.images.avatar)
       page.profile.images.avatar = (
-        await this._uploadImage(body.image.avatar, {
+        await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
-          sizes: AVARTAR_SIZE_CONFIGS
+          sizes: AVARTAR_SIZE_CONFIGS,
+          subpath: `page_${page.displayId}`
         })
       ).image;
-    if (body.image && body.image.cover)
+    if (body.images && body.images.cover)
       page.profile.images.cover = (
-        await this._uploadImage(body.image.cover, {
+        await this._uploadImage(body.images.cover, {
           filename: `page-cover-${id}`,
-          sizes: COMMON_SIZE_CONFIGS
+          sizes: COMMON_SIZE_CONFIGS,
+          subpath: `page_${page.displayId}`
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;
