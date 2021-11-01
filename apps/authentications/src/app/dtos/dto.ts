@@ -23,19 +23,30 @@
 import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsEmail } from 'class-validator';
 export class GuestLoginDto {
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   deviceUUID: string;
 }
 
 export class CheckEmailExistDto {
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   email: string;
 }
 
 export class LoginDto {
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   username: string;
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   password: string;
 }

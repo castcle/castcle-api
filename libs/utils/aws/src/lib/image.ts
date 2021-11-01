@@ -128,6 +128,7 @@ export class Image {
   }
 
   static async upload(base64: string, options?: ImageUploadOptions) {
+    console.debug('original upload()', options);
     const uploader = new Uploader(
       env.assets_bucket_name ? env.assets_bucket_name : 'testBucketName',
       Configs.IMAGE_BUCKET_FOLDER
@@ -152,6 +153,7 @@ export class Image {
 
     //Multisize opton
     if (options.sizes && options.sizes.length > 0) {
+      console.debug('options', options);
       for (let i = 0; i < options.sizes.length; i++) {
         image[options.sizes[i].name] = await Image.uploadSpecificSizeImage(
           buffer,

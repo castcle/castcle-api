@@ -31,7 +31,7 @@ export const CacheKeyName = {
   },
   LanguagesGet: {
     Name: 'LANGUAGES_GET',
-    Ttl: 3
+    Ttl: 3600
   },
   HashtagsGet: {
     Name: 'HASHTAGS_GET',
@@ -64,5 +64,9 @@ export const CacheKeyName = {
   Users: {
     Name: 'USERS',
     Ttl: 3
+  },
+  Country: {
+    Name: 'COUNTRY',
+    Ttl: 3600
   }
 };

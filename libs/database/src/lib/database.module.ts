@@ -32,6 +32,7 @@ import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
 import { CommentSchemaFactory } from './schemas/comment.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
+import { CountrySchema } from './schemas/country.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
@@ -45,6 +46,7 @@ import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { ContentService } from './services/content.service';
+import { CountryService } from './services/country.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
@@ -60,7 +62,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Language', schema: LanguageSchema },
   { name: 'Hashtag', schema: HashtagSchema },
-  { name: 'AccountAuthenId', schema: AccountAuthenIdSchema }
+  { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
+  { name: 'Country', schema: CountrySchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -122,7 +125,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationProducer,
     LanguageService,
     HashtagService,
-    SearchService
+    SearchService,
+    CountryService
   ],
   exports: [
     AuthenticationService,
@@ -133,7 +137,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     RankerService,
     LanguageService,
     HashtagService,
-    SearchService
+    SearchService,
+    CountryService
   ]
 })
 export class DatabaseModule {}
@@ -147,5 +152,6 @@ export {
   RankerService,
   LanguageService,
   HashtagService,
-  SearchService
+  SearchService,
+  CountryService
 };

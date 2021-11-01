@@ -88,8 +88,6 @@ describe('CommentController', () => {
   let userCredentialRequest: any;
   let rootCommentId: any;
   const pageDto: PageDto = {
-    avatar: 'http://placehold.it/100x100',
-    cover: 'http://placehold.it/1500x300',
     displayName: 'Super Page',
     castcleId: 'pageyo'
   };

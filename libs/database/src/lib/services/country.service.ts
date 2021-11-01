@@ -20,39 +20,45 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import {
-  PageDto,
-  PageModelDto,
-  UpdatePageDto
-} from '@castcle-api/database/dtos';
-import { Configs } from '@castcle-api/environments';
-import { Password } from '@castcle-api/utils';
-import {
-  Image,
-  COMMON_SIZE_CONFIGS,
-  AVARTAR_SIZE_CONFIGS
-} from '@castcle-api/utils/aws';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import {
+  CastcleQueryOptions,
+  CountryPayloadDto,
+  DEFAULT_COUNTRY_QUERY_OPTIONS
+} from '../dtos';
+import { CountryDocument } from '../schemas/country.schema';
 
 @Injectable()
-export class AppService {
-  getData(): { message: string } {
-    return { message: 'Welcome to bases!' };
+export class CountryService {
+  constructor(
+    @InjectModel('Country') public _countryModel: Model<CountryDocument>
+  ) {}
+
+  /**
+   * get all data from country Document
+   *
+   * @returns {CountryDocument[]} return all country Document
+   */
+  async getAll(options: CastcleQueryOptions = DEFAULT_COUNTRY_QUERY_OPTIONS) {
+    console.log(options);
+    let query = this._countryModel.find();
+    if (options.sortBy.type === 'desc') {
+      query = query.sort(`-${options.sortBy.field}`);
+    } else {
+      query = query.sort(`${options.sortBy.field}`);
+    }
+    return query.exec();
   }
 
   /**
-   *
-   * @param body
-   * @returns
+   * create new country
+   * @param {CountryPayloadDto} country country payload
+   * @returns {CountryDocument} return new country document
    */
-  async uploadPage(body: PageDto): Promise<PageModelDto> {
-    const pageModelDto: PageModelDto = {
-      castcleId: body.castcleId,
-      displayName: body.displayName
-    };
-
-    return pageModelDto;
+  async create(country: CountryPayloadDto) {
+    const createResult = await new this._countryModel(country).save();
+    return createResult;
   }
 }
