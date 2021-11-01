@@ -23,50 +23,46 @@
 export const CacheKeyName = {
   NotificationsGet: {
     Name: 'NOTIFICATIONS_GET',
-    Ttl: 30
+    Ttl: 3
   },
   NotificationsBadges: {
     Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 30
+    Ttl: 3
   },
   LanguagesGet: {
     Name: 'LANGUAGES_GET',
-    Ttl: 3600
+    Ttl: 3
   },
   HashtagsGet: {
     Name: 'HASHTAGS_GET',
-    Ttl: 300
+    Ttl: 3
   },
   TopTrends: {
     Name: 'TOPTRENDS',
-    Ttl: 60
+    Ttl: 3
   },
   Searches: {
     Name: 'SEARCHES',
-    Ttl: 60
+    Ttl: 3
   },
   Pages: {
     Name: 'PAGES',
-    Ttl: 300
+    Ttl: 3
   },
   Feeds: {
     Name: 'FEEDS',
-    Ttl: 30
+    Ttl: 3
   },
   Contents: {
     Name: 'CONTENTS',
-    Ttl: 300
+    Ttl: 3
   },
   Comments: {
     Name: 'COMMENTS',
-    Ttl: 300
+    Ttl: 3
   },
   Users: {
     Name: 'USERS',
-    Ttl: 300
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 3600
+    Ttl: 3
   }
 };
