@@ -26,6 +26,7 @@ import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { MetadataController } from './app.controller';
 import { AppService } from './app.service';
+import { CountryController } from './controllers/country/country.controller';
 import { HashtagsController } from './controllers/hashtags/hashtags.controller';
 import { HealthyController } from './controllers/healthy/healthy.controller';
 import { LanguagesController } from './controllers/languages/languages.controller';
@@ -36,7 +37,8 @@ import { LanguagesController } from './controllers/languages/languages.controlle
     MetadataController,
     HealthyController,
     LanguagesController,
-    HashtagsController
+    HashtagsController,
+    CountryController
   ],
   providers: [AppService]
 })

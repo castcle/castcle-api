@@ -21,12 +21,12 @@
  * or have any questions.
  */
 import {
+  CastcleImage,
   CastcleQueryOptions,
+  CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  Pagination,
-  CastcleQueueAction,
-  CastcleImage
+  Pagination
 } from './common.dto';
 import {
   BlogPayload,
@@ -40,6 +40,11 @@ import {
   ShortPayload,
   Url
 } from './content.dto';
+import {
+  CountryPayloadDto,
+  CountryResponse,
+  DEFAULT_COUNTRY_QUERY_OPTIONS
+} from './country.dto';
 import {
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedItemMode,
@@ -140,5 +145,8 @@ export {
   CastcleImage,
   UpdateModelUserDto,
   PageModelDto,
-  Url
+  Url,
+  CountryPayloadDto,
+  CountryResponse,
+  DEFAULT_COUNTRY_QUERY_OPTIONS
 };
