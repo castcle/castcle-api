@@ -295,13 +295,13 @@ describe('AppController', () => {
       });
 
       const result = await appController.follow(
-        mocks[1].user._id,
+        mocks[0].user.displayId,
         {
           $credential: mocks[0].credential,
           $language: 'th'
         } as any,
         {
-          targetCastcleId: mocks[0].user.displayId
+          targetCastcleId: mocks[1].user._id
         }
       );
     });

@@ -213,18 +213,20 @@ export class PageController {
     if (!page.profile.socials) page.profile.socials = {};
 
     //TODO !!! performance issue
-    if (body.avatar)
+    if (body.images && body.images.avatar)
       page.profile.images.avatar = (
-        await this._uploadImage(body.avatar, {
+        await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
-          sizes: AVARTAR_SIZE_CONFIGS
+          sizes: AVARTAR_SIZE_CONFIGS,
+          subpath: `page_${page.displayId}`
         })
       ).image;
-    if (body.cover)
+    if (body.images && body.images.cover)
       page.profile.images.cover = (
-        await this._uploadImage(body.cover, {
+        await this._uploadImage(body.images.cover, {
           filename: `page-cover-${id}`,
-          sizes: COMMON_SIZE_CONFIGS
+          sizes: COMMON_SIZE_CONFIGS,
+          subpath: `page_${page.displayId}`
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;
@@ -301,7 +303,7 @@ export class PageController {
     try {
       const page = await this._getOwnPageByIdOrCastcleId(id, req);
       //TODO !!! need guard later on
-      const password = deletePageDto.payload.password;
+      const password = deletePageDto.password;
       const account = await this.authService.getAccountFromCredential(
         req.$credential
       );

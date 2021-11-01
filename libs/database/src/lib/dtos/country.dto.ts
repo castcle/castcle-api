@@ -20,40 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Account, AccountDocument } from './account.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from './accountAuthenId.schema';
-import { Comment, CommentDocument } from './comment.schema';
-import { Content, ContentDocument } from './content.schema';
-import { CountryDocument } from './country.schema';
-import {
-  Credential,
-  CredentialDocument,
-  CredentialModel
-} from './credential.schema';
-import { HashtagDocument } from './hashtag.schema';
-import { LanguageDocument } from './language.schema';
-import { NotificationDocument } from './notification.schema';
-import { User, UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  Credential,
-  HashtagDocument,
-  AccountAuthenIdType,
-  AccountAuthenIdDocument,
-  CountryDocument
-};
+
+import { ApiProperty } from '@nestjs/swagger';
+import { CastcleQueryOptions } from './common.dto';
+
+export class CountryPayloadDto {
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  dialCode: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  flag: string;
+}
+
+export class CountryResponse {
+  @ApiProperty({ type: CountryPayloadDto, isArray: true })
+  payload: CountryPayloadDto[];
+}
+
+export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
+  sortBy: {
+    field: 'name',
+    type: 'asc'
+  }
+} as CastcleQueryOptions;
