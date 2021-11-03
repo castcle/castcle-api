@@ -40,7 +40,8 @@ export class Otp extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
+    index: true
   })
   account: Account;
 

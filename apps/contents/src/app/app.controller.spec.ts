@@ -91,8 +91,6 @@ describe('ContentController', () => {
   let userCredential: CredentialDocument;
   let user: UserDocument;
   const pageDto: PageDto = {
-    avatar: 'http://placehold.it/100x100',
-    cover: 'http://placehold.it/1500x300',
     displayName: 'Super Page',
     castcleId: 'pageyo'
   };
@@ -276,6 +274,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
+      console.debug('createResult', result.payload.author);
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {
