@@ -22,7 +22,12 @@
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
-import { CredentialDocument } from '@castcle-api/database/schemas';
+import {
+  AccountDocument,
+  CredentialDocument,
+  OtpDocument,
+  OtpObjective
+} from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
@@ -33,15 +38,23 @@ import {
   FacebookUserInfo,
   TelegramClient,
   TelegramUserInfo,
+  TwillioChannel,
+  TwillioClient,
   TwitterAccessToken,
   TwitterClient,
   TwitterUserData
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
-import { SocialConnect, SocialConnectInfo, TokenResponse } from './dtos/dto';
+import {
+  ForgotPasswordRequestOtpDto,
+  SocialConnect,
+  SocialConnectInfo,
+  TokenResponse
+} from './dtos/dto';
 /*
  * TODO: !!!
  */
@@ -63,7 +76,8 @@ export class AppService {
     private download: Downloader,
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
-    private userService: UserService
+    private userService: UserService,
+    private twillioClient: TwillioClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -323,5 +337,88 @@ export class AppService {
       profile: user,
       pages: pages
     };
+  }
+
+  /**
+   * password request Otp
+   * @param {ForgotPasswordRequestOtpDto} request
+   * @param {CredentialRequest} credentiial
+   * @returns {OtpDocument} Opt data
+   */
+  async forgotPasswordOTP(
+    request: ForgotPasswordRequestOtpDto,
+    credentiial: CredentialRequest
+  ) {
+    let account: AccountDocument = null;
+    let otp: OtpDocument = null;
+    switch (request.channel) {
+      case TwillioChannel.Email: {
+        account = await this.authService.getAccountFromEmail(
+          request.payload.email
+        );
+        if (!account)
+          throw new CastcleException(
+            CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+            credentiial.$language
+          );
+
+        otp = await this.passwordRequestOtp(
+          account.email,
+          account,
+          TwillioChannel.Email
+        );
+        break;
+      }
+      case TwillioChannel.Mobile: {
+        const mobile =
+          request.payload.mobileNumber.charAt(0) === '0'
+            ? request.payload.mobileNumber.slice(1)
+            : request.payload.mobileNumber;
+        account = await this.authService.getAccountFromMobile(
+          mobile,
+          request.payload.countryCode
+        );
+        if (!account)
+          throw new CastcleException(
+            CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+            credentiial.$language
+          );
+
+        otp = await this.passwordRequestOtp(
+          account.mobile.countryCode + account.mobile.number,
+          account,
+          TwillioChannel.Mobile
+        );
+        break;
+      }
+      default: {
+        throw new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentiial.$language
+        );
+        break;
+      }
+    }
+    return otp;
+  }
+
+  /**
+   * password request Otp
+   * @param {string} reciever
+   * @param {AccountDocument} account
+   * @param {TwillioChannel} account
+   * @returns {OtpDocument} Opt data
+   */
+  async passwordRequestOtp(
+    reciever: string,
+    account: AccountDocument,
+    channel: TwillioChannel
+  ): Promise<OtpDocument> {
+    const otp = await this.authService.generateOtp(
+      account,
+      OtpObjective.ForgotPassword
+    );
+    await this.twillioClient.requestOtp(reciever, channel);
+    return otp;
   }
 }

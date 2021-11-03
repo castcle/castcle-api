@@ -35,6 +35,7 @@ import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   TelegramClient,
+  TwillioClient,
   TwitterClient
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -45,13 +46,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { LoginResponse, TokenResponse } from './dtos/dto';
 import {
   DownloaderMock,
   FacebookClientMock,
   TelegramClientMock,
+  TwillioClientMock,
   TwitterClientMock
-} from './social.client.mock';
+} from './client.mock';
+import { LoginResponse, TokenResponse } from './dtos/dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -101,6 +103,10 @@ describe('AppController', () => {
       provide: TwitterClient,
       useClass: TwitterClientMock
     };
+    const TwillioClientProvider = {
+      provide: TwillioClient,
+      useClass: TwillioClientMock
+    };
 
     app = await Test.createTestingModule({
       imports: [
@@ -118,6 +124,7 @@ describe('AppController', () => {
         DownloaderProvider,
         TelegramClientProvider,
         TwitterClientProvider,
+        TwillioClientProvider,
         UserService,
         ContentService
       ]

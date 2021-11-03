@@ -291,6 +291,7 @@ describe('Authentication Service', () => {
         expect(resultCredential).toBeNull();
       });
     });
+
     describe('#getCredentialFromRefreshToken()', () => {
       it('should return credential with newly create Account refresh token', async () => {
         const resultCredential = await service.getCredentialFromRefreshToken(
@@ -301,6 +302,7 @@ describe('Authentication Service', () => {
         );
       });
     });
+
     describe('#getCredentialFromAccessToken()', () => {
       it('should return credential with newly create Account refresh token', async () => {
         const resultCredential = await service.getCredentialFromAccessToken(
@@ -311,6 +313,7 @@ describe('Authentication Service', () => {
         );
       });
     });
+
     describe('#getAccountFromEmail()', () => {
       it('should return null for non exist email in account', async () => {
         const testEmail = 'yotest@gmail.com';
@@ -334,6 +337,7 @@ describe('Authentication Service', () => {
         expect(result._id).toEqual(newAccountResult._id);
       });
     });
+
     describe('#getUserFromId()', () => {
       it('should return null if non id is exist in user', async () => {
         const result = await service.getUserFromCastcleId('notFoundId');
@@ -354,6 +358,7 @@ describe('Authentication Service', () => {
         expect(result.displayName).toEqual(newUser.displayName);
       });
     });
+
     describe('#createAccountActivation()', () => {
       it('should create account activation with verification token', async () => {
         const accountActivation = await service.createAccountActivation(
@@ -365,6 +370,7 @@ describe('Authentication Service', () => {
         expect(accountActivation.verifyTokenExpireDate).toBeDefined();
       });
     });
+
     describe('#signupByEmail()', () => {
       let signupResult: AccountActivationDocument;
       let afterSaveAccount: AccountDocument;
@@ -406,6 +412,7 @@ describe('Authentication Service', () => {
         expect(signupResult).toBeDefined();
       });
     });
+
     describe('#verifyAccount()', () => {
       let accountActivation: AccountActivationDocument;
       let beforeVerifyAccount;
@@ -447,6 +454,7 @@ describe('Authentication Service', () => {
         expect(afterAccountActivation.activationDate).toBeDefined();
       });
     });
+
     describe('#revokeAccountActivation()', () => {
       it('should update revocation date and verifyToken after called()', async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
@@ -469,6 +477,7 @@ describe('Authentication Service', () => {
         expect(newActivation.revocationDate).toBeDefined();
       });
     });
+
     describe('#linkCredentialToAccount()', () => {
       it('should remove old account from credential and change it to new Account', async () => {
         const randomAcc = await service.createAccount({
@@ -497,6 +506,7 @@ describe('Authentication Service', () => {
         });
       });
     });
+
     describe('#suggestCastcleId()', () => {
       it('should suggest a name', async () => {
         const suggestName = await service.suggestCastcleId('Hello Friend');
@@ -612,6 +622,33 @@ describe('Authentication Service', () => {
         expect(accountSocialFb.socialId).toEqual(fbsocialId);
         expect(accountSocialTw.socialId).toEqual(twsocialId);
         expect(accountSocialTw.socialToken).toEqual('testtoken');
+      });
+    });
+
+    describe('#getAccountFromMobile()', () => {
+      it('should return null for non exist mobile in account', async () => {
+        const result = await service.getAccountFromMobile('812342336', '+66');
+        expect(result).toBeNull();
+      });
+      it('should found an account that have email match', async () => {
+        const newlyInsertEmail = `${Math.ceil(
+          Math.random() * 1000
+        )}@testinsert.com`;
+        const newAccount = new service._accountModel({
+          email: newlyInsertEmail,
+          password: 'sompop234@Hello',
+          mobile: {
+            countryCode: '+66',
+            number: '0817896767'
+          },
+          isGuest: true,
+          preferences: {
+            langagues: ['en', 'en']
+          }
+        });
+        const newAccountResult = await newAccount.save();
+        const result = await service.getAccountFromMobile('817896767', '+66');
+        expect(result._id).toEqual(newAccountResult._id);
       });
     });
   });

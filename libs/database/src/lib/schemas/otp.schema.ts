@@ -30,7 +30,9 @@ import { Account } from './account.schema';
 import { Password } from '@castcle-api/utils';
 
 export enum OtpObjective {
-  ChangePassword = 'changepassword'
+  ChangePassword = 'changepassword',
+  ForgotPassword = 'forgotpassword',
+  VerifyForgotPassword = 'verify-forgotpassword'
 }
 
 export type OtpDocument = Otp & IOtp;

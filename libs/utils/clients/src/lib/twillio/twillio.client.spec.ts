@@ -20,43 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Account, AccountDocument } from './account.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from './accountAuthenId.schema';
-import { Comment, CommentDocument } from './comment.schema';
-import { Content, ContentDocument } from './content.schema';
-import { CountryDocument } from './country.schema';
-import {
-  Credential,
-  CredentialDocument,
-  CredentialModel
-} from './credential.schema';
-import { HashtagDocument } from './hashtag.schema';
-import { LanguageDocument } from './language.schema';
-import { NotificationDocument } from './notification.schema';
-import { OtpDocument, OtpObjective } from './otp.schema';
-import { User, UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  Credential,
-  HashtagDocument,
-  AccountAuthenIdType,
-  AccountAuthenIdDocument,
-  CountryDocument,
-  OtpObjective,
-  OtpDocument
-};
+import { HttpModule } from '@nestjs/axios';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TwillioClient } from './twillio.client';
+
+describe('TwillioClient', () => {
+  let service: TwillioClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TwillioClient],
+      imports: [HttpModule]
+    }).compile();
+
+    service = module.get<TwillioClient>(TwillioClient);
+  });
+
+  it('TwillioClient - should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});

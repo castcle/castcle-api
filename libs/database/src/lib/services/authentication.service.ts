@@ -229,6 +229,15 @@ export class AuthenticationService {
       .findOne({ email: email, visibility: EntityVisibility.Publish })
       .exec();
 
+  getAccountFromMobile = (mobileNo: string, countryCode: string) =>
+    this._accountModel
+      .findOne({
+        'mobile.countryCode': countryCode,
+        'mobile.number': new RegExp(`${mobileNo}`),
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
   getUserFromCastcleId = (id: string) => {
     return this._userModel
       .findOne({
@@ -350,11 +359,8 @@ export class AuthenticationService {
    * @param {AccountDocument} account
    * @returns {OtpDocument}
    */
-  async generateOtp(account: AccountDocument) {
-    const otp = await this._otpModel.generate(
-      account._id,
-      OtpObjective.ChangePassword
-    );
+  async generateOtp(account: AccountDocument, objective: OtpObjective) {
+    const otp = await this._otpModel.generate(account._id, objective);
     return otp;
   }
 

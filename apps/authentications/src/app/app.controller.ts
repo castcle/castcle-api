@@ -22,7 +22,10 @@
  */
 import { CommonDate } from '@castcle-api/commonDate';
 import { AuthenticationService } from '@castcle-api/database';
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+import {
+  AccountAuthenIdType,
+  OtpObjective
+} from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
@@ -60,6 +63,8 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
+  ForgotPasswordRequestOtpDto,
+  ForgotPasswordResponse,
   GuestLoginDto,
   LoginDto,
   LoginResponse,
@@ -535,6 +540,30 @@ export class AuthenticationController {
     };
   }*/
 
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: TokenResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('forgotPasswordRequestOTP')
+  @HttpCode(200)
+  async forgotPasswordRequestOTP(
+    @Body() body: ForgotPasswordRequestOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    const otp = await this.appService.forgotPasswordOTP(body, req);
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
+  }
+
   @Get()
   getData() {
     const dt = new CommonDate();
@@ -610,7 +639,10 @@ export class AuthenticationController {
     //add password checker
     this.appService.validatePassword(password, req.$language);
     if (account.verifyPassword(password)) {
-      const otp = await this.authService.generateOtp(account);
+      const otp = await this.authService.generateOtp(
+        account,
+        OtpObjective.ChangePassword
+      );
       return {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
