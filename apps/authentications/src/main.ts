@@ -36,7 +36,7 @@ import {
 } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
-import { VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
 
 async function bootstrap() {
@@ -59,7 +59,11 @@ async function bootstrap() {
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-
+  //TODO !!! social login need to add class validator  to use this
+  /*app.useGlobalPipes(new ValidationPipe({
+    forbidUnknownValues:true
+  }));*/
+  app.useGlobalPipes(new ValidationPipe());
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.node_env}`);
