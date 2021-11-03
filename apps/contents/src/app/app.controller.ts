@@ -109,19 +109,27 @@ export class ContentController {
     const user = await this.authService.getUserFromCastcleId(body.castcleId);
     if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
       const newBody = await this.appService.uploadContentToS3(body, user);
-      console.log('uploadedBody', newBody);
+      console.debug('user', user);
+      console.debug('uploadedBody', newBody);
       const content = await this.contentService.createContentFromUser(
         user,
         newBody
       );
+      console.debug('content', content);
       //TODO !!! need to remove after done feed
       this.contentProducer.sendMessage({
         action: CastcleQueueAction.CreateFeedItemToEveryOne,
         id: content._id
       });
-      return {
+      console.debug('test', content.toContentPayload());
+      console.debug('contentAfterToContent', content);
+      const payloadResponse = {
         payload: content.toContentPayload()
-      } as ContentResponse;
+      };
+      console.debug('payloadResponse', payloadResponse);
+      console.debug('payloadResponse', payloadResponse.payload);
+
+      return payloadResponse;
     } else {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,

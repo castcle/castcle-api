@@ -274,6 +274,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
+      console.debug('createResult', result.payload.author);
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {

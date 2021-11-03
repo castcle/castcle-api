@@ -29,10 +29,20 @@ import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class Relationship extends CastcleBase {
-  @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  })
   user: User;
 
-  @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  })
   followedUser: User;
 
   //TODO !!! might need to change to embed followedUser and user instead

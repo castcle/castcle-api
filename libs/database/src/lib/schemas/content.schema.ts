@@ -102,6 +102,7 @@ interface IContent extends Document {
 }
 
 export const signContentPayload = (payload: ContentPayloadDto) => {
+  console.debug('signContentPayload', payload.author.avatar);
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
@@ -131,7 +132,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
 };
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
-
+ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =
   | {
       [key: string]: boolean;
@@ -191,8 +192,8 @@ export const ContentSchemaFactory = (
   ) {
     const payload = {
       id: (this as ContentDocument)._id,
-      author: (this as ContentDocument).author,
-      payload: (this as ContentDocument).payload,
+      author: { ...(this as ContentDocument).author },
+      payload: { ...(this as ContentDocument).payload },
       createAt: (this as ContentDocument).createdAt.toISOString(),
       updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
@@ -225,8 +226,8 @@ export const ContentSchemaFactory = (
     //Todo Need to implement recast quote cast later on
     const payload = {
       id: (this as ContentDocument)._id,
-      author: (this as ContentDocument).author,
-      payload: (this as ContentDocument).payload,
+      author: { ...(this as ContentDocument).author },
+      payload: { ...(this as ContentDocument).payload },
       createAt: (this as ContentDocument).createdAt.toISOString(),
       updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,

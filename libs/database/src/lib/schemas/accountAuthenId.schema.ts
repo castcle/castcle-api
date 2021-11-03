@@ -42,14 +42,17 @@ export class AccountAuthenId extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
+    index: true
   })
   account: Account;
 
   @Prop({ required: true })
   type: string;
 
-  @Prop()
+  @Prop({
+    unique: true
+  })
   socialId: string;
 
   @Prop()

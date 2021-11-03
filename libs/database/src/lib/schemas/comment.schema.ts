@@ -75,7 +75,7 @@ interface IComment extends Document {
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
-
+CommentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 export const CommentSchemaFactory = (
   revisionModel: Model<RevisionDocument>,
   contentModel: Model<ContentDocument>
