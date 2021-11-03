@@ -81,22 +81,9 @@ import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
+import { CastcleController } from '@castcle-api/utils/decorators';
 
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
-  required: true
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
-})
-@Controller({
-  version: '1.0'
-})
+@CastcleController('1.0')
 export class AuthenticationController {
   constructor(
     private readonly appService: AppService,
@@ -122,13 +109,20 @@ export class AuthenticationController {
   @HttpCode(200)
   async checkEmailExists(
     @Req() req: HeadersRequest,
-    @Body('email') email: string
+    @Body() payloadCheckEmailExistDto: CheckEmailExistDto
   ) {
     //if there is no email in the request and email is not valid (not email )
-    if (!(email && this.authService.validateEmail(email)))
+    if (
+      !(
+        payloadCheckEmailExistDto.email &&
+        this.authService.validateEmail(payloadCheckEmailExistDto.email)
+      )
+    )
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     try {
-      const account = await this.authService.getAccountFromEmail(email);
+      const account = await this.authService.getAccountFromEmail(
+        payloadCheckEmailExistDto.email
+      );
       return {
         message: 'success message',
         payload: {

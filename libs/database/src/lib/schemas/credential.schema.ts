@@ -44,10 +44,10 @@ export class Credential extends CastcleBase {
   })
   account: Account;
 
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   accessToken: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   refreshToken: string;
 
   @Prop({ required: true })
