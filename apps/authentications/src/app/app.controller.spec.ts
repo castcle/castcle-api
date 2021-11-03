@@ -266,7 +266,9 @@ describe('AppController', () => {
       const testEmail = 'sompop@castcle.com';
       let response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        testEmail
+        {
+          email: testEmail
+        }
       );
       expect(response.payload.exist).toBe(false);
       const result = await service.createAccount({
@@ -279,7 +281,9 @@ describe('AppController', () => {
       await result.accountDocument.save();
       response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        testEmail
+        {
+          email: testEmail
+        }
       );
       expect(response.payload.exist).toBe(true);
     });
@@ -334,7 +338,7 @@ describe('AppController', () => {
       expect(result.payload.exist).toBe(false);
       let response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        registerEmail
+        { email: registerEmail }
       );
       expect(response.payload.exist).toBe(false);
       guestResult = await appController.guestLogin(
@@ -373,7 +377,7 @@ describe('AppController', () => {
       expect(result.payload.exist).toBe(true);
       response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        registerEmail
+        { email: registerEmail }
       );
       expect(response.payload.exist).toBe(true);
 
