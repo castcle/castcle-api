@@ -45,7 +45,9 @@ interface ICredential {
 
 @Schema({ timestamps: true })
 export class Account extends CastcleBase {
-  @Prop()
+  @Prop({
+    index: true
+  })
   email: string;
 
   @Prop()

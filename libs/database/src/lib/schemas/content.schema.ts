@@ -132,7 +132,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
 };
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
-
+ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =
   | {
       [key: string]: boolean;

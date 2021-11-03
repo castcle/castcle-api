@@ -31,7 +31,7 @@ export type HashtagDocument = Hashtag & IHashtag;
 
 @Schema({ timestamps: true })
 export class Hashtag extends CastcleBase {
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   tag: string;
 
   @Prop({ required: true })
