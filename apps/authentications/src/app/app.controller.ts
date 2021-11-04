@@ -23,7 +23,6 @@
 import { CommonDate } from '@castcle-api/commonDate';
 import { AuthenticationService } from '@castcle-api/database';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
-import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -304,7 +303,7 @@ export class AuthenticationController {
       if (!this.authService.validateEmail(body.payload.email))
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
       //check if castcleId Exist
-      const user = await this.authService.getUserFromCastcleId(
+      const user = await this.authService.getExistedUserFromCastcleId(
         body.payload.castcleId
       );
       //validate password
@@ -496,7 +495,9 @@ export class AuthenticationController {
   @Post('checkCastcleIdExists')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const user = await this.authService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
     return {
       message: 'success message',
       payload: {
