@@ -188,6 +188,8 @@ export class ContentPayloadDto {
   createAt: string;
   @ApiProperty()
   updateAt: string;
+
+  isSign?: boolean;
 }
 
 class AuthorDto {
