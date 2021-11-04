@@ -22,16 +22,16 @@
  */
 
 import {
-  SortByPipe,
-  LimitPipe,
-  PagePipe,
-  ContentTypePipe,
-  LIMIT_MAX
-} from './query.pipe';
-import {
-  DEFAULT_QUERY_OPTIONS,
-  DEFAULT_CONTENT_QUERY_OPTIONS
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS
 } from '@castcle-api/database/dtos';
+import {
+  ContentTypePipe,
+  LimitPipe,
+  LIMIT_MAX,
+  PagePipe,
+  SortByPipe
+} from './query.pipe';
 
 describe('SortByPipe', () => {
   let pipe: SortByPipe;
@@ -48,12 +48,6 @@ describe('SortByPipe', () => {
     const ascResult = pipe.transform('asc(test)');
     expect(ascResult.type).toEqual('asc');
     expect(ascResult.field).toEqual('test');
-  });
-  it(`should return default (${JSON.stringify(
-    DEFAULT_QUERY_OPTIONS.sortBy
-  )}) when the format is wrong`, () => {
-    const wrongFormatResult = pipe.transform('yo(hello)');
-    expect(wrongFormatResult).toEqual(DEFAULT_QUERY_OPTIONS.sortBy);
   });
 });
 
