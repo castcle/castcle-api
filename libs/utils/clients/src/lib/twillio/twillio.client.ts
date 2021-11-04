@@ -39,14 +39,14 @@ export class TwillioClient {
   );
 
   async requestOtp(receiver: string, channel: TwillioChannel) {
-    this.client.verify
+    return this.client.verify
       .services(Environment.twilio_otp_sid)
       .verifications.create({
         to: receiver,
         channel: channel
       })
       .then((verification) => {
-        console.log(verification);
+        return verification;
       })
       .catch((error) => {
         throw new Error(error);
@@ -54,11 +54,11 @@ export class TwillioClient {
   }
 
   async verifyOtp(receiver: string, otp: string) {
-    this.client.verify
+    return this.client.verify
       .services(Environment.twilio_otp_sid)
       .verificationChecks.create({ to: receiver, code: otp })
       .then((verification) => {
-        console.log(verification);
+        return verification;
       })
       .catch((error) => {
         throw new Error(error);
