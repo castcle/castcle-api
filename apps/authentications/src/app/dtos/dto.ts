@@ -93,7 +93,6 @@ class RegisterPayload {
 }
 
 export class RegisterByEmailDto {
-  @IsEmail()
   @IsString()
   @IsNotEmpty()
   @ApiProperty()

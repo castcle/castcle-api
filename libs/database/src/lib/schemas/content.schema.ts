@@ -102,15 +102,20 @@ interface IContent extends Document {
 }
 
 export const signContentPayload = (payload: ContentPayloadDto) => {
-  console.debug('signContentPayload', payload.author.avatar);
+  console.debug('signContentPayload', JSON.stringify(payload));
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
     ).map((url: CastcleImage) => {
-      return new Image(url).toSignUrls();
+      if (!url['isSign']) return new Image(url).toSignUrls();
+      else return url;
     });
   }
-  if (payload.payload.photo && (payload.payload as BlogPayload).photo.cover) {
+  if (
+    payload.payload.photo &&
+    (payload.payload as BlogPayload).photo.cover &&
+    !((payload.payload as BlogPayload).photo.cover as CastcleImage)['isSign']
+  ) {
     (payload.payload as BlogPayload).photo.cover = new Image(
       (payload.payload as BlogPayload).photo.cover as CastcleImage
     ).toSignUrls();
@@ -119,7 +124,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
     (payload.payload as BlogPayload).link = (
       payload.payload as BlogPayload
     ).link.map((item) => {
-      if (item.image) {
+      if (item.image && !item.image['isSign']) {
         item.image = new Image(item.image as CastcleImage).toSignUrls();
       }
       return item;
@@ -128,6 +133,8 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
+  payload.isSign = true;
+  console.debug('afterSign', JSON.stringify(payload));
   return payload;
 };
 
