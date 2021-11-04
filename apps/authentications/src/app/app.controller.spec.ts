@@ -1343,4 +1343,147 @@ describe('AppController', () => {
       expect(token.oauthToken).toBeDefined;
     });
   });
+
+  describe('forgotPasswordRequestOTP', () => {
+    let credentialGuest = null;
+    let guestResult = null;
+    const emailTest = 'test.opt@gmail.com';
+    const countryCodeTest = '+66';
+    const numberTest = '0817896767';
+    beforeAll(async () => {
+      const testId = 'registerId34';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompop12341';
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'testLang'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: testId,
+            displayName: 'abc',
+            email: emailTest,
+            password: password
+          }
+        }
+      );
+      const acc = await service.getAccountFromCredential(credentialGuest);
+      await service._accountModel
+        .updateOne(
+          { _id: acc.id },
+          { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
+        )
+        .exec();
+    });
+
+    it('should reset password via mobile successful', async () => {
+      const result = await appController.forgotPasswordRequestOTP(
+        {
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should reset password via email successful', async () => {
+      const result = await appController.forgotPasswordRequestOTP(
+        {
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should return Exception when get wrong channel', async () => {
+      await expect(
+        appController.forgotPasswordRequestOTP(
+          {
+            channel: 'test',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+      );
+    });
+
+    it('should return Exception when get empty account', async () => {
+      await expect(
+        appController.forgotPasswordRequestOTP(
+          {
+            channel: 'mobile',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
+
+      await expect(
+        appController.forgotPasswordRequestOTP(
+          {
+            channel: 'email',
+            payload: {
+              email: '',
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
+    });
+  });
 });

@@ -352,7 +352,8 @@ export class AppService {
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
     switch (request.channel) {
-      case TwillioChannel.Email: {
+      case 'email': {
+        this.logger.log('Get Account from eamil');
         account = await this.authService.getAccountFromEmail(
           request.payload.email
         );
@@ -362,6 +363,7 @@ export class AppService {
             credentiial.$language
           );
 
+        this.logger.log('Create OTP');
         otp = await this.passwordRequestOtp(
           account.email,
           account,
@@ -369,21 +371,29 @@ export class AppService {
         );
         break;
       }
-      case TwillioChannel.Mobile: {
+      case 'mobile': {
         const mobile =
           request.payload.mobileNumber.charAt(0) === '0'
             ? request.payload.mobileNumber.slice(1)
             : request.payload.mobileNumber;
+        this.logger.log('Get Account from mobile');
         account = await this.authService.getAccountFromMobile(
           mobile,
           request.payload.countryCode
         );
-        if (!account)
+        if (!account) {
+          this.logger.error(
+            'Can not get Account from mobile :' +
+              request.payload.countryCode +
+              mobile
+          );
           throw new CastcleException(
             CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
             credentiial.$language
           );
+        }
 
+        this.logger.log('Create OTP');
         otp = await this.passwordRequestOtp(
           account.mobile.countryCode + account.mobile.number,
           account,
@@ -414,10 +424,12 @@ export class AppService {
     account: AccountDocument,
     channel: TwillioChannel
   ): Promise<OtpDocument> {
+    this.logger.log('Generate Ref Code');
     const otp = await this.authService.generateOtp(
       account,
       OtpObjective.ForgotPassword
     );
+    this.logger.log('Send Otp');
     await this.twillioClient.requestOtp(reciever, channel);
     return otp;
   }

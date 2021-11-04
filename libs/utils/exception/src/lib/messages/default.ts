@@ -79,7 +79,7 @@ export const ErrorMessages = {
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'password ไม่ถูกต้อง'
+    message: 'payload กับ channel ไม่ตรงกัน'
   },
   '3006': {
     statusCode: '400',

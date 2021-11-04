@@ -26,9 +26,9 @@ import {
   AccountAuthenIdType,
   OtpObjective
 } from '@castcle-api/database/schemas';
-import { Configs } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -39,7 +39,6 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
-  Controller,
   Get,
   HttpCode,
   Post,
@@ -81,7 +80,6 @@ import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
-import { CastcleController } from '@castcle-api/utils/decorators';
 
 @CastcleController('1.0')
 export class AuthenticationController {
@@ -546,6 +544,7 @@ export class AuthenticationController {
     @Body() body: ForgotPasswordRequestOtpDto,
     @Req() req: CredentialRequest
   ) {
+    this.logger.log('Start forgot password OPT channel : ' + body.channel);
     const otp = await this.appService.forgotPasswordOTP(body, req);
     if (otp && otp.isValid()) {
       const response: ForgotPasswordResponse = {
