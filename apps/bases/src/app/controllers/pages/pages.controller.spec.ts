@@ -93,6 +93,10 @@ describe('PageController', () => {
     displayName: 'Super Page',
     castcleId: 'pageyo'
   };
+  const pageDto2: PageDto = {
+    displayName: 'Super Page2',
+    castcleId: 'pageyo2'
+  };
   beforeAll(async () => {
     app = await Test.createTestingModule({
       imports: [
@@ -146,9 +150,7 @@ describe('PageController', () => {
       .spyOn(appService, 'uploadPage')
       .mockImplementation(async (body: PageDto) => {
         return {
-          ...body,
-          avatar: Configs.DefaultAvatarImages,
-          cover: Configs.DefaultAvatarCovers
+          ...body
         };
       });
     userCredential = result.credentialDocument;
@@ -230,10 +232,10 @@ describe('PageController', () => {
     it('should be able to get page from user ID', async () => {
       const newPageResponse = await pageController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto
+        pageDto2
       );
       const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
+        pageDto2.castcleId
       );
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
@@ -243,18 +245,18 @@ describe('PageController', () => {
     });
     it('should be able to get page from CastcleId', async () => {
       const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
+        pageDto2.castcleId
       );
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto.castcleId
+        pageDto2.castcleId
       );
       expect(getResult).toEqual(testPage.toPageResponse());
     });
   });
   describe('getPageContents', () => {
     it('should return ContentsReponse that contain all contain that create by this page', async () => {
-      const page = await authService.getUserFromCastcleId(pageDto.castcleId);
+      const page = await authService.getUserFromCastcleId(pageDto2.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
           type: ContentType.Short,

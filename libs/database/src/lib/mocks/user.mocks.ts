@@ -61,12 +61,6 @@ const _generatePageDto = (pagePerAccountAmount: number) => {
   const pageDtos: PageModelDto[] = [];
   for (let i = 0; i < pagePerAccountAmount; i++) {
     pageDtos[i] = {
-      avatar: {
-        original: '/testBase64'
-      },
-      cover: {
-        original: '/testCover64'
-      },
       castcleId: `page-${i}-${new Date().getTime()}`,
       displayName: `Page-${i}`
     };

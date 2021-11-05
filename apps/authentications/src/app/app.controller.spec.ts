@@ -441,12 +441,6 @@ describe('AppController', () => {
         credentialGuest
       );
       const page = await userService.createPageFromUser(currentUser, {
-        avatar: {
-          original: 'http://placehold.it/200x200'
-        },
-        cover: {
-          original: 'http://placehold.it/200x200'
-        },
         displayName: 'new Page',
         castcleId: 'npop2'
       });
