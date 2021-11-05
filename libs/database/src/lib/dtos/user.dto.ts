@@ -133,8 +133,6 @@ export class PageDto {
 export class PageModelDto {
   castcleId: string;
   displayName: string;
-  avatar?: CastcleImage;
-  cover?: CastcleImage;
 }
 
 export class PageResponseDto {

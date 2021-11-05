@@ -175,7 +175,7 @@ export class PageController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     console.debug('create body', body);
     //check if page name exist
-    const namingResult = await this.authService.getUserFromCastcleId(
+    const namingResult = await this.authService.getExistedUserFromCastcleId(
       body.castcleId
     );
     if (namingResult)
