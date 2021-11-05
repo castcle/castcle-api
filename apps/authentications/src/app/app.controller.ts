@@ -540,12 +540,12 @@ export class AuthenticationController {
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')
   @HttpCode(200)
-  async forgotPasswordRequestOTP(
+  async forgotPasswordRequestOtp(
     @Body() body: ForgotPasswordRequestOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log('Start forgot password OPT channel : ' + body.channel);
-    const otp = await this.appService.forgotPasswordOTP(body, req);
+    const otp = await this.appService.forgotPasswordOtp(body, req);
     if (otp && otp.isValid()) {
       const response: ForgotPasswordResponse = {
         refCode: otp.refCode,

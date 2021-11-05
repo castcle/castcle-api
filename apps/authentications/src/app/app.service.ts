@@ -345,7 +345,7 @@ export class AppService {
    * @param {CredentialRequest} credentiial
    * @returns {OtpDocument} Opt data
    */
-  async forgotPasswordOTP(
+  async forgotPasswordOtp(
     request: ForgotPasswordRequestOtpDto,
     credentiial: CredentialRequest
   ) {
@@ -363,7 +363,7 @@ export class AppService {
             credentiial.$language
           );
 
-        this.logger.log('Create OTP');
+        this.logger.log('Create Otp');
         otp = await this.passwordRequestOtp(
           account.email,
           account,
@@ -393,7 +393,7 @@ export class AppService {
           );
         }
 
-        this.logger.log('Create OTP');
+        this.logger.log('Create Otp');
         otp = await this.passwordRequestOtp(
           account.mobile.countryCode + account.mobile.number,
           account,

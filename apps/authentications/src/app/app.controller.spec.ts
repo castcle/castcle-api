@@ -1387,7 +1387,7 @@ describe('AppController', () => {
     });
 
     it('should reset password via mobile successful', async () => {
-      const result = await appController.forgotPasswordRequestOTP(
+      const result = await appController.forgotPasswordRequestOtp(
         {
           channel: 'mobile',
           payload: {
@@ -1405,7 +1405,7 @@ describe('AppController', () => {
     });
 
     it('should reset password via email successful', async () => {
-      const result = await appController.forgotPasswordRequestOTP(
+      const result = await appController.forgotPasswordRequestOtp(
         {
           channel: 'email',
           payload: {
@@ -1424,7 +1424,7 @@ describe('AppController', () => {
 
     it('should return Exception when get wrong channel', async () => {
       await expect(
-        appController.forgotPasswordRequestOTP(
+        appController.forgotPasswordRequestOtp(
           {
             channel: 'test',
             payload: {
@@ -1446,7 +1446,7 @@ describe('AppController', () => {
 
     it('should return Exception when get empty account', async () => {
       await expect(
-        appController.forgotPasswordRequestOTP(
+        appController.forgotPasswordRequestOtp(
           {
             channel: 'mobile',
             payload: {
@@ -1466,7 +1466,7 @@ describe('AppController', () => {
       );
 
       await expect(
-        appController.forgotPasswordRequestOTP(
+        appController.forgotPasswordRequestOtp(
           {
             channel: 'email',
             payload: {
