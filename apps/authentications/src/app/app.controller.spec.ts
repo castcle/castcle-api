@@ -1480,4 +1480,211 @@ describe('AppController', () => {
       );
     });
   });
+
+  describe('forgotPasswordVerificationOTP', () => {
+    let credentialGuest = null;
+    let guestResult = null;
+    const emailTest = 'testverify@gmail.com';
+    const countryCodeTest = '+66';
+    const numberTest = '0817896888';
+    beforeAll(async () => {
+      const testId = 'verify01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'verifyuuid';
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: testId,
+            displayName: 'abc',
+            email: emailTest,
+            password: password
+          }
+        }
+      );
+      const acc = await service.getAccountFromCredential(credentialGuest);
+      await service._accountModel
+        .updateOne(
+          { _id: acc.id },
+          { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
+        )
+        .exec();
+    });
+
+    it('should pass verify otp mobile channel', async () => {
+      const otpCode = await appController.forgotPasswordRequestOtp(
+        {
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      const result = await appController.forgotPasswordVerificationOtp(
+        {
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          },
+          refCode: otpCode.refCode,
+          otp: '123456'
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should pass verify otp email channel', async () => {
+      const otpCode = await appController.forgotPasswordRequestOtp(
+        {
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        },
+        credentialGuest
+      );
+
+      const result = await appController.forgotPasswordVerificationOtp(
+        {
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: ''
+          },
+          refCode: otpCode.refCode,
+          otp: '123456'
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should return Exception when get wrong channel', async () => {
+      await expect(
+        appController.forgotPasswordVerificationOtp(
+          {
+            channel: 'test',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            },
+            refCode: '67845676',
+            otp: '123456'
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+      );
+    });
+
+    it('should return Exception when get empty account', async () => {
+      await expect(
+        appController.forgotPasswordVerificationOtp(
+          {
+            channel: 'mobile',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            },
+            refCode: '67845676',
+            otp: '123456'
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
+
+      await expect(
+        appController.forgotPasswordVerificationOtp(
+          {
+            channel: 'email',
+            payload: {
+              email: '',
+              countryCode: '',
+              mobileNumber: ''
+            },
+            refCode: '67845676',
+            otp: '123456'
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
+    });
+
+    it('should return Exception when imvalid otp', async () => {
+      const otpCode = await appController.forgotPasswordRequestOtp(
+        {
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      await expect(
+        appController.forgotPasswordVerificationOtp(
+          {
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: otpCode.refCode,
+            otp: '000000'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.INVALID_OTP, 'th'));
+    });
+  });
 });

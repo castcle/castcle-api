@@ -51,6 +51,7 @@ import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ForgotPasswordRequestOtpDto,
+  ForgotPasswordVerificationOtpDto,
   SocialConnect,
   SocialConnectInfo,
   TokenResponse
@@ -339,6 +340,12 @@ export class AppService {
     };
   }
 
+  /**
+   * get and validate account from email
+   * @param {string} email
+   * @param {string} lang
+   * @returns {AccountDocument} account document
+   */
   async getAccountFromEmail(email: string, lang: string) {
     this.logger.log('Get Account from eamil');
     const account = await this.authService.getAccountFromEmail(email);
@@ -348,6 +355,13 @@ export class AppService {
     return account;
   }
 
+  /**
+   * get and validate account from mobile
+   * @param {string} mobileNumber
+   * @param {string} countryCode
+   * @param {string} lang
+   * @returns {AccountDocument} account document
+   */
   async getAccountFromMobile(
     mobileNumber: string,
     countryCode: string,
@@ -371,7 +385,7 @@ export class AppService {
   }
 
   /**
-   * password request Otp
+   * forgot password request Otp
    * @param {ForgotPasswordRequestOtpDto} request
    * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
@@ -417,7 +431,6 @@ export class AppService {
           CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
           credential.$language
         );
-        break;
       }
     }
     return otp;
@@ -445,61 +458,64 @@ export class AppService {
     return otp;
   }
 
-  // async forgotPasswordVerificationOtp() {
-  //   const bb = await this.authService.getOtpFromAccount(acc);
-  // }
+  /**
+   * forgot password verify Otp
+   * @param {ForgotPasswordVerificationOtpDto} request
+   * @param {CredentialRequest} credential
+   * @returns {OtpDocument} Opt data
+   */
+  async forgotPasswordVerificationOtp(
+    request: ForgotPasswordVerificationOtpDto,
+    credential: CredentialRequest
+  ) {
+    let account: AccountDocument = null;
+    let receiver = '';
+    switch (request.channel) {
+      case 'email': {
+        account = await this.getAccountFromEmail(
+          request.payload.email,
+          credential.$language
+        );
+        receiver = account.email;
+        break;
+      }
+      case 'mobile': {
+        account = await this.getAccountFromMobile(
+          request.payload.mobileNumber,
+          request.payload.countryCode,
+          credential.$language
+        );
+        receiver = account.mobile.countryCode + account.mobile.number;
 
-  //   /**
-  //  * find refCode that has the same refCode and
-  //  * @param {AccountDocument} account
-  //  * @param {string} refCode
-  //  * @returns {OtpDocument}
-  //  */
-  //    async getOtpFromAccount(account: AccountDocument, refCode: string) {
-  //     return this._otpModel
-  //       .findOne({ account: account._id, refCode: refCode })
-  //       .exec();
-  //   }
+        break;
+      }
+      default: {
+        throw new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credential.$language
+        );
+      }
+    }
 
-  // /**
-  //  * forgot password vefication OTP
-  //  * @param {string} channel
-  //  * @param {AccountDocument} account
-  //  * @param {string} refCode
-  //  * @param {string} otp
-  //  */
-  //  async forgotPasswordVerificationOtp(
-  //   channel: string,
-  //   account: AccountDocument,
-  //   refCode: string,
-  //   otp: string
-  // ): Promise<OtpDocument> {
-  //   let receiver = '';
-  //   const bb = await this.authService.
-  //   // const otpObj = await this._otpModel
-  //   //   .findOne({
-  //   //     account: account,
-  //   //     refCode: refCode,
-  //   //     action: OtpObjective.ForgotPassword
-  //   //   })
-  //   //   .exec();
-  //   if (otp && otp.isValid()) {
-  //     if (channel == 'mobile') {
-  //       receiver = await MobileNumber.getMobileNumberWithCountyrCode(
-  //         account.mobile.countryCode,
-  //         account.mobile.number
-  //       );
-  //     } else {
-  //       receiver = account.email;
-  //     }
-  //     await TwilioService.verifyOtp(receiver, otp);
-  //     const newOtp = await this._otpModel.generate(
-  //       account._id,
-  //       OtpObjective.VerifyForgotPassword
-  //     );
-  //     return newOtp;
-  //   } else {
-  //     throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
-  //   }
-  // }
+    const otp = await this.authService.getOtpFromAccount(
+      account,
+      request.refCode
+    );
+
+    if (otp && otp.isValid()) {
+      const verifyOtpResult = await this.twillioClient.verifyOtp(
+        receiver,
+        request.otp
+      );
+      if (verifyOtpResult.status !== 'approved')
+        throw new CastcleException(CastcleStatus.INVALID_OTP);
+      // const newOtp = await this._otpModel.generate(
+      //   account._id,
+      //   OtpObjective.VerifyForgotPassword
+      // );
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP);
+    }
+    return otp;
+  }
 }
