@@ -702,6 +702,7 @@ describe('User Service', () => {
         const preComment = await contentService.getCommentById(
           testLikeComment._id
         );
+        console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
         expect(
           (await preComment.toCommentPayload(contentService._commentModel)).like

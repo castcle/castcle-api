@@ -39,11 +39,16 @@ import {
   SortByPipe
 } from '@castcle-api/utils/pipes';
 import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';
+import { ContentService, UserService } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 
 @CastcleController('1.0')
 export class FeedController {
-  constructor(private rankerService: RankerService) {}
+  constructor(
+    private rankerService: RankerService,
+    private contentService: ContentService,
+    private userService: UserService
+  ) {}
   private readonly logger = new CastLogger(
     FeedController.name,
     CastLoggerOptions
@@ -111,6 +116,28 @@ export class FeedController {
         }
       );
       console.debug('rankerFeeds', feedItemsResult);
+      if (!account.isGuest) {
+        const user = await this.userService.getUserFromCredential(
+          req.$credential
+        );
+        const contentIds = feedItemsResult.items.map((item) => item.content.id);
+        const allContentsEngagements =
+          await this.contentService.getAllEngagementFromContentIdsAndUser(
+            contentIds,
+            user
+          );
+        return {
+          payload: feedItemsResult.items.map((t) => {
+            const engagements = allContentsEngagements.filter(
+              (c) => c.targetRef.$id === t.content.id
+            );
+            return t.toFeedItemPayload(engagements);
+          }),
+          pagination: feedItemsResult.pagination
+        } as FeedsResponse;
+      }
+
+      //
       return {
         payload: feedItemsResult.items.map((t) => t.toFeedItemPayload()),
         pagination: feedItemsResult.pagination
