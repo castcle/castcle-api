@@ -517,25 +517,62 @@ export class AuthenticationController {
       expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
   }
+*/
 
-  @Post('verificationOTP')
-  @HttpCode(204)
-  verificationOTP() {
-    return '';
-  }
-
-  @Post('forgotPasswordRequestOTP')
-  forgotPasswordRequestOTP() {
-    return {
-      refCode: 'xxxxxxxx', // 8 หลัก
-      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
-    };
-  }*/
+  // @ApiBearerAuth()
+  // @ApiResponse({
+  //   status: 200,
+  //   type: ForgotPasswordResponse
+  // })
+  // @UseInterceptors(CredentialInterceptor)
+  // @Post('forgotPasswordVerificationOTP')
+  // @HttpCode(200)
+  // async forgotPasswordVerificationOTP(
+  //   @Body() body: ForgotPasswordVerificationOtpDto,
+  //   @Req() req: CredentialRequest
+  // ) {
+  //   let account: AccountDocument = null;
+  //   if (body.channel === 'email') {
+  //     account = await this.authService.getAccountFromEmail(body.payload.email);
+  //   } else if (body.channel === 'mobile') {
+  //     // TODO !!! wait findAccountByMobileNumber
+  //     // account = await this.authService.getAccountFromMobileNo(
+  //     //   body.payload.countryCode,
+  //     //   body.payload.mobileNumber
+  //     // );
+  //   } else {
+  //     throw new CastcleException(
+  //       CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+  //       req.$language
+  //     );
+  //   }
+  //   if (!account.$isValid) {
+  //     throw new CastcleException(
+  //       CastcleStatus.INVALID_EMAIL_OR_PASSWORD,
+  //       req.$language
+  //     );
+  //   }
+  //   const otp = await this.authService.forgotPasswordVerificationOtp(
+  //     body.channel,
+  //     account,
+  //     body.refCode,
+  //     body.otp
+  //   );
+  //   if (otp && otp.isValid()) {
+  //     const response: ForgotPasswordResponse = {
+  //       refCode: otp.refCode,
+  //       expiresTime: otp.expireDate.toISOString()
+  //     };
+  //     return response;
+  //   } else {
+  //     throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+  //   }
+  // }
 
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: TokenResponse
+    type: ForgotPasswordResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')

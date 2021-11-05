@@ -339,29 +339,55 @@ export class AppService {
     };
   }
 
+  async getAccountFromEmail(email: string, lang: string) {
+    this.logger.log('Get Account from eamil');
+    const account = await this.authService.getAccountFromEmail(email);
+    if (!account)
+      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
+
+    return account;
+  }
+
+  async getAccountFromMobile(
+    mobileNumber: string,
+    countryCode: string,
+    lang: string
+  ) {
+    const mobile =
+      mobileNumber.charAt(0) === '0' ? mobileNumber.slice(1) : mobileNumber;
+    this.logger.log('Get Account from mobile');
+    const account = await this.authService.getAccountFromMobile(
+      mobile,
+      countryCode
+    );
+    if (!account) {
+      this.logger.error(
+        'Can not get Account from mobile : ' + countryCode + mobile
+      );
+      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
+    }
+
+    return account;
+  }
+
   /**
    * password request Otp
    * @param {ForgotPasswordRequestOtpDto} request
-   * @param {CredentialRequest} credentiial
+   * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
    */
   async forgotPasswordOTP(
     request: ForgotPasswordRequestOtpDto,
-    credentiial: CredentialRequest
+    credential: CredentialRequest
   ) {
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
     switch (request.channel) {
       case 'email': {
-        this.logger.log('Get Account from eamil');
-        account = await this.authService.getAccountFromEmail(
-          request.payload.email
+        account = await this.getAccountFromEmail(
+          request.payload.email,
+          credential.$language
         );
-        if (!account)
-          throw new CastcleException(
-            CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
-            credentiial.$language
-          );
 
         this.logger.log('Create OTP');
         otp = await this.passwordRequestOtp(
@@ -372,27 +398,11 @@ export class AppService {
         break;
       }
       case 'mobile': {
-        const mobile =
-          request.payload.mobileNumber.charAt(0) === '0'
-            ? request.payload.mobileNumber.slice(1)
-            : request.payload.mobileNumber;
-        this.logger.log('Get Account from mobile');
-        account = await this.authService.getAccountFromMobile(
-          mobile,
-          request.payload.countryCode
+        account = await this.getAccountFromMobile(
+          request.payload.mobileNumber,
+          request.payload.countryCode,
+          credential.$language
         );
-        if (!account) {
-          this.logger.error(
-            'Can not get Account from mobile :' +
-              request.payload.countryCode +
-              mobile
-          );
-          throw new CastcleException(
-            CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
-            credentiial.$language
-          );
-        }
-
         this.logger.log('Create OTP');
         otp = await this.passwordRequestOtp(
           account.mobile.countryCode + account.mobile.number,
@@ -404,7 +414,7 @@ export class AppService {
       default: {
         throw new CastcleException(
           CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-          credentiial.$language
+          credential.$language
         );
         break;
       }
@@ -433,4 +443,62 @@ export class AppService {
     await this.twillioClient.requestOtp(reciever, channel);
     return otp;
   }
+
+  // async forgotPasswordVerificationOtp() {
+  //   const bb = await this.authService.getOtpFromAccount(acc);
+  // }
+
+  //   /**
+  //  * find refCode that has the same refCode and
+  //  * @param {AccountDocument} account
+  //  * @param {string} refCode
+  //  * @returns {OtpDocument}
+  //  */
+  //    async getOtpFromAccount(account: AccountDocument, refCode: string) {
+  //     return this._otpModel
+  //       .findOne({ account: account._id, refCode: refCode })
+  //       .exec();
+  //   }
+
+  // /**
+  //  * forgot password vefication OTP
+  //  * @param {string} channel
+  //  * @param {AccountDocument} account
+  //  * @param {string} refCode
+  //  * @param {string} otp
+  //  */
+  //  async forgotPasswordVerificationOtp(
+  //   channel: string,
+  //   account: AccountDocument,
+  //   refCode: string,
+  //   otp: string
+  // ): Promise<OtpDocument> {
+  //   let receiver = '';
+  //   const bb = await this.authService.
+  //   // const otpObj = await this._otpModel
+  //   //   .findOne({
+  //   //     account: account,
+  //   //     refCode: refCode,
+  //   //     action: OtpObjective.ForgotPassword
+  //   //   })
+  //   //   .exec();
+  //   if (otp && otp.isValid()) {
+  //     if (channel == 'mobile') {
+  //       receiver = await MobileNumber.getMobileNumberWithCountyrCode(
+  //         account.mobile.countryCode,
+  //         account.mobile.number
+  //       );
+  //     } else {
+  //       receiver = account.email;
+  //     }
+  //     await TwilioService.verifyOtp(receiver, otp);
+  //     const newOtp = await this._otpModel.generate(
+  //       account._id,
+  //       OtpObjective.VerifyForgotPassword
+  //     );
+  //     return newOtp;
+  //   } else {
+  //     throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
+  //   }
+  // }
 }
