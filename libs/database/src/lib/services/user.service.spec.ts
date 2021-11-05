@@ -236,12 +236,6 @@ describe('User Service', () => {
         result.credentialDocument
       );
       const page = await service.createPageFromUser(currentUser, {
-        avatar: {
-          original: 'http://placehold.it/200x200'
-        },
-        cover: {
-          original: 'http://placehold.it/200x200'
-        },
         displayName: 'new Page',
         castcleId: 'npop'
       });
@@ -258,12 +252,6 @@ describe('User Service', () => {
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
       const page = await service.createPageFromUser(currentUser, {
-        avatar: {
-          original: 'http://placehold.it/200x200'
-        },
-        cover: {
-          original: 'http://placehold.it/200x200'
-        },
         displayName: 'new Page',
         castcleId: 'npop2'
       });

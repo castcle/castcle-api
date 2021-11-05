@@ -238,6 +238,24 @@ export class AuthenticationService {
       })
       .exec();
 
+  /**
+   *  For check if account is existed
+   * @param {string} id
+   * @returns {UserDocument}
+   */
+  getExistedUserFromCastcleId = (id: string) => {
+    return this._userModel
+      .findOne({
+        displayId: { $regex: new RegExp('^' + id.toLowerCase() + '$', 'i') }
+      })
+      .exec();
+  };
+
+  /**
+   * Get user
+   * @param {string} id
+   * @returns {UserDocument}
+   */
   getUserFromCastcleId = (id: string) => {
     return this._userModel
       .findOne({

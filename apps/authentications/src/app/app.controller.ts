@@ -307,7 +307,7 @@ export class AuthenticationController {
       if (!this.authService.validateEmail(body.payload.email))
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
       //check if castcleId Exist
-      const user = await this.authService.getUserFromCastcleId(
+      const user = await this.authService.getExistedUserFromCastcleId(
         body.payload.castcleId
       );
       //validate password
@@ -499,7 +499,9 @@ export class AuthenticationController {
   @Post('checkCastcleIdExists')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const user = await this.authService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
     return {
       message: 'success message',
       payload: {
@@ -577,12 +579,12 @@ export class AuthenticationController {
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')
   @HttpCode(200)
-  async forgotPasswordRequestOTP(
+  async forgotPasswordRequestOtp(
     @Body() body: ForgotPasswordRequestOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log('Start forgot password OPT channel : ' + body.channel);
-    const otp = await this.appService.forgotPasswordOTP(body, req);
+    const otp = await this.appService.forgotPasswordOtp(body, req);
     if (otp && otp.isValid()) {
       const response: ForgotPasswordResponse = {
         refCode: otp.refCode,

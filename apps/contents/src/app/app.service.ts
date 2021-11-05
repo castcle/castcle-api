@@ -76,12 +76,11 @@ export class AppService {
         (body.payload.photo.contents as Url[]).map(async (item) => {
           console.debug('uploading----');
           console.debug(item);
-          const image = await Image.upload(item.image, {
+          return Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
             subpath: `contents/${uploader._id}`
-          });
-          return image.image;
+          }).then((r) => r.image);
         })
       );
       body.payload.photo.contents = newContents;
