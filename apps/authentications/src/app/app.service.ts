@@ -342,12 +342,12 @@ export class AppService {
   /**
    * password request Otp
    * @param {ForgotPasswordRequestOtpDto} request
-   * @param {CredentialRequest} credentiial
+   * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
    */
   async forgotPasswordOtp(
     request: ForgotPasswordRequestOtpDto,
-    credentiial: CredentialRequest
+    credential: CredentialRequest
   ) {
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
@@ -360,7 +360,7 @@ export class AppService {
         if (!account)
           throw new CastcleException(
             CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
-            credentiial.$language
+            credential.$language
           );
 
         this.logger.log('Create Otp');
@@ -389,7 +389,7 @@ export class AppService {
           );
           throw new CastcleException(
             CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
-            credentiial.$language
+            credential.$language
           );
         }
 
@@ -404,7 +404,7 @@ export class AppService {
       default: {
         throw new CastcleException(
           CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-          credentiial.$language
+          credential.$language
         );
         break;
       }
