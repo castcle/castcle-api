@@ -55,8 +55,6 @@ export class SortByPipe implements PipeTransform {
             : SortByEnum.Asc,
         field: sortByResult[2]
       };
-    } else {
-      return DEFAULT_QUERY_OPTIONS.sortBy;
     }
   }
 }
