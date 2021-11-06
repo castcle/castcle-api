@@ -102,14 +102,20 @@ interface IContent extends Document {
 }
 
 export const signContentPayload = (payload: ContentPayloadDto) => {
+  console.debug('signContentPayload', JSON.stringify(payload));
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
     ).map((url: CastcleImage) => {
-      return new Image(url).toSignUrls();
+      if (!url['isSign']) return new Image(url).toSignUrls();
+      else return url;
     });
   }
-  if (payload.payload.photo && (payload.payload as BlogPayload).photo.cover) {
+  if (
+    payload.payload.photo &&
+    (payload.payload as BlogPayload).photo.cover &&
+    !((payload.payload as BlogPayload).photo.cover as CastcleImage)['isSign']
+  ) {
     (payload.payload as BlogPayload).photo.cover = new Image(
       (payload.payload as BlogPayload).photo.cover as CastcleImage
     ).toSignUrls();
@@ -118,7 +124,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
     (payload.payload as BlogPayload).link = (
       payload.payload as BlogPayload
     ).link.map((item) => {
-      if (item.image) {
+      if (item.image && !item.image['isSign']) {
         item.image = new Image(item.image as CastcleImage).toSignUrls();
       }
       return item;
@@ -127,11 +133,13 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
+  payload.isSign = true;
+  console.debug('afterSign', JSON.stringify(payload));
   return payload;
 };
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
-
+ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =
   | {
       [key: string]: boolean;
@@ -191,8 +199,8 @@ export const ContentSchemaFactory = (
   ) {
     const payload = {
       id: (this as ContentDocument)._id,
-      author: (this as ContentDocument).author,
-      payload: (this as ContentDocument).payload,
+      author: { ...(this as ContentDocument).author },
+      payload: { ...(this as ContentDocument).payload },
       createAt: (this as ContentDocument).createdAt.toISOString(),
       updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
@@ -225,8 +233,8 @@ export const ContentSchemaFactory = (
     //Todo Need to implement recast quote cast later on
     const payload = {
       id: (this as ContentDocument)._id,
-      author: (this as ContentDocument).author,
-      payload: (this as ContentDocument).payload,
+      author: { ...(this as ContentDocument).author },
+      payload: { ...(this as ContentDocument).payload },
       createAt: (this as ContentDocument).createdAt.toISOString(),
       updateAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,

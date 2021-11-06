@@ -82,7 +82,8 @@ export class User extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
+    index: true
   })
   ownerAccount: Account;
 
@@ -93,7 +94,7 @@ export class User extends CastcleBase {
   @Prop({ required: true })
   displayName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   displayId: string;
 
   @Prop({ type: Object })
