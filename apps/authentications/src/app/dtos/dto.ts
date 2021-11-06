@@ -93,13 +93,18 @@ class RegisterPayload {
 }
 
 export class RegisterByEmailDto {
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   channel: 'email';
+  @IsNotEmpty()
   @ApiProperty()
   payload: RegisterPayload;
 }
 
 export class CheckIdExistDto {
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
   castcleId: string;
 }

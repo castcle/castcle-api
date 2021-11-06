@@ -46,7 +46,8 @@ export class Notification extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'User',
+    index: true
   })
   sourceUserId: User;
 
@@ -62,7 +63,8 @@ export class Notification extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Credential'
+    ref: 'Credential',
+    index: true
   })
   credential: Credential;
 }

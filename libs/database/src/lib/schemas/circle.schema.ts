@@ -34,7 +34,7 @@ export type CircleDocument = Circle & Document;
 
 @Schema({ timestamps: true })
 export class Circle extends CastcleBase {
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   slug: string;
 
   @Prop({ required: true })
