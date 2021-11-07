@@ -538,15 +538,15 @@ export class AuthenticationController {
       'Start forgot password OPT Verify channel : ' + body.channel
     );
     const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
-    // if (otp && otp.isValid()) {
-    const response: ForgotPasswordResponse = {
-      refCode: otp.refCode,
-      expiresTime: otp.expireDate.toISOString()
-    };
-    return response;
-    // } else {
-    //   throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
-    // }
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
   }
 
   @ApiBearerAuth()

@@ -509,10 +509,13 @@ export class AppService {
       );
       if (verifyOtpResult.status !== 'approved')
         throw new CastcleException(CastcleStatus.INVALID_OTP);
-      // const newOtp = await this._otpModel.generate(
-      //   account._id,
-      //   OtpObjective.VerifyForgotPassword
-      // );
+
+      await otp.delete();
+      const newOtp = await this.authService.generateOtp(
+        account,
+        OtpObjective.VerifyForgotPassword
+      );
+      return newOtp;
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP);
     }
