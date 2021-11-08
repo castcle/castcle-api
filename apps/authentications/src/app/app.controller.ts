@@ -511,17 +511,6 @@ export class AuthenticationController {
     } as CheckingResponse;
   }
 
-  // PLAN : !!!
-  /* @Post('requestOTP')
-  requestOTP() {
-    return {
-      refCode: 'xxxxxxxx', // 8 หลัก
-      objective: 'mergeAccount',
-      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
-    };
-  }
-*/
-
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
@@ -572,6 +561,23 @@ export class AuthenticationController {
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
+  }
+
+  @ApiBearerAuth()
+  @ApiBody({
+    type: ChangePasswordBody
+  })
+  @ApiResponse({
+    status: 204
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('resetPasswordSubmit')
+  @HttpCode(200)
+  async resetPasswordSubmit(
+    @Body() body: ChangePasswordBody,
+    @Req() req: CredentialRequest
+  ) {
+    return this.appService.resetPassword(body, req);
   }
 
   @Get()
@@ -675,21 +681,7 @@ export class AuthenticationController {
     @Body('newPassword') newPassword: string,
     @Req() req: CredentialRequest
   ) {
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
-    this.appService.validatePassword(newPassword, req.$language);
-    const otp = await this.authService.getOtpFromAccount(account, refCode);
-    if (otp && otp.isValid()) {
-      //change password
-      const result = await this.authService.changePassword(
-        account,
-        otp,
-        newPassword
-      );
-      return '';
-    } else
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+    return this.appService.resetPassword({ refCode, newPassword }, req);
   }
 
   @ApiBearerAuth()

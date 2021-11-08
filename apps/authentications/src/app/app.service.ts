@@ -50,6 +50,7 @@ import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
 import {
+  ChangePasswordBody,
   ForgotPasswordRequestOtpDto,
   ForgotPasswordVerificationOtpDto,
   SocialConnect,
@@ -427,6 +428,7 @@ export class AppService {
         break;
       }
       default: {
+        this.logger.error(`Forgot password channel mismatch.`);
         throw new CastcleException(
           CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
           credential.$language
@@ -490,6 +492,7 @@ export class AppService {
         break;
       }
       default: {
+        this.logger.error(`Verify password channel mismatch.`);
         throw new CastcleException(
           CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
           credential.$language
@@ -510,8 +513,10 @@ export class AppService {
         request.otp
       );
       this.logger.log('Twillio result : ' + verifyOtpResult.status);
-      if (verifyOtpResult.status !== 'approved')
+      if (verifyOtpResult.status !== 'approved') {
+        this.logger.error(`Invalid Otp.`);
         throw new CastcleException(CastcleStatus.INVALID_OTP);
+      }
 
       this.logger.log('delete old otp');
       await otp.delete();
@@ -523,8 +528,40 @@ export class AppService {
       );
       return newOtp;
     } else {
+      this.logger.error(`Otp expired.`);
       throw new CastcleException(CastcleStatus.EXPIRED_OTP);
     }
-    return otp;
+  }
+
+  /**
+   * reset password
+   * @param {ChangePasswordBody} data
+   * @param {CredentialRequest} credential
+   * @returns {string} empty string
+   */
+  async resetPassword(data: ChangePasswordBody, credential: CredentialRequest) {
+    this.logger.log('Get account from credential');
+    const account = await this.authService.getAccountFromCredential(
+      credential.$credential
+    );
+    this.logger.log('Validate password');
+    this.validatePassword(data.newPassword, credential.$language);
+    this.logger.log('Get otp document');
+    const otp = await this.authService.getOtpFromAccount(account, data.refCode);
+    if (otp && otp.isValid()) {
+      this.logger.log('Change password');
+      const result = await this.authService.changePassword(
+        account,
+        otp,
+        data.newPassword
+      );
+      return '';
+    } else {
+      this.logger.error(`Invalid Ref Code`);
+      throw new CastcleException(
+        CastcleStatus.INVLAID_REFCODE,
+        credential.$language
+      );
+    }
   }
 }
