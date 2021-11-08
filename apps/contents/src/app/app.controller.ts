@@ -67,6 +67,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
+import { ContentLikeBody } from '../dtos/content.dto';
 
 @CastcleController('1.0')
 @Controller()
@@ -146,6 +147,7 @@ export class ContentController {
         content,
         user
       );
+    console.debug('engagements', engagements);
     return {
       payload: content.toContentPayload(engagements)
     } as ContentResponse;
@@ -276,6 +278,9 @@ export class ContentController {
 
   @ApiResponse({
     status: 204
+  })
+  @ApiBody({
+    type: ContentLikeBody
   })
   @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
