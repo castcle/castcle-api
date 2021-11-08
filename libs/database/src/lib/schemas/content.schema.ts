@@ -138,11 +138,15 @@ export const signContentPayload = (
   console.debug('----SIGN CONTENT---');
   console.debug(payload);
   for (const key in engagementNameMap) {
+    console.debug(key, engagementNameMap[key], engagements);
     const findEngagement = engagements
       ? engagements.find((engagement) => engagement.type === key)
       : null;
+    console.debug(findEngagement);
     payload[engagementNameMap[key]][engagementNameMap[key]] = findEngagement
       ? true
+      : payload[engagementNameMap[key]][engagementNameMap[key]]
+      ? payload[engagementNameMap[key]][engagementNameMap[key]]
       : false;
   }
   console.debug('signContentPayload', JSON.stringify(payload));
