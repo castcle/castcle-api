@@ -28,19 +28,31 @@ import * as Twilio from 'twilio';
 import { TwillioChannel } from './twillio.message';
 @Injectable()
 export class TwillioClient {
+  private readonly env = {
+    twilioAccountSid: Environment.twilio_account_sid
+      ? Environment.twilio_account_sid
+      : 'ACd501e',
+    twilioAuthToken: Environment.twilio_auth_token
+      ? Environment.twilio_auth_token
+      : 'secrect',
+    twilioOtpSid: Environment.twilio_otp_sid
+      ? Environment.twilio_otp_sid
+      : 'VA356353'
+  };
+
   private readonly logger = new CastLogger(
     TwillioClient.name,
     CastLoggerOptions
   );
 
   private readonly client = new Twilio.Twilio(
-    Environment.twilio_account_sid,
-    Environment.twilio_auth_token
+    this.env.twilioAccountSid,
+    this.env.twilioAuthToken
   );
 
   async requestOtp(receiver: string, channel: TwillioChannel) {
     return this.client.verify
-      .services(Environment.twilio_otp_sid)
+      .services(this.env.twilioOtpSid)
       .verifications.create({
         to: receiver,
         channel: channel
@@ -55,7 +67,7 @@ export class TwillioClient {
 
   async verifyOtp(receiver: string, otp: string) {
     return this.client.verify
-      .services(Environment.twilio_otp_sid)
+      .services(this.env.twilioOtpSid)
       .verificationChecks.create({ to: receiver, code: otp })
       .then((verification) => {
         return verification;
