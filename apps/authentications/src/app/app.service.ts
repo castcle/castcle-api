@@ -497,20 +497,26 @@ export class AppService {
       }
     }
 
+    this.logger.log('Get Account from OTP');
     const otp = await this.authService.getOtpFromAccount(
       account,
       request.refCode
     );
 
     if (otp && otp.isValid()) {
+      this.logger.log('Verify otp with twillio');
       const verifyOtpResult = await this.twillioClient.verifyOtp(
         receiver,
         request.otp
       );
+      this.logger.log('Twillio result : ' + verifyOtpResult.status);
       if (verifyOtpResult.status !== 'approved')
         throw new CastcleException(CastcleStatus.INVALID_OTP);
 
+      this.logger.log('delete old otp');
       await otp.delete();
+
+      this.logger.log('generate new otp');
       const newOtp = await this.authService.generateOtp(
         account,
         OtpObjective.VerifyForgotPassword
