@@ -53,6 +53,36 @@ export interface QuotePayload {
   content: string;
 }
 
+const engagementNameMap = {
+  like: 'liked',
+  comment: 'commented',
+  quote: 'quoteCast',
+  recast: 'recasted'
+};
+
+/**
+ * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
+ * @param doc
+ * @param engagementType
+ * @param userId
+ * @returns
+ */
+const getEngagementObject = (
+  doc: ContentDocument,
+  engagementType: EngagementType,
+  isEngage: boolean
+) => {
+  //get owner relate enagement
+  const engagementObject: ContentEngagement = {
+    count: doc.engagements[engagementType]
+      ? doc.engagements[engagementType].count
+      : 0,
+    participant: []
+  };
+  engagementObject[engagementNameMap[engagementType]] = isEngage;
+  return engagementObject;
+};
+
 export type ContentDocument = Content & IContent;
 
 @Schema({ timestamps: true })
@@ -101,7 +131,20 @@ interface IContent extends Document {
   toContent(): Content;
 }
 
-export const signContentPayload = (payload: ContentPayloadDto) => {
+export const signContentPayload = (
+  payload: ContentPayloadDto,
+  engagements: EngagementDocument[] = []
+) => {
+  console.debug('----SIGN CONTENT---');
+  console.debug(payload);
+  for (const key in engagementNameMap) {
+    const findEngagement = engagements
+      ? engagements.find((engagement) => engagement.type === key)
+      : null;
+    payload[engagementNameMap[key]][engagementNameMap[key]] = findEngagement
+      ? true
+      : false;
+  }
   console.debug('signContentPayload', JSON.stringify(payload));
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
@@ -159,35 +202,6 @@ export const ContentSchemaFactory = (
   userModel: Model<UserDocument>,
   relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
-  const engagementNameMap = {
-    like: 'liked',
-    comment: 'commented',
-    quote: 'quoteCast',
-    recast: 'recasted'
-  };
-  /**
-   * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
-   * @param doc
-   * @param engagementType
-   * @param userId
-   * @returns
-   */
-  const getEngagementObject = (
-    doc: ContentDocument,
-    engagementType: EngagementType,
-    isEngage: boolean
-  ) => {
-    //get owner relate enagement
-    const engagementObject: ContentEngagement = {
-      count: doc.engagements[engagementType]
-        ? doc.engagements[engagementType].count
-        : 0,
-      participant: []
-    };
-    engagementObject[engagementNameMap[engagementType]] = isEngage;
-    return engagementObject;
-  };
-
   ContentSchema.methods.toContent = function () {
     const t = new Content();
     t.author = (this as ContentDocument).author;
@@ -258,6 +272,7 @@ export const ContentSchemaFactory = (
     //if it's recast or quotecast
     if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
       payload.originalPost = (this as ContentDocument).originalPost;
+    console.debug('--signContent', payload);
     return signContentPayload(payload);
   };
 

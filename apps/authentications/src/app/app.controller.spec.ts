@@ -35,6 +35,7 @@ import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   FacebookClient,
   TelegramClient,
+  TwillioClient,
   TwitterClient
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -45,13 +46,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { LoginResponse, TokenResponse } from './dtos/dto';
 import {
   DownloaderMock,
   FacebookClientMock,
   TelegramClientMock,
+  TwillioClientMock,
   TwitterClientMock
-} from './social.client.mock';
+} from './client.mock';
+import { LoginResponse, TokenResponse } from './dtos/dto';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -101,6 +103,10 @@ describe('AppController', () => {
       provide: TwitterClient,
       useClass: TwitterClientMock
     };
+    const TwillioClientProvider = {
+      provide: TwillioClient,
+      useClass: TwillioClientMock
+    };
 
     app = await Test.createTestingModule({
       imports: [
@@ -118,6 +124,7 @@ describe('AppController', () => {
         DownloaderProvider,
         TelegramClientProvider,
         TwitterClientProvider,
+        TwillioClientProvider,
         UserService,
         ContentService
       ]
@@ -434,12 +441,6 @@ describe('AppController', () => {
         credentialGuest
       );
       const page = await userService.createPageFromUser(currentUser, {
-        avatar: {
-          original: 'http://placehold.it/200x200'
-        },
-        cover: {
-          original: 'http://placehold.it/200x200'
-        },
         displayName: 'new Page',
         castcleId: 'npop2'
       });
@@ -1334,6 +1335,149 @@ describe('AppController', () => {
       } as any);
       expect(token).toBeDefined;
       expect(token.oauthToken).toBeDefined;
+    });
+  });
+
+  describe('forgotPasswordRequestOTP', () => {
+    let credentialGuest = null;
+    let guestResult = null;
+    const emailTest = 'test.opt@gmail.com';
+    const countryCodeTest = '+66';
+    const numberTest = '0817896767';
+    beforeAll(async () => {
+      const testId = 'registerId34';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompop12341';
+      guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: deviceUUID }
+      );
+      credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      await appController.register(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'testLang'
+        } as any,
+        {
+          channel: 'email',
+          payload: {
+            castcleId: testId,
+            displayName: 'abc',
+            email: emailTest,
+            password: password
+          }
+        }
+      );
+      const acc = await service.getAccountFromCredential(credentialGuest);
+      await service._accountModel
+        .updateOne(
+          { _id: acc.id },
+          { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
+        )
+        .exec();
+    });
+
+    it('should reset password via mobile successful', async () => {
+      const result = await appController.forgotPasswordRequestOtp(
+        {
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should reset password via email successful', async () => {
+      const result = await appController.forgotPasswordRequestOtp(
+        {
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+    });
+
+    it('should return Exception when get wrong channel', async () => {
+      await expect(
+        appController.forgotPasswordRequestOtp(
+          {
+            channel: 'test',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+      );
+    });
+
+    it('should return Exception when get empty account', async () => {
+      await expect(
+        appController.forgotPasswordRequestOtp(
+          {
+            channel: 'mobile',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
+
+      await expect(
+        appController.forgotPasswordRequestOtp(
+          {
+            channel: 'email',
+            payload: {
+              email: '',
+              countryCode: '',
+              mobileNumber: ''
+            }
+          },
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'th'
+          } as any
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+      );
     });
   });
 });
