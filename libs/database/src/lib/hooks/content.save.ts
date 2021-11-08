@@ -127,6 +127,7 @@ export const postContentSave = async (
   //create contentItem
   //if is new and
   if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
+    console.debug('saving doc -->', JSON.stringify(doc));
     await createRelatedContentItem(doc, models);
   }
 
@@ -139,6 +140,7 @@ export const postContentSave = async (
  * @returns
  */
 export const preContentSave = async (doc: ContentDocument) => {
+  console.debug('preSaveDoc', doc);
   doc.wasNew = doc.isNew;
   doc.visibility = doc.visibility ? doc.visibility : EntityVisibility.Publish;
   doc.revisionCount = doc.revisionCount ? doc.revisionCount + 1 : 1;
