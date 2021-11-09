@@ -53,6 +53,36 @@ export interface QuotePayload {
   content: string;
 }
 
+const engagementNameMap = {
+  like: 'liked',
+  comment: 'commented',
+  quote: 'quoteCast',
+  recast: 'recasted'
+};
+
+/**
+ * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
+ * @param doc
+ * @param engagementType
+ * @param userId
+ * @returns
+ */
+const getEngagementObject = (
+  doc: ContentDocument,
+  engagementType: EngagementType,
+  isEngage: boolean
+) => {
+  //get owner relate enagement
+  const engagementObject: ContentEngagement = {
+    count: doc.engagements[engagementType]
+      ? doc.engagements[engagementType].count
+      : 0,
+    participant: []
+  };
+  engagementObject[engagementNameMap[engagementType]] = isEngage;
+  return engagementObject;
+};
+
 export type ContentDocument = Content & IContent;
 
 @Schema({ timestamps: true })
@@ -101,16 +131,38 @@ interface IContent extends Document {
   toContent(): Content;
 }
 
-export const signContentPayload = (payload: ContentPayloadDto) => {
-  console.debug('signContentPayload', payload.author.avatar);
+export const signContentPayload = (
+  payload: ContentPayloadDto,
+  engagements: EngagementDocument[] = []
+) => {
+  console.debug('----SIGN CONTENT---');
+  console.debug(payload);
+  for (const key in engagementNameMap) {
+    console.debug(key, engagementNameMap[key], engagements);
+    const findEngagement = engagements
+      ? engagements.find((engagement) => engagement.type === key)
+      : null;
+    console.debug(findEngagement);
+    payload[engagementNameMap[key]][engagementNameMap[key]] = findEngagement
+      ? true
+      : payload[engagementNameMap[key]][engagementNameMap[key]]
+      ? payload[engagementNameMap[key]][engagementNameMap[key]]
+      : false;
+  }
+  console.debug('signContentPayload', JSON.stringify(payload));
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
     ).map((url: CastcleImage) => {
-      return new Image(url).toSignUrls();
+      if (!url['isSign']) return new Image(url).toSignUrls();
+      else return url;
     });
   }
-  if (payload.payload.photo && (payload.payload as BlogPayload).photo.cover) {
+  if (
+    payload.payload.photo &&
+    (payload.payload as BlogPayload).photo.cover &&
+    !((payload.payload as BlogPayload).photo.cover as CastcleImage)['isSign']
+  ) {
     (payload.payload as BlogPayload).photo.cover = new Image(
       (payload.payload as BlogPayload).photo.cover as CastcleImage
     ).toSignUrls();
@@ -119,7 +171,7 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
     (payload.payload as BlogPayload).link = (
       payload.payload as BlogPayload
     ).link.map((item) => {
-      if (item.image) {
+      if (item.image && !item.image['isSign']) {
         item.image = new Image(item.image as CastcleImage).toSignUrls();
       }
       return item;
@@ -128,6 +180,8 @@ export const signContentPayload = (payload: ContentPayloadDto) => {
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
+  payload.isSign = true;
+  console.debug('afterSign', JSON.stringify(payload));
   return payload;
 };
 
@@ -152,35 +206,6 @@ export const ContentSchemaFactory = (
   userModel: Model<UserDocument>,
   relationshipModel: Model<RelationshipDocument>
 ): mongoose.Schema<any> => {
-  const engagementNameMap = {
-    like: 'liked',
-    comment: 'commented',
-    quote: 'quoteCast',
-    recast: 'recasted'
-  };
-  /**
-   * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
-   * @param doc
-   * @param engagementType
-   * @param userId
-   * @returns
-   */
-  const getEngagementObject = (
-    doc: ContentDocument,
-    engagementType: EngagementType,
-    isEngage: boolean
-  ) => {
-    //get owner relate enagement
-    const engagementObject: ContentEngagement = {
-      count: doc.engagements[engagementType]
-        ? doc.engagements[engagementType].count
-        : 0,
-      participant: []
-    };
-    engagementObject[engagementNameMap[engagementType]] = isEngage;
-    return engagementObject;
-  };
-
   ContentSchema.methods.toContent = function () {
     const t = new Content();
     t.author = (this as ContentDocument).author;
@@ -251,6 +276,7 @@ export const ContentSchemaFactory = (
     //if it's recast or quotecast
     if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
       payload.originalPost = (this as ContentDocument).originalPost;
+    console.debug('--signContent', payload);
     return signContentPayload(payload);
   };
 

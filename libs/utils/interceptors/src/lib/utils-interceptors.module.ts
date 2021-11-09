@@ -38,6 +38,7 @@ import {
   HeadersRequest
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
+import { ExceptionalInterceptor } from './exception/exception.interceptor';
 
 @Module({
   imports: [DatabaseModule, CaslModule, CacheModule.register()],
@@ -57,5 +58,6 @@ export {
   HttpCacheIndividualInterceptor,
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
-  HttpCacheClearInterceptor
+  HttpCacheClearInterceptor,
+  ExceptionalInterceptor
 };

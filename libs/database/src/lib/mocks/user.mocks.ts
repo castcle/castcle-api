@@ -61,12 +61,6 @@ const _generatePageDto = (pagePerAccountAmount: number) => {
   const pageDtos: PageModelDto[] = [];
   for (let i = 0; i < pagePerAccountAmount; i++) {
     pageDtos[i] = {
-      avatar: {
-        original: '/testBase64'
-      },
-      cover: {
-        original: '/testCover64'
-      },
       castcleId: `page-${i}-${new Date().getTime()}`,
       displayName: `Page-${i}`
     };
@@ -117,16 +111,13 @@ export const generateMockUsers = async (
 
   for (let j = 0; j < userInfos.length; j++) {
     const info = userInfos[j];
-    console.log('each user');
     const result = await model.accountService.createAccount(
       info.accountRequirement
     );
-    console.log('result', result);
     const accountActivation = await model.accountService.signupByEmail(
       result.accountDocument,
       info.signupRequirement
     );
-    console.log('accountActivation', accountActivation);
     const verifyAcc = await model.accountService.verifyAccount(
       accountActivation
     );
@@ -140,13 +131,6 @@ export const generateMockUsers = async (
         await model.userService.createPageFromUser(user, info.pages[i])
       );
     }
-
-    console.log('---->', {
-      account: verifyAcc,
-      user: user,
-      pages: pages,
-      credential: result.credentialDocument
-    });
     mockUsers.push({
       account: verifyAcc,
       user: user,
@@ -154,7 +138,5 @@ export const generateMockUsers = async (
       credential: result.credentialDocument
     });
   }
-  console.log('----MOCK users---');
-  console.log(mockUsers);
   return mockUsers;
 };

@@ -77,6 +77,7 @@ export class Image {
     Object.keys(this.image).forEach((sizeName) => {
       newImage[sizeName] = this.toSignUrl(sizeName);
     });
+    newImage['isSign'] = 'signed'; //TODO !!! Hack
     return newImage;
   }
 

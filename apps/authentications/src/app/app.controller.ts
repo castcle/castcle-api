@@ -22,10 +22,13 @@
  */
 import { CommonDate } from '@castcle-api/commonDate';
 import { AuthenticationService } from '@castcle-api/database';
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
-import { Configs } from '@castcle-api/environments';
+import {
+  AccountAuthenIdType,
+  OtpObjective
+} from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -36,7 +39,6 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
-  Controller,
   Get,
   HttpCode,
   Post,
@@ -60,6 +62,9 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
+  ForgotPasswordRequestOtpDto,
+  ForgotPasswordResponse,
+  ForgotPasswordVerificationOtpDto,
   GuestLoginDto,
   LoginDto,
   LoginResponse,
@@ -76,7 +81,6 @@ import {
   GuestInterceptor,
   GuestRequest
 } from './interceptors/guest.interceptor';
-import { CastcleController } from '@castcle-api/utils/decorators';
 
 @CastcleController('1.0')
 export class AuthenticationController {
@@ -304,7 +308,7 @@ export class AuthenticationController {
       if (!this.authService.validateEmail(body.payload.email))
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
       //check if castcleId Exist
-      const user = await this.authService.getUserFromCastcleId(
+      const user = await this.authService.getExistedUserFromCastcleId(
         body.payload.castcleId
       );
       //validate password
@@ -496,7 +500,9 @@ export class AuthenticationController {
   @Post('checkCastcleIdExists')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const user = await this.authService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
     return {
       message: 'success message',
       payload: {
@@ -514,20 +520,59 @@ export class AuthenticationController {
       expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
   }
+*/
 
-  @Post('verificationOTP')
-  @HttpCode(204)
-  verificationOTP() {
-    return '';
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: ForgotPasswordResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('forgotPasswordVerificationOTP')
+  @HttpCode(200)
+  async forgotPasswordVerificationOtp(
+    @Body() body: ForgotPasswordVerificationOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log(
+      'Start forgot password OPT Verify channel : ' + body.channel
+    );
+    const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
   }
 
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: ForgotPasswordResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')
-  forgotPasswordRequestOTP() {
-    return {
-      refCode: 'xxxxxxxx', // 8 หลัก
-      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
-    };
-  }*/
+  @HttpCode(200)
+  async forgotPasswordRequestOtp(
+    @Body() body: ForgotPasswordRequestOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log('Start forgot password OPT channel : ' + body.channel);
+    const otp = await this.appService.forgotPasswordOtp(body, req);
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
+  }
 
   @Get()
   getData() {
@@ -604,7 +649,10 @@ export class AuthenticationController {
     //add password checker
     this.appService.validatePassword(password, req.$language);
     if (account.verifyPassword(password)) {
-      const otp = await this.authService.generateOtp(account);
+      const otp = await this.authService.generateOtp(
+        account,
+        OtpObjective.ChangePassword
+      );
       return {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()

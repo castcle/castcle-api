@@ -52,6 +52,7 @@ export const preCommentSave = async (doc: CommentDocument) => {
       }
     };
   }
+  console.debug('preDoc', doc);
   return doc;
 };
 

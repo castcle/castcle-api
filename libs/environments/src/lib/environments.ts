@@ -107,5 +107,9 @@ export const Environment = {
   apple_client_id: process.env.APPLE_CLIENT_ID,
   apple_team_id: process.env.APPLE_TEAM_ID,
   apple_key_identifier: process.env.APPLE_KEY_IDENTIFIER,
-  apple_private_key: process.env.APPLE_PRIVATE_KEY
+  apple_private_key: process.env.APPLE_PRIVATE_KEY,
+  // Twilio
+  twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
+  twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
+  twilio_otp_sid: process.env.TWILIO_OTP_SID
 };
