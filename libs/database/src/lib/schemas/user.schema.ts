@@ -150,11 +150,11 @@ const _covertToUserResponse = (self: User | UserDocument) => {
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? new Image(self.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages, // TODO !!! need to check S3 about static url
+          : new Image(Configs.DefaultAvatarImages).toSignUrls(), // TODO !!! need to check S3 about static url
       cover:
         self.profile && self.profile.images && self.profile.images.cover
           ? new Image(self.profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers
+          : new Image(Configs.DefaultAvatarCovers).toSignUrls()
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
@@ -172,7 +172,7 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     avatar:
       self.profile && self.profile.images && self.profile.images.avatar
         ? new Image(self.profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
+        : new Image(Configs.DefaultAvatarImages).toSignUrls(),
     castcleId: self.displayId,
     displayName: self.displayName,
     followed: false, //default of followed
@@ -202,7 +202,7 @@ UserSchema.methods.toPageResponse = function () {
         (this as UserDocument).profile.images.avatar
           ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
           : {
-              original: Configs.DefaultCover
+              original: new Image(Configs.DefaultAvatarImages).toSignUrls()
             },
       cover:
         (this as UserDocument).profile &&
@@ -210,7 +210,7 @@ UserSchema.methods.toPageResponse = function () {
         (this as UserDocument).profile.images.cover
           ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
           : {
-              original: Configs.DefaultCover
+              original: new Image(Configs.DefaultAvatarCovers).toSignUrls()
             }
     },
     followers: {
@@ -276,7 +276,7 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
         ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
+        : new Image(Configs.DefaultAvatarImages).toSignUrls(),
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
@@ -308,7 +308,7 @@ UserSchema.methods.toSearchResponse = function () {
       (this as UserDocument).profile.images &&
       (this as UserDocument).profile.images.avatar
         ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
+        : new Image(Configs.DefaultAvatarImages).toSignUrls(),
     type: (this as UserDocument).type,
     // TODO !!! need implement aggregator
     aggregator: {
@@ -362,7 +362,7 @@ export const UserSchemaFactory = (
       avatar:
         self.profile && self.profile.images && self.profile.images.avatar
           ? new Image(self.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
+          : new Image(Configs.DefaultAvatarImages).toSignUrls(),
       castcleId: self.displayId,
       displayName: self.displayName,
       followed: false, //default of followed

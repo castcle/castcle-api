@@ -172,6 +172,10 @@ export class TwillioClientMock {
   }
 
   async verifyOtp(receiver: string, otp: string) {
-    return true;
+    if (otp === '123456') {
+      return { status: 'approved' };
+    } else {
+      return { status: 'pending' };
+    }
   }
 }
