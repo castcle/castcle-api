@@ -540,15 +540,13 @@ export class AppService {
    * @returns {string} empty string
    */
   async resetPassword(data: ChangePasswordBody, credential: CredentialRequest) {
-    this.logger.log('Get account from credential');
-    const account = await this.authService.getAccountFromCredential(
-      credential.$credential
-    );
+    this.logger.log('Get otp document');
+    const otp = await this.authService.getOtpFromRefCode(data.refCode);
     this.logger.log('Validate password');
     this.validatePassword(data.newPassword, credential.$language);
-    this.logger.log('Get otp document');
-    const otp = await this.authService.getOtpFromAccount(account, data.refCode);
     if (otp && otp.isValid()) {
+      this.logger.log('Get Account');
+      const account = await this.authService.getAccountFromId(otp.account._id);
       this.logger.log('Change password');
       const result = await this.authService.changePassword(
         account,
