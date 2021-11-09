@@ -564,9 +564,6 @@ export class AuthenticationController {
   }
 
   @ApiBearerAuth()
-  @ApiBody({
-    type: ChangePasswordBody
-  })
   @ApiResponse({
     status: 204
   })
@@ -577,6 +574,7 @@ export class AuthenticationController {
     @Body() body: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
+    this.logger.log('Start reset password refCode : ' + body.refCode);
     return this.appService.resetPassword(body, req);
   }
 
