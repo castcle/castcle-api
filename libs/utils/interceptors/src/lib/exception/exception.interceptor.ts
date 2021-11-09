@@ -39,7 +39,7 @@ export interface CredentialRequest extends TokenRequest {
   $credential: CredentialDocument;
 }
 
-@Injectable()
+@Catch(CastcleException)
 export class ExceptionalInterceptor implements ExceptionFilter {
   catch(exception: CastcleException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
