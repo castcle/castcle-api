@@ -22,6 +22,7 @@
  */
 import { HttpException } from '@nestjs/common';
 import { ErrorMessages } from './messages/default';
+import { LocalErrorMessage } from './messages';
 
 export enum CastcleStatus {
   REQUEST_URL_NOT_FOUND = '1001',
@@ -48,9 +49,11 @@ export enum CastcleStatus {
   PAGE_IS_EXIST = '3015',
   USER_NAME_IS_EXIST = '3016',
   USER_ID_IS_EXIST = '3017',
+  USER_OR_PAGE_NOT_FOUND = '4001',
   FEATURE_NOT_EXIST = '5001',
   PAYLOAD_TYPE_MISMATCH = '5002',
-  NOTIFICATION_NOT_FOUND = '6001'
+  NOTIFICATION_NOT_FOUND = '6001',
+  SOMETHING_WRONG = '7001'
 }
 
 interface ErrorStatus {
@@ -60,8 +63,18 @@ interface ErrorStatus {
 }
 
 export class CastcleException extends HttpException {
+  public errorStatus: ErrorStatus;
   constructor(castcleStatus: CastcleStatus, language = 'en') {
-    const error: ErrorStatus = ErrorMessages[castcleStatus];
+    const error: ErrorStatus = LocalErrorMessage[language]
+      ? LocalErrorMessage[language][castcleStatus]
+      : ErrorMessages[castcleStatus];
     super(error, Number(error.statusCode));
+    this.errorStatus = error;
+  }
+
+  getLocalStatus(language: string) {
+    if (LocalErrorMessage[language])
+      return LocalErrorMessage[language][this.errorStatus.code];
+    else return LocalErrorMessage.default[this.errorStatus.code];
   }
 }

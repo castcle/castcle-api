@@ -308,6 +308,7 @@ export class UserController {
         page: pageOption,
         sortBy: sortByOption
       });
+      console.debug('test/me/pages', user._id, JSON.stringify(pages.items));
       return {
         pagination: pages.pagination,
         payload: pages.items.map((item) => item.toPageResponse())
