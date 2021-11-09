@@ -1684,7 +1684,12 @@ describe('AppController', () => {
           },
           credentialGuest
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.INVALID_OTP, 'th'));
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVALID_OTP,
+          credentialGuest.$language
+        )
+      );
     });
   });
 });
