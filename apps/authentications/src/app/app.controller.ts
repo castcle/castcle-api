@@ -64,6 +64,7 @@ import {
   CheckingResponse,
   ForgotPasswordRequestOtpDto,
   ForgotPasswordResponse,
+  ForgotPasswordVerificationOtpDto,
   GuestLoginDto,
   LoginDto,
   LoginResponse,
@@ -519,25 +520,39 @@ export class AuthenticationController {
       expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
     };
   }
-
-  @Post('verificationOTP')
-  @HttpCode(204)
-  verificationOTP() {
-    return '';
-  }
-
-  @Post('forgotPasswordRequestOTP')
-  forgotPasswordRequestOTP() {
-    return {
-      refCode: 'xxxxxxxx', // 8 หลัก
-      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
-    };
-  }*/
+*/
 
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: TokenResponse
+    type: ForgotPasswordResponse
+  })
+  @UseInterceptors(CredentialInterceptor)
+  @Post('forgotPasswordVerificationOTP')
+  @HttpCode(200)
+  async forgotPasswordVerificationOtp(
+    @Body() body: ForgotPasswordVerificationOtpDto,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log(
+      'Start forgot password OPT Verify channel : ' + body.channel
+    );
+    const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
+    if (otp && otp.isValid()) {
+      const response: ForgotPasswordResponse = {
+        refCode: otp.refCode,
+        expiresTime: otp.expireDate.toISOString()
+      };
+      return response;
+    } else {
+      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+    }
+  }
+
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: ForgotPasswordResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('forgotPasswordRequestOTP')
