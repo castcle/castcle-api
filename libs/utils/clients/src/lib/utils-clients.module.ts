@@ -32,6 +32,7 @@ import {
 import { GoogleClient } from './google/google.client';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
+import { TwillioClient } from './twillio/twillio.client';
 import { TwitterClient } from './twitter/twitter.client';
 import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 
@@ -42,13 +43,20 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     })
   ],
   controllers: [],
-  providers: [FacebookClient, TelegramClient, TwitterClient, GoogleClient],
+  providers: [
+    FacebookClient,
+    TelegramClient,
+    TwitterClient,
+    GoogleClient,
+    TwillioClient
+  ],
   exports: [
     HttpModule,
     FacebookClient,
     TelegramClient,
     TwitterClient,
-    GoogleClient
+    GoogleClient,
+    TwillioClient
   ]
 })
 export class UtilsClientsModule {}

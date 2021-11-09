@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { TelegramUserInfo } from '@castcle-api/utils/clients';
+import { TelegramUserInfo, TwillioChannel } from '@castcle-api/utils/clients';
+
 export class FacebookClientMock {
   getAccessToken() {
     return {
@@ -161,6 +162,20 @@ export class TwitterClientMock {
       };
     } else {
       return null;
+    }
+  }
+}
+
+export class TwillioClientMock {
+  async requestOtp(receiver: string, channel: TwillioChannel) {
+    return true;
+  }
+
+  async verifyOtp(receiver: string, otp: string) {
+    if (otp === '123456') {
+      return { status: 'approved' };
+    } else {
+      return { status: 'pending' };
     }
   }
 }

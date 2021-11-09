@@ -23,7 +23,7 @@
 import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEmail } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -93,7 +93,6 @@ class RegisterPayload {
 }
 
 export class RegisterByEmailDto {
-  @IsEmail()
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
@@ -197,4 +196,39 @@ export class LoginResponse {
 
   @ApiProperty()
   refreshToken: string;
+}
+
+export class ForgotPasswordPayload {
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  countryCode: string;
+
+  @ApiProperty()
+  mobileNumber: string;
+}
+
+export class ForgotPasswordRequestOtpDto {
+  @ApiProperty()
+  channel: string;
+
+  @ApiProperty()
+  payload: ForgotPasswordPayload;
+}
+
+export class ForgotPasswordResponse {
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  expiresTime: string;
+}
+
+export class ForgotPasswordVerificationOtpDto extends ForgotPasswordRequestOtpDto {
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  otp: string;
 }

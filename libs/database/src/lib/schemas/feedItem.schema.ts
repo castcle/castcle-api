@@ -28,6 +28,7 @@ import { CastcleBase } from './base.schema';
 import { signContentPayload } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { ContentPayloadDto } from '../dtos/content.dto';
+import { EngagementDocument } from './engagement.schema';
 
 export type FeedItemDocument = FeedItem & IFeedItem;
 
@@ -64,10 +65,12 @@ FeedItemSchema.index({
   'content.author.castcleId': 1
 });
 export interface IFeedItem extends mongoose.Document {
-  toFeedItemPayload(): FeedItemPayload;
+  toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
 }
 
-FeedItemSchema.methods.toFeedItemPayload = function () {
+FeedItemSchema.methods.toFeedItemPayload = function (
+  engagements: EngagementDocument[] = []
+) {
   return {
     id: (this as FeedItemDocument)._id,
     feature: {
@@ -83,7 +86,10 @@ FeedItemSchema.methods.toFeedItemPayload = function () {
       slug: 'forYou'
     },
     type: 'content',
-    payload: signContentPayload((this as FeedItemDocument).content),
+    payload: signContentPayload(
+      (this as FeedItemDocument).content,
+      engagements
+    ),
     aggregator: {
       type: 'createTime'
     },

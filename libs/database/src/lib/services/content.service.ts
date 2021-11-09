@@ -133,6 +133,7 @@ export class ContentService {
         .exec();
       await engagement.remove();
     }
+    console.debug('*********deleteContentFromId', id);
     return content.save();
   };
 

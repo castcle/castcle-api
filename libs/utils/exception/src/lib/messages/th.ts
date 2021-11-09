@@ -20,26 +20,26 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const ErrorMessages = {
+export const ThErrorMessages = {
   '1001': {
     statusCode: '404',
     code: '1001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '1002': {
     statusCode: '401',
     code: '1002',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '1003': {
     statusCode: '401',
     code: '1003',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '1004': {
     statusCode: '401',
     code: '1004',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '1005': {
     statusCode: '401',
@@ -59,74 +59,74 @@ export const ErrorMessages = {
   '3001': {
     statusCode: '400',
     code: '3001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3002': {
     statusCode: '400',
     code: '3002',
-    message: 'Incorrect email address or password. Please try again.'
+    message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3003': {
     statusCode: '400',
     code: '3003',
-    message: 'Incorrect email address. Please try again.'
+    message: 'อีเมลไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3004': {
     statusCode: '400',
     code: '3004',
-    message: 'Invalid phone number. Please try again.'
+    message: 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3007': {
     statusCode: '400',
     code: '3007',
-    message: 'Please try again in 3 minutes.'
+    message: 'กรุณาลองใหม่อีกครั้งใน 3 นาที'
   },
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'Invalid OTP code. Please try again.'
+    message: 'รหัส OTP ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3009': {
     statusCode: '400',
     code: '3009',
     message:
-      'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.'
+      'รหัส OTP ถูกขอมาเกินระยะเวลา กรุณากดปุ่ม "รับรหัส OTP" เพื่อขอรหัสใหม่อีกครั้ง'
   },
   '3010': {
     statusCode: '400',
     code: '3010',
     message:
-      'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.'
+      'ระบุรหัส OTP ไม่ถูกต้องเกิน 3 ครั้ง กรุณาระบุหมายเลขโทรศัพท์ หรือ อีเมล เพื่อขอรับรหัส OTP ใหม่อีกครั้ง'
   },
   '3011': {
     statusCode: '400',
     code: '3009',
-    message: 'Incorrect password. Please try again.'
+    message: 'รหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3013': {
     statusCode: '400',
     code: '3013',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3014': {
     statusCode: '400',
     code: '3014',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3015': {
     statusCode: '400',
@@ -151,12 +151,12 @@ export const ErrorMessages = {
   '5001': {
     statusCode: '400',
     code: '5001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '5002': {
     statusCode: '400',
     code: '5002',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '5003': {
     statusCode: '404',
