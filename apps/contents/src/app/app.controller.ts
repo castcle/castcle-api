@@ -67,6 +67,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
+import { ContentLikeBody } from '../dtos/content.dto';
 
 @CastcleController('1.0')
 @Controller()
@@ -146,6 +147,7 @@ export class ContentController {
         content,
         user
       );
+    console.debug('engagements', engagements);
     return {
       payload: content.toContentPayload(engagements)
     } as ContentResponse;
@@ -181,9 +183,14 @@ export class ContentController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    console.log('caslUser', user as User);
-    const ability = this.caslAbility.getUserManageContentAbility(user, content);
+    const users = await this.userService.getUserAndPagesFromCredential(
+      req.$credential
+    );
+    console.log('caslUser', users as User[]);
+    const ability = this.caslAbility.getUserManageContentAbility(
+      users,
+      content
+    );
     const result = ability.can(Action.Update, Content);
     console.log('result', result);
     /*const result = this.contentService.checkUserPermissionForEditContent(
@@ -238,7 +245,8 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     await this._checkPermissionForUpdate(content, req);
-    content.delete();
+    await this.contentService.deleteContentFromId(content._id);
+    //content.delete();
     return '';
   }
 
@@ -276,6 +284,9 @@ export class ContentController {
 
   @ApiResponse({
     status: 204
+  })
+  @ApiBody({
+    type: ContentLikeBody
   })
   @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')

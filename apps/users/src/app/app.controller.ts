@@ -60,6 +60,13 @@ import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
 
+class DeleteUserBody {
+  channel: string;
+  payload: {
+    password: string;
+  };
+}
+
 @CastcleController('1.0')
 export class UserController {
   constructor(
@@ -194,6 +201,9 @@ export class UserController {
   @ApiResponse({
     status: 204
   })
+  @ApiBody({
+    type: DeleteUserBody
+  })
   @CastleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   async deleteMyData(
@@ -207,8 +217,6 @@ export class UserController {
         req.$credential
       );
       if (
-        user.verified &&
-        user.verified.email &&
         channel === 'email' &&
         account.verifyPassword(passwordPayload.password)
       ) {
@@ -300,6 +308,7 @@ export class UserController {
         page: pageOption,
         sortBy: sortByOption
       });
+      console.debug('test/me/pages', user._id, JSON.stringify(pages.items));
       return {
         pagination: pages.pagination,
         payload: pages.items.map((item) => item.toPageResponse())
@@ -380,7 +389,7 @@ export class UserController {
     type: TargetCastcleDto
   })
   @CastleClearCacheAuth(CacheKeyName.Users)
-  @Put(':id/follow')
+  @Put(':id/follows')
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,

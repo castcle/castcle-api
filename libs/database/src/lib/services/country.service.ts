@@ -53,6 +53,19 @@ export class CountryService {
   }
 
   /**
+   * get country by dialCode
+   * @param {string} dialCode country dialCode
+   * @returns {CountryDocument} return country document result
+   */
+  async getByDialCode(dialCode: string) {
+    return this._countryModel
+      .findOne({
+        dialCode: dialCode
+      })
+      .exec();
+  }
+
+  /**
    * create new country
    * @param {CountryPayloadDto} country country payload
    * @returns {CountryDocument} return new country document
