@@ -75,6 +75,19 @@ export class UserService {
       })
       .exec();
 
+  /**
+   * Get all user and page that this credentials is own
+   * @param credential
+   * @returns {UserDocument[]}
+   */
+  getUserAndPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
   getUserFromId = (id: string) => {
     try {
       if (mongoose.Types.ObjectId(id)) {
