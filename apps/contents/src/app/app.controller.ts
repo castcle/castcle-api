@@ -183,9 +183,14 @@ export class ContentController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    console.log('caslUser', user as User);
-    const ability = this.caslAbility.getUserManageContentAbility(user, content);
+    const users = await this.userService.getUserAndPagesFromCredential(
+      req.$credential
+    );
+    console.log('caslUser', users as User[]);
+    const ability = this.caslAbility.getUserManageContentAbility(
+      users,
+      content
+    );
     const result = ability.can(Action.Update, Content);
     console.log('result', result);
     /*const result = this.contentService.checkUserPermissionForEditContent(
@@ -240,7 +245,8 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     await this._checkPermissionForUpdate(content, req);
-    content.delete();
+    this.contentService.deleteContentFromId(content._id);
+    //content.delete();
     return '';
   }
 
