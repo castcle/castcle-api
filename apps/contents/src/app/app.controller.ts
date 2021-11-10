@@ -245,7 +245,7 @@ export class ContentController {
   ) {
     const content = await this._getContentIfExist(id, req);
     await this._checkPermissionForUpdate(content, req);
-    this.contentService.deleteContentFromId(content._id);
+    await this.contentService.deleteContentFromId(content._id);
     //content.delete();
     return '';
   }
