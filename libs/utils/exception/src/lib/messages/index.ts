@@ -20,43 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Account, AccountDocument } from './account.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from './accountAuthenId.schema';
-import { Comment, CommentDocument } from './comment.schema';
-import { Content, ContentDocument } from './content.schema';
-import { CountryDocument } from './country.schema';
-import {
-  Credential,
-  CredentialDocument,
-  CredentialModel
-} from './credential.schema';
-import { HashtagDocument } from './hashtag.schema';
-import { LanguageDocument } from './language.schema';
-import { NotificationDocument } from './notification.schema';
-import { OtpDocument, OtpObjective } from './otp.schema';
-import { User, UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  Credential,
-  HashtagDocument,
-  AccountAuthenIdType,
-  AccountAuthenIdDocument,
-  CountryDocument,
-  OtpObjective,
-  OtpDocument
+
+import { ThErrorMessages } from './th';
+import { DevErrorMessages } from './dev.th';
+import { ErrorMessages } from './default';
+
+export const LocalErrorMessage = {
+  default: ErrorMessages,
+  th: ThErrorMessages,
+  dev: DevErrorMessages
 };

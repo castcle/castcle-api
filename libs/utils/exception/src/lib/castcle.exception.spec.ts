@@ -22,6 +22,7 @@
  */
 import { CastcleException, CastcleStatus } from './castcle.exception';
 import { ErrorMessages } from './messages/default';
+import { LocalErrorMessage } from './messages';
 
 describe('CastcleException', () => {
   it(`should throw REQUEST_URL_NOT_FOUND and code ${CastcleStatus.REQUEST_URL_NOT_FOUND} when called`, () => {

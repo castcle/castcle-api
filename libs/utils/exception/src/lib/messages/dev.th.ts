@@ -20,26 +20,26 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const ErrorMessages = {
+export const DevErrorMessages = {
   '1001': {
     statusCode: '404',
     code: '1001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'The requested URL was not found.'
   },
   '1002': {
     statusCode: '401',
     code: '1002',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Missing Authorization header.'
   },
   '1003': {
     statusCode: '401',
     code: '1003',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Access token is expired.'
   },
   '1004': {
     statusCode: '401',
     code: '1004',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Refresh token is expired.'
   },
   '1005': {
     statusCode: '401',
@@ -59,74 +59,73 @@ export const ErrorMessages = {
   '3001': {
     statusCode: '400',
     code: '3001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Incorrect username or password.'
   },
   '3002': {
     statusCode: '400',
     code: '3002',
-    message: 'Incorrect email address or password. Please try again.'
+    message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3003': {
     statusCode: '400',
     code: '3003',
-    message: 'Incorrect email address. Please try again.'
+    message: 'ไม่มี email หรือ mobile ในระบบ '
   },
   '3004': {
     statusCode: '400',
     code: '3004',
-    message: 'Invalid phone number. Please try again.'
+    message: 'opt ไม่ถูกต้อง หรือ หมดอายุ'
   },
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'payload กับ channel ไม่ตรงกัน'
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'refId ไม่ถูกต้อง หรือ หมดอายุ '
   },
   '3007': {
     statusCode: '400',
     code: '3007',
-    message: 'Please try again in 3 minutes.'
+    message: 'role ไม่ถูกต้อง '
   },
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'Invalid OTP code. Please try again.'
+    message: 'email หรือ mobile ซ้ำ'
   },
   '3009': {
     statusCode: '400',
     code: '3009',
-    message:
-      'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.'
+    message: 'รูปแบบ email ไม่ถูกต้อง'
   },
   '3010': {
     statusCode: '400',
     code: '3010',
     message:
-      'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.'
+      'ระบุรหัส OTP ไม่ถูกต้องเกิน 3 ครั้ง กรุณาระบุหมายเลขโทรศัพท์ หรือ อีเมล เพื่อขอรับรหัส OTP ใหม่อีกครั้ง'
   },
   '3011': {
     statusCode: '400',
     code: '3009',
-    message: 'Incorrect password. Please try again.'
+    message: 'รหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'refCode ไม่ถูกต้อง หรือ หมดอายุ'
   },
   '3013': {
     statusCode: '400',
     code: '3013',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'role ไม่ถูกต้อง'
   },
   '3014': {
     statusCode: '400',
     code: '3014',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'email หรือ mobile มีในระบบแล้ว'
   },
   '3015': {
     statusCode: '400',
@@ -151,12 +150,12 @@ export const ErrorMessages = {
   '5001': {
     statusCode: '400',
     code: '5001',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'feature ไม่รับรอง type นี้'
   },
   '5002': {
     statusCode: '400',
     code: '5002',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'type กับ payload ไม่ตรงกัน'
   },
   '5003': {
     statusCode: '404',

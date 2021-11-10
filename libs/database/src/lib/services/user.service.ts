@@ -75,6 +75,19 @@ export class UserService {
       })
       .exec();
 
+  /**
+   * Get all user and page that this credentials is own
+   * @param credential
+   * @returns {UserDocument[]}
+   */
+  getUserAndPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
   getUserFromId = (id: string) => {
     try {
       if (mongoose.Types.ObjectId(id)) {
@@ -168,13 +181,7 @@ export class UserService {
       ownerAccount: user.ownerAccount,
       type: UserType.Page,
       displayId: pageDto.castcleId,
-      displayName: pageDto.displayName,
-      profile: {
-        images: {
-          avatar: pageDto.avatar,
-          cover: pageDto.cover
-        }
-      }
+      displayName: pageDto.displayName
     });
     return newPage.save();
   };
@@ -210,7 +217,11 @@ export class UserService {
     user: UserDocument,
     queryOptions: CastcleQueryOptions
   ) => {
-    const filter = { ownerAccount: user.ownerAccount, type: UserType.Page };
+    const filter = {
+      ownerAccount: user.ownerAccount,
+      type: UserType.Page,
+      visibility: EntityVisibility.Publish
+    };
     const pages = this._userModel
       .find(filter)
       .skip(queryOptions.page - 1)

@@ -123,4 +123,12 @@ describe('CountryService', () => {
       expect(result[0].dialCode).toEqual('+1');
     });
   });
+
+  describe('#getByDialCode', () => {
+    it('should get ByDialCode in db', async () => {
+      const result = await service.getByDialCode('+66');
+      expect(result).toBeDefined();
+      expect(result.dialCode).toEqual('+66');
+    });
+  });
 });
