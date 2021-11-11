@@ -25,12 +25,15 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
 import { CommentPayload } from '../dtos/comment.dto';
+import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 import { Account } from '../schemas/account.schema';
 import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
 import { ContentDocument, User } from '.';
 import { RevisionDocument } from './revision.schema';
 import { EntityVisibility } from '../dtos';
+import { EngagementDocument, EngagementType } from './engagement.schema';
 
 export type CommentDocument = Comment & IComment;
 
@@ -38,7 +41,6 @@ export enum CommentType {
   Comment = 'comment',
   Reply = 'reply'
 }
-
 @Schema({ timestamps: true })
 export class Comment extends CastcleBase {
   @Prop({ required: true, type: Object })
@@ -70,7 +72,8 @@ export class Comment extends CastcleBase {
 
 interface IComment extends Document {
   toCommentPayload(
-    commentModel: Model<CommentDocument>
+    commentModel: Model<CommentDocument>,
+    engagements?: EngagementDocument[]
   ): Promise<CommentPayload>;
 }
 
@@ -81,7 +84,8 @@ export const CommentSchemaFactory = (
   contentModel: Model<ContentDocument>
 ): mongoose.Schema<any> => {
   CommentSchema.methods.toCommentPayload = async function (
-    commentModel: Model<CommentDocument>
+    commentModel: Model<CommentDocument>,
+    engagements: EngagementDocument[] = []
   ) {
     //check if have revision
     const revisionCount = await revisionModel
@@ -101,25 +105,31 @@ export const CommentSchemaFactory = (
         visibility: EntityVisibility.Publish
       })
       .exec();
-    return {
+    const findEngagement = engagements
+      ? engagements.find(
+          (engagement) => engagement.type === EngagementType.Like
+        )
+      : null;
+    const payload: CommentPayload = {
       id: (this as CommentDocument)._id,
       message: (this as CommentDocument).message,
       like: {
+        liked: findEngagement ? true : false,
         count: (this as CommentDocument).engagements.like.count,
         participant: [] //TODO !!! need to fix later on
       },
       author: {
         avatar: (this as CommentDocument).author.profile
-          ? (this as CommentDocument).author.profile?.images.avatar
-          : null,
+          ? new Image(
+              (this as CommentDocument).author.profile.images.avatar
+            ).toSignUrls()
+          : Configs.DefaultAvatarImages,
         castcleId: (this as CommentDocument).author.displayId,
         displayName: (this as CommentDocument).author.displayName,
         followed: false, //need to check with relationships,
         id: (this as CommentDocument).author._id,
         type: (this as CommentDocument).author.type,
-        verified: (this as CommentDocument).author.verified.official
-          ? true
-          : false
+        verified: (this as CommentDocument).author.verified
       },
       hasHistory: revisionCount > 1 ? true : false,
       reply: replies.map((r) => ({
@@ -127,18 +137,22 @@ export const CommentSchemaFactory = (
         createAt: r.createdAt.toISOString(),
         message: r.message,
         author: {
-          avatar: r.author.profile ? r.author.profile.images.avatar : null,
+          avatar: r.author.profile
+            ? new Image(r.author.profile.images.avatar).toSignUrls()
+            : Configs.DefaultAvatarImages,
           castcleId: r.author.displayId,
           displayName: r.author.displayName,
           id: r.author._id,
           followed: false,
-          verified: r.author.verified.official ? true : false,
+          verified: r.author.verified,
           type: r.author.type
         }
       })),
       createAt: (this as CommentDocument).createdAt.toISOString(),
       updateAt: (this as CommentDocument).updatedAt.toISOString()
     } as CommentPayload;
+
+    return payload;
   };
 
   CommentSchema.pre('save', function (next) {
