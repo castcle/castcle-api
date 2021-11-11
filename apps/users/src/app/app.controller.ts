@@ -268,6 +268,7 @@ export class UserController {
           contents.items,
           user
         );
+      console.debug('all engagements', engagements);
       return {
         payload: contents.items.map((item) => {
           const subEngagements = engagements.filter(
@@ -275,6 +276,7 @@ export class UserController {
               String(eng.targetRef.$id) === String(item._id) ||
               String(eng.targetRef.oid) === String(item.id)
           );
+
           return item.toContentPayload(subEngagements);
         }),
         pagination: contents.pagination

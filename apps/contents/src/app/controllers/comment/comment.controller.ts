@@ -93,20 +93,26 @@ export class CommentController {
     @Body() commentBody: CreateCommentBody,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(contentId, req);
-    const user = await this.authService.getUserFromCastcleId(
-      commentBody.castcleId
-    );
-    const comment = await this.contentService.createCommentForContent(
-      user,
-      content,
-      {
-        message: commentBody.message
-      }
-    );
-    return {
-      payload: await comment.toCommentPayload(this.contentService._commentModel)
-    };
+    try {
+      const content = await this._getContentIfExist(contentId, req);
+      const user = await this.authService.getUserFromCastcleId(
+        commentBody.castcleId
+      );
+      const comment = await this.contentService.createCommentForContent(
+        user,
+        content,
+        {
+          message: commentBody.message
+        }
+      );
+      return {
+        payload: await comment.toCommentPayload(
+          this.contentService._commentModel
+        )
+      };
+    } catch (error) {
+      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    }
   }
 
   @CastcleAuth(CacheKeyName.Comments)
