@@ -37,7 +37,8 @@ import { AppService } from './app.service';
 import {
   AuthenticationService,
   UserService,
-  ContentService
+  ContentService,
+  NotificationService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
@@ -46,6 +47,8 @@ import {
   ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
+  NotificationSource,
+  NotificationType,
   SaveContentDto
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -78,7 +81,8 @@ export class ContentController {
     private userService: UserService,
     private contentService: ContentService,
     private caslAbility: CaslAbilityFactory,
-    private contentProducer: ContentProducer
+    private contentProducer: ContentProducer,
+    private notifyService: NotificationService
   ) {}
   private readonly logger = new CastLogger(
     ContentController.name,
@@ -300,6 +304,17 @@ export class ContentController {
     const content = await this._getContentIfExist(id, req);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.likeContent(content, user);
+    this.notifyService.notifyToUser({
+      type: NotificationType.Content,
+      message: 'Castcle ถูกใจโพสของคุณ',
+      read: false,
+      source: NotificationSource.Profile,
+      sourceUserId: user._id,
+      targetRef: {
+        _id: content._id
+      },
+      account: { _id: content.author.id }
+    });
     return '';
   }
 

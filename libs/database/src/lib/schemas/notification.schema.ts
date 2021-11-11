@@ -27,6 +27,7 @@ import {
   NotificationPayloadDto,
   NotificationType
 } from '../dtos/notification.dto';
+import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Credential } from './credential.schema';
 import { User } from './user.schema';
@@ -63,10 +64,10 @@ export class Notification extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Credential',
+    ref: 'Account',
     index: true
   })
-  credential: Credential;
+  account: Account;
 }
 
 interface INotification extends Document {
@@ -74,7 +75,6 @@ interface INotification extends Document {
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
-
 NotificationSchema.methods.toNotificationPayload = function () {
   return {
     id: (this as NotificationDocument)._id,

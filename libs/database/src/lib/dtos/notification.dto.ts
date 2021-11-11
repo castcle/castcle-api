@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { AccountDocument } from '../schemas';
 import { CastcleQueryOptions, Pagination } from './common.dto';
 
 export enum NotificationType {
@@ -31,9 +32,9 @@ export enum NotificationType {
 }
 
 export enum NotificationSource {
-  Profile = 'profile',
-  Page = 'page',
-  System = 'system'
+  Profile = 'PROFILE',
+  Page = 'PAGE',
+  System = 'SYSTEM'
 }
 
 class ObjectRef {
@@ -90,10 +91,9 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
 } as NotificationQueryOptions;
 
 export interface CreateNotification {
-  avatar: string;
   message: string;
   source: NotificationSource;
-  sourceUserId: {
+  sourceUserId?: {
     _id: string;
   };
   type: NotificationType;
@@ -101,7 +101,7 @@ export interface CreateNotification {
     _id: string;
   };
   read: boolean;
-  credential: {
+  account: {
     _id: string;
   };
 }
