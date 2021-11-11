@@ -87,7 +87,7 @@ export class CommentController {
     type: CreateCommentBody
   })
   @CastcleBasicAuth()
-  @Post('contents/:id/comments')
+  @Post(':id/comments')
   async createComment(
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
@@ -110,7 +110,7 @@ export class CommentController {
   }
 
   @CastcleAuth(CacheKeyName.Comments)
-  @Get('contents/:id/comments')
+  @Get(':id/comments')
   async getAllComment(
     @Param('id') contentId: string,
     @Req() req: CredentialRequest,
@@ -140,7 +140,7 @@ export class CommentController {
     type: ReplyCommentBody
   })
   @CastcleBasicAuth()
-  @Post('contents/:id/comments/:commentId/reply')
+  @Post(':id/comments/:commentId/reply')
   async replyComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
@@ -165,7 +165,7 @@ export class CommentController {
     type: EditCommentBody
   })
   @CastcleBasicAuth()
-  @Put('contents/:id/comments/:commentId')
+  @Put(':id/comments/:commentId')
   async updateComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
@@ -186,7 +186,7 @@ export class CommentController {
 
   @HttpCode(204)
   @CastcleBasicAuth()
-  @Delete('contents/:id/comments/:commentId')
+  @Delete(':id/comments/:commentId')
   async deleteComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
@@ -203,7 +203,7 @@ export class CommentController {
   })
   @HttpCode(204)
   @CastcleBasicAuth()
-  @Put('contents/:id/comments/:commentId/liked')
+  @Put(':id/comments/:commentId/liked')
   async likeComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
@@ -223,7 +223,7 @@ export class CommentController {
   })
   @CastcleBasicAuth()
   @HttpCode(204)
-  @Put('contents/:id/comments/:commentId/unliked')
+  @Put(':id/comments/:commentId/unliked')
   async unlikeComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
