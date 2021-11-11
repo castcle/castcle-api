@@ -643,9 +643,17 @@ export class ContentService {
       )
       .exec();
     const totalDocument = await this._commentModel.count(filter).exec();
+    const engagements = await this._engagementModel.find({
+      targetRef: {
+        $in: rootComments.map((rComment) => ({
+          $ref: 'comment',
+          $id: rComment._id
+        }))
+      }
+    });
     const payloads = await Promise.all(
       rootComments.map((comment) =>
-        comment.toCommentPayload(this._commentModel)
+        comment.toCommentPayload(this._commentModel, engagements)
       )
     );
     return {
@@ -772,6 +780,7 @@ export class ContentService {
     user: UserDocument
   ) => {
     const contentIds = contents.map((c) => c._id);
+    console.debug('contentIds', contentIds);
     return this.getAllEngagementFromContentIdsAndUser(contentIds, user);
   };
 
@@ -788,10 +797,10 @@ export class ContentService {
     return this._engagementModel
       .find({
         targetRef: {
-          $ref: 'content',
-          $id: {
-            $in: contentIds
-          }
+          $in: contentIds.map((id) => ({
+            $ref: 'content',
+            $id: id
+          }))
         },
         user: user._id
       })
