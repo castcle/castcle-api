@@ -218,7 +218,7 @@ export class UserController {
       );
       if (
         channel === 'email' &&
-        account.verifyPassword(passwordPayload.password)
+        (await account.verifyPassword(passwordPayload.password))
       ) {
         await this.userService.deactive(user);
         return '';
