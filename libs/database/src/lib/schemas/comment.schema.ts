@@ -129,9 +129,7 @@ export const CommentSchemaFactory = (
         followed: false, //need to check with relationships,
         id: (this as CommentDocument).author._id,
         type: (this as CommentDocument).author.type,
-        verified: (this as CommentDocument).author.verified.official
-          ? true
-          : false
+        verified: (this as CommentDocument).author.verified
       },
       hasHistory: revisionCount > 1 ? true : false,
       reply: replies.map((r) => ({
@@ -146,7 +144,7 @@ export const CommentSchemaFactory = (
           displayName: r.author.displayName,
           id: r.author._id,
           followed: false,
-          verified: r.author.verified.official ? true : false,
+          verified: r.author.verified,
           type: r.author.type
         }
       })),
