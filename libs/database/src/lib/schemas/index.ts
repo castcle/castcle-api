@@ -33,6 +33,7 @@ import {
   CredentialDocument,
   CredentialModel
 } from './credential.schema';
+import { EngagementDocument } from './engagement.schema';
 import { HashtagDocument } from './hashtag.schema';
 import { LanguageDocument } from './language.schema';
 import { NotificationDocument } from './notification.schema';
@@ -58,5 +59,6 @@ export {
   AccountAuthenIdDocument,
   CountryDocument,
   OtpObjective,
-  OtpDocument
+  OtpDocument,
+  EngagementDocument
 };
