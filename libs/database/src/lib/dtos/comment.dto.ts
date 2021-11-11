@@ -24,6 +24,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CastcleImage, Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
+import { UserVerified } from '../schemas/user.schema';
 
 export class CommentDto {
   author: any; //mongooseId
@@ -62,7 +63,7 @@ export class CommentPayload {
     castcleId: string; // @castcle
     displayName: string;
     avatar: CastcleImage;
-    verified: boolean;
+    verified: UserVerified;
     followed: boolean;
   };
   @ApiProperty()
@@ -76,7 +77,7 @@ export class CommentPayload {
       castcleId: string; // @castcle
       displayName: string;
       avatar: CastcleImage;
-      verified: boolean;
+      verified: UserVerified;
       followed: boolean;
     };
   }[];

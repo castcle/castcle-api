@@ -652,7 +652,7 @@ export class AuthenticationController {
     );
     //add password checker
     this.appService.validatePassword(password, req.$language);
-    if (account.verifyPassword(password)) {
+    if (await account.verifyPassword(password)) {
       const otp = await this.authService.generateOtp(
         account,
         OtpObjective.ChangePassword

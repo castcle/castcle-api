@@ -157,7 +157,6 @@ describe('CommentController', () => {
       const commentResult = await commentController.createComment(
         content._id,
         {
-          feedItemId: 'nothing',
           message: 'hello',
           castcleId: user.displayId
         },

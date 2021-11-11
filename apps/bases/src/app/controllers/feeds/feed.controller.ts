@@ -129,7 +129,9 @@ export class FeedController {
         return {
           payload: feedItemsResult.items.map((t) => {
             const engagements = allContentsEngagements.filter(
-              (c) => c.targetRef.$id === t.content.id
+              (c) =>
+                String(c.targetRef.$id) === String(t.content.id) ||
+                String(c.targetRef.oid) === String(t.content.id)
             );
             return t.toFeedItemPayload(engagements);
           }),
