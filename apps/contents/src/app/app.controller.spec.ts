@@ -47,7 +47,7 @@ import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
-import { CacheModule } from '@nestjs/common';
+import { CacheModule, UploadedFile } from '@nestjs/common';
 import { ContentProducer } from '@castcle-api/utils/queue';
 import { Configs } from '@castcle-api/environments';
 
@@ -95,6 +95,8 @@ describe('ContentController', () => {
   let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   let user: UserDocument;
+  let page: UserDocument;
+  let payloadId: any;
   const pageDto: PageDto = {
     displayName: 'Super Page',
     castcleId: 'pageyo'
@@ -168,6 +170,10 @@ describe('ContentController', () => {
     user = await service.getUserFromCredential(userCredential);
     console.debug('======USER FROM TEST=====');
     console.debug(user);
+    page = await service.createPageFromUser(user, {
+      castcleId: 'pageTest',
+      displayName: 'pageTest'
+    });
   });
   afterAll(async () => {
     await closeInMongodConnection();
@@ -279,6 +285,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
+      payloadId = result.payload.id;
       expect(result.payload.author.id).toEqual(newPage._id);
     });
   });
@@ -376,6 +383,41 @@ describe('ContentController', () => {
         } as any
       );
       expect(getResult.payload).toEqual(updateResult.payload);
+    });
+    it('should be able to update page content', async () => {
+      const updateResult = await contentController.updateContentFromId(
+        payloadId as string,
+        {
+          type: 'short',
+          payload: {
+            message: 'hibro'
+          },
+          castcleId: 'whatsup'
+        },
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
+      expect((updateResult.payload.payload as ShortPayload).message).toEqual(
+        'hibro'
+      );
+    });
+  });
+  describe('deleteContentFromId() ', () => {
+    it('it should be able to delete from page', async () => {
+      const deleteResult = await contentController.deleteContentFromId(
+        payloadId as string,
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any
+      );
+      expect(deleteResult).toEqual('');
+      const getContentResultService = await contentService.getContentFromId(
+        payloadId as string
+      );
+      expect(getContentResultService).toBeNull();
     });
   });
 });

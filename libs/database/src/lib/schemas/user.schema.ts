@@ -201,17 +201,13 @@ UserSchema.methods.toPageResponse = function () {
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.avatar
           ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
-          : {
-              original: new Image(Configs.DefaultAvatarImages).toSignUrls()
-            },
+          : Configs.DefaultAvatarImages,
       cover:
         (this as UserDocument).profile &&
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.cover
           ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
-          : {
-              original: new Image(Configs.DefaultAvatarCovers).toSignUrls()
-            }
+          : Configs.DefaultAvatarCovers
     },
     followers: {
       count: (this as UserDocument).followerCount

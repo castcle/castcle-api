@@ -27,7 +27,7 @@ export class CreateCommentBody {
   @ApiProperty()
   'message': string;
   @ApiProperty()
-  'feedItemId': string;
+  'feedItemId'?: string;
   @ApiProperty()
   'castcleId': string;
 }
@@ -46,7 +46,7 @@ export class EditCommentBody {
 
 export class LikeCommentBody {
   @ApiProperty()
-  'feedItemId': string;
+  'feedItemId'?: string;
   @ApiProperty()
   'castcleId': string;
 }

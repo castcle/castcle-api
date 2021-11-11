@@ -69,11 +69,14 @@ export type AppAbility = Ability<[Action, Subjects]>;
 
 @Injectable()
 export class CaslAbilityFactory {
-  getUserManageContentAbility(user: UserDocument, content: ContentDocument) {
+  getUserManageContentAbility(users: UserDocument[], content: ContentDocument) {
     const { can, cannot, build } = new AbilityBuilder<
       Ability<[Action, Subjects]>
     >(Ability as AbilityClass<AppAbility>);
-    if (String(user._id) === String(content.author.id)) {
+    const findUser = users.findIndex(
+      (u) => String(u._id) === String(content.author.id)
+    );
+    if (findUser >= 0) {
       can(Action.Update, Content);
       can(Action.Delete, Content);
     }
