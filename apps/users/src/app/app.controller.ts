@@ -218,7 +218,7 @@ export class UserController {
       );
       if (
         channel === 'email' &&
-        account.verifyPassword(passwordPayload.password)
+        (await account.verifyPassword(passwordPayload.password))
       ) {
         await this.userService.deactive(user);
         return '';
@@ -271,7 +271,9 @@ export class UserController {
       return {
         payload: contents.items.map((item) => {
           const subEngagements = engagements.filter(
-            (eng) => eng.targetRef.$id === item._id
+            (eng) =>
+              String(eng.targetRef.$id) === String(item._id) ||
+              String(eng.targetRef.oid) === String(item.id)
           );
           return item.toContentPayload(subEngagements);
         }),
@@ -363,14 +365,27 @@ export class UserController {
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
+
     const contents = await this.contentService.getContentsFromUser(user, {
       limit: limitOption,
       page: pageOption,
       sortBy: sortByOption,
       type: contentTypeOption
     });
+    const engagements =
+      await this.contentService.getAllEngagementFromContentsAndUser(
+        contents.items,
+        user
+      );
     return {
-      payload: contents.items.map((item) => item.toContentPayload()),
+      payload: contents.items.map((item) => {
+        const subEngagements = engagements.filter(
+          (eng) =>
+            String(eng.targetRef.$id) === String(item._id) ||
+            String(eng.targetRef.oid) === String(item.id)
+        );
+        return item.toContentPayload(subEngagements);
+      }),
       pagination: contents.pagination
     } as ContentsResponse;
   }

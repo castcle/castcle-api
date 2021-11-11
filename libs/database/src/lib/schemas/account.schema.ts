@@ -80,7 +80,7 @@ export interface IAccount extends Document {
     pasword: string,
     email?: string
   ): Promise<AccountDocument | null>;
-  verifyPassword(password: string): boolean;
+  verifyPassword(password: string): Promise<boolean>;
 }
 AccountSchema.methods.changePassword = async function (
   password: string,
