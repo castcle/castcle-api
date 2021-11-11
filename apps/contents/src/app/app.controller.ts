@@ -300,13 +300,13 @@ export class ContentController {
     @Body('castcleId') castcleId: string,
     @Req() req: CredentialRequest
   ) {
-    //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id, req);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.likeContent(content, user);
+    //TODO !!! has to implement message libs and i18N and message functions
     this.notifyService.notifyToUser({
       type: NotificationType.Content,
-      message: 'Castcle ถูกใจโพสของคุณ',
+      message: `${user.displayName} ถูกใจโพสของคุณ`,
       read: false,
       source: NotificationSource.Profile,
       sourceUserId: user._id,
