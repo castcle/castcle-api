@@ -34,6 +34,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
 import { UxEngagementBody } from '../dtos/ux.engagement.dto';
 import { UxEngagementDocument } from '../schemas/uxengagement.schema';
+import { HashtagService } from './hashtag.service';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -64,7 +65,8 @@ describe('UxEngagement Service', () => {
   const providers = [
     UxEngagementService,
     AuthenticationService,
-    ContentService
+    ContentService,
+    HashtagService
   ];
 
   beforeAll(async () => {

@@ -45,6 +45,7 @@ import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { UserVerified } from '../schemas/user.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { HashtagService } from './hashtag.service';
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -149,7 +150,8 @@ describe('ContentService', () => {
     ContentService,
     UserService,
     AuthenticationService,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;
