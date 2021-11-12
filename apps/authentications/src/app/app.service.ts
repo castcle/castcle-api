@@ -540,6 +540,10 @@ export class AppService {
    * @returns {string} empty string
    */
   async resetPassword(data: ChangePasswordBody, credential: CredentialRequest) {
+    this.logger.log('Validate objective');
+    if (data.objective !== OtpObjective.ChangePassword)
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
+
     this.logger.log('Get otp document');
     const otp = await this.authService.getOtpFromRefCode(data.refCode);
     this.logger.log('Validate password');
