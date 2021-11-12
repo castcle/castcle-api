@@ -25,7 +25,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   ContentService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  NotificationService
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
@@ -45,7 +46,11 @@ import {
 } from '@castcle-api/database/dtos';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import {
+  NotificationProducer,
+  TopicName,
+  UserProducer
+} from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, UploadedFile } from '@nestjs/common';
 import { ContentProducer } from '@castcle-api/utils/queue';
@@ -62,6 +67,14 @@ const fakeBull = BullModule.registerQueue({
 });
 const fakeBull2 = BullModule.registerQueue({
   name: TopicName.Contents,
+  redis: {
+    host: '0.0.0.0',
+    port: 6380
+  },
+  processors: [fakeProcessor]
+});
+const fakeBull3 = BullModule.registerQueue({
+  name: TopicName.Notifications,
   redis: {
     host: '0.0.0.0',
     port: 6380
@@ -112,7 +125,8 @@ describe('ContentController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull,
-        fakeBull2
+        fakeBull2,
+        fakeBull3
       ],
       controllers: [ContentController],
       providers: [
@@ -122,7 +136,9 @@ describe('ContentController', () => {
         ContentService,
         CaslAbilityFactory,
         UserProducer,
-        ContentProducer
+        ContentProducer,
+        NotificationProducer,
+        NotificationService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
