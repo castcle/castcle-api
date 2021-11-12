@@ -31,19 +31,23 @@ export class AppleClient {
   private readonly logger = new CastLogger(AppleClient.name, CastLoggerOptions);
 
   private readonly appleSignIn = new AppleSignIn({
-    clientId: Environment.apple_client_id,
-    teamId: Environment.apple_team_id,
-    keyIdentifier: Environment.apple_key_identifier,
+    clientId: Environment.apple_client_id
+      ? Environment.apple_client_id
+      : 'com.my-company.my-app',
+    teamId: Environment.apple_team_id
+      ? Environment.apple_team_id
+      : '5B645323E8',
+    keyIdentifier: Environment.apple_key_identifier
+      ? Environment.apple_key_identifier
+      : 'U3B842SVGC',
     privateKey: Environment.apple_private_key
+      ? Environment.apple_private_key
+      : '-----BEGIN PRIVATE KEY-----\nMIGTAgEHIHMJKJyqGSM32AgEGC...'
   });
 
-  //   private readonly requestTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
-  //   private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/access_token `;
-  //   private readonly verifyToken = `${Environment.twitter_host}/1.1/account/verify_credentials.json?include_email=true`;
-
   /**
-   * Request Twitter Access Token
-   * @returns {TwitterAccessToken} token data
+   * Request Token
+   * @returns {string} token data
    */
   async requestToken(): Promise<string> {
     return await this.appleSignIn.getAuthorizationUrl({
