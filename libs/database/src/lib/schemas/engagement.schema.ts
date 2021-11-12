@@ -164,6 +164,10 @@ export const EngagementSchemaFactory = (
   EngagementSchema.post('remove', async (doc, next) => {
     const incEngagment: { [key: string]: number } = {};
     incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
+    const feedIncEngagement: { [key: string]: number } = {};
+    feedIncEngagement[
+      `content.${feedItemKey[(doc as EngagementDocument).type]}.count`
+    ] = -1;
     if ((doc as EngagementDocument).targetRef.namespace === 'content') {
       const content = await contentModel
         .findById((doc as EngagementDocument).targetRef.oid)
@@ -177,6 +181,16 @@ export const EngagementSchemaFactory = (
         )
         .exec();
       console.log(result);
+      await feedItemModel
+        .updateMany(
+          {
+            'content.id': (doc as EngagementDocument).targetRef.oid
+          },
+          {
+            $inc: feedIncEngagement
+          }
+        )
+        .exec();
     } else {
       const comment = await commentModel
         .findById((doc as EngagementDocument).targetRef.oid)
