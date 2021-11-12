@@ -24,8 +24,12 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
+import { BlogPayload, ShortPayload } from '../dtos';
+import { CommentDto } from '../dtos/comment.dto';
+import { ImagePayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
 import { env } from '../environment';
+import { CommentType } from '../schemas/comment.schema';
 import { HashtagService } from './hashtag.service';
 
 let mongod: MongoMemoryServer;
@@ -94,6 +98,61 @@ describe('HashtagService', () => {
       const result = await service.getAll();
       expect(result).toBeDefined();
       expect(result.length).toEqual(1);
+    });
+  });
+
+  describe('#extractHashtagFromText', () => {
+    it('should return all #hashtag from content', () => {
+      expect(service.extractHashtagFromText('this is #good #stuff')).toEqual([
+        'good',
+        'stuff'
+      ]);
+    });
+    it('should return all #hashtag with space infront only', () => {
+      expect(
+        service.extractHashtagFromText('this is #good blog#stuff')
+      ).toEqual(['good']);
+    });
+  });
+
+  describe('#extractHashtagFromContentPayload', () => {
+    it('should return all #hashtag from ShortContent', () => {
+      const short: ShortPayload = {
+        message: 'helloworld #castcle'
+      };
+      expect(service.extractHashtagFromContentPayload(short)).toEqual([
+        'castcle'
+      ]);
+    });
+    it('should return all #hashtag from BlogContent', () => {
+      const blog: BlogPayload = {
+        message: 'helloworld #castcle',
+        header: 'cool stuff'
+      };
+      expect(service.extractHashtagFromContentPayload(blog)).toEqual([
+        'castcle'
+      ]);
+    });
+    it('should return all #hashtag from ImageContent', () => {
+      const image: ImagePayload = {};
+      expect(service.extractHashtagFromContentPayload(image)).toEqual([]);
+    });
+  });
+
+  describe('#extractHashtagFromCommentDto', () => {
+    it('should return all #hashtag from CommentDto', () => {
+      const commentDto: CommentDto = {
+        message: 'cool #bean',
+        author: 'test',
+        targetRef: {
+          $id: 'cool',
+          $ref: 'bean'
+        },
+        type: CommentType.Comment
+      };
+      expect(service.extractHashtagFromCommentDto(commentDto)).toEqual([
+        'bean'
+      ]);
     });
   });
 });

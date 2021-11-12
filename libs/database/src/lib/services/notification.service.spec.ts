@@ -43,6 +43,7 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
+import { HashtagService } from './hashtag.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
@@ -107,7 +108,8 @@ describe('NotificationService', () => {
     AuthenticationService,
     NotificationService,
     NotificationProducer,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;
