@@ -23,6 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures
 } from '@castcle-api/database';
@@ -110,7 +111,8 @@ describe('AppController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        UserProducer
+        UserProducer,
+        HashtagService
       ]
     }).compile();
     service = app.get<UserService>(UserService);

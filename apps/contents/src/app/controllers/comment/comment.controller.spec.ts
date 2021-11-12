@@ -24,6 +24,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService
@@ -125,7 +126,8 @@ describe('CommentController', () => {
         CaslAbilityFactory,
         UserProducer,
         NotificationProducer,
-        NotificationService
+        NotificationService,
+        HashtagService
       ]
     }).compile();
     service = app.get<UserService>(UserService);

@@ -44,6 +44,8 @@ import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { UserVerified } from '../schemas/user.schema';
+import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { HashtagService } from './hashtag.service';
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -148,7 +150,8 @@ describe('ContentService', () => {
     ContentService,
     UserService,
     AuthenticationService,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;
@@ -296,6 +299,7 @@ describe('ContentService', () => {
   });
   describe('#likeContent()', () => {
     let content: ContentDocument;
+    let feedItems: FeedItemDocument[];
     beforeAll(async () => {
       const shortPayload2: ShortPayload = {
         message: 'Test Like 2'
@@ -305,6 +309,7 @@ describe('ContentService', () => {
         payload: shortPayload2,
         castcleId: user.displayId
       });
+      feedItems = await service.createFeedItemFromAuthorToEveryone(content);
     });
     it('should update total like Count after call', async () => {
       const likeResult = await service.likeContent(content, user);
@@ -325,6 +330,16 @@ describe('ContentService', () => {
       expect(postContent.engagements['like']).toBeDefined();
       expect(postContent.engagements['like'].count).toEqual(1);
     });
+    it('should showup in feedItem', async () => {
+      const feedItems = await service._feedItemModel
+        .find({
+          'content.id': content._id
+        })
+        .exec();
+      expect(feedItems.length > 0).toEqual(true);
+      for (let i = 0; i < feedItems.length; i++)
+        expect(feedItems[i].content.liked.count).toEqual(1);
+    });
     describe('#unLikeContent()', () => {
       it('should update total like after call', async () => {
         await service.unLikeContent(content, user);
@@ -337,6 +352,16 @@ describe('ContentService', () => {
         const postContent = await service.getContentFromId(content._id);
         expect(postContent.engagements['like']).toBeDefined();
         expect(postContent.engagements['like'].count).toEqual(0);
+      });
+      it('should unlike on feedItems too', async () => {
+        const feedItems = await service._feedItemModel
+          .find({
+            'content.id': content._id
+          })
+          .exec();
+        expect(feedItems.length > 0).toEqual(true);
+        for (let i = 0; i < feedItems.length; i++)
+          expect(feedItems[i].content.liked.count).toEqual(0);
       });
     });
   });

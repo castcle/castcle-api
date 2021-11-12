@@ -102,7 +102,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Engagement',
     useFactory: EngagementSchemaFactory,
-    inject: [getModelToken('Content'), getModelToken('Comment')]
+    inject: [
+      getModelToken('Content'),
+      getModelToken('Comment'),
+      getModelToken('FeedItem')
+    ]
   }
 ]);
 
