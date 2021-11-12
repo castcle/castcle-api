@@ -122,7 +122,9 @@ const creatMockData = async (
       $id: docRefId
     },
     read: false,
-    credential: userCredential
+    account: {
+      _id: userCredential.account._id
+    }
   });
   await newNotification.save();
 };
@@ -227,8 +229,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample profile',
-            source: 'profile',
+            message: 'sample PROFILE',
+            source: 'PROFILE',
             read: false,
             content: {
               id: null
@@ -243,8 +245,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample profile',
-            source: 'profile',
+            message: 'sample PROFILE',
+            source: 'PROFILE',
             read: false,
             content: {
               id: null
@@ -288,8 +290,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample page',
-            source: 'page',
+            message: 'sample PAGE',
+            source: 'PAGE',
             read: false,
             content: {
               id: null

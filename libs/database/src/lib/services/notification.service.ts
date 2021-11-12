@@ -35,6 +35,7 @@ import {
   NotificationType,
   RegisterTokenDto
 } from '../dtos/notification.dto';
+import { AccountDocument } from '../schemas';
 import {
   CredentialDocument,
   CredentialModel
@@ -51,7 +52,8 @@ export class NotificationService {
     public _userModel: UserModel,
     private readonly notificationProducer: NotificationProducer,
     @InjectModel('Credential')
-    public _credentialModel: CredentialModel
+    public _credentialModel: CredentialModel,
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>
   ) {}
 
   /**
@@ -64,17 +66,11 @@ export class NotificationService {
     credential: CredentialDocument,
     options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
   ) => {
-    const user = await this._userModel
-      .findOne({
-        ownerAccount: credential.account._id
-      })
-      .exec();
-
     const findFilter: {
-      sourceUserId: any;
+      account: any;
       source: string;
     } = {
-      sourceUserId: user ? user._id : null,
+      account: credential.account._id,
       source: options.source
     };
     console.log(findFilter);
@@ -121,7 +117,19 @@ export class NotificationService {
   flagRead = async (notification: NotificationDocument) => {
     if (notification) {
       notification.read = true;
-      return notification.save();
+      const result = notification.save();
+      //update account notification Badge
+      this._accountModel
+        .updateOne(
+          { _id: notification.account._id },
+          {
+            $inc: {
+              notificationBadgeCount: -1
+            }
+          }
+        )
+        .exec();
+      return result;
     } else {
       return null;
     }
@@ -150,7 +158,7 @@ export class NotificationService {
       };
       console.log(findFilter);
 
-      return await this._notificationModel
+      const result = await this._notificationModel
         .updateMany(findFilter, { read: true }, null, (err: any, docs: any) => {
           if (err) {
             console.log(err);
@@ -159,11 +167,17 @@ export class NotificationService {
           }
         })
         .exec();
+      this._accountModel
+        .updateOne(
+          { _id: credential.account._id },
+          { notificationBadgeCount: 0 }
+        )
+        .exec();
+      return result;
     } else {
       return null;
     }
   };
-
   /**
    * create notofication and push to queue
    * @param {CreateNotification} notificationData notofication document
@@ -185,21 +199,45 @@ export class NotificationService {
     const createResult = await new this._notificationModel(
       newNotification
     ).save();
-
-    console.log('get firebase token');
-    const credential = await this._credentialModel
-      .findOne({ _id: notificationData.credential._id })
+    //update account notification Badge
+    this._accountModel
+      .updateOne(
+        { _id: notificationData.account._id },
+        {
+          $inc: {
+            notificationBadgeCount: 1
+          }
+        }
+      )
       .exec();
-
-    if (createResult && credential) {
+    notificationData.account._id;
+    const credentials = await this._credentialModel
+      .find({ 'account._id': notificationData.account._id })
+      .exec();
+    if (createResult && notificationData.account) {
       const message: NotificationMessage = {
-        id: createResult._id,
-        message: createResult.message,
-        source: NotificationSource[createResult.source],
-        sourceUserId: createResult.sourceUserId._id,
-        type: NotificationType[createResult.type],
-        targetRefId: createResult.targetRef,
-        firebaseToken: credential.firebaseNotificationToken
+        aps: {
+          alert: createResult.message,
+          'mutable-content': 1,
+          badge: 1,
+          category: 'CONTENTS',
+          sound: 'default'
+        },
+        payload: {
+          notifyId: createResult._id,
+          source: NotificationSource[createResult.source],
+          comment:
+            NotificationType[createResult.type] === NotificationType.Comment
+              ? notificationData.targetRef._id
+              : undefined,
+          content:
+            NotificationType[createResult.type] === NotificationType.Content
+              ? notificationData.targetRef._id
+              : undefined
+        },
+        firebaseTokens: credentials
+          .filter((c) => c.firebaseNotificationToken)
+          .map((c) => c.firebaseNotificationToken as string)
       };
       console.log('add to queue');
       this.notificationProducer.sendMessage(message);
