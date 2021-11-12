@@ -23,6 +23,7 @@
 import {
   AuthenticationService,
   ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   UserService
@@ -127,7 +128,8 @@ describe('AppController', () => {
         TwitterClientProvider,
         TwillioClientProvider,
         UserService,
-        ContentService
+        ContentService,
+        HashtagService
       ]
     }).compile();
 
