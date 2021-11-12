@@ -671,21 +671,25 @@ export class AuthenticationController {
   @Post('changePasswordSubmit')
   @HttpCode(204)
   async changePasswordSubmit(
-    @Body('refCode') refCode: string,
-    @Body('newPassword') newPassword: string,
+    @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
+    if (payload.objective !== OtpObjective.ChangePassword)
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    this.appService.validatePassword(newPassword, req.$language);
-    const otp = await this.authService.getOtpFromAccount(account, refCode);
+    this.appService.validatePassword(payload.newPassword, req.$language);
+    const otp = await this.authService.getOtpFromAccount(
+      account,
+      payload.refCode
+    );
     if (otp && otp.isValid()) {
       //change password
       const result = await this.authService.changePassword(
         account,
         otp,
-        newPassword
+        payload.newPassword
       );
       return '';
     } else
