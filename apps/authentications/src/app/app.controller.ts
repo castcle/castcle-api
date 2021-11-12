@@ -28,7 +28,10 @@ import {
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
-import { CastcleController } from '@castcle-api/utils/decorators';
+import {
+  CastcleBasicAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -516,7 +519,7 @@ export class AuthenticationController {
     status: 200,
     type: ForgotPasswordResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post('forgotPasswordVerificationOTP')
   @HttpCode(200)
   async forgotPasswordVerificationOtp(
@@ -543,7 +546,7 @@ export class AuthenticationController {
     status: 200,
     type: ForgotPasswordResponse
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post('forgotPasswordRequestOTP')
   @HttpCode(200)
   async forgotPasswordRequestOtp(
@@ -567,7 +570,7 @@ export class AuthenticationController {
   @ApiResponse({
     status: 204
   })
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @Post('resetPasswordSubmit')
   @HttpCode(200)
   async resetPasswordSubmit(
