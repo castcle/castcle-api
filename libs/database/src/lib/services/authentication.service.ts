@@ -224,6 +224,9 @@ export class AuthenticationService {
   getAccountFromCredential = (credential: CredentialDocument) =>
     this._accountModel.findById(credential.account._id).exec();
 
+  getAccountFromId = (accountId: string) =>
+    this._accountModel.findById(accountId).exec();
+
   getAccountFromEmail = (email: string) =>
     this._accountModel
       .findOne({ email: email, visibility: EntityVisibility.Publish })
@@ -392,6 +395,15 @@ export class AuthenticationService {
     return this._otpModel
       .findOne({ account: account._id, refCode: refCode })
       .exec();
+  }
+
+  /**
+   * find otp by ref code
+   * @param {string} refCode
+   * @returns {OtpDocument}
+   */
+  async getOtpFromRefCode(refCode: string) {
+    return this._otpModel.findOne({ refCode: refCode }).exec();
   }
 
   /**
