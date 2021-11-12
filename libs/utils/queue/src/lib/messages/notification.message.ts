@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export interface NotificationMessage {
+/*export interface NotificationMessage {
   id: string;
   message: string;
   source: string;
@@ -28,4 +28,25 @@ export interface NotificationMessage {
   type: string;
   targetRefId: string;
   firebaseToken: string;
+}*/
+
+type Aps = {
+  alert: string; // Castcle is display name
+  sound: string;
+  category: 'CONTENTS';
+  badge: number; // นับ noti ที่ยังไม่อ่าน
+  'mutable-content': number;
+};
+
+type NotificationPayload = {
+  notifyId: string;
+  source: 'PROFILE' | 'PAGE' | 'SYSTEM'; // PROFILE OR PAGE OR SYSTEM
+  content?: string;
+  comment?: string;
+};
+
+export interface NotificationMessage {
+  aps: Aps;
+  payload: NotificationPayload;
+  firebaseTokens: string[];
 }
