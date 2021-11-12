@@ -65,8 +65,6 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
-  ForgotPasswordRequestOtpDto,
-  ForgotPasswordResponse,
   ForgotPasswordVerificationOtpDto,
   GuestLoginDto,
   LoginDto,
@@ -74,6 +72,8 @@ import {
   OauthTokenResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
+  RequestOtpDto,
+  RequestOtpResponse,
   SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
@@ -517,7 +517,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: ForgotPasswordResponse
+    type: RequestOtpResponse
   })
   @CastcleBasicAuth()
   @Post('forgotPasswordVerificationOTP')
@@ -531,7 +531,7 @@ export class AuthenticationController {
     );
     const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
+      const response: RequestOtpResponse = {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -544,19 +544,18 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: ForgotPasswordResponse
+    type: RequestOtpResponse
   })
   @CastcleBasicAuth()
-  @Post('forgotPasswordRequestOTP')
+  @Post('requestOTP')
   @HttpCode(200)
-  async forgotPasswordRequestOtp(
-    @Body() body: ForgotPasswordRequestOtpDto,
-    @Req() req: CredentialRequest
-  ) {
-    this.logger.log('Start forgot password OPT channel : ' + body.channel);
-    const otp = await this.appService.forgotPasswordOtp(body, req);
+  async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
+    this.logger.log(
+      `Start forgot password OPT channel : ${body.channel} objective : ${body.objective}`
+    );
+    const otp = await this.appService.requestOtpCode(body, req);
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
+      const response: RequestOtpResponse = {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };

@@ -51,8 +51,8 @@ import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
-  ForgotPasswordRequestOtpDto,
   ForgotPasswordVerificationOtpDto,
+  RequestOtpDto,
   SocialConnect,
   SocialConnectInfo,
   TokenResponse
@@ -69,6 +69,12 @@ const transporter = nodemailer.createTransport({
     pass: env.smtp_password ? env.smtp_password : 'password' // generated ethereal password
   }
 });
+
+export enum OtpObjective2 {
+  ChangePassword = 'change_password',
+  ForgotPassword = 'forgot_password',
+  VerifyForgotPassword = 'verify_forgotpassword'
+}
 
 @Injectable()
 export class AppService {
@@ -387,16 +393,15 @@ export class AppService {
 
   /**
    * forgot password request Otp
-   * @param {ForgotPasswordRequestOtpDto} request
+   * @param {RequestOtpDto} request
    * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
    */
-  async forgotPasswordOtp(
-    request: ForgotPasswordRequestOtpDto,
-    credential: CredentialRequest
-  ) {
+  async requestOtpCode(request: RequestOtpDto, credential: CredentialRequest) {
     let account: AccountDocument = null;
     let otp: OtpDocument = null;
+    const objective: OtpObjective = <OtpObjective>request.objective;
+
     switch (request.channel) {
       case 'email': {
         account = await this.getAccountFromEmail(
@@ -408,7 +413,8 @@ export class AppService {
         otp = await this.passwordRequestOtp(
           account.email,
           account,
-          TwillioChannel.Email
+          TwillioChannel.Email,
+          objective
         );
         break;
       }
@@ -423,7 +429,8 @@ export class AppService {
         otp = await this.passwordRequestOtp(
           account.mobile.countryCode + account.mobile.number,
           account,
-          TwillioChannel.Mobile
+          TwillioChannel.Mobile,
+          objective
         );
         break;
       }
@@ -448,13 +455,12 @@ export class AppService {
   async passwordRequestOtp(
     reciever: string,
     account: AccountDocument,
-    channel: TwillioChannel
+    channel: TwillioChannel,
+    objective: OtpObjective
   ): Promise<OtpDocument> {
     this.logger.log('Generate Ref Code');
-    const otp = await this.authService.generateOtp(
-      account,
-      OtpObjective.ForgotPassword
-    );
+
+    const otp = await this.authService.generateOtp(account, objective);
     this.logger.log('Send Otp');
     await this.twillioClient.requestOtp(reciever, channel);
     return otp;

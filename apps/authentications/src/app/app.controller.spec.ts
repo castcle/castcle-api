@@ -1425,8 +1425,9 @@ describe('AppController', () => {
     });
 
     it('should reset password via mobile successful', async () => {
-      const result = await appController.forgotPasswordRequestOtp(
+      const result = await appController.requestOTP(
         {
+          objective: 'forgot_password',
           channel: 'mobile',
           payload: {
             email: '',
@@ -1434,7 +1435,11 @@ describe('AppController', () => {
             mobileNumber: numberTest
           }
         },
-        credentialGuest
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any
       );
 
       expect(result).toBeDefined;
@@ -1443,8 +1448,9 @@ describe('AppController', () => {
     });
 
     it('should reset password via email successful', async () => {
-      const result = await appController.forgotPasswordRequestOtp(
+      const result = await appController.requestOTP(
         {
+          objective: 'forgot_password',
           channel: 'email',
           payload: {
             email: emailTest,
@@ -1462,8 +1468,9 @@ describe('AppController', () => {
 
     it('should return Exception when get wrong channel', async () => {
       await expect(
-        appController.forgotPasswordRequestOtp(
+        appController.requestOTP(
           {
+            objective: 'forgot_password',
             channel: 'test',
             payload: {
               email: emailTest,
@@ -1484,8 +1491,9 @@ describe('AppController', () => {
 
     it('should return Exception when get empty account', async () => {
       await expect(
-        appController.forgotPasswordRequestOtp(
+        appController.requestOTP(
           {
+            objective: 'forgot_password',
             channel: 'mobile',
             payload: {
               email: emailTest,
@@ -1504,8 +1512,9 @@ describe('AppController', () => {
       );
 
       await expect(
-        appController.forgotPasswordRequestOtp(
+        appController.requestOTP(
           {
+            objective: 'forgot_password',
             channel: 'email',
             payload: {
               email: '',
@@ -1568,8 +1577,9 @@ describe('AppController', () => {
     });
 
     it('should pass verify otp mobile channel', async () => {
-      const otpCode = await appController.forgotPasswordRequestOtp(
+      const otpCode = await appController.requestOTP(
         {
+          objective: 'forgot_password',
           channel: 'mobile',
           payload: {
             email: '',
@@ -1582,6 +1592,7 @@ describe('AppController', () => {
 
       const result = await appController.forgotPasswordVerificationOtp(
         {
+          objective: 'forgot_password',
           channel: 'mobile',
           payload: {
             email: '',
@@ -1600,8 +1611,9 @@ describe('AppController', () => {
     });
 
     it('should pass verify otp email channel', async () => {
-      const otpCode = await appController.forgotPasswordRequestOtp(
+      const otpCode = await appController.requestOTP(
         {
+          objective: 'forgot_password',
           channel: 'email',
           payload: {
             email: emailTest,
@@ -1614,6 +1626,7 @@ describe('AppController', () => {
 
       const result = await appController.forgotPasswordVerificationOtp(
         {
+          objective: 'forgot_password',
           channel: 'email',
           payload: {
             email: emailTest,
@@ -1635,6 +1648,7 @@ describe('AppController', () => {
       await expect(
         appController.forgotPasswordVerificationOtp(
           {
+            objective: 'forgot_password',
             channel: 'test',
             payload: {
               email: emailTest,
@@ -1659,6 +1673,7 @@ describe('AppController', () => {
       await expect(
         appController.forgotPasswordVerificationOtp(
           {
+            objective: 'forgot_password',
             channel: 'mobile',
             payload: {
               email: emailTest,
@@ -1681,6 +1696,7 @@ describe('AppController', () => {
       await expect(
         appController.forgotPasswordVerificationOtp(
           {
+            objective: 'forgot_password',
             channel: 'email',
             payload: {
               email: '',
@@ -1702,8 +1718,9 @@ describe('AppController', () => {
     });
 
     it('should return Exception when imvalid otp', async () => {
-      const otpCode = await appController.forgotPasswordRequestOtp(
+      const otpCode = await appController.requestOTP(
         {
+          objective: 'forgot_password',
           channel: 'mobile',
           payload: {
             email: '',
@@ -1717,6 +1734,7 @@ describe('AppController', () => {
       await expect(
         appController.forgotPasswordVerificationOtp(
           {
+            objective: 'forgot_password',
             channel: 'mobile',
             payload: {
               email: '',
