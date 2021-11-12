@@ -150,6 +150,9 @@ export class SuggestCastcleIdReponse {
 
 export class ChangePasswordBody {
   @ApiProperty()
+  objective: string;
+
+  @ApiProperty()
   refCode: string;
   @ApiProperty()
   newPassword: string;

@@ -29,7 +29,8 @@ import {
 } from '@castcle-api/database';
 import {
   AccountAuthenIdType,
-  CredentialDocument
+  CredentialDocument,
+  OtpObjective
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
@@ -614,52 +615,93 @@ describe('AppController', () => {
       expect(acc.isGuest).toBe(false);
     });
   });
-
-  describe('requestLinkVerify', () => {
-    it('should update verifyToken and revocationDate after success', async () => {
-      const testId = 'registerId4';
-      const registerEmail = 'sompop4.kulapalanont@gmail.com';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'sompop12341';
-      const guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
-      );
-      await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'testLang'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: testId,
-            displayName: 'abc',
-            email: registerEmail,
-            password: password
+  describe('verifyPassword Flows', () => {
+    let registerResult: LoginResponse;
+    let genRefCode: string;
+    describe('requestLinkVerify', () => {
+      it('should update verifyToken and revocationDate after success', async () => {
+        const testId = 'registerId4';
+        const registerEmail = 'sompop4.kulapalanont@gmail.com';
+        const password = '2@HelloWorld';
+        const deviceUUID = 'sompop12341';
+        const guestResult = await appController.guestLogin(
+          { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+          { deviceUUID: deviceUUID }
+        );
+        const credentialGuest = await service.getCredentialFromAccessToken(
+          guestResult.accessToken
+        );
+        registerResult = await appController.register(
+          {
+            $credential: credentialGuest,
+            $token: guestResult.accessToken,
+            $language: 'testLang'
+          } as any,
+          {
+            channel: 'email',
+            payload: {
+              castcleId: testId,
+              displayName: 'abc',
+              email: registerEmail,
+              password: password
+            }
           }
-        }
-      );
-      const preAccountActivationToken =
-        await service.getAccountActivationFromCredential(credentialGuest);
-      const preToken = preAccountActivationToken.verifyToken;
-      expect(preAccountActivationToken.revocationDate).not.toBeDefined();
-      await appController.requestLinkVerify(
-        {
-          $credential: credentialGuest,
-          $language: 'th',
-          $token: credentialGuest.accessToken
-        } as any,
-        mockResponse
-      );
-      const postAccountActivationToken =
-        await service.getAccountActivationFromCredential(credentialGuest);
-      expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);
-      expect(postAccountActivationToken.revocationDate).toBeDefined();
+        );
+        const preAccountActivationToken =
+          await service.getAccountActivationFromCredential(credentialGuest);
+        const preToken = preAccountActivationToken.verifyToken;
+        expect(preAccountActivationToken.revocationDate).not.toBeDefined();
+        await appController.requestLinkVerify(
+          {
+            $credential: credentialGuest,
+            $language: 'th',
+            $token: credentialGuest.accessToken
+          } as any,
+          mockResponse
+        );
+        const postAccountActivationToken =
+          await service.getAccountActivationFromCredential(credentialGuest);
+        expect(preToken).not.toEqual(postAccountActivationToken.verifyToken);
+        expect(postAccountActivationToken.revocationDate).toBeDefined();
+      });
+    });
+
+    describe('verificationPassword', () => {
+      it('it should create otp document after send', async () => {
+        const credential = await service.getCredentialFromAccessToken(
+          registerResult.accessToken
+        );
+        const response = await appController.verificationPassword(
+          '2@HelloWorld',
+          {
+            $credential: credential,
+            $language: 'th'
+          } as any
+        );
+        expect(response.refCode).toBeDefined();
+        genRefCode = response.refCode;
+        expect(response.expiresTime).toBeDefined();
+      });
+    });
+
+    describe('changePasswordSubmit', () => {
+      it('should be able to change password', async () => {
+        const credential = await service.getCredentialFromAccessToken(
+          registerResult.accessToken
+        );
+        const response = await appController.changePasswordSubmit(
+          {
+            newPassword: '2@BlaBlaBla',
+            objective: OtpObjective.ChangePassword,
+            refCode: genRefCode
+          },
+          {
+            $credential: credential,
+            $language: 'th'
+          } as any
+        );
+        expect(response).toEqual('');
+      });
     });
   });
 

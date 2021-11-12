@@ -678,11 +678,10 @@ export class AuthenticationController {
   @Post('changePasswordSubmit')
   @HttpCode(204)
   async changePasswordSubmit(
-    @Body('refCode') refCode: string,
-    @Body('newPassword') newPassword: string,
+    @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
-    return this.appService.resetPassword({ refCode, newPassword }, req);
+    return this.appService.resetPassword(payload, req);
   }
 
   @ApiBearerAuth()
