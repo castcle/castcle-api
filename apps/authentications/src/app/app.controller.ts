@@ -565,21 +565,6 @@ export class AuthenticationController {
     }
   }
 
-  @ApiBearerAuth()
-  @ApiResponse({
-    status: 204
-  })
-  @CastcleBasicAuth()
-  @Post('resetPasswordSubmit')
-  @HttpCode(200)
-  async resetPasswordSubmit(
-    @Body() body: ChangePasswordBody,
-    @Req() req: CredentialRequest
-  ) {
-    this.logger.log('Start reset password refCode : ' + body.refCode);
-    return this.appService.resetPassword(body, req);
-  }
-
   @Get()
   getData() {
     const dt = new CommonDate();
