@@ -520,16 +520,16 @@ export class AuthenticationController {
     type: RequestOtpResponse
   })
   @CastcleBasicAuth()
-  @Post('forgotPasswordVerificationOTP')
+  @Post('verificationOTP')
   @HttpCode(200)
-  async forgotPasswordVerificationOtp(
+  async verificationOTP(
     @Body() body: ForgotPasswordVerificationOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
-      'Start forgot password OPT Verify channel : ' + body.channel
+      `Start verify OPT channel : ${body.channel} objective : ${body.objective}`
     );
-    const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
+    const otp = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
       const response: RequestOtpResponse = {
         refCode: otp.refCode,
@@ -551,7 +551,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
     this.logger.log(
-      `Start forgot password OPT channel : ${body.channel} objective : ${body.objective}`
+      `Start request OPT channel : ${body.channel} objective : ${body.objective}`
     );
     const otp = await this.appService.requestOtpCode(body, req);
     if (otp && otp.isValid()) {

@@ -1590,7 +1590,7 @@ describe('AppController', () => {
         credentialGuest
       );
 
-      const result = await appController.forgotPasswordVerificationOtp(
+      const result = await appController.verificationOTP(
         {
           objective: 'forgot_password',
           channel: 'mobile',
@@ -1624,7 +1624,7 @@ describe('AppController', () => {
         credentialGuest
       );
 
-      const result = await appController.forgotPasswordVerificationOtp(
+      const result = await appController.verificationOTP(
         {
           objective: 'forgot_password',
           channel: 'email',
@@ -1646,7 +1646,7 @@ describe('AppController', () => {
 
     it('should return Exception when get wrong channel', async () => {
       await expect(
-        appController.forgotPasswordVerificationOtp(
+        appController.verificationOTP(
           {
             objective: 'forgot_password',
             channel: 'test',
@@ -1671,7 +1671,7 @@ describe('AppController', () => {
 
     it('should return Exception when get empty account', async () => {
       await expect(
-        appController.forgotPasswordVerificationOtp(
+        appController.verificationOTP(
           {
             objective: 'forgot_password',
             channel: 'mobile',
@@ -1694,7 +1694,7 @@ describe('AppController', () => {
       );
 
       await expect(
-        appController.forgotPasswordVerificationOtp(
+        appController.verificationOTP(
           {
             objective: 'forgot_password',
             channel: 'email',
@@ -1717,7 +1717,7 @@ describe('AppController', () => {
       );
     });
 
-    it('should return Exception when imvalid otp', async () => {
+    it('should return Exception when imvalid otp and return lock otp when over 3 times', async () => {
       const otpCode = await appController.requestOTP(
         {
           objective: 'forgot_password',
@@ -1732,7 +1732,7 @@ describe('AppController', () => {
       );
 
       await expect(
-        appController.forgotPasswordVerificationOtp(
+        appController.verificationOTP(
           {
             objective: 'forgot_password',
             channel: 'mobile',
@@ -1749,6 +1749,72 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(
           CastcleStatus.INVALID_OTP,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: otpCode.refCode,
+            otp: '000000'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVALID_OTP,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: otpCode.refCode,
+            otp: '000000'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVALID_OTP,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: otpCode.refCode,
+            otp: '000000'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.LOCKED_OTP,
           credentialGuest.$language
         )
       );

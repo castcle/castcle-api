@@ -376,6 +376,19 @@ export class AuthenticationService {
   }
 
   /**
+   * Update retry count Otp Document
+   * @param {OtpDocument} otp
+   * @returns {OtpDocument}
+   */
+  async updateRetryOtp(otp: OtpDocument) {
+    const newRetry = (otp.retry ? otp.retry : 0) + 1;
+    const otpResult = await this._otpModel
+      .updateOne({ _id: otp.id }, { retry: newRetry })
+      .exec();
+    return otpResult;
+  }
+
+  /**
    * generate refCode and create Otp Document
    * @param {AccountDocument} account
    * @returns {OtpDocument}

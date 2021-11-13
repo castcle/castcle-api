@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { Password } from '@castcle-api/utils';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { env } from '../environment';
 import { Document, Model } from 'mongoose';
-import { CastcleBase } from './base.schema';
+import { env } from '../environment';
 import { Account } from './account.schema';
-import { Password } from '@castcle-api/utils';
+import { CastcleBase } from './base.schema';
 
 export enum OtpObjective {
   ChangePassword = 'change_password',
@@ -55,6 +55,9 @@ export class Otp extends CastcleBase {
 
   @Prop({ required: true })
   expireDate: Date;
+
+  @Prop()
+  retry: number;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);

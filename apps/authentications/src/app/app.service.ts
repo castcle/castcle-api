@@ -402,6 +402,14 @@ export class AppService {
     let otp: OtpDocument = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
 
+    if (!objective) {
+      this.logger.error(`Invalid objective.`);
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        credential.$language
+      );
+    }
+
     switch (request.channel) {
       case 'email': {
         account = await this.getAccountFromEmail(
@@ -472,12 +480,21 @@ export class AppService {
    * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
    */
-  async forgotPasswordVerificationOtp(
+  async verificationOTP(
     request: ForgotPasswordVerificationOtpDto,
     credential: CredentialRequest
   ) {
+    const limitRetry = 3;
     let account: AccountDocument = null;
     let receiver = '';
+
+    const objective: OtpObjective = <OtpObjective>request.objective;
+    if (!objective)
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        credential.$language
+      );
+
     switch (request.channel) {
       case 'email': {
         account = await this.getAccountFromEmail(
@@ -512,6 +529,18 @@ export class AppService {
       request.refCode
     );
 
+    if (otp.action !== objective) {
+      this.logger.error(`Invalid objective.`);
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
+    }
+
+    const retryCount = otp.retry ? otp.retry : 0;
+    if (retryCount >= limitRetry) {
+      this.logger.error(`Otp over limit retry : ${limitRetry}`);
+      await otp.delete();
+      throw new CastcleException(CastcleStatus.LOCKED_OTP);
+    }
+
     if (otp && otp.isValid()) {
       this.logger.log('Verify otp with twillio');
       const verifyOtpResult = await this.twillioClient.verifyOtp(
@@ -520,6 +549,7 @@ export class AppService {
       );
       this.logger.log('Twillio result : ' + verifyOtpResult.status);
       if (verifyOtpResult.status !== 'approved') {
+        await this.authService.updateRetryOtp(otp);
         this.logger.error(`Invalid Otp.`);
         throw new CastcleException(CastcleStatus.INVALID_OTP);
       }
@@ -528,10 +558,7 @@ export class AppService {
       await otp.delete();
 
       this.logger.log('generate new otp');
-      const newOtp = await this.authService.generateOtp(
-        account,
-        OtpObjective.VerifyForgotPassword
-      );
+      const newOtp = await this.authService.generateOtp(account, objective);
       return newOtp;
     } else {
       this.logger.error(`Otp expired.`);
