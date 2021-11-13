@@ -29,6 +29,7 @@ import { Comment, CommentDocument } from './comment.schema';
 import { Content, ContentDocument } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { FeedItemDocument } from './feedItem.schema';
 
 export type EngagementDocument = Engagement & Document;
 
@@ -38,6 +39,13 @@ export enum EngagementType {
   Quote = 'quote',
   Comment = 'comment'
 }
+
+const feedItemKey = {
+  like: 'liked',
+  comment: 'commented',
+  recast: 'recasted',
+  quote: 'quoteCast'
+};
 
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {
@@ -58,11 +66,19 @@ export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
   contentModel: Model<ContentDocument>,
-  commentModel: Model<CommentDocument>
+  commentModel: Model<CommentDocument>,
+  feedItemModel: Model<FeedItemDocument>
 ): mongoose.Schema<any> => {
   EngagementSchema.post('save', async function (doc, next) {
     const incEngagment: { [key: string]: number } = {};
+    const feedIncEngagement: { [key: string]: number } = {};
     incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] =
+      (doc as EngagementDocument).visibility === EntityVisibility.Publish
+        ? 1
+        : -1;
+    feedIncEngagement[
+      `content.${feedItemKey[(doc as EngagementDocument).type]}.count`
+    ] =
       (doc as EngagementDocument).visibility === EntityVisibility.Publish
         ? 1
         : -1;
@@ -78,6 +94,17 @@ export const EngagementSchemaFactory = (
           }
         )
         .exec();
+
+      await feedItemModel
+        .updateMany(
+          {
+            'content.id': (doc as EngagementDocument).targetRef.$id
+          },
+          {
+            $inc: feedIncEngagement
+          }
+        )
+        .exec();
     } else if (
       (doc as EngagementDocument).targetRef.$ref &&
       (doc as EngagementDocument).targetRef.$ref === 'comment'
@@ -89,11 +116,21 @@ export const EngagementSchemaFactory = (
           { $inc: incEngagment }
         )
         .exec();
+      await feedItemModel
+        .updateMany(
+          {
+            'content.id': (doc as EngagementDocument).targetRef.$id
+          },
+          {
+            $inc: feedIncEngagement
+          }
+        )
+        .exec();
     } else if (
       doc.targetRef.namespace &&
       (doc as EngagementDocument).visibility !== EntityVisibility.Publish
     ) {
-      if (doc.targetRef.namespace === 'content')
+      if (doc.targetRef.namespace === 'content') {
         await contentModel
           .updateOne(
             { _id: (doc as EngagementDocument).targetRef.oid },
@@ -102,6 +139,17 @@ export const EngagementSchemaFactory = (
             }
           )
           .exec();
+        await feedItemModel
+          .updateMany(
+            {
+              'content.id': (doc as EngagementDocument).targetRef.oid
+            },
+            {
+              $inc: feedIncEngagement
+            }
+          )
+          .exec();
+      }
       if (doc.targetRef.namespace === 'comment')
         await commentModel
           .updateOne(
@@ -116,6 +164,10 @@ export const EngagementSchemaFactory = (
   EngagementSchema.post('remove', async (doc, next) => {
     const incEngagment: { [key: string]: number } = {};
     incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
+    const feedIncEngagement: { [key: string]: number } = {};
+    feedIncEngagement[
+      `content.${feedItemKey[(doc as EngagementDocument).type]}.count`
+    ] = -1;
     if ((doc as EngagementDocument).targetRef.namespace === 'content') {
       const content = await contentModel
         .findById((doc as EngagementDocument).targetRef.oid)
@@ -129,6 +181,16 @@ export const EngagementSchemaFactory = (
         )
         .exec();
       console.log(result);
+      await feedItemModel
+        .updateMany(
+          {
+            'content.id': (doc as EngagementDocument).targetRef.oid
+          },
+          {
+            $inc: feedIncEngagement
+          }
+        )
+        .exec();
     } else {
       const comment = await commentModel
         .findById((doc as EngagementDocument).targetRef.oid)

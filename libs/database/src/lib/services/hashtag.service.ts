@@ -23,6 +23,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { BlogPayload } from '../dtos';
+import { CommentDto } from '../dtos/comment.dto';
+import { ImagePayload, ShortPayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
 import { HashtagDocument } from '../schemas/hashtag.schema';
 
@@ -58,5 +61,41 @@ export class HashtagService {
 
     const createResult = await new this._hashtagModel(newHashtag).save();
     return createResult;
+  };
+
+  /**
+   * Return array of hashtag that could create from string
+   * @param {string} text
+   * @returns {string[]}
+   */
+  extractHashtagFromText = (text: string) =>
+    text.match(/\s\#([a-zA-Z]+\b)(?!;)/g)
+      ? text.match(/\s\#([a-zA-Z]+\b)(?!;)/g).map((item) => item.split(' #')[1])
+      : [];
+
+  /**
+   * return array of hashtag from ContentPayload
+   * @param payload
+   * @returns
+   */
+  extractHashtagFromContentPayload = (
+    payload: ShortPayload | BlogPayload | ImagePayload
+  ) => {
+    if ((payload as ShortPayload).message) {
+      return this.extractHashtagFromText((payload as ShortPayload).message);
+    }
+    return [];
+  };
+
+  /**
+   *
+   * @param commentDto
+   * @returns
+   */
+  extractHashtagFromCommentDto = (commentDto: CommentDto) => {
+    if (commentDto.message) {
+      return this.extractHashtagFromText(commentDto.message);
+    }
+    return [];
   };
 }

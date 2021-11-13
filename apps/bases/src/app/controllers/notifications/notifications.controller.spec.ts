@@ -23,6 +23,7 @@
 import {
   AuthenticationService,
   ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -176,7 +177,8 @@ describe('NotificationsController', () => {
         ContentService,
         NotificationService,
         NotificationProducer,
-        UserProducer
+        UserProducer,
+        HashtagService
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
