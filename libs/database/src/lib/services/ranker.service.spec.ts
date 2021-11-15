@@ -39,6 +39,7 @@ import { ContentType, ShortPayload } from '../dtos';
 import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
+import { HashtagService } from './hashtag.service';
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -95,7 +96,8 @@ describe('Ranker Service', () => {
     UserService,
     AuthenticationService,
     RankerService,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;

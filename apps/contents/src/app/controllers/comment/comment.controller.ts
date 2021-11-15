@@ -36,10 +36,15 @@ import {
 import {
   AuthenticationService,
   UserService,
-  ContentService
+  ContentService,
+  NotificationService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  NotificationSource,
+  NotificationType
+} from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
@@ -65,7 +70,8 @@ export class CommentController {
     private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
-    private caslAbility: CaslAbilityFactory
+    private caslAbility: CaslAbilityFactory,
+    private notifyService: NotificationService
   ) {}
   private readonly logger = new CastLogger(
     CommentController.name,
@@ -105,6 +111,17 @@ export class CommentController {
           message: commentBody.message
         }
       );
+      this.notifyService.notifyToUser({
+        type: NotificationType.Comment,
+        message: `${user.displayName} ตอบกลับโพสต์ของคุณ`,
+        read: false,
+        source: NotificationSource.Profile,
+        sourceUserId: user._id,
+        targetRef: {
+          _id: comment._id
+        },
+        account: { _id: content.author.id }
+      });
       return {
         payload: await comment.toCommentPayload(
           this.contentService._commentModel
@@ -159,6 +176,17 @@ export class CommentController {
     );
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message
+    });
+    this.notifyService.notifyToUser({
+      type: NotificationType.Comment,
+      message: `${user.displayName} ตอบกลับความคิดเห็นของคุณ`,
+      read: false,
+      source: NotificationSource.Profile,
+      sourceUserId: user._id,
+      targetRef: {
+        _id: comment._id
+      },
+      account: { _id: comment.author._id }
     });
     return {
       payload: await replyComment.toCommentPayload(
@@ -221,6 +249,17 @@ export class CommentController {
       likeCommentBody.castcleId
     );
     await this.contentService.likeComment(user, comment);
+    this.notifyService.notifyToUser({
+      type: NotificationType.Comment,
+      message: `${user.displayName} ถูกใจความคิดเห็นคุณ`,
+      read: false,
+      source: NotificationSource.Profile,
+      sourceUserId: user._id,
+      targetRef: {
+        _id: comment._id
+      },
+      account: { _id: comment.author._id }
+    });
     return '';
   }
 

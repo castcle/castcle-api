@@ -23,6 +23,7 @@
 import {
   AuthenticationService,
   ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -122,7 +123,9 @@ const creatMockData = async (
       $id: docRefId
     },
     read: false,
-    credential: userCredential
+    account: {
+      _id: userCredential.account._id
+    }
   });
   await newNotification.save();
 };
@@ -174,7 +177,8 @@ describe('NotificationsController', () => {
         ContentService,
         NotificationService,
         NotificationProducer,
-        UserProducer
+        UserProducer,
+        HashtagService
       ]
     }).compile();
     userService = app.get<UserService>(UserService);
@@ -227,8 +231,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample profile',
-            source: 'profile',
+            message: 'sample PROFILE',
+            source: 'PROFILE',
             read: false,
             content: {
               id: null
@@ -243,8 +247,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample profile',
-            source: 'profile',
+            message: 'sample PROFILE',
+            source: 'PROFILE',
             read: false,
             content: {
               id: null
@@ -288,8 +292,8 @@ describe('NotificationsController', () => {
           {
             id: '',
             avatar: '',
-            message: 'sample page',
-            source: 'page',
+            message: 'sample PAGE',
+            source: 'PAGE',
             read: false,
             content: {
               id: null

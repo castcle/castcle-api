@@ -43,6 +43,7 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
+import { HashtagService } from './hashtag.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
@@ -107,7 +108,8 @@ describe('NotificationService', () => {
     AuthenticationService,
     NotificationService,
     NotificationProducer,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;
@@ -157,8 +159,8 @@ describe('NotificationService', () => {
         _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: {
-        _id: result.credentialDocument.id
+      account: {
+        _id: result.accountDocument.id
       }
     });
     await newNoti.save();
@@ -166,7 +168,7 @@ describe('NotificationService', () => {
     const newNoti2 = new service._notificationModel({
       avatar: '',
       message: 'sample page',
-      source: 'page',
+      source: NotificationSource.Page,
       sourceUserId: {
         _id: user._id
       },
@@ -175,8 +177,8 @@ describe('NotificationService', () => {
         _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: {
-        _id: result.credentialDocument.id
+      account: {
+        _id: result.accountDocument.id
       }
     });
     await newNoti2.save();
@@ -192,8 +194,8 @@ describe('NotificationService', () => {
         _id: '6138afa4f616a467b5c4eb72'
       },
       read: false,
-      credential: {
-        _id: result.credentialDocument.id
+      account: {
+        _id: result.accountDocument.id
       }
     });
     await newNoti3.save();
@@ -303,7 +305,6 @@ describe('NotificationService', () => {
   describe('#notifyToUser', () => {
     it('should create new notification with type comment in db', async () => {
       const newNoti: CreateNotification = {
-        avatar: 'http://avatar.com/1',
         message: 'sample page',
         source: NotificationSource.Profile,
         sourceUserId: {
@@ -314,8 +315,8 @@ describe('NotificationService', () => {
           _id: '6138afa4f616a467b5c4eb72'
         },
         read: false,
-        credential: {
-          _id: result.credentialDocument.id
+        account: {
+          _id: result.accountDocument.id
         }
       };
 
@@ -324,7 +325,6 @@ describe('NotificationService', () => {
 
       expect(resultData).toBeDefined();
       expect(totalNoti.total).toEqual(3);
-      expect(resultData.avatar).toEqual(newNoti.avatar);
       expect(resultData.message).toEqual(newNoti.message);
       expect(resultData.source).toEqual(newNoti.source);
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
@@ -332,14 +332,11 @@ describe('NotificationService', () => {
       expect(resultData.targetRef.$ref).toEqual(NotificationType.Comment);
       expect(resultData.targetRef.$id).toEqual(newNoti.targetRef._id);
       expect(resultData.read).toEqual(newNoti.read);
-      expect(resultData.credential._id.toString()).toEqual(
-        newNoti.credential._id
-      );
+      expect(resultData.account._id.toString()).toEqual(newNoti.account._id);
     });
 
     it('should create new notification with type system in db', async () => {
       const newNoti: CreateNotification = {
-        avatar: 'http://avatar.com/1',
         message: 'sample page',
         source: NotificationSource.Profile,
         sourceUserId: {
@@ -350,8 +347,8 @@ describe('NotificationService', () => {
           _id: '6138afa4f616a467b5c4eb72'
         },
         read: false,
-        credential: {
-          _id: result.credentialDocument.id
+        account: {
+          _id: result.accountDocument.id
         }
       };
 
@@ -360,16 +357,13 @@ describe('NotificationService', () => {
 
       expect(resultData).toBeDefined();
       expect(totalNoti.total).toEqual(4);
-      expect(resultData.avatar).toEqual(newNoti.avatar);
       expect(resultData.message).toEqual(newNoti.message);
       expect(resultData.source).toEqual(newNoti.source);
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
       expect(resultData.type).toEqual(newNoti.type);
       expect(resultData.targetRef.$ref).toBeNull();
       expect(resultData.read).toEqual(newNoti.read);
-      expect(resultData.credential._id.toString()).toEqual(
-        newNoti.credential._id
-      );
+      expect(resultData.account._id.toString()).toEqual(newNoti.account._id);
     });
   });
 
@@ -439,8 +433,8 @@ describe('NotificationService', () => {
             id: '6138afa4f616a467b5c4eb72'
           },
           read: false,
-          credential: {
-            _id: result.credentialDocument.id
+          account: {
+            _id: result.accountDocument.id
           }
         });
         await newNoti.save();

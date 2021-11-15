@@ -150,6 +150,8 @@ export class SuggestCastcleIdReponse {
 
 export class ChangePasswordBody {
   @ApiProperty()
+  objective: string;
+  @ApiProperty()
   refCode: string;
   @ApiProperty()
   newPassword: string;
@@ -209,7 +211,10 @@ export class ForgotPasswordPayload {
   mobileNumber: string;
 }
 
-export class ForgotPasswordRequestOtpDto {
+export class RequestOtpDto {
+  @ApiProperty()
+  objective: string;
+
   @ApiProperty()
   channel: string;
 
@@ -217,7 +222,7 @@ export class ForgotPasswordRequestOtpDto {
   payload: ForgotPasswordPayload;
 }
 
-export class ForgotPasswordResponse {
+export class RequestOtpResponse {
   @ApiProperty()
   refCode: string;
 
@@ -225,7 +230,7 @@ export class ForgotPasswordResponse {
   expiresTime: string;
 }
 
-export class ForgotPasswordVerificationOtpDto extends ForgotPasswordRequestOtpDto {
+export class ForgotPasswordVerificationOtpDto extends RequestOtpDto {
   @ApiProperty()
   refCode: string;
 
