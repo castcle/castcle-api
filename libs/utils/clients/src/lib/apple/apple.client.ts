@@ -23,7 +23,11 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
-import { AppleSignIn } from 'apple-sign-in-rest';
+import {
+  AppleIdTokenType,
+  AppleSignIn,
+  RefreshTokenResponse
+} from 'apple-sign-in-rest';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -46,15 +50,54 @@ export class AppleClient {
   });
 
   /**
-   * Request Token
-   * @returns {string} token data
+   * Request Authorizatio Url
+   * @param {string} callBackUrl callBack Url
+   * @returns {string} Authorization url
    */
-  async requestToken(callBackUrl: string): Promise<string> {
+  async requestAuthorizationUrl(callBackUrl: string): Promise<string> {
+    this.logger.log('Request apple authorize url.');
     return await this.appleSignIn.getAuthorizationUrl({
       scope: ['name', 'email'],
       redirectUri: callBackUrl,
       state: new Date().getTime().toString(),
       nonce: uuidv4()
     });
+  }
+
+  /**
+   * Verify Token
+   * @param {string} token token
+   * @param {string} nonce nonce
+   * @param {string} subject subject
+   * @returns {AppleIdTokenType} token data
+   */
+  async verifyToken(
+    token: string,
+    nonce: string,
+    subject: string
+  ): Promise<AppleIdTokenType> {
+    this.logger.log('Verify apple token.');
+    return await this.appleSignIn.verifyIdToken(token, {
+      nonce: nonce,
+      subject: subject,
+      ignoreExpiration: true
+    });
+  }
+
+  /**
+   * Refresh Token
+   * @param {string} clientSecret client secret
+   * @param {string} refreshToken refresh token
+   * @returns {RefreshTokenResponse} token data
+   */
+  async refreshToken(
+    clientSecret: string,
+    refreshToken: string
+  ): Promise<RefreshTokenResponse> {
+    this.logger.log('Refresh apple token.');
+    return await this.appleSignIn.refreshAuthorizationToken(
+      clientSecret,
+      refreshToken
+    );
   }
 }
