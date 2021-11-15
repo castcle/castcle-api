@@ -49,10 +49,10 @@ export class AppleClient {
    * Request Token
    * @returns {string} token data
    */
-  async requestToken(): Promise<string> {
+  async requestToken(callBackUrl: string): Promise<string> {
     return await this.appleSignIn.getAuthorizationUrl({
       scope: ['name', 'email'],
-      redirectUri: 'http://localhost:3000/auth/apple/callback',
+      redirectUri: callBackUrl,
       state: new Date().getTime().toString(),
       nonce: uuidv4()
     });
