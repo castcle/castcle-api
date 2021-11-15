@@ -70,12 +70,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export enum OtpObjective2 {
-  ChangePassword = 'change_password',
-  ForgotPassword = 'forgot_password',
-  VerifyForgotPassword = 'verify_forgotpassword'
-}
-
 @Injectable()
 export class AppService {
   constructor(
