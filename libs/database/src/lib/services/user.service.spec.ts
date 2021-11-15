@@ -52,6 +52,7 @@ import {
 } from '../dtos/common.dto';
 import { CommentDocument, ContentDocument } from '../schemas';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { HashtagService } from './hashtag.service';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -104,7 +105,8 @@ describe('User Service', () => {
     UserService,
     AuthenticationService,
     ContentService,
-    UserProducer
+    UserProducer,
+    HashtagService
   ];
   let result: {
     accountDocument: AccountDocument;

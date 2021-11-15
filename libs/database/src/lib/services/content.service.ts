@@ -61,6 +61,7 @@ import { CommentType } from '../schemas/comment.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
+import { HashtagService } from './hashtag.service';
 
 @Injectable()
 export class ContentService {
@@ -79,7 +80,8 @@ export class ContentService {
     @InjectModel('Comment')
     public _commentModel: Model<CommentDocument>,
     @InjectModel('FeedItem')
-    public _feedItemModel: Model<FeedItemDocument>
+    public _feedItemModel: Model<FeedItemDocument>,
+    public hashtagService: HashtagService
   ) {}
 
   /**
@@ -95,14 +97,19 @@ export class ContentService {
       author = this._getAuthorFromUser(page);
     }*/
     const author = this._getAuthorFromUser(user);
+    const hashtags = this.hashtagService.extractHashtagFromContentPayload(
+      contentDto.payload
+    );
     const newContent = {
       author: author,
       payload: contentDto.payload,
       revisionCount: 0,
       type: contentDto.type,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
+      hashtags: hashtags
     } as Content;
     const content = new this._contentModel(newContent);
+
     return content.save();
   }
 
@@ -182,6 +189,9 @@ export class ContentService {
     const content = await this._contentModel.findById(id).exec();
     content.payload = contentDto.payload;
     content.type = contentDto.type;
+    content.hashtags = this.hashtagService.extractHashtagFromContentPayload(
+      contentDto.payload
+    );
     return content.save();
   };
 
@@ -576,7 +586,7 @@ export class ContentService {
     content: ContentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
-    const newComment = new this._commentModel({
+    const dto = {
       author: author as User,
       message: updateCommentDto.message,
       targetRef: {
@@ -584,8 +594,9 @@ export class ContentService {
         $ref: 'content'
       },
       type: CommentType.Comment
-    } as CommentDto);
-
+    } as CommentDto;
+    const newComment = new this._commentModel(dto);
+    newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
     const comment = await newComment.save();
     await this._updateCommentCounter(comment, author._id);
     return comment;
@@ -603,7 +614,7 @@ export class ContentService {
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
-    const newComment = new this._commentModel({
+    const dto = {
       author: author as User,
       message: updateCommentDto.message,
       targetRef: {
@@ -611,7 +622,9 @@ export class ContentService {
         $ref: 'comment'
       },
       type: CommentType.Reply
-    } as CommentDto);
+    } as CommentDto;
+    const newComment = new this._commentModel(dto);
+    newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
     const comment = await newComment.save();
     await this._updateCommentCounter(comment, author._id);
     return comment;
@@ -675,6 +688,9 @@ export class ContentService {
   ) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
+    comment.hashtags = this.hashtagService.extractHashtagFromText(
+      updateCommentDto.message
+    );
     return comment.save();
   };
 

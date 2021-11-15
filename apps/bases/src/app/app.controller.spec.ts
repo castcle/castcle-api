@@ -24,6 +24,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   ContentService,
+  HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   RankerService
@@ -82,7 +83,8 @@ describe('AppController', () => {
         RankerService,
         AuthenticationService,
         ContentService,
-        UserProducer
+        UserProducer,
+        HashtagService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
