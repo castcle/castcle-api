@@ -652,7 +652,7 @@ export class AuthenticationController {
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @ApiBody({
     type: ChangePasswordBody
   })
