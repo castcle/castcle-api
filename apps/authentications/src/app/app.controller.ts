@@ -28,7 +28,10 @@ import {
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
-import { CastcleController } from '@castcle-api/utils/decorators';
+import {
+  CastcleBasicAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
@@ -62,8 +65,6 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
-  ForgotPasswordRequestOtpDto,
-  ForgotPasswordResponse,
   ForgotPasswordVerificationOtpDto,
   GuestLoginDto,
   LoginDto,
@@ -71,6 +72,8 @@ import {
   OauthTokenResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
+  RequestOtpDto,
+  RequestOtpResponse,
   SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
@@ -511,35 +514,24 @@ export class AuthenticationController {
     } as CheckingResponse;
   }
 
-  // PLAN : !!!
-  /* @Post('requestOTP')
-  requestOTP() {
-    return {
-      refCode: 'xxxxxxxx', // 8 หลัก
-      objective: 'mergeAccount',
-      expiresTime: '2021–06–16T11:22:33Z' // 5 นาทีจาก create
-    };
-  }
-*/
-
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: ForgotPasswordResponse
+    type: RequestOtpResponse
   })
-  @UseInterceptors(CredentialInterceptor)
-  @Post('forgotPasswordVerificationOTP')
+  @CastcleBasicAuth()
+  @Post('verificationOTP')
   @HttpCode(200)
-  async forgotPasswordVerificationOtp(
+  async verificationOTP(
     @Body() body: ForgotPasswordVerificationOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
-      'Start forgot password OPT Verify channel : ' + body.channel
+      `Start verify OPT channel : ${body.channel} objective : ${body.objective}`
     );
-    const otp = await this.appService.forgotPasswordVerificationOtp(body, req);
+    const otp = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
+      const response: RequestOtpResponse = {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -552,19 +544,18 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: ForgotPasswordResponse
+    type: RequestOtpResponse
   })
-  @UseInterceptors(CredentialInterceptor)
-  @Post('forgotPasswordRequestOTP')
+  @CastcleBasicAuth()
+  @Post('requestOTP')
   @HttpCode(200)
-  async forgotPasswordRequestOtp(
-    @Body() body: ForgotPasswordRequestOtpDto,
-    @Req() req: CredentialRequest
-  ) {
-    this.logger.log('Start forgot password OPT channel : ' + body.channel);
-    const otp = await this.appService.forgotPasswordOtp(body, req);
+  async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
+    this.logger.log(
+      `Start request OPT channel : ${body.channel} objective : ${body.objective}`
+    );
+    const otp = await this.appService.requestOtpCode(body, req);
     if (otp && otp.isValid()) {
-      const response: ForgotPasswordResponse = {
+      const response: RequestOtpResponse = {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -674,26 +665,7 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
-    if (payload.objective !== OtpObjective.ChangePassword)
-      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
-    this.appService.validatePassword(payload.newPassword, req.$language);
-    const otp = await this.authService.getOtpFromAccount(
-      account,
-      payload.refCode
-    );
-    if (otp && otp.isValid()) {
-      //change password
-      const result = await this.authService.changePassword(
-        account,
-        otp,
-        payload.newPassword
-      );
-      return '';
-    } else
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+    return this.appService.resetPassword(payload, req);
   }
 
   @ApiBearerAuth()
