@@ -72,6 +72,10 @@ export class SocialConnectInfo {
   auth_date?: string;
   @ApiProperty()
   hash?: string;
+  @ApiProperty()
+  nonce?: string;
+  @ApiProperty()
+  subject?: string;
 }
 
 export class SocialConnectDto {

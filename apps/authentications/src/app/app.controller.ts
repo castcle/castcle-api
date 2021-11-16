@@ -671,7 +671,7 @@ export class AuthenticationController {
     return this.appService.resetPassword(payload, req);
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiBody({
     type: SocialConnectDto
   })
@@ -779,7 +779,7 @@ export class AuthenticationController {
     return token;
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiBody({
     type: SocialConnectDto
   })
@@ -900,10 +900,44 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Apple: {
+        this.logger.log(`Apple Connect`);
+        const userApp = await this.appService.appleConnect(
+          body.payload,
+          req.$language
+        );
+
+        if (userApp) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userApp.sub,
+              AccountAuthenIdType.Apple
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Apple,
+              userApp.sub,
+              body.payload.authToken,
+              ''
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiOkResponse({
     status: 200,
     type: OauthTokenResponse

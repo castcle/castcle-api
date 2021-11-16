@@ -33,6 +33,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils';
 import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
+  AppleClient,
   FacebookAccessToken,
   FacebookClient,
   FacebookUserInfo,
@@ -79,7 +80,8 @@ export class AppService {
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwillioClient,
+    private appleClient: AppleClient
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -265,7 +267,7 @@ export class AppService {
    * Connect Twitter API
    * @param {SocialConnectInfo} payload response from twitter
    * @param {string} language en is default
-   * @returns {FacebookUserInfo}
+   * @returns {TwitterUserData, TwitterAccessToken}
    */
   async twitterConnect(payload: SocialConnectInfo, language: string) {
     if (
@@ -412,7 +414,7 @@ export class AppService {
         );
 
         this.logger.log('Create Otp');
-        otp = await this.passwordRequestOtp(
+        otp = await this.generateAndSendOtp(
           account.email,
           account,
           TwillioChannel.Email,
@@ -428,7 +430,7 @@ export class AppService {
         );
 
         this.logger.log('Create OTP');
-        otp = await this.passwordRequestOtp(
+        otp = await this.generateAndSendOtp(
           account.mobile.countryCode + account.mobile.number,
           account,
           TwillioChannel.Mobile,
@@ -448,13 +450,13 @@ export class AppService {
   }
 
   /**
-   * password request Otp
+   * generate and send Otp
    * @param {string} reciever
    * @param {AccountDocument} account
    * @param {TwillioChannel} account
    * @returns {OtpDocument} Opt data
    */
-  async passwordRequestOtp(
+  async generateAndSendOtp(
     reciever: string,
     account: AccountDocument,
     channel: TwillioChannel,
@@ -595,5 +597,31 @@ export class AppService {
         credential.$language
       );
     }
+  }
+
+  /**
+   * Connect Apple API
+   * @param {SocialConnectInfo} payload response from twitter
+   * @param {string} language en is default
+   * @returns {AppleIdTokenType}
+   */
+  async appleConnect(payload: SocialConnectInfo, language: string) {
+    if (!payload.authToken || !payload.nonce || !payload.subject) {
+      this.logger.error(`payload missing.`);
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
+    }
+
+    this.logger.log(`verify apple user token.`);
+    const userVerify = await this.appleClient.verifyToken(
+      payload.authToken,
+      payload.nonce,
+      payload.subject
+    );
+
+    if (!userVerify) {
+      this.logger.error(`Can't get user data.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    }
+    return userVerify;
   }
 }
