@@ -70,6 +70,12 @@ export class Account extends CastcleBase {
     number: string;
   };
 
+  @Prop({ type: Object })
+  geolocation?: {
+    countryCode: string;
+    continentCode: string;
+  };
+
   @Prop({ type: Array })
   credentials: ICredential[];
 }

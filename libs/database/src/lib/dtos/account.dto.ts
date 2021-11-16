@@ -58,5 +58,9 @@ export class CreateAccountDto {
   preferences: {
     languages: string[];
   };
+  geolocation?: {
+    countryCode: string;
+    continentCode: string;
+  };
   visibility = EntityVisibility.Publish;
 }

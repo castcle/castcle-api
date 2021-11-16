@@ -21,6 +21,9 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
+import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs/operators';
+import { lastValueFrom } from 'rxjs';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,
@@ -51,12 +54,16 @@ import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
+  CheckIpDto,
   ForgotPasswordVerificationOtpDto,
   RequestOtpDto,
   SocialConnect,
   SocialConnectInfo,
   TokenResponse
 } from './dtos/dto';
+
+const IP_CHECK_URL = 'http://ip-api.com/json/';
+
 /*
  * TODO: !!!
  */
@@ -79,7 +86,8 @@ export class AppService {
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwillioClient,
+    private httpService: HttpService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -594,6 +602,26 @@ export class AppService {
         CastcleStatus.INVLAID_REFCODE,
         credential.$language
       );
+    }
+  }
+
+  /**
+   * Get country and continentalCode from http://ip-api.com/json/
+   * @param {string} ip
+   * @returns {CheckIpDto}
+   */
+  async getGeolocationFromIp(ip: string) {
+    try {
+      const result = await lastValueFrom(
+        this.httpService
+          .get<CheckIpDto>(
+            `${IP_CHECK_URL}/${ip}?fields=continentCode,countryCode`
+          )
+          .pipe(map(({ data }) => data))
+      );
+      return result;
+    } catch (error) {
+      return null;
     }
   }
 }
