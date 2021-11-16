@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleName } from '@castcle-api/utils';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -61,6 +62,97 @@ export class HashtagService {
 
     const createResult = await new this._hashtagModel(newHashtag).save();
     return createResult;
+  };
+
+  /**
+   * Create a tag or increase the score of the tags
+   * @param {string} tag
+   * @returns
+   */
+  createFromTag = async (tag: string) => {
+    const name = new CastcleName(tag);
+    return this._hashtagModel
+      .updateOne(
+        {
+          tag: name.slug
+        },
+        {
+          $setOnInsert: {
+            tag: name.slug,
+            name: name.name,
+            aggregator: {
+              name: 'default'
+            }
+          },
+          $inc: {
+            score: 1
+          }
+        },
+        {
+          upsert: true
+        }
+      )
+      .exec();
+  };
+
+  /**
+   * Remove score from tag
+   * @param {string} tag
+   * @returns
+   */
+  removeFromTag = async (tag: string) => {
+    const name = new CastcleName(tag);
+    return this._hashtagModel
+      .updateOne(
+        {
+          tag: name.slug,
+          score: {
+            $gt: 0
+          }
+        },
+        {
+          $inc: {
+            score: -1
+          }
+        }
+      )
+      .exec();
+  };
+
+  /**
+   * Remove multiple tags
+   * @param {string[]} tags
+   * @returns
+   */
+  removeFromTags = async (tags: string[]) =>
+    Promise.all(tags.map((tag) => this.removeFromTag(tag)));
+
+  /**
+   * Create tags
+   * @param {string[]} tags
+   * @returns
+   */
+  createFromTags = async (tags: string[]) =>
+    Promise.all(tags.map((tag) => this.createFromTag(tag)));
+
+  /**
+   * Update only essential tags
+   * @param {string[]} newTags
+   * @param {string[]} oldTags
+   * @returns
+   */
+  updateFromTags = async (newTags: string[], oldTags?: string[]) => {
+    if (oldTags) {
+      //find conflict tag
+      const removeTags = oldTags.filter(
+        (oldTag) => newTags.findIndex((nT) => nT === oldTag) < 0
+      );
+      await Promise.all(removeTags.map((t) => this.removeFromTag(t)));
+      newTags = newTags.filter(
+        (nT) => oldTags.findIndex((oldTag) => nT === oldTag) < 0
+      );
+    }
+    return Promise.all(newTags.map((tag) => this.createFromTag(tag)));
   };
 
   /**

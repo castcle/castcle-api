@@ -38,7 +38,7 @@ import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility
 } from '../dtos';
-import { CommentDocument, UserDocument } from '../schemas';
+import { CommentDocument, HashtagDocument, UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
@@ -157,6 +157,7 @@ describe('ContentService', () => {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
   };
+  let hashtagContent: ContentDocument;
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
@@ -208,6 +209,22 @@ describe('ContentService', () => {
         social: false
       } as UserVerified);
     });
+    it('should create a hashtag stat', async () => {
+      const shortPayload: ShortPayload = {
+        message: 'this is test status #cool #yo'
+      };
+      hashtagContent = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload,
+        castcleId: user.displayId
+      });
+      const hashtags = await service.hashtagService.getAll();
+      expect(hashtags.length).toEqual(2);
+      expect(['cool', 'yo']).toContain(hashtags[0].tag);
+      expect(['cool', 'yo']).toContain(hashtags[1].tag);
+      expect(hashtags[0].score).toEqual(1);
+      expect(hashtags[1].score).toEqual(1);
+    });
   });
   describe('#updateContentFromId()', () => {
     it('should update from saveDTO with content id', async () => {
@@ -250,6 +267,46 @@ describe('ContentService', () => {
       );
       const revisions = await service.getContentRevisions(postContent);
       expect(postContent.revisionCount).toEqual(revisions.length);
+    });
+    it('should update the content hashtag', async () => {
+      const shortPayload: ShortPayload = {
+        message: 'this is test status #sompop #yo'
+      };
+      await service.updateContentFromId(hashtagContent._id, {
+        type: ContentType.Short,
+        payload: shortPayload,
+        castcleId: user.displayId
+      });
+      const hashtags = await service.hashtagService.getAll();
+      const sompopTag = hashtags.find((ht) => ht.tag === 'sompop');
+      expect(sompopTag).toBeDefined();
+      expect(sompopTag.score).toEqual(1);
+      const coolTag = hashtags.find((ht) => ht.tag === 'cool');
+      expect(coolTag.score).toEqual(0);
+      const yoTag = hashtags.find((ht) => ht.tag === 'yo');
+      expect(yoTag.score).toEqual(1);
+    });
+  });
+  describe('#deleteContentFromId()', () => {
+    it('should set delete content flag to Delete', async () => {
+      const shortPayload: ShortPayload = {
+        message: 'this is test status #cool #yo'
+      };
+      const toDeleteContent = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: shortPayload,
+        castcleId: user.displayId
+      });
+      await service.deleteContentFromId(toDeleteContent.id);
+      const postDelete = await service.getContentFromId(toDeleteContent.id);
+      expect(postDelete).toBeNull();
+    });
+    it('should be able to decrease hashtag Score ', async () => {
+      await service.deleteContentFromId(hashtagContent._id);
+      const hashtags = await service.hashtagService.getAll();
+      expect(hashtags[0].score).toEqual(0);
+      expect(hashtags[1].score).toEqual(0);
+      expect(hashtags[2].score).toEqual(0);
     });
   });
   describe('#getContentsFromUser()', () => {
@@ -478,7 +535,7 @@ describe('ContentService', () => {
         it('should be create a document in comment collection', async () => {
           //console.log('create Comment for content');
           rootComment = await service.createCommentForContent(user, contentA, {
-            message: 'Hello'
+            message: 'Hello #hello'
           });
           expect(contentA.engagements.comment.count).toEqual(0);
           const findResult = await service._commentModel
@@ -499,6 +556,11 @@ describe('ContentService', () => {
           const postContent = await service.getContentFromId(contentA._id);
           expect(postContent.engagements.comment.count).toEqual(1);
         });
+        it('should create hashtag', async () => {
+          const hashtags = await service.hashtagService.getAll();
+          const helloTag = hashtags.find((ht) => ht.tag === 'hello');
+          expect(helloTag.score).toEqual(1);
+        });
       });
       describe('#replyComment()', () => {
         it('should create a document in comment collection', async () => {
@@ -508,7 +570,7 @@ describe('ContentService', () => {
             .exec();
           expect(postComment.engagements.comment.count).toEqual(0);
           const replyResult = await service.replyComment(user, rootComment, {
-            message: 'nice'
+            message: 'nice #baby'
           });
           const findResult = await service._commentModel
             .find({ targetRef: { $id: rootComment._id, $ref: 'comment' } })
@@ -525,6 +587,11 @@ describe('ContentService', () => {
           );
           replyComment = findResult[0];
         });
+        it('should create hashtag ', async () => {
+          const hashtags = await service.hashtagService.getAll();
+          const babyTag = hashtags.find((ht) => ht.tag === 'baby');
+          expect(babyTag.score).toEqual(1);
+        });
         it('should increase engagement.comment of comment', async () => {
           const postComment = await service._commentModel
             .findById(rootComment._id)
@@ -534,7 +601,7 @@ describe('ContentService', () => {
       });
       describe('#updateComment()', () => {
         it('should update the comment message', async () => {
-          expect(rootComment.message).toEqual('Hello');
+          expect(rootComment.message).toEqual('Hello #hello');
           const postComment = await service.updateComment(rootComment, {
             message: 'cool'
           });
@@ -549,6 +616,11 @@ describe('ContentService', () => {
             .findById(rootComment._id)
             .exec();
           expect(postComment.engagements.comment.count).toEqual(1);
+        });
+        it('should update comment score', async () => {
+          const hashtags = await service.hashtagService.getAll();
+          const helloTag = hashtags.find((ht) => ht.tag === 'hello');
+          expect(helloTag.score).toEqual(0);
         });
       });
       describe('#getCommentsFromContent()', () => {
