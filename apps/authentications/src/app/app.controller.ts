@@ -775,6 +775,34 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Apple: {
+        const userApple = await this.appService.appleConnect(
+          body.payload,
+          req.$language
+        );
+        if (userApple && userApple.sub) {
+          this.logger.log(`social login Apple`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: userApple.sub,
+              email: userApple.email ? userApple.email : '',
+              name: `${body.payload.first_name} ${body.payload.last_name}`,
+              provider: AccountAuthenIdType.Apple,
+              profileImage: '',
+              socialToken: body.payload.authToken,
+              socialSecretToken: ''
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
     return token;
   }
