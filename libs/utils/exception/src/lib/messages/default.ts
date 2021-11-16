@@ -110,7 +110,7 @@ export const ErrorMessages = {
   },
   '3011': {
     statusCode: '400',
-    code: '3009',
+    code: '3011',
     message: 'Incorrect password. Please try again.'
   },
   '3012': {
