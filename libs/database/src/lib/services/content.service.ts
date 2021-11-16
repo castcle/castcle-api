@@ -100,6 +100,8 @@ export class ContentService {
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       contentDto.payload
     );
+    //create hashtag
+    await this.hashtagService.createFromTags(hashtags);
     const newContent = {
       author: author,
       payload: contentDto.payload,
@@ -139,6 +141,9 @@ export class ContentService {
         .findOne({ itemId: content._id })
         .exec();
       await engagement.remove();
+    }
+    if (content.hashtags) {
+      this.hashtagService.removeFromTags(content.hashtags);
     }
     console.debug('*********deleteContentFromId', id);
     return content.save();
@@ -189,6 +194,11 @@ export class ContentService {
     const content = await this._contentModel.findById(id).exec();
     content.payload = contentDto.payload;
     content.type = contentDto.type;
+    const newHashtags = this.hashtagService.extractHashtagFromContentPayload(
+      contentDto.payload
+    );
+    //TODO !!! need to improve performance
+    await this.hashtagService.updateFromTags(newHashtags, content.hashtags);
     content.hashtags = this.hashtagService.extractHashtagFromContentPayload(
       contentDto.payload
     );
@@ -597,6 +607,7 @@ export class ContentService {
     } as CommentDto;
     const newComment = new this._commentModel(dto);
     newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
+    await this.hashtagService.createFromTags(newComment.hashtags);
     const comment = await newComment.save();
     await this._updateCommentCounter(comment, author._id);
     return comment;
@@ -625,6 +636,7 @@ export class ContentService {
     } as CommentDto;
     const newComment = new this._commentModel(dto);
     newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
+    await this.hashtagService.createFromTags(newComment.hashtags);
     const comment = await newComment.save();
     await this._updateCommentCounter(comment, author._id);
     return comment;
@@ -688,9 +700,11 @@ export class ContentService {
   ) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
-    comment.hashtags = this.hashtagService.extractHashtagFromText(
+    const tags = this.hashtagService.extractHashtagFromText(
       updateCommentDto.message
     );
+    await this.hashtagService.updateFromTags(tags, comment.hashtags);
+    comment.hashtags = tags;
     return comment.save();
   };
 
@@ -703,6 +717,8 @@ export class ContentService {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.visibility = EntityVisibility.Deleted;
     const result = comment.save();
+    if (comment.hashtags)
+      await this.hashtagService.removeFromTags(comment.hashtags);
     this._updateCommentCounter(comment);
     return result;
   };
