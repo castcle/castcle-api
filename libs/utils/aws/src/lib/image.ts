@@ -81,27 +81,35 @@ export class Image {
     return newImage;
   }
 
+  /**
+   * return a size with same ratio as original with the max of both width and height from maxSize
+   * @param {number} originalWidth
+   * @param {number} originalHeight
+   * @param {Size} maxSize
+   * @returns {Size}
+   */
   static _getNewSameRatioSize = (
     originalWidth: number,
     originalHeight: number,
-    size: Size
+    maxSize: Size
   ) => {
     let newWidth = originalWidth;
     let newHeight = originalHeight;
-    let isCorrectSize = newWidth <= size.width && newHeight <= size.height;
+    let isCorrectSize =
+      newWidth <= maxSize.width && newHeight <= maxSize.height;
     while (!isCorrectSize) {
-      if (newWidth > size.width) {
+      if (newWidth > maxSize.width) {
         const oldWidth = newWidth;
-        newWidth = size.width;
+        newWidth = maxSize.width;
         newHeight = (newWidth / oldWidth) * newHeight;
-      } else if (newHeight > size.height) {
+      } else if (newHeight > maxSize.height) {
         const oldHeight = newHeight;
-        newHeight = size.height;
+        newHeight = maxSize.height;
         newWidth = (newHeight / oldHeight) * newWidth;
       }
-      isCorrectSize = newWidth <= size.width && newHeight <= size.height;
+      isCorrectSize = newWidth <= maxSize.width && newHeight <= maxSize.height;
     }
-    return { name: size.name, width: newWidth, height: newHeight } as Size;
+    return { name: maxSize.name, width: newWidth, height: newHeight } as Size;
   };
 
   /**
