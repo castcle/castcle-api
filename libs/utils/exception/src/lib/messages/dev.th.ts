@@ -94,7 +94,7 @@ export const DevErrorMessages = {
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'email หรือ mobile ซ้ำ'
+    message: 'รหัส OTP ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3009': {
     statusCode: '400',

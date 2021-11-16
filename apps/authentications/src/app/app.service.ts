@@ -466,7 +466,11 @@ export class AppService {
 
     const otp = await this.authService.generateOtp(account, objective);
     this.logger.log('Send Otp');
-    await this.twillioClient.requestOtp(reciever, channel);
+    try {
+      await this.twillioClient.requestOtp(reciever, channel);
+    } catch (ex) {
+      this.logger.error('Twillio Error : ' + ex.message, ex);
+    }
     return otp;
   }
 
