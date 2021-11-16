@@ -81,6 +81,29 @@ export class Image {
     return newImage;
   }
 
+  static _getNewSameRatioSize = (
+    originalWidth: number,
+    originalHeight: number,
+    size: Size
+  ) => {
+    let newWidth = originalWidth;
+    let newHeight = originalHeight;
+    let isCorrectSize = newWidth <= size.width && newHeight <= size.height;
+    while (!isCorrectSize) {
+      if (newWidth > size.width) {
+        const oldWidth = newWidth;
+        newWidth = size.width;
+        newHeight = (newWidth / oldWidth) * newHeight;
+      } else if (newHeight > size.height) {
+        const oldHeight = newHeight;
+        newHeight = size.height;
+        newWidth = (newHeight / oldHeight) * newWidth;
+      }
+      isCorrectSize = newWidth <= size.width && newHeight <= size.height;
+    }
+    return { name: size.name, width: newWidth, height: newHeight } as Size;
+  };
+
   /**
    *
    * @param buffer
@@ -95,7 +118,10 @@ export class Image {
     fileType: string,
     options?: ImageUploadOptions
   ) => {
-    const newBuffer = await sharp(buffer)
+    const sharpImage = sharp(buffer);
+    const metaData = await sharpImage.metadata();
+    size = Image._getNewSameRatioSize(metaData.width, metaData.height, size);
+    const newBuffer = await sharpImage
       .resize(size.width, size.height)
       .toBuffer();
     const uploader = new Uploader(
