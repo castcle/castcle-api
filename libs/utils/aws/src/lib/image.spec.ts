@@ -38,5 +38,16 @@ describe('Image Unit Test', () => {
       expect(newSize2.height).toEqual(fixSize.height);
       expect(newSize2.width).toEqual((200 / 500) * 200);
     });
+    it('should not resize if the original is smaller than ratio', () => {
+      const fixSize: Size = {
+        name: 'test',
+        width: 200,
+        height: 200
+      };
+      const newSize = Image._getNewSameRatioSize(140, 50, fixSize);
+      expect(newSize.name).toEqual(fixSize.name);
+      expect(newSize.width).toEqual(140);
+      expect(newSize.height).toEqual(50);
+    });
   });
 });

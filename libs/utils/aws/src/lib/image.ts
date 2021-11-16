@@ -93,23 +93,20 @@ export class Image {
     originalHeight: number,
     maxSize: Size
   ) => {
-    let newWidth = originalWidth;
-    let newHeight = originalHeight;
-    let isCorrectSize =
-      newWidth <= maxSize.width && newHeight <= maxSize.height;
-    while (!isCorrectSize) {
-      if (newWidth > maxSize.width) {
-        const oldWidth = newWidth;
-        newWidth = maxSize.width;
-        newHeight = (newWidth / oldWidth) * newHeight;
-      } else if (newHeight > maxSize.height) {
-        const oldHeight = newHeight;
-        newHeight = maxSize.height;
-        newWidth = (newHeight / oldHeight) * newWidth;
-      }
-      isCorrectSize = newWidth <= maxSize.width && newHeight <= maxSize.height;
-    }
-    return { name: maxSize.name, width: newWidth, height: newHeight } as Size;
+    const heightRatio = originalHeight / maxSize.height;
+    const widthRatio = originalWidth / maxSize.width;
+    const ratio = Math.max(heightRatio, widthRatio);
+    if (ratio <= 1.0)
+      return {
+        name: maxSize.name,
+        height: originalHeight,
+        width: originalWidth
+      } as Size;
+    return {
+      name: maxSize.name,
+      height: originalHeight / ratio,
+      width: originalWidth / ratio
+    } as Size;
   };
 
   /**
