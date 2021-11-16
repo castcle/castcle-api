@@ -652,7 +652,7 @@ export class AuthenticationController {
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @ApiBody({
     type: ChangePasswordBody
   })
@@ -665,6 +665,9 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
+    this.logger.log(
+      `Start change password objective : ${payload.objective}, refCode: ${payload.refCode}`
+    );
     return this.appService.resetPassword(payload, req);
   }
 

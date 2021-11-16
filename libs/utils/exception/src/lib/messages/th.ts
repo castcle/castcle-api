@@ -110,7 +110,7 @@ export const ThErrorMessages = {
   },
   '3011': {
     statusCode: '400',
-    code: '3009',
+    code: '3011',
     message: 'รหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3012': {

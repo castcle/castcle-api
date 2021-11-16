@@ -82,6 +82,34 @@ export class Image {
   }
 
   /**
+   * return a size with same ratio as original with the max of both width and height from maxSize
+   * @param {number} originalWidth
+   * @param {number} originalHeight
+   * @param {Size} maxSize
+   * @returns {Size}
+   */
+  static _getNewSameRatioSize = (
+    originalWidth: number,
+    originalHeight: number,
+    maxSize: Size
+  ) => {
+    const heightRatio = originalHeight / maxSize.height;
+    const widthRatio = originalWidth / maxSize.width;
+    const ratio = Math.max(heightRatio, widthRatio);
+    if (ratio <= 1.0)
+      return {
+        name: maxSize.name,
+        height: originalHeight,
+        width: originalWidth
+      } as Size;
+    return {
+      name: maxSize.name,
+      height: originalHeight / ratio,
+      width: originalWidth / ratio
+    } as Size;
+  };
+
+  /**
    *
    * @param buffer
    * @param size
@@ -95,7 +123,10 @@ export class Image {
     fileType: string,
     options?: ImageUploadOptions
   ) => {
-    const newBuffer = await sharp(buffer)
+    const sharpImage = sharp(buffer);
+    const metaData = await sharpImage.metadata();
+    size = Image._getNewSameRatioSize(metaData.width, metaData.height, size);
+    const newBuffer = await sharpImage
       .resize(size.width, size.height)
       .toBuffer();
     const uploader = new Uploader(

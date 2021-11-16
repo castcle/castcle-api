@@ -524,7 +524,7 @@ export class AppService {
       request.refCode
     );
 
-    if (otp.action !== objective) {
+    if (!otp || otp.action !== objective) {
       this.logger.error(`Invalid objective.`);
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
     }
@@ -569,7 +569,10 @@ export class AppService {
    */
   async resetPassword(data: ChangePasswordBody, credential: CredentialRequest) {
     this.logger.log('Validate objective');
-    if (data.objective !== OtpObjective.ChangePassword)
+    if (
+      data.objective !== OtpObjective.ChangePassword &&
+      data.objective !== OtpObjective.ForgotPassword
+    )
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
 
     this.logger.log('Get otp document');
