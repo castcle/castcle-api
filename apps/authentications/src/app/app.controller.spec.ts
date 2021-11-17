@@ -148,13 +148,6 @@ describe('AppController', () => {
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
-
-    jest
-      .spyOn(appService, 'getGeolocationFromIp')
-      .mockImplementation(async (ip) => ({
-        continentCode: 'th',
-        countryCode: 'th'
-      }));
   });
   afterAll(async () => {
     await closeInMongodConnection();
@@ -172,7 +165,7 @@ describe('AppController', () => {
     it('should always return {accessToken, refreshToken} if it pass the interceptor', async () => {
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345', clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: 'sompop12345' }
       );
       expect(response).toBeDefined();
       expect(response.accessToken).toBeDefined();
@@ -182,7 +175,7 @@ describe('AppController', () => {
       const deviceUUID = 'abc1345';
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       expect(response).toBeDefined();
       const firstResponseCredentialId = await (
@@ -190,7 +183,7 @@ describe('AppController', () => {
       )._id;
       const secondReponse = await appController.guestLogin(
         { $device: 'android', $language: 'en', $platform: 'android' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       expect(secondReponse).toBeDefined();
       expect(response).not.toEqual(secondReponse);
@@ -202,7 +195,7 @@ describe('AppController', () => {
     it('should create new credential when the credetnail form this device is already signup', async () => {
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345', clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: 'sompop12345' }
       );
       const currentCredential = await service.getCredentialFromAccessToken(
         response.accessToken
@@ -228,7 +221,7 @@ describe('AppController', () => {
       expect(afterVerify.isGuest).toBe(false);
       const response2 = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345', clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: 'sompop12345' }
       );
       const postCredential = await service.getCredentialFromAccessToken(
         response2.accessToken
@@ -244,7 +237,7 @@ describe('AppController', () => {
       const language = 'th';
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: language, $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const refreshTokenResponse = await appController.refreshToken({
         $token: response.refreshToken,
@@ -312,7 +305,7 @@ describe('AppController', () => {
       const deviceUUID = 'sompop12345';
       await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const randomAccount = await service.getAccountFromCredential(
         await service.getGuestCredentialFromDeviceUUID(deviceUUID)
@@ -365,7 +358,7 @@ describe('AppController', () => {
           $platform: 'iOs',
           clientInfo: { ipAddress: '10.0.0.1' }
         } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -431,7 +424,7 @@ describe('AppController', () => {
     it('should be able to login after register', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -482,7 +475,7 @@ describe('AppController', () => {
     it('should be able to login with different device', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: newDeviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: newDeviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -536,7 +529,7 @@ describe('AppController', () => {
       const language = 'th';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -561,7 +554,7 @@ describe('AppController', () => {
       const language = 'th';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -592,7 +585,7 @@ describe('AppController', () => {
       const deviceUUID = 'sompop12341';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -640,7 +633,7 @@ describe('AppController', () => {
         const deviceUUID = 'sompop12341';
         const guestResult = await appController.guestLogin(
           { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-          { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+          { deviceUUID: deviceUUID }
         );
         const credentialGuest = await service.getCredentialFromAccessToken(
           guestResult.accessToken
@@ -726,7 +719,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -845,7 +838,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone999', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -938,7 +931,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone99a', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1043,7 +1036,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1161,7 +1154,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone9999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1275,7 +1268,7 @@ describe('AppController', () => {
 
       guestResult = await appController.guestLogin(
         { $device: 'iphone9991a', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1377,7 +1370,7 @@ describe('AppController', () => {
     beforeAll(async () => {
       guestResult = await appController.guestLogin(
         { $device: 'iphone99999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1406,7 +1399,7 @@ describe('AppController', () => {
       const deviceUUID = 'sompop12341';
       guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
@@ -1558,7 +1551,7 @@ describe('AppController', () => {
       const deviceUUID = 'verifyuuid';
       guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID, clientInfo: { ipAddress: '10.0.0.1' } }
+        { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken

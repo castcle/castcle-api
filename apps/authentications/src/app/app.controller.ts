@@ -253,9 +253,7 @@ export class AuthenticationController {
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
-    const geolocation = await this.appService.getGeolocationFromIp(
-      body.clientInfo.ipAddress
-    );
+
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
@@ -268,18 +266,6 @@ export class AuthenticationController {
         }
       );
       //update geolocation if current geolocaiton is not the same from service
-      if (
-        !credential.account.geolocation ||
-        (geolocation &&
-          credential.account.geolocation.countryCode !==
-            geolocation.countryCode)
-      ) {
-        const account = await this.authService.getAccountFromCredential(
-          credential
-        );
-        account.geolocation = geolocation;
-        await account.save();
-      }
       return tokenResult;
     } else {
       const result = await this.authService.createAccount({

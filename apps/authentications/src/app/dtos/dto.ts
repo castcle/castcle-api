@@ -29,12 +29,6 @@ export class GuestLoginDto {
   @IsNotEmpty()
   @ApiProperty()
   deviceUUID: string;
-
-  @IsNotEmpty()
-  @ApiProperty()
-  clientInfo: {
-    ipAddress: string;
-  };
 }
 
 export class CheckEmailExistDto {
@@ -242,9 +236,4 @@ export class ForgotPasswordVerificationOtpDto extends RequestOtpDto {
 
   @ApiProperty()
   otp: string;
-}
-
-export class CheckIpDto {
-  countryCode: string;
-  continentCode: string;
 }

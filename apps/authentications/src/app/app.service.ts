@@ -54,7 +54,6 @@ import * as nodemailer from 'nodemailer';
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
-  CheckIpDto,
   ForgotPasswordVerificationOtpDto,
   RequestOtpDto,
   SocialConnect,
@@ -605,24 +604,6 @@ export class AppService {
         CastcleStatus.INVLAID_REFCODE,
         credential.$language
       );
-    }
-  }
-
-  /**
-   * Get country and continentalCode from http://ip-api.com/json/
-   * @param {string} ip
-   * @returns {CheckIpDto}
-   */
-  async getGeolocationFromIp(ip: string) {
-    try {
-      const result = await lastValueFrom(
-        this.httpService
-          .get<CheckIpDto>(getIPUrl(ip))
-          .pipe(map(({ data }) => data))
-      );
-      return result;
-    } catch (error) {
-      return null;
     }
   }
 }
