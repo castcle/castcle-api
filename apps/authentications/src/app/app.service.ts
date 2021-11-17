@@ -62,7 +62,10 @@ import {
   TokenResponse
 } from './dtos/dto';
 
-const IP_CHECK_URL = 'http://ip-api.com/json/';
+const getIPUrl = (ip: string) =>
+  env.ip_api_key
+    ? `${env.ip_api_url}/${ip}?fields=continentCode,countryCode&key=${env.ip_api_key}`
+    : `${env.ip_api_url}/${ip}?fields=continentCode,countryCode`;
 
 /*
  * TODO: !!!
@@ -614,9 +617,7 @@ export class AppService {
     try {
       const result = await lastValueFrom(
         this.httpService
-          .get<CheckIpDto>(
-            `${IP_CHECK_URL}/${ip}?fields=continentCode,countryCode`
-          )
+          .get<CheckIpDto>(getIPUrl(ip))
           .pipe(map(({ data }) => data))
       );
       return result;
