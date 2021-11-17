@@ -61,6 +61,6 @@ export const getIpFromRequest = (request: Request) => {
     if (regexResult) {
       return regexResult[1];
     }
-    throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
-  } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+    throw new CastcleException(CastcleStatus.INVALID_FORMAT);
+  } else throw new CastcleException(CastcleStatus.INVALID_FORMAT);
 };
