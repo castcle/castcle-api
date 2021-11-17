@@ -56,6 +56,10 @@ export interface AccountRequirements {
   device: string;
   deviceUUID: string;
   languagesPreferences: string[];
+  geolocation?: {
+    countryCode: string;
+    continentCode: string;
+  };
 }
 
 export interface SignupRequirements {
@@ -120,7 +124,10 @@ export class AuthenticationService {
       isGuest: true,
       preferences: {
         languages: accountRequirements.languagesPreferences
-      }
+      },
+      geolocation: accountRequirements.geolocation
+        ? accountRequirements.geolocation
+        : null
     } as CreateAccountDto);
     newAccount.visibility = EntityVisibility.Publish;
     const accountDocument = await newAccount.save();
