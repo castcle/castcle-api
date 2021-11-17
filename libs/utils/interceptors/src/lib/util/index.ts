@@ -46,3 +46,21 @@ export const getLangagueFromRequest = (request: Request) => {
     return request.headers['accept-language'];
   } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
 };
+
+/**
+ * get ip from current request
+ * @param {Request} request
+ * @returns {string}
+ */
+export const getIpFromRequest = (request: Request) => {
+  //API-Metadata: "ip=127.0.0.1,src=iOS,dest=castcle-authentications"
+  if (request.headers && request.headers['api-metadata']) {
+    const regexResult = (request.headers['api-metadata'] as string).match(
+      /ip=(\d+\.\d+\.\d+\.\d+),src=(\w+),dest=(.+)/
+    );
+    if (regexResult) {
+      return regexResult[1];
+    }
+    throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+  } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+};

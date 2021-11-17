@@ -37,6 +37,7 @@ import {
   CredentialInterceptor,
   CredentialRequest,
   HeadersRequest,
+  IpTrackerInterceptor,
   TokenInterceptor,
   TokenRequest
 } from '@castcle-api/utils/interceptors';
@@ -145,6 +146,7 @@ export class AuthenticationController {
     type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(IpTrackerInterceptor)
   @Post('login')
   @HttpCode(200)
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
@@ -244,6 +246,7 @@ export class AuthenticationController {
     description: 'will show if some of header is missing'
   })
   @UseInterceptors(GuestInterceptor)
+  @UseInterceptors(IpTrackerInterceptor)
   @Post('guestLogin')
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
@@ -696,6 +699,7 @@ export class AuthenticationController {
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(IpTrackerInterceptor)
   @Post('loginWithSocial')
   @HttpCode(200)
   async loginWithSocial(
