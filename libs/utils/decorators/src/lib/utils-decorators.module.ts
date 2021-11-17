@@ -26,6 +26,7 @@ import { CastcleController } from './castcle-controller.decorator';
 import {
   CastcleAuth,
   CastcleBasicAuth,
+  CastcleTrack,
   CastleClearCacheAuth
 } from './castcle-auth.decorator';
 
@@ -41,5 +42,6 @@ export {
   CastcleController,
   CastcleAuth,
   CastcleBasicAuth,
-  CastleClearCacheAuth
+  CastleClearCacheAuth,
+  CastcleTrack
 };
