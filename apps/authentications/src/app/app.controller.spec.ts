@@ -617,6 +617,7 @@ describe('AppController', () => {
       expect(acc.isGuest).toBe(false);
     });
   });
+
   describe('verifyPassword Flows', () => {
     let registerResult: LoginResponse;
     let genRefCode: string;
@@ -694,7 +695,6 @@ describe('AppController', () => {
         const response = await appController.changePasswordSubmit(
           {
             newPassword: '2@BlaBlaBla',
-            objective: OtpObjective.ChangePassword,
             refCode: genRefCode
           },
           {
@@ -1384,7 +1384,6 @@ describe('AppController', () => {
 
   describe('forgotPasswordRequestOTP', () => {
     let credentialGuest = null;
-    let guestResult = null;
     const emailTest = 'test.opt@gmail.com';
     const countryCodeTest = '+66';
     const numberTest = '0817896767';
@@ -1392,18 +1391,18 @@ describe('AppController', () => {
       const testId = 'registerId34';
       const password = '2@HelloWorld';
       const deviceUUID = 'sompop12341';
-      guestResult = await appController.guestLogin(
+      const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
       );
-      credentialGuest = await service.getCredentialFromAccessToken(
+      const guestAccount = await service.getCredentialFromAccessToken(
         guestResult.accessToken
       );
       await appController.register(
         {
-          $credential: credentialGuest,
+          $credential: guestAccount,
           $token: guestResult.accessToken,
-          $language: 'testLang'
+          $language: 'th'
         } as any,
         {
           channel: 'email',
@@ -1415,13 +1414,19 @@ describe('AppController', () => {
           }
         }
       );
-      const acc = await service.getAccountFromCredential(credentialGuest);
+      const acc = await service.getAccountFromCredential(guestAccount);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
           { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
         )
         .exec();
+
+      credentialGuest = {
+        $credential: guestAccount,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any;
     });
 
     it('should reset password via mobile successful', async () => {
@@ -1435,11 +1440,7 @@ describe('AppController', () => {
             mobileNumber: numberTest
           }
         },
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any
+        credentialGuest
       );
 
       expect(result).toBeDefined;
@@ -1478,18 +1479,25 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty account', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
       await expect(
         appController.requestOTP(
           {
@@ -1501,14 +1509,13 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
 
       await expect(
@@ -1522,21 +1529,19 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('forgotPasswordVerificationOTP', () => {
     let credentialGuest = null;
-    let guestResult = null;
     const emailTest = 'testverify@gmail.com';
     const countryCodeTest = '+66';
     const numberTest = '0817896888';
@@ -1544,16 +1549,16 @@ describe('AppController', () => {
       const testId = 'verify01';
       const password = '2@HelloWorld';
       const deviceUUID = 'verifyuuid';
-      guestResult = await appController.guestLogin(
+      const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
       );
-      credentialGuest = await service.getCredentialFromAccessToken(
+      const accountGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
       );
       await appController.register(
         {
-          $credential: credentialGuest,
+          $credential: accountGuest,
           $token: guestResult.accessToken,
           $language: 'th'
         } as any,
@@ -1567,13 +1572,19 @@ describe('AppController', () => {
           }
         }
       );
-      const acc = await service.getAccountFromCredential(credentialGuest);
+      const acc = await service.getAccountFromCredential(accountGuest);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
           { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
         )
         .exec();
+
+      credentialGuest = {
+        $credential: accountGuest,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any;
     });
 
     it('should pass verify otp mobile channel', async () => {
@@ -1658,14 +1669,13 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
 
@@ -1683,14 +1693,13 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
 
       await expect(
@@ -1706,18 +1715,25 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when imvalid otp and return lock otp when over 3 times', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
       const otpCode = await appController.requestOTP(
         {
           objective: 'forgot_password',

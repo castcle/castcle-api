@@ -79,27 +79,28 @@ export const DevErrorMessages = {
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'payload กับ channel ไม่ตรงกัน'
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'refId ไม่ถูกต้อง หรือ หมดอายุ '
+    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
   },
   '3007': {
     statusCode: '400',
     code: '3007',
-    message: 'role ไม่ถูกต้อง '
+    message: 'กรุณาลองใหม่อีกครั้งใน 3 นาที'
   },
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'email หรือ mobile ซ้ำ'
+    message: 'รหัส OTP ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3009': {
     statusCode: '400',
     code: '3009',
-    message: 'รูปแบบ email ไม่ถูกต้อง'
+    message:
+      'รหัส OTP ถูกขอมาเกินระยะเวลา กรุณากดปุ่ม "รับรหัส OTP" เพื่อขอรหัสใหม่อีกครั้ง'
   },
   '3010': {
     statusCode: '400',

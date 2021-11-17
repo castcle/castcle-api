@@ -527,7 +527,7 @@ export class AuthenticationController {
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
-      `Start verify OPT channel : ${body.channel} objective : ${body.objective}`
+      `Start verify OPT channel: ${body.channel} objective: ${body.objective} refCode: ${body.refCode}`
     );
     const otp = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
@@ -551,7 +551,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
     this.logger.log(
-      `Start request OPT channel : ${body.channel} objective : ${body.objective}`
+      `Start request OPT channel: ${body.channel} objective: ${body.objective}`
     );
     const otp = await this.appService.requestOtpCode(body, req);
     if (otp && otp.isValid()) {
@@ -642,7 +642,9 @@ export class AuthenticationController {
     if (await account.verifyPassword(password)) {
       const otp = await this.authService.generateOtp(
         account,
-        OtpObjective.ChangePassword
+        OtpObjective.VerifyPassword,
+        req.$credential.account._id,
+        ''
       );
       return {
         refCode: otp.refCode,
@@ -665,9 +667,7 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
-    this.logger.log(
-      `Start change password objective : ${payload.objective}, refCode: ${payload.refCode}`
-    );
+    this.logger.log(`Start change password refCode: ${payload.refCode}`);
     return this.appService.resetPassword(payload, req);
   }
 
