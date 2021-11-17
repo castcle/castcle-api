@@ -70,7 +70,8 @@ export const postAccountSave = async (
           'account.activateDate': doc.activateDate,
           'account.visibility': doc.visibility,
           'account.preferences': doc.preferences,
-          'account.email': doc.email
+          'account.email': doc.email,
+          'account.geolocation': doc.geolocation ? doc.geolocation : null
         }
       )
       .exec();

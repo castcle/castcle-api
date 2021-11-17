@@ -352,7 +352,11 @@ describe('AppController', () => {
       );
       expect(response.payload.exist).toBe(false);
       guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        {
+          $device: 'iphone',
+          $language: 'th',
+          $platform: 'iOs'
+        } as any,
         { deviceUUID: deviceUUID }
       );
       credentialGuest = await service.getCredentialFromAccessToken(
