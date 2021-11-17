@@ -68,10 +68,15 @@ export class HashtagService {
    * @param {string} text
    * @returns {string[]}
    */
-  extractHashtagFromText = (text: string) =>
-    text.match(/\s\#([a-zA-Z]+\b)(?!;)/g)
-      ? text.match(/\s\#([a-zA-Z]+\b)(?!;)/g).map((item) => item.split(' #')[1])
+  extractHashtagFromText = (text: string) => {
+    text = text.replace(/\n/g, ' ');
+    return text.match(/\s\#([a-z\dA-Z]+\b)(?!;)/g)
+      ? text
+          .match(/\s\#([a-z\dA-Z]+\b)(?!;)/g)
+          .map((item) => item.split(' #')[1])
+          .filter((t) => t)
       : [];
+  };
 
   /**
    * return array of hashtag from ContentPayload
