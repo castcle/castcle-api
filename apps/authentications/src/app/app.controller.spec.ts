@@ -355,8 +355,7 @@ describe('AppController', () => {
         {
           $device: 'iphone',
           $language: 'th',
-          $platform: 'iOs',
-          clientInfo: { ipAddress: '10.0.0.1' }
+          $platform: 'iOs'
         } as any,
         { deviceUUID: deviceUUID }
       );
