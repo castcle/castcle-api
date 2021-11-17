@@ -99,13 +99,13 @@ export class Image {
     if (ratio <= 1.0)
       return {
         name: maxSize.name,
-        height: originalHeight,
-        width: originalWidth
+        height: Math.floor(originalHeight),
+        width: Math.floor(originalWidth)
       } as Size;
     return {
       name: maxSize.name,
-      height: originalHeight / ratio,
-      width: originalWidth / ratio
+      height: Math.floor(originalHeight / ratio),
+      width: Math.floor(originalWidth / ratio)
     } as Size;
   };
 
