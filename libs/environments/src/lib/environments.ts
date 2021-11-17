@@ -109,5 +109,11 @@ export const Environment = {
   // Twilio
   twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
   twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
-  twilio_otp_sid: process.env.TWILIO_OTP_SID
+  twilio_otp_sid: process.env.TWILIO_OTP_SID,
+
+  //ip-api
+  ip_api_url: process.env.IP_API_URL
+    ? process.env.IP_API_URL
+    : 'https://ip-api.com/json',
+  ip_api_key: process.env.IP_API_KEY ? process.env.IP_API_KEY : null
 };

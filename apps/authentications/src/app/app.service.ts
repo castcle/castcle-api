@@ -20,7 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AuthenticationService } from '@castcle-api/database';
+import { AuthenticationService, UserService } from '@castcle-api/database';
+import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs/operators';
+import { lastValueFrom } from 'rxjs';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,
@@ -58,6 +61,12 @@ import {
   SocialConnectInfo,
   TokenResponse
 } from './dtos/dto';
+
+const getIPUrl = (ip: string) =>
+  env.ip_api_key
+    ? `${env.ip_api_url}/${ip}?fields=continentCode,countryCode&key=${env.ip_api_key}`
+    : `${env.ip_api_url}/${ip}?fields=continentCode,countryCode`;
+
 /*
  * TODO: !!!
  */
@@ -81,7 +90,8 @@ export class AppService {
     private twitterClient: TwitterClient,
     private googleClient: GoogleClient,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwillioClient,
+    private httpService: HttpService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
