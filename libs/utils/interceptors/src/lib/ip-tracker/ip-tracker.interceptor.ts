@@ -64,18 +64,25 @@ export class IpTrackerInterceptor implements NestInterceptor {
       const token = util.getTokenFromRequest(request);
       credential = await this.authService.getCredentialFromAccessToken(token);
     }
-    const account = await this.authService.getAccountFromCredential(credential);
-    const ip = util.getIpFromRequest(request);
+
+    request.$ip = util.getIpFromRequest(request);
     try {
-      const result = await lastValueFrom(
+      request.$geolocation = await lastValueFrom(
         this.httpService
-          .get<CheckIp>(getIPUrl(ip))
+          .get<CheckIp>(getIPUrl(request.$ip))
           .pipe(map(({ data }) => data))
       );
-      account.geolocation = result;
+    } catch (error) {
+      console.debug('wrong ip', request.$ip);
+    }
+    try {
+      const account = await this.authService.getAccountFromCredential(
+        credential
+      );
+      account.geolocation = request.$geolocation;
       account.save();
     } catch (error) {
-      console.debug('wrong ip');
+      console.debug('wrong credential');
     }
 
     return next.handle();
