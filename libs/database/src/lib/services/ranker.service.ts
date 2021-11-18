@@ -26,15 +26,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ContentDocument } from '../schemas';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import {
-  CastcleFeedQueryOptions,
-  FeedItemDto,
-  FeedItemMode
-} from '../dtos/feedItem.dto';
-import { Content } from '../schemas/content.schema';
+import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import { createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import { ContentAggregator } from '../aggregator/content.aggregator';
 
 @Injectable()
 export class RankerService {

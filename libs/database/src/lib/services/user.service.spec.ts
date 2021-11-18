@@ -34,12 +34,7 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
-import {
-  PageDto,
-  PageModelDto,
-  UpdateModelUserDto,
-  UpdateUserDto
-} from '../dtos/user.dto';
+import { PageDto, PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,

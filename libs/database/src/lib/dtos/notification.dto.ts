@@ -22,7 +22,6 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountDocument } from '../schemas';
 import { CastcleQueryOptions, Pagination } from './common.dto';
 
 export enum NotificationType {

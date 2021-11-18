@@ -23,11 +23,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { Account } from '../schemas/account.schema';
 import {
   ContentPayloadDto,
   ShortPayload,
-  ContentType,
   BlogPayload,
   Author,
   ImagePayload
@@ -35,7 +33,7 @@ import {
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
-import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
