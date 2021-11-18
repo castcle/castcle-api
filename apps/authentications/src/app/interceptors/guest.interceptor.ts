@@ -27,9 +27,16 @@ import {
   HeadersRequest
 } from '@castcle-api/utils/interceptors';
 
+type Geolocation = {
+  countryCode: string;
+  continentCode: string;
+};
+
 export interface GuestRequest extends HeadersRequest {
   $platform: string;
   $device: string;
+  $ip: string;
+  $geolocation?: Geolocation;
 }
 
 @Injectable()
