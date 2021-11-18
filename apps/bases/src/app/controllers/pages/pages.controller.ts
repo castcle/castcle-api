@@ -30,8 +30,7 @@ import {
   Param,
   Post,
   Put,
-  Req,
-  UseInterceptors
+  Req
 } from '@nestjs/common';
 import { AppService } from '../../app.service';
 import {
@@ -48,7 +47,6 @@ import {
   PageDto,
   PagesResponse,
   UpdatePageDto,
-  PageResponse,
   PageResponseDto
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -66,14 +64,8 @@ import {
   Image,
   ImageUploadOptions
 } from '@castcle-api/utils/aws';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOkResponse,
-  ApiQuery,
-  ApiResponse
-} from '@nestjs/swagger';
-import { UserDocument, UserType } from '@castcle-api/database/schemas';
+import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { UserType } from '@castcle-api/database/schemas';
 import { Query } from '@nestjs/common';
 import {
   CastcleAuth,

@@ -51,7 +51,6 @@ import {
   ShortPayload,
   UpdateUserDto
 } from '@castcle-api/database/dtos';
-import { CastcleException } from '@castcle-api/utils/exception';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';

@@ -49,7 +49,7 @@ import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
 import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
-import { CaslAbilityFactory, Action } from '@castcle-api/casl';
+import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
   CreateCommentBody,
   EditCommentBody,

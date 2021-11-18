@@ -27,7 +27,6 @@ import { Document, Model } from 'mongoose';
 import { CommentPayload } from '../dtos/comment.dto';
 import { Image } from '@castcle-api/utils/aws';
 import { Configs } from '@castcle-api/environments';
-import { Account } from '../schemas/account.schema';
 import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
 import { ContentDocument, User } from '.';

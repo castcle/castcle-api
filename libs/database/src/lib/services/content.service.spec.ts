@@ -31,14 +31,9 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { ContentDocument, ContentSchema } from '../schemas/content.schema';
-import {
-  SaveContentDto,
-  ContentType,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
-} from '../dtos';
-import { CommentDocument, HashtagDocument, UserDocument } from '../schemas';
+import { ContentDocument } from '../schemas/content.schema';
+import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
+import { CommentDocument, UserDocument } from '../schemas';
 import { ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
