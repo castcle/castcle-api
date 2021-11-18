@@ -21,9 +21,6 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import { HttpService } from '@nestjs/axios';
-import { map } from 'rxjs/operators';
-import { lastValueFrom } from 'rxjs';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,
@@ -49,6 +46,7 @@ import {
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
@@ -430,7 +428,7 @@ export class AppService {
     let otp: OtpDocument = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
 
-    if (!objective) {
+    if (!objective || !Object.values(OtpObjective).includes(objective)) {
       this.logger.error(`Invalid objective.`);
       throw new CastcleException(
         CastcleStatus.PAYLOAD_TYPE_MISMATCH,
@@ -552,11 +550,13 @@ export class AppService {
     let receiver = '';
 
     const objective: OtpObjective = <OtpObjective>request.objective;
-    if (!objective)
+    if (!objective || !Object.values(OtpObjective).includes(objective)) {
+      this.logger.error(`Invalid objective.`);
       throw new CastcleException(
         CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         credential.$language
       );
+    }
 
     switch (request.channel) {
       case 'email': {
