@@ -273,7 +273,8 @@ export class AuthenticationController {
         device: req.$device,
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
-        languagesPreferences: [req.$language]
+        languagesPreferences: [req.$language],
+        geolocation: req.$geolocation
       });
       return {
         accessToken: result.credentialDocument.accessToken,
