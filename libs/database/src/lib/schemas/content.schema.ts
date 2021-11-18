@@ -263,7 +263,9 @@ export const ContentSchemaFactory = (
         slug: 'feed',
         key: 'feature.feed',
         name: 'Feed'
-      }
+      },
+      isQuote: (this as ContentDocument).isQuote,
+      isRecast: (this as ContentDocument).isRecast
     } as ContentPayloadDto;
     //get owner relate enagement
     for (const key in engagementNameMap) {
