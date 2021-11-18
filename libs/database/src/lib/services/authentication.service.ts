@@ -398,15 +398,27 @@ export class AuthenticationService {
   /**
    * generate refCode and create Otp Document
    * @param {AccountDocument} account
+   * @param {OtpObjective} objective
+   * @param {string} requestId
    * @returns {OtpDocument}
    */
-  async generateOtp(account: AccountDocument, objective: OtpObjective) {
-    const otp = await this._otpModel.generate(account._id, objective);
+  async generateOtp(
+    account: AccountDocument,
+    objective: OtpObjective,
+    requestId: string,
+    channel: string
+  ) {
+    const otp = await this._otpModel.generate(
+      account._id,
+      objective,
+      requestId,
+      channel
+    );
     return otp;
   }
 
   /**
-   * find refCode that has the same refCode and
+   * find Otp from account and refCode
    * @param {AccountDocument} account
    * @param {string} refCode
    * @returns {OtpDocument}
@@ -414,6 +426,33 @@ export class AuthenticationService {
   async getOtpFromAccount(account: AccountDocument, refCode: string) {
     return this._otpModel
       .findOne({ account: account._id, refCode: refCode })
+      .exec();
+  }
+
+  /**
+   * find all Otp from request id and objective
+   * @param {string} requestId
+   * @param {OtpObjective} objective
+   * @returns {OtpDocument}
+   */
+  async getAllOtpFromRequestIdObjective(
+    requestId: string,
+    objective: OtpObjective
+  ) {
+    return this._otpModel
+      .find({ requestId: requestId, action: objective })
+      .exec();
+  }
+
+  /**
+   * find Otp from request id and refCode
+   * @param {string} requestId
+   * @param {string} refCode
+   * @returns {OtpDocument}
+   */
+  async getOtpFromRequestIdRefCode(requestId: string, refCode: string) {
+    return this._otpModel
+      .findOne({ requestId: requestId, refCode: refCode })
       .exec();
   }
 
