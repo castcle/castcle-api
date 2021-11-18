@@ -149,7 +149,6 @@ export const signContentPayload = (
       ? payload[engagementNameMap[key]][engagementNameMap[key]]
       : false;
   }
-  console.debug('signContentPayload', JSON.stringify(payload));
   if (payload.payload.photo && payload.payload.photo.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
@@ -180,6 +179,10 @@ export const signContentPayload = (
   if (payload.author && payload.author.avatar)
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
   else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
+
+  if (payload.originalPost)
+    payload.originalPost.author.avatar =
+      payload.originalPost.author.avatar || Configs.DefaultAvatarImages;
   payload.isSign = true;
   console.debug('afterSign', JSON.stringify(payload));
   return payload;

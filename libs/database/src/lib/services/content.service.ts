@@ -465,9 +465,7 @@ export class ContentService {
       revisionCount: 0,
       type: ContentType.Short,
       originalPost:
-        content.isRecast || content.isQuote
-          ? content.originalPost._id
-          : content._id,
+        content.isQuote || content.isRecast ? content.originalPost : content,
       isRecast: true
     } as Content;
     const recastContent = await new this._contentModel(newContent).save();
