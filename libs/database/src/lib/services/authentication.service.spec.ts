@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
-import { AccountAuthenIdDocument } from '../schemas';
+import { AccountAuthenIdDocument, OtpDocument, OtpObjective } from '../schemas';
 import { AccountDocument } from '../schemas/account.schema';
 import { AccountActivationDocument } from '../schemas/accountActivation.schema';
 import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
@@ -649,6 +649,78 @@ describe('Authentication Service', () => {
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromMobile('817896767', '+66');
         expect(result._id).toEqual(newAccountResult._id);
+      });
+    });
+
+    describe('#Otp Document', () => {
+      let account: AccountDocument = null;
+      const password = 'sompop234@Hello';
+      const countryCodeTest = '+66';
+      const numberTest = '0817896888';
+      let otp: OtpDocument = null;
+      beforeAll(async () => {
+        const newlyInsertEmail = `${Math.ceil(
+          Math.random() * 1000
+        )}@testinsert.com`;
+        const newAccount = new service._accountModel({
+          email: newlyInsertEmail,
+          password: password,
+          mobile: {
+            countryCode: countryCodeTest,
+            number: numberTest
+          },
+          isGuest: false,
+          preferences: {
+            langagues: ['en', 'en']
+          }
+        });
+        account = await newAccount.save();
+      });
+
+      it('should generate otp successful', async () => {
+        otp = await service.generateOtp(
+          account,
+          OtpObjective.ForgotPassword,
+          account.id,
+          'email'
+        );
+        expect(otp.refCode).toBeDefined;
+        expect(otp.isValid()).toEqual(true);
+      });
+      it('should found otp document that match with account and ref code', async () => {
+        const result = await service.getOtpFromAccount(account, otp.refCode);
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with request id and objective', async () => {
+        const result = await service.getAllOtpFromRequestIdObjective(
+          account.id,
+          OtpObjective.ForgotPassword
+        );
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with request id and ref code', async () => {
+        const result = await service.getOtpFromRequestIdRefCode(
+          account.id,
+          otp.refCode
+        );
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with ref code', async () => {
+        const result = await service.getOtpFromRefCode(otp.refCode);
+        expect(result).toBeDefined;
+      });
+      it('should update retry otp document successful', async () => {
+        await service.updateRetryOtp(otp);
+        const result = await service.getOtpFromRefCode(otp.refCode);
+        expect(result.retry).toEqual(1);
+      });
+      it('should update account password successful', async () => {
+        const result = await service.changePassword(
+          account,
+          otp,
+          'test1234@!gbn'
+        );
+        expect(result).toBeDefined;
       });
     });
   });
