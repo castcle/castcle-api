@@ -189,6 +189,9 @@ export class ContentPayloadDto {
   @ApiProperty()
   updateAt: string;
 
+  isQuote?: boolean;
+  isRecast?: boolean;
+
   isSign?: boolean;
 }
 

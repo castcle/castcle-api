@@ -21,6 +21,9 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
+import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs/operators';
+import { lastValueFrom } from 'rxjs';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,
@@ -57,6 +60,12 @@ import {
   SocialConnectInfo,
   TokenResponse
 } from './dtos/dto';
+
+const getIPUrl = (ip: string) =>
+  env.ip_api_key
+    ? `${env.ip_api_url}/${ip}?fields=continentCode,countryCode&key=${env.ip_api_key}`
+    : `${env.ip_api_url}/${ip}?fields=continentCode,countryCode`;
+
 /*
  * TODO: !!!
  */
@@ -79,7 +88,8 @@ export class AppService {
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwillioClient,
+    private httpService: HttpService
   ) {}
 
   private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
@@ -523,7 +533,7 @@ export class AppService {
       request.refCode
     );
 
-    if (otp.action !== objective) {
+    if (!otp || otp.action !== objective) {
       this.logger.error(`Invalid objective.`);
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
     }
@@ -568,7 +578,10 @@ export class AppService {
    */
   async resetPassword(data: ChangePasswordBody, credential: CredentialRequest) {
     this.logger.log('Validate objective');
-    if (data.objective !== OtpObjective.ChangePassword)
+    if (
+      data.objective !== OtpObjective.ChangePassword &&
+      data.objective !== OtpObjective.ForgotPassword
+    )
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
 
     this.logger.log('Get otp document');

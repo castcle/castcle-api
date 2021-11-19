@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleName } from '@castcle-api/utils';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -113,6 +114,24 @@ describe('HashtagService', () => {
         service.extractHashtagFromText('this is #good blog#stuff')
       ).toEqual(['good']);
     });
+    it('should pass complex case', () => {
+      //metaverse  #GameFi #NFT #PlayToEarn #P2E #IDO  #BSC #PreSale  #Airdrop
+      expect(
+        service.extractHashtagFromText(
+          'SupreSpace: 🎁There is 10BNB to reach the hard top🎁\n✅✅Private sale will be closed soon.\n✅✅Join Private sale here:\n\n✅Like and retweet\n✅Drop your BEP20 address \n#metaverse  #GameFi #NFT #PlayToEarn #P2E #IDO  #BSC #PreSale  #Airdrop\n\nhttps://twitter.com/SupreSpace/status/1460873380618399750'
+        )
+      ).toEqual([
+        'metaverse',
+        'GameFi',
+        'NFT',
+        'PlayToEarn',
+        'P2E',
+        'IDO',
+        'BSC',
+        'PreSale',
+        'Airdrop'
+      ]);
+    });
   });
 
   describe('#extractHashtagFromContentPayload', () => {
@@ -153,6 +172,142 @@ describe('HashtagService', () => {
       expect(service.extractHashtagFromCommentDto(commentDto)).toEqual([
         'bean'
       ]);
+    });
+  });
+
+  describe('#createFromTag', () => {
+    it('it should create a new tag with score 1', async () => {
+      const currentTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(currentTag).toBeNull();
+      const result = await service.createFromTag('sompop');
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.tag).toEqual(new CastcleName('Sompop').slug);
+      expect(newTag.score).toEqual(1);
+    });
+    it("should update the current hashtag if it's already exist", async () => {
+      const currentTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(currentTag.score).toEqual(1);
+      const result = await service.createFromTag('soMPop');
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.tag).toEqual(new CastcleName('SomPop').slug);
+      expect(newTag.score).toEqual(2);
+    });
+  });
+  describe('#createFromTags', () => {
+    it('should perform creatFromTag for multiple tags', async () => {
+      const result = await service.createFromTags([
+        'CastClesSs',
+        'jUl',
+        'bEnz'
+      ]);
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'castclesss' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.score).toEqual(1);
+      const newTag2 = await service._hashtagModel
+        .findOne({ tag: 'jul' })
+        .exec();
+      expect(newTag2).toBeDefined();
+      expect(newTag2.score).toEqual(1);
+      const newTag3 = await service._hashtagModel
+        .findOne({ tag: 'benz' })
+        .exec();
+      expect(newTag3).toBeDefined();
+      expect(newTag3.score).toEqual(1);
+    });
+  });
+  describe('#decreaseTagScore', () => {
+    it('should decrease score ', async () => {
+      await service.removeFromTag('sompOp');
+      const currentTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(currentTag.score).toEqual(1);
+    });
+  });
+  describe('#removeFromTags', () => {
+    it('should decrease all tags score', async () => {
+      await service.removeFromTags(['CastClesSs', 'jUl', 'bEnz']);
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'castclesss' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.score).toEqual(0);
+      const newTag2 = await service._hashtagModel
+        .findOne({ tag: 'jul' })
+        .exec();
+      expect(newTag2).toBeDefined();
+      expect(newTag2.score).toEqual(0);
+      const newTag3 = await service._hashtagModel
+        .findOne({ tag: 'benz' })
+        .exec();
+      expect(newTag3).toBeDefined();
+      expect(newTag3.score).toEqual(0);
+    });
+    it('should not below 0', async () => {
+      await service.removeFromTags(['CastClesSs', 'jUl', 'bEnz']);
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'castclesss' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.score).toEqual(0);
+      const newTag2 = await service._hashtagModel
+        .findOne({ tag: 'jul' })
+        .exec();
+      expect(newTag2).toBeDefined();
+      expect(newTag2.score).toEqual(0);
+      const newTag3 = await service._hashtagModel
+        .findOne({ tag: 'benz' })
+        .exec();
+      expect(newTag3).toBeDefined();
+      expect(newTag3.score).toEqual(0);
+    });
+  });
+  describe('#updateFromTags', () => {
+    it('should only update a new one and decrease the old one', async () => {
+      await service.updateFromTags(['CastcleSSS', 'Jul'], ['sompop']);
+      const currentTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(currentTag.score).toEqual(0);
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'castclesss' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.score).toEqual(1);
+      const newTag2 = await service._hashtagModel
+        .findOne({ tag: 'jul' })
+        .exec();
+      expect(newTag2).toBeDefined();
+      expect(newTag2.score).toEqual(1);
+    });
+    it('should only update a new one and decrease the old one', async () => {
+      await service.updateFromTags(['sompop'], ['CastcleSSS', 'Jul']);
+      const currentTag = await service._hashtagModel
+        .findOne({ tag: 'sompop' })
+        .exec();
+      expect(currentTag.score).toEqual(1);
+      const newTag = await service._hashtagModel
+        .findOne({ tag: 'castclesss' })
+        .exec();
+      expect(newTag).toBeDefined();
+      expect(newTag.score).toEqual(0);
+      const newTag2 = await service._hashtagModel
+        .findOne({ tag: 'jul' })
+        .exec();
+      expect(newTag2).toBeDefined();
+      expect(newTag2.score).toEqual(0);
     });
   });
 });

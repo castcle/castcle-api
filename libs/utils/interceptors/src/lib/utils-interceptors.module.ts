@@ -39,6 +39,7 @@ import {
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import { ExceptionalInterceptor } from './exception/exception.interceptor';
+import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 
 @Module({
   imports: [DatabaseModule, CaslModule, CacheModule.register()],
@@ -59,5 +60,6 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionalInterceptor
+  ExceptionalInterceptor,
+  IpTrackerInterceptor
 };

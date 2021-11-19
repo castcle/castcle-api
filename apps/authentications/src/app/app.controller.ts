@@ -30,13 +30,15 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
 import {
   CastcleBasicAuth,
-  CastcleController
+  CastcleController,
+  CastcleTrack
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
   HeadersRequest,
+  IpTrackerInterceptor,
   TokenInterceptor,
   TokenRequest
 } from '@castcle-api/utils/interceptors';
@@ -145,6 +147,7 @@ export class AuthenticationController {
     type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
+  @CastcleTrack()
   @Post('login')
   @HttpCode(200)
   async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
@@ -244,12 +247,14 @@ export class AuthenticationController {
     description: 'will show if some of header is missing'
   })
   @UseInterceptors(GuestInterceptor)
+  @CastcleTrack()
   @Post('guestLogin')
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
       deviceUUID
     );
+
     if (credential) {
       const tokenResult: TokenResponse = await credential.renewTokens(
         {
@@ -261,13 +266,15 @@ export class AuthenticationController {
           id: credential.account._id as unknown as string
         }
       );
+      //update geolocation if current geolocaiton is not the same from service
       return tokenResult;
     } else {
       const result = await this.authService.createAccount({
         device: req.$device,
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
-        languagesPreferences: [req.$language]
+        languagesPreferences: [req.$language],
+        geolocation: req.$geolocation
       });
       return {
         accessToken: result.credentialDocument.accessToken,
@@ -652,7 +659,7 @@ export class AuthenticationController {
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @CastcleBasicAuth()
   @ApiBody({
     type: ChangePasswordBody
   })
@@ -665,6 +672,9 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
+    this.logger.log(
+      `Start change password objective : ${payload.objective}, refCode: ${payload.refCode}`
+    );
     return this.appService.resetPassword(payload, req);
   }
 
@@ -677,6 +687,7 @@ export class AuthenticationController {
     type: TokenResponse
   })
   @UseInterceptors(CredentialInterceptor)
+  @CastcleTrack()
   @Post('loginWithSocial')
   @HttpCode(200)
   async loginWithSocial(
