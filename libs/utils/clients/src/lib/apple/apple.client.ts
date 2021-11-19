@@ -35,19 +35,26 @@ export class AppleClient {
   private readonly logger = new CastLogger(AppleClient.name, CastLoggerOptions);
 
   private readonly appleSignIn = new AppleSignIn({
-    clientId: Environment.apple_client_id
-      ? Environment.apple_client_id
+    clientId: Environment.APPLE_CLIENT_ID
+      ? Environment.APPLE_CLIENT_ID
       : 'com.my-company.my-app',
-    teamId: Environment.apple_team_id
-      ? Environment.apple_team_id
+    teamId: Environment.APPLE_TEAM_ID
+      ? Environment.APPLE_TEAM_ID
       : '5B645323E8',
-    keyIdentifier: Environment.apple_key_identifier
-      ? Environment.apple_key_identifier
+    keyIdentifier: Environment.APPLE_KEY_IDENTIFIER
+      ? Environment.APPLE_KEY_IDENTIFIER
       : 'U3B842SVGC',
-    privateKey: Environment.apple_private_key
-      ? Environment.apple_private_key
+    privateKey: Environment.APPLE_PRIVATE_KEY
+      ? Environment.APPLE_PRIVATE_KEY
       : '-----BEGIN PRIVATE KEY-----\nMIGTAgEHIHMJKJyqGSM32AgEGC...'
   });
+
+  private getClientSecret() {
+    this.logger.log('generate client secret.');
+    return this.appleSignIn.createClientSecret({
+      expirationDuration: 5 * 60 // 5 minutes
+    });
+  }
 
   /**
    * Request Authorizatio Url
@@ -72,12 +79,12 @@ export class AppleClient {
    * @returns {AppleIdTokenType} token data
    */
   async verifyToken(
-    token: string,
+    idToken: string,
     nonce: string,
     subject: string
   ): Promise<AppleIdTokenType> {
     this.logger.log('Verify apple token.');
-    return await this.appleSignIn.verifyIdToken(token, {
+    return await this.appleSignIn.verifyIdToken(idToken, {
       nonce: nonce,
       subject: subject,
       ignoreExpiration: true
@@ -86,18 +93,32 @@ export class AppleClient {
 
   /**
    * Refresh Token
-   * @param {string} clientSecret client secret
    * @param {string} refreshToken refresh token
    * @returns {RefreshTokenResponse} token data
    */
-  async refreshToken(
-    clientSecret: string,
-    refreshToken: string
-  ): Promise<RefreshTokenResponse> {
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
     this.logger.log('Refresh apple token.');
     return await this.appleSignIn.refreshAuthorizationToken(
-      clientSecret,
+      this.getClientSecret(),
       refreshToken
+    );
+  }
+
+  /**
+   * Authorization Token
+   * @param {string} code code
+   * @param {string} redirectUrl redirectUrl
+   * @returns {AccessTokenResponse} AccessTokenResponse
+   */
+  async authorizationToken(code: string, redirectUrl: string) {
+    this.logger.log('validate apple token.');
+    return await this.appleSignIn.getAuthorizationToken(
+      this.getClientSecret(),
+      code,
+      {
+        // Optional, use the same value which you passed to authorisation URL. In case of iOS you skip the value
+        redirectUri: redirectUrl
+      }
     );
   }
 }
