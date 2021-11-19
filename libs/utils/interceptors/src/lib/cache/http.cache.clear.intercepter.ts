@@ -22,7 +22,6 @@
  */
 
 import {
-  CacheInterceptor,
   CACHE_KEY_METADATA,
   CACHE_MANAGER,
   CallHandler,

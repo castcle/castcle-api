@@ -29,7 +29,6 @@ import {
 } from '../dtos/notification.dto';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import { Credential } from './credential.schema';
 import { User } from './user.schema';
 
 export type NotificationDocument = Notification & INotification;

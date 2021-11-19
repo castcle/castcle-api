@@ -23,13 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model, model } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { preAccountSave, postAccountSave } from '../hooks/account.save';
-import { CredentialDocument, CredentialSchema } from './credential.schema';
+import { CredentialDocument } from './credential.schema';
 import { Password } from '@castcle-api/utils';
-import { User } from './user.schema';
-import { EntityVisibility } from '../dtos/common.dto';
 import { UserDocument } from '.';
 export type AccountDocument = Account & IAccount;
 

@@ -21,15 +21,11 @@
  * or have any questions.
  */
 
-import { Model, ObjectId } from 'mongoose';
-import { Inject, Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
-import {
-  CommentDocument,
-  CredentialDocument,
-  CredentialModel
-} from '../schemas';
+import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
 import { ContentDocument, Content } from '../schemas/content.schema';
 import {
@@ -37,17 +33,12 @@ import {
   EngagementType
 } from '../schemas/engagement.schema';
 import { createPagination } from '../utils/common';
-import { PageDto, UpdateUserDto } from '../dtos/user.dto';
 import {
   SaveContentDto,
-  ContentPayloadDto,
   Author,
   CastcleContentQueryOptions,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  ContentResponse,
   ContentType,
-  QuotePayload,
-  RecastPayload,
   ShortPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';

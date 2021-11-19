@@ -22,11 +22,7 @@
  */
 
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  ContentMessage,
-  TopicName,
-  UserMessage
-} from '@castcle-api/utils/queue';
+import { ContentMessage, TopicName } from '@castcle-api/utils/queue';
 import { ContentService } from '@castcle-api/database';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';

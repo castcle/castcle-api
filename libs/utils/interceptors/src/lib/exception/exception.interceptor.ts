@@ -23,14 +23,7 @@
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Request, Response } from 'express';
 import { CastcleException } from '@castcle-api/utils/exception';
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import { TokenRequest } from '../token/token.interceptor';
 import * as util from '../util';
 import { Environment } from '@castcle-api/environments';

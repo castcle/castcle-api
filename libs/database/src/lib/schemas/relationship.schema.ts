@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
+import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
 
