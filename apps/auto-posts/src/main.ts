@@ -21,30 +21,17 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/auto-posts',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/apps/bases',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/users',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/utils/clients',
-    '<rootDir>/libs/utils/decorators',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/libs/utils/queue'
-  ]
-};
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const port = process.env.PORT || 3342;
+  await app.listen(port, () => {
+    Logger.log('Listening at http://localhost:' + port + '/');
+  });
+}
+
+bootstrap();

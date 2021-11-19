@@ -60,6 +60,12 @@ export class AccountAuthenId extends CastcleBase {
 
   @Prop()
   socialSecretToken: string;
+
+  @Prop()
+  autoPost: boolean;
+
+  @Prop()
+  latestPostId: string;
 }
 
 export const AccountAuthenIdSchema =

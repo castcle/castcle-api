@@ -33,7 +33,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload
 } from '../dtos/token.dto';
-import { AccountDocument } from '../schemas/account.schema';
+import { Account, AccountDocument } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
   AccountActivationModel
@@ -273,6 +273,10 @@ export class AuthenticationService {
         visibility: EntityVisibility.Publish
       })
       .exec();
+  };
+
+  getUserFromAccount = (account: Account) => {
+    return this._userModel.findOne({ ownerAccount: account }).exec();
   };
 
   getUserFromAccountId = (credential: CredentialDocument) => {
@@ -543,4 +547,14 @@ export class AuthenticationService {
     });
     return accountActivation.save();
   }
+
+  /**
+   * get accounts where `accountAuthenId.autoSync = true`
+   * @param {AccountAuthenIdType} socialType
+   * @returns {AccountAuthenIdDocument[]}
+   */
+  getAutoPostAccounts = (
+    socialType: AccountAuthenIdType
+  ): Promise<AccountAuthenIdDocument[]> =>
+    this._accountAuthenId.find({ autoPost: true, type: socialType }).exec();
 }
