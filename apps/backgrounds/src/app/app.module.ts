@@ -36,9 +36,9 @@ import { ContentConsumer } from './consumers/content.consumer';
     UtilsQueueModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
-        projectId: Environment.firebase_project_id,
-        clientEmail: Environment.firebase_client_email,
-        privateKey: Buffer.from(Environment.firebase_private_key, 'base64')
+        projectId: Environment.FIREBASE_PROJECT_ID,
+        clientEmail: Environment.FIREBASE_CLIENT_EMAIL,
+        privateKey: Buffer.from(Environment.FIREBASE_PRIVATE_KEY, 'base64')
           .toString('ascii')
           .replace(/\\n/g, '\n')
       }

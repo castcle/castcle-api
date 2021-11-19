@@ -40,16 +40,16 @@ export class FacebookClient {
   );
 
   constructor(private httpService: HttpService) {}
-  private readonly accessTokenUrl = `${Environment.fb_host}/oauth/access_token?`;
-  private readonly verifyTokenUrl = `${Environment.fb_host}/v12.0/debug_token?`;
-  private readonly userInfoUrl = `${Environment.fb_host}/v12.0/me?`;
+  private readonly accessTokenUrl = `${Environment.FACEBOOK_HOST}/oauth/access_token?`;
+  private readonly verifyTokenUrl = `${Environment.FACEBOOK_HOST}/v12.0/debug_token?`;
+  private readonly userInfoUrl = `${Environment.FACEBOOK_HOST}/v12.0/me?`;
 
   /**
    * Get Authentication token from facebook
    * @returns {FacebookAccessToken} access token
    */
   async getAccessToken() {
-    const parameter = `client_id=${Environment.fb_client_id}&client_secret=${Environment.fb_client_secret}&grant_type=client_credentials`;
+    const parameter = `client_id=${Environment.FACEBOOK_CLIENT_ID}&client_secret=${Environment.FACEBOOK_CLIENT_SECRET}&grant_type=client_credentials`;
     const url = `${this.accessTokenUrl}${parameter}`;
     this.logger.log('get facebook access token');
 

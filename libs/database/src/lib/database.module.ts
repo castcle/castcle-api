@@ -113,7 +113,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
-    MongooseModule.forRoot(env.db_uri, env.db_options),
+    MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsQueueModule

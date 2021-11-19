@@ -20,24 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { CacheKeyName } from './enum/cache.key.name';
 
-@Module({
-  controllers: [],
-  providers: [],
-  imports: [
-    CacheModule.register({
-      store: redisStore,
-      host: Environment.REDIS_HOST,
-      port: Environment.REDIS_PORT,
-      ttl: 1000
-    })
-  ],
-  exports: [CacheModule]
-})
-export class UtilsCacheModule {}
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 
-export { CacheKeyName };
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const port = process.env.PORT || 3342;
+  await app.listen(port, () => {
+    Logger.log('Listening at http://localhost:' + port + '/');
+  });
+}
+
+bootstrap();

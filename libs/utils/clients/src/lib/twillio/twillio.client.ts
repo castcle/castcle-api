@@ -29,14 +29,14 @@ import { TwillioChannel } from './twillio.message';
 @Injectable()
 export class TwillioClient {
   private readonly env = {
-    twilioAccountSid: Environment.twilio_account_sid
-      ? Environment.twilio_account_sid
+    twilioAccountSid: Environment.TWILIO_ACCOUNT_SID
+      ? Environment.TWILIO_ACCOUNT_SID
       : 'ACd501e',
-    twilioAuthToken: Environment.twilio_auth_token
-      ? Environment.twilio_auth_token
+    twilioAuthToken: Environment.TWILIO_AUTH_TOKEN
+      ? Environment.TWILIO_AUTH_TOKEN
       : 'secrect',
-    twilioOtpSid: Environment.twilio_otp_sid
-      ? Environment.twilio_otp_sid
+    twilioOtpSid: Environment.TWILIO_OTP_SID
+      ? Environment.TWILIO_OTP_SID
       : 'VA356353'
   };
 

@@ -106,7 +106,9 @@ export const CommentSchemaFactory = (
       .exec();
     const findEngagement = engagements
       ? engagements.find(
-          (engagement) => engagement.type === EngagementType.Like
+          (engagement) =>
+            engagement.type === EngagementType.Like &&
+            String(engagement.targetRef.$id) === this.id
         )
       : null;
     const payload: CommentPayload = {
@@ -133,7 +135,7 @@ export const CommentSchemaFactory = (
       hasHistory: revisionCount > 1 ? true : false,
       reply: replies.map((r) => ({
         id: r._id,
-        createAt: r.createdAt.toISOString(),
+        createdAt: r.createdAt.toISOString(),
         message: r.message,
         author: {
           avatar: r.author.profile
@@ -145,10 +147,21 @@ export const CommentSchemaFactory = (
           followed: false,
           verified: r.author.verified,
           type: r.author.type
+        },
+        like: {
+          liked: engagements.find(
+            (engagement) =>
+              engagement.type === EngagementType.Like &&
+              String(engagement.targetRef.$id) === r.id
+          )
+            ? true
+            : false,
+          count: r.engagements.like.count,
+          participant: []
         }
       })),
-      createAt: (this as CommentDocument).createdAt.toISOString(),
-      updateAt: (this as CommentDocument).updatedAt.toISOString()
+      createdAt: (this as CommentDocument).createdAt.toISOString(),
+      updatedAt: (this as CommentDocument).updatedAt.toISOString()
     } as CommentPayload;
 
     return payload;

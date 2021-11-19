@@ -132,7 +132,7 @@ export class HashtagService {
    * @param {string[]} tags
    * @returns
    */
-  createFromTags = async (tags: string[]) =>
+  createFromTags = (tags: string[]) =>
     Promise.all(tags.map((tag) => this.createFromTag(tag)));
 
   /**
