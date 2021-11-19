@@ -22,8 +22,6 @@
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { HttpService } from '@nestjs/axios';
-import { map } from 'rxjs/operators';
-import { lastValueFrom } from 'rxjs';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,

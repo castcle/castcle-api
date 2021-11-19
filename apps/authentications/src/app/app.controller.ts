@@ -38,7 +38,6 @@ import {
   CredentialInterceptor,
   CredentialRequest,
   HeadersRequest,
-  IpTrackerInterceptor,
   TokenInterceptor,
   TokenRequest
 } from '@castcle-api/utils/interceptors';

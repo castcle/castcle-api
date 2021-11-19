@@ -40,13 +40,8 @@ import {
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
-import {
-  BlogPayload,
-  ContentPayloadDto,
-  PageDto
-} from '@castcle-api/database/dtos';
+import { PageDto } from '@castcle-api/database/dtos';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
 import {
   NotificationProducer,
   TopicName,

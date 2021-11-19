@@ -24,7 +24,7 @@
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
-import { AccountDocument, ContentDocument, UserDocument } from '../schemas';
+import { ContentDocument, UserDocument } from '../schemas';
 import { RevisionDocument } from '../schemas/revision.schema';
 import { Content } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';

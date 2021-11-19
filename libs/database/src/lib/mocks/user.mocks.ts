@@ -23,7 +23,6 @@
 
 import { UserService } from '../services/user.service';
 import { AuthenticationService } from '../services/authentication.service';
-import { PageDto } from '../dtos';
 import { AccountDocument, CredentialDocument, UserDocument } from '../schemas';
 import { PageModelDto } from '../dtos/user.dto';
 

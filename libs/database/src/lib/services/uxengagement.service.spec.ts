@@ -25,15 +25,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
-import { UserService } from './user.service';
-import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
-import { UxEngagementBody } from '../dtos/ux.engagement.dto';
-import { UxEngagementDocument } from '../schemas/uxengagement.schema';
 import { HashtagService } from './hashtag.service';
 
 let mongod: MongoMemoryServer;
