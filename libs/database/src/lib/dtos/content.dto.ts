@@ -185,9 +185,9 @@ export class ContentPayloadDto {
   author: Author;
 
   @ApiProperty()
-  createAt: string;
+  createdAt: string;
   @ApiProperty()
-  updateAt: string;
+  updatedAt: string;
 
   isQuote?: boolean;
   isRecast?: boolean;

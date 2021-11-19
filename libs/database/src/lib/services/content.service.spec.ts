@@ -337,7 +337,7 @@ describe('ContentService', () => {
       expect(contents.items[1].payload).toEqual(shortPayload1);
       const contentsInverse = await service.getContentsFromUser(user, {
         sortBy: {
-          field: 'updateAt',
+          field: 'updatedAt',
           type: 'asc'
         }
       });
