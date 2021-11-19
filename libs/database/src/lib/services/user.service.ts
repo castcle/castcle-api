@@ -26,28 +26,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import {
-  UserDocument,
-  UserType,
-  UserModel,
-  User
-} from '../schemas/user.schema';
+import { UserDocument, UserType, UserModel } from '../schemas/user.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { ContentDocument } from '../schemas/content.schema';
-import {
-  FollowResponse,
-  PageDto,
-  PageModelDto,
-  UpdateModelUserDto,
-  UpdateUserDto
-} from '../dtos/user.dto';
+import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { CastcleQueryOptions } from '../dtos';
 import { createPagination } from '../utils/common';
 import {
   CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
-  EntityVisibility,
-  Pagination
+  EntityVisibility
 } from '../dtos/common.dto';
 import { ContentService } from './content.service';
 import { UserProducer, UserMessage } from '@castcle-api/utils/queue';

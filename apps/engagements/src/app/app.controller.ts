@@ -36,7 +36,6 @@ import {
   CredentialInterceptor,
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
-import * as mongoose from 'mongoose';
 import { UxEngagementService } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
