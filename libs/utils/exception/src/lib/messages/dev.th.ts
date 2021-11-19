@@ -59,7 +59,7 @@ export const DevErrorMessages = {
   '3001': {
     statusCode: '400',
     code: '3001',
-    message: 'Incorrect username or password.'
+    message: 'authToken ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'
   },
   '3002': {
     statusCode: '400',
@@ -69,22 +69,22 @@ export const DevErrorMessages = {
   '3003': {
     statusCode: '400',
     code: '3003',
-    message: 'ไม่มี email หรือ mobile ในระบบ '
+    message: 'อีเมลไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3004': {
     statusCode: '400',
     code: '3004',
-    message: 'opt ไม่ถูกต้อง หรือ หมดอายุ'
+    message: 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง'
   },
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    message: 'payload กับ channel ไม่ตรงกัน'
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    message: 'ไม่มี email หรือ mobile ในระบบ'
   },
   '3007': {
     statusCode: '400',

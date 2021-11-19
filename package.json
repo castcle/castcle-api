@@ -63,6 +63,7 @@
     "@nestjs/mongoose": "^8.0.0",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.0.4",
+    "@nestjs/schedule": "^1.0.2",
     "@nestjs/swagger": "^5.0.4",
     "@types/sharp": "^0.29.2",
     "apple-sign-in-rest": "^1.0.3",
@@ -89,7 +90,8 @@
     "sharp": "^0.29.1",
     "swagger-ui-express": "^4.1.6",
     "tslib": "^2.0.0",
-    "twilio": "^3.70.0"
+    "twilio": "^3.70.0",
+    "twitter-api-v2": "^1.6.5"
   },
   "devDependencies": {
     "@compodoc/compodoc": "^1.1.14",
@@ -120,7 +122,7 @@
     "eslint": "^7.31.0",
     "eslint-config-prettier": "8.1.0",
     "eslint-plugin-prettier": "^3.4.0",
-    "eslint-plugin-unused-imports": "^2.0.0",
+    "eslint-plugin-unused-imports": "^1.1.5",
     "husky": "^7.0.1",
     "jest": "27.0.3",
     "mongodb-memory-server": "^7.3.4",

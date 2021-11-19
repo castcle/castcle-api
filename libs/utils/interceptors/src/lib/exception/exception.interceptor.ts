@@ -42,10 +42,9 @@ export class ExceptionalInterceptor implements ExceptionFilter {
     response
       .status(exception.getStatus())
       .json(
-        Environment &&
-          Environment.node_env &&
-          (Environment.node_env === 'localhost' ||
-            Environment.node_env === 'development')
+        Environment?.NODE_ENV &&
+          (Environment.NODE_ENV === 'localhost' ||
+            Environment.NODE_ENV === 'development')
           ? exception.getLocalStatus('dev')
           : exception.getLocalStatus(langague)
       );

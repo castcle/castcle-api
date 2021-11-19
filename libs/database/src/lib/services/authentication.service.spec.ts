@@ -57,10 +57,10 @@ const closeInMongodConnection = async () => {
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
-  console.log('test in real db = ', env.db_test_in_db);
-  const importModules = env.db_test_in_db
+  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  const importModules = env.DB_TEST_IN_DB
     ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures
       ]
@@ -74,7 +74,7 @@ describe('Authentication Service', () => {
     service = module.get<AuthenticationService>(AuthenticationService);
   });
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
   });
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -115,10 +115,10 @@ describe('Authentication Service', () => {
         expect(typeof result.accessToken).toBe('string');
         expect(result.accessTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_access_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_access_expires_in) * 1000
+          now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
         );
         const result = service._generateAccessToken({
           id: 'randomid',
@@ -139,10 +139,10 @@ describe('Authentication Service', () => {
         expect(typeof result.refreshToken).toBe('string');
         expect(result.refreshTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_refresh_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+          now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
         );
         const result = service._generateRefreshToken({
           id: 'randomid'
@@ -161,10 +161,10 @@ describe('Authentication Service', () => {
         expect(typeof result.verifyToken).toBe('string');
         expect(result.verifyTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_verify_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+          now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
         );
 
         const result = service._generateEmailVerifyToken({

@@ -20,24 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
-import { CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
-import { CacheKeyName } from './enum/cache.key.name';
+
+import { DatabaseModule } from '@castcle-api/database';
+import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TwitterService } from './services/twitter.service';
 
 @Module({
+  imports: [DatabaseModule, ScheduleModule.forRoot()],
   controllers: [],
-  providers: [],
-  imports: [
-    CacheModule.register({
-      store: redisStore,
-      host: Environment.REDIS_HOST,
-      port: Environment.REDIS_PORT,
-      ttl: 1000
-    })
-  ],
-  exports: [CacheModule]
+  providers: [TwitterService]
 })
-export class UtilsCacheModule {}
-
-export { CacheKeyName };
+export class AppModule {}

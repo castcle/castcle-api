@@ -40,7 +40,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: Environment.http_time_out
+      timeout: Environment.HTTP_TIME_OUT
     })
   ],
   controllers: [],

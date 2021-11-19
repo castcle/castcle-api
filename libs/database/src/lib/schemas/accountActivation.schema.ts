@@ -73,7 +73,7 @@ export interface IAccountActivation extends Document {
 AccountActivationSchema.methods.isVerifyTokenValid = function () {
   return Token.isTokenValid(
     (this as AccountActivationDocument).verifyToken,
-    env.jwt_verify_secret
+    env.JWT_VERIFY_SECRET
   );
 };
 
@@ -90,13 +90,13 @@ AccountActivationSchema.statics.generateVerifyToken = function (
 ) {
   const now = new Date();
   const verifyTokenExpireDate = new Date(
-    now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+    now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
   );
   payload.verifyTokenExpiresTime = verifyTokenExpireDate.toISOString();
   const verifyToken = Token.generateToken(
     payload,
-    env.jwt_verify_secret,
-    Number(env.jwt_verify_expires_in)
+    env.JWT_VERIFY_SECRET,
+    Number(env.JWT_VERIFY_EXPIRES_IN)
   );
   return {
     verifyToken,
