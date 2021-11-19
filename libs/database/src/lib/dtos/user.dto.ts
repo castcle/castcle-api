@@ -174,10 +174,10 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
-  updateAt: string;
+  updatedAt: string;
 
   @ApiProperty()
-  createAt: string;
+  createdAt: string;
 }
 
 export class UpdatePageDto {

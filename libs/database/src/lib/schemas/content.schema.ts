@@ -220,8 +220,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',
@@ -254,8 +254,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',

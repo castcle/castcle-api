@@ -133,7 +133,7 @@ export const CommentSchemaFactory = (
       hasHistory: revisionCount > 1 ? true : false,
       reply: replies.map((r) => ({
         id: r._id,
-        createAt: r.createdAt.toISOString(),
+        createdAt: r.createdAt.toISOString(),
         message: r.message,
         author: {
           avatar: r.author.profile
@@ -147,8 +147,8 @@ export const CommentSchemaFactory = (
           type: r.author.type
         }
       })),
-      createAt: (this as CommentDocument).createdAt.toISOString(),
-      updateAt: (this as CommentDocument).updatedAt.toISOString()
+      createdAt: (this as CommentDocument).createdAt.toISOString(),
+      updatedAt: (this as CommentDocument).updatedAt.toISOString()
     } as CommentPayload;
 
     return payload;
