@@ -129,8 +129,8 @@ describe('ContentService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        env.db_test_in_db
-          ? MongooseModule.forRoot(env.db_uri, env.db_options)
+        env.DB_TEST_IN_DB
+          ? MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS)
           : rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -166,7 +166,7 @@ describe('ContentService', () => {
   });
 
   afterAll(async () => {
-    if (env.db_test_in_db) await mongod?.stop();
+    if (env.DB_TEST_IN_DB) await mongod?.stop();
   });
 
   describe('#createContentFromUser', () => {

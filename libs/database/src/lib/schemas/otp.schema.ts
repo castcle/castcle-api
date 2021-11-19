@@ -83,7 +83,7 @@ OtpSchema.statics.generate = async function (
   let newRefCode: string;
   let otpFindingResult;
   do {
-    newRefCode = Password.generateRandomDigits(env.otp_digits);
+    newRefCode = Password.generateRandomDigits(env.OTP_DIGITS);
     otpFindingResult = await this.findOne({
       account: accountId,
       action: objective,
@@ -95,7 +95,7 @@ OtpSchema.statics.generate = async function (
     account: accountId,
     action: objective,
     refCode: newRefCode,
-    expireDate: new Date(now.getTime() + env.otp_expires_in * 1000)
+    expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000)
   });
   return otp.save();
 };
