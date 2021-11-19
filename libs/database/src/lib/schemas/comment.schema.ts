@@ -107,7 +107,9 @@ export const CommentSchemaFactory = (
       .exec();
     const findEngagement = engagements
       ? engagements.find(
-          (engagement) => engagement.type === EngagementType.Like
+          (engagement) =>
+            engagement.type === EngagementType.Like &&
+            String(engagement.targetRef.$id) === this.id
         )
       : null;
     const payload: CommentPayload = {
@@ -146,6 +148,17 @@ export const CommentSchemaFactory = (
           followed: false,
           verified: r.author.verified,
           type: r.author.type
+        },
+        like: {
+          liked: engagements.find(
+            (engagement) =>
+              engagement.type === EngagementType.Like &&
+              String(engagement.targetRef.$id) === r.id
+          )
+            ? true
+            : false,
+          count: r.engagements.like.count,
+          participant: []
         }
       })),
       createAt: (this as CommentDocument).createdAt.toISOString(),
