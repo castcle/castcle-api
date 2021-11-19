@@ -21,30 +21,14 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/auto-posts',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/apps/bases',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/users',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/commonDate',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/utils/clients',
-    '<rootDir>/libs/utils/decorators',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/libs/utils/queue'
-  ]
-};
+import { DatabaseModule } from '@castcle-api/database';
+import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TwitterService } from './services/twitter.service';
+
+@Module({
+  imports: [DatabaseModule, ScheduleModule.forRoot()],
+  controllers: [],
+  providers: [TwitterService]
+})
+export class AppModule {}

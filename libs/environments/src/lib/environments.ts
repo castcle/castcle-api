@@ -86,7 +86,7 @@ export const Environment = {
   // Social network
   twitter_key: process.env.TWITTER_KEY,
   twitter_secret_key: process.env.TWITTER_SECRET_KEY,
-  twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
+  TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
   twitter_host: process.env.TWITTER_HOST,
   // Otp
   otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
