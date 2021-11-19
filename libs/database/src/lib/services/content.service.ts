@@ -726,6 +726,7 @@ export class ContentService {
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
+    const session = this._accountModel.startSession();
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
     const tags = this.hashtagService.extractHashtagFromText(

@@ -60,20 +60,20 @@ import {
 } from './dtos/dto';
 
 const getIPUrl = (ip: string) =>
-  env.ip_api_key
-    ? `${env.ip_api_url}/${ip}?fields=continentCode,countryCode&key=${env.ip_api_key}`
-    : `${env.ip_api_url}/${ip}?fields=continentCode,countryCode`;
+  env.IP_API_KEY
+    ? `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode&key=${env.IP_API_KEY}`
+    : `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode`;
 
 /*
  * TODO: !!!
  */
 const transporter = nodemailer.createTransport({
-  host: env.smtp_host ? env.smtp_host : 'http://localhost:3334',
-  port: env.smtp_port ? env.smtp_port : 465,
+  host: env.SMTP_HOST ? env.SMTP_HOST : 'http://localhost:3334',
+  port: env.SMTP_PORT ? env.SMTP_PORT : 465,
   secure: true, // true for 465, false for other ports
   auth: {
-    user: env.smtp_username ? env.smtp_username : 'username', // generated ethereal user
-    pass: env.smtp_password ? env.smtp_password : 'password' // generated ethereal password
+    user: env.SMTP_USERNAME ? env.SMTP_USERNAME : 'username', // generated ethereal user
+    pass: env.SMTP_PASSWORD ? env.SMTP_PASSWORD : 'password' // generated ethereal password
   }
 });
 

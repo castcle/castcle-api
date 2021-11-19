@@ -9,7 +9,7 @@ import { AVARTAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: Environment.http_time_out
+      timeout: Environment.HTTP_TIME_OUT
     })
   ],
   controllers: [],

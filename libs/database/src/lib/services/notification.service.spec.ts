@@ -81,10 +81,10 @@ describe('NotificationService', () => {
   let authService: AuthenticationService;
   let user: UserDocument;
   let producer: NotificationProducer;
-  console.log('test in real db = ', env.db_test_in_db);
-  const importModules = env.db_test_in_db
+  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  const importModules = env.DB_TEST_IN_DB
     ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures
       ]
@@ -210,7 +210,7 @@ describe('NotificationService', () => {
     });
   });
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
   });
 
   describe('#getAll', () => {
