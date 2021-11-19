@@ -22,9 +22,8 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleImage, Pagination } from '.';
+import { Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
-import { UserVerified } from '../schemas/user.schema';
 import { Author } from './content.dto';
 
 export class CommentDto {
@@ -65,7 +64,7 @@ export class CommentPayload {
   reply: {
     id: string;
     message: string;
-    createAt: string;
+    createdAt: string;
     author: Author;
     like: Like;
   }[];
