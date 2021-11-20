@@ -35,6 +35,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
+  AppleClient,
   FacebookClient,
   TelegramClient,
   TwillioClient,
@@ -49,6 +50,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import {
+  AppleClientMock,
   DownloaderMock,
   FacebookClientMock,
   TelegramClientMock,
@@ -109,6 +111,10 @@ describe('AppController', () => {
       provide: TwillioClient,
       useClass: TwillioClientMock
     };
+    const AppleClientProvider = {
+      provide: AppleClient,
+      useClass: AppleClientMock
+    };
 
     app = await Test.createTestingModule({
       imports: [
@@ -127,6 +133,7 @@ describe('AppController', () => {
         TelegramClientProvider,
         TwitterClientProvider,
         TwillioClientProvider,
+        AppleClientProvider,
         UserService,
         ContentService,
         HashtagService
@@ -854,12 +861,14 @@ describe('AppController', () => {
         {
           provider: AccountAuthenIdType.Telegram,
           payload: {
-            id: socialId,
-            first_name: 'John',
-            last_name: 'Doe',
-            username: 'username',
-            photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000',
+            socialUser: {
+              id: socialId,
+              first_name: 'John',
+              last_name: 'Doe',
+              username: 'username',
+              photo_url: 'https://t.me/i/userpic/320/username.jpg',
+              auth_date: '1519400000'
+            },
             hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
           }
         }
@@ -887,12 +896,14 @@ describe('AppController', () => {
           {
             provider: AccountAuthenIdType.Telegram,
             payload: {
-              id: socialId,
-              first_name: 'John',
-              last_name: 'Doe',
-              username: 'username',
-              photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000',
+              socialUser: {
+                id: socialId,
+                first_name: 'John',
+                last_name: 'Doe',
+                username: 'username',
+                photo_url: 'https://t.me/i/userpic/320/username.jpg',
+                auth_date: '1519400000'
+              },
               hash: '1'
             }
           }
@@ -913,7 +924,9 @@ describe('AppController', () => {
           {
             provider: AccountAuthenIdType.Telegram,
             payload: {
-              id: ''
+              socialUser: {
+                id: ''
+              }
             }
           }
         )
@@ -1191,12 +1204,14 @@ describe('AppController', () => {
         {
           provider: AccountAuthenIdType.Telegram,
           payload: {
-            id: socialId,
-            first_name: 'John',
-            last_name: 'Doe',
-            username: 'username',
-            photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000',
+            socialUser: {
+              id: socialId,
+              first_name: 'John',
+              last_name: 'Doe',
+              username: 'username',
+              photo_url: 'https://t.me/i/userpic/320/username.jpg',
+              auth_date: '1519400000'
+            },
             hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
           }
         }
@@ -1222,12 +1237,14 @@ describe('AppController', () => {
           {
             provider: AccountAuthenIdType.Telegram,
             payload: {
-              id: socialId,
-              first_name: 'John',
-              last_name: 'Doe',
-              username: 'username',
-              photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000',
+              socialUser: {
+                id: socialId,
+                first_name: 'John',
+                last_name: 'Doe',
+                username: 'username',
+                photo_url: 'https://t.me/i/userpic/320/username.jpg',
+                auth_date: '1519400000'
+              },
               hash: '1'
             }
           }
@@ -1248,7 +1265,9 @@ describe('AppController', () => {
           {
             provider: AccountAuthenIdType.Telegram,
             payload: {
-              id: ''
+              socialUser: {
+                id: ''
+              }
             }
           }
         )

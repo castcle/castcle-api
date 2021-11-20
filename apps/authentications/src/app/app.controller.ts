@@ -733,12 +733,12 @@ export class AuthenticationController {
           this.logger.log(`social login Telegram`);
           token = await this.appService.socialLogin(
             {
-              socialId: body.payload.id,
+              socialId: body.payload.socialUser.id,
               email: '',
-              name: `${body.payload.first_name} ${body.payload.last_name}`,
+              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
               provider: AccountAuthenIdType.Telegram,
-              profileImage: body.payload.photo_url
-                ? body.payload.photo_url
+              profileImage: body.payload.socialUser.photo_url
+                ? body.payload.socialUser.photo_url
                 : '',
               socialToken: body.payload.hash,
               socialSecretToken: ''
@@ -787,17 +787,20 @@ export class AuthenticationController {
           body.payload,
           req.$language
         );
-        if (userApple && userApple.sub) {
+        if (userApple && userApple.user.sub) {
           this.logger.log(`social login Apple`);
           token = await this.appService.socialLogin(
             {
-              socialId: userApple.sub,
-              email: userApple.email ? userApple.email : '',
-              name: `${body.payload.first_name} ${body.payload.last_name}`,
+              socialId: userApple.user.sub,
+              email: userApple.user.email ? userApple.user.email : '',
+              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
               provider: AccountAuthenIdType.Apple,
               profileImage: '',
               socialToken: body.payload.authToken,
-              socialSecretToken: ''
+              socialSecretToken:
+                userApple.token && userApple.token.refresh_token
+                  ? userApple.token.refresh_token
+                  : ''
             },
             req.$credential
           );
@@ -878,14 +881,14 @@ export class AuthenticationController {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =
             await this.authService.getAccountAuthenIdFromSocialId(
-              body.payload.id,
+              body.payload.socialUser.id,
               AccountAuthenIdType.Telegram
             );
           if (!socialAccount) {
             await this.authService.createAccountAuthenId(
               currentAccount,
               AccountAuthenIdType.Telegram,
-              body.payload.id,
+              body.payload.socialUser.id,
               body.payload.hash,
               ''
             );
@@ -946,16 +949,18 @@ export class AuthenticationController {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =
             await this.authService.getAccountAuthenIdFromSocialId(
-              userApp.sub,
+              userApp.user.sub,
               AccountAuthenIdType.Apple
             );
           if (!socialAccount) {
             await this.authService.createAccountAuthenId(
               currentAccount,
               AccountAuthenIdType.Apple,
-              userApp.sub,
+              userApp.user.sub,
               body.payload.authToken,
-              ''
+              userApp.token && userApp.token.refresh_token
+                ? userApp.token.refresh_token
+                : ''
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);

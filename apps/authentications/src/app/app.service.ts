@@ -49,6 +49,7 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
+import { AccessTokenResponse } from 'apple-sign-in-rest';
 import * as nodemailer from 'nodemailer';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 import { getSignupHtml } from './configs/signupEmail';
@@ -248,11 +249,11 @@ export class AppService {
     this.logger.log('Validate Data');
     if (
       !payload ||
-      !payload.id ||
-      !payload.first_name ||
-      !payload.last_name ||
-      !payload.username ||
-      !payload.auth_date ||
+      !payload.socialUser.id ||
+      !payload.socialUser.first_name ||
+      !payload.socialUser.last_name ||
+      !payload.socialUser.username ||
+      !payload.socialUser.auth_date ||
       !payload.hash
     ) {
       this.logger.error(`payload data missing.`);
@@ -260,12 +261,14 @@ export class AppService {
     }
 
     const message: TelegramUserInfo = {
-      id: payload.id,
-      first_name: payload.first_name,
-      last_name: payload.last_name,
-      username: payload.username,
-      photo_url: payload.photo_url ? payload.photo_url : '',
-      auth_date: payload.auth_date,
+      id: payload.socialUser.id,
+      first_name: payload.socialUser.first_name,
+      last_name: payload.socialUser.last_name,
+      username: payload.socialUser.username,
+      photo_url: payload.socialUser.photo_url
+        ? payload.socialUser.photo_url
+        : '',
+      auth_date: payload.socialUser.auth_date,
       hash: payload.hash
     };
     this.logger.log('Validate Hash');
@@ -713,22 +716,30 @@ export class AppService {
    * @returns {AppleIdTokenType}
    */
   async appleConnect(payload: SocialConnectInfo, language: string) {
-    if (!payload.authToken || !payload.nonce || !payload.subject) {
+    if (!payload.authToken) {
       this.logger.error(`payload missing.`);
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
+    }
+
+    let tokenDetail: AccessTokenResponse;
+    if (payload.code) {
+      this.logger.log(`authorize apple user token.`);
+      tokenDetail = await this.appleClient.authorizationToken(
+        payload.code,
+        payload.redirectUrl
+      );
     }
 
     this.logger.log(`verify apple user token.`);
     const userVerify = await this.appleClient.verifyToken(
       payload.authToken,
-      payload.nonce,
-      payload.subject
+      payload.socialUser.id
     );
 
     if (!userVerify) {
       this.logger.error(`Can't get user data.`);
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
     }
-    return userVerify;
+    return { user: userVerify, token: tokenDetail };
   }
 }

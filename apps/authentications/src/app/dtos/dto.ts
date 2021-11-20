@@ -51,13 +51,7 @@ export class LoginDto {
   password: string;
 }
 
-export class SocialConnectInfo {
-  @ApiProperty()
-  authToken?: string;
-  @ApiProperty()
-  authTokenSecret?: string;
-  @ApiProperty()
-  authVerifierToken?: string;
+export class SocialUser {
   @ApiProperty()
   id?: string;
   @ApiProperty()
@@ -71,11 +65,23 @@ export class SocialConnectInfo {
   @ApiProperty()
   auth_date?: string;
   @ApiProperty()
+  email?: string;
+}
+export class SocialConnectInfo {
+  @ApiProperty()
+  authToken?: string;
+  @ApiProperty()
+  authTokenSecret?: string;
+  @ApiProperty()
+  authVerifierToken?: string;
+  @ApiProperty()
   hash?: string;
   @ApiProperty()
-  nonce?: string;
+  code?: string;
   @ApiProperty()
-  subject?: string;
+  redirectUrl?: string;
+  @ApiProperty({ type: SocialUser, isArray: false })
+  socialUser?: SocialUser;
 }
 
 export class SocialConnectDto {

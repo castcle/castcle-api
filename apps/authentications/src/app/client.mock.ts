@@ -21,6 +21,11 @@
  * or have any questions.
  */
 import { TelegramUserInfo, TwillioChannel } from '@castcle-api/utils/clients';
+import {
+  AccessTokenResponse,
+  AppleIdTokenType,
+  RefreshTokenResponse
+} from 'apple-sign-in-rest';
 
 export class FacebookClientMock {
   getAccessToken() {
@@ -177,5 +182,29 @@ export class TwillioClientMock {
     } else {
       return { status: 'pending' };
     }
+  }
+}
+
+export class AppleClientMock {
+  async requestAuthorizationUrl(callBackUrl: string) {
+    return callBackUrl;
+  }
+
+  async verifyToken(
+    idToken: string,
+    subject: string
+  ): Promise<AppleIdTokenType> {
+    return null;
+  }
+
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
+    return null;
+  }
+
+  async authorizationToken(
+    code: string,
+    redirectUrl: string
+  ): Promise<AccessTokenResponse> {
+    return null;
   }
 }

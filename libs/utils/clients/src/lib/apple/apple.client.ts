@@ -24,6 +24,7 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import {
+  AccessTokenResponse,
   AppleIdTokenType,
   AppleSignIn,
   RefreshTokenResponse
@@ -74,18 +75,15 @@ export class AppleClient {
   /**
    * Verify Token
    * @param {string} token token
-   * @param {string} nonce nonce
    * @param {string} subject subject
    * @returns {AppleIdTokenType} token data
    */
   async verifyToken(
     idToken: string,
-    nonce: string,
     subject: string
   ): Promise<AppleIdTokenType> {
     this.logger.log('Verify apple token.');
     return await this.appleSignIn.verifyIdToken(idToken, {
-      nonce: nonce,
       subject: subject,
       ignoreExpiration: true
     });
@@ -110,7 +108,10 @@ export class AppleClient {
    * @param {string} redirectUrl redirectUrl
    * @returns {AccessTokenResponse} AccessTokenResponse
    */
-  async authorizationToken(code: string, redirectUrl: string) {
+  async authorizationToken(
+    code: string,
+    redirectUrl: string
+  ): Promise<AccessTokenResponse> {
     this.logger.log('validate apple token.');
     return await this.appleSignIn.getAuthorizationToken(
       this.getClientSecret(),
