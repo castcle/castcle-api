@@ -64,7 +64,8 @@
             "outputPath": "dist/apps/auto-posts",
             "main": "apps/auto-posts/src/main.ts",
             "tsConfig": "apps/auto-posts/tsconfig.app.json",
-            "assets": ["apps/auto-posts/src/assets"]
+            "assets": ["apps/auto-posts/src/assets"],
+            "generatePackageJson": true
           },
           "configurations": {
             "production": {
