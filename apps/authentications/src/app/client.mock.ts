@@ -194,21 +194,23 @@ export class AppleClientMock {
     idToken: string,
     subject: string
   ): Promise<AppleIdTokenType> {
-    const result = {
-      iss: 'https://appleid.apple.com',
-      aud: 'com.sarunw.siwa',
-      exp: '1577943613',
-      iat: '1577943013',
-      sub: 'xxx.yyy.zzz',
-      nonce: 'nounce',
-      nonce_supported: true,
-      c_hash: 'xxxx',
-      email: 'xxxx@privaterelay.appleid.com',
-      email_verified: true,
-      is_private_email: true,
-      auth_time: 1577943013
-    } as AppleIdTokenType;
-
+    let result;
+    if (idToken !== '1') {
+      result = {
+        iss: 'https://appleid.apple.com',
+        aud: 'com.sarunw.siwa',
+        exp: '1577943613',
+        iat: '1577943013',
+        sub: 'xxx.yyy.zzz',
+        nonce: 'nounce',
+        nonce_supported: true,
+        c_hash: 'xxxx',
+        email: 'xxxx@privaterelay.appleid.com',
+        email_verified: true,
+        is_private_email: true,
+        auth_time: 1577943013
+      } as AppleIdTokenType;
+    }
     return result;
   }
 

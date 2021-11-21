@@ -257,7 +257,7 @@ export class AppService {
       !payload.hash
     ) {
       this.logger.error(`payload data missing.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
     }
 
     const message: TelegramUserInfo = {
@@ -716,7 +716,13 @@ export class AppService {
    * @returns {AppleIdTokenType}
    */
   async appleConnect(payload: SocialConnectInfo, language: string) {
-    if (!payload.authToken) {
+    if (
+      !payload.authToken ||
+      !payload.socialUser ||
+      !payload.socialUser.first_name ||
+      !payload.socialUser.last_name ||
+      !payload.socialUser.email
+    ) {
       this.logger.error(`payload missing.`);
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
     }
@@ -738,7 +744,7 @@ export class AppService {
 
     if (!userVerify) {
       this.logger.error(`Can't get user data.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
     return { user: userVerify, token: tokenDetail };
   }
