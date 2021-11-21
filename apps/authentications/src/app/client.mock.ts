@@ -257,3 +257,13 @@ export class AppleClientMock {
     };
   }
 }
+
+export class GoogleClientMock {
+  async getAccessToken(code: string) {
+    return null;
+  }
+
+  async getGoogleUserInfo(accessToken: string) {
+    return null;
+  }
+}

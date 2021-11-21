@@ -37,6 +37,7 @@ import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   AppleClient,
   FacebookClient,
+  GoogleClient,
   TelegramClient,
   TwillioClient,
   TwitterClient
@@ -53,6 +54,7 @@ import {
   AppleClientMock,
   DownloaderMock,
   FacebookClientMock,
+  GoogleClientMock,
   TelegramClientMock,
   TwillioClientMock,
   TwitterClientMock
@@ -161,6 +163,10 @@ describe('AppController', () => {
       provide: AppleClient,
       useClass: AppleClientMock
     };
+    const GoogleClientProvider = {
+      provide: GoogleClient,
+      useClass: GoogleClientMock
+    };
 
     app = await Test.createTestingModule({
       imports: [
@@ -180,6 +186,7 @@ describe('AppController', () => {
         TwitterClientProvider,
         TwillioClientProvider,
         AppleClientProvider,
+        GoogleClientProvider,
         UserService,
         ContentService,
         HashtagService
