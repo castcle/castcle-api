@@ -259,11 +259,11 @@ export class AppleClientMock {
 }
 
 export class GoogleClientMock {
-  async getAccessToken(code: string) {
+  async verifyToken(token: string) {
     return null;
   }
 
-  async getGoogleUserInfo(accessToken: string) {
+  async getGoogleUserInfo(token: string) {
     return null;
   }
 }

@@ -400,7 +400,7 @@ export class AppService {
     return account;
   }
 
-  async validateExistingOtp(
+  private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
     channel: string

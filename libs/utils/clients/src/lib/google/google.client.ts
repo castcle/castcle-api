@@ -22,60 +22,46 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { lastValueFrom } from 'rxjs';
+import { Auth, google } from 'googleapis';
 @Injectable()
 export class GoogleClient {
+  private oauthClient: Auth.OAuth2Client;
   private readonly logger = new CastLogger(
     GoogleClient.name,
     CastLoggerOptions
   );
 
-  constructor(private httpService: HttpService) {}
-  private readonly accessTokenUrl = `https://oauth2.googleapis.com/token`;
-  private readonly verifyTokenUrl = `https://www.googleapis.com/oauth2/v2/userinfo`;
-
-  /**
-   * Get Authentication token from facebook
-   * @returns {FacebookAccessToken} access token
-   */
-  async getAccessToken(code: string) {
-    const { data } = await lastValueFrom(
-      this.httpService.post(this.accessTokenUrl, {
-        client_id: Environment.GOOGLE_CLIENT_ID,
-        client_secret: Environment.GOOGLE_SECRET,
-        redirect_uri: 'http://localhost:4300/authenticate/google',
-        grant_type: 'authorization_code',
-        code
-      })
+  constructor() {
+    this.oauthClient = new google.auth.OAuth2(
+      Environment.GOOGLE_CLIENT_ID,
+      Environment.GOOGLE_SECRET
     );
-    console.log(data); // { access_token, expires_in, token_type, refresh_token }
-    return data.access_token;
-    // const parameter = `client_id=${Environment.fb_client_id}&client_secret=${Environment.fb_client_secret}&grant_type=client_credentials`;
-    // const url = `${this.accessTokenUrl}${parameter}`;
-    // this.logger.log('get facebook access token');
-
-    // return lastValueFrom(
-    //   this.httpService
-    //     .get<FacebookAccessToken>(url)
-    //     .pipe(map(({ data }) => data))
-    // );
   }
 
   /**
    * Get Authentication token from facebook
-   * @returns {FacebookAccessToken} access token
+   * @param {string} token access token from Google
+   * @returns {TokenInfo} access token detail
    */
-  async getGoogleUserInfo(accessToken: string) {
-    const { data } = await lastValueFrom(
-      this.httpService.get(this.verifyTokenUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
-    );
-    console.log(data); // { id, email, given_name, family_name }
-    return data;
+  async verifyToken(token: string) {
+    return await this.oauthClient.getTokenInfo(token);
+  }
+
+  /**
+   * Get Authentication token from facebook
+   * @param {string} token access token from Google
+   * @returns {Schema$Userinfo} user data
+   */
+  async getGoogleUserInfo(token: string) {
+    const userInfoClient = google.oauth2('v2').userinfo;
+    this.oauthClient.setCredentials({
+      access_token: token
+    });
+
+    const userInfoResponse = await userInfoClient.get({
+      auth: this.oauthClient
+    });
+    return userInfoResponse.data;
   }
 }
