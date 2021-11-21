@@ -83,6 +83,48 @@ const mockResponse: any = {
   })
 };
 
+const createMockCredential = async (
+  appController: AuthenticationController,
+  service: AuthenticationService,
+  deviceUUID: string,
+  castcleId: string,
+  displayName: string,
+  email: string,
+  password: string
+) => {
+  const guestResult = await appController.guestLogin(
+    { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
+    { deviceUUID: deviceUUID }
+  );
+  const guestAccount = await service.getCredentialFromAccessToken(
+    guestResult.accessToken
+  );
+  await appController.register(
+    {
+      $credential: guestAccount,
+      $token: guestResult.accessToken,
+      $language: 'th'
+    } as any,
+    {
+      channel: 'email',
+      payload: {
+        castcleId: castcleId,
+        displayName: displayName,
+        email: email,
+        password: password
+      }
+    }
+  );
+
+  const credentialGuest = {
+    $credential: guestAccount,
+    $token: guestResult.accessToken,
+    $language: 'th'
+  } as any;
+
+  return credentialGuest;
+};
+
 describe('AppController', () => {
   let app: TestingModule;
   let appController: AuthenticationController;
@@ -1041,6 +1083,105 @@ describe('AppController', () => {
     });
   });
 
+  // describe('loginWithSocial Apple', () => {
+  //   let guestResult: TokenResponse;
+  //   let credentialGuest: CredentialDocument;
+  //   const deviceUUID = 'sompo008';
+  //   beforeAll(async () => {
+  //     guestResult = await appController.guestLogin(
+  //       { $device: 'iphone999', $language: 'th', $platform: 'iOs' } as any,
+  //       { deviceUUID: deviceUUID }
+  //     );
+  //     credentialGuest = await service.getCredentialFromAccessToken(
+  //       guestResult.accessToken
+  //     );
+  //   });
+  //   // it('should create new account with new user by social ', async () => {
+  //   //   const socialId = '424242424242';
+  //   //   const result = await appController.loginWithSocial(
+  //   //     {
+  //   //       $credential: credentialGuest,
+  //   //       $token: guestResult.accessToken,
+  //   //       $language: 'th'
+  //   //     } as any,
+  //   //     {
+  //   //       provider: AccountAuthenIdType.Telegram,
+  //   //       payload: {
+  //   //         socialUser: {
+  //   //           id: socialId,
+  //   //           first_name: 'John',
+  //   //           last_name: 'Doe',
+  //   //           username: 'username',
+  //   //           photo_url: 'https://t.me/i/userpic/320/username.jpg',
+  //   //           auth_date: '1519400000'
+  //   //         },
+  //   //         hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
+  //   //       }
+  //   //     }
+  //   //   );
+  //   //   const accountSocial = await service.getAccountAuthenIdFromSocialId(
+  //   //     socialId,
+  //   //     AccountAuthenIdType.Telegram
+  //   //   );
+
+  //   //   expect(result).toBeDefined();
+  //   //   expect(result.accessToken).toBeDefined();
+  //   //   expect(result.refreshToken).toBeDefined();
+  //   //   expect(accountSocial.socialId).toEqual('424242424242');
+  //   // });
+
+  //   // it('should return Exception when invalid hash', async () => {
+  //   //   const socialId = '424242424242';
+  //   //   await expect(
+  //   //     appController.loginWithSocial(
+  //   //       {
+  //   //         $credential: credentialGuest,
+  //   //         $token: guestResult.accessToken,
+  //   //         $language: 'th'
+  //   //       } as any,
+  //   //       {
+  //   //         provider: AccountAuthenIdType.Telegram,
+  //   //         payload: {
+  //   //           socialUser: {
+  //   //             id: socialId,
+  //   //             first_name: 'John',
+  //   //             last_name: 'Doe',
+  //   //             username: 'username',
+  //   //             photo_url: 'https://t.me/i/userpic/320/username.jpg',
+  //   //             auth_date: '1519400000'
+  //   //           },
+  //   //           hash: '1'
+  //   //         }
+  //   //       }
+  //   //     )
+  //   //   ).rejects.toEqual(
+  //   //     new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+  //   //   );
+  //   // });
+
+  //   // it('should return Exception when get empty user data', async () => {
+  //   //   await expect(
+  //   //     appController.loginWithSocial(
+  //   //       {
+  //   //         $credential: credentialGuest,
+  //   //         $token: guestResult.accessToken,
+  //   //         $language: 'th'
+  //   //       } as any,
+  //   //       {
+  //   //         provider: AccountAuthenIdType.Telegram,
+  //   //         payload: {
+  //   //           socialUser: {
+  //   //             id: ''
+  //   //           }
+  //   //         }
+  //   //       }
+  //   //     )
+  //   //   ).rejects.toEqual(
+  //   //     new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+  //   //   );
+  //   // });
+  // });
+
   describe('connectWithSocial Facebook', () => {
     let guestResult: TokenResponse;
     let credentialGuest: CredentialDocument;
@@ -1414,42 +1555,25 @@ describe('AppController', () => {
       const testId = 'registerId34';
       const password = '2@HelloWorld';
       const deviceUUID = 'sompop12341';
-      const guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password
       );
-      const guestAccount = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+
+      const acc = await service.getAccountFromCredential(
+        credentialGuest.$credential
       );
-      await appController.register(
-        {
-          $credential: guestAccount,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: testId,
-            displayName: 'abc',
-            email: emailTest,
-            password: password
-          }
-        }
-      );
-      const acc = await service.getAccountFromCredential(guestAccount);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
           { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
         )
         .exec();
-
-      credentialGuest = {
-        $credential: guestAccount,
-        $token: guestResult.accessToken,
-        $language: 'th'
-      } as any;
     });
 
     it('should request otp via mobile successful', async () => {
@@ -1616,42 +1740,25 @@ describe('AppController', () => {
       const testId = 'verify01';
       const password = '2@HelloWorld';
       const deviceUUID = 'verifyuuid';
-      const guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password
       );
-      const accountGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const acc = await service.getAccountFromCredential(
+        credentialGuest.$credential
       );
-      await appController.register(
-        {
-          $credential: accountGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: testId,
-            displayName: 'abc',
-            email: emailTest,
-            password: password
-          }
-        }
-      );
-      const acc = await service.getAccountFromCredential(accountGuest);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
           { 'mobile.countryCode': countryCodeTest, 'mobile.number': numberTest }
         )
         .exec();
-
-      credentialGuest = {
-        $credential: accountGuest,
-        $token: guestResult.accessToken,
-        $language: 'th'
-      } as any;
     });
 
     it('should pass verify otp mobile channel', async () => {

@@ -194,17 +194,47 @@ export class AppleClientMock {
     idToken: string,
     subject: string
   ): Promise<AppleIdTokenType> {
-    return null;
+    const result = {
+      iss: 'https://appleid.apple.com',
+      aud: 'com.sarunw.siwa',
+      exp: '1577943613',
+      iat: '1577943013',
+      sub: 'xxx.yyy.zzz',
+      nonce: 'nounce',
+      nonce_supported: true,
+      c_hash: 'xxxx',
+      email: 'xxxx@privaterelay.appleid.com',
+      email_verified: true,
+      is_private_email: true,
+      auth_time: 1577943013
+    } as AppleIdTokenType;
+
+    return result;
   }
 
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
-    return null;
+    return {
+      access_token: 'ACCESS_TOKEN',
+      expires_in: 1577943013,
+      token_type: 'refresh_token'
+    };
   }
 
   async authorizationToken(
     code: string,
     redirectUrl: string
   ): Promise<AccessTokenResponse> {
-    return null;
+    return {
+      // A token used to access allowed data. Currently has no use
+      access_token: 'ACCESS_TOKEN',
+      // It will always be Bearer.
+      token_type: 'Bearer',
+      // The amount of time, in seconds, before the access token expires.
+      expires_in: 3600,
+      // used to regenerate new access tokens. Store this token securely on your server.
+      refresh_token: 'REFRESH_TOKEN',
+      // A JSON Web Token that contains the user’s identity information.
+      id_token: 'ID_TOKEN'
+    };
   }
 }
