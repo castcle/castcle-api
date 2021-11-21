@@ -87,13 +87,13 @@ CredentialSchema.statics.generateAccessToken = (
 ) => {
   const now = new Date();
   const accessTokenExpireDate = new Date(
-    now.getTime() + Number(env.jwt_access_expires_in) * 1000
+    now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
   );
   payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
   const accessToken = Token.generateToken(
     payload,
-    env.jwt_access_secret,
-    Number(env.jwt_access_expires_in)
+    env.JWT_ACCESS_SECRET,
+    Number(env.JWT_ACCESS_EXPIRES_IN)
   );
   return {
     accessToken,
@@ -105,13 +105,13 @@ CredentialSchema.statics.generateRefreshToken = (
 ) => {
   const now = new Date();
   const refreshTokenExpireDate = new Date(
-    now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+    now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
   );
   payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
   const refreshToken = Token.generateToken(
     payload,
-    env.jwt_refresh_secret,
-    Number(env.jwt_refresh_expires_in)
+    env.JWT_REFRESH_SECRET,
+    Number(env.JWT_REFRESH_EXPIRES_IN)
   );
 
   return {
@@ -179,7 +179,7 @@ CredentialSchema.methods.isAccessTokenValid = function () {
     return false;
   return Token.isTokenValid(
     (this as CredentialDocument).accessToken,
-    env.jwt_access_secret
+    env.JWT_ACCESS_SECRET
   );
 };
 CredentialSchema.methods.isRefreshTokenValid = function () {
@@ -189,7 +189,7 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
     return false;
   return Token.isTokenValid(
     (this as CredentialDocument).refreshToken,
-    env.jwt_refresh_secret
+    env.JWT_REFRESH_SECRET
   );
 };
 

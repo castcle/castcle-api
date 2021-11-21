@@ -65,7 +65,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
-    logger.log(`Environment at ${env.node_env}`);
+    logger.log(`Environment at ${env.NODE_ENV}`);
   });
 }
 

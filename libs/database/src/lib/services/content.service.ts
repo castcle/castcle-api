@@ -53,6 +53,7 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
+import { TweetUserTimelineV2Paginator } from 'twitter-api-v2';
 
 @Injectable()
 export class ContentService {
@@ -78,7 +79,7 @@ export class ContentService {
   /**
    *
    * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
-   * @param {SaveContentDto} contentDto the content Dto that required for create a conent
+   * @param {SaveContentDto} contentDto the content Dto that required for create a content
    * @returns {ContentDocument} content.save() result
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
@@ -108,6 +109,47 @@ export class ContentService {
 
   /**
    *
+   * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
+   * @param {TweetUserTimelineV2Paginator} timeline the timeline from user for converting to content and saving
+   * @returns {ContentDocument[]} contents
+   */
+  async createContentsFromTweets(
+    user: UserDocument,
+    { data: timeline }: TweetUserTimelineV2Paginator
+  ): Promise<ContentDocument[]> {
+    const author = this._getAuthorFromUser(user);
+    const contentsToSave = timeline.data.map(async ({ attachments, text }) => {
+      const photos = attachments?.media_keys?.map((mediaKey) => {
+        const media = timeline.includes?.media?.find(
+          ({ media_key: key }) => key === mediaKey
+        );
+
+        return { image: media?.url || media?.preview_image_url };
+      });
+
+      const shortContent = { message: text, photo: { contents: photos } };
+      const hashtags =
+        this.hashtagService.extractHashtagFromContentPayload(shortContent);
+
+      await this.hashtagService.createFromTags(hashtags);
+
+      return {
+        author: author,
+        payload: shortContent,
+        revisionCount: 0,
+        type: ContentType.Short,
+        visibility: EntityVisibility.Publish,
+        hashtags: hashtags
+      } as Content;
+    });
+
+    const contentsToCreate = await Promise.all(contentsToSave);
+
+    return this._contentModel.create(contentsToCreate);
+  }
+
+  /**
+   *
    * @param {string} id get content from content's id
    * @returns {ContentDocument}
    */
@@ -126,7 +168,7 @@ export class ContentService {
   deleteContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
     content.visibility = EntityVisibility.Deleted;
-    //rmeove enagement
+    //remove engagement
     if (content.isRecast || content.isQuote) {
       const engagement = await this._engagementModel
         .findOne({ itemId: content._id })
@@ -156,14 +198,14 @@ export class ContentService {
         const engagementType = content.isQuote
           ? EngagementType.Quote
           : EngagementType.Recast;
-        const incEngagment: { [key: string]: number } = {};
-        incEngagment[`engagements.${engagementType}.count`] = 1;
+        const incEngagement: { [key: string]: number } = {};
+        incEngagement[`engagements.${engagementType}.count`] = 1;
         //use update to byPass save hook to prevent recursive and revision api
         const updateResult = await this._contentModel
           .updateOne(
             { _id: sourceContent._id },
             {
-              $inc: incEngagment
+              $inc: incEngagement
             }
           )
           .exec();
@@ -372,10 +414,7 @@ export class ContentService {
   _getAuthorFromUser = (user: UserDocument) => {
     const author: Author = {
       id: user._id,
-      avatar:
-        user.profile && user.profile.images && user.profile.images.avatar
-          ? user.profile.images.avatar
-          : null,
+      avatar: user.profile?.images?.avatar || null,
       castcleId: user.displayId,
       displayName: user.displayName,
       followed: false,
@@ -687,6 +726,7 @@ export class ContentService {
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
+    const session = this._accountModel.startSession();
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
     const tags = this.hashtagService.extractHashtagFromText(
@@ -764,7 +804,7 @@ export class ContentService {
   };
 
   /**
-   * get content by id that visibilty = equal true
+   * get content by id that visibility = equal true
    * @param commentId
    * @returns
    */

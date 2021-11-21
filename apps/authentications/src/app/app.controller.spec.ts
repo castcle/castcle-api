@@ -35,6 +35,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
+  AppleClient,
   FacebookClient,
   TelegramClient,
   TwillioClient,
@@ -49,6 +50,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 import {
+  AppleClientMock,
   DownloaderMock,
   FacebookClientMock,
   TelegramClientMock,
@@ -81,6 +83,52 @@ const mockResponse: any = {
   })
 };
 
+const createMockCredential = async (
+  appController: AuthenticationController,
+  service: AuthenticationService,
+  deviceUUID: string,
+  castcleId: string,
+  displayName: string,
+  email: string,
+  password: string,
+  skipRegister: boolean
+) => {
+  const guestResult = await appController.guestLogin(
+    { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
+    { deviceUUID: deviceUUID }
+  );
+  const guestAccount = await service.getCredentialFromAccessToken(
+    guestResult.accessToken
+  );
+
+  if (!skipRegister) {
+    await appController.register(
+      {
+        $credential: guestAccount,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any,
+      {
+        channel: 'email',
+        payload: {
+          castcleId: castcleId,
+          displayName: displayName,
+          email: email,
+          password: password
+        }
+      }
+    );
+  }
+
+  const credentialGuest = {
+    $credential: guestAccount,
+    $token: guestResult.accessToken,
+    $language: 'th'
+  } as any;
+
+  return credentialGuest;
+};
+
 describe('AppController', () => {
   let app: TestingModule;
   let appController: AuthenticationController;
@@ -109,6 +157,10 @@ describe('AppController', () => {
       provide: TwillioClient,
       useClass: TwillioClientMock
     };
+    const AppleClientProvider = {
+      provide: AppleClient,
+      useClass: AppleClientMock
+    };
 
     app = await Test.createTestingModule({
       imports: [
@@ -127,6 +179,7 @@ describe('AppController', () => {
         TelegramClientProvider,
         TwitterClientProvider,
         TwillioClientProvider,
+        AppleClientProvider,
         UserService,
         ContentService,
         HashtagService
@@ -621,6 +674,7 @@ describe('AppController', () => {
       expect(acc.isGuest).toBe(false);
     });
   });
+
   describe('verifyPassword Flows', () => {
     let registerResult: LoginResponse;
     let genRefCode: string;
@@ -698,7 +752,6 @@ describe('AppController', () => {
         const response = await appController.changePasswordSubmit(
           {
             newPassword: '2@BlaBlaBla',
-            objective: OtpObjective.ChangePassword,
             refCode: genRefCode
           },
           {
@@ -712,32 +765,32 @@ describe('AppController', () => {
   });
 
   describe('loginWithSocial Facebook', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo007';
+    let credentialGuest = null;
     beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone99', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const testId = '';
+      const password = '';
+      const deviceUUID = 'sompo007';
+      const emailTest = '';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
       );
     });
+
     it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: '109364223'
-          }
+      const result = await appController.loginWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Facebook,
+        payload: {
+          authToken: '109364223'
         }
-      );
+      });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
         AccountAuthenIdType.Facebook
@@ -751,119 +804,105 @@ describe('AppController', () => {
 
     it('should return Exception when invalid user token', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: ''
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: ''
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: 'test_empty'
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: 'test_empty'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get exception user data', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: 'exception'
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: 'exception'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty authen token', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: ''
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: ''
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('loginWithSocial Telegram', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo008';
+    let credentialGuest = null;
     beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone999', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const testId = '';
+      const password = '';
+      const deviceUUID = 'sompo008';
+      const emailTest = '';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
       );
     });
+
     it('should create new account with new user by social ', async () => {
       const socialId = '424242424242';
-      const result = await appController.loginWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
+      const result = await appController.loginWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Telegram,
+        payload: {
+          socialUser: {
             id: socialId,
             first_name: 'John',
             last_name: 'Doe',
             username: 'username',
             photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000',
-            hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
-          }
+            auth_date: '1519400000'
+          },
+          hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
         }
-      );
+      });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         socialId,
         AccountAuthenIdType.Telegram
@@ -878,80 +917,76 @@ describe('AppController', () => {
     it('should return Exception when invalid hash', async () => {
       const socialId = '424242424242';
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Telegram,
-            payload: {
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            socialUser: {
               id: socialId,
               first_name: 'John',
               last_name: 'Doe',
               username: 'username',
               photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000',
-              hash: '1'
-            }
+              auth_date: '1519400000'
+            },
+            hash: '1'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Telegram,
-            payload: {
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            socialUser: {
               id: ''
             }
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('loginWithSocial Twitter', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo0070';
+    let credentialGuest = null;
     beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone99a', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const testId = '';
+      const password = '';
+      const deviceUUID = 'sompo0070';
+      const emailTest = '';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
       );
     });
+
     it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: 'wAAAAABUZusAAABfHLxV60',
-            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-            authVerifierToken: '88888888'
-          }
+      const result = await appController.loginWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Twitter,
+        payload: {
+          authToken: 'wAAAAABUZusAAABfHLxV60',
+          authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+          authVerifierToken: '88888888'
         }
-      );
+      });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '999999',
         AccountAuthenIdType.Twitter
@@ -965,117 +1000,165 @@ describe('AppController', () => {
 
     it('should return Exception when invalid user token', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Twitter,
-            payload: {
-              authToken: ''
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: ''
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty authen token', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Twitter,
-            payload: {
-              authToken: '55555555',
-              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-              authVerifierToken: '88888888'
-            }
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: '55555555',
+            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+            authVerifierToken: '88888888'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get exception user data', async () => {
       await expect(
-        appController.loginWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Twitter,
-            payload: {
-              authToken: '77777777',
-              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-              authVerifierToken: '88888888'
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: '77777777',
+            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+            authVerifierToken: '88888888'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
+      );
+    });
+  });
+
+  describe('loginWithSocial Apple', () => {
+    let credentialGuest = null;
+    beforeAll(async () => {
+      const testId = 'verify01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'apple01';
+      const emailTest = 'test@apple.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const result = await appController.loginWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Apple,
+        payload: {
+          authToken:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+          code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
+          socialUser: {
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'user@apple.com'
+          }
+        }
+      });
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        'xxx.yyy.zzz',
+        AccountAuthenIdType.Apple
+      );
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual('xxx.yyy.zzz');
+    });
+
+    it('should return Exception when invalid idToken', async () => {
+      await expect(
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Apple,
+          payload: {
+            authToken: '1',
+            code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
+            socialUser: {
+              first_name: 'John',
+              last_name: 'Doe',
+              email: 'user@apple.com'
             }
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Apple,
+          payload: {
+            authToken:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
       );
     });
   });
 
   describe('connectWithSocial Facebook', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo009';
+    let credentialGuest = null;
     beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const testId = 'fb01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompo009';
+      const emailTest = 'testfb@castcle.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'fb01',
+        emailTest,
+        password,
+        false
       );
     });
     it('should create new social connect map to user ', async () => {
-      const tokens = await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: 'test123',
-            displayName: 'abc',
-            email: 'test@castcle.com',
-            password: '2@HelloWorld'
-          }
-        }
-      );
-
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
         AccountAuthenIdType.Facebook
       );
-      await appController.connectWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: '10936456'
-          }
+      await appController.connectWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Facebook,
+        payload: {
+          authToken: '10936456'
         }
-      );
+      });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
         AccountAuthenIdType.Facebook
@@ -1087,120 +1170,93 @@ describe('AppController', () => {
 
     it('should return Exception when invalid user token', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: ''
-            }
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: ''
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: 'test_empty'
-            }
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: 'test_empty'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception get exception user data', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Facebook,
-            payload: {
-              authToken: 'exception'
-            }
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Facebook,
+          payload: {
+            authToken: 'exception'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('connectWithSocial Telegram', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo010';
+    let credentialGuest = null;
     beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone9999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const testId = 'test1234';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompo010';
+      const emailTest = 'test123@castcle.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abcdv',
+        emailTest,
+        password,
+        false
       );
     });
+
     it('should create new social connect map to user ', async () => {
       const socialId = '12345';
-      const tokens = await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: 'test1234',
-            displayName: 'abc',
-            email: 'test123@castcle.com',
-            password: '2@HelloWorld'
-          }
-        }
-      );
-
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         socialId,
         AccountAuthenIdType.Telegram
       );
-      await appController.connectWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
+      await appController.connectWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Telegram,
+        payload: {
+          socialUser: {
             id: socialId,
             first_name: 'John',
             last_name: 'Doe',
             username: 'username',
             photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000',
-            hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
-          }
+            auth_date: '1519400000'
+          },
+          hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
         }
-      );
+      });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         socialId,
         AccountAuthenIdType.Telegram
@@ -1213,103 +1269,80 @@ describe('AppController', () => {
     it('should return Exception when invalid hash', async () => {
       const socialId = '12345';
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Telegram,
-            payload: {
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            socialUser: {
               id: socialId,
               first_name: 'John',
               last_name: 'Doe',
               username: 'username',
               photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000',
-              hash: '1'
-            }
+              auth_date: '1519400000'
+            },
+            hash: '1'
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Telegram,
-            payload: {
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Telegram,
+          payload: {
+            socialUser: {
               id: ''
             }
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('connectWithSocial Twitter', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo109';
+    let credentialGuest = null;
     beforeAll(async () => {
       await service._accountAuthenId.deleteMany({ socialId: '999999' });
+      const testId = 'twitter01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompo109';
+      const emailTest = 'test_twitter@castcle.com';
 
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone9991a', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'tw01',
+        emailTest,
+        password,
+        false
       );
     });
     it('should create new social connect map to user ', async () => {
-      const tokens = await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: 'twitter01',
-            displayName: 'tw01',
-            email: 'test_twitter@castcle.com',
-            password: '2@HelloWorld'
-          }
-        }
-      );
-
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         '999999',
         AccountAuthenIdType.Twitter
       );
-      await appController.connectWithSocial(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: 'wAAAAABUZusAAABfHLxV60',
-            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-            authVerifierToken: '88888888'
-          }
+      await appController.connectWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Twitter,
+        payload: {
+          authToken: 'wAAAAABUZusAAABfHLxV60',
+          authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+          authVerifierToken: '88888888'
         }
-      );
+      });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '999999',
         AccountAuthenIdType.Twitter
@@ -1321,43 +1354,121 @@ describe('AppController', () => {
 
     it('should return Exception when invalid user token', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Twitter,
-            payload: {
-              authToken: ''
-            }
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: ''
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.connectWithSocial(
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any,
-          {
-            provider: AccountAuthenIdType.Twitter,
-            payload: {
-              authToken: '77777777',
-              authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-              authVerifierToken: '88888888'
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          payload: {
+            authToken: '77777777',
+            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
+            authVerifierToken: '88888888'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
+      );
+    });
+  });
+
+  describe('connectWithSocial Apple', () => {
+    let credentialGuest = null;
+    beforeAll(async () => {
+      const testId = 'apple01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'apple02';
+      const emailTest = 'test_connect@apple.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc apple',
+        emailTest,
+        password,
+        false
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const socialId = 'aaa.bbb.ccc';
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Apple
+      );
+      await appController.connectWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Apple,
+        payload: {
+          authToken: '2',
+          code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
+          socialUser: {
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'user@apple.com'
+          }
+        }
+      });
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Apple
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual(socialId);
+    });
+
+    it('should return Exception when invalid idToken', async () => {
+      await expect(
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Apple,
+          payload: {
+            authToken: '1',
+            code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
+            socialUser: {
+              first_name: 'John',
+              last_name: 'Doe',
+              email: 'user@apple.com'
             }
           }
-        )
+        })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Apple,
+          payload: {
+            authToken:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
   });
@@ -1388,7 +1499,6 @@ describe('AppController', () => {
 
   describe('forgotPasswordRequestOTP', () => {
     let credentialGuest = null;
-    let guestResult = null;
     const emailTest = 'test.opt@gmail.com';
     const countryCodeTest = '+66';
     const numberTest = '0817896767';
@@ -1396,30 +1506,20 @@ describe('AppController', () => {
       const testId = 'registerId34';
       const password = '2@HelloWorld';
       const deviceUUID = 'sompop12341';
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        false
       );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+
+      const acc = await service.getAccountFromCredential(
+        credentialGuest.$credential
       );
-      await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'testLang'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: testId,
-            displayName: 'abc',
-            email: emailTest,
-            password: password
-          }
-        }
-      );
-      const acc = await service.getAccountFromCredential(credentialGuest);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
@@ -1428,46 +1528,56 @@ describe('AppController', () => {
         .exec();
     });
 
-    it('should reset password via mobile successful', async () => {
-      const result = await appController.requestOTP(
-        {
-          objective: 'forgot_password',
-          channel: 'mobile',
-          payload: {
-            email: '',
-            countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
-        },
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any
-      );
+    it('should request otp via mobile successful', async () => {
+      const request = {
+        objective: 'forgot_password',
+        channel: 'mobile',
+        payload: {
+          email: '',
+          countryCode: countryCodeTest,
+          mobileNumber: numberTest
+        }
+      };
+      const result = await appController.requestOTP(request, credentialGuest);
 
       expect(result).toBeDefined;
       expect(result.refCode).toBeDefined;
       expect(result.expiresTime).toBeDefined;
-    });
 
-    it('should reset password via email successful', async () => {
-      const result = await appController.requestOTP(
-        {
-          objective: 'forgot_password',
-          channel: 'email',
-          payload: {
-            email: emailTest,
-            countryCode: '',
-            mobileNumber: ''
-          }
-        },
+      const resultAgain = await appController.requestOTP(
+        request,
         credentialGuest
       );
 
+      expect(resultAgain).toBeDefined;
+      expect(resultAgain.refCode).toEqual(result.refCode);
+      expect(resultAgain.expiresTime).toEqual(result.expiresTime);
+    });
+
+    it('should request otp via email successful', async () => {
+      const request = {
+        objective: 'forgot_password',
+        channel: 'email',
+        payload: {
+          email: emailTest,
+          countryCode: '',
+          mobileNumber: ''
+        }
+      };
+      const result = await appController.requestOTP(request, credentialGuest);
+
       expect(result).toBeDefined;
       expect(result.refCode).toBeDefined;
       expect(result.expiresTime).toBeDefined;
+
+      const resultAgain = await appController.requestOTP(
+        request,
+        credentialGuest
+      );
+
+      expect(resultAgain).toBeDefined;
+      expect(resultAgain.refCode).toEqual(result.refCode);
+      expect(resultAgain.expiresTime).toEqual(result.expiresTime);
     });
 
     it('should return Exception when get wrong channel', async () => {
@@ -1482,18 +1592,25 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
 
-    it('should return Exception when get empty account', async () => {
+    it('should return Exception when get wrong channel', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
       await expect(
         appController.requestOTP(
           {
@@ -1505,14 +1622,13 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
 
       await expect(
@@ -1526,21 +1642,49 @@ describe('AppController', () => {
               mobileNumber: ''
             }
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return exception when wrong objective', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
+      const request = () => {
+        return {
+          objective: 'forgot_password2555',
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: ''
+          }
+        };
+      };
+      await expect(
+        appController.requestOTP(request(), credentialGuest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
   });
 
   describe('forgotPasswordVerificationOTP', () => {
     let credentialGuest = null;
-    let guestResult = null;
     const emailTest = 'testverify@gmail.com';
     const countryCodeTest = '+66';
     const numberTest = '0817896888';
@@ -1548,30 +1692,20 @@ describe('AppController', () => {
       const testId = 'verify01';
       const password = '2@HelloWorld';
       const deviceUUID = 'verifyuuid';
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        false
       );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+      const acc = await service.getAccountFromCredential(
+        credentialGuest.$credential
       );
-      await appController.register(
-        {
-          $credential: credentialGuest,
-          $token: guestResult.accessToken,
-          $language: 'th'
-        } as any,
-        {
-          channel: 'email',
-          payload: {
-            castcleId: testId,
-            displayName: 'abc',
-            email: emailTest,
-            password: password
-          }
-        }
-      );
-      const acc = await service.getAccountFromCredential(credentialGuest);
       await service._accountModel
         .updateOne(
           { _id: acc.id },
@@ -1662,14 +1796,13 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.PAYLOAD_CHANNEL_MISMATCH, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
 
@@ -1687,14 +1820,13 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
       );
 
       await expect(
@@ -1710,18 +1842,159 @@ describe('AppController', () => {
             refCode: '67845676',
             otp: '123456'
           },
-          {
-            $credential: credentialGuest,
-            $token: guestResult.accessToken,
-            $language: 'th'
-          } as any
+          credentialGuest
         )
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, 'th')
+        new CastcleException(
+          CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return exception when wrong objective', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
+      const otpCode = await appController.requestOTP(
+        {
+          objective: 'forgot_password',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password2555',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: '123456',
+            otp: '123456'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'change_password',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: otpCode.refCode,
+            otp: '123456'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password',
+            channel: 'email',
+            payload: {
+              email: emailTest,
+              countryCode: '',
+              mobileNumber: ''
+            },
+            refCode: otpCode.refCode,
+            otp: '123456'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return exception when wrong ref code', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
+      const otpCode = await appController.requestOTP(
+        {
+          objective: 'forgot_password',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        },
+        credentialGuest
+      );
+
+      await expect(
+        appController.verificationOTP(
+          {
+            objective: 'forgot_password',
+            channel: 'mobile',
+            payload: {
+              email: '',
+              countryCode: countryCodeTest,
+              mobileNumber: numberTest
+            },
+            refCode: '123456',
+            otp: '123456'
+          },
+          credentialGuest
+        )
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVLAID_REFCODE,
+          credentialGuest.$language
+        )
       );
     });
 
     it('should return Exception when imvalid otp and return lock otp when over 3 times', async () => {
+      const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
+        credentialGuest.$credential.account._id,
+        OtpObjective.ForgotPassword
+      );
+      for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
+        await exOtp.delete();
+      }
+
       const otpCode = await appController.requestOTP(
         {
           objective: 'forgot_password',

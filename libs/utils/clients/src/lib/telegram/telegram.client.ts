@@ -41,7 +41,7 @@ export class TelegramClient {
   async verifyUserToken({ hash, ...data }: TelegramUserInfo) {
     this.logger.log('Hash Token');
     const secret = createHash('sha256')
-      .update(Environment.tg_bot_token)
+      .update(Environment.TELEGRAM_BOT_TOKEN)
       .digest();
     const checkString = Object.keys(data)
       .sort()

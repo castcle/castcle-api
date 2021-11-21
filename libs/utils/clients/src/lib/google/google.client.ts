@@ -44,8 +44,8 @@ export class GoogleClient {
   async getAccessToken(code: string) {
     const { data } = await lastValueFrom(
       this.httpService.post(this.accessTokenUrl, {
-        client_id: Environment.google_client_id,
-        client_secret: Environment.google_secret,
+        client_id: Environment.GOOGLE_CLIENT_ID,
+        client_secret: Environment.GOOGLE_SECRET,
         redirect_uri: 'http://localhost:4300/authenticate/google',
         grant_type: 'authorization_code',
         code

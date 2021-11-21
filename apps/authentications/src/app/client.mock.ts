@@ -21,6 +21,11 @@
  * or have any questions.
  */
 import { TelegramUserInfo, TwillioChannel } from '@castcle-api/utils/clients';
+import {
+  AccessTokenResponse,
+  AppleIdTokenType,
+  RefreshTokenResponse
+} from 'apple-sign-in-rest';
 
 export class FacebookClientMock {
   getAccessToken() {
@@ -177,5 +182,78 @@ export class TwillioClientMock {
     } else {
       return { status: 'pending' };
     }
+  }
+}
+
+export class AppleClientMock {
+  async requestAuthorizationUrl(callBackUrl: string) {
+    return callBackUrl;
+  }
+
+  async verifyToken(
+    idToken: string,
+    subject: string
+  ): Promise<AppleIdTokenType> {
+    let result;
+    if (idToken === '1') {
+      result = null;
+    } else if (idToken === '2') {
+      result = {
+        iss: 'https://appleid.apple.com',
+        aud: 'com.sarunw.siwa',
+        exp: '1577943613',
+        iat: '1577943013',
+        sub: 'aaa.bbb.ccc',
+        nonce: 'nounce',
+        nonce_supported: true,
+        c_hash: 'xxxx',
+        email: 'xxxx@privaterelay.appleid.com',
+        email_verified: true,
+        is_private_email: true,
+        auth_time: 1577943013
+      } as AppleIdTokenType;
+    } else {
+      result = {
+        iss: 'https://appleid.apple.com',
+        aud: 'com.sarunw.siwa',
+        exp: '1577943613',
+        iat: '1577943013',
+        sub: 'xxx.yyy.zzz',
+        nonce: 'nounce',
+        nonce_supported: true,
+        c_hash: 'xxxx',
+        email: 'xxxx@privaterelay.appleid.com',
+        email_verified: true,
+        is_private_email: true,
+        auth_time: 1577943013
+      } as AppleIdTokenType;
+    }
+    return result;
+  }
+
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
+    return {
+      access_token: 'ACCESS_TOKEN',
+      expires_in: 1577943013,
+      token_type: 'refresh_token'
+    };
+  }
+
+  async authorizationToken(
+    code: string,
+    redirectUrl: string
+  ): Promise<AccessTokenResponse> {
+    return {
+      // A token used to access allowed data. Currently has no use
+      access_token: 'ACCESS_TOKEN',
+      // It will always be Bearer.
+      token_type: 'Bearer',
+      // The amount of time, in seconds, before the access token expires.
+      expires_in: 3600,
+      // used to regenerate new access tokens. Store this token securely on your server.
+      refresh_token: 'REFRESH_TOKEN',
+      // A JSON Web Token that contains the user’s identity information.
+      id_token: 'ID_TOKEN'
+    };
   }
 }

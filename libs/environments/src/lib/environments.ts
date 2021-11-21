@@ -36,7 +36,7 @@ const db_user_pass =
     : `${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@`;
 const db_query =
   process.env.DB_HOST === 'localhost' ? '' : '?retryWrites=true&w=majority';
-const db_options: MongooseModuleOptions =
+const DB_OPTIONS: MongooseModuleOptions =
   process.env.DB_HOST === 'localhost' &&
   process.env.DB_USERNAME === '' &&
   process.env.DB_PASSWORD === ''
@@ -47,73 +47,75 @@ const db_options: MongooseModuleOptions =
       };
 
 export const Environment = {
-  production: process.env.NODE_ENV === 'production',
-  node_env: process.env.NODE_ENV,
-  port: process.env.PORT,
+  PRODUCTION: process.env.NODE_ENV === 'production',
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
   // Database
-  db_username: process.env.DB_USERNAME,
-  db_password: process.env.DB_PASSWORD,
-  db_host: process.env.DB_HOST,
-  db_database_name: process.env.DB_DATABASE_NAME,
-  db_uri: `mongodb+srv://${db_user_pass}${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}${db_query}`,
-  db_options,
-  db_test_in_db: process.env.DB_TEST_IN_DB === 'yes',
+  DB_USERNAME: process.env.DB_USERNAME,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_HOST: process.env.DB_HOST,
+  DB_NAME: process.env.DB_DATABASE_NAME,
+  DB_URI: `mongodb+srv://${db_user_pass}${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}${db_query}`,
+  DB_OPTIONS,
+  DB_TEST_IN_DB: process.env.DB_TEST_IN_DB === 'yes',
   // Mail Service
-  smtp_username: process.env.SMTP_USERNAME,
-  smtp_password: process.env.SMTP_PASSWORD,
-  smtp_host: process.env.SMTP_HOST,
-  smtp_port: process.env.SMTP_PORT as unknown as number,
+  SMTP_USERNAME: process.env.SMTP_USERNAME,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT as unknown as number,
   // JWT
-  jwt_access_secret: process.env.JWT_ACCESS_SECRET,
-  jwt_access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN as unknown as number,
-  jwt_refresh_secret: process.env.JWT_REFRESH_SECRET,
-  jwt_refresh_expires_in: process.env
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
+  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN as unknown as number,
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+  JWT_REFRESH_EXPIRES_IN: process.env
     .JWT_REFRESH_EXPIRES_IN as unknown as number,
-  jwt_verify_secret: process.env.JWT_VERIFY_SECRET,
-  jwt_verify_expires_in: process.env.JWT_VERIFY_EXPIRES_IN as unknown as number,
-  jwt_signature_secret: process.env.JWT_SIGNATURE_SECRET,
-  jwt_signature_expires_in: process.env
+  JWT_VERIFY_SECRET: process.env.JWT_VERIFY_SECRET,
+  JWT_VERIFY_EXPIRES_IN: process.env.JWT_VERIFY_EXPIRES_IN as unknown as number,
+  JWT_SIGNATURE_SECRET: process.env.JWT_SIGNATURE_SECRET,
+  JWT_SIGNATURE_EXPIRES_IN: process.env
     .JWT_SIGNATURE_EXPIRES_IN as unknown as number,
   // Cloudfront
-  cloudfront_access_key_id: process.env.CLOUDFRONT_ACCESS_KEY_ID,
-  cloudfront_private_key: process.env.CLOUDFRONT_PRIVATE_KEY,
+  CLOUDFRONT_ACCESS_KEY_ID: process.env.CLOUDFRONT_ACCESS_KEY_ID,
+  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY,
   // Redis
-  redis_host: process.env.REDIS_HOST,
-  redis_port: process.env.REDIS_PORT as unknown as number,
+  REDIS_HOST: process.env.REDIS_HOST,
+  REDIS_PORT: process.env.REDIS_PORT as unknown as number,
   // Assets
-  assets_bucket_name: process.env.ASSETS_BUCKET_NAME,
-  assets_host: process.env.ASSETS_HOST,
+  ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
+  ASSETS_HOST: process.env.ASSETS_HOST,
   // Social network
-  twitter_key: process.env.TWITTER_KEY,
-  twitter_secret_key: process.env.TWITTER_SECRET_KEY,
-  twitter_bearer_token: process.env.TWITTER_BEARER_TOKEN,
-  twitter_host: process.env.TWITTER_HOST,
+  TWITTER_KEY: process.env.TWITTER_KEY,
+  TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,
+  TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
+  TWITTER_HOST: process.env.TWITTER_HOST,
   // Otp
-  otp_digits: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
-  otp_expires_in: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
+  OTP_DIGITS: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
+  OPT_EXPIRES_IN: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
   // Firebase
-  firebase_project_id: process.env.FIREBASE_PROJECT_ID,
-  firebase_client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  firebase_private_key: process.env.FIREBASE_PRIVATE_KEY,
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
   // HTTP
-  http_time_out: process.env.HTTP_TIME_OUT as unknown as number,
+  HTTP_TIME_OUT: process.env.HTTP_TIME_OUT as unknown as number,
   // Facebook
-  fb_host: process.env.FB_HOST,
-  fb_client_id: process.env.FB_CLIENT_ID,
-  fb_client_secret: process.env.FB_CLIENT_SECRET,
+  FACEBOOK_HOST: process.env.FB_HOST,
+  FACEBOOK_CLIENT_ID: process.env.FB_CLIENT_ID,
+  FACEBOOK_CLIENT_SECRET: process.env.FB_CLIENT_SECRET,
   // Telegram
-  tg_bot_token: process.env.TG_BOT_TOKEN,
-  // Google
-  google_client_id: process.env.GOOGLE_CLIENT_ID,
-  google_secret: process.env.GOOGLE_SECRET,
+  TELEGRAM_BOT_TOKEN: process.env.TG_BOT_TOKEN,
+  // Apple
+  APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+  APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+  APPLE_KEY_IDENTIFIER: process.env.APPLE_KEY_IDENTIFIER,
+  APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
   // Twilio
-  twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
-  twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
-  twilio_otp_sid: process.env.TWILIO_OTP_SID,
-
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_OTP_SID: process.env.TWILIO_OTP_SID,
   //ip-api
-  ip_api_url: process.env.IP_API_URL
-    ? process.env.IP_API_URL
-    : 'https://ip-api.com/json',
-  ip_api_key: process.env.IP_API_KEY ? process.env.IP_API_KEY : null
+  IP_API_URL: process.env.IP_API_URL || 'https://ip-api.com/json',
+  IP_API_KEY: process.env.IP_API_KEY || null,
+  // Google
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_SECRET: process.env.GOOGLE_SECRE
 };

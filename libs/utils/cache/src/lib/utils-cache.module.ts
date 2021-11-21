@@ -31,8 +31,8 @@ import { CacheKeyName } from './enum/cache.key.name';
   imports: [
     CacheModule.register({
       store: redisStore,
-      host: Environment.redis_host,
-      port: Environment.redis_port,
+      host: Environment.REDIS_HOST,
+      port: Environment.REDIS_PORT,
       ttl: 1000
     })
   ],
