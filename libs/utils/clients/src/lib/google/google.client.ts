@@ -1,4 +1,3 @@
-import { Environment } from '@castcle-api/environments';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,11 +20,11 @@ import { Environment } from '@castcle-api/environments';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-
 @Injectable()
 export class GoogleClient {
   private readonly logger = new CastLogger(
