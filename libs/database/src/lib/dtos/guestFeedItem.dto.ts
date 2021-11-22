@@ -20,58 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
 
-export class Pagination {
-  @ApiProperty()
-  previous?: number;
-  @ApiProperty()
-  self?: number;
-  @ApiProperty()
-  next?: number;
-  @ApiProperty()
-  limit?: number;
-}
+import { ContentPayloadDto } from '.';
+import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
+import { User } from '../schemas/user.schema';
 
-export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
-  type?: string;
-  page?: number = 1;
-  limit?: number = 25;
-}
-
-export const DEFAULT_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  page: 1,
-  limit: 25
-} as CastcleQueryOptions;
-
-export enum EntityVisibility {
-  Hidden = 'hidden',
-  Publish = 'publish',
-  Deleted = 'deleted'
-}
-
-export enum CastcleQueueAction {
-  Deleting = 'deleting',
-  Deleted = 'deleted',
-  Restore = 'restore',
-  UpdateProfile = 'updateProfile',
-  CreateFollowFeedItem = 'craeteFollowFeedItem',
-  CreateFeedItemToEveryOne = 'createFeedItemToEveryone',
-  CreateFeedItemToGuests = 'createFeedItemToGuests'
-}
-
-export class CastcleImage {
-  original: string;
-  [key: string]: string;
+export class GuestFeedItemDto {
+  content?: ContentPayloadDto;
+  type: GuestFeedItemType;
+  user?: User;
+  countryCode: string;
+  score: number;
 }

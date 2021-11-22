@@ -20,58 +20,49 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ContentPayloadDto } from '../dtos';
+import { CastcleBase } from './base.schema';
+import { User } from './user.schema';
 
-export class Pagination {
-  @ApiProperty()
-  previous?: number;
-  @ApiProperty()
-  self?: number;
-  @ApiProperty()
-  next?: number;
-  @ApiProperty()
-  limit?: number;
+export type GuestFeedItemDocument = GuestFeedItem & Document;
+
+export enum GuestFeedItemType {
+  Content = 'content',
+  Advertisement = 'ads',
+  SuggestFollow = 'suggest_follow'
 }
 
-export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
-  type?: string;
-  page?: number = 1;
-  limit?: number = 25;
+@Schema({ timestamps: true })
+export class GuestFeedItem extends CastcleBase {
+  @Prop({
+    type: Object
+  })
+  content?: ContentPayloadDto;
+
+  @Prop({
+    required: true
+  })
+  type: string;
+
+  @Prop({
+    type: Object
+  })
+  user?: User;
+  @Prop({ required: true })
+  countryCode: string;
+
+  @Prop({
+    required: true
+  })
+  score: number;
 }
 
-export const DEFAULT_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  page: 1,
-  limit: 25
-} as CastcleQueryOptions;
-
-export enum EntityVisibility {
-  Hidden = 'hidden',
-  Publish = 'publish',
-  Deleted = 'deleted'
-}
-
-export enum CastcleQueueAction {
-  Deleting = 'deleting',
-  Deleted = 'deleted',
-  Restore = 'restore',
-  UpdateProfile = 'updateProfile',
-  CreateFollowFeedItem = 'craeteFollowFeedItem',
-  CreateFeedItemToEveryOne = 'createFeedItemToEveryone',
-  CreateFeedItemToGuests = 'createFeedItemToGuests'
-}
-
-export class CastcleImage {
-  original: string;
-  [key: string]: string;
-}
+export const GuestFeedItemSchema = SchemaFactory.createForClass(GuestFeedItem);
+GuestFeedItemSchema.index({
+  score: 1,
+  countryCode: 1,
+  'content.id': 1,
+  'content.author.id': 1,
+  'content.author.castcleId': 1
+});

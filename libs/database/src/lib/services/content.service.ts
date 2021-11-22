@@ -54,6 +54,11 @@ import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
 import { TweetUserTimelineV2Paginator } from 'twitter-api-v2';
+import {
+  GuestFeedItemDocument,
+  GuestFeedItemType
+} from '../schemas/guestFeedItems.schema';
+import { GuestFeedItemDto } from '../dtos/guestFeedItem.dto';
 
 @Injectable()
 export class ContentService {
@@ -73,7 +78,9 @@ export class ContentService {
     public _commentModel: Model<CommentDocument>,
     @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItemDocument>,
-    public hashtagService: HashtagService
+    public hashtagService: HashtagService,
+    @InjectModel('GuestFeedItem')
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>
   ) {}
 
   /**
@@ -975,5 +982,31 @@ export class ContentService {
     const author = await this._userModel.findById(authorId).exec();
     const viewer = await this._userModel.findById(viewerId).exec();
     return this.createFeedItemFromAuthorToViewer(author, viewer);
+  };
+
+  /**
+   *
+   * @param contentId
+   * @returns {GuestFeedItemDocument}
+   */
+  createGuestFeedItemFromAuthorId = async (contentId: any) => {
+    const content = await this._contentModel.findById(contentId).exec();
+    console.debug('create guest feed with content', content);
+    return this.createGuestFeedItemFromAuthor(content);
+  };
+
+  /**
+   * Create feed item document from content with default cuntryCode "" and score = 0
+   * @param {ContentDocument} content
+   * @returns {GuestFeedItemDocument}
+   */
+  createGuestFeedItemFromAuthor = (content: ContentDocument) => {
+    const newGuestFeedItem = new this._guestFeedItemModel({
+      score: 0,
+      type: GuestFeedItemType.Content,
+      content: content.toContentPayload(),
+      countryCode: ''
+    } as GuestFeedItemDto);
+    return newGuestFeedItem.save();
   };
 }
