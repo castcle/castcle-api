@@ -813,6 +813,38 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Google: {
+        const userGoogle = await this.appService.googleConnect(
+          body.payload,
+          req.$language
+        );
+        if (userGoogle) {
+          this.logger.log(`social login Google`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: userGoogle.userVerify.id
+                ? userGoogle.userVerify.id
+                : '',
+              email: userGoogle.userVerify.email
+                ? userGoogle.userVerify.email
+                : '',
+              name: userGoogle.userVerify.name,
+              provider: AccountAuthenIdType.Google,
+              profileImage: '',
+              socialToken: body.payload.authTokenSecret,
+              socialSecretToken: ''
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
     return token;
   }
@@ -974,6 +1006,40 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Google: {
+        this.logger.log(`Google Connect`);
+        const userGoogle = await this.appService.googleConnect(
+          body.payload,
+          req.$language
+        );
+
+        if (userGoogle) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userGoogle.userVerify.id,
+              AccountAuthenIdType.Google
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Google,
+              userGoogle.userVerify.id,
+              body.payload.authToken,
+              ''
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
   }
 
@@ -993,21 +1059,4 @@ export class AuthenticationController {
     response.oauthTokenSecret = result.oauth_token_secret;
     return response;
   }
-
-  // // @ApiBearerAuth()
-  // @ApiOkResponse({
-  //   status: 200,
-  //   type: OauthTokenResponse
-  // })
-  // // @UseInterceptors(CredentialInterceptor)
-  // @Get('test')
-  // @HttpCode(200)
-  // async test(@Req() req: CredentialRequest) {
-  //   this.logger.log(`request twitter token`);
-  //   await this.appService.testToken(req.$language);
-  //   // const response = new OauthTokenResponse();
-  //   // response.oauthToken = result.oauth_token;
-  //   // response.oauthTokenSecret = result.oauth_token_secret;
-  //   return '';
-  // }
 }
