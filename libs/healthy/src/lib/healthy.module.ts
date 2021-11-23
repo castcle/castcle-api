@@ -21,15 +21,10 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterService } from './services/twitter.service';
+import { HealthyController } from './healthy.controller';
 
 @Module({
-  imports: [DatabaseModule, HealthyModule, ScheduleModule.forRoot()],
-  controllers: [],
-  providers: [TwitterService]
+  controllers: [HealthyController]
 })
-export class AppModule {}
+export class HealthyModule {}

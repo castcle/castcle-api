@@ -391,6 +391,27 @@
         }
       }
     },
+    "healthy": {
+      "root": "libs/healthy",
+      "sourceRoot": "libs/healthy/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/healthy/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/healthy"],
+          "options": {
+            "jestConfig": "libs/healthy/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "logger": {
       "root": "libs/logger",
       "sourceRoot": "libs/logger/src",

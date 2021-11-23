@@ -57,6 +57,9 @@
     "environments": {
       "tags": []
     },
+    "healthy": {
+      "tags": []
+    },
     "logger": {
       "tags": []
     },
