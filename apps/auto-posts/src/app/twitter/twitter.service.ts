@@ -30,10 +30,15 @@ import {
   AccountAuthenIdDocument,
   AccountAuthenIdType
 } from '@castcle-api/database/schemas';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 
 @Injectable()
 export class TwitterService {
   private readonly client: TwitterApiv2;
+  private readonly logger = new CastLogger(
+    TwitterService.name,
+    CastLoggerOptions
+  );
 
   constructor(
     private readonly authenticationService: AuthenticationService,
@@ -44,17 +49,24 @@ export class TwitterService {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async handleTwitterJobs() {
+    this.logger.log(`Start looking for user's timeline`);
+
     const accounts = await this.authenticationService.getAutoPostAccounts(
       AccountAuthenIdType.Twitter
     );
 
     await Promise.all(accounts.map(this.toSaveContents));
+    this.logger.log('Done, waiting for next available schedule');
   }
 
   toSaveContents = async (accountAuthenId: AccountAuthenIdDocument) => {
     const tweets = await this.getTweetsByUserId(
       accountAuthenId.socialId,
       accountAuthenId.latestPostId
+    );
+
+    this.logger.log(
+      `Name: ${accountAuthenId.displayName}, tweet(s): ${tweets.meta.result_count}`
     );
 
     if (!tweets.meta.result_count) return;
@@ -64,14 +76,19 @@ export class TwitterService {
     );
 
     await this.contentService.createContentsFromTweets(user, tweets);
+    accountAuthenId.displayName = tweets.includes?.users?.[0]?.name;
     accountAuthenId.latestPostId = tweets.data.data[0].id;
     await accountAuthenId.save();
+
+    this.logger.log(
+      `Name: ${accountAuthenId.displayName}, ${tweets.meta.result_count} tweet(s) saved`
+    );
   };
 
   getTweetsByUserId = (userId: string, latestPostId: string) => {
     return this.client.userTimeline(userId, {
       exclude: ['retweets', 'replies'],
-      expansions: ['attachments.media_keys'],
+      expansions: ['attachments.media_keys', 'author_id'],
       'media.fields': ['media_key', 'type', 'url'],
       since_id: latestPostId
     });

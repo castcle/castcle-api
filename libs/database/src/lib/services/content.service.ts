@@ -118,24 +118,17 @@ export class ContentService {
     { data: timeline }: TweetUserTimelineV2Paginator
   ): Promise<ContentDocument[]> {
     const author = this._getAuthorFromUser(user);
-    const contentsToSave = timeline.data.map(async ({ attachments, text }) => {
-      const photos = attachments?.media_keys?.map((mediaKey) => {
-        const media = timeline.includes?.media?.find(
-          ({ media_key: key }) => key === mediaKey
-        );
-
-        return { image: media?.url || media?.preview_image_url };
-      });
-
-      const shortContent = { message: text, photo: { contents: photos } };
+    const contentsToSave = timeline.data.map(async ({ text }) => {
+      const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
+      const content = { message: text.replace(LAST_TWITTER_LINK_PATTERN, '') };
       const hashtags =
-        this.hashtagService.extractHashtagFromContentPayload(shortContent);
+        this.hashtagService.extractHashtagFromContentPayload(content);
 
       await this.hashtagService.createFromTags(hashtags);
 
       return {
         author: author,
-        payload: shortContent,
+        payload: content,
         revisionCount: 0,
         type: ContentType.Short,
         visibility: EntityVisibility.Publish,
