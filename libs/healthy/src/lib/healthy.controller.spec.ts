@@ -21,15 +21,21 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterService } from './services/twitter.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HealthyController } from './healthy.controller';
 
-@Module({
-  imports: [DatabaseModule, HealthyModule, ScheduleModule.forRoot()],
-  controllers: [],
-  providers: [TwitterService]
-})
-export class AppModule {}
+describe('HealthyController', () => {
+  let controller: HealthyController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthyController]
+    }).compile();
+
+    controller = module.get(HealthyController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
