@@ -21,15 +21,16 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterService } from './services/twitter.service';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Controller, Get } from '@nestjs/common';
 
-@Module({
-  imports: [DatabaseModule, HealthyModule, ScheduleModule.forRoot()],
-  controllers: [],
-  providers: [TwitterService]
-})
-export class AppModule {}
+@Controller('healthy')
+export class HealthyController {
+  private logger = new CastLogger(HealthyController.name, CastLoggerOptions);
+
+  @Get()
+  getData() {
+    this.logger.log('Health Check');
+    return '';
+  }
+}
