@@ -35,6 +35,7 @@ module.exports = {
     '<rootDir>/libs/commonDate',
     '<rootDir>/libs/database',
     '<rootDir>/libs/environments',
+    '<rootDir>/libs/healthy',
     '<rootDir>/libs/logger',
     '<rootDir>/libs/ranker',
     '<rootDir>/libs/utils',

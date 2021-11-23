@@ -21,30 +21,21 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { Test, TestingModule } from '@nestjs/testing';
+import { HealthyController } from './healthy.controller';
 
-import { AppModule } from './app/app.module';
+describe('HealthyController', () => {
+  let controller: HealthyController;
 
-async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const port = process.env.PORT || 3342;
-  const prefix = 'auto-posts';
-  const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthyController]
+    }).compile();
+
+    controller = module.get(HealthyController);
   });
 
-  app.setGlobalPrefix(prefix);
-
-  await app.listen(port);
-  Logger.log('Listening at http://localhost:' + port + '/');
-  logger.log(`Environment at ${Environment.NODE_ENV}`);
-}
-
-bootstrap();
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});

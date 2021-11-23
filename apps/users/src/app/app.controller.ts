@@ -406,7 +406,7 @@ export class UserController {
     type: TargetCastcleDto
   })
   @CastleClearCacheAuth(CacheKeyName.Users)
-  @Put(':id/follows')
+  @Put(':id/following')
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
