@@ -21,30 +21,16 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { Controller, Get } from '@nestjs/common';
 
-import { AppModule } from './app/app.module';
+@Controller('healthy')
+export class HealthyController {
+  private logger = new CastLogger(HealthyController.name, CastLoggerOptions);
 
-async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
-  const port = process.env.PORT || 3342;
-  const prefix = 'auto-posts';
-  const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel
-  });
-
-  app.setGlobalPrefix(prefix);
-
-  await app.listen(port);
-  Logger.log('Listening at http://localhost:' + port + '/');
-  logger.log(`Environment at ${Environment.NODE_ENV}`);
+  @Get()
+  getData() {
+    this.logger.log('Health Check');
+    return '';
+  }
 }
-
-bootstrap();
