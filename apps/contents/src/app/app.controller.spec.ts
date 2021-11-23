@@ -46,16 +46,14 @@ import {
   SaveContentDto
 } from '@castcle-api/database/dtos';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
 import {
   NotificationProducer,
   TopicName,
   UserProducer
 } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
-import { CacheModule, UploadedFile } from '@nestjs/common';
+import { CacheModule } from '@nestjs/common';
 import { ContentProducer } from '@castcle-api/utils/queue';
-import { Configs } from '@castcle-api/environments';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({

@@ -26,7 +26,6 @@ import {
   BlogPayload,
   ContentType,
   SaveContentDto,
-  ShortPayload,
   Url
 } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';

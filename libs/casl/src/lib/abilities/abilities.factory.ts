@@ -34,13 +34,9 @@ import {
   Ability,
   AbilityBuilder,
   AbilityClass,
-  ExtractSubjectType,
-  MongoQuery
+  ExtractSubjectType
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { Document, Model } from 'mongoose';
-import { EntityVisibility } from '@castcle-api/database/dtos';
-import * as mongoose from 'mongoose';
 
 type Subjects =
   | InferSubjects<

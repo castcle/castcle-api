@@ -33,15 +33,15 @@ export class TwitterClient {
     CastLoggerOptions
   );
 
-  private readonly requestTokenUrl = `${Environment.twitter_host}/oauth/request_token`;
-  private readonly accessTokenUrl = `${Environment.twitter_host}/oauth/access_token `;
-  private readonly verifyToken = `${Environment.twitter_host}/1.1/account/verify_credentials.json?include_email=true`;
+  private readonly requestTokenUrl = `${Environment.TWITTER_HOST}/oauth/request_token`;
+  private readonly accessTokenUrl = `${Environment.TWITTER_HOST}/oauth/access_token `;
+  private readonly verifyToken = `${Environment.TWITTER_HOST}/1.1/account/verify_credentials.json?include_email=true`;
 
   private readonly oauth = new OAuth.OAuth(
     this.requestTokenUrl,
     this.accessTokenUrl,
-    Environment.twitter_key,
-    Environment.twitter_secret_key,
+    Environment.TWITTER_KEY,
+    Environment.TWITTER_SECRET_KEY,
     '1.0A',
     null,
     'HMAC-SHA1'

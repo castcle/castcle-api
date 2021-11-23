@@ -35,8 +35,8 @@ import { ContentMessage } from './messages/content.message';
   imports: [
     BullModule.forRoot({
       redis: {
-        host: Environment.redis_host,
-        port: Environment.redis_port
+        host: Environment.REDIS_HOST,
+        port: Environment.REDIS_PORT
       }
     }),
     BullModule.registerQueue({

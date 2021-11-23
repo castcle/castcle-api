@@ -25,7 +25,6 @@ import * as mongoose from 'mongoose';
 import { EntityVisibility } from '../dtos';
 import { CommentDocument, Comment, ContentDocument } from '../schemas';
 import { RevisionDocument } from '../schemas/revision.schema';
-import { CommentSchema, CommentType } from '../schemas/comment.schema';
 
 type HookModels = {
   revisionModel: Model<RevisionDocument>;

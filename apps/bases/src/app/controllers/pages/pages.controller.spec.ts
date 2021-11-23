@@ -39,8 +39,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AccountDocument,
   ContentDocument,
-  CredentialDocument,
-  UserType
+  CredentialDocument
 } from '@castcle-api/database/schemas';
 import {
   ContentType,
@@ -53,7 +52,6 @@ import { Image } from '@castcle-api/utils/aws';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { Configs } from '@castcle-api/environments';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({

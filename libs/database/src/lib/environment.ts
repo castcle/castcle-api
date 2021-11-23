@@ -24,42 +24,17 @@
 import { Environment } from '@castcle-api/environments';
 
 export const env = {
-  db_test_in_db:
-    Environment && Environment.db_test_in_db
-      ? Environment.db_test_in_db
-      : false,
-  db_uri:
-    Environment && Environment.db_password
-      ? Environment.db_uri
-      : 'mongodb://localhost:27017/test',
-  db_options:
-    Environment && Environment.db_options ? Environment.db_options : {},
-  jwt_refresh_expires_in:
-    Environment && Environment.jwt_refresh_expires_in
-      ? Environment.jwt_refresh_expires_in
-      : '18000',
-  jwt_access_expires_in:
-    Environment && Environment.jwt_access_expires_in
-      ? Environment.jwt_access_expires_in
-      : '6001',
-  jwt_verify_expires_in:
-    Environment && Environment.jwt_verify_expires_in
-      ? Environment.jwt_verify_expires_in
-      : '6002',
-  jwt_access_secret:
-    Environment && Environment.jwt_access_secret
-      ? Environment.jwt_access_secret
-      : 'secretna',
-  jwt_refresh_secret:
-    Environment && Environment.jwt_refresh_secret
-      ? Environment.jwt_refresh_secret
-      : 'secretjing',
-  jwt_verify_secret:
-    Environment && Environment.jwt_verify_secret
-      ? Environment.jwt_verify_secret
-      : 'secretlen',
-  otp_digits:
-    Environment && Environment.otp_digits ? Environment.otp_digits : 8,
-  otp_expires_in:
-    Environment && Environment.otp_expires_in ? Environment.otp_expires_in : 900
+  DB_TEST_IN_DB: Environment?.DB_TEST_IN_DB || false,
+  DB_URI: Environment?.DB_PASSWORD
+    ? Environment.DB_URI
+    : 'mongodb://localhost:27017/test',
+  DB_OPTIONS: Environment?.DB_OPTIONS || {},
+  JWT_REFRESH_EXPIRES_IN: Environment?.JWT_REFRESH_EXPIRES_IN || '18000',
+  JWT_ACCESS_EXPIRES_IN: Environment?.JWT_ACCESS_EXPIRES_IN || '6001',
+  JWT_VERIFY_EXPIRES_IN: Environment?.JWT_VERIFY_EXPIRES_IN || '6002',
+  JWT_ACCESS_SECRET: Environment?.JWT_ACCESS_SECRET || 'secretna',
+  JWT_REFRESH_SECRET: Environment?.JWT_REFRESH_SECRET || 'secretjing',
+  JWT_VERIFY_SECRET: Environment?.JWT_VERIFY_SECRET || 'secretlen',
+  OTP_DIGITS: Environment?.OTP_DIGITS || 8,
+  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 900
 };

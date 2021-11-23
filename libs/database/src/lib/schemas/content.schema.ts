@@ -23,11 +23,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { Account } from '../schemas/account.schema';
 import {
   ContentPayloadDto,
   ShortPayload,
-  ContentType,
   BlogPayload,
   Author,
   ImagePayload
@@ -35,7 +33,7 @@ import {
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
-import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
@@ -222,8 +220,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',
@@ -256,8 +254,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',
