@@ -1117,7 +1117,10 @@ describe('AppController', () => {
           }
         })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, 'th')
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
       );
     });
 
@@ -1131,7 +1134,81 @@ describe('AppController', () => {
           }
         })
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+    });
+  });
+
+  describe('loginWithSocial Google', () => {
+    let credentialGuest = null;
+    beforeAll(async () => {
+      const testId = 'google01';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'android01';
+      const emailTest = 'test@gmail.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'goo',
+        emailTest,
+        password,
+        true
+      );
+    });
+    it('should create new account with new user by social ', async () => {
+      const result = await appController.loginWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Google,
+        payload: {
+          authToken:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+        }
+      });
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        'mock_user_google',
+        AccountAuthenIdType.Google
+      );
+
+      expect(result).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(accountSocial.socialId).toEqual('mock_user_google');
+    });
+
+    it('should return Exception when invalid token', async () => {
+      await expect(
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Google,
+          payload: {
+            authToken: '1'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.loginWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Apple,
+          payload: {
+            authToken: ''
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
       );
     });
   });
@@ -1474,6 +1551,96 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(
           CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+    });
+  });
+
+  describe('connectWithSocial Google', () => {
+    let credentialGuest = null;
+    beforeAll(async () => {
+      await service._accountAuthenId.deleteMany({
+        socialId: 'mock_user_google_2'
+      });
+      const testId = 'google02';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'google02';
+      const emailTest = 'test_connect@gmail.com';
+
+      credentialGuest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc google',
+        emailTest,
+        password,
+        false
+      );
+    });
+    it('should create new social connect map to user ', async () => {
+      const socialId = 'mock_user_google_2';
+      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Google
+      );
+      await appController.connectWithSocial(credentialGuest, {
+        provider: AccountAuthenIdType.Google,
+        payload: {
+          authToken: '2'
+        }
+      });
+      const afterConnect = await service.getAccountAuthenIdFromSocialId(
+        socialId,
+        AccountAuthenIdType.Google
+      );
+
+      expect(beforeConnect).toBeNull();
+      expect(afterConnect.socialId).toEqual(socialId);
+    });
+
+    it('should return Exception when invalid token', async () => {
+      await expect(
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Google,
+          payload: {
+            authToken: '1'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVLAID_AUTH_TOKEN,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return Exception when get empty user data', async () => {
+      await expect(
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Google,
+          payload: {
+            authToken: ''
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+
+      await expect(
+        appController.connectWithSocial(credentialGuest, {
+          provider: AccountAuthenIdType.Google,
+          payload: {
+            authToken: '3'
+          }
+        })
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
           credentialGuest.$language
         )
       );
