@@ -30,7 +30,7 @@ import { User, UserDocument, UserType } from '../schemas/user.schema';
 import {
   ContentDocument,
   Content,
-  toUnsignedContentPayloadItem
+  toSignedContentPayloadItem
 } from '../schemas/content.schema';
 import {
   EngagementDocument,
@@ -68,6 +68,8 @@ import {
   GuestFeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
 import { QueryOption } from '../dtos/common.dto';
+import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 
 @Injectable()
 export class ContentService {
@@ -1072,12 +1074,19 @@ export class ContentService {
               name: 'For You',
               slug: 'forYou'
             },
-            payload: toUnsignedContentPayloadItem(item.content),
+            payload: toSignedContentPayloadItem(item.content),
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
       includes: {
-        users: documents.map((item) => item.content.author)
+        users: documents
+          .map((item) => item.content.author)
+          .map((author) => {
+            if (author.avatar)
+              author.avatar = new Image(author.avatar).toSignUrls();
+            else author.avatar = Configs.DefaultAvatarImages;
+            return author;
+          })
       },
       pagination: pagination
     } as GuestFeedItemPayload;

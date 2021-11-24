@@ -200,6 +200,7 @@ export class ContentPayloadItem {
   'type': ContentType.Short | ContentType.Blog | ContentType.Image; // short, blog, image, shortClip, clip, live
   'message': string;
   'photo': {
+    cover?: CastcleImage;
     contents: CastcleImage[];
   };
   'link': Link[];
