@@ -53,7 +53,6 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
-import { TweetUserTimelineV2Paginator } from 'twitter-api-v2';
 
 @Injectable()
 export class ContentService {
@@ -110,35 +109,33 @@ export class ContentService {
   /**
    *
    * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
-   * @param {TweetUserTimelineV2Paginator} timeline the timeline from user for converting to content and saving
-   * @returns {ContentDocument[]} contents
+   * @param {SaveContentDto[]} contentsDtos contents to save
+   * @returns {ContentDocument[]} saved contents
    */
-  async createContentsFromTweets(
+  async createContentsFromUser(
     user: UserDocument,
-    { data: timeline }: TweetUserTimelineV2Paginator
+    contentsDtos: SaveContentDto[]
   ): Promise<ContentDocument[]> {
     const author = this._getAuthorFromUser(user);
-    const contentsToSave = timeline.data.map(async ({ text }) => {
-      const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
-      const content = { message: text.replace(LAST_TWITTER_LINK_PATTERN, '') };
+    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
-        this.hashtagService.extractHashtagFromContentPayload(content);
+        this.hashtagService.extractHashtagFromContentPayload(payload);
 
       await this.hashtagService.createFromTags(hashtags);
 
       return {
-        author: author,
-        payload: content,
+        author,
+        payload,
         revisionCount: 0,
-        type: ContentType.Short,
+        type,
         visibility: EntityVisibility.Publish,
         hashtags: hashtags
       } as Content;
     });
 
-    const contentsToCreate = await Promise.all(contentsToSave);
+    const contents = await Promise.all(contentsToCreate);
 
-    return this._contentModel.create(contentsToCreate);
+    return this._contentModel.create(contents);
   }
 
   /**
