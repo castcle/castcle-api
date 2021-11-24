@@ -21,11 +21,12 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ContentPayloadDto } from '../dtos';
+import * as mongoose from 'mongoose';
+import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
 
-export type GuestFeedItemDocument = GuestFeedItem & Document;
+export type GuestFeedItemDocument = GuestFeedItem & mongoose.Document;
 
 export enum GuestFeedItemType {
   Content = 'content',
@@ -38,7 +39,7 @@ export class GuestFeedItem extends CastcleBase {
   @Prop({
     type: Object
   })
-  content?: ContentPayloadDto;
+  content?: Content;
 
   @Prop({
     required: true

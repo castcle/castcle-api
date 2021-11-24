@@ -28,7 +28,8 @@ import {
   ShortPayload,
   BlogPayload,
   Author,
-  ImagePayload
+  ImagePayload,
+  ContentPayloadItem
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
@@ -184,6 +185,52 @@ export const signContentPayload = (
   payload.isSign = true;
   console.debug('afterSign', JSON.stringify(payload));
   return payload;
+};
+
+export const toUnsignedContentPayloadItem = (
+  content: ContentDocument | Content,
+  engagements: EngagementDocument[] = []
+) => {
+  const result = {
+    id: String(content._id),
+    authorId: content.author.id,
+    type: content.type,
+    message: (content.payload as ShortPayload).message,
+    link: (content.payload as ShortPayload).link,
+    photo: (content.payload as ShortPayload).photo,
+    metrics: {
+      likeCount: content.engagements?.like?.count | 0,
+      commentCount: content.engagements?.comment?.count | 0,
+      quoteCount: content.engagements?.quote?.count | 0,
+      recastCount: content.engagements?.recast?.count | 0
+    },
+    participate: {
+      liked: engagements.find((item) => item.type === EngagementType.Like)
+        ? true
+        : false,
+      commented: engagements.find(
+        (item) => item.type === EngagementType.Comment
+      )
+        ? true
+        : false,
+      quoted: engagements.find((item) => item.type === EngagementType.Quote)
+        ? true
+        : false,
+      recasted: engagements.find((item) => item.type === EngagementType.Recast)
+        ? true
+        : false
+    },
+
+    createdAt: content.createdAt.toISOString(),
+    updatedAt: content.updatedAt.toISOString()
+  } as ContentPayloadItem;
+  if (content.isRecast || content.isQuote) {
+    result.referencedCasts = {
+      type: content.isRecast ? 'recasted' : 'quoted',
+      id: content.originalPost._id as string
+    };
+  }
+  return result;
 };
 
 export const ContentSchema = SchemaFactory.createForClass(Content);

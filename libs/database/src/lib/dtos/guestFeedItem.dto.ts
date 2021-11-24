@@ -21,20 +21,41 @@
  * or have any questions.
  */
 
-import { ContentPayloadDto } from '.';
+import { Content } from '../schemas/content.schema';
 import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
 import { User } from '../schemas/user.schema';
 import { CastclePagination } from './common.dto';
+import { Author, ContentPayloadItem } from './content.dto';
 
 export class GuestFeedItemDto {
-  content?: ContentPayloadDto;
+  content?: Content;
   type: GuestFeedItemType;
   user?: User;
-  countryCode: string;
+  countryCode?: string;
   score: number;
 }
 
+export class GuestFeedItemPayloadItem {
+  id: string;
+  feature: {
+    slug: 'feed';
+    key: 'feature.feed';
+    name: 'Feed';
+  };
+  circle: {
+    id: 'for-you';
+    key: 'circle.forYou';
+    name: 'For You';
+    slug: 'forYou';
+  };
+  type: 'content' | 'suggestion' | 'ads'; // content or suggestion or reminder or ads
+  payload: ContentPayloadItem;
+}
+
 export class GuestFeedItemPayload {
-  payload: GuestFeedItemDto[];
+  payload: GuestFeedItemPayloadItem[];
+  includes: {
+    users: Author[];
+  };
   pagination: CastclePagination;
 }
