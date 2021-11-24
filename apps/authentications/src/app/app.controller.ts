@@ -677,7 +677,7 @@ export class AuthenticationController {
     return this.appService.resetPassword(payload, req);
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiBody({
     type: SocialConnectDto
   })
@@ -733,12 +733,12 @@ export class AuthenticationController {
           this.logger.log(`social login Telegram`);
           token = await this.appService.socialLogin(
             {
-              socialId: body.payload.id,
+              socialId: body.payload.socialUser.id,
               email: '',
-              name: `${body.payload.first_name} ${body.payload.last_name}`,
+              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
               provider: AccountAuthenIdType.Telegram,
-              profileImage: body.payload.photo_url
-                ? body.payload.photo_url
+              profileImage: body.payload.socialUser.photo_url
+                ? body.payload.socialUser.photo_url
                 : '',
               socialToken: body.payload.hash,
               socialSecretToken: ''
@@ -782,11 +782,42 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Apple: {
+        const userApple = await this.appService.appleConnect(
+          body.payload,
+          req.$language
+        );
+        if (userApple && userApple.user.sub) {
+          this.logger.log(`social login Apple`);
+          token = await this.appService.socialLogin(
+            {
+              socialId: userApple.user.sub,
+              email: userApple.user.email ? userApple.user.email : '',
+              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
+              provider: AccountAuthenIdType.Apple,
+              profileImage: '',
+              socialToken: body.payload.authToken,
+              socialSecretToken:
+                userApple.token && userApple.token.refresh_token
+                  ? userApple.token.refresh_token
+                  : ''
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
     return token;
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiBody({
     type: SocialConnectDto
   })
@@ -850,14 +881,14 @@ export class AuthenticationController {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =
             await this.authService.getAccountAuthenIdFromSocialId(
-              body.payload.id,
+              body.payload.socialUser.id,
               AccountAuthenIdType.Telegram
             );
           if (!socialAccount) {
             await this.authService.createAccountAuthenId(
               currentAccount,
               AccountAuthenIdType.Telegram,
-              body.payload.id,
+              body.payload.socialUser.id,
               body.payload.hash,
               ''
             );
@@ -907,10 +938,46 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Apple: {
+        this.logger.log(`Apple Connect`);
+        const userApp = await this.appService.appleConnect(
+          body.payload,
+          req.$language
+        );
+
+        if (userApp) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userApp.user.sub,
+              AccountAuthenIdType.Apple
+            );
+          if (!socialAccount) {
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Apple,
+              userApp.user.sub,
+              body.payload.authToken,
+              userApp.token && userApp.token.refresh_token
+                ? userApp.token.refresh_token
+                : ''
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
   }
 
-  @ApiBearerAuth()
+  @CastcleBasicAuth()
   @ApiOkResponse({
     status: 200,
     type: OauthTokenResponse

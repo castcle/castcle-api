@@ -83,7 +83,7 @@ export const Environment = {
   // Assets
   ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
   ASSETS_HOST: process.env.ASSETS_HOST,
-  // Social network
+  // Twitter Config
   TWITTER_KEY: process.env.TWITTER_KEY,
   TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,
   TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
@@ -103,6 +103,11 @@ export const Environment = {
   FACEBOOK_CLIENT_SECRET: process.env.FB_CLIENT_SECRET,
   // Telegram
   TELEGRAM_BOT_TOKEN: process.env.TG_BOT_TOKEN,
+  // Apple
+  APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+  APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+  APPLE_KEY_IDENTIFIER: process.env.APPLE_KEY_IDENTIFIER,
+  APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
   // Twilio
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,

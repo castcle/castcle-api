@@ -52,6 +52,7 @@ export class TwitterClient {
    * @returns {TwitterAccessToken} token data
    */
   async requestToken(): Promise<TwitterAccessToken> {
+    this.logger.log('call twitter api for request token');
     return new Promise((resolve, reject) => {
       this.oauth.getOAuthRequestToken(
         (error, oauth_token, oauth_token_secret, results) => {
@@ -77,6 +78,7 @@ export class TwitterClient {
     tokenSecret: string,
     oauthVerifier: string
   ): Promise<TwitterAccessToken> {
+    this.logger.log('call twitter api for request access token');
     return new Promise((resolve, reject) => {
       this.oauth.getOAuthAccessToken(
         accessToken,
@@ -107,6 +109,7 @@ export class TwitterClient {
     accessToken: string,
     tokenSecret: string
   ): Promise<TwitterUserData> {
+    this.logger.log('call twitter api for request verify token');
     return new Promise((resolve, reject) => {
       this.oauth.getProtectedResource(
         this.verifyToken,
