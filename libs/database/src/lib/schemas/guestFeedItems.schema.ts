@@ -49,8 +49,8 @@ export class GuestFeedItem extends CastcleBase {
     type: Object
   })
   user?: User;
-  @Prop({ required: true })
-  countryCode: string;
+
+  countryCode?: string;
 
   @Prop({
     required: true

@@ -75,3 +75,23 @@ export class CastcleImage {
   original: string;
   [key: string]: string;
 }
+
+export class CastcleMeta {
+  'oldestId'?: string;
+  'newestId'?: string;
+  'resultCount': number;
+}
+
+export class CastclePagination {
+  'firstId': string;
+  'lastId': string;
+  'limit': number;
+}
+
+export class QueryOption {
+  mode: 'current' | 'history';
+  hashtag?: string;
+  maxResults: number;
+  sinceId?: string;
+  untilId?: string;
+}

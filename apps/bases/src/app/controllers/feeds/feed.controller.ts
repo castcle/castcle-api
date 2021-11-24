@@ -151,4 +151,19 @@ export class FeedController {
       );
     }
   }
+
+  @Get('feeds/guests')
+  async getGuestFeed(
+    @Query('maxResults') maxResults: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string
+  ) {
+    const payload = await this.contentService.getGuestFeedItems({
+      maxResults: maxResults,
+      mode: 'current',
+      sinceId: sinceId,
+      untilId: untilId
+    });
+    return payload;
+  }
 }
