@@ -198,6 +198,7 @@ export const toUnsignedContentPayloadItem = (
     message: (content.payload as ShortPayload).message,
     link: (content.payload as ShortPayload).link,
     photo: (content.payload as ShortPayload).photo,
+
     metrics: {
       likeCount: content.engagements?.like?.count | 0,
       commentCount: content.engagements?.comment?.count | 0,
@@ -231,6 +232,28 @@ export const toUnsignedContentPayloadItem = (
     };
   }
   return result;
+};
+
+export const toSignedContentPayloadItem = (
+  content: ContentDocument | Content,
+  engagements: EngagementDocument[] = []
+) => {
+  const unsignPayloadItem = toUnsignedContentPayloadItem(content, engagements);
+  if (unsignPayloadItem.photo && unsignPayloadItem.photo.contents)
+    unsignPayloadItem.photo.contents = unsignPayloadItem.photo?.contents?.map(
+      (item) => new Image(item).toSignUrls()
+    );
+  if (unsignPayloadItem.photo && unsignPayloadItem.photo.cover)
+    unsignPayloadItem.photo.cover = new Image(
+      unsignPayloadItem.photo.cover
+    ).toSignUrls();
+  if (unsignPayloadItem.link)
+    unsignPayloadItem.link = unsignPayloadItem.link.map((item) => {
+      if (item.image) {
+        item.image = new Image(item.image as CastcleImage).toSignUrls();
+      } else return item;
+    });
+  return unsignPayloadItem;
 };
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
