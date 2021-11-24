@@ -27,7 +27,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  ContentDocument,
+  Content,
+  toUnsignedContentPayloadItem
+} from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
@@ -60,7 +64,8 @@ import {
 } from '../schemas/guestFeedItems.schema';
 import {
   GuestFeedItemDto,
-  GuestFeedItemPayload
+  GuestFeedItemPayload,
+  GuestFeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
 import { QueryOption } from '../dtos/common.dto';
 
@@ -1008,7 +1013,7 @@ export class ContentService {
     const newGuestFeedItem = new this._guestFeedItemModel({
       score: 0,
       type: GuestFeedItemType.Content,
-      content: content.toUnsignedContentPayload()
+      content: content
     } as GuestFeedItemDto);
     return newGuestFeedItem.save();
   };
@@ -1045,13 +1050,36 @@ export class ContentService {
         $lt: new Date(guestFeeditemUntil.createdAt)
       };
     }
-
     const documents = await this._guestFeedItemModel
       .find(filter)
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();
     const pagination = createCastclePagination(query, documents);
-    return {} as GuestFeedItemPayload;
+    return {
+      payload: documents.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: toUnsignedContentPayloadItem(item.content),
+            type: 'content'
+          } as GuestFeedItemPayloadItem)
+      ),
+      includes: {
+        users: documents.map((item) => item.content.author)
+      },
+      pagination: pagination
+    } as GuestFeedItemPayload;
   };
 }

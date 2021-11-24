@@ -152,9 +152,25 @@ export class FeedController {
     }
   }
 
+  @ApiQuery({
+    name: 'maxResults',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'sinceId',
+    type: String,
+    required: false
+  })
+  @ApiQuery({
+    name: 'untilId',
+    type: String,
+    required: false
+  })
+  @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/guests')
   async getGuestFeed(
-    @Query('maxResults') maxResults: number,
+    @Query('maxResults', LimitPipe) maxResults: number,
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string
   ) {
