@@ -696,7 +696,7 @@ describe('ContentService', () => {
         media_keys: ['3_1461216794228957186']
       },
       id: '1461307091956551690',
-      text: 'Want to improve your portfolio performance? 🤑\n \nIntroducing the new https://t.co/vCNztABJoG Exchange dashboard \n \nGet live performance data for:\n​📈 Portfolio performance\n​📈 Latest token trends \n​📈 Trading tier fee discounts\n \nAnd more. Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt'
+      text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt'
     };
 
     const meta = {
@@ -720,10 +720,11 @@ describe('ContentService', () => {
       const contents = await service.createContentsFromTweets(user, timelineV2);
       const content = contents?.[0];
       const payload = content.payload as ShortPayload;
+      const expectedText = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
 
       expect(contents.length).toBe(meta.result_count);
       expect(content.type).toBe(ContentType.Short);
-      expect(payload.message).toBe(tweet.text);
+      expect(payload.message).toBe(expectedText);
     });
   });
 });
