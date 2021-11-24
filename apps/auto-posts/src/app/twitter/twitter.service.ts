@@ -22,7 +22,10 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import TwitterApi, { TwitterApiv2 } from 'twitter-api-v2';
+import TwitterApi, {
+  Tweetv2TimelineResult,
+  TwitterApiv2
+} from 'twitter-api-v2';
 import { Environment } from '@castcle-api/environments';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AuthenticationService, ContentService } from '@castcle-api/database';
@@ -31,6 +34,7 @@ import {
   AccountAuthenIdType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { SaveContentDto } from '@castcle-api/database/dtos';
 
 @Injectable()
 export class TwitterService {
@@ -55,42 +59,61 @@ export class TwitterService {
       AccountAuthenIdType.Twitter
     );
 
-    await Promise.all(accounts.map(this.toSaveContents));
+    await Promise.all(accounts.map(this.getTweetsByAccount));
     this.logger.log('Done, waiting for next available schedule');
   }
 
-  toSaveContents = async (accountAuthenId: AccountAuthenIdDocument) => {
-    const tweets = await this.getTweetsByUserId(
+  getTweetsByAccount = async (accountAuthenId: AccountAuthenIdDocument) => {
+    const timeline = await this.getTimelineByUserId(
       accountAuthenId.socialId,
       accountAuthenId.latestPostId
     );
 
     this.logger.log(
-      `Name: ${accountAuthenId.displayName}, tweet(s): ${tweets.meta.result_count}`
+      `Name: ${accountAuthenId.displayName}, tweet(s): ${timeline.meta.result_count}`
     );
 
-    if (!tweets.meta.result_count) return;
+    if (!timeline.meta.result_count) return;
 
     const user = await this.authenticationService.getUserFromAccount(
       accountAuthenId.account
     );
 
-    await this.contentService.createContentsFromTweets(user, tweets);
-    accountAuthenId.displayName = tweets.includes?.users?.[0]?.name;
-    accountAuthenId.latestPostId = tweets.data.data[0].id;
+    const contents = this.convertTimelineToContents(timeline.data);
+
+    await this.contentService.createContentsFromUser(user, contents);
+
+    accountAuthenId.displayName = timeline.includes?.users?.[0]?.name;
+    accountAuthenId.latestPostId = timeline.data.data[0].id;
     await accountAuthenId.save();
 
     this.logger.log(
-      `Name: ${accountAuthenId.displayName}, ${tweets.meta.result_count} tweet(s) saved`
+      `Name: ${accountAuthenId.displayName}, ${timeline.meta.result_count} tweet(s) saved`
     );
   };
 
-  getTweetsByUserId = (userId: string, latestPostId: string) => {
+  getTimelineByUserId = (userId: string, latestPostId: string) => {
     return this.client.userTimeline(userId, {
       exclude: ['retweets', 'replies'],
       expansions: ['attachments.media_keys', 'author_id'],
       'media.fields': ['media_key', 'type', 'url'],
-      since_id: latestPostId
+      since_id: latestPostId,
+      'tweet.fields': ['referenced_tweets']
     });
   };
+
+  convertTimelineToContents(timeline: Tweetv2TimelineResult) {
+    return timeline.data
+      .filter(({ referenced_tweets }) => {
+        return !referenced_tweets?.some(({ type }) => type === 'quoted');
+      })
+      .map(({ text }) => {
+        const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
+
+        return {
+          payload: { message: text.replace(LAST_TWITTER_LINK_PATTERN, '') },
+          type: 'short'
+        } as SaveContentDto;
+      });
+  }
 }
