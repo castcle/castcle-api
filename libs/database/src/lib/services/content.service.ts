@@ -32,7 +32,7 @@ import {
   EngagementDocument,
   EngagementType
 } from '../schemas/engagement.schema';
-import { createPagination } from '../utils/common';
+import { createCastclePagination, createPagination } from '../utils/common';
 import {
   SaveContentDto,
   Author,
@@ -58,7 +58,11 @@ import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import { GuestFeedItemDto } from '../dtos/guestFeedItem.dto';
+import {
+  GuestFeedItemDto,
+  GuestFeedItemPayload
+} from '../dtos/guestFeedItem.dto';
+import { QueryOption } from '../dtos/common.dto';
 
 @Injectable()
 export class ContentService {
@@ -996,9 +1000,50 @@ export class ContentService {
     const newGuestFeedItem = new this._guestFeedItemModel({
       score: 0,
       type: GuestFeedItemType.Content,
-      content: content.toContentPayload(),
-      countryCode: ''
+      content: content.toUnsignedContentPayload()
     } as GuestFeedItemDto);
     return newGuestFeedItem.save();
+  };
+
+  /**
+   * Get guestfeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * @param {QueryOption} query
+   * @param {string} accountCountryCode
+   * @returns {GuestFeedItemDocument[]}
+   */
+  getGuestFeedItems = async (
+    query: QueryOption,
+    accountCountryCode?: string
+  ) => {
+    const filter: any = {
+      countryCode: accountCountryCode
+        ? accountCountryCode
+        : {
+            $exists: false
+          }
+    };
+    if (query.sinceId) {
+      const guestFeeditemSince = await this._guestFeedItemModel
+        .findById(query.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(guestFeeditemSince.createdAt)
+      };
+    } else if (query.untilId) {
+      const guestFeeditemUntil = await this._guestFeedItemModel
+        .findById(query.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(guestFeeditemUntil.createdAt)
+      };
+    }
+
+    const documents = await this._guestFeedItemModel
+      .find(filter)
+      .limit(query.maxResults)
+      .sort({ score: -1, createdAt: -1 })
+      .exec();
+    const pagination = createCastclePagination(query, documents);
+    return {} as GuestFeedItemPayload;
   };
 }

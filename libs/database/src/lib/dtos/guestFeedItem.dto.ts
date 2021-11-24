@@ -24,6 +24,7 @@
 import { ContentPayloadDto } from '.';
 import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
 import { User } from '../schemas/user.schema';
+import { CastclePagination } from './common.dto';
 
 export class GuestFeedItemDto {
   content?: ContentPayloadDto;
@@ -31,4 +32,9 @@ export class GuestFeedItemDto {
   user?: User;
   countryCode: string;
   score: number;
+}
+
+export class GuestFeedItemPayload {
+  payload: GuestFeedItemDto[];
+  pagination: CastclePagination;
 }
