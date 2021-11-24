@@ -34,14 +34,13 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument } from '../schemas/content.schema';
 import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
-import { ShortPayload } from '../dtos/content.dto';
+import { SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { UserVerified } from '../schemas/user.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
-import { TweetUserTimelineV2Paginator } from 'twitter-api-v2';
 
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -685,46 +684,25 @@ describe('ContentService', () => {
   });
 
   describe('#createContentsFromTweets', () => {
-    const media = {
-      media_key: '3_1461216794228957186',
-      type: 'photo',
-      url: 'https://example-image.jpg'
-    };
-
-    const tweet = {
-      attachments: {
-        media_keys: ['3_1461216794228957186']
-      },
-      id: '1461307091956551690',
-      text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt'
-    };
-
-    const meta = {
-      result_count: 1,
-      newest_id: 'string',
-      oldest_id: 'string',
-      next_token: 'string'
-    };
+    const message = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
+    const contentDto = {
+      type: 'short',
+      payload: { message }
+    } as SaveContentDto;
 
     it('should not create any content', async () => {
-      const timeline = { data: [], includes: { media: [media] }, meta };
-      const timelineV2 = { data: timeline } as TweetUserTimelineV2Paginator;
-      const contents = await service.createContentsFromTweets(user, timelineV2);
+      const contents = await service.createContentsFromUser(user, []);
 
       expect(contents).toBeUndefined();
     });
 
     it('should create a short content from timeline', async () => {
-      const timeline = { data: [tweet], includes: { media: [media] }, meta };
-      const timelineV2 = { data: timeline } as TweetUserTimelineV2Paginator;
-      const contents = await service.createContentsFromTweets(user, timelineV2);
+      const contents = await service.createContentsFromUser(user, [contentDto]);
       const content = contents?.[0];
-      const payload = content.payload as ShortPayload;
-      const expectedText = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
 
-      expect(contents.length).toBe(meta.result_count);
-      expect(content.type).toBe(ContentType.Short);
-      expect(payload.message).toBe(expectedText);
+      expect(contents.length).toEqual(1);
+      expect(content.type).toEqual(ContentType.Short);
+      expect(content.payload).toEqual({ message });
     });
   });
 });
