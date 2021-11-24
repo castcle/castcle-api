@@ -83,7 +83,7 @@ export const Environment = {
   // Assets
   ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
   ASSETS_HOST: process.env.ASSETS_HOST,
-  // Social network
+  // Twitter Config
   TWITTER_KEY: process.env.TWITTER_KEY,
   TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,
   TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
