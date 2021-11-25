@@ -992,21 +992,10 @@ export class ContentService {
    * @returns {GuestFeedItemDocument}
    */
   createGuestFeedItemFromAuthorId = async (contentId: any) => {
-    const content = await this._contentModel.findById(contentId).exec();
-    console.debug('create guest feed with content', content);
-    return this.createGuestFeedItemFromAuthor(content);
-  };
-
-  /**
-   * Create feed item document from content with default cuntryCode "" and score = 0
-   * @param {ContentDocument} content
-   * @returns {GuestFeedItemDocument}
-   */
-  createGuestFeedItemFromAuthor = (content: ContentDocument) => {
     const newGuestFeedItem = new this._guestFeedItemModel({
       score: 0,
       type: GuestFeedItemType.Content,
-      content: content
+      content: contentId
     } as GuestFeedItemDto);
     return newGuestFeedItem.save();
   };
@@ -1045,6 +1034,7 @@ export class ContentService {
     }
     const documents = await this._guestFeedItemModel
       .find(filter)
+      .populate('content')
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();

@@ -21,14 +21,13 @@
  * or have any questions.
  */
 
-import { Content } from '../schemas/content.schema';
 import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
 import { User } from '../schemas/user.schema';
 import { CastcleMeta } from './common.dto';
 import { Author, ContentPayloadItem } from './content.dto';
 
 export class GuestFeedItemDto {
-  content?: Content;
+  content?: any;
   type: GuestFeedItemType;
   user?: User;
   countryCode?: string;
