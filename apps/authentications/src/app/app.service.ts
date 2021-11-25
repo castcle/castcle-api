@@ -189,7 +189,6 @@ export class AppService {
       }
     }
 
-    credential.account.isGuest = false;
     this.logger.log('get AccessTokenPayload FromCredential');
     const accessTokenPayload =
       await this.authService.getAccessTokenPayloadFromCredential(credential);

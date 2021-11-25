@@ -683,7 +683,7 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     status: 200,
-    type: TokenResponse
+    type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @CastcleTrack()
@@ -850,7 +850,18 @@ export class AuthenticationController {
         break;
       }
     }
-    return token;
+    this.logger.log('get User Profile');
+    const userProfile = await this.appService.getUserProfile(req.$credential);
+    return {
+      profile: userProfile.profile
+        ? await userProfile.profile.toUserResponse()
+        : null,
+      pages: userProfile.pages
+        ? userProfile.pages.items.map((item) => item.toPageResponse())
+        : null,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken
+    } as LoginResponse;
   }
 
   @CastcleBasicAuth()
