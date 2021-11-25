@@ -22,11 +22,12 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { Module } from '@nestjs/common';
 import { TwitterService } from './twitter.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, UtilsAwsModule],
   providers: [TwitterService]
 })
 export class TwitterModule {}

@@ -35,6 +35,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { SaveContentDto } from '@castcle-api/database/dtos';
+import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 
 @Injectable()
 export class TwitterService {
@@ -46,7 +47,8 @@ export class TwitterService {
 
   constructor(
     private readonly authenticationService: AuthenticationService,
-    private readonly contentService: ContentService
+    private readonly contentService: ContentService,
+    private readonly downloader: Downloader
   ) {
     this.client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
   }
@@ -79,7 +81,10 @@ export class TwitterService {
       accountAuthenId.account
     );
 
-    const contents = this.convertTimelineToContents(timeline.data);
+    const contents = await this.convertTimelineToContents(
+      accountAuthenId.account._id,
+      timeline.data
+    );
 
     await this.contentService.createContentsFromUser(user, contents);
 
@@ -96,22 +101,52 @@ export class TwitterService {
     return this.client.userTimeline(userId, {
       exclude: ['retweets', 'replies'],
       expansions: ['attachments.media_keys', 'author_id'],
-      'media.fields': ['media_key', 'type', 'url'],
+      'media.fields': ['media_key', 'preview_image_url', 'type', 'url'],
       since_id: latestPostId,
       'tweet.fields': ['referenced_tweets']
     });
   };
 
-  convertTimelineToContents(timeline: Tweetv2TimelineResult) {
+  async convertTimelineToContents(
+    accountId: string,
+    timeline: Tweetv2TimelineResult
+  ) {
+    const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
+    const toUploadMedia = timeline.includes?.media?.map(async (medium) => {
+      const imageUrl = medium?.url || medium?.preview_image_url;
+
+      if (!imageUrl) return;
+
+      const image = await this.downloader.getImageFromUrl(imageUrl);
+      const uploadedImage = await Image.upload(image, {
+        filename: `twitter-${medium.media_key}`,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `contents/${accountId}`
+      });
+
+      medium.url = uploadedImage.toSignUrl();
+    });
+
+    if (toUploadMedia) await Promise.all(toUploadMedia);
+
     return timeline.data
       .filter(({ referenced_tweets }) => {
         return !referenced_tweets?.some(({ type }) => type === 'quoted');
       })
-      .map(({ text }) => {
-        const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
+      .map(({ attachments, text }) => {
+        const images = attachments?.media_keys?.map((mediaKey) => {
+          const medium = timeline.includes?.media?.find(
+            ({ media_key: key }) => key === mediaKey
+          );
+
+          return { image: medium?.url };
+        });
 
         return {
-          payload: { message: text.replace(LAST_TWITTER_LINK_PATTERN, '') },
+          payload: {
+            message: text.replace(LAST_TWITTER_LINK_PATTERN, ''),
+            photo: images ? { contents: images } : undefined
+          },
           type: 'short'
         } as SaveContentDto;
       });
