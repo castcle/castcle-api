@@ -115,5 +115,8 @@ export const Environment = {
 
   //ip-api
   IP_API_URL: process.env.IP_API_URL || 'https://ip-api.com/json',
-  IP_API_KEY: process.env.IP_API_KEY || null
+  IP_API_KEY: process.env.IP_API_KEY || null,
+
+  AUTO_CREATE_GUEST_FEED:
+    process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false
 };

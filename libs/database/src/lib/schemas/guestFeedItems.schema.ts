@@ -37,7 +37,9 @@ export enum GuestFeedItemType {
 @Schema({ timestamps: true })
 export class GuestFeedItem extends CastcleBase {
   @Prop({
-    type: Object
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Content',
+    index: true
   })
   content?: Content;
 
