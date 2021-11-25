@@ -27,12 +27,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  ContentDocument,
+  Content,
+  toSignedContentPayloadItem
+} from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
 } from '../schemas/engagement.schema';
-import { createPagination } from '../utils/common';
+import { createCastcleMeta, createPagination } from '../utils/common';
 import {
   SaveContentDto,
   Author,
@@ -53,6 +57,18 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
+import {
+  GuestFeedItemDocument,
+  GuestFeedItemType
+} from '../schemas/guestFeedItems.schema';
+import {
+  GuestFeedItemDto,
+  GuestFeedItemPayload,
+  GuestFeedItemPayloadItem
+} from '../dtos/guestFeedItem.dto';
+import { QueryOption } from '../dtos/common.dto';
+import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 
 @Injectable()
 export class ContentService {
@@ -72,7 +88,9 @@ export class ContentService {
     public _commentModel: Model<CommentDocument>,
     @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItemDocument>,
-    public hashtagService: HashtagService
+    public hashtagService: HashtagService,
+    @InjectModel('GuestFeedItem')
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>
   ) {}
 
   /**
@@ -966,5 +984,91 @@ export class ContentService {
     const author = await this._userModel.findById(authorId).exec();
     const viewer = await this._userModel.findById(viewerId).exec();
     return this.createFeedItemFromAuthorToViewer(author, viewer);
+  };
+
+  /**
+   *
+   * @param contentId
+   * @returns {GuestFeedItemDocument}
+   */
+  createGuestFeedItemFromAuthorId = async (contentId: any) => {
+    const newGuestFeedItem = new this._guestFeedItemModel({
+      score: 0,
+      type: GuestFeedItemType.Content,
+      content: contentId
+    } as GuestFeedItemDto);
+    return newGuestFeedItem.save();
+  };
+
+  /**
+   * Get guestfeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * @param {QueryOption} query
+   * @param {string} accountCountryCode
+   * @returns {GuestFeedItemDocument[]}
+   */
+  getGuestFeedItems = async (
+    query: QueryOption,
+    accountCountryCode?: string
+  ) => {
+    const filter: any = {
+      countryCode: accountCountryCode
+        ? accountCountryCode
+        : {
+            $exists: false
+          }
+    };
+    if (query.sinceId) {
+      const guestFeeditemSince = await this._guestFeedItemModel
+        .findById(query.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(guestFeeditemSince.createdAt)
+      };
+    } else if (query.untilId) {
+      const guestFeeditemUntil = await this._guestFeedItemModel
+        .findById(query.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(guestFeeditemUntil.createdAt)
+      };
+    }
+    const documents = await this._guestFeedItemModel
+      .find(filter)
+      .populate('content')
+      .limit(query.maxResults)
+      .sort({ score: -1, createdAt: -1 })
+      .exec();
+    return {
+      payload: documents.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: toSignedContentPayloadItem(item.content),
+            type: 'content'
+          } as GuestFeedItemPayloadItem)
+      ),
+      includes: {
+        users: documents
+          .map((item) => item.content.author)
+          .map((author) => {
+            if (author.avatar)
+              author.avatar = new Image(author.avatar).toSignUrls();
+            else author.avatar = Configs.DefaultAvatarImages;
+            return author;
+          })
+      },
+      meta: createCastcleMeta(documents)
+    } as GuestFeedItemPayload;
   };
 }

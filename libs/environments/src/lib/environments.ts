@@ -112,10 +112,13 @@ export const Environment = {
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
   TWILIO_OTP_SID: process.env.TWILIO_OTP_SID,
-  //ip-api
+  // ip-api
   IP_API_URL: process.env.IP_API_URL || 'https://ip-api.com/json',
   IP_API_KEY: process.env.IP_API_KEY || null,
   // Google
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-  GOOGLE_SECRET: process.env.GOOGLE_SECRE
+  GOOGLE_SECRET: process.env.GOOGLE_SECRE,
+  // Feed Setting
+  AUTO_CREATE_GUEST_FEED:
+    process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false
 };

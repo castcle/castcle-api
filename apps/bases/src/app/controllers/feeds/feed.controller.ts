@@ -151,4 +151,35 @@ export class FeedController {
       );
     }
   }
+
+  @ApiQuery({
+    name: 'maxResults',
+    type: Number,
+    required: false
+  })
+  @ApiQuery({
+    name: 'sinceId',
+    type: String,
+    required: false
+  })
+  @ApiQuery({
+    name: 'untilId',
+    type: String,
+    required: false
+  })
+  @CastcleAuth(CacheKeyName.Feeds)
+  @Get('feeds/guests')
+  async getGuestFeed(
+    @Query('maxResults', LimitPipe) maxResults: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string
+  ) {
+    const payload = await this.contentService.getGuestFeedItems({
+      maxResults: maxResults,
+      mode: 'current',
+      sinceId: sinceId,
+      untilId: untilId
+    });
+    return payload;
+  }
 }
