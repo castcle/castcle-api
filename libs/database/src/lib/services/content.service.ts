@@ -36,7 +36,7 @@ import {
   EngagementDocument,
   EngagementType
 } from '../schemas/engagement.schema';
-import { createCastclePagination, createPagination } from '../utils/common';
+import { createCastcleMeta, createPagination } from '../utils/common';
 import {
   SaveContentDto,
   Author,
@@ -57,7 +57,6 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
-import { TweetUserTimelineV2Paginator } from 'twitter-api-v2';
 import {
   GuestFeedItemDocument,
   GuestFeedItemType
@@ -1049,7 +1048,6 @@ export class ContentService {
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();
-    const pagination = createCastclePagination(query, documents);
     return {
       payload: documents.map(
         (item) =>
@@ -1080,7 +1078,7 @@ export class ContentService {
             return author;
           })
       },
-      pagination: pagination
+      meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };
 }

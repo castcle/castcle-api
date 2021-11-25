@@ -24,7 +24,7 @@
 import { Content } from '../schemas/content.schema';
 import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
 import { User } from '../schemas/user.schema';
-import { CastclePagination } from './common.dto';
+import { CastcleMeta } from './common.dto';
 import { Author, ContentPayloadItem } from './content.dto';
 
 export class GuestFeedItemDto {
@@ -57,5 +57,5 @@ export class GuestFeedItemPayload {
   includes: {
     users: Author[];
   };
-  pagination: CastclePagination;
+  meta: CastcleMeta;
 }

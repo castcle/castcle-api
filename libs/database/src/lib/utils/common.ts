@@ -22,6 +22,7 @@
  */
 
 import {
+  CastcleMeta,
   CastclePagination,
   CastcleQueryOptions,
   QueryOption
@@ -60,4 +61,12 @@ export const createCastclePagination = (
   pagination.firstId = documents[0].id;
   pagination.lastId = documents[documents.length - 1].id;
   return pagination;
+};
+
+export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
+  const meta = new CastcleMeta();
+  meta.oldestId = documents[0].id;
+  meta.newestId = documents[documents.length - 1].id;
+  meta.resultCount = documents.length;
+  return meta;
 };
