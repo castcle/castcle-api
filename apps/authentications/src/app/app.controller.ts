@@ -818,8 +818,10 @@ export class AuthenticationController {
           body.payload,
           req.$language
         );
-        if (userGoogle) {
-          this.logger.log(`social login Google`);
+        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
+          this.logger.log(
+            `social login Google id: ${userGoogle.userVerify.id}`
+          );
           token = await this.appService.socialLogin(
             {
               socialId: userGoogle.userVerify.id
@@ -830,7 +832,9 @@ export class AuthenticationController {
                 : '',
               name: userGoogle.userVerify.name,
               provider: AccountAuthenIdType.Google,
-              profileImage: '',
+              profileImage: userGoogle.userVerify.picture
+                ? userGoogle.userVerify.picture
+                : '',
               socialToken: body.payload.authTokenSecret,
               socialSecretToken: ''
             },
@@ -1013,7 +1017,7 @@ export class AuthenticationController {
           req.$language
         );
 
-        if (userGoogle) {
+        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
           this.logger.log('get AccountAuthenIdFromSocialId');
           const socialAccount =
             await this.authService.getAccountAuthenIdFromSocialId(
@@ -1021,6 +1025,9 @@ export class AuthenticationController {
               AccountAuthenIdType.Google
             );
           if (!socialAccount) {
+            this.logger.log(
+              `Connect account id:${currentAccount._id} to google id: ${userGoogle.userVerify.id}`
+            );
             await this.authService.createAccountAuthenId(
               currentAccount,
               AccountAuthenIdType.Google,

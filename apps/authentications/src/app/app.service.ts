@@ -771,7 +771,7 @@ export class AppService {
       throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
 
-    this.logger.log(`verify twitter user token.`);
+    this.logger.log(`verify google user token.`);
     const userVerify = await this.googleClient.getGoogleUserInfo(
       payload.authToken
     );
