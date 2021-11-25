@@ -58,7 +58,7 @@ async function bootstrap() {
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-
+  app.enableCors();
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.NODE_ENV}`);
