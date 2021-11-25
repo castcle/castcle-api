@@ -53,6 +53,10 @@ export class ContentConsumer {
           this.logger.log(
             `Creating feed item for user ${job.data.content.id} `
           );
+          this.contentService.createGuestFeedItemFromAuthorId(
+            job.data.content.id
+          );
+          this.logger.log(`Creating Feedd Item for all guests`);
           break;
       }
     } catch (error) {
