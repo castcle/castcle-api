@@ -170,16 +170,20 @@ export class FeedController {
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/guests')
   async getGuestFeed(
+    @Req() req: CredentialRequest,
     @Query('maxResults', LimitPipe) maxResults: number,
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string
   ) {
-    const payload = await this.contentService.getGuestFeedItems({
-      maxResults: maxResults,
-      mode: 'current',
-      sinceId: sinceId,
-      untilId: untilId
-    });
+    const payload = await this.contentService.getGuestFeedItems(
+      {
+        maxResults: maxResults,
+        mode: 'current',
+        sinceId: sinceId,
+        untilId: untilId
+      },
+      req.$credential.account.geolocation.countryCode
+    );
     return payload;
   }
 }
