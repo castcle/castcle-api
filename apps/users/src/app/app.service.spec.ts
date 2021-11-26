@@ -21,14 +21,10 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseForFeatures } from '@castcle-api/database';
+import { Test } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { AuthenticationService } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { CredentialDocument } from '@castcle-api/database/schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>

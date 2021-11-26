@@ -30,6 +30,9 @@
     "authentications": {
       "tags": []
     },
+    "auto-posts": {
+      "tags": []
+    },
     "backgrounds": {
       "tags": []
     },
@@ -52,6 +55,9 @@
       "tags": []
     },
     "environments": {
+      "tags": []
+    },
+    "healthy": {
       "tags": []
     },
     "logger": {

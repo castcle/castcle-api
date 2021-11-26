@@ -21,7 +21,13 @@
  * or have any questions.
  */
 
-import { CastcleQueryOptions } from '../dtos/common.dto';
+import {
+  CastcleMeta,
+  CastclePagination,
+  CastcleQueryOptions,
+  QueryOption
+} from '../dtos/common.dto';
+import { Document } from 'mongoose';
 import { Pagination } from '../dtos/common.dto';
 
 /**
@@ -44,4 +50,25 @@ export const createPagination = (
   if (queryOptions.page < totalPages) pagination.next = queryOptions.page + 1;
   pagination.limit = queryOptions.limit;
   return pagination;
+};
+
+export const createCastclePagination = (
+  queryOptions: QueryOption,
+  documents: Document[]
+): CastclePagination => {
+  const pagination = new CastclePagination();
+  pagination.limit = queryOptions.maxResults;
+  pagination.firstId = documents[0].id;
+  pagination.lastId = documents[documents.length - 1].id;
+  return pagination;
+};
+
+export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
+  const meta = new CastcleMeta();
+  if (documents && documents.length > 0) {
+    meta.oldestId = documents[0].id;
+    meta.newestId = documents[documents.length - 1].id;
+  }
+  meta.resultCount = documents.length;
+  return meta;
 };

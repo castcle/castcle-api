@@ -23,14 +23,7 @@
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Request, Response } from 'express';
 import { CastcleException } from '@castcle-api/utils/exception';
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import { TokenRequest } from '../token/token.interceptor';
 import * as util from '../util';
 import { Environment } from '@castcle-api/environments';
@@ -49,10 +42,9 @@ export class ExceptionalInterceptor implements ExceptionFilter {
     response
       .status(exception.getStatus())
       .json(
-        Environment &&
-          Environment.node_env &&
-          (Environment.node_env === 'localhost' ||
-            Environment.node_env === 'development')
+        Environment?.NODE_ENV &&
+          (Environment.NODE_ENV === 'localhost' ||
+            Environment.NODE_ENV === 'development')
           ? exception.getLocalStatus('dev')
           : exception.getLocalStatus(langague)
       );

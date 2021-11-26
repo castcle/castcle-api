@@ -54,6 +54,7 @@ import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -63,7 +64,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Language', schema: LanguageSchema },
   { name: 'Hashtag', schema: HashtagSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-  { name: 'Country', schema: CountrySchema }
+  { name: 'Country', schema: CountrySchema },
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -113,7 +115,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
-    MongooseModule.forRoot(env.db_uri, env.db_options),
+    MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsQueueModule

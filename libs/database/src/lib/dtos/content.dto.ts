@@ -185,14 +185,44 @@ export class ContentPayloadDto {
   author: Author;
 
   @ApiProperty()
-  createAt: string;
+  createdAt: string;
   @ApiProperty()
-  updateAt: string;
+  updatedAt: string;
 
   isQuote?: boolean;
   isRecast?: boolean;
 
   isSign?: boolean;
+}
+
+export class ContentPayloadItem {
+  'id': string;
+  'type': ContentType.Short | ContentType.Blog | ContentType.Image; // short, blog, image, shortClip, clip, live
+  'message': string;
+  'photo': {
+    cover?: CastcleImage;
+    contents: CastcleImage[];
+  };
+  'link': Link[];
+  'referencedCasts'?: {
+    type: 'quoted' | 'recasted'; // quoted, recasted
+    id: string;
+  };
+  'metrics': {
+    likeCount: number;
+    commentCount: number;
+    quoteCount: number;
+    recastCount: number;
+  };
+  'participate': {
+    liked: boolean;
+    commented: boolean;
+    quoted: boolean;
+    recasted: boolean;
+  };
+  authorId: string;
+  'createdAt': string;
+  'updatedAt': string;
 }
 
 class AuthorDto {

@@ -23,19 +23,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { Account } from '../schemas/account.schema';
 import {
   ContentPayloadDto,
   ShortPayload,
-  ContentType,
   BlogPayload,
   Author,
-  ImagePayload
+  ImagePayload,
+  ContentPayloadItem
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
-import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { UserDocument } from '.';
 import { RelationshipDocument } from './relationship.schema';
@@ -188,6 +187,75 @@ export const signContentPayload = (
   return payload;
 };
 
+export const toUnsignedContentPayloadItem = (
+  content: ContentDocument | Content,
+  engagements: EngagementDocument[] = []
+) => {
+  const result = {
+    id: String(content._id),
+    authorId: content.author.id,
+    type: content.type,
+    message: (content.payload as ShortPayload).message,
+    link: (content.payload as ShortPayload).link,
+    photo: (content.payload as ShortPayload).photo,
+
+    metrics: {
+      likeCount: content.engagements?.like?.count | 0,
+      commentCount: content.engagements?.comment?.count | 0,
+      quoteCount: content.engagements?.quote?.count | 0,
+      recastCount: content.engagements?.recast?.count | 0
+    },
+    participate: {
+      liked: engagements.find((item) => item.type === EngagementType.Like)
+        ? true
+        : false,
+      commented: engagements.find(
+        (item) => item.type === EngagementType.Comment
+      )
+        ? true
+        : false,
+      quoted: engagements.find((item) => item.type === EngagementType.Quote)
+        ? true
+        : false,
+      recasted: engagements.find((item) => item.type === EngagementType.Recast)
+        ? true
+        : false
+    },
+
+    createdAt: content.createdAt.toISOString(),
+    updatedAt: content.updatedAt.toISOString()
+  } as ContentPayloadItem;
+  if (content.isRecast || content.isQuote) {
+    result.referencedCasts = {
+      type: content.isRecast ? 'recasted' : 'quoted',
+      id: content.originalPost._id as string
+    };
+  }
+  return result;
+};
+
+export const toSignedContentPayloadItem = (
+  content: ContentDocument | Content,
+  engagements: EngagementDocument[] = []
+) => {
+  const unsignPayloadItem = toUnsignedContentPayloadItem(content, engagements);
+  if (unsignPayloadItem.photo && unsignPayloadItem.photo.contents)
+    unsignPayloadItem.photo.contents = unsignPayloadItem.photo?.contents?.map(
+      (item) => new Image(item).toSignUrls()
+    );
+  if (unsignPayloadItem.photo && unsignPayloadItem.photo.cover)
+    unsignPayloadItem.photo.cover = new Image(
+      unsignPayloadItem.photo.cover
+    ).toSignUrls();
+  if (unsignPayloadItem.link)
+    unsignPayloadItem.link = unsignPayloadItem.link.map((item) => {
+      if (item.image) {
+        item.image = new Image(item.image as CastcleImage).toSignUrls();
+      } else return item;
+    });
+  return unsignPayloadItem;
+};
+
 export const ContentSchema = SchemaFactory.createForClass(Content);
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =
@@ -222,8 +290,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',
@@ -256,8 +324,8 @@ export const ContentSchemaFactory = (
       id: (this as ContentDocument)._id,
       author: { ...(this as ContentDocument).author },
       payload: { ...(this as ContentDocument).payload },
-      createAt: (this as ContentDocument).createdAt.toISOString(),
-      updateAt: (this as ContentDocument).updatedAt.toISOString(),
+      createdAt: (this as ContentDocument).createdAt.toISOString(),
+      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
       type: (this as ContentDocument).type,
       feature: {
         slug: 'feed',

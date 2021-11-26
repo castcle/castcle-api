@@ -35,7 +35,7 @@ import {
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import { UserDocument, UserType } from '@castcle-api/database/schemas';
+import { UserType } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -170,6 +170,7 @@ export class UserController {
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
+
     return await user.toUserResponse();
   }
 
@@ -406,7 +407,7 @@ export class UserController {
     type: TargetCastcleDto
   })
   @CastleClearCacheAuth(CacheKeyName.Users)
-  @Put(':id/follows')
+  @Put(':id/following')
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,

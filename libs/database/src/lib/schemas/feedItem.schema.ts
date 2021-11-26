@@ -93,8 +93,8 @@ FeedItemSchema.methods.toFeedItemPayload = function (
     aggregator: {
       type: 'createTime'
     },
-    createAt: (this as FeedItemDocument).createdAt.toISOString(),
-    updateAt: (this as FeedItemDocument).updatedAt.toISOString()
+    createdAt: (this as FeedItemDocument).createdAt.toISOString(),
+    updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
   } as FeedItemPayload;
 };
 

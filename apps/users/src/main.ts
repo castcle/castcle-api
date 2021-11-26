@@ -63,9 +63,10 @@ async function bootstrap() {
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.useGlobalFilters(new ExceptionalInterceptor());
   app.useGlobalPipes(new ValidationPipe());
+  app.enableCors();
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
-    logger.log(`Environment at ${env.node_env}`);
+    logger.log(`Environment at ${env.NODE_ENV}`);
   });
 }
 

@@ -31,30 +31,22 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { ContentDocument, ContentSchema } from '../schemas/content.schema';
-import {
-  SaveContentDto,
-  ContentType,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
-} from '../dtos';
-import { CommentDocument, HashtagDocument, UserDocument } from '../schemas';
-import { ShortPayload } from '../dtos/content.dto';
+import { ContentDocument } from '../schemas/content.schema';
+import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
+import { CommentDocument, UserDocument } from '../schemas';
+import { SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { UserVerified } from '../schemas/user.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
-const fakeProcessor = jest.fn();
+
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380
-  },
-  processors: [fakeProcessor]
+  redis: { host: '0.0.0.0', port: 6380 }
 });
+
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
   options: MongooseModuleOptions = { useFindAndModify: false }
@@ -62,24 +54,18 @@ const rootMongooseTestModule = (
   MongooseModule.forRootAsync({
     useFactory: async () => {
       mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
       return {
-        uri: mongoUri,
-        ...options
+        ...options,
+        uri: mongod.getUri()
       };
     }
   });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 describe('ContentService', () => {
   let service: ContentService;
   let userService: UserService;
   let authService: AuthenticationService;
   let user: UserDocument;
-  //console.log('test in real db = ', env.db_test_in_db);
   /**
    * For multiple user
    */
@@ -133,35 +119,29 @@ describe('ContentService', () => {
       }
     }
   ];
-  const importModules = env.db_test_in_db
-    ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ];
-  const providers = [
-    ContentService,
-    UserService,
-    AuthenticationService,
-    UserProducer,
-    HashtagService
-  ];
   let result: {
     accountDocument: AccountDocument;
     credentialDocument: CredentialDocument;
   };
   let hashtagContent: ContentDocument;
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+      imports: [
+        env.DB_TEST_IN_DB
+          ? MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS)
+          : rootMongooseTestModule(),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+        fakeBull
+      ],
+      providers: [
+        AuthenticationService,
+        ContentService,
+        HashtagService,
+        UserProducer,
+        UserService
+      ]
     }).compile();
     service = module.get<ContentService>(ContentService);
     userService = module.get<UserService>(UserService);
@@ -183,9 +163,11 @@ describe('ContentService', () => {
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
   });
+
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    if (env.DB_TEST_IN_DB) await mongod?.stop();
   });
+
   describe('#createContentFromUser', () => {
     it('should create short content instance in db with author as user', async () => {
       const shortPayload: ShortPayload = {
@@ -342,7 +324,7 @@ describe('ContentService', () => {
       expect(contents.items[1].payload).toEqual(shortPayload1);
       const contentsInverse = await service.getContentsFromUser(user, {
         sortBy: {
-          field: 'updateAt',
+          field: 'updatedAt',
           type: 'asc'
         }
       });
@@ -475,7 +457,7 @@ describe('ContentService', () => {
         const postContentB = await service.getContentFromId(contentB._id);
         expect(postContentB.engagements.recast.count).toEqual(0);
       });
-      it('when we delete recast content it should delete engagemnt of original content', async () => {
+      it('when we delete recast content it should delete engagement of original content', async () => {
         await service.deleteContentFromId(contentC._id);
         const postContentA = await service.getContentFromId(contentA._id);
 
@@ -504,7 +486,7 @@ describe('ContentService', () => {
         const postContentA = await service.getContentFromId(contentA._id);
         expect(postContentA.engagements.quote.count).toEqual(1);
       });
-      it('when we delete recast content it should delete enagement of original content', async () => {
+      it('when we delete recast content it should delete engagement of original content', async () => {
         await service.deleteContentFromId(contentC._id);
         const postContentA = await service.getContentFromId(contentA._id);
         expect(postContentA.engagements.quote.count).toEqual(0);
@@ -634,7 +616,7 @@ describe('ContentService', () => {
         });
       });
       describe('#likeComment()', () => {
-        it('should update enagement.like of comment', async () => {
+        it('should update engagement.like of comment', async () => {
           await service.likeComment(user, rootComment);
           const postComment = await service._commentModel
             .findById(rootComment._id)
@@ -650,7 +632,7 @@ describe('ContentService', () => {
         });
       });
       describe('#unlikeComment()', () => {
-        it('should update enagement.like of comment', async () => {
+        it('should update engagement.like of comment', async () => {
           await service.unlikeComment(user, rootComment);
           const postComment = await service._commentModel
             .findById(rootComment._id)
@@ -698,6 +680,29 @@ describe('ContentService', () => {
           expect(comments.total).toEqual(0);
         });
       });
+    });
+  });
+
+  describe('#createContentsFromTweets', () => {
+    const message = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
+    const contentDto = {
+      type: 'short',
+      payload: { message }
+    } as SaveContentDto;
+
+    it('should not create any content', async () => {
+      const contents = await service.createContentsFromUser(user, []);
+
+      expect(contents).toBeUndefined();
+    });
+
+    it('should create a short content from timeline', async () => {
+      const contents = await service.createContentsFromUser(user, [contentDto]);
+      const content = contents?.[0];
+
+      expect(contents.length).toEqual(1);
+      expect(content.type).toEqual(ContentType.Short);
+      expect(content.payload).toEqual({ message });
     });
   });
 });

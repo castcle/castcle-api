@@ -34,12 +34,7 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserDocument } from '../schemas/user.schema';
-import {
-  PageDto,
-  PageModelDto,
-  UpdateModelUserDto,
-  UpdateUserDto
-} from '../dtos/user.dto';
+import { PageDto, PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -87,10 +82,10 @@ describe('User Service', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
 
-  console.log('test in real db = ', env.db_test_in_db);
-  const importModules = env.db_test_in_db
+  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  const importModules = env.DB_TEST_IN_DB
     ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull
@@ -137,7 +132,7 @@ describe('User Service', () => {
     });
   });
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
   });
 
   describe('#getUserFromCredential()', () => {

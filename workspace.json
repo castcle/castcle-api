@@ -52,6 +52,57 @@
         }
       }
     },
+    "auto-posts": {
+      "root": "apps/auto-posts",
+      "sourceRoot": "apps/auto-posts/src",
+      "projectType": "application",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:build",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/apps/auto-posts",
+            "main": "apps/auto-posts/src/main.ts",
+            "tsConfig": "apps/auto-posts/tsconfig.app.json",
+            "assets": ["apps/auto-posts/src/assets"],
+            "generatePackageJson": true
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "extractLicenses": true,
+              "inspect": false,
+              "fileReplacements": [
+                {
+                  "replace": "apps/auto-posts/src/environments/environment.ts",
+                  "with": "apps/auto-posts/src/environments/environment.prod.ts"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "executor": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "auto-posts:build"
+          }
+        },
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["apps/auto-posts/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/apps/auto-posts"],
+          "options": {
+            "jestConfig": "apps/auto-posts/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "backgrounds": {
       "root": "apps/backgrounds",
       "sourceRoot": "apps/backgrounds/src",
@@ -335,6 +386,27 @@
           "outputs": ["coverage/libs/environments"],
           "options": {
             "jestConfig": "libs/environments/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "healthy": {
+      "root": "libs/healthy",
+      "sourceRoot": "libs/healthy/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/healthy/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/healthy"],
+          "options": {
+            "jestConfig": "libs/healthy/jest.config.js",
             "passWithNoTests": true
           }
         }

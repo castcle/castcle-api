@@ -253,8 +253,8 @@ UserSchema.methods.toPageResponse = function () {
     verified: {
       official: (this as UserDocument).verified.official
     } as PageVerified,
-    updateAt: (this as UserDocument).updatedAt.toISOString(),
-    createAt: (this as UserDocument).createdAt.toISOString()
+    updatedAt: (this as UserDocument).updatedAt.toISOString(),
+    createdAt: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
 };
 

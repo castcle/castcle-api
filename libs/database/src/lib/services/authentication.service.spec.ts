@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
-import { AccountAuthenIdDocument } from '../schemas';
+import { AccountAuthenIdDocument, OtpDocument, OtpObjective } from '../schemas';
 import { AccountDocument } from '../schemas/account.schema';
 import { AccountActivationDocument } from '../schemas/accountActivation.schema';
 import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
@@ -57,10 +57,10 @@ const closeInMongodConnection = async () => {
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
-  console.log('test in real db = ', env.db_test_in_db);
-  const importModules = env.db_test_in_db
+  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  const importModules = env.DB_TEST_IN_DB
     ? [
-        MongooseModule.forRoot(env.db_uri, env.db_options),
+        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures
       ]
@@ -74,7 +74,7 @@ describe('Authentication Service', () => {
     service = module.get<AuthenticationService>(AuthenticationService);
   });
   afterAll(async () => {
-    if (env.db_test_in_db) await closeInMongodConnection();
+    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
   });
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -115,10 +115,10 @@ describe('Authentication Service', () => {
         expect(typeof result.accessToken).toBe('string');
         expect(result.accessTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_access_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_access_expires_in) * 1000
+          now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
         );
         const result = service._generateAccessToken({
           id: 'randomid',
@@ -139,10 +139,10 @@ describe('Authentication Service', () => {
         expect(typeof result.refreshToken).toBe('string');
         expect(result.refreshTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_refresh_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_refresh_expires_in) * 1000
+          now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
         );
         const result = service._generateRefreshToken({
           id: 'randomid'
@@ -161,10 +161,10 @@ describe('Authentication Service', () => {
         expect(typeof result.verifyToken).toBe('string');
         expect(result.verifyTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.jwt_verify_expires_in} seconds`, () => {
+      it(`expire date should be in the next ${env.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.jwt_verify_expires_in) * 1000
+          now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
         );
 
         const result = service._generateEmailVerifyToken({
@@ -649,6 +649,78 @@ describe('Authentication Service', () => {
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromMobile('817896767', '+66');
         expect(result._id).toEqual(newAccountResult._id);
+      });
+    });
+
+    describe('#Otp Document', () => {
+      let account: AccountDocument = null;
+      const password = 'sompop234@Hello';
+      const countryCodeTest = '+66';
+      const numberTest = '0817896888';
+      let otp: OtpDocument = null;
+      beforeAll(async () => {
+        const newlyInsertEmail = `${Math.ceil(
+          Math.random() * 1000
+        )}@testinsert.com`;
+        const newAccount = new service._accountModel({
+          email: newlyInsertEmail,
+          password: password,
+          mobile: {
+            countryCode: countryCodeTest,
+            number: numberTest
+          },
+          isGuest: false,
+          preferences: {
+            langagues: ['en', 'en']
+          }
+        });
+        account = await newAccount.save();
+      });
+
+      it('should generate otp successful', async () => {
+        otp = await service.generateOtp(
+          account,
+          OtpObjective.ForgotPassword,
+          account.id,
+          'email'
+        );
+        expect(otp.refCode).toBeDefined;
+        expect(otp.isValid()).toEqual(true);
+      });
+      it('should found otp document that match with account and ref code', async () => {
+        const result = await service.getOtpFromAccount(account, otp.refCode);
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with request id and objective', async () => {
+        const result = await service.getAllOtpFromRequestIdObjective(
+          account.id,
+          OtpObjective.ForgotPassword
+        );
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with request id and ref code', async () => {
+        const result = await service.getOtpFromRequestIdRefCode(
+          account.id,
+          otp.refCode
+        );
+        expect(result).toBeDefined;
+      });
+      it('should found otp document that match with ref code', async () => {
+        const result = await service.getOtpFromRefCode(otp.refCode);
+        expect(result).toBeDefined;
+      });
+      it('should update retry otp document successful', async () => {
+        await service.updateRetryOtp(otp);
+        const result = await service.getOtpFromRefCode(otp.refCode);
+        expect(result.retry).toEqual(1);
+      });
+      it('should update account password successful', async () => {
+        const result = await service.changePassword(
+          account,
+          otp,
+          'test1234@!gbn'
+        );
+        expect(result).toBeDefined;
       });
     });
   });

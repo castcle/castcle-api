@@ -21,33 +21,28 @@
  * or have any questions.
  */
 
-import { Model, ObjectId } from 'mongoose';
-import { Inject, Injectable } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
-import {
-  CommentDocument,
-  CredentialDocument,
-  CredentialModel
-} from '../schemas';
+import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  ContentDocument,
+  Content,
+  toSignedContentPayloadItem
+} from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
 } from '../schemas/engagement.schema';
-import { createPagination } from '../utils/common';
-import { PageDto, UpdateUserDto } from '../dtos/user.dto';
+import { createCastcleMeta, createPagination } from '../utils/common';
 import {
   SaveContentDto,
-  ContentPayloadDto,
   Author,
   CastcleContentQueryOptions,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  ContentResponse,
   ContentType,
-  QuotePayload,
-  RecastPayload,
   ShortPayload
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
@@ -62,6 +57,18 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
+import {
+  GuestFeedItemDocument,
+  GuestFeedItemType
+} from '../schemas/guestFeedItems.schema';
+import {
+  GuestFeedItemDto,
+  GuestFeedItemPayload,
+  GuestFeedItemPayloadItem
+} from '../dtos/guestFeedItem.dto';
+import { QueryOption } from '../dtos/common.dto';
+import { Image } from '@castcle-api/utils/aws';
+import { Configs } from '@castcle-api/environments';
 
 @Injectable()
 export class ContentService {
@@ -81,13 +88,15 @@ export class ContentService {
     public _commentModel: Model<CommentDocument>,
     @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItemDocument>,
-    public hashtagService: HashtagService
+    public hashtagService: HashtagService,
+    @InjectModel('GuestFeedItem')
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>
   ) {}
 
   /**
    *
    * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
-   * @param {SaveContentDto} contentDto the content Dto that required for create a conent
+   * @param {SaveContentDto} contentDto the content Dto that required for create a content
    * @returns {ContentDocument} content.save() result
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
@@ -117,6 +126,38 @@ export class ContentService {
 
   /**
    *
+   * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
+   * @param {SaveContentDto[]} contentsDtos contents to save
+   * @returns {ContentDocument[]} saved contents
+   */
+  async createContentsFromUser(
+    user: UserDocument,
+    contentsDtos: SaveContentDto[]
+  ): Promise<ContentDocument[]> {
+    const author = this._getAuthorFromUser(user);
+    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
+      const hashtags =
+        this.hashtagService.extractHashtagFromContentPayload(payload);
+
+      await this.hashtagService.createFromTags(hashtags);
+
+      return {
+        author,
+        payload,
+        revisionCount: 0,
+        type,
+        visibility: EntityVisibility.Publish,
+        hashtags: hashtags
+      } as Content;
+    });
+
+    const contents = await Promise.all(contentsToCreate);
+
+    return this._contentModel.create(contents);
+  }
+
+  /**
+   *
    * @param {string} id get content from content's id
    * @returns {ContentDocument}
    */
@@ -135,7 +176,7 @@ export class ContentService {
   deleteContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
     content.visibility = EntityVisibility.Deleted;
-    //rmeove enagement
+    //remove engagement
     if (content.isRecast || content.isQuote) {
       const engagement = await this._engagementModel
         .findOne({ itemId: content._id })
@@ -165,14 +206,14 @@ export class ContentService {
         const engagementType = content.isQuote
           ? EngagementType.Quote
           : EngagementType.Recast;
-        const incEngagment: { [key: string]: number } = {};
-        incEngagment[`engagements.${engagementType}.count`] = 1;
+        const incEngagement: { [key: string]: number } = {};
+        incEngagement[`engagements.${engagementType}.count`] = 1;
         //use update to byPass save hook to prevent recursive and revision api
         const updateResult = await this._contentModel
           .updateOne(
             { _id: sourceContent._id },
             {
-              $inc: incEngagment
+              $inc: incEngagement
             }
           )
           .exec();
@@ -381,10 +422,7 @@ export class ContentService {
   _getAuthorFromUser = (user: UserDocument) => {
     const author: Author = {
       id: user._id,
-      avatar:
-        user.profile && user.profile.images && user.profile.images.avatar
-          ? user.profile.images.avatar
-          : null,
+      avatar: user.profile?.images?.avatar || null,
       castcleId: user.displayId,
       displayName: user.displayName,
       followed: false,
@@ -696,6 +734,7 @@ export class ContentService {
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
+    const session = this._accountModel.startSession();
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
     const tags = this.hashtagService.extractHashtagFromText(
@@ -773,7 +812,7 @@ export class ContentService {
   };
 
   /**
-   * get content by id that visibilty = equal true
+   * get content by id that visibility = equal true
    * @param commentId
    * @returns
    */
@@ -945,5 +984,91 @@ export class ContentService {
     const author = await this._userModel.findById(authorId).exec();
     const viewer = await this._userModel.findById(viewerId).exec();
     return this.createFeedItemFromAuthorToViewer(author, viewer);
+  };
+
+  /**
+   *
+   * @param contentId
+   * @returns {GuestFeedItemDocument}
+   */
+  createGuestFeedItemFromAuthorId = async (contentId: any) => {
+    const newGuestFeedItem = new this._guestFeedItemModel({
+      score: 0,
+      type: GuestFeedItemType.Content,
+      content: contentId
+    } as GuestFeedItemDto);
+    return newGuestFeedItem.save();
+  };
+
+  /**
+   * Get guestfeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * @param {QueryOption} query
+   * @param {string} accountCountryCode
+   * @returns {GuestFeedItemDocument[]}
+   */
+  getGuestFeedItems = async (
+    query: QueryOption,
+    accountCountryCode?: string
+  ) => {
+    const filter: any = {
+      countryCode: accountCountryCode
+        ? {
+            $regex: new RegExp(`^${accountCountryCode}`, 'i')
+          }
+        : 'EN'
+    };
+    if (query.sinceId) {
+      const guestFeeditemSince = await this._guestFeedItemModel
+        .findById(query.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(guestFeeditemSince.createdAt)
+      };
+    } else if (query.untilId) {
+      const guestFeeditemUntil = await this._guestFeedItemModel
+        .findById(query.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(guestFeeditemUntil.createdAt)
+      };
+    }
+    const documents = await this._guestFeedItemModel
+      .find(filter)
+      .populate('content')
+      .limit(query.maxResults)
+      .sort({ score: -1, createdAt: -1 })
+      .exec();
+    return {
+      payload: documents.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: toSignedContentPayloadItem(item.content),
+            type: 'content'
+          } as GuestFeedItemPayloadItem)
+      ),
+      includes: {
+        users: documents
+          .map((item) => item.content.author)
+          .map((author) => {
+            if (author.avatar)
+              author.avatar = new Image(author.avatar).toSignUrls();
+            else author.avatar = Configs.DefaultAvatarImages;
+            return author;
+          })
+      },
+      meta: createCastcleMeta(documents)
+    } as GuestFeedItemPayload;
   };
 }

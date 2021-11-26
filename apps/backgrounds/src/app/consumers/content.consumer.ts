@@ -22,16 +22,13 @@
  */
 
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import {
-  ContentMessage,
-  TopicName,
-  UserMessage
-} from '@castcle-api/utils/queue';
+import { ContentMessage, TopicName } from '@castcle-api/utils/queue';
 import { ContentService } from '@castcle-api/database';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
 import { CastcleQueueAction } from '@castcle-api/database/dtos';
+import { Environment } from '@castcle-api/environments';
 @Injectable()
 @Processor(TopicName.Contents)
 export class ContentConsumer {
@@ -57,6 +54,12 @@ export class ContentConsumer {
           this.logger.log(
             `Creating feed item for user ${job.data.content.id} `
           );
+          if (Environment.AUTO_CREATE_GUEST_FEED) {
+            this.contentService.createGuestFeedItemFromAuthorId(
+              job.data.content.id
+            );
+            this.logger.log(`Creating Feedd Item for all guests`);
+          }
           break;
       }
     } catch (error) {
