@@ -175,9 +175,14 @@ export const signContentPayload = (
       return item;
     });
   }
-  if (payload.author && payload.author.avatar)
+  if (
+    payload.author &&
+    payload.author.avatar &&
+    !payload.author.avatar['isSign']
+  )
     payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
-  else if (payload.author) payload.author.avatar = Configs.DefaultAvatarImages;
+  else if (payload.author && !payload.author.avatar)
+    payload.author.avatar = Configs.DefaultAvatarImages;
 
   if (payload.originalPost)
     payload.originalPost.author.avatar =

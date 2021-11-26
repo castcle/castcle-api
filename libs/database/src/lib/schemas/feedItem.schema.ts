@@ -27,8 +27,9 @@ import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { signContentPayload } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
-import { ContentPayloadDto } from '../dtos/content.dto';
-import { EngagementDocument } from './engagement.schema';
+import { ContentPayloadDto, ShortPayload } from '../dtos/content.dto';
+import { EngagementDocument, EngagementType } from './engagement.schema';
+import { GuestFeedItemPayloadItem } from '../dtos/guestFeedItem.dto';
 
 export type FeedItemDocument = FeedItem & IFeedItem;
 
@@ -96,6 +97,48 @@ FeedItemSchema.methods.toFeedItemPayload = function (
     createdAt: (this as FeedItemDocument).createdAt.toISOString(),
     updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
   } as FeedItemPayload;
+};
+
+FeedItemSchema.methods.toFeedItemPayloadV2 = function (
+  engagements: EngagementDocument[] = []
+) {
+  return {
+    payload: {
+      id: (this as FeedItemDocument).content.id,
+      authorId: (this as FeedItemDocument).content.author.id,
+      message: ((this as FeedItemDocument).content.payload as ShortPayload)
+        .message,
+      type: (this as FeedItemDocument).content.type,
+      link: ((this as FeedItemDocument).content.payload as ShortPayload).link,
+      photo: ((this as FeedItemDocument).content.payload as ShortPayload).photo,
+      metrics: {
+        likeCount: (this as FeedItemDocument).content.liked.count,
+        commentCount: (this as FeedItemDocument).content.commented.count,
+        quoteCount: 0,
+        recastCount: (this as FeedItemDocument).content.recasted.count
+      },
+      participate: {
+        liked: engagements.find((item) => item.type === EngagementType.Like)
+          ? true
+          : false,
+        commented: engagements.find(
+          (item) => item.type === EngagementType.Comment
+        )
+          ? true
+          : false,
+        quoted: engagements.find((item) => item.type === EngagementType.Quote)
+          ? true
+          : false,
+        recasted: engagements.find(
+          (item) => item.type === EngagementType.Recast
+        )
+          ? true
+          : false
+      },
+      createdAt: (this as FeedItemDocument).content.createdAt,
+      updatedAt: (this as FeedItemDocument).content.updatedAt
+    }
+  } as GuestFeedItemPayloadItem;
 };
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
