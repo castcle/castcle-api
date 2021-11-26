@@ -65,8 +65,10 @@ export const createCastclePagination = (
 
 export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
   const meta = new CastcleMeta();
-  meta.oldestId = documents[0].id;
-  meta.newestId = documents[documents.length - 1].id;
+  if (documents && documents.length > 0) {
+    meta.oldestId = documents[0].id;
+    meta.newestId = documents[documents.length - 1].id;
+  }
   meta.resultCount = documents.length;
   return meta;
 };

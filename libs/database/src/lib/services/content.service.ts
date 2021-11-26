@@ -1012,10 +1012,10 @@ export class ContentService {
   ) => {
     const filter: any = {
       countryCode: accountCountryCode
-        ? accountCountryCode
-        : {
-            $exists: false
+        ? {
+            $regex: new RegExp(`^${accountCountryCode}`, 'i')
           }
+        : 'EN'
     };
     if (query.sinceId) {
       const guestFeeditemSince = await this._guestFeedItemModel
