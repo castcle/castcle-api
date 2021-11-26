@@ -37,6 +37,7 @@ import {
   TweetUserTimelineV2Paginator
 } from 'twitter-api-v2';
 import { ContentType } from '@castcle-api/database/dtos';
+import { Downloader, Image, UtilsAwsModule } from '@castcle-api/utils/aws';
 
 describe('Twitter Service', () => {
   let mongoMemoryServer: MongoMemoryServer;
@@ -45,6 +46,7 @@ describe('Twitter Service', () => {
   let twitterService: TwitterService;
 
   const accountAuthenIdDocument = {
+    account: { _id: '1234567890' },
     save: jest.fn()
   } as any;
 
@@ -93,19 +95,25 @@ describe('Twitter Service', () => {
             mongoMemoryServer = await MongoMemoryServer.create();
             return { uri: mongoMemoryServer.getUri() };
           }
-        })
+        }),
+        UtilsAwsModule
       ],
       providers: [
         AuthenticationService,
         ContentService,
         HashtagService,
-        TwitterService
+        TwitterService,
+        { provide: Downloader, useValue: { getImageFromUrl: jest.fn() } }
       ]
     }).compile();
 
     authenticationService = module.get(AuthenticationService);
     contentService = module.get(ContentService);
     twitterService = module.get(TwitterService);
+
+    jest
+      .spyOn(Image, 'upload')
+      .mockResolvedValue({ toSignUrl: () => media.url } as any);
   });
 
   describe('#handleTwitterJobs', () => {
@@ -162,19 +170,26 @@ describe('Twitter Service', () => {
   });
 
   describe('#convertTimelineToContents', () => {
-    it('should filter quoted tweets', () => {
-      const contents = twitterService.convertTimelineToContents(timeline);
+    it('should filter quoted tweets', async () => {
+      const contents = await twitterService.convertTimelineToContents(
+        accountAuthenIdDocument.account._id,
+        timeline
+      );
 
       expect(contents.length).toEqual(1);
     });
 
-    it('should trim last Twitter URL and convert all tweets to short contents', () => {
-      const contents = twitterService.convertTimelineToContents(timeline);
+    it('should trim last Twitter URL and convert all tweets to short contents', async () => {
       const expectedText = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
+      const contents = await twitterService.convertTimelineToContents(
+        accountAuthenIdDocument.account._id,
+        timeline
+      );
 
       expect(contents.length).toEqual(1);
-      expect(contents[0].type).toBe(ContentType.Short);
+      expect(contents[0].type).toEqual(ContentType.Short);
       expect(contents[0].payload).toMatchObject({ message: expectedText });
+      expect(contents[0].payload.photo.contents[0].image).toEqual(media.url);
     });
   });
 });
