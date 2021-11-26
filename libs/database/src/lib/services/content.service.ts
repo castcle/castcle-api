@@ -1015,9 +1015,7 @@ export class ContentService {
         ? {
             $regex: new RegExp(`^${accountCountryCode}`, 'i')
           }
-        : {
-            $exists: false
-          }
+        : 'EN'
     };
     if (query.sinceId) {
       const guestFeeditemSince = await this._guestFeedItemModel
