@@ -192,6 +192,51 @@ export const signContentPayload = (
   return payload;
 };
 
+export const transformContentPayloadToV2 = (
+  content: ContentPayloadDto,
+  engagements: EngagementDocument[]
+) => {
+  const contentPayloadItem = {
+    id: content.id,
+    authorId: content.author.id,
+    message: (content.payload as ShortPayload).message,
+    type: content.type,
+    link: (content.payload as ShortPayload).link,
+    photo: (content.payload as ShortPayload).photo,
+    metrics: {
+      likeCount: content.liked.count,
+      commentCount: content.commented.count,
+      quoteCount: 0,
+      recastCount: content.recasted.count
+    },
+    participate: {
+      liked: engagements.find((item) => item.type === EngagementType.Like)
+        ? true
+        : false,
+      commented: engagements.find(
+        (item) => item.type === EngagementType.Comment
+      )
+        ? true
+        : false,
+      quoted: engagements.find((item) => item.type === EngagementType.Quote)
+        ? true
+        : false,
+      recasted: engagements.find((item) => item.type === EngagementType.Recast)
+        ? true
+        : false
+    },
+    createdAt: content.createdAt,
+    updatedAt: content.updatedAt
+  } as ContentPayloadItem;
+  if (content.isRecast || content.isQuote) {
+    contentPayloadItem.referencedCasts = {
+      type: content.isRecast ? 'recasted' : 'quoted',
+      id: content.originalPost._id as string
+    };
+  }
+  return contentPayloadItem;
+};
+
 export const toUnsignedContentPayloadItem = (
   content: ContentDocument | Content,
   engagements: EngagementDocument[] = []
@@ -239,11 +284,9 @@ export const toUnsignedContentPayloadItem = (
   return result;
 };
 
-export const toSignedContentPayloadItem = (
-  content: ContentDocument | Content,
-  engagements: EngagementDocument[] = []
+export const signedContentPayloadItem = (
+  unsignPayloadItem: ContentPayloadItem
 ) => {
-  const unsignPayloadItem = toUnsignedContentPayloadItem(content, engagements);
   if (unsignPayloadItem.photo && unsignPayloadItem.photo.contents)
     unsignPayloadItem.photo.contents = unsignPayloadItem.photo?.contents?.map(
       (item) => new Image(item).toSignUrls()
@@ -260,6 +303,12 @@ export const toSignedContentPayloadItem = (
     });
   return unsignPayloadItem;
 };
+
+export const toSignedContentPayloadItem = (
+  content: ContentDocument | Content,
+  engagements: EngagementDocument[] = []
+) =>
+  signedContentPayloadItem(toUnsignedContentPayloadItem(content, engagements));
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
