@@ -1012,7 +1012,9 @@ export class ContentService {
   ) => {
     const filter: any = {
       countryCode: accountCountryCode
-        ? accountCountryCode
+        ? {
+            $regex: new RegExp(`^${accountCountryCode}`, 'i')
+          }
         : {
             $exists: false
           }
