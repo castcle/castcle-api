@@ -71,7 +71,10 @@ web_modules/
 
 # dotenv environment variables file
 .env
+.env.dev
+.env.development
 .env.test
+.env.staging
 .env.production
 
 # parcel-bundler cache (https://parceljs.org/)
@@ -120,12 +123,18 @@ dist/*
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# yarn v1
+yarn.lock
+
 # yarn v2
 .yarn/cache
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# pnpm
+pnpm-lock.yaml
 
 # IDE - VSCode
 *.code-workspace
@@ -156,3 +165,12 @@ Thumbs.db
 # compiled templates
 src/app/homepage/pages/**/*.html
 
+
+#documentations
+documentation
+
+#localDB
+db
+
+#localDocker
+docker-compose.yml

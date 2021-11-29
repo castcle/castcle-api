@@ -1,4 +1,5 @@
 # **Castcle API**
+
 ## A decentralized social media for everyone
 
 [![N|Solid](https://avatars.githubusercontent.com/u/85831466?s=200&v=4)](https://github.com/castcle)
@@ -13,13 +14,13 @@ All works and source files published in this repository are published under [GNU
 
 ## **Philosophy**
 
-#### *DON'T* - Decentralize Everything
+#### _DON'T_ - Decentralize Everything
 
 Eventhough we believe in user rights and free speeches, **decentralizing content custodian can cause more harm than good**. For example, violence VDOs, photos demonstrating drug uses, mis/disinformation contents, might affect users without discretion, especially in youth users. Hence, by disrupting the power of content custodian, making no one can take down violated contents, will apparently cause more harm to the society than good. **This is why we're not focusing on building up a non-content-custodian social network platform.**
 
-#### *DO* - Decentralize the Ownership
+#### _DO_ - Decentralize the Ownership
 
-As the rise of blockchain technology, making anyone can trust on digital assets, aka *TOKEN*, will play a crucial role in making social media fairer. As stated in *[About](#about)* section above, we believe that decentralizing platform ownership to users proportionated to the values they created is a key to create a successful and more sustainable ecosystem.
+As the rise of blockchain technology, making anyone can trust on digital assets, aka _TOKEN_, will play a crucial role in making social media fairer. As stated in _[About](#about)_ section above, we believe that decentralizing platform ownership to users proportionated to the values they created is a key to create a successful and more sustainable ecosystem.
 
 ## **Whitepaper**
 
@@ -29,13 +30,13 @@ For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, 
 
 #### Prerequisites
 
-- Download and ***install npm*** from https://nodejs.org/en/download/.
+- Download and **_install npm_** from https://nodejs.org/en/download/.
 
-- Download and ***install git*** tool you prefer. If you don't have one, try [Github Desktop](https://desktop.github.com/).
+- Download and **_install git_** tool you prefer. If you don't have one, try [Github Desktop](https://desktop.github.com/).
 
-- ***Clone***, aka ***Check out***, this repository to your local `<INSTALL_DIR>` by following [these steps](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository-from-github/cloning-a-repository).
+- **_Clone_**, aka **_Check out_**, this repository to your local `<INSTALL_DIR>` by following [these steps](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository-from-github/cloning-a-repository).
 
-- **Navigate to `<INSTALL_DIR>`** by using ***Cmd*** *(in Windows)* or ***Terminal*** *(in MacOS)*.
+- **Navigate to `<INSTALL_DIR>`** by using **_Cmd_** _(in Windows)_ or **_Terminal_** _(in MacOS)_.
 
 - **Install dependency packages** by executing:
   ```
@@ -52,6 +53,7 @@ For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, 
 #### Unit Testing
 
 - To **run ALL** unit tests:
+
   ```
     > npm run test
   ```
@@ -60,11 +62,12 @@ For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, 
   ```
     > npm run test:<service-name>
   ```
-  For example, `npm run test:feeds` for *'feeds'* service. You can see all available `test:<service-name>`s in `package.json`.
+  For example, `npm run test:feeds` for _'feeds'_ service. You can see all available `test:<service-name>`s in `package.json`.
 
 #### Building
 
 - To **build ALL** micro services:
+
   ```
     > npm run build
   ```
@@ -73,17 +76,17 @@ For ***Tokenomics, Key Features, Key Ideas,*** and more ***Technical Issues***, 
   ```
     > npm run build:<service-name>
   ```
-  For example, `npm run build:authentications` for *'authentications'* service. You can see all available `build:<service-name>`s in `package.json`.
+  For example, `npm run build:authentications` for _'authentications'_ service. You can see all available `build:<service-name>`s in `package.json`.
 
 #### Deploying
 
 - **Dockerize** the app by running `Dockerfile.*` files in `<INSTALL_DIR>` using `> docker build`.
 
-  *See: [docker build](https://docs.docker.com/engine/reference/commandline/build/)*
+  _See: [docker build](https://docs.docker.com/engine/reference/commandline/build/)_
 
-- **Deploy** Castcle's micro services using *docker image* generated from step above via `> docker run` on your local computer or in any *container environments*.
+- **Deploy** Castcle's micro services using _docker image_ generated from step above via `> docker run` on your local computer or in any _container environments_.
 
-  *See: [docker run](https://docs.docker.com/engine/reference/commandline/run/)*
+  _See: [docker run](https://docs.docker.com/engine/reference/commandline/run/)_
 
 ## **License**
 
