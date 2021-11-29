@@ -22,25 +22,16 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
-import { Account } from './account.schema';
+import { Author } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 
 export type SocialSyncDocument = SocialSync & Document;
 
 @Schema({ timestamps: true })
 export class SocialSync extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-    index: true
-  })
-  account: Account;
-
-  @Prop({ required: true })  //user emb
-  castcleId: string;
+  @Prop({ required: true, type: Object })
+  author: Author;
 
   @Prop({ required: true })
   provider: string;
@@ -65,3 +56,4 @@ export class SocialSync extends CastcleBase {
 }
 
 export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
+SocialSyncSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
