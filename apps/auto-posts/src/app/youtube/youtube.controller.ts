@@ -21,18 +21,22 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+import { Environment } from '@castcle-api/environments';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ValidateWebhookQuery } from './dto';
 
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    TwitterModule,
-    YoutubeModule
-  ]
-})
-export class AppModule {}
+@Controller('youtube')
+export class YoutubeController {
+  @Get()
+  async validateWebhook(
+    @Query()
+    {
+      'hub.challenge': challenge,
+      'hub.verify_token': verifyToken
+    }: ValidateWebhookQuery
+  ) {
+    if (verifyToken !== Environment.YOUTUBE_VERIFY_TOKEN) return;
+
+    return challenge;
+  }
+}

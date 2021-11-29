@@ -116,7 +116,7 @@ export class User extends CastcleBase {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
-  toUserResponse(): Promise<UserResponseDto>;
+  toUserResponse(followed?: boolean): Promise<UserResponseDto>;
   toPageResponse(): PageResponseDto;
   follow(user: UserDocument): Promise<void>;
   unfollow(user: UserDocument): Promise<void>;
@@ -126,11 +126,14 @@ export interface IUser extends Document {
 }
 
 export interface UserModel extends mongoose.Model<UserDocument> {
-  covertToUserResponse(user: User | UserDocument): UserResponseDto;
+  covertToUserResponse(
+    user: User | UserDocument,
+    followed?: boolean
+  ): UserResponseDto;
   toAuthor(user: User | UserDocument): Author;
 }
 
-const _covertToUserResponse = (self: User | UserDocument) => {
+const _covertToUserResponse = (self: User | UserDocument, followed = false) => {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
@@ -159,12 +162,15 @@ const _covertToUserResponse = (self: User | UserDocument) => {
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
-    verified: self.verified //self.verified ? true : false,
+    verified: self.verified, //self.verified ? true : false,
+    followed: followed
   } as UserResponseDto;
 };
 
-UserSchema.statics.covertToUserResponse = (self: User | UserDocument) =>
-  _covertToUserResponse(self);
+UserSchema.statics.covertToUserResponse = (
+  self: User | UserDocument,
+  followed = false
+) => _covertToUserResponse(self, followed);
 
 UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   ({
@@ -180,14 +186,15 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     verified: self.verified
   } as Author);
 
-UserSchema.methods.toUserResponse = async function () {
+UserSchema.methods.toUserResponse = async function (followed = false) {
   const self = await (this as UserDocument)
     .populate('ownerAccount')
     .execPopulate();
-  const response = _covertToUserResponse(self);
+  const response = _covertToUserResponse(self, followed);
   response.email = self.ownerAccount.email;
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
+
   return response;
 };
 

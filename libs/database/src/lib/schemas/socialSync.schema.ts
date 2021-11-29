@@ -21,18 +21,39 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { Author } from '../dtos/content.dto';
+import { CastcleBase } from './base.schema';
 
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    TwitterModule,
-    YoutubeModule
-  ]
-})
-export class AppModule {}
+export type SocialSyncDocument = SocialSync & Document;
+
+@Schema({ timestamps: true })
+export class SocialSync extends CastcleBase {
+  @Prop({ required: true, type: Object })
+  author: Author;
+
+  @Prop({ required: true })
+  provider: string;
+
+  @Prop({ required: true })
+  socialId: string;
+
+  @Prop()
+  userName: string;
+
+  @Prop()
+  displayName: string;
+
+  @Prop()
+  avatar: string;
+
+  @Prop()
+  active: boolean;
+
+  @Prop()
+  latestPostId: string;
+}
+
+export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
+SocialSyncSchema.index({ 'author.id': 1, 'author.castcleId': 1 });

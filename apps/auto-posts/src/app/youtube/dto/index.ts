@@ -21,18 +21,4 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
-
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    TwitterModule,
-    YoutubeModule
-  ]
-})
-export class AppModule {}
+export * from './validate-webhook.dto';
