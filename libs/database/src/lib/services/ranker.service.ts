@@ -30,6 +30,14 @@ import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import { createCastcleMeta, createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
 import { QueryOption } from '../dtos/common.dto';
+import { transformContentPayloadToV2 } from '../schemas/content.schema';
+import {
+  GuestFeedItemPayload,
+  GuestFeedItemPayloadItem
+} from '../dtos/guestFeedItem.dto';
+import { Configs } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
+import { Author } from '../dtos/content.dto';
 
 @Injectable()
 export class RankerService {
@@ -96,12 +104,42 @@ export class RankerService {
         $lt: new Date(guestFeeditemUntil.createdAt)
       };
     }
-    const feedItemResult = await this._feedItemModel
+    const documents = await this._feedItemModel
       .find(filter)
       .limit(query.maxResults)
       .sort('-aggregator.createTime')
       .exec();
-
-    createCastcleMeta(feedItemResult);
+    return {
+      payload: documents.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: transformContentPayloadToV2(item.content, []),
+            type: 'content'
+          } as GuestFeedItemPayloadItem)
+      ),
+      includes: {
+        users: documents
+          .map((item) => item.content.author as Author)
+          .map((author) => {
+            if (author.avatar)
+              author.avatar = new Image(author.avatar).toSignUrls();
+            else author.avatar = Configs.DefaultAvatarImages;
+            return author;
+          })
+      },
+      meta: createCastcleMeta(documents)
+    } as GuestFeedItemPayload;
   };
 }
