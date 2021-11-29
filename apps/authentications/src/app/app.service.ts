@@ -26,7 +26,8 @@ import {
   AccountDocument,
   CredentialDocument,
   OtpDocument,
-  OtpObjective
+  OtpObjective,
+  UserDocument
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -534,13 +535,41 @@ export class AppService {
     );
     this.logger.log('Send Otp');
     try {
-      await this.twillioClient.requestOtp(reciever, twillioChannel);
+      this.logger.log('get user from account');
+      const user = await this.authService.getUserFromAccount(account);
+      await this.twillioClient.requestOtp(
+        reciever,
+        twillioChannel,
+        this.buildTemplateMessage(objective, user)
+      );
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
     }
     return otp;
   }
 
+  private buildTemplateMessage(objective: OtpObjective, user: UserDocument) {
+    const userName = user && user.displayName ? user.displayName : '';
+    if (objective === OtpObjective.ForgotPassword) {
+      this.logger.log('build template forgot password objective');
+      return {
+        twilio_name: userName,
+        twilio_message_body:
+          'We received a request to reset your  Castcle password. Enter the following password reset code',
+        twilio_message_footer_1: 'Didn’t request this change?',
+        twilio_message_footer_2: 'If you didn’t request a new password'
+      };
+    } else {
+      this.logger.log('build template other objective');
+      return {
+        twilio_name: userName,
+        twilio_message_body:
+          'We received a request for One Time Password (OTP).',
+        twilio_message_footer_1: 'Didn’t request this change?',
+        twilio_message_footer_2: ''
+      };
+    }
+  }
   /**
    * forgot password verify Otp
    * @param {ForgotPasswordVerificationOtpDto} request
