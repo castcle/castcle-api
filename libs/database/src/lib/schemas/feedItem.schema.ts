@@ -25,10 +25,15 @@ import * as mongoose from 'mongoose';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import { signContentPayload } from './content.schema';
+import {
+  signContentPayload,
+  signedContentPayloadItem,
+  transformContentPayloadToV2
+} from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { ContentPayloadDto } from '../dtos/content.dto';
 import { EngagementDocument } from './engagement.schema';
+import { GuestFeedItemPayloadItem } from '../dtos/guestFeedItem.dto';
 
 export type FeedItemDocument = FeedItem & IFeedItem;
 
@@ -66,6 +71,9 @@ FeedItemSchema.index({
 });
 export interface IFeedItem extends mongoose.Document {
   toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
+  toFeedItemPayloadV2(
+    engagements?: EngagementDocument[]
+  ): GuestFeedItemPayloadItem;
 }
 
 FeedItemSchema.methods.toFeedItemPayload = function (
@@ -96,6 +104,38 @@ FeedItemSchema.methods.toFeedItemPayload = function (
     createdAt: (this as FeedItemDocument).createdAt.toISOString(),
     updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
   } as FeedItemPayload;
+};
+
+FeedItemSchema.methods.toFeedItemPayloadV2 = function (
+  engagements: EngagementDocument[] = []
+) {
+  return {
+    id: (this as FeedItemDocument)._id,
+    feature: {
+      id: 'feed',
+      key: 'feature.feed',
+      name: 'Feed',
+      slug: 'feed'
+    },
+    circle: {
+      id: 'for-you',
+      key: 'circle.forYou',
+      name: 'For You',
+      slug: 'forYou'
+    },
+    type: 'content',
+    payload: signedContentPayloadItem(
+      transformContentPayloadToV2(
+        (this as FeedItemDocument).content,
+        engagements
+      )
+    ),
+    aggregator: {
+      type: 'createTime'
+    },
+    createdAt: (this as FeedItemDocument).createdAt.toISOString(),
+    updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
+  } as GuestFeedItemPayloadItem;
 };
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {

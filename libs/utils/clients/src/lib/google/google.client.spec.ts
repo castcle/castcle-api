@@ -20,19 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { HttpModule } from '@nestjs/axios';
+import { Test, TestingModule } from '@nestjs/testing';
+import { GoogleClient } from './google.client';
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+describe('GoogleClient', () => {
+  let service: GoogleClient;
 
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    TwitterModule,
-    YoutubeModule
-  ]
-})
-export class AppModule {}
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [GoogleClient],
+      imports: [HttpModule]
+    }).compile();
+
+    service = module.get<GoogleClient>(GoogleClient);
+  });
+
+  it('GoogleClient - should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});

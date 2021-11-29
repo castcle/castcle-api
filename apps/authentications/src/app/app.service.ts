@@ -37,6 +37,7 @@ import {
   FacebookAccessToken,
   FacebookClient,
   FacebookUserInfo,
+  GoogleClient,
   TelegramClient,
   TelegramUserInfo,
   TwillioChannel,
@@ -88,6 +89,7 @@ export class AppService {
     private download: Downloader,
     private telegramClient: TelegramClient,
     private twitterClient: TwitterClient,
+    private googleClient: GoogleClient,
     private userService: UserService,
     private twillioClient: TwillioClient,
     private httpService: HttpService,
@@ -187,7 +189,6 @@ export class AppService {
       }
     }
 
-    credential.account.isGuest = false;
     this.logger.log('get AccessTokenPayload FromCredential');
     const accessTokenPayload =
       await this.authService.getAccessTokenPayloadFromCredential(credential);
@@ -334,8 +335,7 @@ export class AppService {
     else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 
-  /**
-   * Get User Profile and Pages
+  /**User Profile and Pages
    * @param {CredentialDocument} credential
    * @returns {profile,pages} profile data
    */
@@ -399,7 +399,7 @@ export class AppService {
     return account;
   }
 
-  async validateExistingOtp(
+  private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
     channel: string
@@ -422,6 +422,7 @@ export class AppService {
 
     return existingOtp;
   }
+
   /**
    * forgot password request Otp
    * @param {RequestOtpDto} request
@@ -747,5 +748,38 @@ export class AppService {
       throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
     return { user: userVerify, token: tokenDetail };
+  }
+
+  /**
+   * Connect Google API
+   * @param {SocialConnectInfo} payload response from google
+   * @param {string} language en is default
+   * @returns {TwitterUserData, TwitterAccessToken}
+   */
+  async googleConnect(payload: SocialConnectInfo, language: string) {
+    if (!payload.authToken) {
+      this.logger.error(`token missing.`);
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
+    }
+
+    this.logger.log(`verify google access token.`);
+    const tokenData = await this.googleClient.verifyToken(payload.authToken);
+
+    if (!tokenData) {
+      this.logger.error(`Use token expired.`);
+      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+    }
+
+    this.logger.log(`verify google user token.`);
+    const userVerify = await this.googleClient.getGoogleUserInfo(
+      payload.authToken
+    );
+
+    if (!userVerify) {
+      this.logger.error(`Can't get user data.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    }
+
+    return { userVerify, tokenData };
   }
 }

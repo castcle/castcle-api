@@ -27,8 +27,9 @@ import { Model } from 'mongoose';
 import { ContentDocument } from '../schemas';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
-import { createPagination } from '../utils/common';
+import { createCastcleMeta, createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
+import { QueryOption } from '../dtos/common.dto';
 
 @Injectable()
 export class RankerService {
@@ -71,4 +72,36 @@ export class RankerService {
       pagination: createPagination(options, totalFeedItems)
     };
   }
+
+  getMemberFeedItemsFromViewer = async (
+    viewer: Account,
+    query: QueryOption
+  ) => {
+    const filter: any = {
+      viewer: viewer._id,
+      seen: query.mode === FeedItemMode.Current ? false : true
+    };
+    if (query.sinceId) {
+      const guestFeeditemSince = await this._feedItemModel
+        .findById(query.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(guestFeeditemSince.createdAt)
+      };
+    } else if (query.untilId) {
+      const guestFeeditemUntil = await this._feedItemModel
+        .findById(query.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(guestFeeditemUntil.createdAt)
+      };
+    }
+    const feedItemResult = await this._feedItemModel
+      .find(filter)
+      .limit(query.maxResults)
+      .sort('-aggregator.createTime')
+      .exec();
+
+    createCastcleMeta(feedItemResult);
+  };
 }
