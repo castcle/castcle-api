@@ -43,7 +43,7 @@ export class SocialSync extends CastcleBase {
   userName: string;
 
   @Prop()
-  displayNmae: string;
+  displayName: string;
 
   @Prop()
   avatar: string;
