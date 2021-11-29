@@ -683,7 +683,7 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     status: 200,
-    type: TokenResponse
+    type: LoginResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @CastcleTrack()
@@ -813,8 +813,55 @@ export class AuthenticationController {
         }
         break;
       }
+      case AccountAuthenIdType.Google: {
+        const userGoogle = await this.appService.googleConnect(
+          body.payload,
+          req.$language
+        );
+        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
+          this.logger.log(
+            `social login Google id: ${userGoogle.userVerify.id}`
+          );
+          token = await this.appService.socialLogin(
+            {
+              socialId: userGoogle.userVerify.id
+                ? userGoogle.userVerify.id
+                : '',
+              email: userGoogle.userVerify.email
+                ? userGoogle.userVerify.email
+                : '',
+              name: userGoogle.userVerify.name,
+              provider: AccountAuthenIdType.Google,
+              profileImage: userGoogle.userVerify.picture
+                ? userGoogle.userVerify.picture
+                : '',
+              socialToken: body.payload.authTokenSecret,
+              socialSecretToken: ''
+            },
+            req.$credential
+          );
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
     }
-    return token;
+    this.logger.log('get User Profile');
+    const userProfile = await this.appService.getUserProfile(req.$credential);
+    return {
+      profile: userProfile.profile
+        ? await userProfile.profile.toUserResponse()
+        : null,
+      pages: userProfile.pages
+        ? userProfile.pages.items.map((item) => item.toPageResponse())
+        : null,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken
+    } as LoginResponse;
   }
 
   @CastcleBasicAuth()
@@ -961,6 +1008,43 @@ export class AuthenticationController {
               userApp.token && userApp.token.refresh_token
                 ? userApp.token.refresh_token
                 : ''
+            );
+          } else {
+            this.logger.warn(`already connect social: ${body.provider}.`);
+          }
+        } else {
+          this.logger.error(`Can't get user data.`);
+          throw new CastcleException(
+            CastcleStatus.FORBIDDEN_REQUEST,
+            req.$language
+          );
+        }
+        break;
+      }
+      case AccountAuthenIdType.Google: {
+        this.logger.log(`Google Connect`);
+        const userGoogle = await this.appService.googleConnect(
+          body.payload,
+          req.$language
+        );
+
+        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
+          this.logger.log('get AccountAuthenIdFromSocialId');
+          const socialAccount =
+            await this.authService.getAccountAuthenIdFromSocialId(
+              userGoogle.userVerify.id,
+              AccountAuthenIdType.Google
+            );
+          if (!socialAccount) {
+            this.logger.log(
+              `Connect account id:${currentAccount._id} to google id: ${userGoogle.userVerify.id}`
+            );
+            await this.authService.createAccountAuthenId(
+              currentAccount,
+              AccountAuthenIdType.Google,
+              userGoogle.userVerify.id,
+              body.payload.authToken,
+              ''
             );
           } else {
             this.logger.warn(`already connect social: ${body.provider}.`);
