@@ -243,8 +243,7 @@ export class UserService {
         visibility: EntityVisibility.Publish
       })
       .exec();
-    if (relationship) return true;
-    else return false;
+    return Boolean(relationship);
   };
 
   /**
