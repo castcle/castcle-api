@@ -224,6 +224,28 @@ export class UserService {
     else items = await pages.sort(`${queryOptions.sortBy.field}`).exec();
     return { items, pagination };
   };
+
+  /**
+   *
+   * @param credential
+   * @param user
+   * @returns
+   */
+  isCredentialFollow = async (
+    credential: CredentialDocument,
+    user: UserDocument
+  ) => {
+    const credentialUser = await this.getUserFromCredential(credential);
+    const relationship = await this._relationshipModel
+      .findOne({
+        user: credentialUser._id,
+        followedUser: user._id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+    return Boolean(relationship);
+  };
+
   /**
    *
    * @param {UserDocument} user

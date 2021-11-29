@@ -170,8 +170,11 @@ export class UserController {
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     //UserService
     const user = await this._getUserFromIdOrCastcleId(id, req);
-
-    return await user.toUserResponse();
+    const isFollowed = await this.userService.isCredentialFollow(
+      req.$credential,
+      user
+    );
+    return await user.toUserResponse(isFollowed);
   }
 
   @ApiBody({
