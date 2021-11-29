@@ -145,7 +145,6 @@ export class UserController {
     logger.log('Root');
     return this.appService.getData();
   }
-
   @ApiOkResponse({
     type: UserResponseDto
   })

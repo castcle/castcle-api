@@ -21,19 +21,47 @@
  * or have any questions.
  */
 
-module.exports = {
-  displayName: 'users',
-  preset: '../../jest.preset.js',
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]s$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/users',
-  collectCoverage: true
-};
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { Account } from '../schemas/account.schema';
+import { CastcleBase } from './base.schema';
+
+export type SocialSyncDocument = SocialSync & Document;
+
+@Schema({ timestamps: true })
+export class SocialSync extends CastcleBase {
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true
+  })
+  account: Account;
+
+  @Prop({ required: true })  //user emb
+  castcleId: string;
+
+  @Prop({ required: true })
+  provider: string;
+
+  @Prop({ required: true })
+  socialId: string;
+
+  @Prop()
+  userName: string;
+
+  @Prop()
+  displayNmae: string;
+
+  @Prop()
+  avatar: string;
+
+  @Prop()
+  active: boolean;
+
+  @Prop()
+  latestPostId: string;
+}
+
+export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);

@@ -38,6 +38,7 @@ import { HashtagDocument } from './hashtag.schema';
 import { LanguageDocument } from './language.schema';
 import { NotificationDocument } from './notification.schema';
 import { OtpDocument, OtpObjective } from './otp.schema';
+import { SocialSyncDocument } from './socialSync.schema';
 import { User, UserDocument, UserType } from './user.schema';
 export {
   CredentialDocument,
@@ -60,5 +61,6 @@ export {
   CountryDocument,
   OtpObjective,
   OtpDocument,
-  EngagementDocument
+  EngagementDocument,
+  SocialSyncDocument
 };

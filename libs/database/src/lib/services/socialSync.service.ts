@@ -21,19 +21,37 @@
  * or have any questions.
  */
 
-module.exports = {
-  displayName: 'users',
-  preset: '../../jest.preset.js',
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]s$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/users',
-  collectCoverage: true
-};
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { LanguagePayloadDto } from '../dtos/language.dto';
+import { SocialSyncDocument } from '../schemas/socialSync.schema';
+
+@Injectable()
+export class SocialSyncService {
+  constructor(
+    @InjectModel('SocialSync')
+    public _socialSyncModel: Model<SocialSyncDocument>
+  ) {}
+
+  /**
+   * get all data from Language Document
+   *
+   * @returns {LanguageDocument[]} return all Language Document
+   */
+  async getAll() {
+    console.log('get all language');
+    return this._socialSyncModel.find().exec();
+  }
+
+  /**
+   * create new language
+   * @param {LanguagePayloadDto} language language payload
+   * @returns {LanguageDocument} return new language document
+   */
+  create = async (language: SocialSyncDto) => {
+    console.log('save language');
+    const createResult = await new this._socialSyncModel(language).save();
+    return createResult;
+  };
+}

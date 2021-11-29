@@ -36,12 +36,14 @@ import { CountrySchema } from './schemas/country.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
+import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
 import { HashtagSchema } from './schemas/hashtag.schema';
 import { LanguageSchema } from './schemas/language.schema';
 import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
 import { RevisionchemaFactory } from './schemas/revision.schema';
+import { SocialSyncSchema } from './schemas/socialSync.schema';
 import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
@@ -52,9 +54,9 @@ import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
+import { SocialSyncService } from './services/socialSync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -65,7 +67,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Hashtag', schema: HashtagSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
   { name: 'Country', schema: CountrySchema },
-  { name: 'GuestFeedItem', schema: GuestFeedItemSchema }
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
+  { name: 'SocialSync', schema: SocialSyncSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -132,7 +135,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     LanguageService,
     HashtagService,
     SearchService,
-    CountryService
+    CountryService,
+    SocialSyncService
   ],
   exports: [
     AuthenticationService,
@@ -144,7 +148,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     LanguageService,
     HashtagService,
     SearchService,
-    CountryService
+    CountryService,
+    SocialSyncService
   ]
 })
 export class DatabaseModule {}
@@ -159,5 +164,6 @@ export {
   LanguageService,
   HashtagService,
   SearchService,
-  CountryService
+  CountryService,
+  SocialSyncService
 };
