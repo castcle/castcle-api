@@ -50,10 +50,13 @@ export class TwillioClient {
     this.env.twilioAuthToken
   );
 
-  async requestOtp(receiver: string, channel: TwillioChannel) {
+  async requestOtp(receiver: string, channel: TwillioChannel, config: any) {
     return this.client.verify
       .services(this.env.twilioOtpSid)
       .verifications.create({
+        channelConfiguration: {
+          substitutions: config
+        },
         to: receiver,
         channel: channel
       })
