@@ -203,7 +203,7 @@ export class FeedController {
     required: false
   })
   @CastcleAuth(CacheKeyName.Feeds)
-  @Get('feeds/member')
+  @Get('feeds/members/feed/forYou')
   async getMemberFeed(
     @Req() req: CredentialRequest,
     @Query('maxResults', LimitPipe) maxResults: number,
@@ -218,6 +218,7 @@ export class FeedController {
         sinceId: sinceId,
         untilId: untilId
       });
+    console.log('feeds', feedItemsResult);
     return feedItemsResult;
   }
 }
