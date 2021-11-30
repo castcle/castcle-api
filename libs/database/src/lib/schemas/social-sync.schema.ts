@@ -23,37 +23,47 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Author } from '../dtos/content.dto';
+import { Author, AuthorSchema } from './author.schema';
 import { CastcleBase } from './base.schema';
 
-export type SocialSyncDocument = SocialSync & Document;
+export enum SocialProvider {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram',
+  Apple = 'apple'
+}
 
 @Schema({ timestamps: true })
 export class SocialSync extends CastcleBase {
-  @Prop({ required: true, type: Object })
+  @Prop({ required: true, type: AuthorSchema })
   author: Author;
 
   @Prop({ required: true })
-  provider: string;
+  provider: SocialProvider;
 
   @Prop({ required: true })
   socialId: string;
 
   @Prop()
-  userName: string;
+  userName?: string;
 
   @Prop()
-  displayName: string;
+  displayName?: string;
 
   @Prop()
-  avatar: string;
+  avatar?: string;
 
-  @Prop()
+  @Prop({ default: false })
   active: boolean;
 
   @Prop()
-  latestPostId: string;
+  latestSyncId?: string;
+
+  @Prop()
+  latestSyncDate?: Date;
 }
 
+export type SocialSyncDocument = SocialSync & Document;
+
 export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
-SocialSyncSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
