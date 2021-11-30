@@ -28,6 +28,7 @@ import {
   MongooseForFeatures,
   UserService
 } from '@castcle-api/database';
+import { generateMockUsers } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
   CredentialDocument,
@@ -609,6 +610,7 @@ describe('AppController', () => {
         new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
       );
     });
+
     it('should get Exception when wrong password', async () => {
       const language = 'th';
       const guestResult = await appController.guestLogin(
@@ -633,6 +635,40 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
       );
+    });
+
+    it('should be able to login and return all pages', async () => {
+      const mockpassword = '2@HelloWorld';
+      const mocks = await generateMockUsers(1, 50, {
+        accountService: service,
+        userService: userService
+      });
+
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone13', $language: 'th', $platform: 'iOs' } as any,
+        { deviceUUID: 'i13Test' }
+      );
+      const credentialGuest = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
+      );
+      const result = await appController.login(
+        {
+          $credential: credentialGuest,
+          $token: guestResult.accessToken,
+          $language: 'th'
+        } as any,
+        {
+          password: mockpassword,
+          username: mocks[0].account.email
+        }
+      );
+
+      expect(result).toBeDefined();
+      expect(result.profile).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
+      expect(result.pages).toBeDefined();
+      expect(result.pages.length).toEqual(50);
     });
   });
 
