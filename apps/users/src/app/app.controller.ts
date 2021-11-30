@@ -304,14 +304,15 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page
+    //TODO !!! hack it to make ui display more than 25
+    /*@Query('limit', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit*/
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
       const pages = await this.userService.getUserPages(user, {
-        limit: limitOption,
+        //limit: limitOption,
         page: pageOption,
         sortBy: sortByOption
       });
