@@ -24,7 +24,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { EntityVisibility } from '../dtos';
+import { Author } from '../dtos/content.dto';
 import { LanguagePayloadDto } from '../dtos/language.dto';
+import { UserDocument, UserType } from '../schemas';
 import { SocialSyncDocument } from '../schemas/socialSync.schema';
 
 @Injectable()
@@ -35,23 +38,70 @@ export class SocialSyncService {
   ) {}
 
   /**
-   * get all data from Language Document
+   * get social sync from User Document
    *
-   * @returns {LanguageDocument[]} return all Language Document
+   * @param {UserDocument} user
+   * @returns {SocialSyncDocument[]} return all social sync Document
    */
-  async getAll() {
-    console.log('get all language');
-    return this._socialSyncModel.find().exec();
+  async getsocialSyncFromUser(user: UserDocument) {
+    const findFilter: {
+      'author.id': any;
+      visibility: EntityVisibility;
+    } = {
+      'author.id': user._id,
+      visibility: EntityVisibility.Publish
+    };
+    return this._socialSyncModel.find(findFilter).exec();
   }
+
+  /**
+   * transform User => Author object for create a content and use as DTO
+   * @private
+   * @param {UserDocument} user
+   * @returns {Author}
+   */
+  _getAuthorFromUser = (user: UserDocument) => {
+    const author: Author = {
+      id: user._id,
+      avatar: user.profile?.images?.avatar || null,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      followed: false,
+      type: user.type === UserType.Page ? UserType.Page : UserType.People,
+      verified: user.verified
+    };
+    return author;
+  };
 
   /**
    * create new language
    * @param {LanguagePayloadDto} language language payload
    * @returns {LanguageDocument} return new language document
    */
-  create = async (language: SocialSyncDto) => {
+  async create(user: UserDocument, language: SocialSyncDto) {
     console.log('save language');
     const createResult = await new this._socialSyncModel(language).save();
     return createResult;
-  };
+
+    const author = this._getAuthorFromUser(user);
+    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
+      const hashtags =
+        this.hashtagService.extractHashtagFromContentPayload(payload);
+
+      await this.hashtagService.createFromTags(hashtags);
+
+      return {
+        author,
+        payload,
+        revisionCount: 0,
+        type,
+        visibility: EntityVisibility.Publish,
+        hashtags: hashtags
+      } as Content;
+    });
+
+    const contents = await Promise.all(contentsToCreate);
+
+    return this._contentModel.create(contents);
+  }
 }
