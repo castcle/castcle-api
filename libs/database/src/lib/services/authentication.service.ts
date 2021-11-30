@@ -586,14 +586,4 @@ export class AuthenticationService {
     });
     return accountActivation.save();
   }
-
-  /**
-   * get accounts where `accountAuthenId.autoSync = true`
-   * @param {AccountAuthenIdType} socialType
-   * @returns {AccountAuthenIdDocument[]}
-   */
-  getAutoPostAccounts = (
-    socialType: AccountAuthenIdType
-  ): Promise<AccountAuthenIdDocument[]> =>
-    this._accountAuthenId.find({ autoPost: true, type: socialType }).exec();
 }

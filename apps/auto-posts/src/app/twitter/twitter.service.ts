@@ -28,10 +28,10 @@ import TwitterApi, {
 } from 'twitter-api-v2';
 import { Environment } from '@castcle-api/environments';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { AuthenticationService, ContentService } from '@castcle-api/database';
+import { ContentService, SocialSyncService } from '@castcle-api/database';
 import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
+  SocialProvider,
+  SocialSyncDocument
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { SaveContentDto } from '@castcle-api/database/dtos';
@@ -46,7 +46,7 @@ export class TwitterService {
   );
 
   constructor(
-    private readonly authenticationService: AuthenticationService,
+    private readonly socialSyncService: SocialSyncService,
     private readonly contentService: ContentService,
     private readonly downloader: Downloader
   ) {
@@ -57,43 +57,44 @@ export class TwitterService {
   async handleTwitterJobs() {
     this.logger.log(`Start looking for user's timeline`);
 
-    const accounts = await this.authenticationService.getAutoPostAccounts(
-      AccountAuthenIdType.Twitter
+    const syncAccounts = await this.socialSyncService.getAutoSyncAccounts(
+      SocialProvider.Twitter
     );
 
-    await Promise.all(accounts.map(this.getTweetsByAccount));
+    await Promise.all(syncAccounts.map(this.getTweetsByAccount));
+
     this.logger.log('Done, waiting for next available schedule');
   }
 
-  getTweetsByAccount = async (accountAuthenId: AccountAuthenIdDocument) => {
+  getTweetsByAccount = async (syncAccount: SocialSyncDocument) => {
     const timeline = await this.getTimelineByUserId(
-      accountAuthenId.socialId,
-      accountAuthenId.latestPostId
+      syncAccount.socialId,
+      syncAccount.latestSyncId
     );
 
     this.logger.log(
-      `Name: ${accountAuthenId.displayName}, tweet(s): ${timeline.meta.result_count}`
+      `Name: ${syncAccount.displayName}, tweet(s): ${timeline.meta.result_count}`
     );
 
     if (!timeline.meta.result_count) return;
 
-    const user = await this.authenticationService.getUserFromAccount(
-      accountAuthenId.account
-    );
-
     const contents = await this.convertTimelineToContents(
-      accountAuthenId.account._id,
+      syncAccount.author.id,
       timeline.data
     );
 
-    await this.contentService.createContentsFromUser(user, contents);
+    await this.contentService.createContentsFromAuthor(
+      syncAccount.author,
+      contents
+    );
 
-    accountAuthenId.displayName = timeline.includes?.users?.[0]?.name;
-    accountAuthenId.latestPostId = timeline.data.data[0].id;
-    await accountAuthenId.save();
+    syncAccount.displayName = timeline.includes?.users?.[0]?.name;
+    syncAccount.latestSyncId = timeline.data.data[0].id;
+    syncAccount.latestSyncDate = new Date();
+    syncAccount.save();
 
     this.logger.log(
-      `Name: ${accountAuthenId.displayName}, ${timeline.meta.result_count} tweet(s) saved`
+      `Name: ${syncAccount.displayName}, ${timeline.meta.result_count} tweet(s) saved`
     );
   };
 
@@ -108,7 +109,7 @@ export class TwitterService {
   };
 
   async convertTimelineToContents(
-    accountId: string,
+    userId: string,
     timeline: Tweetv2TimelineResult
   ) {
     const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
@@ -121,7 +122,7 @@ export class TwitterService {
       const uploadedImage = await Image.upload(image, {
         filename: `twitter-${medium.media_key}`,
         sizes: COMMON_SIZE_CONFIGS,
-        subpath: `contents/${accountId}`
+        subpath: `contents/${userId}`
       });
 
       medium.url = uploadedImage.toSignUrl();

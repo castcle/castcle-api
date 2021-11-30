@@ -130,15 +130,14 @@ export class ContentService {
 
   /**
    *
-   * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
+   * @param {Author} author the user that create this content
    * @param {SaveContentDto[]} contentsDtos contents to save
    * @returns {ContentDocument[]} saved contents
    */
-  async createContentsFromUser(
-    user: UserDocument,
+  async createContentsFromAuthor(
+    author: Author,
     contentsDtos: SaveContentDto[]
   ): Promise<ContentDocument[]> {
-    const author = this._getAuthorFromUser(user);
     const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
         this.hashtagService.extractHashtagFromContentPayload(payload);
