@@ -210,10 +210,8 @@ export class UserService {
       type: UserType.Page,
       visibility: EntityVisibility.Publish
     };
-    const pages = this._userModel
-      .find(filter)
-      .skip(queryOptions.page - 1)
-      .limit(queryOptions.limit);
+    const pages = this._userModel.find(filter).skip(queryOptions.page - 1);
+    //.limit(queryOptions.limit); TODO !!! hack
     const pagination = createPagination(
       queryOptions,
       await this._userModel.countDocuments(filter)
