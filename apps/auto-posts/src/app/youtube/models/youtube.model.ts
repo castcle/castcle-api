@@ -21,15 +21,14 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { Module } from '@nestjs/common';
-import { YoutubeController } from './youtube.controller';
-import { YoutubeService } from './youtube.service';
+export enum YoutubeThumbnailQuality {
+  HQ = 'hqdefault',
+  MQ = 'mqdefault',
+  SD = 'sddefault'
+}
 
-@Module({
-  imports: [DatabaseModule, UtilsAwsModule],
-  controllers: [YoutubeController],
-  providers: [YoutubeService]
-})
-export class YoutubeModule {}
+export class Youtube {
+  static thumbnailUrlFromId(id: string, quality = YoutubeThumbnailQuality.HQ) {
+    return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
+  }
+}
