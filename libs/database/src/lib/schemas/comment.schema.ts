@@ -114,10 +114,16 @@ export const CommentSchemaFactory = (
     const payload: CommentPayload = {
       id: (this as CommentDocument)._id,
       message: (this as CommentDocument).message,
-      like: {
+      /*like: {
         liked: findEngagement ? true : false,
         count: (this as CommentDocument).engagements.like.count,
         participant: [] //TODO !!! need to fix later on
+      },*/
+      metrics: {
+        likeCount: (this as CommentDocument).engagements.like.count
+      },
+      participate: {
+        liked: findEngagement ? true : false
       },
       author: {
         avatar: (this as CommentDocument).author.profile
@@ -148,7 +154,7 @@ export const CommentSchemaFactory = (
           verified: r.author.verified,
           type: r.author.type
         },
-        like: {
+        /*like: {
           liked: engagements.find(
             (engagement) =>
               engagement.type === EngagementType.Like &&
@@ -158,6 +164,18 @@ export const CommentSchemaFactory = (
             : false,
           count: r.engagements.like.count,
           participant: []
+        }*/
+        metrics: {
+          likeCount: r.engagements.like.count
+        },
+        participate: {
+          liked: engagements.find(
+            (engagement) =>
+              engagement.type === EngagementType.Like &&
+              String(engagement.targetRef.$id) === r.id
+          )
+            ? true
+            : false
         }
       })),
       createdAt: (this as CommentDocument).createdAt.toISOString(),

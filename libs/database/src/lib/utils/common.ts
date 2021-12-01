@@ -21,12 +21,7 @@
  * or have any questions.
  */
 
-import {
-  CastcleMeta,
-  CastclePagination,
-  CastcleQueryOptions,
-  QueryOption
-} from '../dtos/common.dto';
+import { CastcleMeta, CastcleQueryOptions } from '../dtos/common.dto';
 import { Document } from 'mongoose';
 import { Pagination } from '../dtos/common.dto';
 
@@ -49,17 +44,6 @@ export const createPagination = (
   const totalPages = Math.ceil(totalDocuments / queryOptions.limit);
   if (queryOptions.page < totalPages) pagination.next = queryOptions.page + 1;
   pagination.limit = queryOptions.limit;
-  return pagination;
-};
-
-export const createCastclePagination = (
-  queryOptions: QueryOption,
-  documents: Document[]
-): CastclePagination => {
-  const pagination = new CastclePagination();
-  pagination.limit = queryOptions.maxResults;
-  pagination.firstId = documents[0].id;
-  pagination.lastId = documents[documents.length - 1].id;
   return pagination;
 };
 

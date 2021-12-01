@@ -124,6 +124,7 @@ interface IContent extends Document {
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
   toContentPayload(engagements?: EngagementDocument[]): ContentPayloadDto;
+  toContentPayloadItem(engagements?: EngagementDocument[]): ContentPayloadItem;
   toUnsignedContentPayload(
     engagements?: EngagementDocument[]
   ): ContentPayloadDto;
@@ -368,6 +369,14 @@ export const ContentSchemaFactory = (
     if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
       payload.originalPost = (this as ContentDocument).originalPost;
     return payload;
+  };
+
+  ContentSchema.methods.toContentPayloadItem = function (
+    engagements: EngagementDocument[] = []
+  ) {
+    return signedContentPayloadItem(
+      toUnsignedContentPayloadItem(this as ContentDocument, engagements)
+    );
   };
 
   ContentSchema.methods.toContentPayload = function (

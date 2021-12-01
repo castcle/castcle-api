@@ -690,8 +690,8 @@ describe('User Service', () => {
         console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
         expect(
-          (await preComment.toCommentPayload(contentService._commentModel)).like
-            .count
+          (await preComment.toCommentPayload(contentService._commentModel))
+            .metrics.likeCount
         ).toEqual(2);
         await service._removeAllEngagements(userA);
         const postContent = await contentService.getContentFromId(
@@ -704,7 +704,7 @@ describe('User Service', () => {
         );
         expect(
           (await postComment.toCommentPayload(contentService._commentModel))
-            .like.count
+            .metrics.likeCount
         ).toEqual(1);
       });
     });
@@ -722,14 +722,14 @@ describe('User Service', () => {
         const comments = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments.items.length).toEqual(3);
-        expect(comments.total).toEqual(3);
+        expect(comments.payload.length).toEqual(3);
+        expect(comments.meta.resultCount).toEqual(3);
         await service._removeAllCommentFromUser(userA);
         const comments2 = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments2.total).toEqual(2);
-        expect(comments2.items.length).toEqual(2);
+        expect(comments2.meta.resultCount).toEqual(2);
+        expect(comments2.payload.length).toEqual(2);
       });
     });
     describe('_deactiveAccount()', () => {
@@ -743,7 +743,7 @@ describe('User Service', () => {
         const comments2 = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments2.total).toEqual(1);
+        expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollower(userNotDelete);
         expect(postFollower.items.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
@@ -756,7 +756,7 @@ describe('User Service', () => {
         );
         expect(
           (await postComment.toCommentPayload(contentService._commentModel))
-            .like.count
+            .metrics.likeCount
         ).toEqual(0);
       });
     });
