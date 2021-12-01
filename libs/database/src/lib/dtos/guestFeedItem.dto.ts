@@ -55,6 +55,7 @@ export class GuestFeedItemPayload {
   payload: GuestFeedItemPayloadItem[];
   includes: {
     users: Author[];
+    casts?: ContentPayloadItem[];
   };
   meta: CastcleMeta;
 }
