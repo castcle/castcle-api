@@ -21,4 +21,19 @@ export class SocialSyncService {
       .find({ active: true, provider: socialProvider })
       .exec();
   };
+
+  /**
+   * get auto-sync account by social ID
+   * @param {SocialProvider} socialProvider e.g. facebook, google, twitter
+   * @param {string} socialId
+   * @returns {Promise<SocialSyncDocument>}
+   */
+  getAutoSyncAccountBySocialId = (
+    socialProvider: SocialProvider,
+    socialId: string
+  ): Promise<SocialSyncDocument> => {
+    return this.socialSyncModel
+      .findOne({ active: true, provider: socialProvider, socialId })
+      .exec();
+  };
 }

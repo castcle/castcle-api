@@ -26,14 +26,19 @@ import { CastcleImage } from '.';
 import { UserVerified } from '../schemas/user.schema';
 import { CastcleMeta } from './common.dto';
 import { CastcleQueryOptions } from './common.dto';
+
 export class Url {
   @ApiProperty()
   image: string;
 }
 
+export enum LinkType {
+  Youtube = 'youtube'
+}
+
 class Link {
   @ApiProperty()
-  type: string;
+  type: string | LinkType;
 
   @ApiProperty()
   url: string;

@@ -21,15 +21,44 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { Module } from '@nestjs/common';
-import { YoutubeController } from './youtube.controller';
-import { YoutubeService } from './youtube.service';
+export class SubscriptionContent {
+  feed: DeletedContent | PublishedContent;
+  isPublishedContent: boolean;
 
-@Module({
-  imports: [DatabaseModule, UtilsAwsModule],
-  controllers: [YoutubeController],
-  providers: [YoutubeService]
-})
-export class YoutubeModule {}
+  constructor(feed: DeletedContent | PublishedContent) {
+    this.feed = feed;
+    this.isPublishedContent = Boolean((feed as PublishedContent).entry?.id);
+  }
+}
+
+export class DeletedContent {
+  'at:deleted-entry': DeletedEntry;
+}
+
+class DeletedEntry {
+  link: string;
+  'at:by': Author;
+}
+
+export class PublishedContent {
+  link: string[];
+  title: string;
+  updated: Date;
+  entry: Entry;
+}
+
+class Entry {
+  id: string;
+  'yt:videoId': string;
+  'yt:channelId': string;
+  title: string;
+  link: string;
+  author: Author;
+  published: Date;
+  updated: Date;
+}
+
+class Author {
+  name: string;
+  uri: string;
+}
