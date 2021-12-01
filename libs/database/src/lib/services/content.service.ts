@@ -51,7 +51,11 @@ import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility
 } from '../dtos/common.dto';
-import { CommentDto, UpdateCommentDto } from '../dtos/comment.dto';
+import {
+  CommentDto,
+  CommentsReponse,
+  UpdateCommentDto
+} from '../dtos/comment.dto';
 import { CommentType } from '../schemas/comment.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { FeedItemDto } from '../dtos/feedItem.dto';
@@ -539,19 +543,14 @@ export class ContentService {
       .find(findFilter)
       .skip(options.page - 1)
       .limit(options.limit);
-    const totalDocument = await this._contentModel.count(findFilter).exec();
-    if (options.sortBy.type === 'desc') {
-      return {
-        total: totalDocument,
-        items: await query.sort(`-${options.sortBy.field}`).exec(),
-        pagination: createPagination(options, totalDocument)
-      };
-    } else
-      return {
-        total: totalDocument,
-        items: await query.sort(`${options.sortBy.field}`).exec(),
-        pagination: createPagination(options, totalDocument)
-      };
+    const items =
+      options.sortBy.type === 'desc'
+        ? await query.sort(`-${options.sortBy.field}`).exec()
+        : await query.sort(`${options.sortBy.field}`).exec();
+    return {
+      items,
+      meta: createCastcleMeta(items)
+    };
   };
 
   /**
@@ -687,7 +686,7 @@ export class ContentService {
   getCommentsFromContent = async (
     content: ContentDocument,
     options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
-  ) => {
+  ): Promise<CommentsReponse> => {
     const filter = {
       targetRef: {
         $id: content._id,
@@ -703,7 +702,6 @@ export class ContentService {
         `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
       )
       .exec();
-    const totalDocument = await this._commentModel.count(filter).exec();
     const engagements = await this._engagementModel.find({
       targetRef: {
         $in: rootComments.map((rComment) => ({
@@ -718,9 +716,8 @@ export class ContentService {
       )
     );
     return {
-      total: totalDocument,
-      items: payloads,
-      pagination: createPagination(options, totalDocument)
+      payload: payloads,
+      meta: createCastcleMeta(rootComments)
     };
   };
 

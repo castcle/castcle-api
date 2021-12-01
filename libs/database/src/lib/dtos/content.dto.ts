@@ -24,7 +24,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { CastcleImage } from '.';
 import { UserVerified } from '../schemas/user.schema';
-import { Pagination } from './common.dto';
+import { CastcleMeta } from './common.dto';
 import { CastcleQueryOptions } from './common.dto';
 export class Url {
   @ApiProperty()
@@ -269,13 +269,13 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
 
 export class ContentResponse {
   @ApiProperty()
-  payload: ContentPayloadDto;
+  payload: ContentPayloadItem;
 }
 
 export class ContentsResponse {
   @ApiProperty()
-  payload: ContentPayloadDto[];
+  payload: ContentPayloadItem[];
 
   @ApiProperty()
-  pagination: Pagination;
+  meta: CastcleMeta;
 }

@@ -23,6 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  createCastcleMeta,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures
@@ -286,15 +287,12 @@ describe('PageController', () => {
         $credential: userCredential,
         $language: 'th'
       } as any);
-
+      const items = createResult
+        .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
+        .map((c) => c.toContentPayloadItem());
       expect(response).toEqual({
-        payload: createResult
-          .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toContentPayload()),
-        pagination: {
-          self: 1,
-          limit: 25
-        }
+        payload: items,
+        meta: createCastcleMeta(createResult)
       });
     });
   });

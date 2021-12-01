@@ -30,7 +30,11 @@ import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import { createCastcleMeta, createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
 import { QueryOption } from '../dtos/common.dto';
-import { transformContentPayloadToV2 } from '../schemas/content.schema';
+import {
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+  transformContentPayloadToV2
+} from '../schemas/content.schema';
 import {
   GuestFeedItemPayload,
   GuestFeedItemPayloadItem
@@ -137,7 +141,11 @@ export class RankerService {
               author.avatar = new Image(author.avatar).toSignUrls();
             else author.avatar = Configs.DefaultAvatarImages;
             return author;
-          })
+          }),
+        casts: documents
+          .filter((doc) => doc.content.originalPost)
+          .map((c) => c.content.originalPost)
+          .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
       },
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
