@@ -1008,11 +1008,7 @@ export class ContentService {
     accountCountryCode?: string
   ) => {
     const filter: any = {
-      countryCode: accountCountryCode
-        ? {
-            $regex: new RegExp(`^${accountCountryCode}`, 'i')
-          }
-        : 'EN'
+      countryCode: accountCountryCode ? accountCountryCode.toLowerCase() : 'en'
     };
     if (query.sinceId) {
       const guestFeeditemSince = await this._guestFeedItemModel
