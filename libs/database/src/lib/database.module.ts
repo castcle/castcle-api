@@ -57,6 +57,7 @@ import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/socialSync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { createCastcleMeta } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -165,5 +166,6 @@ export {
   HashtagService,
   SearchService,
   CountryService,
-  SocialSyncService
+  SocialSyncService,
+  createCastcleMeta
 };

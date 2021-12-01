@@ -124,7 +124,7 @@ export class ContentController {
         id: content._id
       });
       const payloadResponse = {
-        payload: content.toContentPayload()
+        payload: content.toContentPayloadItem()
       };
       return payloadResponse;
     } else {
@@ -153,7 +153,7 @@ export class ContentController {
       );
     console.debug('engagements', engagements);
     return {
-      payload: content.toContentPayload(engagements)
+      payload: content.toContentPayloadItem(engagements)
     } as ContentResponse;
   }
 
@@ -233,7 +233,7 @@ export class ContentController {
     );
     console.debug('updatedContent', updatedContent);
     return {
-      payload: updatedContent.toContentPayload()
+      payload: updatedContent.toContentPayloadItem()
     } as ContentResponse;
   }
 
@@ -281,8 +281,8 @@ export class ContentController {
     });
 
     return {
-      payload: result.items.map((c) => c.toContentPayload()),
-      pagination: result.pagination
+      payload: result.items.map((c) => c.toContentPayloadItem()),
+      meta: result.meta
     } as ContentsResponse;
   }
 
@@ -355,7 +355,7 @@ export class ContentController {
       user
     );
     return {
-      payload: result.recastContent.toContentPayload()
+      payload: result.recastContent.toContentPayloadItem()
     } as ContentResponse;
   }
 
@@ -381,7 +381,7 @@ export class ContentController {
       message
     );
     return {
-      payload: result.quoteContent.toContentPayload()
+      payload: result.quoteContent.toContentPayloadItem()
     } as ContentResponse;
   }
 }

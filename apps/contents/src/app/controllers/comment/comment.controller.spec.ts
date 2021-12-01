@@ -217,7 +217,7 @@ describe('CommentController', () => {
         content._id,
         userCredentialRequest
       );
-      expect(comments.payload[0].like.count).toEqual(1);
+      expect(comments.payload[0].metrics.likeCount).toEqual(1);
       const result = await commentController.likeComment(
         content._id,
         rootCommentId,
@@ -228,7 +228,7 @@ describe('CommentController', () => {
         content._id,
         userCredentialRequest
       );
-      expect(comments2.payload[0].like.count).toEqual(1);
+      expect(comments2.payload[0].metrics.likeCount).toEqual(1);
     });
   });
   describe('#unlikeComment()', () => {
@@ -249,7 +249,7 @@ describe('CommentController', () => {
         content._id,
         userCredentialRequest
       );
-      expect(comments.payload[0].like.count).toEqual(0);
+      expect(comments.payload[0].metrics.likeCount).toEqual(0);
       const result = await commentController.unlikeComment(
         content._id,
         rootCommentId,
@@ -260,7 +260,7 @@ describe('CommentController', () => {
         content._id,
         userCredentialRequest
       );
-      expect(comments2.payload[0].like.count).toEqual(0);
+      expect(comments2.payload[0].metrics.likeCount).toEqual(0);
     });
   });
   describe('#updateComment()', () => {

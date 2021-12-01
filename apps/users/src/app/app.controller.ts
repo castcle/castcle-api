@@ -54,6 +54,7 @@ import {
 } from '@castcle-api/utils/pipes';
 import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { createCastcleMeta } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { TargetCastcleDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
@@ -280,9 +281,9 @@ export class UserController {
               String(eng.targetRef.oid) === String(item.id)
           );
 
-          return item.toContentPayload(subEngagements);
+          return item.toContentPayloadItem(subEngagements);
         }),
-        pagination: contents.pagination
+        meta: createCastcleMeta(contents.items)
       } as ContentsResponse;
     } else
       throw new CastcleException(
@@ -390,9 +391,9 @@ export class UserController {
             String(eng.targetRef.$id) === String(item._id) ||
             String(eng.targetRef.oid) === String(item.id)
         );
-        return item.toContentPayload(subEngagements);
+        return item.toContentPayloadItem(subEngagements);
       }),
-      pagination: contents.pagination
+      meta: createCastcleMeta(contents.items)
     } as ContentsResponse;
   }
 

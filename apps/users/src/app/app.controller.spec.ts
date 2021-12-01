@@ -258,10 +258,11 @@ describe('AppController', () => {
       expectedResponse = {
         payload: contents
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c, index) => c.toContentPayload(enagementContents[index])),
-        pagination: {
-          limit: 25,
-          self: 1
+          .map((c, index) => c.toContentPayloadItem(enagementContents[index])),
+        meta: {
+          resultCount: contents.length,
+          oldestId: contents[0].id,
+          newestId: contents[contents.length - 1].id
         }
       };
       console.debug('liked stuff', JSON.stringify(expectedResponse));
@@ -273,7 +274,7 @@ describe('AppController', () => {
           $language: 'th'
         } as any);
         //expect(response).toEqual(expectedResponse);
-        expect(response.pagination).toEqual(expectedResponse.pagination);
+        expect(response.meta).toEqual(expectedResponse.meta);
       });
     });
 
@@ -283,7 +284,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th'
         } as any);
-        expect(response.pagination).toEqual(expectedResponse.pagination);
+        expect(response.meta).toEqual(expectedResponse.meta);
       });
     });
   });
