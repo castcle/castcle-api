@@ -20,18 +20,19 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { UpdateUserDto, UpdateModelUserDto } from '@castcle-api/database/dtos';
+import { UpdateModelUserDto, UpdateUserDto } from '@castcle-api/database/dtos';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
-  Image,
   AVARTAR_SIZE_CONFIGS,
-  COMMON_SIZE_CONFIGS
+  COMMON_SIZE_CONFIGS,
+  Image
 } from '@castcle-api/utils/aws';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-
 import { Injectable } from '@nestjs/common';
-
 @Injectable()
 export class AppService {
+  private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
+
   getData(): { message: string } {
     return { message: 'Welcome to users!' };
   }
@@ -47,8 +48,8 @@ export class AppService {
     req: CredentialRequest
   ): Promise<UpdateModelUserDto> {
     let updateModelUserDto: UpdateModelUserDto = {};
-    console.debug('uploading info', `avatar-${req.$credential.account._id}`);
-    console.debug(body);
+    this.logger.debug(`uploading info avatar-${req.$credential.account._id}`);
+    this.logger.debug(body);
     updateModelUserDto.images = {};
     if (body.images && body.images.avatar) {
       const avatar = await Image.upload(body.images.avatar as string, {
@@ -58,7 +59,7 @@ export class AppService {
         subpath: `account_${req.$credential.account._id}`
       });
       updateModelUserDto.images.avatar = avatar.image;
-      console.debug('after update', updateModelUserDto);
+      this.logger.debug('after update', updateModelUserDto);
     }
     if (body.images && body.images.cover) {
       const cover = await Image.upload(body.images.cover as string, {

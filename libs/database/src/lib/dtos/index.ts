@@ -77,6 +77,7 @@ import {
   TopTrendsQueryOptions,
   TopTrendsResponse
 } from './search.dto';
+import { SocialSyncDto } from './social-sync.dto';
 import { UserAccessTokenPayload } from './token.dto';
 import {
   FollowResponse,
@@ -148,5 +149,6 @@ export {
   Url,
   CountryPayloadDto,
   CountryResponse,
-  DEFAULT_COUNTRY_QUERY_OPTIONS
+  DEFAULT_COUNTRY_QUERY_OPTIONS,
+  SocialSyncDto
 };

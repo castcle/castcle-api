@@ -24,6 +24,8 @@
 import {
   AuthenticationService,
   ContentService,
+  createCastcleMeta,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -32,6 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   FollowResponse,
   PagesResponse,
+  SocialSyncDto,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
@@ -52,9 +55,17 @@ import {
   SortByEnum,
   SortByPipe
 } from '@castcle-api/utils/pipes';
-import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req
+} from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { createCastcleMeta } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { TargetCastcleDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
@@ -74,7 +85,8 @@ export class UserController {
     private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private socialSyncService: SocialSyncService
   ) {
     logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
@@ -571,5 +583,37 @@ export class UserController {
       payload: followers.items,
       pagination: followers.pagination
     } as FollowResponse;
+  }
+
+  /**
+   * User {castcleId} sync social media for auto post
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Post('syncSocial')
+  async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
+    logger.log(`Start create sync social.`);
+    logger.log(JSON.stringify(body));
+
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (user) {
+      logger.log(`create sync data.`);
+      await this.socialSyncService.create(user, body);
+      return '';
+    } else {
+      logger.error(`Can't get user data`);
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
   }
 }

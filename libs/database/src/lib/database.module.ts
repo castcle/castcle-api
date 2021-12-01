@@ -54,7 +54,7 @@ import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
-import { SocialSyncService } from './services/socialSync.service';
+import { SocialSyncService } from './services/social-sync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 import { createCastcleMeta } from './utils/common';

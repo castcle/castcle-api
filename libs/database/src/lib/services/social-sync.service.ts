@@ -21,20 +21,23 @@
  * or have any questions.
  */
 
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EntityVisibility } from '../dtos';
+import { EntityVisibility, SocialSyncDto } from '../dtos';
 import { Author } from '../dtos/content.dto';
-import { LanguagePayloadDto } from '../dtos/language.dto';
 import { UserDocument, UserType } from '../schemas';
-import { SocialSyncDocument } from '../schemas/socialSync.schema';
-
+import { SocialSync } from '../schemas/socialSync.schema';
 @Injectable()
 export class SocialSyncService {
+  private readonly logger = new CastLogger(
+    SocialSyncService.name,
+    CastLoggerOptions
+  );
   constructor(
     @InjectModel('SocialSync')
-    public _socialSyncModel: Model<SocialSyncDocument>
+    private socialSyncModel: Model<SocialSync>
   ) {}
 
   /**
@@ -51,16 +54,17 @@ export class SocialSyncService {
       'author.id': user._id,
       visibility: EntityVisibility.Publish
     };
-    return this._socialSyncModel.find(findFilter).exec();
+    return this.socialSyncModel.find(findFilter).exec();
   }
 
   /**
-   * transform User => Author object for create a content and use as DTO
-   * @private
+   * create new language
    * @param {UserDocument} user
-   * @returns {Author}
+   * @param {SocialSyncDto} socialSync payload
+   * @returns {SocialSyncDocument} return new social sync document
    */
-  _getAuthorFromUser = (user: UserDocument) => {
+  async create(user: UserDocument, socialSync: SocialSyncDto) {
+    this.logger.log('save social sync.');
     const author: Author = {
       id: user._id,
       avatar: user.profile?.images?.avatar || null,
@@ -70,38 +74,16 @@ export class SocialSyncService {
       type: user.type === UserType.Page ? UserType.Page : UserType.People,
       verified: user.verified
     };
-    return author;
-  };
 
-  /**
-   * create new language
-   * @param {LanguagePayloadDto} language language payload
-   * @returns {LanguageDocument} return new language document
-   */
-  async create(user: UserDocument, language: SocialSyncDto) {
-    console.log('save language');
-    const createResult = await new this._socialSyncModel(language).save();
-    return createResult;
-
-    const author = this._getAuthorFromUser(user);
-    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
-      const hashtags =
-        this.hashtagService.extractHashtagFromContentPayload(payload);
-
-      await this.hashtagService.createFromTags(hashtags);
-
-      return {
-        author,
-        payload,
-        revisionCount: 0,
-        type,
-        visibility: EntityVisibility.Publish,
-        hashtags: hashtags
-      } as Content;
+    const newSocialSync = new this.socialSyncModel({
+      author: author,
+      provider: socialSync.provider,
+      socialId: socialSync.uid,
+      userName: socialSync.userName,
+      displayName: socialSync.displayName,
+      avatar: socialSync.avatar,
+      active: socialSync.active ? socialSync.active : true
     });
-
-    const contents = await Promise.all(contentsToCreate);
-
-    return this._contentModel.create(contents);
+    return newSocialSync.save();
   }
 }
