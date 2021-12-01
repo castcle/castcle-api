@@ -611,8 +611,8 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(1);
-          expect(comments.items[0].reply.length).toEqual(1);
+          expect(comments.meta.resultCount).toEqual(1);
+          expect(comments.payload[0].reply.length).toEqual(1);
         });
       });
       describe('#likeComment()', () => {
@@ -662,8 +662,8 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(1);
-          expect(comments.items[0].reply.length).toEqual(0);
+          expect(comments.meta.resultCount).toEqual(1);
+          expect(comments.payload[0].reply.length).toEqual(0);
           //expect reply engagement = 0
           const postComment = await service._commentModel
             .findById(rootComment._id)
@@ -677,7 +677,7 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(0);
+          expect(comments.meta.resultCount).toEqual(0);
         });
       });
     });

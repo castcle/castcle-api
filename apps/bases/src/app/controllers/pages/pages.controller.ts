@@ -36,7 +36,8 @@ import { AppService } from '../../app.service';
 import {
   AuthenticationService,
   UserService,
-  ContentService
+  ContentService,
+  createCastcleMeta
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
@@ -377,8 +378,8 @@ export class PageController {
       type: contentTypeOption
     });
     return {
-      payload: contents.items.map((c) => c.toContentPayload()),
-      pagination: contents.pagination
+      payload: contents.items.map((c) => c.toContentPayloadItem()),
+      meta: createCastcleMeta(contents.items)
     };
   }
 }

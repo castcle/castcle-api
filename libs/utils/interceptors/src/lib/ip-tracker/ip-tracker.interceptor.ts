@@ -68,9 +68,15 @@ export class IpTrackerInterceptor implements NestInterceptor {
     request.$ip = util.getIpFromRequest(request);
     try {
       request.$geolocation = await lastValueFrom(
-        this.httpService
-          .get<CheckIp>(getIPUrl(request.$ip))
-          .pipe(map(({ data }) => data))
+        this.httpService.get<CheckIp>(getIPUrl(request.$ip)).pipe(
+          map(
+            ({ data }) =>
+              ({
+                continentCode: data.continentCode.toLowerCase(),
+                countryCode: data.countryCode.toLowerCase()
+              } as CheckIp)
+          )
+        )
       );
     } catch (error) {
       console.debug('wrong ip', request.$ip);

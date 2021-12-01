@@ -153,10 +153,7 @@ export class CommentController {
       page: pageOption,
       sortBy: sortByOption
     });
-    return {
-      payload: comments.items,
-      pagination: comments.pagination
-    };
+    return comments;
   }
 
   @ApiBody({
