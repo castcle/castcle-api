@@ -21,7 +21,10 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS
+} from '@castcle-api/database/dtos';
 import {
   AccountDocument,
   CredentialDocument,
@@ -343,8 +346,8 @@ export class AppService {
     const user = await this.userService.getUserFromCredential(credential);
     const pages = user
       ? await this.userService.getUserPages(user, {
-          limit: DEFAULT_CONTENT_QUERY_OPTIONS.limit,
-          page: DEFAULT_CONTENT_QUERY_OPTIONS.page,
+          limit: DEFAULT_QUERY_OPTIONS.limit,
+          page: DEFAULT_QUERY_OPTIONS.page,
           sortBy: DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
         })
       : null;

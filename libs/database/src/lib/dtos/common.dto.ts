@@ -83,9 +83,9 @@ export class CastcleMeta {
 }
 
 export class QueryOption {
-  mode: 'current' | 'history';
+  mode?: 'current' | 'history';
   hashtag?: string;
-  maxResults: number;
+  maxResults?: number;
   sinceId?: string;
   untilId?: string;
 }

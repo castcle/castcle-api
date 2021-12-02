@@ -30,6 +30,7 @@ import {
   ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS,
   FollowResponse,
   PagesResponse,
   UpdateUserDto,
@@ -123,9 +124,9 @@ export class UserController {
   async getMentions(
     @Query('keyword', KeywordPipe) keyword: string,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
     console.debug('Call Get mention');
     const result = await this.userService.getMentionsFromPublic(keyword, {
@@ -252,10 +253,10 @@ export class UserController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
+    @Query('maxResult', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
@@ -263,9 +264,9 @@ export class UserController {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user, {
-        limit: limitOption,
+        sinceId: sinceId,
         sortBy: sortByOption,
-        page: pageOption,
+        untilId: untilId,
         type: contentTypeOption
       });
       const engagements =
@@ -306,7 +307,7 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page
     //TODO !!! hack it to make ui display more than 25
     /*@Query('limit', LimitPipe)
     limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit*/
@@ -364,10 +365,9 @@ export class UserController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('maxResults', LimitPipe) maxResults?: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
@@ -375,8 +375,9 @@ export class UserController {
     const user = await this._getUserFromIdOrCastcleId(id, req);
 
     const contents = await this.contentService.getContentsFromUser(user, {
-      limit: limitOption,
-      page: pageOption,
+      maxResults: maxResults,
+      sinceId: sinceId,
+      untilId: untilId,
       sortBy: sortByOption,
       type: contentTypeOption
     });
@@ -500,9 +501,9 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
@@ -554,9 +555,9 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {

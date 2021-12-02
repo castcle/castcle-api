@@ -245,16 +245,14 @@ describe('User Service', () => {
       const currentUser = await service.getUserFromCredential(
         result.credentialDocument
       );
-      const allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
+      const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
       const page = await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
         castcleId: 'npop2'
       });
-      const allPages2 = await service.getAllPages(
-        DEFAULT_CONTENT_QUERY_OPTIONS
-      );
+      const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages2.items.length).toEqual(2);
     });
   });
@@ -265,7 +263,7 @@ describe('User Service', () => {
       );
       const ownPages = await service.getUserPages(
         currentUser,
-        DEFAULT_CONTENT_QUERY_OPTIONS
+        DEFAULT_QUERY_OPTIONS
       );
       expect(ownPages.items.length).toEqual(2);
       expect(ownPages.pagination.limit).toEqual(25);
