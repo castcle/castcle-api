@@ -244,6 +244,18 @@ export class UserController {
   @ApiOkResponse({
     type: ContentsResponse
   })
+  @ApiQuery({
+    name: 'sinceId',
+    required: false
+  })
+  @ApiQuery({
+    name: 'untilId',
+    required: false
+  })
+  @ApiQuery({
+    name: 'maxResult',
+    required: false
+  })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/contents')
   async getMyContents(
