@@ -48,6 +48,12 @@ export class Relationship extends CastcleBase {
   //TODO !!! might need to change to embed followedUser and user instead
   @Prop()
   isFollowPage: boolean;
+
+  @Prop({ default: true })
+  following: boolean;
+
+  @Prop({ default: false })
+  blocking: boolean;
 }
 
 export type RelationshipDocument = Relationship & Document;
