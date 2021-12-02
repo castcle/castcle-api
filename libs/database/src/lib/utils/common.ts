@@ -21,8 +21,12 @@
  * or have any questions.
  */
 
-import { CastcleMeta, CastcleQueryOptions } from '../dtos/common.dto';
-import { Document } from 'mongoose';
+import {
+  CastcleMeta,
+  CastcleQueryOptions,
+  QueryOption
+} from '../dtos/common.dto';
+import { Document, Model } from 'mongoose';
 import { Pagination } from '../dtos/common.dto';
 
 /**
@@ -55,4 +59,23 @@ export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
   }
   meta.resultCount = documents.length;
   return meta;
+};
+
+export const createCastcleFilter = async (
+  filter: any,
+  queryOption: QueryOption,
+  model: Model<any>
+) => {
+  if (queryOption.sinceId) {
+    const sinceDocument = await model.findById(queryOption.sinceId).exec();
+    filter.createdAt = {
+      $gt: new Date(sinceDocument['createdAt'])
+    };
+  } else if (queryOption.untilId) {
+    const untilDocument = await model.findById(queryOption.untilId).exec();
+    filter.createdAt = {
+      $lt: new Date(untilDocument['createdAt'])
+    };
+  }
+  return filter;
 };
