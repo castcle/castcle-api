@@ -21,15 +21,49 @@
  * or have any questions.
  */
 
-import { DatabaseModule } from '@castcle-api/database';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { Module } from '@nestjs/common';
-import { YoutubeController } from './youtube.controller';
-import { YoutubeService } from './youtube.service';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { Author, AuthorSchema } from './author.schema';
+import { CastcleBase } from './base.schema';
 
-@Module({
-  imports: [DatabaseModule, UtilsAwsModule],
-  controllers: [YoutubeController],
-  providers: [YoutubeService]
-})
-export class YoutubeModule {}
+export enum SocialProvider {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram',
+  Apple = 'apple'
+}
+
+@Schema({ timestamps: true })
+export class SocialSync extends CastcleBase {
+  @Prop({ required: true, type: AuthorSchema })
+  author: Author;
+
+  @Prop({ required: true })
+  provider: SocialProvider;
+
+  @Prop({ required: true })
+  socialId: string;
+
+  @Prop()
+  userName?: string;
+
+  @Prop()
+  displayName?: string;
+
+  @Prop()
+  avatar?: string;
+
+  @Prop({ default: false })
+  active: boolean;
+
+  @Prop()
+  latestSyncId?: string;
+
+  @Prop()
+  latestSyncDate?: Date;
+}
+
+export type SocialSyncDocument = SocialSync & Document;
+
+export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
