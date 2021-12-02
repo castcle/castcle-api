@@ -70,6 +70,7 @@ import {
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
 import { ContentLikeBody } from '../dtos/content.dto';
+import { SaveContentPipe } from './pipes/save-content.pipe';
 
 @CastcleController('1.0')
 @Controller()
@@ -98,7 +99,7 @@ export class ContentController {
   @CastcleBasicAuth()
   @Post('feed')
   async createFeedContent(
-    @Body() body: SaveContentDto,
+    @Body(new SaveContentPipe()) body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
     const ability = this.caslAbility.createForCredential(req.$credential);
@@ -214,7 +215,7 @@ export class ContentController {
   @Put(':id')
   async updateContentFromId(
     @Param('id') id: string,
-    @Body() body: SaveContentDto,
+    @Body(new SaveContentPipe()) body: SaveContentDto,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
