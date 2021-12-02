@@ -775,12 +775,16 @@ describe('AppController', () => {
           registerResult.accessToken
         );
         const response = await appController.verificationPassword(
-          '2@HelloWorld',
+          {
+            objective: OtpObjective.ChangePassword,
+            password: '2@HelloWorld'
+          },
           {
             $credential: credential,
             $language: 'th'
           } as any
         );
+
         expect(response.refCode).toBeDefined();
         genRefCode = response.refCode;
         expect(response.expiresTime).toBeDefined();
@@ -794,6 +798,7 @@ describe('AppController', () => {
         );
         const response = await appController.changePasswordSubmit(
           {
+            objective: OtpObjective.ChangePassword,
             newPassword: '2@BlaBlaBla',
             refCode: genRefCode
           },

@@ -32,7 +32,7 @@ import { CastcleBase } from './base.schema';
 export enum OtpObjective {
   ChangePassword = 'change_password',
   ForgotPassword = 'forgot_password',
-  VerifyPassword = 'verify_password'
+  VerifyMobile = 'verify_mobile'
 }
 
 export type OtpDocument = Otp & IOtp;
@@ -64,6 +64,9 @@ export class Otp extends CastcleBase {
 
   @Prop()
   channel: string;
+
+  @Prop({ default: false })
+  isVerify: boolean;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
@@ -83,7 +86,8 @@ export interface OtpModel extends Model<OtpDocument> {
     accountId: any,
     objective: OtpObjective,
     requestId: string,
-    channel: string
+    channel: string,
+    verify: boolean
   ): Promise<OtpDocument>;
 }
 
@@ -91,7 +95,8 @@ OtpSchema.statics.generate = async function (
   accountId: any,
   objective: OtpObjective,
   requestId: string,
-  channel: string
+  channel: string,
+  verify: boolean
 ) {
   let newRefCode: string;
   let otpFindingResult;
@@ -111,6 +116,7 @@ OtpSchema.statics.generate = async function (
     requestId: requestId,
     retry: 0,
     channel: channel,
+    isVerify: verify,
     expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000)
   });
   return otp.save();

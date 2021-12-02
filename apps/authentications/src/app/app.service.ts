@@ -57,11 +57,11 @@ import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/ver
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
-  ForgotPasswordVerificationOtpDto,
   RequestOtpDto,
   SocialConnect,
   SocialConnectInfo,
-  TokenResponse
+  TokenResponse,
+  verificationOtpDto
 } from './dtos/dto';
 
 const getIPUrl = (ip: string) =>
@@ -443,18 +443,18 @@ export class AppService {
       );
     }
 
+    const exOtp = await this.validateExistingOtp(
+      objective,
+      credential,
+      request.channel
+    );
+    if (exOtp) {
+      this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
+      return exOtp;
+    }
+
     switch (request.channel) {
       case 'email': {
-        const exOtp = await this.validateExistingOtp(
-          objective,
-          credential,
-          request.channel
-        );
-        if (exOtp) {
-          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
-          return exOtp;
-        }
-
         account = await this.getAccountFromEmail(
           request.payload.email,
           credential.$language
@@ -472,16 +472,6 @@ export class AppService {
         break;
       }
       case 'mobile': {
-        const exOtp = await this.validateExistingOtp(
-          objective,
-          credential,
-          request.channel
-        );
-        if (exOtp) {
-          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
-          return exOtp;
-        }
-
         account = await this.getAccountFromMobile(
           request.payload.mobileNumber,
           request.payload.countryCode,
@@ -531,7 +521,8 @@ export class AppService {
       account,
       objective,
       credential.$credential.account._id,
-      otpChannel
+      otpChannel,
+      false
     );
     this.logger.log('Send Otp');
     try {
@@ -572,12 +563,12 @@ export class AppService {
   }
   /**
    * forgot password verify Otp
-   * @param {ForgotPasswordVerificationOtpDto} request
+   * @param {verificationOtpDto} request
    * @param {CredentialRequest} credential
    * @returns {OtpDocument} Opt data
    */
   async verificationOTP(
-    request: ForgotPasswordVerificationOtpDto,
+    request: verificationOtpDto,
     credential: CredentialRequest
   ) {
     const limitRetry = 3;
@@ -687,12 +678,13 @@ export class AppService {
       this.logger.log('delete old otp');
       await otp.delete();
 
-      this.logger.log('generate new otp');
+      this.logger.log('generate new otp with verify pass');
       const newOtp = await this.authService.generateOtp(
         account,
-        OtpObjective.VerifyPassword,
+        objective,
         credential.$credential.account._id,
-        request.channel
+        request.channel,
+        true
       );
       return newOtp;
     } else {
@@ -718,7 +710,14 @@ export class AppService {
       credential.$credential.account._id,
       data.refCode
     );
-    if (otp && otp.isValid() && otp.action === OtpObjective.VerifyPassword) {
+
+    if (
+      otp &&
+      otp.isValid() &&
+      (otp.action === OtpObjective.ChangePassword ||
+        otp.action === OtpObjective.ForgotPassword) &&
+      otp.isVerify
+    ) {
       this.logger.log('Validate password');
       this.validatePassword(data.newPassword, credential.$language);
       this.logger.log('Get Account');
