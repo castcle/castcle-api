@@ -21,27 +21,14 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+export enum YoutubeThumbnailQuality {
+  HQ = 'hqdefault',
+  MQ = 'mqdefault',
+  SD = 'sddefault'
+}
 
-export class SocialSyncDto {
-  @ApiProperty()
-  castcleId: string;
-
-  @ApiProperty()
-  provider: string;
-
-  @ApiProperty()
-  uid: string;
-
-  @ApiProperty()
-  userName: string;
-
-  @ApiProperty()
-  displayName: string;
-
-  @ApiProperty()
-  avatar: string;
-
-  @ApiProperty()
-  active: boolean;
+export class Youtube {
+  static thumbnailUrlFromId(id: string, quality = YoutubeThumbnailQuality.HQ) {
+    return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
+  }
 }

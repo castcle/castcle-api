@@ -42,8 +42,8 @@ import { LanguageSchema } from './schemas/language.schema';
 import { NotificationSchema } from './schemas/notification.schema';
 import { OtpSchema } from './schemas/otp.schema';
 import { RelationshipSchemaFactory } from './schemas/relationship.schema';
-import { RevisionchemaFactory } from './schemas/revision.schema';
-import { SocialSyncSchema } from './schemas/socialSync.schema';
+import { RevisionSchemaFactory } from './schemas/revision.schema';
+import { SocialSyncSchema } from './schemas/social-sync.schema';
 import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
@@ -75,7 +75,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'Credential', useFactory: CredentialSchemaFactory },
   { name: 'Relationship', useFactory: RelationshipSchemaFactory },
-  { name: 'Revision', useFactory: RevisionchemaFactory },
+  { name: 'Revision', useFactory: RevisionSchemaFactory },
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
@@ -166,6 +166,6 @@ export {
   HashtagService,
   SearchService,
   CountryService,
-  SocialSyncService,
-  createCastcleMeta
+  createCastcleMeta,
+  SocialSyncService
 };

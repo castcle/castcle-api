@@ -235,7 +235,7 @@ export class SocialSyncDto {
   uid: string;
 
   @ApiProperty()
-  username?: string;
+  userName?: string;
 
   @ApiProperty()
   displayName?: string;
