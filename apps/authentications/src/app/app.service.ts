@@ -21,10 +21,7 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import {
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS
-} from '@castcle-api/database/dtos';
+import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountDocument,
   CredentialDocument,
