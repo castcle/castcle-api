@@ -383,6 +383,7 @@ export const UserSchemaFactory = (
         user: (this as UserDocument)._id,
         followedUser: followedUser._id,
         isFollowPage: false,
+        blocking: false,
         visibility: EntityVisibility.Publish
       };
       if ((followedUser as UserDocument).type === UserType.Page)
@@ -394,7 +395,8 @@ export const UserSchemaFactory = (
             followedUser: followedUser._id
           },
           {
-            $setOnInsert: setObject
+            $setOnInsert: setObject,
+            $set: { following: true }
           },
           {
             upsert: true
@@ -412,20 +414,38 @@ export const UserSchemaFactory = (
 
   UserSchema.methods.unfollow = async function (followedUser: UserDocument) {
     const session = await relationshipModel.startSession();
+
     await session.withTransaction(async () => {
-      const result = await relationshipModel
-        .deleteOne({
+      const relationship = await relationshipModel
+        .findOne({
           user: this._id,
-          followedUser: followedUser._id
+          followedUser: followedUser._id,
+          following: true
         })
         .exec();
-      if (result.deletedCount === 1) {
-        (this as UserDocument).followedCount--;
-        followedUser.followerCount--;
-        await Promise.all([this.save(), followedUser.save()]);
+
+      if (!relationship) return;
+
+      (this as UserDocument).followedCount--;
+      followedUser.followerCount--;
+
+      const toSaveDocuments: Promise<any>[] = [
+        this.save(),
+        followedUser.save()
+      ];
+
+      if (relationship.blocking) {
+        relationship.following = false;
+        toSaveDocuments.push(relationship.save());
+      } else {
+        toSaveDocuments.push(relationship.delete());
       }
+
+      await Promise.all(toSaveDocuments);
     });
+
     session.endSession();
   };
+
   return UserSchema;
 };
