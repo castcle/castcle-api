@@ -236,7 +236,10 @@ export class AuthenticationService {
 
   getAccountFromEmail = (email: string) =>
     this._accountModel
-      .findOne({ email: email, visibility: EntityVisibility.Publish })
+      .findOne({
+        email: { $regex: new RegExp('^' + email.toLowerCase() + '$', 'i') },
+        visibility: EntityVisibility.Publish
+      })
       .exec();
 
   getAccountFromMobile = (mobileNo: string, countryCode: string) =>
