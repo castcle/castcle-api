@@ -34,7 +34,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument } from '../schemas/content.schema';
 import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
-import { SaveContentDto, ShortPayload } from '../dtos/content.dto';
+import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
@@ -66,6 +66,7 @@ describe('ContentService', () => {
   let userService: UserService;
   let authService: AuthenticationService;
   let user: UserDocument;
+  let author: Author;
   /**
    * For multiple user
    */
@@ -162,6 +163,15 @@ describe('ContentService', () => {
       password: 'test1234567'
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
+    author = {
+      id: user.id,
+      type: 'page',
+      castcleId: 'castcleId',
+      displayName: 'Castcle',
+      verified: { email: true, mobile: true, official: true, social: true },
+      followed: true,
+      avatar: null
+    };
   });
 
   afterAll(async () => {
@@ -691,13 +701,15 @@ describe('ContentService', () => {
     } as SaveContentDto;
 
     it('should not create any content', async () => {
-      const contents = await service.createContentsFromUser(user, []);
+      const contents = await service.createContentsFromAuthor(author, []);
 
       expect(contents).toBeUndefined();
     });
 
     it('should create a short content from timeline', async () => {
-      const contents = await service.createContentsFromUser(user, [contentDto]);
+      const contents = await service.createContentsFromAuthor(author, [
+        contentDto
+      ]);
       const content = contents?.[0];
 
       expect(contents.length).toEqual(1);

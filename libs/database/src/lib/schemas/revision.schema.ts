@@ -39,7 +39,7 @@ export class Revision extends CastcleBase {
   payload: Content | Comment;
 }
 
-export const Revisionchema = SchemaFactory.createForClass(Revision);
-export const RevisionchemaFactory = (): mongoose.Schema<any> => {
-  return Revisionchema;
+export const RevisionSchema = SchemaFactory.createForClass(Revision);
+export const RevisionSchemaFactory = (): mongoose.Schema<any> => {
+  return RevisionSchema;
 };
