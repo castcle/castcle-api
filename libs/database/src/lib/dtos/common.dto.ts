@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Author, ContentPayloadItem } from '.';
 
 export class Pagination {
   @ApiProperty()
@@ -102,4 +103,9 @@ export class CastcleParticipate {
   commented?: boolean;
   quoted?: boolean;
   recasted?: boolean;
+}
+
+export class CastcleIncludes {
+  users: Author[];
+  casts?: ContentPayloadItem[];
 }

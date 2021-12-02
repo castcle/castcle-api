@@ -129,7 +129,9 @@ export class RankerService {
               name: 'For You',
               slug: 'forYou'
             },
-            payload: transformContentPayloadToV2(item.content, []),
+            payload: signedContentPayloadItem(
+              transformContentPayloadToV2(item.content, [])
+            ),
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),

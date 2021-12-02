@@ -122,10 +122,8 @@ export class ContentController {
         action: CastcleQueueAction.CreateFeedItemToEveryOne,
         id: content._id
       });
-      const payloadResponse = {
-        payload: content.toContentPayloadItem()
-      };
-      return payloadResponse;
+
+      return this.appService.convertContentToContentReponse(content);
     } else {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -151,9 +149,7 @@ export class ContentController {
         user
       );
     console.debug('engagements', engagements);
-    return {
-      payload: content.toContentPayloadItem(engagements)
-    } as ContentResponse;
+    return this.appService.convertContentToContentReponse(content, engagements);
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards

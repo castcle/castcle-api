@@ -22,7 +22,7 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
-import { CastcleImage } from '.';
+import { CastcleImage, CastcleIncludes } from '.';
 import { UserVerified } from '../schemas/user.schema';
 import { CastcleMeta, QueryOption } from './common.dto';
 export class Url {
@@ -276,6 +276,8 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
 export class ContentResponse {
   @ApiProperty()
   payload: ContentPayloadItem;
+  @ApiProperty()
+  includes: CastcleIncludes;
 }
 
 export class ContentsResponse {
