@@ -5,6 +5,7 @@ import { Downloader } from './downloader';
 import { Image, ImageUploadOptions } from './image';
 import { Uploader, UploadOptions } from './uploader';
 import { AVARTAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
+import { predictContents } from './functions/predict-content';
 
 @Module({
   imports: [
@@ -25,5 +26,6 @@ export {
   Downloader,
   AVARTAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
-  ImageUploadOptions
+  ImageUploadOptions,
+  predictContents
 };

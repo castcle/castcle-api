@@ -60,5 +60,6 @@ export const Configs = {
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
     fullHd:
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
-  }
+  },
+  PredictFunctionName: 'dev-ds-predict-per-ct-predictor'
 };
