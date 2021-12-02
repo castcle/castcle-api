@@ -407,15 +407,19 @@ export class AppService {
   ) {
     const allExistingOtp =
       await this.authService.getAllOtpFromRequestIdObjective(
-        credential.$credential.account._id,
-        objective
+        credential.$credential.account._id
       );
 
     let existingOtp = null;
     for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
-      if (exOtp.isValid() && exOtp.channel === channel) {
+      if (
+        exOtp.isValid() &&
+        exOtp.channel === channel &&
+        exOtp.action === objective
+      ) {
         existingOtp = exOtp;
       } else {
+        if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
         this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         await exOtp.delete();
       }
@@ -515,27 +519,30 @@ export class AppService {
     credential: CredentialRequest,
     otpChannel: string
   ): Promise<OtpDocument> {
-    this.logger.log('Generate Ref Code');
+    let sid = '';
+    this.logger.log('Send Otp');
+    try {
+      this.logger.log('get user from account');
+      const user = await this.authService.getUserFromAccount(account);
+      const result = await this.twillioClient.requestOtp(
+        reciever,
+        twillioChannel,
+        this.buildTemplateMessage(objective, user)
+      );
+      sid = result.sid;
+    } catch (ex) {
+      this.logger.error('Twillio Error : ' + ex.message, ex);
+    }
 
+    this.logger.log('Generate Ref Code');
     const otp = await this.authService.generateOtp(
       account,
       objective,
       credential.$credential.account._id,
       otpChannel,
-      false
+      false,
+      sid
     );
-    this.logger.log('Send Otp');
-    try {
-      this.logger.log('get user from account');
-      const user = await this.authService.getUserFromAccount(account);
-      await this.twillioClient.requestOtp(
-        reciever,
-        twillioChannel,
-        this.buildTemplateMessage(objective, user)
-      );
-    } catch (ex) {
-      this.logger.error('Twillio Error : ' + ex.message, ex);
-    }
     return otp;
   }
 
