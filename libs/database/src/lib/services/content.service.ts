@@ -36,7 +36,11 @@ import {
   EngagementDocument,
   EngagementType
 } from '../schemas/engagement.schema';
-import { createCastcleMeta, createPagination } from '../utils/common';
+import {
+  createCastcleFilter,
+  createCastcleMeta,
+  createPagination
+} from '../utils/common';
 import {
   SaveContentDto,
   Author,
@@ -270,19 +274,17 @@ export class ContentService {
     user: UserDocument,
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    const findFilter: {
-      'author.id': any;
-      type?: string;
-      visibility: EntityVisibility;
-    } = {
+    let findFilter: any = {
       'author.id': user._id,
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    const query = this._contentModel
-      .find(findFilter)
-      .skip(options.page - 1)
-      .limit(options.limit);
+    findFilter = await createCastcleFilter(
+      findFilter,
+      options,
+      this._contentModel
+    );
+    const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel.count(findFilter).exec();
     if (options.sortBy.type === 'desc') {
       return {
@@ -531,17 +533,16 @@ export class ContentService {
   getContentsForAdmin = async (
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    const findFilter: {
-      type?: string;
-      visibility: EntityVisibility;
-    } = {
+    let findFilter: any = {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    const query = this._contentModel
-      .find(findFilter)
-      .skip(options.page - 1)
-      .limit(options.limit);
+    findFilter = await createCastcleFilter(
+      findFilter,
+      options,
+      this._contentModel
+    );
+    const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'
         ? await query.sort(`-${options.sortBy.field}`).exec()
