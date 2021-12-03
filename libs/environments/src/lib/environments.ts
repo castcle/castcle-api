@@ -59,6 +59,7 @@ export const Environment = {
   DB_OPTIONS,
   DB_TEST_IN_DB: process.env.DB_TEST_IN_DB === 'yes',
   // Mail Service
+  SMTP_ADMIN_EMAIL: process.env.SMTP_ADMIN_EMAIL,
   SMTP_USERNAME: process.env.SMTP_USERNAME,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_HOST: process.env.SMTP_HOST,
