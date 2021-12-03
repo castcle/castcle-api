@@ -200,6 +200,7 @@ UserSchema.methods.toUserResponse = async function (followed = false) {
 
 UserSchema.methods.toPageResponse = function () {
   return {
+    id: (this as UserDocument)._id,
     castcleId: (this as UserDocument).displayId,
     displayName: (this as UserDocument).displayName,
     images: {

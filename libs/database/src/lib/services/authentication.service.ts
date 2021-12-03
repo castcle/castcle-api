@@ -407,19 +407,25 @@ export class AuthenticationService {
    * @param {AccountDocument} account
    * @param {OtpObjective} objective
    * @param {string} requestId
+   * @param {string} channel
+   * @param {boolean} verify
    * @returns {OtpDocument}
    */
   async generateOtp(
     account: AccountDocument,
     objective: OtpObjective,
     requestId: string,
-    channel: string
+    channel: string,
+    verify: boolean,
+    sid?: string
   ) {
     const otp = await this._otpModel.generate(
       account._id,
       objective,
       requestId,
-      channel
+      channel,
+      verify,
+      sid
     );
     return otp;
   }
@@ -444,11 +450,14 @@ export class AuthenticationService {
    */
   async getAllOtpFromRequestIdObjective(
     requestId: string,
-    objective: OtpObjective
+    objective?: OtpObjective
   ) {
-    return this._otpModel
-      .find({ requestId: requestId, action: objective })
-      .exec();
+    const filter = () => {
+      if (objective) return { requestId: requestId, action: objective };
+      else return { requestId: requestId };
+    };
+
+    return this._otpModel.find(filter).exec();
   }
 
   /**

@@ -51,6 +51,7 @@ export class TwillioClient {
   );
 
   async requestOtp(receiver: string, channel: TwillioChannel, config: any) {
+    this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
     return this.client.verify
       .services(this.env.twilioOtpSid)
       .verifications.create({
@@ -69,9 +70,24 @@ export class TwillioClient {
   }
 
   async verifyOtp(receiver: string, otp: string) {
+    this.logger.log(`Verify otp receiver: ${receiver}`);
     return this.client.verify
       .services(this.env.twilioOtpSid)
       .verificationChecks.create({ to: receiver, code: otp })
+      .then((verification) => {
+        return verification;
+      })
+      .catch((error) => {
+        throw new Error(error);
+      });
+  }
+
+  async canceledOtp(sid: string) {
+    this.logger.log(`Cancel otp sid: ${sid}`);
+    return this.client.verify
+      .services(this.env.twilioOtpSid)
+      .verifications(sid)
+      .update({ status: 'canceled' })
       .then((verification) => {
         return verification;
       })
