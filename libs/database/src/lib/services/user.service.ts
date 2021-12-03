@@ -40,9 +40,23 @@ import {
 import { ContentService } from './content.service';
 import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { createTransport } from 'nodemailer';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 
 @Injectable()
 export class UserService {
+  private logger = new CastLogger(UserService.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD
+    }
+  });
+
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
@@ -634,5 +648,24 @@ export class UserService {
 
     relationship.blocking = false;
     await relationship.save();
+  }
+
+  async reportUser(
+    user: UserDocument,
+    reportedUser: UserDocument,
+    message: string
+  ) {
+    if (!reportedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const mail = await this.transporter.sendMail({
+      from: 'castcle-noreply" <no-reply@castcle.com>',
+      subject: `Report user: ${reportedUser._id}`,
+      to: Environment.SMTP_ADMIN_EMAIL,
+      text: `User ${reportedUser.displayName} (${reportedUser._id}) has been reported.
+Reported by: ${user.displayName} (${user._id})
+Message: ${message}`
+    });
+
+    this.logger.log(`Report has been submitted ${mail.messageId}`);
   }
 }
