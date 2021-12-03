@@ -137,6 +137,9 @@ export class PageModelDto {
 
 export class PageResponseDto {
   @ApiProperty()
+  id: string;
+
+  @ApiProperty()
   castcleId: string;
 
   @ApiProperty()
