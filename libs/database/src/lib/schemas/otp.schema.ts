@@ -67,6 +67,9 @@ export class Otp extends CastcleBase {
 
   @Prop({ default: false })
   isVerify: boolean;
+
+  @Prop()
+  sid: string;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
@@ -87,7 +90,8 @@ export interface OtpModel extends Model<OtpDocument> {
     objective: OtpObjective,
     requestId: string,
     channel: string,
-    verify: boolean
+    verify: boolean,
+    sid?: string
   ): Promise<OtpDocument>;
 }
 
@@ -96,7 +100,8 @@ OtpSchema.statics.generate = async function (
   objective: OtpObjective,
   requestId: string,
   channel: string,
-  verify: boolean
+  verify: boolean,
+  sid?: string
 ) {
   let newRefCode: string;
   let otpFindingResult;
@@ -117,6 +122,7 @@ OtpSchema.statics.generate = async function (
     retry: 0,
     channel: channel,
     isVerify: verify,
+    sid: sid,
     expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000)
   });
   return otp.save();
