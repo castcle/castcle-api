@@ -24,6 +24,7 @@
 import {
   AuthenticationService,
   ContentService,
+  createCastcleMeta,
   UserService
 } from '@castcle-api/database';
 import {
@@ -55,9 +56,8 @@ import {
 } from '@castcle-api/utils/pipes';
 import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { createCastcleMeta } from '@castcle-api/database';
 import { AppService } from './app.service';
-import { TargetCastcleDto } from './dtos/dto';
+import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -585,5 +585,37 @@ export class UserController {
       payload: followers.items,
       pagination: followers.pagination
     } as FollowResponse;
+  }
+
+  @ApiBody({
+    type: UpdateMobileDto
+  })
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.Users)
+  @Put('me/mobile')
+  async updateMobile(
+    @Req() req: CredentialRequest,
+    @Body() body: UpdateMobileDto
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (user) {
+      await this.userService.updateMobile(
+        user.id,
+        req.$credential.account._id,
+        body.countryCode,
+        body.mobileNumber
+      );
+      const afterUpdateUser = await this.userService.getUserFromCredential(
+        req.$credential
+      );
+      const response = await afterUpdateUser.toUserResponse();
+      return response;
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
   }
 }

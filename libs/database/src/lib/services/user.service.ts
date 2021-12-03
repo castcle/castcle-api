@@ -20,28 +20,31 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Model } from 'mongoose';
-import * as mongoose from 'mongoose';
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument, UserType, UserModel } from '../schemas/user.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import * as mongoose from 'mongoose';
+import { Model } from 'mongoose';
 import { CastcleQueryOptions } from '../dtos';
-import { createPagination } from '../utils/common';
 import {
   CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility
 } from '../dtos/common.dto';
+import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { CredentialDocument, CredentialModel } from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
+import { ContentDocument } from '../schemas/content.schema';
+import { RelationshipDocument } from '../schemas/relationship.schema';
+import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
+import { createPagination } from '../utils/common';
 import { ContentService } from './content.service';
-import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new CastLogger(UserService.name, CastLoggerOptions);
+
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
@@ -592,5 +595,34 @@ export class UserService {
       users: users,
       pagination: pagination
     };
+  };
+
+  updateMobile = async (
+    userId: string,
+    accountId: string,
+    countryCode: string,
+    mobileNumber: string
+  ) => {
+    await this._accountModel
+      .updateOne(
+        { _id: accountId },
+        {
+          'mobile.countryCode': countryCode,
+          'mobile.number': mobileNumber
+        }
+      )
+      .exec();
+    this.logger.log('Success update mobile to account');
+
+    const user = this._userModel
+      .updateOne(
+        { _id: userId },
+        {
+          'verified.mobile': true
+        }
+      )
+      .exec();
+    this.logger.log('Success update verify mobile to user');
+    return user;
   };
 }

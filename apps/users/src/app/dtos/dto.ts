@@ -26,3 +26,17 @@ export class TargetCastcleDto {
   @ApiProperty()
   targetCastcleId: string;
 }
+
+export class UpdateMobileDto {
+  @ApiProperty()
+  objective: string;
+
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  countryCode: string;
+
+  @ApiProperty()
+  mobileNumber: string;
+}
