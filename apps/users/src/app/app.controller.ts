@@ -64,13 +64,16 @@ import {
   Post,
   Put,
   Query,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { createCastcleMeta } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { TargetCastcleDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
+import { ReportUserDto } from './dtos';
 
 let logger: CastLogger;
 
@@ -627,5 +630,23 @@ export class UserController {
     );
 
     await this.userService.unblockUser(user, unblockUser);
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/reporting')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Body() { message }: ReportUserDto,
+    @Param('id') reportedUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const reportedUser = await this.authService.getUserFromCastcleId(
+      reportedUserId
+    );
+
+    await this.userService.reportUser(user, reportedUser, message);
   }
 }
