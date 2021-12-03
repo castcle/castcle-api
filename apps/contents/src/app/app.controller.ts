@@ -58,7 +58,6 @@ import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
 import {
   ContentTypePipe,
   LimitPipe,
-  PagePipe,
   SortByPipe
 } from '@castcle-api/utils/pipes';
 import { CaslAbilityFactory, Action } from '@castcle-api/casl';
@@ -123,10 +122,8 @@ export class ContentController {
         action: CastcleQueueAction.CreateFeedItemToEveryOne,
         id: content._id
       });
-      const payloadResponse = {
-        payload: content.toContentPayloadItem()
-      };
-      return payloadResponse;
+
+      return this.appService.convertContentToContentReponse(content);
     } else {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -152,9 +149,7 @@ export class ContentController {
         user
       );
     console.debug('engagements', engagements);
-    return {
-      payload: content.toContentPayloadItem(engagements)
-    } as ContentResponse;
+    return this.appService.convertContentToContentReponse(content, engagements);
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
@@ -266,16 +261,16 @@ export class ContentController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('maxResults', LimitPipe) maxResults?: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ) {
     const result = await this.contentService.getContentsForAdmin({
-      limit: limitOption,
-      page: pageOption,
+      maxResults: maxResults,
+      sinceId: sinceId,
+      untilId: untilId,
       sortBy: sortByOption,
       type: contentTypeOption
     });
