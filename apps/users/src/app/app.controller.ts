@@ -37,7 +37,7 @@ import {
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
+import { OtpObjective, UserType } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -599,14 +599,46 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: UpdateMobileDto
   ) {
+    const objective: OtpObjective = <OtpObjective>body.objective;
+    if (
+      !objective ||
+      !Object.values(OtpObjective).includes(objective) ||
+      objective !== OtpObjective.VerifyMobile
+    ) {
+      logger.error(`Invalid objective.`);
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+
+    logger.log('Get otp document');
+    const otp = await this.authService.getOtpFromRequestIdRefCode(
+      req.$credential.account._id,
+      body.refCode
+    );
+
+    if (
+      !otp ||
+      !otp.isValid() ||
+      otp.action !== OtpObjective.VerifyMobile ||
+      !otp.isVerify
+    ) {
+      logger.error(`Invalid Ref Code`);
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+    }
+
+    logger.log('Get user document');
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
+      logger.log('Update mobile number');
       await this.userService.updateMobile(
         user.id,
         req.$credential.account._id,
         body.countryCode,
         body.mobileNumber
       );
+      logger.log('Get update user document');
       const afterUpdateUser = await this.userService.getUserFromCredential(
         req.$credential
       );
