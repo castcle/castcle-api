@@ -288,6 +288,15 @@ export class AuthenticationService {
   getAccountActivationFromVerifyToken = (token: string) =>
     this._accountActivationModel.findOne({ verifyToken: token }).exec();
 
+  getEmailFromVerifyToken = async (token: string) => {
+    const accountActivation = await this._accountActivationModel
+      .findOne({ verifyToken: token })
+      .populate('account')
+      .exec();
+
+    return accountActivation?.account?.email;
+  };
+
   getAccountActivationFromCredential = (credential: CredentialDocument) =>
     this._accountActivationModel
       .findOne({ account: credential.account })
