@@ -59,8 +59,9 @@ import {
   ApiOkResponse,
   ApiResponse
 } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AppService } from './app.service';
+import { getEmailVerificationHtml } from './configs';
 import {
   ChangePasswordBody,
   CheckEmailExistDto,
@@ -593,20 +594,19 @@ export class AuthenticationController {
    */
   @Version(VERSION_NEUTRAL)
   @Get('verify')
-  verify(@Req() req: Request) {
-    const verifyUrl =
-      Host.getHostname(req) + '/authentications/verificationEmail';
-    if (req.query.code) {
-      return `Verifying you will get a pop up once the process is done.<script>fetch("${verifyUrl}", {
-        headers: {
-          "Accept-Version": "1.0",
-          Accept: "*/*",
-          "Accept-Language": "th",
-          Authorization: "Bearer ${req.query.code}"
-        },
-        method: "POST"
-      }).then(r => r.json()).then(r => { console.log(r);alert('verification success');})</script>`;
-    } else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+  async verify(@Req() req: CredentialRequest) {
+    if (!req.query.code) {
+      throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+    }
+
+    const token = req.query.code as string;
+    await this.verificationEmail({
+      $language: req.$language,
+      $token: token
+    } as TokenRequest);
+    const email = await this.authService.getEmailFromVerifyToken(token);
+
+    return getEmailVerificationHtml(email);
   }
 
   @ApiOkResponse({
