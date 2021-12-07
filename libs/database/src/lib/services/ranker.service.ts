@@ -41,7 +41,6 @@ import {
 } from '../dtos/guestFeedItem.dto';
 import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
-import { Author } from '../dtos/content.dto';
 
 @Injectable()
 export class RankerService {
@@ -113,6 +112,21 @@ export class RankerService {
       .limit(query.maxResults)
       .sort('-aggregator.createTime')
       .exec();
+
+    const users = documents
+      .map((item) => item.content.author)
+      .filter(
+        (author, index, authors) =>
+          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
+          index
+      );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+
     return {
       payload: documents.map(
         (item) =>
@@ -136,14 +150,7 @@ export class RankerService {
           } as GuestFeedItemPayloadItem)
       ),
       includes: {
-        users: documents
-          .map((item) => item.content.author as Author)
-          .map((author) => {
-            if (author.avatar)
-              author.avatar = new Image(author.avatar).toSignUrls();
-            else author.avatar = Configs.DefaultAvatarImages;
-            return author;
-          }),
+        users,
         casts: documents
           .filter((doc) => doc.content.originalPost)
           .map((c) => c.content.originalPost)
