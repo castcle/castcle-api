@@ -390,13 +390,6 @@ export class AppService {
       mobile,
       countryCode
     );
-    if (!account) {
-      this.logger.error(
-        'Can not get Account from mobile : ' + countryCode + mobile
-      );
-      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
-    }
-
     return account;
   }
 
@@ -430,6 +423,53 @@ export class AppService {
     }
 
     return existingOtp;
+  }
+
+  private async getAccount(
+    mobileNumber: string,
+    countryCode: string,
+    objective: OtpObjective,
+    credential: CredentialRequest
+  ) {
+    let account = await this.getAccountFromMobile(
+      mobileNumber,
+      countryCode,
+      credential.$language
+    );
+
+    if (!account && objective !== OtpObjective.VerifyMobile) {
+      this.logger.error(
+        'Can not get Account from mobile : ' + countryCode + mobileNumber
+      );
+      throw new CastcleException(
+        CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+        credential.$language
+      );
+    }
+
+    if (account && objective === OtpObjective.VerifyMobile) {
+      this.logger.error('Dupplicate mobile : ' + countryCode + mobileNumber);
+      throw new CastcleException(
+        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+        credential.$language
+      );
+    }
+
+    if (!account && objective === OtpObjective.VerifyMobile) {
+      account = await this.authService.getAccountFromCredential(
+        credential.$credential
+      );
+
+      if (account.isGuest) {
+        this.logger.error('Can not verify mobile from guest account');
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credential.$language
+        );
+      }
+    }
+
+    return account;
   }
 
   /**
@@ -480,10 +520,11 @@ export class AppService {
         break;
       }
       case 'mobile': {
-        account = await this.getAccountFromMobile(
+        account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
-          credential.$language
+          objective,
+          credential
         );
 
         this.logger.log('Create OTP');
@@ -605,12 +646,13 @@ export class AppService {
         break;
       }
       case 'mobile': {
-        account = await this.getAccountFromMobile(
+        account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
-          credential.$language
+          objective,
+          credential
         );
-        receiver = account.mobile.countryCode + account.mobile.number;
+        receiver = request.payload.countryCode + request.payload.mobileNumber;
 
         break;
       }
