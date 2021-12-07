@@ -49,6 +49,11 @@ import { CommentDocument, ContentDocument } from '../schemas';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { HashtagService } from './hashtag.service';
 
+jest.mock('@castcle-api/logger');
+jest.mock('nodemailer', () => ({
+  createTransport: () => ({ sendMail: jest.fn() })
+}));
+
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -897,6 +902,41 @@ describe('User Service', () => {
       expect(relationship).not.toBeNull();
       expect(relationship.blocking).toBeFalsy();
       expect(relationship.following).toBeTruthy();
+    });
+  });
+
+  describe('#reportUser', () => {
+    let user1: UserDocument;
+    let user2: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to report is not found', async () => {
+      await expect(
+        service.reportUser(user1, null, 'message')
+      ).rejects.toMatchObject({ response: { code: '4001' } });
+    });
+
+    it('should report user by sending email to Castcle admin', async () => {
+      jest
+        .spyOn((service as any).transporter, 'sendMail')
+        .mockReturnValueOnce({ messageId: 1 });
+
+      await service.reportUser(user1, user2, 'message');
+      expect((service as any).logger.log).toBeCalled();
+      expect((service as any).transporter.sendMail).toBeCalled();
     });
   });
 });

@@ -63,7 +63,7 @@ export const Environment = {
   SMTP_USERNAME: process.env.SMTP_USERNAME,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT as unknown as number,
+  SMTP_PORT: Number(process.env.SMTP_PORT) || 465,
   // JWT
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN as unknown as number,
