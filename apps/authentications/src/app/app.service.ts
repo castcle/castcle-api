@@ -419,7 +419,11 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
+        try {
+          if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
+        } catch (ex) {
+          this.logger.warn('Can not cancel otp:', ex);
+        }
         this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         await exOtp.delete();
       }
