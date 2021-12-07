@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Model } from 'mongoose';
-import * as mongoose from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -39,6 +39,7 @@ import {
 } from '../dtos/common.dto';
 import { ContentService } from './content.service';
 import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
+import { CastcleException } from '@castcle-api/utils/exception';
 
 @Injectable()
 export class UserService {
@@ -78,7 +79,7 @@ export class UserService {
 
   getUserFromId = (id: string) => {
     try {
-      if (mongoose.Types.ObjectId(id)) {
+      if (Types.ObjectId(id)) {
         return this._userModel
           .findOne({
             _id: id,
@@ -238,7 +239,9 @@ export class UserService {
       .findOne({
         user: credentialUser._id,
         followedUser: user._id,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
+        blocking: false,
+        following: true
       })
       .exec();
     return Boolean(relationship);
@@ -280,15 +283,15 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    console.log('-----getFollower----');
-
-    const filter: any = {
+    const filter: FilterQuery<RelationshipDocument> = {
       followedUser: user._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
+      blocking: false,
+      following: true
     };
-    console.log('filter', filter);
+
     if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+      filter.isFollowPage = queryOption.type === UserType.Page;
     let query = this._relationshipModel
       .find(filter)
       .skip(queryOption.page - 1)
@@ -319,12 +322,15 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: { user: any; isFollowPage?: boolean; visibility?: any } = {
+    const filter: FilterQuery<RelationshipDocument> = {
       user: user._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
+      blocking: false,
+      following: true
     };
+
     if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+      filter.isFollowPage = queryOption.type === UserType.Page;
     let query = this._relationshipModel
       .find(filter)
       .populate('followedUser')
@@ -441,7 +447,7 @@ export class UserService {
    */
   _removeAllFollower = async (user: UserDocument) => {
     const relationships = await this._relationshipModel
-      .find({ user: user._id })
+      .find({ user: user._id, blocking: false, following: true })
       .exec();
     console.log('relationships', relationships);
     //make all relationship hidden
@@ -593,4 +599,40 @@ export class UserService {
       pagination: pagination
     };
   };
+
+  async blockUser(user: UserDocument, blockedUser?: UserDocument) {
+    if (!blockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const relationship = {
+      user: user._id,
+      followedUser: blockedUser._id,
+      visibility: EntityVisibility.Publish,
+      following: false
+    };
+
+    await this._relationshipModel
+      .updateOne(
+        { user: user._id, followedUser: blockedUser._id },
+        { $setOnInsert: relationship, $set: { blocking: true } },
+        { upsert: true }
+      )
+      .exec();
+  }
+
+  async unblockUser(user: UserDocument, unblockedUser: UserDocument) {
+    if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const relationship = await this._relationshipModel
+      .findOne({
+        user: user._id,
+        followedUser: unblockedUser._id,
+        blocking: true
+      })
+      .exec();
+
+    if (!relationship) return;
+
+    relationship.blocking = false;
+    await relationship.save();
+  }
 }
