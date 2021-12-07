@@ -20,30 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
 import {
+  AuthenticationService,
+  ContentService,
   HashtagService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  UserService
 } from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import {
-  UserService,
-  AuthenticationService,
-  ContentService
-} from '@castcle-api/database';
-import { UserController } from './app.controller';
-import { AppService } from './app.service';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import {
-  CredentialDocument,
-  UserDocument,
-  AccountDocument,
-  ContentDocument,
-  EngagementDocument
-} from '@castcle-api/database/schemas';
 import {
   ContentsResponse,
   ContentType,
@@ -51,10 +35,25 @@ import {
   ShortPayload,
   UpdateUserDto
 } from '@castcle-api/database/dtos';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
+import {
+  AccountDocument,
+  ContentDocument,
+  CredentialDocument,
+  EngagementDocument,
+  OtpObjective,
+  UserDocument
+} from '@castcle-api/database/schemas';
+import { Configs } from '@castcle-api/environments';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { Configs } from '@castcle-api/environments';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { UserController } from './app.controller';
+import { AppService } from './app.service';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -346,6 +345,169 @@ describe('AppController', () => {
       );
       const user = await service.getUserFromCredential(userCredential);
       expect(user).toBeNull();
+    });
+  });
+
+  describe('updateMobile', () => {
+    let user: UserDocument;
+    let account: AccountDocument;
+    let credential;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      account = mocksUsers[0].account;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should update mobile successful', async () => {
+      const countryCode = '+66';
+      const mobile = '0815678900';
+      const newOtp = await authService.generateOtp(
+        account,
+        OtpObjective.VerifyMobile,
+        credential.$credential.account._id,
+        'mobile',
+        true
+      );
+
+      const request = {
+        objective: 'verify_mobile',
+        refCode: newOtp.refCode,
+        countryCode: countryCode,
+        mobileNumber: mobile
+      };
+
+      const result = await appController.updateMobile(credential, request);
+
+      expect(result).toBeDefined;
+      expect(result.verified.mobile).toEqual(true);
+    });
+
+    it('should return Exception when get dupplicate mobile number', async () => {
+      const countryCode = '+66';
+      const mobile = '0815678900';
+      const newOtp = await authService.generateOtp(
+        account,
+        OtpObjective.VerifyMobile,
+        credential.$credential.account._id,
+        'mobile',
+        false
+      );
+
+      const request = {
+        objective: 'verify_mobile',
+        refCode: newOtp.refCode,
+        countryCode: countryCode,
+        mobileNumber: mobile
+      };
+
+      await expect(
+        appController.updateMobile(credential, request)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+          credential.$language
+        )
+      );
+    });
+
+    it('should return Exception when get invalid ref code', async () => {
+      const countryCode = '+66';
+      const mobile = '0815678901';
+      const newOtp = await authService.generateOtp(
+        account,
+        OtpObjective.VerifyMobile,
+        credential.$credential.account._id,
+        'mobile',
+        false
+      );
+
+      const request = {
+        objective: 'verify_mobile',
+        refCode: newOtp.refCode,
+        countryCode: countryCode,
+        mobileNumber: mobile
+      };
+
+      await expect(
+        appController.updateMobile(credential, request)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVLAID_REFCODE,
+          credential.$language
+        )
+      );
+    });
+
+    it('should return Exception when get guest account', async () => {
+      const countryCode = '+66';
+      const mobile = '0815678901';
+      const newOtp = await authService.generateOtp(
+        account,
+        OtpObjective.VerifyMobile,
+        credential.$credential.account._id,
+        'mobile',
+        true
+      );
+
+      const request = {
+        objective: 'verify_mobile',
+        refCode: newOtp.refCode,
+        countryCode: countryCode,
+        mobileNumber: mobile
+      };
+
+      const guest = await authService.createAccount({
+        device: 'iPhone8',
+        deviceUUID: 'ios8',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th']
+      });
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.updateMobile(credentialGuest, request)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.INVALID_ACCESS_TOKEN,
+          credential.$language
+        )
+      );
+    });
+
+    it('should return exception when wrong objective', async () => {
+      const countryCode = '+66';
+      const mobile = '0815678900';
+
+      const request = {
+        objective: 'forgot_password',
+        refCode: '12345678',
+        countryCode: countryCode,
+        mobileNumber: mobile
+      };
+
+      await expect(
+        appController.updateMobile(credential, request)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credential.$language
+        )
+      );
     });
   });
 });

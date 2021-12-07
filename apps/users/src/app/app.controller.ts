@@ -676,12 +676,12 @@ export class UserController {
       );
     }
 
-    const account = await this.authService.getAccountFromMobile(
+    const dupAccount = await this.authService.getAccountFromMobile(
       body.mobileNumber,
       body.countryCode
     );
 
-    if (account) {
+    if (dupAccount) {
       logger.error(
         'Dupplicate mobile : ' + body.countryCode + body.mobileNumber
       );
@@ -708,12 +708,15 @@ export class UserController {
     }
 
     logger.log('Get user document');
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
+    if (account && user && !account.isGuest) {
       logger.log('Update mobile number');
       await this.userService.updateMobile(
         user.id,
-        req.$credential.account._id,
+        account._id,
         body.countryCode,
         body.mobileNumber
       );
