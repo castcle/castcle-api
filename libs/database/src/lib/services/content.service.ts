@@ -76,10 +76,24 @@ import {
 } from '../dtos/guestFeedItem.dto';
 import { QueryOption } from '../dtos/common.dto';
 import { Image } from '@castcle-api/utils/aws';
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { CastLogger } from '@castcle-api/logger';
+import { createTransport } from 'nodemailer';
 
 @Injectable()
 export class ContentService {
+  private logger = new CastLogger(ContentService.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD
+    }
+  });
+
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
@@ -1064,4 +1078,40 @@ export class ContentService {
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };
+
+  async reportContent(
+    user: UserDocument,
+    content: ContentDocument,
+    message: string
+  ) {
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagementFilter = {
+      user: user._id,
+      targetRef: { $ref: 'content', $id: content._id },
+      type: EngagementType.Report
+    };
+
+    await this._engagementModel
+      .updateOne(
+        engagementFilter,
+        { ...engagementFilter, visibility: EntityVisibility.Publish },
+        { upsert: true }
+      )
+      .exec();
+
+    const mail = await this.transporter.sendMail({
+      from: 'castcle-noreply" <no-reply@castcle.com>',
+      subject: `Report content: ${content._id}`,
+      to: Environment.SMTP_ADMIN_EMAIL,
+      text: `Content: ${content._id} has been reported.
+Author: ${content.author.displayName} (${content.author.id})
+Body: ${JSON.stringify(content.payload, null, 2)}
+
+ReportedBy: ${user.displayName} (${user._id})
+Message: ${message}`
+    });
+
+    this.logger.log(`Report has been submitted ${mail.messageId}`);
+  }
 }
