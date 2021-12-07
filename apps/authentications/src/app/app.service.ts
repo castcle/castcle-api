@@ -371,28 +371,6 @@ export class AppService {
     return account;
   }
 
-  /**
-   * get and validate account from mobile
-   * @param {string} mobileNumber
-   * @param {string} countryCode
-   * @param {string} lang
-   * @returns {AccountDocument} account document
-   */
-  async getAccountFromMobile(
-    mobileNumber: string,
-    countryCode: string,
-    lang: string
-  ) {
-    const mobile =
-      mobileNumber.charAt(0) === '0' ? mobileNumber.slice(1) : mobileNumber;
-    this.logger.log('Get Account from mobile');
-    const account = await this.authService.getAccountFromMobile(
-      mobile,
-      countryCode
-    );
-    return account;
-  }
-
   private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
@@ -431,10 +409,10 @@ export class AppService {
     objective: OtpObjective,
     credential: CredentialRequest
   ) {
-    let account = await this.getAccountFromMobile(
+    this.logger.log('Get Account from mobile');
+    let account = await this.authService.getAccountFromMobile(
       mobileNumber,
-      countryCode,
-      credential.$language
+      countryCode
     );
 
     if (!account && objective !== OtpObjective.VerifyMobile) {

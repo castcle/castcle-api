@@ -242,14 +242,22 @@ export class AuthenticationService {
       })
       .exec();
 
-  getAccountFromMobile = (mobileNo: string, countryCode: string) =>
-    this._accountModel
+  /**
+   * get and validate account from mobile
+   * @param {string} mobileNumber
+   * @param {string} countryCode
+   * @returns {AccountDocument} account document
+   */
+  getAccountFromMobile = (mobileNo: string, countryCode: string) => {
+    const mobile = mobileNo.charAt(0) === '0' ? mobileNo.slice(1) : mobileNo;
+    return this._accountModel
       .findOne({
         'mobile.countryCode': countryCode,
-        'mobile.number': new RegExp(`${mobileNo}`),
+        'mobile.number': new RegExp(`${mobile}`),
         visibility: EntityVisibility.Publish
       })
       .exec();
+  };
 
   /**
    *  For check if account is existed

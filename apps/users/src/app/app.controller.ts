@@ -650,6 +650,7 @@ export class UserController {
     await this.userService.reportUser(user, reportedUser, message);
   }
 
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiBody({
     type: UpdateMobileDto
   })
@@ -671,6 +672,21 @@ export class UserController {
       logger.error(`Invalid objective.`);
       throw new CastcleException(
         CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+
+    const account = await this.authService.getAccountFromMobile(
+      body.mobileNumber,
+      body.countryCode
+    );
+
+    if (account) {
+      logger.error(
+        'Dupplicate mobile : ' + body.countryCode + body.mobileNumber
+      );
+      throw new CastcleException(
+        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
         req.$language
       );
     }
