@@ -222,6 +222,7 @@ export class ContentPayloadItem {
     commented: boolean;
     quoted: boolean;
     recasted: boolean;
+    reported: boolean;
   };
   authorId: string;
   'createdAt': string;

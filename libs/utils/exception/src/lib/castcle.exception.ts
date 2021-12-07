@@ -81,4 +81,5 @@ export class CastcleException extends HttpException {
   }
 
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
+  static CONTENT_NOT_FOUND = new CastcleException('5003');
 }
