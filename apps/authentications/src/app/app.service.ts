@@ -510,7 +510,7 @@ export class AppService {
 
         this.logger.log('Create Otp');
         otp = await this.generateAndSendOtp(
-          account.email,
+          request.payload.email,
           account,
           TwillioChannel.Email,
           objective,
@@ -529,7 +529,7 @@ export class AppService {
 
         this.logger.log('Create OTP');
         otp = await this.generateAndSendOtp(
-          account.mobile.countryCode + account.mobile.number,
+          request.payload.countryCode + request.payload.mobileNumber,
           account,
           TwillioChannel.Mobile,
           objective,
@@ -642,7 +642,7 @@ export class AppService {
           request.payload.email,
           credential.$language
         );
-        receiver = account.email;
+        receiver = request.payload.email;
         break;
       }
       case 'mobile': {
