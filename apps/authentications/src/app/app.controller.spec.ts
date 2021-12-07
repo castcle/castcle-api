@@ -1937,6 +1937,59 @@ describe('AppController', () => {
         )
       );
     });
+
+    it('should return exception when duplicate mobile number', async () => {
+      const request = () => {
+        return {
+          objective: 'verify_mobile',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        };
+      };
+      await expect(
+        appController.requestOTP(request(), credentialGuest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return exception when use guest account', async () => {
+      const testId = 'registerId34';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompop12341';
+      const guest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
+      );
+
+      const request = () => {
+        return {
+          objective: 'verify_mobile',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: '815678989'
+          }
+        };
+      };
+      await expect(appController.requestOTP(request(), guest)).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, guest.$language)
+      );
+    });
   });
 
   describe('verificationOTP', () => {
