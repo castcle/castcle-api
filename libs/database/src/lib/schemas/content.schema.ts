@@ -257,20 +257,13 @@ export const toUnsignedContentPayloadItem = (
       recastCount: content.engagements?.recast?.count | 0
     },
     participate: {
-      liked: engagements.find((item) => item.type === EngagementType.Like)
-        ? true
-        : false,
-      commented: engagements.find(
-        (item) => item.type === EngagementType.Comment
-      )
-        ? true
-        : false,
-      quoted: engagements.find((item) => item.type === EngagementType.Quote)
-        ? true
-        : false,
-      recasted: engagements.find((item) => item.type === EngagementType.Recast)
-        ? true
-        : false
+      liked: engagements.some(({ type }) => type === EngagementType.Like),
+      commented: engagements.some(
+        ({ type }) => type === EngagementType.Comment
+      ),
+      quoted: engagements.some(({ type }) => type === EngagementType.Quote),
+      recasted: engagements.some(({ type }) => type === EngagementType.Recast),
+      reported: engagements.some(({ type }) => type === EngagementType.Report)
     },
 
     createdAt: content.createdAt.toISOString(),
