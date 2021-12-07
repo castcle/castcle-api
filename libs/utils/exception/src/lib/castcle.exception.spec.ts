@@ -55,6 +55,7 @@ describe('CastcleException', () => {
     'EMAIL_OR_PHONE_IS_EXIST',
     'PAGE_IS_EXIST',
     'USER_ID_IS_EXIST',
+    'MOBILE_NUMBER_IS_EXIST',
     'FEATURE_NOT_EXIST',
     'PAYLOAD_TYPE_MISMATCH',
     'NOTIFICATION_NOT_FOUND'
