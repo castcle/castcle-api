@@ -42,6 +42,11 @@ import { UserVerified } from '../schemas/user.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
 
+jest.mock('@castcle-api/logger');
+jest.mock('nodemailer', () => ({
+  createTransport: () => ({ sendMail: jest.fn() })
+}));
+
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: { host: '0.0.0.0', port: 6380 }
@@ -715,6 +720,45 @@ describe('ContentService', () => {
       expect(contents.length).toEqual(1);
       expect(content.type).toEqual(ContentType.Short);
       expect(content.payload).toEqual({ message });
+    });
+  });
+
+  describe('#reportContent', () => {
+    const reportingMessage = 'reporting message';
+    let content: ContentDocument;
+
+    beforeAll(async () => {
+      content = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: { message: 'report content test' },
+        castcleId: user.displayId
+      });
+    });
+
+    it('should throw CONTENT_NOT_FOUND when content to report is not found', async () => {
+      await expect(
+        service.reportContent(user, null, reportingMessage)
+      ).rejects.toMatchObject({ response: { code: '5003' } });
+    });
+
+    it('should report content by sending email to Castcle admin', async () => {
+      jest
+        .spyOn((service as any).transporter, 'sendMail')
+        .mockReturnValueOnce({ messageId: 1 });
+
+      await service.reportContent(user, content, reportingMessage);
+
+      const reportedContent = await service.getContentFromId(content._id);
+      const engagements = await service._engagementModel.find({
+        user: user._id,
+        targetRef: { $ref: 'content', $id: content._id }
+      });
+
+      const reportedItem = reportedContent.toContentPayloadItem(engagements);
+
+      expect((service as any).logger.log).toBeCalled();
+      expect((service as any).transporter.sendMail).toBeCalled();
+      expect(reportedItem.participate.reported).toBeTruthy();
     });
   });
 });
