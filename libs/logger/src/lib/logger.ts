@@ -26,6 +26,13 @@ import { Environment as env } from '@castcle-api/environments';
 
 export class CastLogger extends ConsoleLogger {
   /**
+   * Create a logger with context and default options: `CastLoggerOptions`
+   */
+  constructor(context?: string, options = CastLoggerOptions) {
+    super(context, options);
+  }
+
+  /**
    * Write a 'log' level log.
    */
   log(message: any, context?: string) {

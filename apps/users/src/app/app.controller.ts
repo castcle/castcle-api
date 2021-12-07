@@ -42,6 +42,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleController,
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
@@ -54,9 +55,23 @@ import {
   SortByEnum,
   SortByPipe
 } from '@castcle-api/utils/pipes';
-import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UsePipes,
+  ValidationPipe
+} from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
+import { ReportUserDto } from './dtos';
 import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
@@ -587,6 +602,54 @@ export class UserController {
     } as FollowResponse;
   }
 
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/blocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async blockUser(
+    @Param('id') blockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const blockUser = await this.authService.getUserFromCastcleId(blockUserId);
+
+    await this.userService.blockUser(user, blockUser);
+  }
+
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/unblocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unblockUser(
+    @Param('id') unblockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const unblockUser = await this.authService.getUserFromCastcleId(
+      unblockUserId
+    );
+
+    await this.userService.unblockUser(user, unblockUser);
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/reporting')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Body() { message }: ReportUserDto,
+    @Param('id') reportedUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const reportedUser = await this.authService.getUserFromCastcleId(
+      reportedUserId
+    );
+
+    await this.userService.reportUser(user, reportedUser, message);
+  }
+
   @ApiBody({
     type: UpdateMobileDto
   })
@@ -649,5 +712,4 @@ export class UserController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
-  }
 }
