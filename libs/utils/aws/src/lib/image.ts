@@ -131,6 +131,7 @@ export class Image {
     size = Image._getNewSameRatioSize(metaData.width, metaData.height, size);
     const newBuffer = await sharpImage
       .resize(size.width, size.height)
+      .toFormat(metaData.format, { quality: 70 })
       .toBuffer();
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
