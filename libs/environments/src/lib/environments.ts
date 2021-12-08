@@ -83,7 +83,7 @@ export const Environment = {
   REDIS_PORT: process.env.REDIS_PORT as unknown as number,
   // Assets
   ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
-  ASSETS_HOST: process.env.ASSETS_HOST,
+  ASSETS_HOST: process.env.ASSETS_HOST ?? 'https://assets-dev.castcle.com',
   // Twitter Config
   TWITTER_KEY: process.env.TWITTER_KEY,
   TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,

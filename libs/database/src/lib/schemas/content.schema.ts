@@ -278,24 +278,23 @@ export const toUnsignedContentPayloadItem = (
   return result;
 };
 
-export const signedContentPayloadItem = (
-  unsignPayloadItem: ContentPayloadItem
-) => {
-  if (unsignPayloadItem.photo && unsignPayloadItem.photo.contents)
-    unsignPayloadItem.photo.contents = unsignPayloadItem.photo?.contents?.map(
-      (item) => new Image(item).toSignUrls()
+export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
+  if (unsignedItem.photo?.contents)
+    unsignedItem.photo.contents = unsignedItem.photo.contents.map((item) =>
+      new Image(item).toSignUrls()
     );
-  if (unsignPayloadItem.photo && unsignPayloadItem.photo.cover)
-    unsignPayloadItem.photo.cover = new Image(
-      unsignPayloadItem.photo.cover
-    ).toSignUrls();
-  if (unsignPayloadItem.link)
-    unsignPayloadItem.link = unsignPayloadItem.link.map((item) => {
+
+  if (unsignedItem.photo?.cover)
+    unsignedItem.photo.cover = new Image(unsignedItem.photo.cover).toSignUrls();
+
+  if (unsignedItem.link)
+    unsignedItem.link = unsignedItem.link.map((item) => {
       if (item.image) {
         item.image = new Image(item.image as CastcleImage).toSignUrls();
       } else return item;
     });
-  return unsignPayloadItem;
+
+  return unsignedItem;
 };
 
 export const toSignedContentPayloadItem = (
