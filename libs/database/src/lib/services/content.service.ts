@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -1012,7 +1012,7 @@ export class ContentService {
   };
 
   /**
-   * Get guestfeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
    * @param {QueryOption} query
    * @param {string} accountCountryCode
    * @returns {GuestFeedItemDocument[]}
@@ -1021,22 +1021,22 @@ export class ContentService {
     query: QueryOption,
     accountCountryCode?: string
   ) => {
-    const filter: any = {
-      countryCode: accountCountryCode ? accountCountryCode.toLowerCase() : 'en'
+    const filter: FilterQuery<GuestFeedItemDocument> = {
+      countryCode: accountCountryCode.toLowerCase() ?? 'en'
     };
     if (query.sinceId) {
-      const guestFeeditemSince = await this._guestFeedItemModel
+      const guestFeedItemSince = await this._guestFeedItemModel
         .findById(query.sinceId)
         .exec();
       filter.createdAt = {
-        $gt: new Date(guestFeeditemSince.createdAt)
+        $gt: new Date(guestFeedItemSince.createdAt)
       };
     } else if (query.untilId) {
-      const guestFeeditemUntil = await this._guestFeedItemModel
+      const guestFeedItemUntil = await this._guestFeedItemModel
         .findById(query.untilId)
         .exec();
       filter.createdAt = {
-        $lt: new Date(guestFeeditemUntil.createdAt)
+        $lt: new Date(guestFeedItemUntil.createdAt)
       };
     }
     const documents = await this._guestFeedItemModel
@@ -1045,6 +1045,21 @@ export class ContentService {
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();
+
+    const users = documents
+      .map((item) => item.content.author)
+      .filter(
+        (author, index, authors) =>
+          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
+          index
+      );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+
     return {
       payload: documents.map(
         (item) =>
@@ -1065,16 +1080,7 @@ export class ContentService {
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
-      includes: {
-        users: documents
-          .map((item) => item.content.author)
-          .map((author) => {
-            if (author.avatar)
-              author.avatar = new Image(author.avatar).toSignUrls();
-            else author.avatar = Configs.DefaultAvatarImages;
-            return author;
-          })
-      },
+      includes: { users },
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };
