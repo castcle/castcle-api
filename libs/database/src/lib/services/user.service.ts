@@ -43,6 +43,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { createTransport } from 'nodemailer';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { isMongoId } from 'class-validator';
 
 @Injectable()
 export class UserService {
@@ -104,6 +105,15 @@ export class UserService {
     } catch (error) {
       return null;
     }
+  };
+
+  getUserFromIdOrCastcleId = (id: string) => {
+    return this._userModel
+      .findOne({
+        [isMongoId(id) ? '_id' : 'displayId']: id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {

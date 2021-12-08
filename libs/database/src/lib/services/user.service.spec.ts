@@ -939,4 +939,41 @@ describe('User Service', () => {
       expect((service as any).transporter.sendMail).toBeCalled();
     });
   });
+
+  describe('#getUserFromIdOrCastcleId', () => {
+    let user: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      user.displayId = 'displayId';
+      await user.save();
+    });
+
+    afterAll(async () => {
+      await user.deleteOne();
+    });
+
+    it('should return null when user to find is not found', async () => {
+      await expect(
+        service.getUserFromIdOrCastcleId('xxxxxxxxxx')
+      ).resolves.toBeNull();
+    });
+
+    it('should return user when find user with castcle ID or ID', async () => {
+      const userFromId = await service.getUserFromIdOrCastcleId(
+        String(user._id)
+      );
+
+      const userFromCastcleId = await service.getUserFromIdOrCastcleId(
+        user.displayId
+      );
+
+      expect(userFromId).toMatchObject(userFromCastcleId);
+    });
+  });
 });
