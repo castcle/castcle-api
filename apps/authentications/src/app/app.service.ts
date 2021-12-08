@@ -555,6 +555,10 @@ export class AppService {
       sid = result.sid;
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
+      throw new CastcleException(
+        CastcleStatus.SOMETHING_WRONG,
+        credential.$language
+      );
     }
 
     this.logger.log('Generate Ref Code');
