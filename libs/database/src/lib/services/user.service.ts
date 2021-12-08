@@ -26,6 +26,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { isMongoId } from 'class-validator';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import { CastcleQueryOptions } from '../dtos';
@@ -103,6 +104,15 @@ export class UserService {
     } catch (error) {
       return null;
     }
+  };
+
+  getUserFromIdOrCastcleId = (id: string) => {
+    return this._userModel
+      .findOne({
+        [isMongoId(id) ? '_id' : 'displayId']: id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {

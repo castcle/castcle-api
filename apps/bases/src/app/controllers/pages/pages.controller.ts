@@ -61,7 +61,7 @@ import {
 } from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
-  AVARTAR_SIZE_CONFIGS,
+  AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   Image,
   ImageUploadOptions
@@ -211,7 +211,7 @@ export class PageController {
       page.profile.images.avatar = (
         await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
-          sizes: AVARTAR_SIZE_CONFIGS,
+          sizes: AVATAR_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`
         })
       ).image;

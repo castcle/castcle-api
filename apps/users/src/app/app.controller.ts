@@ -611,7 +611,9 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const blockUser = await this.authService.getUserFromCastcleId(blockUserId);
+    const blockUser = await this.userService.getUserFromIdOrCastcleId(
+      blockUserId
+    );
 
     await this.userService.blockUser(user, blockUser);
   }
@@ -625,7 +627,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const unblockUser = await this.authService.getUserFromCastcleId(
+    const unblockUser = await this.userService.getUserFromIdOrCastcleId(
       unblockUserId
     );
 
@@ -643,7 +645,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const reportedUser = await this.authService.getUserFromCastcleId(
+    const reportedUser = await this.userService.getUserFromIdOrCastcleId(
       reportedUserId
     );
 
