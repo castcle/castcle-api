@@ -29,6 +29,7 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
+  CastcleIncludes,
   ContentsResponse,
   ContentType,
   SaveContentDto,
@@ -243,13 +244,13 @@ describe('AppController', () => {
           castcleId: user.displayId
         }
       ];
-      const enagementContents: EngagementDocument[][] = [];
+      const engagementContents: EngagementDocument[][] = [];
       for (let i = 0; i < contentDtos.length; i++) {
         const newContent = await contentService.createContentFromUser(
           user,
           contentDtos[i]
         );
-        enagementContents[i] = [
+        engagementContents[i] = [
           await contentService.likeContent(newContent, user)
         ];
         contents.push(newContent);
@@ -257,7 +258,10 @@ describe('AppController', () => {
       expectedResponse = {
         payload: contents
           .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c, index) => c.toContentPayloadItem(enagementContents[index])),
+          .map((c, index) => c.toContentPayloadItem(engagementContents[index])),
+        includes: new CastcleIncludes({
+          users: contents.map(({ author }) => author)
+        }),
         meta: {
           resultCount: contents.length,
           oldestId: contents[0].id,

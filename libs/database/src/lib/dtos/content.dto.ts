@@ -286,5 +286,8 @@ export class ContentsResponse {
   payload: ContentPayloadItem[];
 
   @ApiProperty()
+  includes: CastcleIncludes;
+
+  @ApiProperty()
   meta: CastcleMeta;
 }
