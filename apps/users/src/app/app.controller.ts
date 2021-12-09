@@ -28,6 +28,7 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
+  CastcleIncludes,
   ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -312,6 +313,9 @@ export class UserController {
 
           return item.toContentPayloadItem(subEngagements);
         }),
+        includes: new CastcleIncludes({
+          users: contents.items.map(({ author }) => author)
+        }),
         meta: createCastcleMeta(contents.items)
       } as ContentsResponse;
     } else
@@ -421,6 +425,9 @@ export class UserController {
             String(eng.targetRef.oid) === String(item.id)
         );
         return item.toContentPayloadItem(subEngagements);
+      }),
+      includes: new CastcleIncludes({
+        users: contents.items.map(({ author }) => author)
       }),
       meta: createCastcleMeta(contents.items)
     } as ContentsResponse;
