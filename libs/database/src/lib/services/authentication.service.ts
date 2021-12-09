@@ -234,13 +234,16 @@ export class AuthenticationService {
   getAccountFromId = (accountId: string) =>
     this._accountModel.findById(accountId).exec();
 
-  getAccountFromEmail = (email: string) =>
-    this._accountModel
+  getAccountFromEmail = (email: string) => {
+    const emailPattern = email.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
+    return this._accountModel
       .findOne({
-        email: { $regex: new RegExp('^' + email.toLowerCase() + '$', 'i') },
+        email: new RegExp(`^${emailPattern}$`, 'i'),
         visibility: EntityVisibility.Publish
       })
       .exec();
+  };
 
   /**
    * get and validate account from mobile
@@ -265,10 +268,10 @@ export class AuthenticationService {
    * @returns {UserDocument}
    */
   getExistedUserFromCastcleId = (id: string) => {
+    const idPattern = id.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
     return this._userModel
-      .findOne({
-        displayId: { $regex: new RegExp('^' + id.toLowerCase() + '$', 'i') }
-      })
+      .findOne({ displayId: new RegExp(`^${idPattern}$`, 'i') })
       .exec();
   };
 
@@ -278,9 +281,11 @@ export class AuthenticationService {
    * @returns {UserDocument}
    */
   getUserFromCastcleId = (id: string) => {
+    const idPattern = id.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
     return this._userModel
       .findOne({
-        displayId: { $regex: new RegExp('^' + id.toLowerCase() + '$', 'i') },
+        displayId: new RegExp(`^${idPattern}$`, 'i'),
         visibility: EntityVisibility.Publish
       })
       .exec();
@@ -315,8 +320,8 @@ export class AuthenticationService {
 
   validateEmail = (email: string) => {
     const re =
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email.toLowerCase());
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
+    return re.test(email);
   };
 
   _generateAccessToken = (payload: AccessTokenPayload) =>
