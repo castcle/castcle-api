@@ -21,8 +21,27 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class TargetCastcleDto {
   @ApiProperty()
   targetCastcleId: string;
+}
+
+export class UpdateMobileDto {
+  @ApiProperty()
+  @IsString()
+  objective: string;
+
+  @ApiProperty()
+  @IsString()
+  refCode: string;
+
+  @ApiProperty()
+  @IsString()
+  countryCode: string;
+
+  @ApiProperty()
+  @IsString()
+  mobileNumber: string;
 }

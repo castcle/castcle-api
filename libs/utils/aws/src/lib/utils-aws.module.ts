@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 import { Downloader } from './downloader';
 import { Image, ImageUploadOptions } from './image';
 import { Uploader, UploadOptions } from './uploader';
-import { AVARTAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
+import { AVATAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
 
 @Module({
   imports: [
@@ -23,7 +23,7 @@ export {
   Uploader,
   UploadOptions,
   Downloader,
-  AVARTAR_SIZE_CONFIGS,
+  AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   ImageUploadOptions
 };

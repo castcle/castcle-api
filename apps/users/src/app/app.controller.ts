@@ -39,11 +39,12 @@ import {
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
+import { OtpObjective, UserType } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleController,
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
@@ -60,15 +61,20 @@ import {
   Body,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
   Query,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { TargetCastcleDto } from './dtos/dto';
+import { ReportUserDto } from './dtos';
+import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -628,5 +634,138 @@ export class UserController {
         req.$language
       );
     }
+  }
+
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/blocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async blockUser(
+    @Param('id') blockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const blockUser = await this.userService.getUserFromIdOrCastcleId(
+      blockUserId
+    );
+
+    await this.userService.blockUser(user, blockUser);
+  }
+
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/unblocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unblockUser(
+    @Param('id') unblockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const unblockUser = await this.userService.getUserFromIdOrCastcleId(
+      unblockUserId
+    );
+
+    await this.userService.unblockUser(user, unblockUser);
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/reporting')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Body() { message }: ReportUserDto,
+    @Param('id') reportedUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const reportedUser = await this.userService.getUserFromIdOrCastcleId(
+      reportedUserId
+    );
+
+    await this.userService.reportUser(user, reportedUser, message);
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiBody({
+    type: UpdateMobileDto
+  })
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.Users)
+  @Put('me/mobile')
+  async updateMobile(
+    @Req() req: CredentialRequest,
+    @Body() body: UpdateMobileDto
+  ) {
+    const objective: OtpObjective = <OtpObjective>body.objective;
+    if (
+      !objective ||
+      !Object.values(OtpObjective).includes(objective) ||
+      objective !== OtpObjective.VerifyMobile
+    ) {
+      logger.error(`Invalid objective.`);
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+
+    const dupAccount = await this.authService.getAccountFromMobile(
+      body.mobileNumber,
+      body.countryCode
+    );
+
+    if (dupAccount) {
+      logger.error(
+        'Dupplicate mobile : ' + body.countryCode + body.mobileNumber
+      );
+      throw new CastcleException(
+        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+        req.$language
+      );
+    }
+
+    logger.log('Get otp document');
+    const otp = await this.authService.getOtpFromRequestIdRefCode(
+      req.$credential.account._id,
+      body.refCode
+    );
+
+    if (
+      !otp ||
+      !otp.isValid() ||
+      otp.action !== OtpObjective.VerifyMobile ||
+      !otp.isVerify
+    ) {
+      logger.error(`Invalid Ref Code`);
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+    }
+
+    logger.log('Get user document');
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    if (account && user && !account.isGuest) {
+      logger.log('Update mobile number');
+      await this.userService.updateMobile(
+        user.id,
+        account._id,
+        body.countryCode,
+        body.mobileNumber
+      );
+      logger.log('Get update user document');
+      const afterUpdateUser = await this.userService.getUserFromCredential(
+        req.$credential
+      );
+      const response = await afterUpdateUser.toUserResponse();
+      return response;
+    } else
+      throw new CastcleException(
+        CastcleStatus.INVALID_ACCESS_TOKEN,
+        req.$language
+      );
   }
 }

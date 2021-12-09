@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -76,10 +76,24 @@ import {
 } from '../dtos/guestFeedItem.dto';
 import { QueryOption } from '../dtos/common.dto';
 import { Image } from '@castcle-api/utils/aws';
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { CastLogger } from '@castcle-api/logger';
+import { createTransport } from 'nodemailer';
 
 @Injectable()
 export class ContentService {
+  private logger = new CastLogger(ContentService.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD
+    }
+  });
+
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
@@ -998,7 +1012,7 @@ export class ContentService {
   };
 
   /**
-   * Get guestfeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
    * @param {QueryOption} query
    * @param {string} accountCountryCode
    * @returns {GuestFeedItemDocument[]}
@@ -1007,22 +1021,22 @@ export class ContentService {
     query: QueryOption,
     accountCountryCode?: string
   ) => {
-    const filter: any = {
-      countryCode: accountCountryCode ? accountCountryCode.toLowerCase() : 'en'
+    const filter: FilterQuery<GuestFeedItemDocument> = {
+      countryCode: accountCountryCode.toLowerCase() ?? 'en'
     };
     if (query.sinceId) {
-      const guestFeeditemSince = await this._guestFeedItemModel
+      const guestFeedItemSince = await this._guestFeedItemModel
         .findById(query.sinceId)
         .exec();
       filter.createdAt = {
-        $gt: new Date(guestFeeditemSince.createdAt)
+        $gt: new Date(guestFeedItemSince.createdAt)
       };
     } else if (query.untilId) {
-      const guestFeeditemUntil = await this._guestFeedItemModel
+      const guestFeedItemUntil = await this._guestFeedItemModel
         .findById(query.untilId)
         .exec();
       filter.createdAt = {
-        $lt: new Date(guestFeeditemUntil.createdAt)
+        $lt: new Date(guestFeedItemUntil.createdAt)
       };
     }
     const documents = await this._guestFeedItemModel
@@ -1031,6 +1045,21 @@ export class ContentService {
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();
+
+    const users = documents
+      .map((item) => item.content.author)
+      .filter(
+        (author, index, authors) =>
+          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
+          index
+      );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+
     return {
       payload: documents.map(
         (item) =>
@@ -1051,17 +1080,44 @@ export class ContentService {
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
-      includes: {
-        users: documents
-          .map((item) => item.content.author)
-          .map((author) => {
-            if (author.avatar)
-              author.avatar = new Image(author.avatar).toSignUrls();
-            else author.avatar = Configs.DefaultAvatarImages;
-            return author;
-          })
-      },
+      includes: { users },
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };
+
+  async reportContent(
+    user: UserDocument,
+    content: ContentDocument,
+    message: string
+  ) {
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagementFilter = {
+      user: user._id,
+      targetRef: { $ref: 'content', $id: content._id },
+      type: EngagementType.Report
+    };
+
+    await this._engagementModel
+      .updateOne(
+        engagementFilter,
+        { ...engagementFilter, visibility: EntityVisibility.Publish },
+        { upsert: true }
+      )
+      .exec();
+
+    const mail = await this.transporter.sendMail({
+      from: 'castcle-noreply" <no-reply@castcle.com>',
+      subject: `Report content: ${content._id}`,
+      to: Environment.SMTP_ADMIN_EMAIL,
+      text: `Content: ${content._id} has been reported.
+Author: ${content.author.displayName} (${content.author.id})
+Body: ${JSON.stringify(content.payload, null, 2)}
+
+ReportedBy: ${user.displayName} (${user._id})
+Message: ${message}`
+    });
+
+    this.logger.log(`Report has been submitted ${mail.messageId}`);
+  }
 }

@@ -371,35 +371,6 @@ export class AppService {
     return account;
   }
 
-  /**
-   * get and validate account from mobile
-   * @param {string} mobileNumber
-   * @param {string} countryCode
-   * @param {string} lang
-   * @returns {AccountDocument} account document
-   */
-  async getAccountFromMobile(
-    mobileNumber: string,
-    countryCode: string,
-    lang: string
-  ) {
-    const mobile =
-      mobileNumber.charAt(0) === '0' ? mobileNumber.slice(1) : mobileNumber;
-    this.logger.log('Get Account from mobile');
-    const account = await this.authService.getAccountFromMobile(
-      mobile,
-      countryCode
-    );
-    if (!account) {
-      this.logger.error(
-        'Can not get Account from mobile : ' + countryCode + mobile
-      );
-      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
-    }
-
-    return account;
-  }
-
   private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
@@ -419,13 +390,64 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
+        try {
+          if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
+        } catch (ex) {
+          this.logger.warn('Can not cancel otp:', ex);
+        }
         this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         await exOtp.delete();
       }
     }
 
     return existingOtp;
+  }
+
+  private async getAccount(
+    mobileNumber: string,
+    countryCode: string,
+    objective: OtpObjective,
+    credential: CredentialRequest
+  ) {
+    this.logger.log('Get Account from mobile');
+    let account = await this.authService.getAccountFromMobile(
+      mobileNumber,
+      countryCode
+    );
+
+    if (!account && objective !== OtpObjective.VerifyMobile) {
+      this.logger.error(
+        'Can not get Account from mobile : ' + countryCode + mobileNumber
+      );
+      throw new CastcleException(
+        CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
+        credential.$language
+      );
+    }
+
+    if (account && objective === OtpObjective.VerifyMobile) {
+      this.logger.error('Dupplicate mobile : ' + countryCode + mobileNumber);
+      throw new CastcleException(
+        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+        credential.$language
+      );
+    }
+
+    if (!account && objective === OtpObjective.VerifyMobile) {
+      account = await this.authService.getAccountFromCredential(
+        credential.$credential
+      );
+
+      if (account.isGuest) {
+        this.logger.error('Can not verify mobile from guest account');
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credential.$language
+        );
+      }
+    }
+
+    return account;
   }
 
   /**
@@ -466,7 +488,7 @@ export class AppService {
 
         this.logger.log('Create Otp');
         otp = await this.generateAndSendOtp(
-          account.email,
+          request.payload.email,
           account,
           TwillioChannel.Email,
           objective,
@@ -476,15 +498,16 @@ export class AppService {
         break;
       }
       case 'mobile': {
-        account = await this.getAccountFromMobile(
+        account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
-          credential.$language
+          objective,
+          credential
         );
 
         this.logger.log('Create OTP');
         otp = await this.generateAndSendOtp(
-          account.mobile.countryCode + account.mobile.number,
+          request.payload.countryCode + request.payload.mobileNumber,
           account,
           TwillioChannel.Mobile,
           objective,
@@ -532,6 +555,10 @@ export class AppService {
       sid = result.sid;
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
+      throw new CastcleException(
+        CastcleStatus.SOMETHING_WRONG,
+        credential.$language
+      );
     }
 
     this.logger.log('Generate Ref Code');
@@ -597,16 +624,17 @@ export class AppService {
           request.payload.email,
           credential.$language
         );
-        receiver = account.email;
+        receiver = request.payload.email;
         break;
       }
       case 'mobile': {
-        account = await this.getAccountFromMobile(
+        account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
-          credential.$language
+          objective,
+          credential
         );
-        receiver = account.mobile.countryCode + account.mobile.number;
+        receiver = request.payload.countryCode + request.payload.mobileNumber;
 
         break;
       }

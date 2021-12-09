@@ -23,7 +23,7 @@
 import { UpdateModelUserDto, UpdateUserDto } from '@castcle-api/database/dtos';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
-  AVARTAR_SIZE_CONFIGS,
+  AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   Image
 } from '@castcle-api/utils/aws';
@@ -55,7 +55,7 @@ export class AppService {
       const avatar = await Image.upload(body.images.avatar as string, {
         filename: `avatar-${req.$credential.account._id}`,
         addTime: true,
-        sizes: AVARTAR_SIZE_CONFIGS,
+        sizes: AVATAR_SIZE_CONFIGS,
         subpath: `account_${req.$credential.account._id}`
       });
       updateModelUserDto.images.avatar = avatar.image;
