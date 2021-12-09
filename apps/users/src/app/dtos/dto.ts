@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
-
+import { IsEnum, IsString } from 'class-validator';
 export class TargetCastcleDto {
   @ApiProperty()
   targetCastcleId: string;
