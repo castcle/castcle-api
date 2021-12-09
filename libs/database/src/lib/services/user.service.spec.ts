@@ -21,20 +21,12 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { BullModule } from '@nestjs/bull';
-import { AuthenticationService } from './authentication.service';
-import { ContentService } from './content.service';
-import { UserService } from './user.service';
-import { env } from '../environment';
-import { AccountDocument } from '../schemas/account.schema';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
+import { BullModule } from '@nestjs/bull';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { UserDocument } from '../schemas/user.schema';
-import { PageDto, PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -45,9 +37,17 @@ import {
   EntityVisibility,
   Pagination
 } from '../dtos/common.dto';
-import { CommentDocument, ContentDocument } from '../schemas';
+import { PageDto, PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { CommentDocument, ContentDocument } from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
+import { CredentialDocument } from '../schemas/credential.schema';
+import { UserDocument } from '../schemas/user.schema';
+import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
+import { UserService } from './user.service';
 
 jest.mock('@castcle-api/logger');
 jest.mock('nodemailer', () => ({
@@ -974,6 +974,37 @@ describe('User Service', () => {
       );
 
       expect(userFromId).toMatchObject(userFromCastcleId);
+    });
+  });
+
+  describe('#updateMobile', () => {
+    let user: UserDocument;
+    let account: AccountDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      account = mocksUsers[0].account;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should update mobile and verify user and account', async () => {
+      const conutryCode = '+66';
+      const mobile = '0814567890';
+      await service.updateMobile(user._id, account._id, conutryCode, mobile);
+      const userUpdate = await service.getUserFromId(user.id);
+      const accountUpdate = await authService.getAccountFromId(account.id);
+
+      expect(userUpdate).not.toBeNull();
+      expect(userUpdate.verified.mobile).toBeTruthy();
+      expect(accountUpdate.mobile.countryCode).toEqual(conutryCode);
+      expect(accountUpdate.mobile.number).toEqual(mobile);
     });
   });
 });

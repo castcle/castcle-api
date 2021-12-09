@@ -36,5 +36,5 @@ export const env = {
   JWT_REFRESH_SECRET: Environment?.JWT_REFRESH_SECRET || 'secretjing',
   JWT_VERIFY_SECRET: Environment?.JWT_VERIFY_SECRET || 'secretlen',
   OTP_DIGITS: Environment?.OTP_DIGITS || 8,
-  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 900
+  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 60
 };
