@@ -45,6 +45,7 @@ import {
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
+  CastcleIncludes,
   CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
@@ -284,6 +285,9 @@ export class ContentController {
 
     return {
       payload: result.items.map((c) => c.toContentPayloadItem()),
+      includes: new CastcleIncludes({
+        users: result.items.map(({ author }) => author)
+      }),
       meta: result.meta
     } as ContentsResponse;
   }
