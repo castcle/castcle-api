@@ -20,30 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Model } from 'mongoose';
-import { FilterQuery, Types } from 'mongoose';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument, CredentialModel } from '../schemas';
-import { UserDocument, UserType, UserModel } from '../schemas/user.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { isMongoId } from 'class-validator';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { createTransport } from 'nodemailer';
 import { CastcleQueryOptions } from '../dtos';
-import { createPagination } from '../utils/common';
 import {
   CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility
 } from '../dtos/common.dto';
+import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { CredentialDocument, CredentialModel } from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
+import { ContentDocument } from '../schemas/content.schema';
+import { RelationshipDocument } from '../schemas/relationship.schema';
+import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
+import { createPagination } from '../utils/common';
 import { ContentService } from './content.service';
-import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { createTransport } from 'nodemailer';
-import { Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { isMongoId } from 'class-validator';
 
 @Injectable()
 export class UserService {
@@ -678,4 +677,33 @@ Message: ${message}`
 
     this.logger.log(`Report has been submitted ${mail.messageId}`);
   }
+
+  updateMobile = async (
+    userId: string,
+    accountId: string,
+    countryCode: string,
+    mobileNumber: string
+  ) => {
+    await this._accountModel
+      .updateOne(
+        { _id: accountId },
+        {
+          'mobile.countryCode': countryCode,
+          'mobile.number': mobileNumber
+        }
+      )
+      .exec();
+    this.logger.log('Success update mobile to account');
+
+    const user = this._userModel
+      .updateOne(
+        { _id: userId },
+        {
+          'verified.mobile': true
+        }
+      )
+      .exec();
+    this.logger.log('Success update verify mobile to user');
+    return user;
+  };
 }
