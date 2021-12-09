@@ -26,6 +26,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -90,6 +91,7 @@ describe('AppController', () => {
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
   let userAccount: AccountDocument;
+  let socialSyncService: SocialSyncService;
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -110,13 +112,15 @@ describe('AppController', () => {
         AuthenticationService,
         ContentService,
         UserProducer,
-        HashtagService
+        HashtagService,
+        SocialSyncService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
+    socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
