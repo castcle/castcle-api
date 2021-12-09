@@ -29,7 +29,7 @@ import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import { createCastcleMeta, createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import { QueryOption } from '../dtos/common.dto';
+import { CastcleIncludes, QueryOption } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toUnsignedContentPayloadItem,
@@ -39,8 +39,6 @@ import {
   GuestFeedItemPayload,
   GuestFeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
-import { Configs } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
 
 @Injectable()
 export class RankerService {
@@ -113,20 +111,6 @@ export class RankerService {
       .sort('-aggregator.createTime')
       .exec();
 
-    const users = documents
-      .map((item) => item.content.author)
-      .filter(
-        (author, index, authors) =>
-          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
-          index
-      );
-
-    users.forEach((author) => {
-      author.avatar = author.avatar
-        ? new Image(author.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages;
-    });
-
     return {
       payload: documents.map(
         (item) =>
@@ -149,13 +133,13 @@ export class RankerService {
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
-      includes: {
-        users,
+      includes: new CastcleIncludes({
+        users: documents.map((item) => item.content.author),
         casts: documents
           .filter((doc) => doc.content.originalPost)
           .map((c) => c.content.originalPost)
           .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
-      },
+      }),
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };

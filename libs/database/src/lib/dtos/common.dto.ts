@@ -20,6 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Configs } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
 import { Author, ContentPayloadItem } from '.';
 
@@ -108,4 +110,18 @@ export class CastcleParticipate {
 export class CastcleIncludes {
   users: Author[];
   casts?: ContentPayloadItem[];
+
+  constructor({ casts, users }: CastcleIncludes) {
+    this.casts = casts;
+    this.users = users.filter(
+      (author, index, authors) =>
+        authors.findIndex(({ id }) => String(author.id) == String(id)) === index
+    );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+  }
 }

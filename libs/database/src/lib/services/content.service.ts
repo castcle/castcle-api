@@ -51,6 +51,7 @@ import {
 } from '../dtos/content.dto';
 import { RevisionDocument } from '../schemas/revision.schema';
 import {
+  CastcleIncludes,
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility
@@ -75,8 +76,7 @@ import {
   GuestFeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
 import { QueryOption } from '../dtos/common.dto';
-import { Image } from '@castcle-api/utils/aws';
-import { Configs, Environment } from '@castcle-api/environments';
+import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CastLogger } from '@castcle-api/logger';
 import { createTransport } from 'nodemailer';
@@ -563,6 +563,9 @@ export class ContentService {
         : await query.sort(`${options.sortBy.field}`).exec();
     return {
       items,
+      includes: new CastcleIncludes({
+        users: items.map(({ author }) => author)
+      }),
       meta: createCastcleMeta(items)
     };
   };
@@ -1046,20 +1049,6 @@ export class ContentService {
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
-    const users = documents
-      .map((item) => item.content.author)
-      .filter(
-        (author, index, authors) =>
-          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
-          index
-      );
-
-    users.forEach((author) => {
-      author.avatar = author.avatar
-        ? new Image(author.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages;
-    });
-
     return {
       payload: documents.map(
         (item) =>
@@ -1080,7 +1069,9 @@ export class ContentService {
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
-      includes: { users },
+      includes: new CastcleIncludes({
+        users: documents.map((item) => item.content.author)
+      }),
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;
   };
