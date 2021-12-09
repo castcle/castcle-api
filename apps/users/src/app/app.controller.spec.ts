@@ -382,7 +382,7 @@ describe('AppController', () => {
       );
 
       const request = {
-        objective: 'verify_mobile',
+        objective: OtpObjective.VerifyMobile,
         refCode: newOtp.refCode,
         countryCode: countryCode,
         mobileNumber: mobile
@@ -406,7 +406,7 @@ describe('AppController', () => {
       );
 
       const request = {
-        objective: 'verify_mobile',
+        objective: OtpObjective.VerifyMobile,
         refCode: newOtp.refCode,
         countryCode: countryCode,
         mobileNumber: mobile
@@ -434,7 +434,7 @@ describe('AppController', () => {
       );
 
       const request = {
-        objective: 'verify_mobile',
+        objective: OtpObjective.VerifyMobile,
         refCode: newOtp.refCode,
         countryCode: countryCode,
         mobileNumber: mobile
@@ -462,7 +462,7 @@ describe('AppController', () => {
       );
 
       const request = {
-        objective: 'verify_mobile',
+        objective: OtpObjective.VerifyMobile,
         refCode: newOtp.refCode,
         countryCode: countryCode,
         mobileNumber: mobile
@@ -494,7 +494,7 @@ describe('AppController', () => {
       const mobile = '0815678900';
 
       const request = {
-        objective: 'forgot_password',
+        objective: OtpObjective.ForgotPassword,
         refCode: '12345678',
         countryCode: countryCode,
         mobileNumber: mobile
