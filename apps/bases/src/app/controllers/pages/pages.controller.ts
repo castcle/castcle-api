@@ -36,7 +36,8 @@ import { AppService } from '../../app.service';
 import {
   AuthenticationService,
   UserService,
-  ContentService
+  ContentService,
+  createCastcleMeta
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
@@ -47,7 +48,8 @@ import {
   PageDto,
   PagesResponse,
   UpdatePageDto,
-  PageResponseDto
+  PageResponseDto,
+  DEFAULT_QUERY_OPTIONS
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
@@ -59,7 +61,7 @@ import {
 } from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
-  AVARTAR_SIZE_CONFIGS,
+  AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   Image,
   ImageUploadOptions
@@ -209,7 +211,7 @@ export class PageController {
       page.profile.images.avatar = (
         await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
-          sizes: AVARTAR_SIZE_CONFIGS,
+          sizes: AVATAR_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`
         })
       ).image;
@@ -264,11 +266,11 @@ export class PageController {
     sortByOption: {
       field: string;
       type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    } = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ): Promise<PagesResponse> {
     const pages = await this.userService.getAllPages({
       page: pageOption,
@@ -362,23 +364,23 @@ export class PageController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('maxResults', LimitPipe) maxResults?: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page, {
       sortBy: sortByOption,
-      limit: limitOption,
-      page: pageOption,
+      maxResults: maxResults,
+      sinceId: sinceId,
+      untilId: untilId,
       type: contentTypeOption
     });
     return {
-      payload: contents.items.map((c) => c.toContentPayload()),
-      pagination: contents.pagination
+      payload: contents.items.map((c) => c.toContentPayloadItem()),
+      meta: createCastcleMeta(contents.items)
     };
   }
 }

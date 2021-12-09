@@ -22,11 +22,14 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { Module } from '@nestjs/common';
 import { YoutubeController } from './youtube.controller';
+import { YoutubeService } from './youtube.service';
 
 @Module({
-  imports: [DatabaseModule],
-  controllers: [YoutubeController]
+  imports: [DatabaseModule, UtilsAwsModule],
+  controllers: [YoutubeController],
+  providers: [YoutubeService]
 })
 export class YoutubeModule {}

@@ -30,14 +30,17 @@ import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import { createCastcleMeta, createPagination } from '../utils/common';
 import { Account } from '../schemas/account.schema';
 import { QueryOption } from '../dtos/common.dto';
-import { transformContentPayloadToV2 } from '../schemas/content.schema';
+import {
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+  transformContentPayloadToV2
+} from '../schemas/content.schema';
 import {
   GuestFeedItemPayload,
   GuestFeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
 import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
-import { Author } from '../dtos/content.dto';
 
 @Injectable()
 export class RankerService {
@@ -109,6 +112,21 @@ export class RankerService {
       .limit(query.maxResults)
       .sort('-aggregator.createTime')
       .exec();
+
+    const users = documents
+      .map((item) => item.content.author)
+      .filter(
+        (author, index, authors) =>
+          authors.findIndex(({ id }) => String(author.id) == String(id)) ===
+          index
+      );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+
     return {
       payload: documents.map(
         (item) =>
@@ -125,19 +143,18 @@ export class RankerService {
               name: 'For You',
               slug: 'forYou'
             },
-            payload: transformContentPayloadToV2(item.content, []),
+            payload: signedContentPayloadItem(
+              transformContentPayloadToV2(item.content, [])
+            ),
             type: 'content'
           } as GuestFeedItemPayloadItem)
       ),
       includes: {
-        users: documents
-          .map((item) => item.content.author as Author)
-          .map((author) => {
-            if (author.avatar)
-              author.avatar = new Image(author.avatar).toSignUrls();
-            else author.avatar = Configs.DefaultAvatarImages;
-            return author;
-          })
+        users,
+        casts: documents
+          .filter((doc) => doc.content.originalPost)
+          .map((c) => c.content.originalPost)
+          .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
       },
       meta: createCastcleMeta(documents)
     } as GuestFeedItemPayload;

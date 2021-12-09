@@ -34,13 +34,18 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument } from '../schemas/content.schema';
 import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
-import { SaveContentDto, ShortPayload } from '../dtos/content.dto';
+import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { UserVerified } from '../schemas/user.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
+
+jest.mock('@castcle-api/logger');
+jest.mock('nodemailer', () => ({
+  createTransport: () => ({ sendMail: jest.fn() })
+}));
 
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -66,6 +71,7 @@ describe('ContentService', () => {
   let userService: UserService;
   let authService: AuthenticationService;
   let user: UserDocument;
+  let author: Author;
   /**
    * For multiple user
    */
@@ -162,6 +168,15 @@ describe('ContentService', () => {
       password: 'test1234567'
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
+    author = {
+      id: user.id,
+      type: 'page',
+      castcleId: 'castcleId',
+      displayName: 'Castcle',
+      verified: { email: true, mobile: true, official: true, social: true },
+      followed: true,
+      avatar: null
+    };
   });
 
   afterAll(async () => {
@@ -611,8 +626,8 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(1);
-          expect(comments.items[0].reply.length).toEqual(1);
+          expect(comments.meta.resultCount).toEqual(1);
+          expect(comments.payload[0].reply.length).toEqual(1);
         });
       });
       describe('#likeComment()', () => {
@@ -662,8 +677,8 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(1);
-          expect(comments.items[0].reply.length).toEqual(0);
+          expect(comments.meta.resultCount).toEqual(1);
+          expect(comments.payload[0].reply.length).toEqual(0);
           //expect reply engagement = 0
           const postComment = await service._commentModel
             .findById(rootComment._id)
@@ -677,7 +692,7 @@ describe('ContentService', () => {
             contentA,
             DEFAULT_QUERY_OPTIONS
           );
-          expect(comments.total).toEqual(0);
+          expect(comments.meta.resultCount).toEqual(0);
         });
       });
     });
@@ -691,18 +706,59 @@ describe('ContentService', () => {
     } as SaveContentDto;
 
     it('should not create any content', async () => {
-      const contents = await service.createContentsFromUser(user, []);
+      const contents = await service.createContentsFromAuthor(author, []);
 
       expect(contents).toBeUndefined();
     });
 
     it('should create a short content from timeline', async () => {
-      const contents = await service.createContentsFromUser(user, [contentDto]);
+      const contents = await service.createContentsFromAuthor(author, [
+        contentDto
+      ]);
       const content = contents?.[0];
 
       expect(contents.length).toEqual(1);
       expect(content.type).toEqual(ContentType.Short);
       expect(content.payload).toEqual({ message });
+    });
+  });
+
+  describe('#reportContent', () => {
+    const reportingMessage = 'reporting message';
+    let content: ContentDocument;
+
+    beforeAll(async () => {
+      content = await service.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: { message: 'report content test' },
+        castcleId: user.displayId
+      });
+    });
+
+    it('should throw CONTENT_NOT_FOUND when content to report is not found', async () => {
+      await expect(
+        service.reportContent(user, null, reportingMessage)
+      ).rejects.toMatchObject({ response: { code: '5003' } });
+    });
+
+    it('should report content by sending email to Castcle admin', async () => {
+      jest
+        .spyOn((service as any).transporter, 'sendMail')
+        .mockReturnValueOnce({ messageId: 1 });
+
+      await service.reportContent(user, content, reportingMessage);
+
+      const reportedContent = await service.getContentFromId(content._id);
+      const engagements = await service._engagementModel.find({
+        user: user._id,
+        targetRef: { $ref: 'content', $id: content._id }
+      });
+
+      const reportedItem = reportedContent.toContentPayloadItem(engagements);
+
+      expect((service as any).logger.log).toBeCalled();
+      expect((service as any).transporter.sendMail).toBeCalled();
+      expect(reportedItem.participate.reported).toBeTruthy();
     });
   });
 });

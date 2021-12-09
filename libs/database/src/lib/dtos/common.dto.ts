@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Author, ContentPayloadItem } from '.';
 
 export class Pagination {
   @ApiProperty()
@@ -82,16 +83,29 @@ export class CastcleMeta {
   'resultCount': number;
 }
 
-export class CastclePagination {
-  'firstId': string;
-  'lastId': string;
-  'limit': number;
-}
-
 export class QueryOption {
-  mode: 'current' | 'history';
+  mode?: 'current' | 'history';
   hashtag?: string;
-  maxResults: number;
+  maxResults?: number;
   sinceId?: string;
   untilId?: string;
+}
+
+export class CastcleMetric {
+  likeCount: number;
+  commentCount?: number;
+  quoteCount?: number;
+  recastCount?: number;
+}
+
+export class CastcleParticipate {
+  liked: boolean;
+  commented?: boolean;
+  quoted?: boolean;
+  recasted?: boolean;
+}
+
+export class CastcleIncludes {
+  users: Author[];
+  casts?: ContentPayloadItem[];
 }

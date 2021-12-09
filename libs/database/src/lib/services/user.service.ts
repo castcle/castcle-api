@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Model } from 'mongoose';
-import * as mongoose from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -39,9 +39,25 @@ import {
 } from '../dtos/common.dto';
 import { ContentService } from './content.service';
 import { UserProducer, UserMessage } from '@castcle-api/utils/queue';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { createTransport } from 'nodemailer';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { isMongoId } from 'class-validator';
 
 @Injectable()
 export class UserService {
+  private logger = new CastLogger(UserService.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD
+    }
+  });
+
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('Credential')
@@ -78,7 +94,7 @@ export class UserService {
 
   getUserFromId = (id: string) => {
     try {
-      if (mongoose.Types.ObjectId(id)) {
+      if (Types.ObjectId(id)) {
         return this._userModel
           .findOne({
             _id: id,
@@ -89,6 +105,15 @@ export class UserService {
     } catch (error) {
       return null;
     }
+  };
+
+  getUserFromIdOrCastcleId = (id: string) => {
+    return this._userModel
+      .findOne({
+        [isMongoId(id) ? '_id' : 'displayId']: id,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {
@@ -210,10 +235,8 @@ export class UserService {
       type: UserType.Page,
       visibility: EntityVisibility.Publish
     };
-    const pages = this._userModel
-      .find(filter)
-      .skip(queryOptions.page - 1)
-      .limit(queryOptions.limit);
+    const pages = this._userModel.find(filter).skip(queryOptions.page - 1);
+    //.limit(queryOptions.limit); TODO !!! hack
     const pagination = createPagination(
       queryOptions,
       await this._userModel.countDocuments(filter)
@@ -240,7 +263,9 @@ export class UserService {
       .findOne({
         user: credentialUser._id,
         followedUser: user._id,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
+        blocking: false,
+        following: true
       })
       .exec();
     return Boolean(relationship);
@@ -282,15 +307,15 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    console.log('-----getFollower----');
-
-    const filter: any = {
+    const filter: FilterQuery<RelationshipDocument> = {
       followedUser: user._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
+      blocking: false,
+      following: true
     };
-    console.log('filter', filter);
+
     if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+      filter.isFollowPage = queryOption.type === UserType.Page;
     let query = this._relationshipModel
       .find(filter)
       .skip(queryOption.page - 1)
@@ -321,12 +346,15 @@ export class UserService {
     user: UserDocument,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: { user: any; isFollowPage?: boolean; visibility?: any } = {
+    const filter: FilterQuery<RelationshipDocument> = {
       user: user._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
+      blocking: false,
+      following: true
     };
+
     if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page ? true : false;
+      filter.isFollowPage = queryOption.type === UserType.Page;
     let query = this._relationshipModel
       .find(filter)
       .populate('followedUser')
@@ -443,7 +471,7 @@ export class UserService {
    */
   _removeAllFollower = async (user: UserDocument) => {
     const relationships = await this._relationshipModel
-      .find({ user: user._id })
+      .find({ user: user._id, blocking: false, following: true })
       .exec();
     console.log('relationships', relationships);
     //make all relationship hidden
@@ -595,4 +623,59 @@ export class UserService {
       pagination: pagination
     };
   };
+
+  async blockUser(user: UserDocument, blockedUser?: UserDocument) {
+    if (!blockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const relationship = {
+      user: user._id,
+      followedUser: blockedUser._id,
+      visibility: EntityVisibility.Publish,
+      following: false
+    };
+
+    await this._relationshipModel
+      .updateOne(
+        { user: user._id, followedUser: blockedUser._id },
+        { $setOnInsert: relationship, $set: { blocking: true } },
+        { upsert: true }
+      )
+      .exec();
+  }
+
+  async unblockUser(user: UserDocument, unblockedUser: UserDocument) {
+    if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const relationship = await this._relationshipModel
+      .findOne({
+        user: user._id,
+        followedUser: unblockedUser._id,
+        blocking: true
+      })
+      .exec();
+
+    if (!relationship) return;
+
+    relationship.blocking = false;
+    await relationship.save();
+  }
+
+  async reportUser(
+    user: UserDocument,
+    reportedUser: UserDocument,
+    message: string
+  ) {
+    if (!reportedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const mail = await this.transporter.sendMail({
+      from: 'castcle-noreply" <no-reply@castcle.com>',
+      subject: `Report user: ${reportedUser._id}`,
+      to: Environment.SMTP_ADMIN_EMAIL,
+      text: `User ${reportedUser.displayName} (${reportedUser._id}) has been reported.
+Reported by: ${user.displayName} (${user._id})
+Message: ${message}`
+    });
+
+    this.logger.log(`Report has been submitted ${mail.messageId}`);
+  }
 }

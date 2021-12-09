@@ -30,6 +30,7 @@ import {
   ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS,
   FollowResponse,
   PagesResponse,
   UpdateUserDto,
@@ -40,6 +41,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleController,
   CastleClearCacheAuth
 } from '@castcle-api/utils/decorators';
@@ -52,11 +54,26 @@ import {
   SortByEnum,
   SortByPipe
 } from '@castcle-api/utils/pipes';
-import { Body, Delete, Get, Param, Put, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UsePipes,
+  ValidationPipe
+} from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { createCastcleMeta } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { TargetCastcleDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
+import { ReportUserDto } from './dtos';
 
 let logger: CastLogger;
 
@@ -122,9 +139,9 @@ export class UserController {
   async getMentions(
     @Query('keyword', KeywordPipe) keyword: string,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
     console.debug('Call Get mention');
     const result = await this.userService.getMentionsFromPublic(keyword, {
@@ -242,6 +259,18 @@ export class UserController {
   @ApiOkResponse({
     type: ContentsResponse
   })
+  @ApiQuery({
+    name: 'sinceId',
+    required: false
+  })
+  @ApiQuery({
+    name: 'untilId',
+    required: false
+  })
+  @ApiQuery({
+    name: 'maxResult',
+    required: false
+  })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/contents')
   async getMyContents(
@@ -251,10 +280,10 @@ export class UserController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
+    @Query('maxResult', LimitPipe)
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
@@ -262,9 +291,9 @@ export class UserController {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user, {
-        limit: limitOption,
+        sinceId: sinceId,
         sortBy: sortByOption,
-        page: pageOption,
+        untilId: untilId,
         type: contentTypeOption
       });
       const engagements =
@@ -281,9 +310,9 @@ export class UserController {
               String(eng.targetRef.oid) === String(item.id)
           );
 
-          return item.toContentPayload(subEngagements);
+          return item.toContentPayloadItem(subEngagements);
         }),
-        pagination: contents.pagination
+        meta: createCastcleMeta(contents.items)
       } as ContentsResponse;
     } else
       throw new CastcleException(
@@ -305,7 +334,7 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page
     //TODO !!! hack it to make ui display more than 25
     /*@Query('limit', LimitPipe)
     limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit*/
@@ -363,10 +392,9 @@ export class UserController {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    @Query('maxResults', LimitPipe) maxResults?: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
@@ -374,8 +402,9 @@ export class UserController {
     const user = await this._getUserFromIdOrCastcleId(id, req);
 
     const contents = await this.contentService.getContentsFromUser(user, {
-      limit: limitOption,
-      page: pageOption,
+      maxResults: maxResults,
+      sinceId: sinceId,
+      untilId: untilId,
       sortBy: sortByOption,
       type: contentTypeOption
     });
@@ -391,9 +420,9 @@ export class UserController {
             String(eng.targetRef.$id) === String(item._id) ||
             String(eng.targetRef.oid) === String(item.id)
         );
-        return item.toContentPayload(subEngagements);
+        return item.toContentPayloadItem(subEngagements);
       }),
-      pagination: contents.pagination
+      meta: createCastcleMeta(contents.items)
     } as ContentsResponse;
   }
 
@@ -499,9 +528,9 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
@@ -553,9 +582,9 @@ export class UserController {
       type: 'desc' | 'asc';
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.page,
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit,
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
@@ -571,5 +600,55 @@ export class UserController {
       payload: followers.items,
       pagination: followers.pagination
     } as FollowResponse;
+  }
+
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/blocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async blockUser(
+    @Param('id') blockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const blockUser = await this.userService.getUserFromIdOrCastcleId(
+      blockUserId
+    );
+
+    await this.userService.blockUser(user, blockUser);
+  }
+
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/unblocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unblockUser(
+    @Param('id') unblockUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const unblockUser = await this.userService.getUserFromIdOrCastcleId(
+      unblockUserId
+    );
+
+    await this.userService.unblockUser(user, unblockUser);
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/reporting')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Body() { message }: ReportUserDto,
+    @Param('id') reportedUserId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const reportedUser = await this.userService.getUserFromIdOrCastcleId(
+      reportedUserId
+    );
+
+    await this.userService.reportUser(user, reportedUser, message);
   }
 }

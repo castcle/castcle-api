@@ -236,7 +236,10 @@ export class AuthenticationService {
 
   getAccountFromEmail = (email: string) =>
     this._accountModel
-      .findOne({ email: email, visibility: EntityVisibility.Publish })
+      .findOne({
+        email: { $regex: new RegExp('^' + email.toLowerCase() + '$', 'i') },
+        visibility: EntityVisibility.Publish
+      })
       .exec();
 
   getAccountFromMobile = (mobileNo: string, countryCode: string) =>
@@ -413,19 +416,25 @@ export class AuthenticationService {
    * @param {AccountDocument} account
    * @param {OtpObjective} objective
    * @param {string} requestId
+   * @param {string} channel
+   * @param {boolean} verify
    * @returns {OtpDocument}
    */
   async generateOtp(
     account: AccountDocument,
     objective: OtpObjective,
     requestId: string,
-    channel: string
+    channel: string,
+    verify: boolean,
+    sid?: string
   ) {
     const otp = await this._otpModel.generate(
       account._id,
       objective,
       requestId,
-      channel
+      channel,
+      verify,
+      sid
     );
     return otp;
   }
@@ -450,11 +459,14 @@ export class AuthenticationService {
    */
   async getAllOtpFromRequestIdObjective(
     requestId: string,
-    objective: OtpObjective
+    objective?: OtpObjective
   ) {
-    return this._otpModel
-      .find({ requestId: requestId, action: objective })
-      .exec();
+    const filter = () => {
+      if (objective) return { requestId: requestId, action: objective };
+      else return { requestId: requestId };
+    };
+
+    return this._otpModel.find(filter).exec();
   }
 
   /**
@@ -595,14 +607,4 @@ export class AuthenticationService {
     });
     return accountActivation.save();
   }
-
-  /**
-   * get accounts where `accountAuthenId.autoSync = true`
-   * @param {AccountAuthenIdType} socialType
-   * @returns {AccountAuthenIdDocument[]}
-   */
-  getAutoPostAccounts = (
-    socialType: AccountAuthenIdType
-  ): Promise<AccountAuthenIdDocument[]> =>
-    this._accountAuthenId.find({ autoPost: true, type: socialType }).exec();
 }

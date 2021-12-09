@@ -22,8 +22,8 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { Pagination } from '.';
 import { CommentType } from '../schemas/comment.schema';
+import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
 import { Author } from './content.dto';
 
 export class CommentDto {
@@ -56,17 +56,24 @@ export class CommentPayload {
   id: string; //commentId
   @ApiProperty()
   message: string;
+
   @ApiProperty()
-  like: Like;
+  metrics: CastcleMetric;
+
   @ApiProperty()
   author: Author;
+
+  @ApiProperty()
+  participate: CastcleParticipate;
+
   @ApiProperty()
   reply: {
     id: string;
     message: string;
     createdAt: string;
     author: Author;
-    like: Like;
+    metrics: CastcleMetric;
+    participate: CastcleParticipate;
   }[];
   @ApiProperty()
   hasHistory: boolean;
@@ -77,7 +84,7 @@ export class CommentPayload {
 }
 
 export class CommentsReponse {
-  message: string;
+  message?: string;
   payload: CommentPayload[];
-  pagination: Pagination;
+  meta: CastcleMeta;
 }

@@ -49,6 +49,11 @@ import { CommentDocument, ContentDocument } from '../schemas';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { HashtagService } from './hashtag.service';
 
+jest.mock('@castcle-api/logger');
+jest.mock('nodemailer', () => ({
+  createTransport: () => ({ sendMail: jest.fn() })
+}));
+
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -245,16 +250,14 @@ describe('User Service', () => {
       const currentUser = await service.getUserFromCredential(
         result.credentialDocument
       );
-      const allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
+      const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
       const page = await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
         castcleId: 'npop2'
       });
-      const allPages2 = await service.getAllPages(
-        DEFAULT_CONTENT_QUERY_OPTIONS
-      );
+      const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages2.items.length).toEqual(2);
     });
   });
@@ -265,7 +268,7 @@ describe('User Service', () => {
       );
       const ownPages = await service.getUserPages(
         currentUser,
-        DEFAULT_CONTENT_QUERY_OPTIONS
+        DEFAULT_QUERY_OPTIONS
       );
       expect(ownPages.items.length).toEqual(2);
       expect(ownPages.pagination.limit).toEqual(25);
@@ -298,6 +301,8 @@ describe('User Service', () => {
       expect(relationship).not.toBeNull();
       expect(relationship.user).not.toBeNull();
       expect(relationship.followedUser).not.toBeNull();
+      expect(relationship.following).toBeTruthy();
+      expect(relationship.blocking).toBeFalsy();
     });
     it('should not have 2 records if you double follow', async () => {
       const postUser = await service.getUserFromId(currentUser._id);
@@ -690,8 +695,8 @@ describe('User Service', () => {
         console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
         expect(
-          (await preComment.toCommentPayload(contentService._commentModel)).like
-            .count
+          (await preComment.toCommentPayload(contentService._commentModel))
+            .metrics.likeCount
         ).toEqual(2);
         await service._removeAllEngagements(userA);
         const postContent = await contentService.getContentFromId(
@@ -704,7 +709,7 @@ describe('User Service', () => {
         );
         expect(
           (await postComment.toCommentPayload(contentService._commentModel))
-            .like.count
+            .metrics.likeCount
         ).toEqual(1);
       });
     });
@@ -722,14 +727,14 @@ describe('User Service', () => {
         const comments = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments.items.length).toEqual(3);
-        expect(comments.total).toEqual(3);
+        expect(comments.payload.length).toEqual(3);
+        expect(comments.meta.resultCount).toEqual(3);
         await service._removeAllCommentFromUser(userA);
         const comments2 = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments2.total).toEqual(2);
-        expect(comments2.items.length).toEqual(2);
+        expect(comments2.meta.resultCount).toEqual(2);
+        expect(comments2.payload.length).toEqual(2);
       });
     });
     describe('_deactiveAccount()', () => {
@@ -743,7 +748,7 @@ describe('User Service', () => {
         const comments2 = await contentService.getCommentsFromContent(
           fixContents[0]
         );
-        expect(comments2.total).toEqual(1);
+        expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollower(userNotDelete);
         expect(postFollower.items.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
@@ -756,7 +761,7 @@ describe('User Service', () => {
         );
         expect(
           (await postComment.toCommentPayload(contentService._commentModel))
-            .like.count
+            .metrics.likeCount
         ).toEqual(0);
       });
     });
@@ -801,6 +806,174 @@ describe('User Service', () => {
       expect(mentions.users[0].followerCount).toEqual(4);
       expect(mentions.users[1]).toEqual(updatedUser2);
       expect(mentions.users[1].followerCount).toEqual(3);
+    });
+  });
+
+  describe('#blockUser', () => {
+    let user1: UserDocument;
+    let user2: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+      await service._relationshipModel.deleteMany({});
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
+      await expect(service.blockUser(user1, null)).rejects.toMatchObject({
+        response: { code: '4001' }
+      });
+    });
+
+    it('should block user and create blocking relationship', async () => {
+      await service.blockUser(user1, user2);
+      const relationship = await service._relationshipModel
+        .findOne({ user: user1._id, followedUser: user2._id })
+        .exec();
+
+      expect(relationship).not.toBeNull();
+      expect(relationship.blocking).toBeTruthy();
+      expect(relationship.following).toBeFalsy();
+    });
+
+    it('should block following user and update relationship', async () => {
+      await service.follow(user1, user2);
+      await service.blockUser(user1, user2);
+      const relationship = await service._relationshipModel
+        .findOne({ user: user1._id, followedUser: user2._id })
+        .exec();
+
+      expect(relationship).not.toBeNull();
+      expect(relationship.blocking).toBeTruthy();
+      expect(relationship.following).toBeTruthy();
+    });
+  });
+
+  describe('#unblockUser', () => {
+    let user1: UserDocument;
+    let user2: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+      await service._relationshipModel.deleteMany({});
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to unblock is not found', async () => {
+      await expect(service.blockUser(user1, null)).rejects.toMatchObject({
+        response: { code: '4001' }
+      });
+    });
+
+    it('should abort when user to unblock is not followed', async () => {
+      await service.unblockUser(user1, user2);
+      const relationship = await service._relationshipModel
+        .findOne({ user: user1._id, followedUser: user2._id })
+        .exec();
+
+      expect(relationship).toBeNull();
+    });
+
+    it('should unblock following user and update relationship', async () => {
+      await service.follow(user1, user2);
+      await service.unblockUser(user1, user2);
+      const relationship = await service._relationshipModel
+        .findOne({ user: user1._id, followedUser: user2._id })
+        .exec();
+
+      expect(relationship).not.toBeNull();
+      expect(relationship.blocking).toBeFalsy();
+      expect(relationship.following).toBeTruthy();
+    });
+  });
+
+  describe('#reportUser', () => {
+    let user1: UserDocument;
+    let user2: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to report is not found', async () => {
+      await expect(
+        service.reportUser(user1, null, 'message')
+      ).rejects.toMatchObject({ response: { code: '4001' } });
+    });
+
+    it('should report user by sending email to Castcle admin', async () => {
+      jest
+        .spyOn((service as any).transporter, 'sendMail')
+        .mockReturnValueOnce({ messageId: 1 });
+
+      await service.reportUser(user1, user2, 'message');
+      expect((service as any).logger.log).toBeCalled();
+      expect((service as any).transporter.sendMail).toBeCalled();
+    });
+  });
+
+  describe('#getUserFromIdOrCastcleId', () => {
+    let user: UserDocument;
+
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      user.displayId = 'displayId';
+      await user.save();
+    });
+
+    afterAll(async () => {
+      await user.deleteOne();
+    });
+
+    it('should return null when user to find is not found', async () => {
+      await expect(
+        service.getUserFromIdOrCastcleId('xxxxxxxxxx')
+      ).resolves.toBeNull();
+    });
+
+    it('should return user when find user with castcle ID or ID', async () => {
+      const userFromId = await service.getUserFromIdOrCastcleId(
+        String(user._id)
+      );
+
+      const userFromCastcleId = await service.getUserFromIdOrCastcleId(
+        user.displayId
+      );
+
+      expect(userFromId).toMatchObject(userFromCastcleId);
     });
   });
 });

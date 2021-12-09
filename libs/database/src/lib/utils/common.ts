@@ -23,11 +23,10 @@
 
 import {
   CastcleMeta,
-  CastclePagination,
   CastcleQueryOptions,
   QueryOption
 } from '../dtos/common.dto';
-import { Document } from 'mongoose';
+import { Document, Model } from 'mongoose';
 import { Pagination } from '../dtos/common.dto';
 
 /**
@@ -52,17 +51,6 @@ export const createPagination = (
   return pagination;
 };
 
-export const createCastclePagination = (
-  queryOptions: QueryOption,
-  documents: Document[]
-): CastclePagination => {
-  const pagination = new CastclePagination();
-  pagination.limit = queryOptions.maxResults;
-  pagination.firstId = documents[0].id;
-  pagination.lastId = documents[documents.length - 1].id;
-  return pagination;
-};
-
 export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
   const meta = new CastcleMeta();
   if (documents && documents.length > 0) {
@@ -71,4 +59,23 @@ export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
   }
   meta.resultCount = documents.length;
   return meta;
+};
+
+export const createCastcleFilter = async (
+  filter: any,
+  queryOption: QueryOption,
+  model: Model<any>
+) => {
+  if (queryOption.sinceId) {
+    const sinceDocument = await model.findById(queryOption.sinceId).exec();
+    filter.createdAt = {
+      $gt: new Date(sinceDocument['createdAt'])
+    };
+  } else if (queryOption.untilId) {
+    const untilDocument = await model.findById(queryOption.untilId).exec();
+    filter.createdAt = {
+      $lt: new Date(untilDocument['createdAt'])
+    };
+  }
+  return filter;
 };

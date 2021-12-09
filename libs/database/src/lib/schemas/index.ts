@@ -20,47 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Account, AccountDocument } from './account.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from './accountAuthenId.schema';
-import { Comment, CommentDocument } from './comment.schema';
-import { Content, ContentDocument } from './content.schema';
-import { CountryDocument } from './country.schema';
-import {
-  Credential,
-  CredentialDocument,
-  CredentialModel
-} from './credential.schema';
-import { EngagementDocument } from './engagement.schema';
-import { HashtagDocument } from './hashtag.schema';
-import { LanguageDocument } from './language.schema';
-import { NotificationDocument } from './notification.schema';
-import { OtpDocument, OtpObjective } from './otp.schema';
-import { SocialSyncDocument } from './socialSync.schema';
-import { User, UserDocument, UserType } from './user.schema';
-export {
-  CredentialDocument,
-  CredentialModel,
-  UserDocument,
-  AccountDocument,
-  UserType,
-  ContentDocument,
-  NotificationDocument,
-  Account,
-  Content,
-  User,
-  Comment,
-  CommentDocument,
-  LanguageDocument,
-  Credential,
-  HashtagDocument,
-  AccountAuthenIdType,
-  AccountAuthenIdDocument,
-  CountryDocument,
-  OtpObjective,
-  OtpDocument,
-  EngagementDocument,
-  SocialSyncDocument
-};
+
+export * from './account.schema';
+export * from './accountAuthenId.schema';
+export * from './comment.schema';
+export * from './content.schema';
+export * from './country.schema';
+export * from './credential.schema';
+export * from './engagement.schema';
+export * from './hashtag.schema';
+export * from './language.schema';
+export * from './notification.schema';
+export * from './otp.schema';
+export * from './social-sync.schema';
+export * from './user.schema';

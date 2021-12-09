@@ -22,18 +22,21 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
-import { CastcleImage } from '.';
+import { CastcleImage, CastcleIncludes } from '.';
 import { UserVerified } from '../schemas/user.schema';
-import { Pagination } from './common.dto';
-import { CastcleQueryOptions } from './common.dto';
+import { CastcleMeta, QueryOption } from './common.dto';
 export class Url {
   @ApiProperty()
   image: string;
 }
 
+export enum LinkType {
+  Youtube = 'youtube'
+}
+
 class Link {
   @ApiProperty()
-  type: string;
+  type: string | LinkType;
 
   @ApiProperty()
   url: string;
@@ -219,6 +222,7 @@ export class ContentPayloadItem {
     commented: boolean;
     quoted: boolean;
     recasted: boolean;
+    reported: boolean;
   };
   authorId: string;
   'createdAt': string;
@@ -254,8 +258,12 @@ export enum ContentType {
   Image = 'image'
 }
 
-export class CastcleContentQueryOptions extends CastcleQueryOptions {
+export class CastcleContentQueryOptions extends QueryOption {
   type?: ContentType;
+  sortBy: {
+    field: string;
+    type: 'desc' | 'asc';
+  };
 }
 
 export const DEFAULT_CONTENT_QUERY_OPTIONS = {
@@ -263,19 +271,20 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
     field: 'updatedAt',
     type: 'desc'
   },
-  page: 1,
-  limit: 25
+  maxResults: 25
 } as CastcleContentQueryOptions;
 
 export class ContentResponse {
   @ApiProperty()
-  payload: ContentPayloadDto;
+  payload: ContentPayloadItem;
+  @ApiProperty()
+  includes: CastcleIncludes;
 }
 
 export class ContentsResponse {
   @ApiProperty()
-  payload: ContentPayloadDto[];
+  payload: ContentPayloadItem[];
 
   @ApiProperty()
-  pagination: Pagination;
+  meta: CastcleMeta;
 }

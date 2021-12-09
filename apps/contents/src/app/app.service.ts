@@ -24,6 +24,7 @@
 import { AuthenticationService } from '@castcle-api/database';
 import {
   BlogPayload,
+  ContentResponse,
   ContentType,
   SaveContentDto,
   Url
@@ -32,7 +33,14 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { UserDocument } from '@castcle-api/database/schemas';
+import {
+  ContentDocument,
+  EngagementDocument,
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+  UserDocument
+} from '@castcle-api/database/schemas';
+import { Configs } from '@castcle-api/environments';
 
 @Injectable()
 export class AppService {
@@ -101,5 +109,34 @@ export class AppService {
       ).image;
     }
     return body;
+  }
+
+  /**
+   *
+   * @param content
+   * @param engagements
+   * @returns {ContentResponse}
+   */
+  async convertContentToContentResponse(
+    content: ContentDocument,
+    engagements: EngagementDocument[] = []
+  ) {
+    content.author.avatar = content.author.avatar
+      ? new Image(content.author.avatar).toSignUrls()
+      : Configs.DefaultAvatarImages;
+    const castItem = content.originalPost
+      ? [
+          signedContentPayloadItem(
+            toUnsignedContentPayloadItem(content.originalPost)
+          )
+        ]
+      : [];
+    return {
+      payload: content.toContentPayloadItem(engagements),
+      includes: {
+        users: [content.author],
+        casts: castItem
+      }
+    } as ContentResponse;
   }
 }

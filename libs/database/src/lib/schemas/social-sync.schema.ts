@@ -20,53 +20,50 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 3
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 3
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 3
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 3
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 3
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 3
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 3
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 3
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 3
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 3
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 10
-  }
-};
+
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { Author, AuthorSchema } from './author.schema';
+import { CastcleBase } from './base.schema';
+
+export enum SocialProvider {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram',
+  Apple = 'apple'
+}
+
+@Schema({ timestamps: true })
+export class SocialSync extends CastcleBase {
+  @Prop({ required: true, type: AuthorSchema })
+  author: Author;
+
+  @Prop({ required: true })
+  provider: SocialProvider;
+
+  @Prop({ required: true })
+  socialId: string;
+
+  @Prop()
+  userName?: string;
+
+  @Prop()
+  displayName?: string;
+
+  @Prop()
+  avatar?: string;
+
+  @Prop({ default: false })
+  active: boolean;
+
+  @Prop()
+  latestSyncId?: string;
+
+  @Prop()
+  latestSyncDate?: Date;
+}
+
+export type SocialSyncDocument = SocialSync & Document;
+
+export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
