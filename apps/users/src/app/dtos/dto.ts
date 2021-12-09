@@ -30,8 +30,8 @@ export class TargetCastcleDto {
 
 export class UpdateMobileDto {
   @ApiProperty()
-  @IsString()
-  objective: string;
+  @IsEnum(OtpObjective)
+  objective: OtpObjective;
 
   @ApiProperty()
   @IsString()
