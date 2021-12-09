@@ -43,6 +43,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import {
+  CastcleIncludes,
   ContentType,
   PageDto,
   SaveContentDto,
@@ -256,7 +257,7 @@ describe('PageController', () => {
     });
   });
   describe('getPageContents', () => {
-    it('should return ContentsReponse that contain all contain that create by this page', async () => {
+    it('should return ContentsResponse that contain all contain that create by this page', async () => {
       const page = await authService.getUserFromCastcleId(pageDto2.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
@@ -292,6 +293,9 @@ describe('PageController', () => {
         .map((c) => c.toContentPayloadItem());
       expect(response).toEqual({
         payload: items,
+        includes: new CastcleIncludes({
+          users: createResult.map(({ author }) => author)
+        }),
         meta: createCastcleMeta(createResult)
       });
     });
