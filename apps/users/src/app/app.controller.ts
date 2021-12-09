@@ -665,12 +665,7 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: UpdateMobileDto
   ) {
-    const objective: OtpObjective = <OtpObjective>body.objective;
-    if (
-      !objective ||
-      !Object.values(OtpObjective).includes(objective) ||
-      objective !== OtpObjective.VerifyMobile
-    ) {
+    if (body.objective !== OtpObjective.VerifyMobile) {
       logger.error(`Invalid objective.`);
       throw new CastcleException(
         CastcleStatus.PAYLOAD_TYPE_MISMATCH,
