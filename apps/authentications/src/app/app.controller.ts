@@ -112,24 +112,16 @@ export class AuthenticationController {
   @HttpCode(200)
   async checkEmailExists(
     @Req() req: HeadersRequest,
-    @Body() payloadCheckEmailExistDto: CheckEmailExistDto
+    @Body() { email }: CheckEmailExistDto
   ) {
-    //if there is no email in the request and email is not valid (not email )
-    if (
-      !(
-        payloadCheckEmailExistDto.email &&
-        this.authService.validateEmail(payloadCheckEmailExistDto.email)
-      )
-    )
+    if (!this.authService.validateEmail(email))
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     try {
-      const account = await this.authService.getAccountFromEmail(
-        payloadCheckEmailExistDto.email
-      );
+      const account = await this.authService.getAccountFromEmail(email);
       return {
         message: 'success message',
         payload: {
-          exist: account ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
+          exist: account ? true : false
         }
       };
     } catch (error) {
@@ -149,14 +141,15 @@ export class AuthenticationController {
   @CastcleTrack()
   @Post('login')
   @HttpCode(200)
-  async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
+  async login(
+    @Req() req: CredentialRequest,
+    @Body() { username, password }: LoginDto
+  ) {
     try {
-      const account = await this.authService.getAccountFromEmail(
-        body.username.toLowerCase()
-      );
+      const account = await this.authService.getAccountFromEmail(username);
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
-      if (await account.verifyPassword(body.password)) {
+      if (await account.verifyPassword(password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
