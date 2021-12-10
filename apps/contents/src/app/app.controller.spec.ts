@@ -226,13 +226,13 @@ describe('ContentController', () => {
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Short);
-      expect(result.payload.payload).toBeDefined();
+      expect(result.payload).toBeDefined();
       //expect(result.payload.payload).toEqual(shortPayload);
       const content = await contentService.getContentFromId(result.payload.id);
 
-      expect(result.payload).toEqual(content.toContentPayload());
+      expect(result.payload).toEqual(content.toContentPayloadItem());
 
-      expect(result.payload.author.id).toEqual(user._id);
+      expect(result.payload.authorId).toEqual(user._id);
     });
     it('should create a new blog content from DTO', async () => {
       const blogPayload = {
@@ -261,10 +261,11 @@ describe('ContentController', () => {
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Blog);
-      expect(result.payload.payload).toEqual(blogPayload);
+      expect(result.payload.photo).toEqual(blogPayload.photo);
+      expect(result.payload.message).toEqual(blogPayload.message);
       const content = await contentService.getContentFromId(result.payload.id);
       //expect(result.payload.).toEqual(content.toContentPayload());
-      expect(result.payload.author.id).toEqual(user._id);
+      expect(result.payload.authorId).toEqual(user._id);
     });
     it('should be able to create a content by page', async () => {
       const pageDto = {
@@ -302,7 +303,7 @@ describe('ContentController', () => {
         } as any
       );
       payloadId = result.payload.id;
-      expect(result.payload.author.id).toEqual(newPage._id);
+      expect(result.payload.authorId).toEqual(newPage._id);
     });
   });
   describe('getContentFromId', () => {
@@ -334,7 +335,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
-      console.debug('createResult', result.payload.author);
+      console.debug('createResult', result.payload.authorId);
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {
@@ -390,7 +391,9 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
-      expect(updateResult.payload.payload).toEqual(updateContentPayload);
+      expect(updateResult.payload.message).toEqual(
+        updateContentPayload.message
+      );
       const getResult = await contentController.getContentFromId(
         result.payload.id,
         {
@@ -415,9 +418,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
-      expect((updateResult.payload.payload as ShortPayload).message).toEqual(
-        'hibro'
-      );
+      expect(updateResult.payload.message).toEqual('hibro');
     });
   });
   describe('deleteContentFromId() ', () => {

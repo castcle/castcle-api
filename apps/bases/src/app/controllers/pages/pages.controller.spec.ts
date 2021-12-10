@@ -23,6 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  createCastcleMeta,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures
@@ -42,6 +43,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import {
+  CastcleIncludes,
   ContentType,
   PageDto,
   SaveContentDto,
@@ -255,7 +257,7 @@ describe('PageController', () => {
     });
   });
   describe('getPageContents', () => {
-    it('should return ContentsReponse that contain all contain that create by this page', async () => {
+    it('should return ContentsResponse that contain all contain that create by this page', async () => {
       const page = await authService.getUserFromCastcleId(pageDto2.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
@@ -286,15 +288,15 @@ describe('PageController', () => {
         $credential: userCredential,
         $language: 'th'
       } as any);
-
+      const items = createResult
+        .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
+        .map((c) => c.toContentPayloadItem());
       expect(response).toEqual({
-        payload: createResult
-          .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
-          .map((c) => c.toContentPayload()),
-        pagination: {
-          self: 1,
-          limit: 25
-        }
+        payload: items,
+        includes: new CastcleIncludes({
+          users: createResult.map(({ author }) => author)
+        }),
+        meta: createCastcleMeta(createResult)
       });
     });
   });

@@ -67,20 +67,19 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponse,
-  ForgotPasswordVerificationOtpDto,
   GuestLoginDto,
   LoginDto,
   LoginResponse,
   OauthTokenResponse,
+  otpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
-  RequestOtpResponse,
   SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
-  VerificationPasswordBody,
-  VerificationPasswordResponse
+  verificationOtpDto,
+  VerificationPasswordBody
 } from './dtos/dto';
 import {
   GuestInterceptor,
@@ -113,24 +112,16 @@ export class AuthenticationController {
   @HttpCode(200)
   async checkEmailExists(
     @Req() req: HeadersRequest,
-    @Body() payloadCheckEmailExistDto: CheckEmailExistDto
+    @Body() { email }: CheckEmailExistDto
   ) {
-    //if there is no email in the request and email is not valid (not email )
-    if (
-      !(
-        payloadCheckEmailExistDto.email &&
-        this.authService.validateEmail(payloadCheckEmailExistDto.email)
-      )
-    )
+    if (!this.authService.validateEmail(email))
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
     try {
-      const account = await this.authService.getAccountFromEmail(
-        payloadCheckEmailExistDto.email
-      );
+      const account = await this.authService.getAccountFromEmail(email);
       return {
         message: 'success message',
         payload: {
-          exist: account ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
+          exist: account ? true : false
         }
       };
     } catch (error) {
@@ -150,14 +141,15 @@ export class AuthenticationController {
   @CastcleTrack()
   @Post('login')
   @HttpCode(200)
-  async login(@Req() req: CredentialRequest, @Body() body: LoginDto) {
+  async login(
+    @Req() req: CredentialRequest,
+    @Body() { username, password }: LoginDto
+  ) {
     try {
-      const account = await this.authService.getAccountFromEmail(
-        body.username.toLowerCase()
-      );
+      const account = await this.authService.getAccountFromEmail(username);
       if (!account)
         throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
-      if (await account.verifyPassword(body.password)) {
+      if (await account.verifyPassword(password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
@@ -524,13 +516,13 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: RequestOtpResponse
+    type: otpResponse
   })
   @CastcleBasicAuth()
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
-    @Body() body: ForgotPasswordVerificationOtpDto,
+    @Body() body: verificationOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
@@ -538,7 +530,8 @@ export class AuthenticationController {
     );
     const otp = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
-      const response: RequestOtpResponse = {
+      const response: otpResponse = {
+        objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -551,7 +544,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: RequestOtpResponse
+    type: otpResponse
   })
   @CastcleBasicAuth()
   @Post('requestOTP')
@@ -562,7 +555,8 @@ export class AuthenticationController {
     );
     const otp = await this.appService.requestOtpCode(body, req);
     if (otp && otp.isValid()) {
-      const response: RequestOtpResponse = {
+      const response: otpResponse = {
+        objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -631,28 +625,42 @@ export class AuthenticationController {
   })
   @ApiResponse({
     status: 201,
-    type: VerificationPasswordResponse
+    type: otpResponse
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('verificationPassword')
   async verificationPassword(
-    @Body('password') password: string,
+    @Body() payload: VerificationPasswordBody,
     @Req() req: CredentialRequest
-  ): Promise<VerificationPasswordResponse> {
-    //req.$credential.
+  ): Promise<otpResponse> {
+    const objective: OtpObjective = <OtpObjective>payload.objective;
+    if (
+      !objective ||
+      !Object.values(OtpObjective).includes(objective) ||
+      objective !== OtpObjective.ChangePassword
+    ) {
+      this.logger.error(`Invalid objective.`);
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
     //add password checker
-    this.appService.validatePassword(password, req.$language);
-    if (await account.verifyPassword(password)) {
+    this.appService.validatePassword(payload.password, req.$language);
+    if (await account.verifyPassword(payload.password)) {
       const otp = await this.authService.generateOtp(
         account,
-        OtpObjective.VerifyPassword,
+        objective,
         req.$credential.account._id,
-        ''
+        '',
+        true
       );
       return {
+        objective: payload.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString()
       };
@@ -673,6 +681,20 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
+    const objective: OtpObjective = <OtpObjective>payload.objective;
+    if (
+      !objective ||
+      !Object.values(OtpObjective).includes(objective) ||
+      (objective !== OtpObjective.ChangePassword &&
+        objective !== OtpObjective.ForgotPassword)
+    ) {
+      this.logger.error(`Invalid objective.`);
+      throw new CastcleException(
+        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+        req.$language
+      );
+    }
+
     this.logger.log(`Start change password refCode: ${payload.refCode}`);
     return this.appService.resetPassword(payload, req);
   }

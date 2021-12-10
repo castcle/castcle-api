@@ -21,10 +21,11 @@
  * or have any questions.
  */
 
+import { CastcleIncludes } from '.';
 import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
 import { User } from '../schemas/user.schema';
 import { CastcleMeta } from './common.dto';
-import { Author, ContentPayloadItem } from './content.dto';
+import { ContentPayloadItem } from './content.dto';
 
 export class GuestFeedItemDto {
   content?: any;
@@ -53,8 +54,6 @@ export class GuestFeedItemPayloadItem {
 
 export class GuestFeedItemPayload {
   payload: GuestFeedItemPayloadItem[];
-  includes: {
-    users: Author[];
-  };
+  includes: CastcleIncludes;
   meta: CastcleMeta;
 }

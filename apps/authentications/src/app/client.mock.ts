@@ -173,7 +173,36 @@ export class TwitterClientMock {
 
 export class TwillioClientMock {
   async requestOtp(receiver: string, channel: TwillioChannel) {
-    return true;
+    return {
+      sid: 'VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      service_sid: 'VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      account_sid: 'ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      to: '+15017122661',
+      channel: 'sms',
+      status: 'pending',
+      valid: false,
+      date_created: '2015-07-30T20:00:00Z',
+      date_updated: '2015-07-30T20:00:00Z',
+      lookup: {
+        carrier: {
+          error_code: null,
+          name: 'Carrier Name',
+          mobile_country_code: '310',
+          mobile_network_code: '150',
+          type: 'mobile'
+        }
+      },
+      amount: null,
+      payee: null,
+      send_code_attempts: [
+        {
+          time: '2015-07-30T20:00:00Z',
+          channel: 'SMS',
+          channel_id: null
+        }
+      ],
+      url: 'https://verify.twilio.com/v2/Services/VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+    };
   }
 
   async verifyOtp(receiver: string, otp: string) {
@@ -182,6 +211,10 @@ export class TwillioClientMock {
     } else {
       return { status: 'pending' };
     }
+  }
+
+  async canceledOtp(sid: string) {
+    return true;
   }
 }
 

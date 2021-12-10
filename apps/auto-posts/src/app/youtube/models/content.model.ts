@@ -20,53 +20,45 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 3
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 3
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600
-  },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
-    Ttl: 3
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 3
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 3
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 3
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 3
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 3
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 3
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 3
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 10
+
+export class SubscriptionContent {
+  feed: DeletedContent | PublishedContent;
+  isPublishedContent: boolean;
+
+  constructor(feed: DeletedContent | PublishedContent) {
+    this.feed = feed;
+    this.isPublishedContent = Boolean((feed as PublishedContent).entry?.id);
   }
-};
+}
+
+export class DeletedContent {
+  'at:deleted-entry': DeletedEntry;
+}
+
+class DeletedEntry {
+  link: string;
+  'at:by': Author;
+}
+
+export class PublishedContent {
+  link: string[];
+  title: string;
+  updated: Date;
+  entry: Entry;
+}
+
+class Entry {
+  id: string;
+  'yt:videoId': string;
+  'yt:channelId': string;
+  title: string;
+  link: string;
+  author: Author;
+  published: Date;
+  updated: Date;
+}
+
+class Author {
+  name: string;
+  uri: string;
+}

@@ -22,31 +22,43 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  AuthenticationService,
-  ContentService,
-  HashtagService,
-  MongooseAsyncFeatures,
-  MongooseForFeatures
-} from '@castcle-api/database';
+import { ContentService, SocialSyncService } from '@castcle-api/database';
 import { TwitterService } from './twitter.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   ReferencedTweetV2,
-  TweetUserTimelineV2Paginator
+  TweetUserTimelineV2Paginator,
+  TwitterApiv2
 } from 'twitter-api-v2';
 import { ContentType } from '@castcle-api/database/dtos';
-import { Downloader, Image, UtilsAwsModule } from '@castcle-api/utils/aws';
+import { Downloader, Image } from '@castcle-api/utils/aws';
+import { CastLogger } from '@castcle-api/logger';
+
+jest.mock('twitter-api-v2');
+jest.mock('@castcle-api/utils/aws');
+
+class PrivateTwitterService {
+  client: TwitterApiv2;
+  logger: CastLogger;
+}
+
+type Union<T, R> = Pick<T, Exclude<keyof T, keyof R>> & R;
 
 describe('Twitter Service', () => {
-  let mongoMemoryServer: MongoMemoryServer;
-  let authenticationService: AuthenticationService;
   let contentService: ContentService;
-  let twitterService: TwitterService;
+  let socialSyncService: SocialSyncService;
+  let twitterService: Union<TwitterService, PrivateTwitterService>;
 
-  const accountAuthenIdDocument = {
-    account: { _id: '1234567890' },
+  const author = {
+    id: '1234567890',
+    type: 'page',
+    castcleId: 'castcleId',
+    displayName: 'Castcle'
+  };
+
+  const syncAccount = {
+    active: true,
+    author,
+    socialId: '1234567890',
     save: jest.fn()
   } as any;
 
@@ -87,92 +99,104 @@ describe('Twitter Service', () => {
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        MongooseModule.forRootAsync({
-          useFactory: async () => {
-            mongoMemoryServer = await MongoMemoryServer.create();
-            return { uri: mongoMemoryServer.getUri() };
-          }
-        }),
-        UtilsAwsModule
-      ],
       providers: [
-        AuthenticationService,
-        ContentService,
-        HashtagService,
         TwitterService,
-        { provide: Downloader, useValue: { getImageFromUrl: jest.fn() } }
+        {
+          provide: ContentService,
+          useValue: { createContentsFromAuthor: jest.fn() }
+        },
+        {
+          provide: Downloader,
+          useValue: { getImageFromUrl: jest.fn() }
+        },
+        {
+          provide: SocialSyncService,
+          useValue: { getAutoSyncAccounts: jest.fn() }
+        }
       ]
     }).compile();
 
-    authenticationService = module.get(AuthenticationService);
     contentService = module.get(ContentService);
+    socialSyncService = module.get(SocialSyncService);
     twitterService = module.get(TwitterService);
+    twitterService.logger = { log: jest.fn() } as any;
+    twitterService.client = { userTimeline: jest.fn() } as any;
+  });
 
-    jest
-      .spyOn(Image, 'upload')
-      .mockResolvedValue({ toSignUrl: () => media.url } as any);
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('#handleTwitterJobs', () => {
     it('should log activities', async () => {
-      (twitterService as any).logger = { log: jest.fn() };
+      jest
+        .spyOn(socialSyncService, 'getAutoSyncAccounts')
+        .mockResolvedValueOnce([]);
+
       await twitterService.handleTwitterJobs();
 
-      expect((twitterService as any).logger.log).toBeCalledTimes(2);
+      expect(twitterService.logger.log).toBeCalledTimes(2);
     });
   });
 
   describe('#getTweetsByAccount', () => {
     it('should abort job if there is no tweet', async () => {
-      jest
-        .spyOn(authenticationService, 'getUserFromAccount')
-        .mockImplementationOnce(jest.fn());
-
       jest.spyOn(twitterService, 'getTimelineByUserId').mockResolvedValueOnce({
         meta: { result_count: 0 }
       } as TweetUserTimelineV2Paginator);
 
-      await twitterService.getTweetsByAccount(accountAuthenIdDocument);
+      jest
+        .spyOn(twitterService, 'convertTimelineToContents')
+        .mockImplementationOnce(jest.fn());
 
-      expect(authenticationService.getUserFromAccount).toBeCalledTimes(0);
+      await twitterService.getTweetsByAccount(syncAccount);
+
+      expect(twitterService.convertTimelineToContents).not.toBeCalled();
     });
 
-    it('should map user and tweets to contents then save all contents', async () => {
+    it('should map author and tweets to contents then save all contents', async () => {
       jest.spyOn(twitterService, 'getTimelineByUserId').mockResolvedValueOnce({
         data: timeline,
         meta: { result_count: meta.result_count }
       } as TweetUserTimelineV2Paginator);
 
       jest
-        .spyOn(authenticationService, 'getUserFromAccount')
-        .mockImplementation(jest.fn());
+        .spyOn(twitterService, 'convertTimelineToContents')
+        .mockResolvedValueOnce([]);
 
       jest
-        .spyOn(contentService, 'createContentsFromUser')
-        .mockImplementation(jest.fn());
+        .spyOn(contentService, 'createContentsFromAuthor')
+        .mockResolvedValueOnce([]);
 
-      await twitterService.getTweetsByAccount(accountAuthenIdDocument);
-
-      expect(accountAuthenIdDocument.save).toBeCalledTimes(1);
+      await expect(
+        twitterService.getTweetsByAccount(syncAccount)
+      ).resolves.not.toThrow();
     });
   });
 
-  describe('#getTweetsByUserId', () => {
-    it('should return user timeline', () => {
-      (twitterService as any).client = { userTimeline: jest.fn() };
-      twitterService.getTimelineByUserId('userId', '1');
+  describe('#getTimelineByUserId', () => {
+    it('should return user timeline', async () => {
+      jest.spyOn(twitterService.client, 'userTimeline').mockResolvedValueOnce({
+        data: timeline
+      } as TweetUserTimelineV2Paginator);
 
-      expect((twitterService as any).client.userTimeline).toBeCalled();
+      expect(() =>
+        twitterService.getTimelineByUserId('userId', '1')
+      ).not.toThrow();
     });
   });
 
   describe('#convertTimelineToContents', () => {
+    beforeEach(() => {
+      jest
+        .spyOn(Image, 'upload')
+        .mockResolvedValue({ toSignUrl: () => media.url } as Image);
+    });
+
     it('should filter quoted tweets', async () => {
       const contents = await twitterService.convertTimelineToContents(
-        accountAuthenIdDocument.account._id,
+        author.id,
         timeline
       );
 
@@ -182,7 +206,7 @@ describe('Twitter Service', () => {
     it('should trim last Twitter URL and convert all tweets to short contents', async () => {
       const expectedText = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
       const contents = await twitterService.convertTimelineToContents(
-        accountAuthenIdDocument.account._id,
+        author.id,
         timeline
       );
 

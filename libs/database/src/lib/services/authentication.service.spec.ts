@@ -682,7 +682,8 @@ describe('Authentication Service', () => {
           account,
           OtpObjective.ForgotPassword,
           account.id,
-          'email'
+          'email',
+          false
         );
         expect(otp.refCode).toBeDefined;
         expect(otp.isValid()).toEqual(true);

@@ -49,6 +49,7 @@ export enum CastcleStatus {
   PAGE_IS_EXIST = '3015',
   USER_NAME_IS_EXIST = '3016',
   USER_ID_IS_EXIST = '3017',
+  MOBILE_NUMBER_IS_EXIST = '3018',
   USER_OR_PAGE_NOT_FOUND = '4001',
   FEATURE_NOT_EXIST = '5001',
   PAYLOAD_TYPE_MISMATCH = '5002',
@@ -64,7 +65,8 @@ interface ErrorStatus {
 
 export class CastcleException extends HttpException {
   public errorStatus: ErrorStatus;
-  constructor(castcleStatus: CastcleStatus, language = 'en') {
+
+  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'en') {
     const error: ErrorStatus = LocalErrorMessage[language]
       ? LocalErrorMessage[language][castcleStatus]
       : ErrorMessages[castcleStatus];
@@ -77,4 +79,7 @@ export class CastcleException extends HttpException {
       return LocalErrorMessage[language][this.errorStatus.code];
     else return LocalErrorMessage.default[this.errorStatus.code];
   }
+
+  static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
+  static CONTENT_NOT_FOUND = new CastcleException('5003');
 }
