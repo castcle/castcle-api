@@ -116,7 +116,7 @@ export const ThErrorMessages = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    message: 'refCode ไม่ถูกต้อง หรือ หมดอายุ'
   },
   '3013': {
     statusCode: '400',

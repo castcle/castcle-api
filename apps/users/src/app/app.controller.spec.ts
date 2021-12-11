@@ -461,10 +461,21 @@ describe('AppController', () => {
     it('should return Exception when get guest account', async () => {
       const countryCode = '+66';
       const mobile = '0815678901';
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
       const newOtp = await authService.generateOtp(
-        account,
+        guest.accountDocument,
         OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
+        guest.accountDocument._id,
         'mobile',
         true
       );
@@ -476,12 +487,6 @@ describe('AppController', () => {
         mobileNumber: mobile
       };
 
-      const guest = await authService.createAccount({
-        device: 'iPhone8',
-        deviceUUID: 'ios8',
-        header: { platform: 'ios' },
-        languagesPreferences: ['th']
-      });
       const credentialGuest = {
         $credential: guest.credentialDocument,
         $language: 'th'
@@ -491,7 +496,7 @@ describe('AppController', () => {
         appController.updateMobile(credentialGuest, request)
       ).rejects.toEqual(
         new CastcleException(
-          CastcleStatus.INVALID_ACCESS_TOKEN,
+          CastcleStatus.FORBIDDEN_REQUEST,
           credential.$language
         )
       );

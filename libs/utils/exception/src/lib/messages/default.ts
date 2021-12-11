@@ -116,7 +116,7 @@ export const ErrorMessages = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Invalid ref code. Please try again.'
   },
   '3013': {
     statusCode: '400',
