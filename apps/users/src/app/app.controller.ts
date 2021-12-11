@@ -617,19 +617,36 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: 204
+    status: HttpStatus.NO_CONTENT
   })
   @ApiBody({
     type: SocialSyncDto
   })
   @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post('syncSocial')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
     logger.log(`Start create sync social.`);
     logger.log(JSON.stringify(body));
 
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const currentSync = await this.socialSyncService.getAllSocialSyncBySocial(
+      body.provider,
+      body.uid
+    );
+
+    if (currentSync && currentSync.length > 0) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+        req.$language
+      );
+    }
+
     if (user) {
       logger.log(`create sync data.`);
       await this.socialSyncService.create(user, body);

@@ -20,20 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EntityVisibility, SocialSyncDto } from '../dtos';
+import { EntityVisibility } from '../dtos';
 import {
   SocialProvider,
   SocialSync,
   SocialSyncDocument,
-  UserDocument,
-  UserType
+  UserDocument
 } from '../schemas';
-import { Author } from '../schemas/author.schema';
+import { SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {
@@ -74,25 +72,33 @@ export class SocialSyncService {
   };
 
   /**
+   * get all account by social ID
+   * @param {SocialProvider} socialProvider e.g. facebook, google, twitter
+   * @param {string} socialId
+   * @returns {Promise<SocialSyncDocument[]>}
+   */
+  getAllSocialSyncBySocial = (
+    socialProvider: SocialProvider,
+    socialId: string
+  ): Promise<SocialSyncDocument[]> => {
+    return this.socialSyncModel
+      .find({ provider: socialProvider, socialId })
+      .exec();
+  };
+
+  /**
    * create new language
    * @param {UserDocument} user
    * @param {SocialSyncDto} socialSync payload
    * @returns {SocialSyncDocument} return new social sync document
    * */
-  async create(user: UserDocument, socialSync: SocialSyncDto) {
+  create = (
+    user: UserDocument,
+    socialSync: SocialSyncDto
+  ): Promise<SocialSyncDocument> => {
     this.logger.log('save social sync.');
-    const author: Author = {
-      id: user._id,
-      avatar: user.profile?.images?.avatar || null,
-      castcleId: user.displayId,
-      displayName: user.displayName,
-      followed: false,
-      type: user.type === UserType.Page ? UserType.Page : UserType.People,
-      verified: user.verified
-    };
-
     const newSocialSync = new this.socialSyncModel({
-      author: author,
+      author: { id: user.id },
       provider: socialSync.provider,
       socialId: socialSync.uid,
       userName: socialSync.userName,
@@ -101,7 +107,7 @@ export class SocialSyncService {
       active: socialSync.active ? socialSync.active : true
     });
     return newSocialSync.save();
-  }
+  };
 
   /**
    * get social sync from User Document
@@ -109,7 +115,7 @@ export class SocialSyncService {
    * @param {UserDocument} user
    * @returns {SocialSyncDocument[]} return all social sync Document
    * */
-  async getsocialSyncFromUser(user: UserDocument) {
+  getSocialSyncByUser = (user: UserDocument): Promise<SocialSyncDocument[]> => {
     const findFilter: {
       'author.id': any;
       visibility: EntityVisibility;
@@ -118,5 +124,5 @@ export class SocialSyncService {
       visibility: EntityVisibility.Publish
     };
     return this.socialSyncModel.find(findFilter).exec();
-  }
+  };
 }
