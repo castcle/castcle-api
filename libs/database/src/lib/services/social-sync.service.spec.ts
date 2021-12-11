@@ -20,3 +20,121 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import {
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  SocialSyncService
+} from '../database.module';
+import { SocialSyncDto } from '../dtos/user.dto';
+import { env } from '../environment';
+import { SocialProvider } from '../schemas/social-sync.schema';
+import { UserDocument, UserType } from './../schemas/user.schema';
+
+let mongod: MongoMemoryServer;
+const rootMongooseTestModule = (
+  options: MongooseModuleOptions = { useFindAndModify: false }
+) =>
+  MongooseModule.forRootAsync({
+    useFactory: async () => {
+      mongod = await MongoMemoryServer.create();
+      const mongoUri = mongod.getUri();
+      return {
+        uri: mongoUri,
+        ...options
+      };
+    }
+  });
+
+const closeInMongodConnection = async () => {
+  if (mongod) await mongod.stop();
+};
+
+describe('SocialSyncService', () => {
+  let service: SocialSyncService;
+  let mocksUser: UserDocument;
+  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  const importModules = env.DB_TEST_IN_DB
+    ? [
+        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
+        MongooseAsyncFeatures,
+        MongooseForFeatures
+      ]
+    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
+  const providers = [SocialSyncService];
+
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: importModules,
+      providers: providers
+    }).compile();
+    service = module.get<SocialSyncService>(SocialSyncService);
+
+    mocksUser = new service.userModel({
+      ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
+      displayName: 'mock user',
+      displayId: 'mockid',
+      type: UserType.People
+    });
+    await mocksUser.save();
+  });
+
+  afterAll(async () => {
+    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+  });
+
+  describe('#create social sync', () => {
+    it('should create new social sync in db', async () => {
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Facebook,
+        uid: '12345678',
+        userName: 'mockfb',
+        displayName: 'mock fb',
+        avatar: 'www.facebook.com/mockfb',
+        active: true
+      };
+      const resultData = await service.create(mocksUser, socialSyncDto);
+
+      expect(resultData).toBeDefined();
+      expect(resultData.provider).toEqual(SocialProvider.Facebook);
+      expect(resultData.author.id).toEqual(mocksUser.id);
+      expect(resultData.socialId).toEqual('12345678');
+    });
+  });
+
+  describe('#getAllSocialSyncBySocial', () => {
+    it('should get all SocialSync BySocial in db', async () => {
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        uid: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+      await service.create(mocksUser, socialSyncDto);
+
+      const resultData = await service.getAllSocialSyncBySocial(
+        SocialProvider.Facebook,
+        '12345678'
+      );
+
+      expect(resultData).toBeDefined();
+      expect(resultData[0].provider).toEqual(SocialProvider.Facebook);
+      expect(resultData[0].socialId).toEqual('12345678');
+      expect(resultData.length).toEqual(1);
+    });
+  });
+
+  describe('#getSocialSyncByUser', () => {
+    it('should get all SocialSync By User in db', async () => {
+      const resultData = await service.getSocialSyncByUser(mocksUser);
+      expect(resultData).toBeDefined();
+      expect(resultData.length).toEqual(2);
+    });
+  });
+});
