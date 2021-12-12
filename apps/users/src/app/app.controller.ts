@@ -614,58 +614,6 @@ export class UserController {
     } as FollowResponse;
   }
 
-  /**
-   * User {castcleId} sync social media for auto post
-   * @param {CredentialRequest} req Request that has credential from interceptor or passport
-   * @param {SocialSyncDto} body social sync payload
-   * @returns {''}
-   */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT
-  })
-  @ApiBody({
-    type: SocialSyncDto
-  })
-  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('syncSocial')
-  async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
-    logger.log(`Start create sync social.`);
-    logger.log(JSON.stringify(body));
-
-    logger.log('Validate guest');
-    await this.validateGuestAccount(req.$credential, req.$language);
-
-    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
-    const currentSync = await this.socialSyncService.getAllSocialSyncBySocial(
-      body.provider,
-      body.uid
-    );
-
-    if (currentSync && currentSync.length > 0) {
-      logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
-      );
-      throw new CastcleException(
-        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-        req.$language
-      );
-    }
-
-    if (user) {
-      logger.log(`create sync data.`);
-      await this.socialSyncService.create(user, body);
-      return '';
-    } else {
-      logger.error(`Can't get user data`);
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
-    }
-  }
-
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/blocking')
   @CastcleBasicAuth()
@@ -794,6 +742,69 @@ export class UserController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  /**
+   * User {castcleId} sync social media for auto post
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('syncSocial')
+  async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
+    logger.log(`Start create sync social.`);
+    logger.log(JSON.stringify(body));
+
+    logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential, req.$language);
+
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const userSync = await this.socialSyncService.getSocialSyncByUser(user);
+    if (userSync.find((x) => x.provider === body.provider)) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+        req.$language
+      );
+    }
+
+    const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
+      body.provider,
+      body.uid
+    );
+
+    if (dupSocialSync && dupSocialSync.length > 0) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+        req.$language
+      );
+    }
+
+    if (user) {
+      logger.log(`create sync data.`);
+      await this.socialSyncService.create(user, body);
+      return '';
+    } else {
+      logger.error(`Can't get user data`);
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
   }
 
   private async validateGuestAccount(
