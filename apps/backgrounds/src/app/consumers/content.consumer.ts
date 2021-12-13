@@ -48,12 +48,6 @@ export class ContentConsumer {
       //this.userService.deactiveQueue();
       switch (job.data.content.action) {
         case CastcleQueueAction.CreateFeedItemToEveryOne:
-          this.contentService.createFeedItemFromAuthorIdToEveryone(
-            job.data.content.id
-          );
-          this.logger.log(
-            `Creating feed item for user ${job.data.content.id} `
-          );
           if (Environment.AUTO_CREATE_GUEST_FEED) {
             this.contentService.createGuestFeedItemFromAuthorId(
               job.data.content.id
