@@ -149,7 +149,11 @@ export const signContentPayload = (
       ? payload[engagementNameMap[key]][engagementNameMap[key]]
       : false;
   }
-  if (payload.payload.photo && payload.payload.photo.contents) {
+  if (
+    payload.payload &&
+    payload.payload.photo &&
+    payload.payload.photo.contents
+  ) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
     ).map((url: CastcleImage) => {
@@ -200,10 +204,10 @@ export const transformContentPayloadToV2 = (
   const contentPayloadItem = {
     id: content.id,
     authorId: content.author.id,
-    message: (content.payload as ShortPayload).message,
+    message: (content.payload as ShortPayload)?.message,
     type: content.type,
-    link: (content.payload as ShortPayload).link,
-    photo: (content.payload as ShortPayload).photo,
+    link: (content.payload as ShortPayload)?.link,
+    photo: (content.payload as ShortPayload)?.photo,
     metrics: {
       likeCount: content.liked.count,
       commentCount: content.commented.count,
@@ -246,9 +250,9 @@ export const toUnsignedContentPayloadItem = (
     id: String(content._id),
     authorId: content.author.id,
     type: content.type,
-    message: (content.payload as ShortPayload).message,
-    link: (content.payload as ShortPayload).link,
-    photo: (content.payload as ShortPayload).photo,
+    message: (content.payload as ShortPayload)?.message,
+    link: (content.payload as ShortPayload)?.link,
+    photo: (content.payload as ShortPayload)?.photo,
 
     metrics: {
       likeCount: content.engagements?.like?.count | 0,
