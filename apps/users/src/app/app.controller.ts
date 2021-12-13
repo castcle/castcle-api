@@ -784,7 +784,7 @@ export class UserController {
       body.uid
     );
 
-    if (dupSocialSync && dupSocialSync.length > 0) {
+    if (dupSocialSync?.length) {
       logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
       );
