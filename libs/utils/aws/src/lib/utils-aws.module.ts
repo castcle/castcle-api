@@ -4,7 +4,8 @@ import { Module } from '@nestjs/common';
 import { Downloader } from './downloader';
 import { Image, ImageUploadOptions } from './image';
 import { Uploader, UploadOptions } from './uploader';
-import { AVATAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
+import { AVARTAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
+import { predictContents } from './functions/predict-content';
 
 @Module({
   imports: [
@@ -25,5 +26,6 @@ export {
   Downloader,
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
-  ImageUploadOptions
+  ImageUploadOptions,
+  predictContents
 };
