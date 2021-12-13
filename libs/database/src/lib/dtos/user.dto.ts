@@ -231,11 +231,11 @@ export class FollowResponse {
 export class SocialSyncDto {
   @ApiProperty()
   @IsString()
-  castcleId: string;
+  castcleId?: string;
 
   @ApiProperty()
   @IsEnum(SocialProvider)
-  provider: SocialProvider;
+  provider?: SocialProvider;
 
   @ApiProperty()
   @IsString()

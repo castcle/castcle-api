@@ -24,12 +24,7 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  SocialProvider,
-  SocialSync,
-  SocialSyncDocument,
-  UserDocument
-} from '../schemas';
+import { SocialProvider, SocialSyncDocument, UserDocument } from '../schemas';
 import { SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
@@ -39,7 +34,8 @@ export class SocialSyncService {
     CastLoggerOptions
   );
   constructor(
-    @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
+    @InjectModel('SocialSync')
+    private socialSyncModel: Model<SocialSyncDocument>,
     @InjectModel('User')
     public userModel: Model<UserDocument>
   ) {}
