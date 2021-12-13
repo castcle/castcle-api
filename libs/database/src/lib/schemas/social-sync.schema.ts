@@ -30,9 +30,8 @@ import { CastcleBase } from './base.schema';
 export enum SocialProvider {
   Twitter = 'twitter',
   Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
+  Youtube = 'youtube',
+  Medium = 'medium'
 }
 
 @Schema({ timestamps: true })

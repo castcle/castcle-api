@@ -42,6 +42,7 @@ import {
 import {
   CredentialDocument,
   OtpObjective,
+  SocialProvider,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -169,6 +170,7 @@ export class UserController {
     logger.log('Root');
     return this.appService.getData();
   }
+
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -183,6 +185,27 @@ export class UserController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  @CastcleAuth(CacheKeyName.SyncSocial)
+  @Get('syncSocial')
+  async syncSocialGet(@Req() req: CredentialRequest) {
+    logger.log(`start get all my sync socail.`);
+
+    logger.log(`Get user.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+
+    logger.log(`Get social from user.`);
+    const social = await this.socialSyncService.getSocialSyncByUser(user);
+    const response = {};
+
+    logger.log(`Generate response.`);
+    for (const item in SocialProvider) {
+      const data = social.find((x) => x.provider === SocialProvider[item]);
+      const key = SocialProvider[item];
+      response[key] = data ? data.toSocialSyncPayload() : null;
+    }
+    return response;
   }
 
   @ApiOkResponse({
