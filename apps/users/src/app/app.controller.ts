@@ -189,7 +189,7 @@ export class UserController {
 
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('syncSocial')
-  async syncSocialGet(@Req() req: CredentialRequest) {
+  async getSyncSocial(@Req() req: CredentialRequest) {
     logger.log(`start get all my sync socail.`);
 
     logger.log(`Get user.`);

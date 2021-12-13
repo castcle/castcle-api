@@ -633,5 +633,39 @@ describe('AppController', () => {
         )
       );
     });
+
+    it('should get all sync social from user', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: 'f89766',
+        userName: 'mockfb',
+        displayName: 'mock fb',
+        avatar: 'www.facebook.com/mockfb',
+        active: true
+      };
+      await appController.syncSocial(credential, request);
+      const result = await appController.getSyncSocial(credential);
+      const expectResult = {
+        twitter: {
+          uid: 't12345678',
+          username: 'mocktw',
+          displayName: 'mock tw',
+          avatar: 'www.twitter.com/mocktw',
+          active: true
+        },
+        facebook: {
+          uid: 'f89766',
+          username: 'mockfb',
+          displayName: 'mock fb',
+          avatar: 'www.facebook.com/mockfb',
+          active: true
+        },
+        youtube: null,
+        medium: null
+      };
+      expect(result).toBeDefined();
+      expect(result).toEqual(expectResult);
+    });
   });
 });
