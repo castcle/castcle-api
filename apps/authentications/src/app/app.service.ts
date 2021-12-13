@@ -106,6 +106,24 @@ export class AppService {
     return { message: 'Welcome to authentications!' };
   }
 
+  /**
+   * Get ENV and return castcle mobile deep link url
+   * @returns {string}
+   */
+  getCastcleMobileLink = () => {
+    if (env && env.NODE_ENV) {
+      const links = {
+        development: 'castcle-dev://?verify=true',
+        test: 'castcle-test://?verify=true',
+        staging: 'castcle-stg://?verify=true',
+        production: 'castcle://?verify=true'
+      };
+      return links[env.NODE_ENV]
+        ? links[env.NODE_ENV]
+        : 'castcle-dev://?verify=true';
+    } else return 'castcle-dev://?verify=true';
+  };
+
   async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
     const verifyLink = `${hostname}/authentications/verify`;
     const info = await transporter.sendMail({
@@ -116,7 +134,7 @@ export class AppService {
       html: getSignupHtml(
         toEmail,
         `${verifyLink}?code=${code}`,
-        'admin@castcle.com'
+        env && env.SMTP_ADMIN_EMAIL ? env.SMTP_ADMIN_EMAIL : 'admin@castcle.com'
       )
     });
     console.log(`Email is send `, info.messageId, info);

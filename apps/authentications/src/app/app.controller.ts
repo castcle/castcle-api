@@ -26,6 +26,7 @@ import {
   AccountAuthenIdType,
   OtpObjective
 } from '@castcle-api/database/schemas';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
 import {
@@ -600,7 +601,13 @@ export class AuthenticationController {
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken(token);
 
-    return getEmailVerificationHtml(email);
+    return getEmailVerificationHtml(
+      email,
+      this.appService.getCastcleMobileLink(),
+      Environment && Environment.SMTP_ADMIN_EMAIL
+        ? Environment.SMTP_ADMIN_EMAIL
+        : 'admin@castcle.com'
+    );
   }
 
   @ApiOkResponse({
