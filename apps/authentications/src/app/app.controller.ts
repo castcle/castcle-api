@@ -600,7 +600,11 @@ export class AuthenticationController {
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken(token);
 
-    return getEmailVerificationHtml(email);
+    return getEmailVerificationHtml(
+      email,
+      this.appService.getCastcleMobileLink(),
+      'admin@castcle.com'
+    );
   }
 
   @ApiOkResponse({
