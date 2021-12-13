@@ -26,6 +26,7 @@ import {
   AccountAuthenIdType,
   OtpObjective
 } from '@castcle-api/database/schemas';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils';
 import {
@@ -603,7 +604,9 @@ export class AuthenticationController {
     return getEmailVerificationHtml(
       email,
       this.appService.getCastcleMobileLink(),
-      'admin@castcle.com'
+      Environment && Environment.SMTP_ADMIN_EMAIL
+        ? Environment.SMTP_ADMIN_EMAIL
+        : 'admin@castcle.com'
     );
   }
 

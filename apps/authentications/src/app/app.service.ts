@@ -134,7 +134,7 @@ export class AppService {
       html: getSignupHtml(
         toEmail,
         `${verifyLink}?code=${code}`,
-        'admin@castcle.com'
+        env && env.SMTP_ADMIN_EMAIL ? env.SMTP_ADMIN_EMAIL : 'admin@castcle.com'
       )
     });
     console.log(`Email is send `, info.messageId, info);
