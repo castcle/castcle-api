@@ -257,20 +257,13 @@ export const toUnsignedContentPayloadItem = (
       recastCount: content.engagements?.recast?.count | 0
     },
     participate: {
-      liked: engagements.find((item) => item.type === EngagementType.Like)
-        ? true
-        : false,
-      commented: engagements.find(
-        (item) => item.type === EngagementType.Comment
-      )
-        ? true
-        : false,
-      quoted: engagements.find((item) => item.type === EngagementType.Quote)
-        ? true
-        : false,
-      recasted: engagements.find((item) => item.type === EngagementType.Recast)
-        ? true
-        : false
+      liked: engagements.some(({ type }) => type === EngagementType.Like),
+      commented: engagements.some(
+        ({ type }) => type === EngagementType.Comment
+      ),
+      quoted: engagements.some(({ type }) => type === EngagementType.Quote),
+      recasted: engagements.some(({ type }) => type === EngagementType.Recast),
+      reported: engagements.some(({ type }) => type === EngagementType.Report)
     },
 
     createdAt: content.createdAt.toISOString(),
@@ -285,24 +278,23 @@ export const toUnsignedContentPayloadItem = (
   return result;
 };
 
-export const signedContentPayloadItem = (
-  unsignPayloadItem: ContentPayloadItem
-) => {
-  if (unsignPayloadItem.photo && unsignPayloadItem.photo.contents)
-    unsignPayloadItem.photo.contents = unsignPayloadItem.photo?.contents?.map(
-      (item) => new Image(item).toSignUrls()
+export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
+  if (unsignedItem.photo?.contents)
+    unsignedItem.photo.contents = unsignedItem.photo.contents.map((item) =>
+      new Image(item).toSignUrls()
     );
-  if (unsignPayloadItem.photo && unsignPayloadItem.photo.cover)
-    unsignPayloadItem.photo.cover = new Image(
-      unsignPayloadItem.photo.cover
-    ).toSignUrls();
-  if (unsignPayloadItem.link)
-    unsignPayloadItem.link = unsignPayloadItem.link.map((item) => {
+
+  if (unsignedItem.photo?.cover)
+    unsignedItem.photo.cover = new Image(unsignedItem.photo.cover).toSignUrls();
+
+  if (unsignedItem.link)
+    unsignedItem.link = unsignedItem.link.map((item) => {
       if (item.image) {
         item.image = new Image(item.image as CastcleImage).toSignUrls();
       } else return item;
     });
-  return unsignPayloadItem;
+
+  return unsignedItem;
 };
 
 export const toSignedContentPayloadItem = (

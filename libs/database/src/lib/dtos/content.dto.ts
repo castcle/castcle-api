@@ -222,6 +222,7 @@ export class ContentPayloadItem {
     commented: boolean;
     quoted: boolean;
     recasted: boolean;
+    reported: boolean;
   };
   authorId: string;
   'createdAt': string;
@@ -283,6 +284,9 @@ export class ContentResponse {
 export class ContentsResponse {
   @ApiProperty()
   payload: ContentPayloadItem[];
+
+  @ApiProperty()
+  includes: CastcleIncludes;
 
   @ApiProperty()
   meta: CastcleMeta;

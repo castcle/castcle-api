@@ -117,7 +117,7 @@ export class AppService {
    * @param engagements
    * @returns {ContentResponse}
    */
-  async convertContentToContentReponse(
+  async convertContentToContentResponse(
     content: ContentDocument,
     engagements: EngagementDocument[] = []
   ) {

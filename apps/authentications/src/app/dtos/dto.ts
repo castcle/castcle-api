@@ -175,6 +175,8 @@ export class SuggestCastcleIdReponse {
 
 export class ChangePasswordBody {
   @ApiProperty()
+  objective: string;
+  @ApiProperty()
   refCode: string;
   @ApiProperty()
   newPassword: string;
@@ -182,14 +184,10 @@ export class ChangePasswordBody {
 
 export class VerificationPasswordBody {
   @ApiProperty()
-  password: string;
-}
+  objective: string;
 
-export class VerificationPasswordResponse {
   @ApiProperty()
-  refCode: string;
-  @ApiProperty()
-  expiresTime: string;
+  password: string;
 }
 
 export interface SocialConnect {
@@ -244,19 +242,21 @@ export class RequestOtpDto {
   @ApiProperty()
   payload: ForgotPasswordPayload;
 }
-
-export class RequestOtpResponse {
-  @ApiProperty()
-  refCode: string;
-
-  @ApiProperty()
-  expiresTime: string;
-}
-
-export class ForgotPasswordVerificationOtpDto extends RequestOtpDto {
+export class verificationOtpDto extends RequestOtpDto {
   @ApiProperty()
   refCode: string;
 
   @ApiProperty()
   otp: string;
+}
+
+export class otpResponse {
+  @ApiProperty()
+  objective: string;
+
+  @ApiProperty()
+  refCode: string;
+
+  @ApiProperty()
+  expiresTime: string;
 }

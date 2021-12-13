@@ -775,15 +775,39 @@ describe('AppController', () => {
           registerResult.accessToken
         );
         const response = await appController.verificationPassword(
-          '2@HelloWorld',
+          {
+            objective: OtpObjective.ChangePassword,
+            password: '2@HelloWorld'
+          },
           {
             $credential: credential,
             $language: 'th'
           } as any
         );
+
         expect(response.refCode).toBeDefined();
         genRefCode = response.refCode;
         expect(response.expiresTime).toBeDefined();
+      });
+
+      it('should return exception when wrong objective', async () => {
+        const credential = await service.getCredentialFromAccessToken(
+          registerResult.accessToken
+        );
+        await expect(
+          appController.verificationPassword(
+            {
+              objective: OtpObjective.ForgotPassword,
+              password: '2@HelloWorld'
+            },
+            {
+              $credential: credential,
+              $language: 'th'
+            } as any
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
+        );
       });
     });
 
@@ -794,6 +818,7 @@ describe('AppController', () => {
         );
         const response = await appController.changePasswordSubmit(
           {
+            objective: OtpObjective.ChangePassword,
             newPassword: '2@BlaBlaBla',
             refCode: genRefCode
           },
@@ -803,6 +828,27 @@ describe('AppController', () => {
           } as any
         );
         expect(response).toEqual('');
+      });
+
+      it('should return exception when wrong objective', async () => {
+        const credential = await service.getCredentialFromAccessToken(
+          registerResult.accessToken
+        );
+        await expect(
+          appController.changePasswordSubmit(
+            {
+              objective: OtpObjective.VerifyMobile,
+              newPassword: '2@BlaBlaBla',
+              refCode: genRefCode
+            },
+            {
+              $credential: credential,
+              $language: 'th'
+            } as any
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
+        );
       });
     });
   });
@@ -1707,7 +1753,7 @@ describe('AppController', () => {
     });
   });
 
-  describe('forgotPasswordRequestOTP', () => {
+  describe('requestOTP', () => {
     let credentialGuest = null;
     const emailTest = 'test.opt@gmail.com';
     const countryCodeTest = '+66';
@@ -1891,9 +1937,62 @@ describe('AppController', () => {
         )
       );
     });
+
+    it('should return exception when duplicate mobile number', async () => {
+      const request = () => {
+        return {
+          objective: 'verify_mobile',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: numberTest
+          }
+        };
+      };
+      await expect(
+        appController.requestOTP(request(), credentialGuest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return exception when use guest account', async () => {
+      const testId = 'registerId34';
+      const password = '2@HelloWorld';
+      const deviceUUID = 'sompop12341';
+      const guest = await createMockCredential(
+        appController,
+        service,
+        deviceUUID,
+        testId,
+        'abc',
+        emailTest,
+        password,
+        true
+      );
+
+      const request = () => {
+        return {
+          objective: 'verify_mobile',
+          channel: 'mobile',
+          payload: {
+            email: '',
+            countryCode: countryCodeTest,
+            mobileNumber: '815678989'
+          }
+        };
+      };
+      await expect(appController.requestOTP(request(), guest)).rejects.toEqual(
+        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, guest.$language)
+      );
+    });
   });
 
-  describe('forgotPasswordVerificationOTP', () => {
+  describe('verificationOTP', () => {
     let credentialGuest = null;
     const emailTest = 'testverify@gmail.com';
     const countryCodeTest = '+66';

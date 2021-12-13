@@ -59,10 +59,11 @@ export const Environment = {
   DB_OPTIONS,
   DB_TEST_IN_DB: process.env.DB_TEST_IN_DB === 'yes',
   // Mail Service
+  SMTP_ADMIN_EMAIL: process.env.SMTP_ADMIN_EMAIL,
   SMTP_USERNAME: process.env.SMTP_USERNAME,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT as unknown as number,
+  SMTP_PORT: Number(process.env.SMTP_PORT) || 465,
   // JWT
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN as unknown as number,
@@ -82,7 +83,7 @@ export const Environment = {
   REDIS_PORT: process.env.REDIS_PORT as unknown as number,
   // Assets
   ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
-  ASSETS_HOST: process.env.ASSETS_HOST,
+  ASSETS_HOST: process.env.ASSETS_HOST ?? 'https://assets-dev.castcle.com',
   // Twitter Config
   TWITTER_KEY: process.env.TWITTER_KEY,
   TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,

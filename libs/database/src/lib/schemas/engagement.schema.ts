@@ -37,7 +37,8 @@ export enum EngagementType {
   Like = 'like',
   Recast = 'recast',
   Quote = 'quote',
-  Comment = 'comment'
+  Comment = 'comment',
+  Report = 'report'
 }
 
 const feedItemKey = {

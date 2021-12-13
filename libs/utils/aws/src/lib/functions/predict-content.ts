@@ -21,19 +21,32 @@
  * or have any questions.
  */
 
-module.exports = {
-  displayName: 'users',
-  preset: '../../jest.preset.js',
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]s$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/users',
-  collectCoverage: true
+import * as AWS from 'aws-sdk';
+import { Configs } from '@castcle-api/environments';
+
+export const predictContents = (accountId: string, contents: string[]) => {
+  const lamda = new AWS.Lambda({
+    region: 'us-east-1'
+  });
+  const payload = JSON.stringify({
+    accountId,
+    contents
+  });
+  const p = new Promise<{ [id: string]: number }[]>((res, rej) => {
+    const now = new Date(); //for now
+    lamda.invoke(
+      {
+        FunctionName: Configs.PredictFunctionName,
+        InvocationType: 'RequestResponse',
+        Payload: payload
+      },
+      (err, data) => {
+        const after = new Date();
+        console.debug('spend time on lambda', after.getTime() - now.getTime());
+        if (err) rej(err);
+        res(JSON.parse(data.Payload as string).result);
+      }
+    );
+  });
+  return p;
 };

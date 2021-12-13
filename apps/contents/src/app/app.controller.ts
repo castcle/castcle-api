@@ -27,11 +27,14 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
   Query,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import {
@@ -42,6 +45,7 @@ import {
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
+  CastcleIncludes,
   CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
@@ -71,6 +75,7 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
 import { ContentLikeBody } from '../dtos/content.dto';
 import { SaveContentPipe } from './pipes/save-content.pipe';
+import { ReportContentDto } from './dtos';
 
 @CastcleController('1.0')
 @Controller()
@@ -124,7 +129,7 @@ export class ContentController {
         id: content._id
       });
 
-      return this.appService.convertContentToContentReponse(content);
+      return this.appService.convertContentToContentResponse(content);
     } else {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -150,7 +155,10 @@ export class ContentController {
         user
       );
     console.debug('engagements', engagements);
-    return this.appService.convertContentToContentReponse(content, engagements);
+    return this.appService.convertContentToContentResponse(
+      content,
+      engagements
+    );
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
@@ -278,6 +286,9 @@ export class ContentController {
 
     return {
       payload: result.items.map((c) => c.toContentPayloadItem()),
+      includes: new CastcleIncludes({
+        users: result.items.map(({ author }) => author)
+      }),
       meta: result.meta
     } as ContentsResponse;
   }
@@ -379,5 +390,21 @@ export class ContentController {
     return {
       payload: result.quoteContent.toContentPayloadItem()
     } as ContentResponse;
+  }
+
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @Post(':id/reporting')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportContent(
+    @Body() { message }: ReportContentDto,
+    @Param('id') reportingContentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(reportingContentId, req);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+
+    await this.contentService.reportContent(user, content, message);
   }
 }

@@ -59,10 +59,13 @@ export class Image {
       cloudFrontPrivateKey
     );
 
+    const imageUrl = sizeName ? this.image[sizeName] : this.image.original;
+    const url = imageUrl?.includes(env.ASSETS_HOST)
+      ? imageUrl
+      : `${env.ASSETS_HOST}/${imageUrl}`;
+
     return signer.getSignedUrl({
-      url: `${
-        env.ASSETS_HOST ? env.ASSETS_HOST : 'https://assets-dev.castcle.com'
-      }/${sizeName ? this.image[sizeName] : this.image.original}`,
+      url,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
     });
   }
@@ -128,6 +131,7 @@ export class Image {
     size = Image._getNewSameRatioSize(metaData.width, metaData.height, size);
     const newBuffer = await sharpImage
       .resize(size.width, size.height)
+      .toFormat(metaData.format, { quality: 70 })
       .toBuffer();
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',

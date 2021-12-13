@@ -21,19 +21,11 @@
  * or have any questions.
  */
 
-module.exports = {
-  displayName: 'users',
-  preset: '../../jest.preset.js',
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]s$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/users',
-  collectCoverage: true
-};
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+
+export class ReportUserDto {
+  @ApiProperty()
+  @IsString()
+  message: string;
+}
