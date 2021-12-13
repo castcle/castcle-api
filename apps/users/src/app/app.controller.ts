@@ -289,9 +289,7 @@ export class UserController {
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string,
     @Query('maxResult', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
-    @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
+    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
   ): Promise<ContentsResponse> {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -300,7 +298,7 @@ export class UserController {
         sinceId: sinceId,
         sortBy: sortByOption,
         untilId: untilId,
-        type: contentTypeOption
+        maxResults: limitOption
       });
       const engagements =
         await this.contentService.getAllEngagementFromContentsAndUser(
