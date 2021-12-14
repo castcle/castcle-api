@@ -120,14 +120,7 @@ export class RankerService {
       timeAfterFind.getTime() - timeAfterFilter.getTime()
     );
     const contentIds = documents.map((item) => item.content.id);
-    const result = await predictContents(String(viewer._id), contentIds);
-    const answer: any = {};
-    result.forEach((item: { [key: string]: number }) => {
-      const key = Object.keys(item)[0];
-      const val = item[key];
-
-      answer[key] = val;
-    });
+    const answer = await predictContents(String(viewer._id), contentIds);
     const newAnswer = Object.keys(answer)
       .map((id) => {
         const feedItem = documents.find((k) => k.content.id == id);
