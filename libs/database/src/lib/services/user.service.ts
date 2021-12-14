@@ -423,7 +423,9 @@ export class UserService {
    * @param {UserDocument} user
    * @returns {ContentDocument[]}
    */
-  _removeAllContentFromUser = async (user: UserDocument) => {
+  _removeAllContentFromUser = async (
+    user: UserDocument
+  ): Promise<ContentDocument[]> => {
     const contents = await this.contentService._contentModel
       .find({ 'author.id': user._id })
       .exec();
