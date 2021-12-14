@@ -40,6 +40,7 @@ import {
   CredentialDocument,
   CredentialModel
 } from '../schemas/credential.schema';
+import * as mongoose from 'mongoose';
 import { UserModel } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
@@ -211,10 +212,15 @@ export class NotificationService {
       )
       .exec();
     notificationData.account._id;
+
     const credentials = await this._credentialModel
-      .find({ 'account._id': notificationData.account._id })
+      .find({
+        'account._id': mongoose.Types.ObjectId(notificationData.account._id)
+      })
       .exec();
     if (createResult && notificationData.account) {
+      console.log('testSendStuff', notificationData.account);
+      console.log(JSON.stringify(credentials));
       const message: NotificationMessage = {
         aps: {
           alert: createResult.message,
