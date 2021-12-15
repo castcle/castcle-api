@@ -28,7 +28,7 @@ import {
   MongooseForFeatures,
   SocialSyncService
 } from '../database.module';
-import { SocialSyncDto } from '../dtos/user.dto';
+import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { SocialProvider } from '../schemas/social-sync.schema';
 import { UserDocument, UserType } from './../schemas/user.schema';
@@ -135,6 +135,47 @@ describe('SocialSyncService', () => {
       const resultData = await service.getSocialSyncByUser(mocksUser);
       expect(resultData).toBeDefined();
       expect(resultData.length).toEqual(2);
+    });
+  });
+
+  describe('#update', () => {
+    it('should update social sync in db', async () => {
+      const updateSocialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Facebook,
+        uid: '7891234',
+        userName: 'mockfb',
+        displayName: 'mock fb',
+        avatar: 'www.facebook.com/mockfb',
+        active: false
+      };
+      await service.update(updateSocialSyncDto, mocksUser);
+      const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
+      const result = socialSyncDoc.find(
+        (x) => x.provider === updateSocialSyncDto.provider
+      );
+      expect(result).toBeDefined();
+      expect(result.provider).toEqual(SocialProvider.Facebook);
+      expect(result.socialId).toEqual('7891234');
+      expect(result.active).toEqual(false);
+    });
+  });
+
+  describe('#delete', () => {
+    it('should delete social sync in db', async () => {
+      const deleteSocial: SocialSyncDeleteDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Facebook,
+        uid: '7891234'
+      };
+      await service.delete(deleteSocial, mocksUser);
+      const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
+      const result = socialSyncDoc.find(
+        (x) => x.provider === deleteSocial.provider
+      );
+      expect(result).toBeUndefined();
+      expect(socialSyncDoc).toBeDefined();
+      expect(socialSyncDoc.length).toEqual(1);
     });
   });
 });

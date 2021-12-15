@@ -257,3 +257,17 @@ export class SocialSyncDto {
   @IsBoolean()
   active?: boolean;
 }
+
+export class SocialSyncDeleteDto {
+  @ApiProperty()
+  @IsString()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsEnum(SocialProvider)
+  provider?: SocialProvider;
+
+  @ApiProperty()
+  @IsString()
+  uid: string;
+}

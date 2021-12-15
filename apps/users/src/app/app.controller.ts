@@ -35,6 +35,7 @@ import {
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
   PagesResponse,
+  SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
   UserResponseDto
@@ -766,7 +767,7 @@ export class UserController {
   }
 
   /**
-   * User {castcleId} sync social media for auto post
+   * User {castcleId} sync social media for create new
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
@@ -826,6 +827,71 @@ export class UserController {
         req.$language
       );
     }
+  }
+
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Put('syncSocial')
+  async updateSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDto
+  ) {
+    logger.log(`Start update sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (user) {
+      await this.socialSyncService.update(body, user);
+      return '';
+    } else
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+  }
+
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDeleteDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete('syncSocial')
+  async deleteSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDeleteDto
+  ) {
+    logger.log(`Start delete sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (user) {
+      await this.socialSyncService.delete(body, user);
+      return '';
+    } else
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
   }
 
   private async validateGuestAccount(
