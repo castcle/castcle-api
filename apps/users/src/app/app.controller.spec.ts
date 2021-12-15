@@ -26,6 +26,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -34,6 +35,7 @@ import {
   ContentType,
   SaveContentDto,
   ShortPayload,
+  SocialSyncDto,
   UpdateUserDto
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
@@ -43,6 +45,7 @@ import {
   CredentialDocument,
   EngagementDocument,
   OtpObjective,
+  SocialProvider,
   UserDocument
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
@@ -91,6 +94,7 @@ describe('AppController', () => {
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
   let userAccount: AccountDocument;
+  let socialSyncService: SocialSyncService;
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -111,13 +115,15 @@ describe('AppController', () => {
         AuthenticationService,
         ContentService,
         UserProducer,
-        HashtagService
+        HashtagService,
+        SocialSyncService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
+    socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -457,10 +463,21 @@ describe('AppController', () => {
     it('should return Exception when get guest account', async () => {
       const countryCode = '+66';
       const mobile = '0815678901';
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
       const newOtp = await authService.generateOtp(
-        account,
+        guest.accountDocument,
         OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
+        guest.accountDocument._id,
         'mobile',
         true
       );
@@ -472,12 +489,6 @@ describe('AppController', () => {
         mobileNumber: mobile
       };
 
-      const guest = await authService.createAccount({
-        device: 'iPhone8',
-        deviceUUID: 'ios8',
-        header: { platform: 'ios' },
-        languagesPreferences: ['th']
-      });
       const credentialGuest = {
         $credential: guest.credentialDocument,
         $language: 'th'
@@ -487,7 +498,7 @@ describe('AppController', () => {
         appController.updateMobile(credentialGuest, request)
       ).rejects.toEqual(
         new CastcleException(
-          CastcleStatus.INVALID_ACCESS_TOKEN,
+          CastcleStatus.FORBIDDEN_REQUEST,
           credential.$language
         )
       );
@@ -509,6 +520,115 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(
           CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credential.$language
+        )
+      );
+    });
+  });
+
+  describe('syncSocial', () => {
+    let user: UserDocument;
+    let account: AccountDocument;
+    let credential;
+    let defaultRequest: SocialSyncDto;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      account = mocksUsers[0].account;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      defaultRequest = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Twitter,
+        uid: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should update sync social successful', async () => {
+      await appController.syncSocial(credential, defaultRequest);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+
+      expect(userSync.length).toEqual(1);
+      expect(userSync[0].provider).toEqual(SocialProvider.Twitter);
+    });
+
+    it('should return Exception when get guest account', async () => {
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.syncSocial(credentialGuest, defaultRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credential.$language
+        )
+      );
+    });
+
+    it('should return exception when get duplicate socail sync', async () => {
+      await expect(
+        appController.syncSocial(credential, defaultRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+          credential.$language
+        )
+      );
+
+      const mocksNewUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      const newUser = mocksNewUsers[0].user;
+      const newCredential = {
+        $credential: mocksNewUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      const newRequest: SocialSyncDto = {
+        castcleId: newUser.displayId,
+        provider: SocialProvider.Twitter,
+        uid: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+      await expect(
+        appController.syncSocial(newCredential, newRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
           credential.$language
         )
       );

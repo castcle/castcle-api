@@ -21,7 +21,8 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { SocialProvider } from '../schemas/social-sync.schema';
 import { PageVerified, UserVerified } from '../schemas/user.schema';
 import { CastcleImage, Pagination } from './common.dto';
 
@@ -225,4 +226,34 @@ export class FollowResponse {
 
   @ApiProperty()
   pagination: Pagination;
+}
+
+export class SocialSyncDto {
+  @ApiProperty()
+  @IsString()
+  castcleId: string;
+
+  @ApiProperty()
+  @IsEnum(SocialProvider)
+  provider: SocialProvider;
+
+  @ApiProperty()
+  @IsString()
+  uid: string;
+
+  @ApiProperty()
+  @IsString()
+  userName?: string;
+
+  @ApiProperty()
+  @IsString()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsString()
+  avatar?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  active?: boolean;
 }

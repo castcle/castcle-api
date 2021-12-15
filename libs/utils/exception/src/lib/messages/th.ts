@@ -116,7 +116,7 @@ export const ThErrorMessages = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง'
+    message: 'refCode ไม่ถูกต้อง หรือ หมดอายุ'
   },
   '3013': {
     statusCode: '400',
@@ -147,6 +147,11 @@ export const ThErrorMessages = {
     statusCode: '400',
     code: '3018',
     message: 'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น'
+  },
+  '3019': {
+    statusCode: '400',
+    code: '3019',
+    message: 'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น'
   },
   '4001': {
     statusCode: '404',

@@ -20,11 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import {
   AuthenticationService,
   ContentService,
   createCastcleMeta,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -35,10 +35,15 @@ import {
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
   PagesResponse,
+  SocialSyncDto,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import { OtpObjective, UserType } from '@castcle-api/database/schemas';
+import {
+  CredentialDocument,
+  OtpObjective,
+  UserType
+} from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -91,7 +96,8 @@ export class UserController {
     private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private socialSyncService: SocialSyncService
   ) {
     logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
@@ -163,7 +169,6 @@ export class UserController {
     logger.log('Root');
     return this.appService.getData();
   }
-
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -708,13 +713,15 @@ export class UserController {
       logger.error(`Invalid Ref Code`);
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
     }
-
-    logger.log('Get user document');
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
+    logger.log('Get account document and validate guest');
+    const account = await this.validateGuestAccount(
+      req.$credential,
+      req.$language
     );
+    logger.log('Get user document');
+
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (account && user && !account.isGuest) {
+    if (account && user) {
       logger.log('Update mobile number');
       await this.userService.updateMobile(
         user.id,
@@ -733,5 +740,81 @@ export class UserController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  /**
+   * User {castcleId} sync social media for auto post
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('syncSocial')
+  async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
+    logger.log(`Start create sync social.`);
+    logger.log(JSON.stringify(body));
+
+    logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential, req.$language);
+
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const userSync = await this.socialSyncService.getSocialSyncByUser(user);
+    if (userSync.find((x) => x.provider === body.provider)) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+        req.$language
+      );
+    }
+
+    const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
+      body.provider,
+      body.uid
+    );
+
+    if (dupSocialSync?.length) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+        req.$language
+      );
+    }
+
+    if (user) {
+      logger.log(`create sync data.`);
+      await this.socialSyncService.create(user, body);
+      return '';
+    } else {
+      logger.error(`Can't get user data`);
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+  }
+
+  private async validateGuestAccount(
+    credential: CredentialDocument,
+    language: string
+  ) {
+    const account = await this.authService.getAccountFromCredential(credential);
+    if (!account || account.isGuest) {
+      logger.error(`Forbidden guest account.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+    } else {
+      return account;
+    }
   }
 }

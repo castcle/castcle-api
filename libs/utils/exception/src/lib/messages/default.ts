@@ -116,7 +116,7 @@ export const ErrorMessages = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'Sorry, Something went wrong. Please try again.'
+    message: 'Invalid ref code. Please try again.'
   },
   '3013': {
     statusCode: '400',
@@ -147,6 +147,11 @@ export const ErrorMessages = {
     statusCode: '400',
     code: '3018',
     message: 'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น'
+  },
+  '3019': {
+    statusCode: '400',
+    code: '3019',
+    message: 'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น'
   },
   '4001': {
     statusCode: '404',
