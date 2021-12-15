@@ -528,7 +528,6 @@ describe('AppController', () => {
 
   describe('syncSocial', () => {
     let user: UserDocument;
-    let account: AccountDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
     beforeAll(async () => {
@@ -538,7 +537,6 @@ describe('AppController', () => {
       });
 
       user = mocksUsers[0].user;
-      account = mocksUsers[0].account;
       credential = {
         $credential: mocksUsers[0].credential,
         $language: 'th'
@@ -559,7 +557,7 @@ describe('AppController', () => {
       await service._userModel.deleteMany({});
     });
 
-    it('should update sync social successful', async () => {
+    it('should create sync social successful', async () => {
       await appController.syncSocial(credential, defaultRequest);
       const userSync = await socialSyncService.getSocialSyncByUser(user);
 
@@ -666,6 +664,37 @@ describe('AppController', () => {
       };
       expect(result).toBeDefined();
       expect(result).toEqual(expectResult);
+    });
+
+    it('should update sync social successful', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: '56738393',
+        userName: 'mockfb2',
+        displayName: 'mock fb2',
+        avatar: 'www.facebook.com/mockfb2',
+        active: true
+      };
+      await appController.updateSyncSocial(credential, request);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const result = userSync.find((x) => x.provider === request.provider);
+      expect(result.socialId).toEqual(request.uid);
+      expect(result.userName).toEqual(request.userName);
+      expect(result.displayName).toEqual(request.displayName);
+      expect(result.avatar).toEqual(request.avatar);
+    });
+
+    it('should delete sync social successful', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: '56738393'
+      };
+      await appController.deleteSyncSocial(credential, request);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const result = userSync.find((x) => x.provider === request.provider);
+      expect(result).toBeUndefined();
     });
   });
 });
