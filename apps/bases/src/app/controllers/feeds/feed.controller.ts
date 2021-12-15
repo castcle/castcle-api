@@ -124,7 +124,7 @@ export class FeedController {
         const allContentsEngagements =
           await this.contentService.getAllEngagementFromContentIdsAndUser(
             contentIds,
-            user
+            user.id
           );
         return {
           payload: feedItemsResult.items.map((t) => {

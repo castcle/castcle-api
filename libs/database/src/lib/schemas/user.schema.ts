@@ -116,8 +116,16 @@ export class User extends CastcleBase {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
-  toUserResponse(followed?: boolean): Promise<UserResponseDto>;
-  toPageResponse(): PageResponseDto;
+  toUserResponse(
+    blocked?: boolean,
+    blocking?: boolean,
+    followed?: boolean
+  ): Promise<UserResponseDto>;
+  toPageResponse(
+    blocked?: boolean,
+    blocking?: boolean,
+    followed?: boolean
+  ): PageResponseDto;
   follow(user: UserDocument): Promise<void>;
   unfollow(user: UserDocument): Promise<void>;
   toSearchTopTrendResponse(): SearchFollowsResponseDto;
@@ -186,19 +194,27 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     verified: self.verified
   } as Author);
 
-UserSchema.methods.toUserResponse = async function (followed = false) {
+UserSchema.methods.toUserResponse = async function (
+  blocked = false,
+  blocking = false,
+  followed = false
+) {
   const self = await (this as UserDocument)
     .populate('ownerAccount')
     .execPopulate();
   const response = _covertToUserResponse(self, followed);
   response.email = self.ownerAccount.email;
-  const selfSocial: any =
-    self.profile && self.profile.socials ? { ...self.profile.socials } : {};
+  response.blocking = blocking;
+  response.blocked = blocked;
 
   return response;
 };
 
-UserSchema.methods.toPageResponse = function () {
+UserSchema.methods.toPageResponse = function (
+  blocked = false,
+  blocking = false,
+  followed = false
+) {
   return {
     id: (this as UserDocument)._id,
     castcleId: (this as UserDocument).displayId,
@@ -261,6 +277,9 @@ UserSchema.methods.toPageResponse = function () {
     verified: {
       official: (this as UserDocument).verified.official
     } as PageVerified,
+    blocked,
+    blocking,
+    followed,
     updatedAt: (this as UserDocument).updatedAt.toISOString(),
     createdAt: (this as UserDocument).createdAt.toISOString()
   } as PageResponseDto;
@@ -418,7 +437,7 @@ export const UserSchemaFactory = (
     await session.withTransaction(async () => {
       const relationship = await relationshipModel
         .findOne({
-          user: this._id,
+          user: (this as UserDocument)._id,
           followedUser: followedUser._id,
           following: true
         })
