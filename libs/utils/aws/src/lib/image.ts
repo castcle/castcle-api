@@ -63,7 +63,10 @@ export class Image {
     const url = imageUrl?.includes(env.ASSETS_HOST)
       ? imageUrl
       : `${env.ASSETS_HOST}/${imageUrl}`;
-
+    console.log({
+      url,
+      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
+    });
     return signer.getSignedUrl({
       url,
       expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
@@ -71,6 +74,7 @@ export class Image {
   }
 
   toSignUrls() {
+    if (this.image['isSign']) return this.image;
     const newImage: {
       original: string;
       [key: string]: string;
