@@ -33,7 +33,7 @@ import {
   createPagination
 } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import { CastcleIncludes, QueryOption } from '../dtos/common.dto';
+import { CastcleIncludes, CastcleMeta, QueryOption } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
@@ -172,6 +172,10 @@ export class RankerService {
       query,
       this._feedItemModel
     );
+    //if have sinceId or untilId but can't find filter.createAt => this is guestFeed
+    if ((query.sinceId || query.untilId) && !filter.createdAt) {
+      return this.getGuestFeedItems(query, viewer.geolocation.countryCode);
+    }
     const timeAfterFilter = new Date();
     console.debug(
       '- after filter : ',
@@ -221,6 +225,21 @@ export class RankerService {
           type: 'content'
         } as FeedItemPayloadItem)
     );
+    const includes = {
+      users: newAnswer
+        .map((item) => item.content.author as Author)
+        .map((author) => {
+          if (author.avatar)
+            author.avatar = new Image(author.avatar).toSignUrls();
+          else author.avatar = Configs.DefaultAvatarImages;
+          return author;
+        }),
+      casts: newAnswer
+        .filter((doc) => doc.content.originalPost)
+        .map((c) => c.content.originalPost)
+        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
+    };
+    let meta: CastcleMeta = createCastcleMeta(newAnswer);
     if (query.maxResults && newAnswer.length < query.maxResults) {
       const guestItemCount = query.maxResults - newAnswer.length;
       const guestFeedPayloads = await this.getGuestFeedItems(
@@ -228,24 +247,22 @@ export class RankerService {
         viewer.geolocation.countryCode
       );
       feedPayload = feedPayload.concat(guestFeedPayloads.payload);
+      includes.users = includes.users.concat(guestFeedPayloads.includes.users);
+      if (guestFeedPayloads.includes.casts) {
+        if (!includes.casts) includes.casts = [];
+        includes.casts = includes.casts.concat(
+          guestFeedPayloads.includes.casts
+        );
+      }
+      meta = {
+        ...guestFeedPayloads.meta,
+        resultCount: guestFeedPayloads.meta.resultCount + meta.resultCount
+      };
     }
     return {
       payload: feedPayload,
-      includes: {
-        users: newAnswer
-          .map((item) => item.content.author as Author)
-          .map((author) => {
-            if (author.avatar)
-              author.avatar = new Image(author.avatar).toSignUrls();
-            else author.avatar = Configs.DefaultAvatarImages;
-            return author;
-          }),
-        casts: newAnswer
-          .filter((doc) => doc.content.originalPost)
-          .map((c) => c.content.originalPost)
-          .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
-      },
-      meta: createCastcleMeta(newAnswer)
+      includes: includes,
+      meta: meta
     } as FeedItemPayload;
   };
 }

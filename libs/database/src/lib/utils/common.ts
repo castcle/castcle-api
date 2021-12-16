@@ -75,14 +75,16 @@ export const createCastcleFilter = async (
 ) => {
   if (queryOption.sinceId) {
     const sinceDocument = await model.findById(queryOption.sinceId).exec();
-    filter.createdAt = {
-      $gt: new Date(sinceDocument['createdAt'])
-    };
+    if (sinceDocument)
+      filter.createdAt = {
+        $gt: new Date(sinceDocument['createdAt'])
+      };
   } else if (queryOption.untilId) {
     const untilDocument = await model.findById(queryOption.untilId).exec();
-    filter.createdAt = {
-      $lt: new Date(untilDocument['createdAt'])
-    };
+    if (untilDocument)
+      filter.createdAt = {
+        $lt: new Date(untilDocument['createdAt'])
+      };
   }
   return filter;
 };
