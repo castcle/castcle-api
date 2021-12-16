@@ -23,7 +23,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { ContentDocument } from '../schemas';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
@@ -36,16 +36,18 @@ import { Account } from '../schemas/account.schema';
 import { CastcleIncludes, QueryOption } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
+  toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
   transformContentPayloadToV2
 } from '../schemas/content.schema';
 import {
-  GuestFeedItemPayload,
-  GuestFeedItemPayloadItem
+  FeedItemPayload,
+  FeedItemPayloadItem
 } from '../dtos/guestFeedItem.dto';
 import { Configs } from '@castcle-api/environments';
 import { Image, predictContents } from '@castcle-api/utils/aws';
 import { Author } from '../dtos/content.dto';
+import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 
 @Injectable()
 export class RankerService {
@@ -53,7 +55,9 @@ export class RankerService {
     @InjectModel('FeedItem')
     public _feedItemModel: Model<FeedItemDocument>,
     @InjectModel('Content')
-    public _contentModel: Model<ContentDocument>
+    public _contentModel: Model<ContentDocument>,
+    @InjectModel('GuestFeedItem')
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>
   ) {}
 
   /**
@@ -90,12 +94,77 @@ export class RankerService {
   }
 
   /**
-   * add test feed item that use data from DS
+   * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
+   * @param {QueryOption} query
+   * @param {string} accountCountryCode
+   * @returns {GuestFeedItemDocument[]}
+   */
+  getGuestFeedItems = async (
+    query: QueryOption,
+    accountCountryCode?: string
+  ) => {
+    const filter: FilterQuery<GuestFeedItemDocument> = {
+      countryCode: accountCountryCode.toLowerCase() ?? 'en'
+    };
+    if (query.sinceId) {
+      const guestFeedItemSince = await this._guestFeedItemModel
+        .findById(query.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(guestFeedItemSince.createdAt)
+      };
+    } else if (query.untilId) {
+      const guestFeedItemUntil = await this._guestFeedItemModel
+        .findById(query.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(guestFeedItemUntil.createdAt)
+      };
+    }
+    const documents = await this._guestFeedItemModel
+      .find(filter)
+      .populate('content')
+      .limit(query.maxResults)
+      .sort({ score: -1, createdAt: -1 })
+      .exec();
+
+    return {
+      payload: documents.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: toSignedContentPayloadItem(item.content),
+            type: 'content'
+          } as FeedItemPayloadItem)
+      ),
+      includes: new CastcleIncludes({
+        users: documents.map((item) => item.content.author)
+      }),
+      meta: createCastcleMeta(documents)
+    } as FeedItemPayload;
+  };
+
+  /**
+   * add member feed item that use data from DS
    * @param viewer
    * @param query
-   * @returns {GuestFeedItemPayload}
+   * @returns {FeedItemPayload}
    */
-  getTestFeedItemsFromViewer = async (viewer: Account, query: QueryOption) => {
+  getMemberFeedItemsFromViewer = async (
+    viewer: Account,
+    query: QueryOption
+  ) => {
     const startNow = new Date();
     console.debug('start service');
     const filter = await createCastcleFilter(
@@ -131,29 +200,37 @@ export class RankerService {
       })
       .sort((a, b) => (a.score > b.score ? -1 : 1))
       .map((t) => t.feedItem);
-
+    let feedPayload: FeedItemPayloadItem[] = newAnswer.map(
+      (item) =>
+        ({
+          id: item.id,
+          feature: {
+            slug: 'feed',
+            key: 'feature.feed',
+            name: 'Feed'
+          },
+          circle: {
+            id: 'for-you',
+            key: 'circle.forYou',
+            name: 'For You',
+            slug: 'forYou'
+          },
+          payload: signedContentPayloadItem(
+            transformContentPayloadToV2(item.content, [])
+          ),
+          type: 'content'
+        } as FeedItemPayloadItem)
+    );
+    if (query.maxResults && newAnswer.length < query.maxResults) {
+      const guestItemCount = query.maxResults - newAnswer.length;
+      const guestFeedPayloads = await this.getGuestFeedItems(
+        { ...query, maxResults: guestItemCount },
+        viewer.geolocation.countryCode
+      );
+      feedPayload = feedPayload.concat(guestFeedPayloads.payload);
+    }
     return {
-      payload: newAnswer.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed'
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou'
-            },
-            payload: signedContentPayloadItem(
-              transformContentPayloadToV2(item.content, [])
-            ),
-            type: 'content'
-          } as GuestFeedItemPayloadItem)
-      ),
+      payload: feedPayload,
       includes: {
         users: newAnswer
           .map((item) => item.content.author as Author)
@@ -169,68 +246,6 @@ export class RankerService {
           .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
       },
       meta: createCastcleMeta(newAnswer)
-    } as GuestFeedItemPayload;
-  };
-
-  getMemberFeedItemsFromViewer = async (
-    viewer: Account,
-    query: QueryOption
-  ) => {
-    const filter: any = {
-      viewer: viewer._id,
-      seen: query.mode === FeedItemMode.Current ? false : true
-    };
-    if (query.sinceId) {
-      const guestFeeditemSince = await this._feedItemModel
-        .findById(query.sinceId)
-        .exec();
-      filter.createdAt = {
-        $gt: new Date(guestFeeditemSince.createdAt)
-      };
-    } else if (query.untilId) {
-      const guestFeeditemUntil = await this._feedItemModel
-        .findById(query.untilId)
-        .exec();
-      filter.createdAt = {
-        $lt: new Date(guestFeeditemUntil.createdAt)
-      };
-    }
-    const documents = await this._feedItemModel
-      .find(filter)
-      .limit(query.maxResults)
-      .sort('-aggregator.createTime')
-      .exec();
-
-    return {
-      payload: documents.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed'
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou'
-            },
-            payload: signedContentPayloadItem(
-              transformContentPayloadToV2(item.content, [])
-            ),
-            type: 'content'
-          } as GuestFeedItemPayloadItem)
-      ),
-      includes: new CastcleIncludes({
-        users: documents.map((item) => item.content.author),
-        casts: documents
-          .filter((doc) => doc.content.originalPost)
-          .map((c) => c.content.originalPost)
-          .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
-      }),
-      meta: createCastcleMeta(documents)
-    } as GuestFeedItemPayload;
+    } as FeedItemPayload;
   };
 }
