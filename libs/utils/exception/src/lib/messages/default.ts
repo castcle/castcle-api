@@ -56,6 +56,11 @@ export const ErrorMessages = {
     code: '1007',
     message: 'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
   },
+  '1008': {
+    statusCode: '400',
+    code: '1008',
+    message: `The 'maxResults' query parameter value is not between 5 and 100`
+  },
   '3001': {
     statusCode: '400',
     code: '3001',
