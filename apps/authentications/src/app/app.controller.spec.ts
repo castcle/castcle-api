@@ -1272,7 +1272,7 @@ describe('AppController', () => {
         })
       ).rejects.toEqual(
         new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
+          CastcleStatus.FORBIDDEN_REQUEST,
           credentialGuest.$language
         )
       );
@@ -1692,7 +1692,7 @@ describe('AppController', () => {
         })
       ).rejects.toEqual(
         new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
+          CastcleStatus.FORBIDDEN_REQUEST,
           credentialGuest.$language
         )
       );
