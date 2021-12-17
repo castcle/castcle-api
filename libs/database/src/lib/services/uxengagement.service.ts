@@ -28,13 +28,16 @@ import { Model } from 'mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
 import { UxEngagementDocument } from '../schemas/uxengagement.schema';
+import { DsContentReachDocument } from '../schemas/ds-content-reach.schema';
 
 @Injectable()
 export class UxEngagementService {
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('UxEngagement')
-    public _uxEngagementModel: Model<UxEngagementDocument>
+    public _uxEngagementModel: Model<UxEngagementDocument>,
+    @InjectModel('DsContentReach')
+    public _dsContentReachModel: Model<DsContentReachDocument>
   ) {}
 
   /**
@@ -51,5 +54,36 @@ export class UxEngagementService {
     } as UxEngagementDto;
     const createResult = await new this._uxEngagementModel(uxDto).save();
     return createResult;
+  }
+
+  /**
+   * Add reach to collection DsContentReach
+   * @param contentId
+   * @param userId
+   * @returns {DsContentReachDocument}
+   */
+  async addReach(contentId: string, userId: string) {
+    let newMappedUser: any;
+    newMappedUser[userId] = 1;
+    const setOnInsert = {
+      content: contentId,
+      mappedUser: newMappedUser,
+      reachCount: 1
+    };
+    const dsReach = await this._dsContentReachModel
+      .findOne({ content: contentId })
+      .exec();
+    if (dsReach) {
+      if (dsReach.mappedUser[userId]) {
+        dsReach.mappedUser[userId] = dsReach.mappedUser[userId] + 1;
+      } else {
+        dsReach.mappedUser[userId] = 1;
+      }
+      dsReach.reachCount = dsReach.reachCount + 1;
+      dsReach.markModified('mappedUser');
+      return dsReach.save();
+    } else {
+      return new this._dsContentReachModel(setOnInsert).save();
+    }
   }
 }
