@@ -21,17 +21,13 @@
  * or have any questions.
  */
 
-import { FilterQuery, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import {
-  ContentDocument,
-  Content,
-  toSignedContentPayloadItem
-} from '../schemas/content.schema';
+import { ContentDocument, Content } from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
@@ -70,12 +66,7 @@ import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import {
-  GuestFeedItemDto,
-  GuestFeedItemPayload,
-  GuestFeedItemPayloadItem
-} from '../dtos/guestFeedItem.dto';
-import { QueryOption } from '../dtos/common.dto';
+import { GuestFeedItemDto } from '../dtos/guestFeedItem.dto';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CastLogger } from '@castcle-api/logger';
@@ -293,11 +284,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel.count(findFilter).exec();
     if (options.sortBy.type === 'desc') {
@@ -551,11 +538,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'
@@ -1012,68 +995,6 @@ export class ContentService {
       content: contentId
     } as GuestFeedItemDto);
     return newGuestFeedItem.save();
-  };
-
-  /**
-   * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
-   * @param {QueryOption} query
-   * @param {string} accountCountryCode
-   * @returns {GuestFeedItemDocument[]}
-   */
-  getGuestFeedItems = async (
-    query: QueryOption,
-    accountCountryCode?: string
-  ) => {
-    const filter: FilterQuery<GuestFeedItemDocument> = {
-      countryCode: accountCountryCode.toLowerCase() ?? 'en'
-    };
-    if (query.sinceId) {
-      const guestFeedItemSince = await this._guestFeedItemModel
-        .findById(query.sinceId)
-        .exec();
-      filter.createdAt = {
-        $gt: new Date(guestFeedItemSince.createdAt)
-      };
-    } else if (query.untilId) {
-      const guestFeedItemUntil = await this._guestFeedItemModel
-        .findById(query.untilId)
-        .exec();
-      filter.createdAt = {
-        $lt: new Date(guestFeedItemUntil.createdAt)
-      };
-    }
-    const documents = await this._guestFeedItemModel
-      .find(filter)
-      .populate('content')
-      .limit(query.maxResults)
-      .sort({ score: -1, createdAt: -1 })
-      .exec();
-
-    return {
-      payload: documents.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed'
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou'
-            },
-            payload: toSignedContentPayloadItem(item.content),
-            type: 'content'
-          } as GuestFeedItemPayloadItem)
-      ),
-      includes: new CastcleIncludes({
-        users: documents.map((item) => item.content.author)
-      }),
-      meta: createCastcleMeta(documents)
-    } as GuestFeedItemPayload;
   };
 
   async reportContent(
