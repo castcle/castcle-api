@@ -26,8 +26,9 @@ import {
   CastcleQueryOptions,
   QueryOption
 } from '../dtos/common.dto';
-import { Document, Model } from 'mongoose';
+import { Document } from 'mongoose';
 import { Pagination } from '../dtos/common.dto';
+import * as mongoose from 'mongoose';
 
 /**
  *
@@ -70,18 +71,15 @@ export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
 
 export const createCastcleFilter = async (
   filter: any,
-  queryOption: QueryOption,
-  model: Model<any>
+  queryOption: QueryOption
 ) => {
   if (queryOption.sinceId) {
-    const sinceDocument = await model.findById(queryOption.sinceId).exec();
-    filter.createdAt = {
-      $gt: new Date(sinceDocument['createdAt'])
+    filter._id = {
+      $gt: mongoose.Types.ObjectId(queryOption.sinceId)
     };
   } else if (queryOption.untilId) {
-    const untilDocument = await model.findById(queryOption.untilId).exec();
-    filter.createdAt = {
-      $lt: new Date(untilDocument['createdAt'])
+    filter._id = {
+      $lt: mongoose.Types.ObjectId(queryOption.untilId)
     };
   }
   return filter;
