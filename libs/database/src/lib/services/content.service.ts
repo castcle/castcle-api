@@ -284,11 +284,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel.count(findFilter).exec();
     if (options.sortBy.type === 'desc') {
@@ -542,11 +538,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'

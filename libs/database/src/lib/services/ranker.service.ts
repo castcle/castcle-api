@@ -23,7 +23,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import { ContentDocument } from '../schemas';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
@@ -103,24 +103,12 @@ export class RankerService {
     query: QueryOption,
     accountCountryCode?: string
   ) => {
-    const filter: FilterQuery<GuestFeedItemDocument> = {
-      countryCode: accountCountryCode.toLowerCase() ?? 'en'
-    };
-    if (query.sinceId) {
-      const guestFeedItemSince = await this._guestFeedItemModel
-        .findById(query.sinceId)
-        .exec();
-      filter.createdAt = {
-        $gt: new Date(guestFeedItemSince.createdAt)
-      };
-    } else if (query.untilId) {
-      const guestFeedItemUntil = await this._guestFeedItemModel
-        .findById(query.untilId)
-        .exec();
-      filter.createdAt = {
-        $lt: new Date(guestFeedItemUntil.createdAt)
-      };
-    }
+    const filter = await createCastcleFilter(
+      {
+        countryCode: accountCountryCode.toLowerCase() ?? 'en'
+      },
+      query
+    );
     const documents = await this._guestFeedItemModel
       .find(filter)
       .populate('content')
@@ -167,14 +155,14 @@ export class RankerService {
   ) => {
     const startNow = new Date();
     console.debug('start service');
-    const filter = await createCastcleFilter(
-      { viewer: viewer._id },
-      query,
-      this._feedItemModel
-    );
+    const filter = await createCastcleFilter({ viewer: viewer._id }, query);
     //if have sinceId or untilId but can't find filter.createAt => this is guestFeed
-    if ((query.sinceId || query.untilId) && !filter.createdAt) {
-      return this.getGuestFeedItems(query, viewer.geolocation.countryCode);
+    if (query.sinceId || query.untilId) {
+      const refFilter = await this._feedItemModel
+        .findById(query.sinceId || query.untilId)
+        .exec();
+      if (!refFilter)
+        return this.getGuestFeedItems(query, viewer.geolocation.countryCode);
     }
     const timeAfterFilter = new Date();
     console.debug(
