@@ -35,7 +35,7 @@ export class GuestFeedItemDto {
   score: number;
 }
 
-export class GuestFeedItemPayloadItem {
+export class FeedItemPayloadItem {
   id: string;
   feature: {
     slug: 'feed';
@@ -52,8 +52,8 @@ export class GuestFeedItemPayloadItem {
   payload: ContentPayloadItem;
 }
 
-export class GuestFeedItemPayload {
-  payload: GuestFeedItemPayloadItem[];
+export class FeedItemPayload {
+  payload: FeedItemPayloadItem[];
   includes: CastcleIncludes;
   meta: CastcleMeta;
 }
