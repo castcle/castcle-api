@@ -22,7 +22,7 @@
  */
 
 import { Get, Query, Req } from '@nestjs/common';
-import { RankerService } from '@castcle-api/database';
+import { RankerService, UxEngagementService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
@@ -47,7 +47,8 @@ export class FeedController {
   constructor(
     private rankerService: RankerService,
     private contentService: ContentService,
-    private userService: UserService
+    private userService: UserService,
+    private uxEngagementService: UxEngagementService
   ) {}
   private readonly logger = new CastLogger(
     FeedController.name,
@@ -124,8 +125,13 @@ export class FeedController {
         const allContentsEngagements =
           await this.contentService.getAllEngagementFromContentIdsAndUser(
             contentIds,
-            user
+            user.id
           );
+        //track contentIds reach
+        this.uxEngagementService.addReachToContents(
+          contentIds,
+          String(account._id)
+        );
         return {
           payload: feedItemsResult.items.map((t) => {
             const engagements = allContentsEngagements.filter(
@@ -184,6 +190,11 @@ export class FeedController {
       },
       req.$credential.account.geolocation.countryCode
     );
+    //track contentIds reach
+    this.uxEngagementService.addReachToContents(
+      payload.payload.map((feed) => feed.payload.id),
+      String(req.$credential.account._id)
+    );
     return payload;
   }
 
@@ -219,6 +230,11 @@ export class FeedController {
         untilId: untilId
       });
     console.log('feeds', feedItemsResult);
+    //track contentIds reach
+    this.uxEngagementService.addReachToContents(
+      feedItemsResult.payload.map((feed) => feed.payload.id),
+      String(account._id)
+    );
     return feedItemsResult;
   }
 }

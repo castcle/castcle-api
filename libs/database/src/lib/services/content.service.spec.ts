@@ -334,10 +334,10 @@ describe('ContentService', () => {
         payload: shortPayload2,
         castcleId: user.displayId
       });
-      const contents = await service.getContentsFromUser(user);
+      const contents = await service.getContentsFromUser(user.id);
       expect(contents.items[0].payload).toEqual(shortPayload2);
       expect(contents.items[1].payload).toEqual(shortPayload1);
-      const contentsInverse = await service.getContentsFromUser(user, {
+      const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
           type: 'asc'

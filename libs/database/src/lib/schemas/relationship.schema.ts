@@ -24,8 +24,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
+import { UserDocument } from '.';
 import { CastcleBase } from './base.schema';
-import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class Relationship extends CastcleBase {
@@ -35,7 +35,7 @@ export class Relationship extends CastcleBase {
     ref: 'User',
     index: true
   })
-  user: User;
+  user: UserDocument;
 
   @Prop({
     required: true,
@@ -43,15 +43,17 @@ export class Relationship extends CastcleBase {
     ref: 'User',
     index: true
   })
-  followedUser: User;
+  followedUser: UserDocument;
 
   //TODO !!! might need to change to embed followedUser and user instead
   @Prop()
   isFollowPage: boolean;
 
+  /** `true` if user follow followedUser */
   @Prop({ default: true })
   following: boolean;
 
+  /** `true` if user block followedUser */
   @Prop({ default: false })
   blocking: boolean;
 }

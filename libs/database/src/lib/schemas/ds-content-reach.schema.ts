@@ -20,19 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-module.exports = {
-  displayName: 'utils-decorators',
-  preset: '../../../jest.preset.js',
-  setupFiles: ['../../../jest.setup.ts'],
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]sx?$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  coverageDirectory: '../../../coverage/libs/utils/decorators'
-};
+
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Content } from 'aws-sdk/clients/codecommit';
+import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+export class DsContentReach extends CastcleBase {
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Content',
+    index: true
+  })
+  content: Content;
+
+  @Prop({ type: Object })
+  mappedAccount: { [key: string]: number };
+
+  @Prop({ index: true })
+  reachCount: number;
+}
+
+export type DsContentReachDocument = DsContentReach & Document;
+export const DsContentReachSchema =
+  SchemaFactory.createForClass(DsContentReach);
