@@ -38,7 +38,7 @@ export class DsContentReach extends CastcleBase {
   content: Content;
 
   @Prop({ type: Object })
-  mappedUser: { [key: string]: number };
+  mappedAccount: { [key: string]: number };
 
   @Prop({ index: true })
   reachCount: number;

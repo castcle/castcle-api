@@ -57,30 +57,47 @@ export class UxEngagementService {
   }
 
   /**
+   *
+   * @param contentIds
+   * @param userId
+   * @returns {DsContentReachDocument[]}
+   */
+  async addReachToContents(contentIds: string[], userId: string) {
+    console.log('contents', contentIds);
+    return Promise.all(
+      contentIds.map((id) => this.addReachToSingleContent(id, userId))
+    );
+  }
+
+  /**
    * Add reach to collection DsContentReach
    * @param contentId
    * @param userId
    * @returns {DsContentReachDocument}
    */
-  async addReach(contentId: string, userId: string) {
-    let newMappedUser: any;
-    newMappedUser[userId] = 1;
+  async addReachToSingleContent(
+    contentId: string,
+    accountId: string
+  ): Promise<DsContentReachDocument> {
+    const newMappedAccount: any = {};
+    newMappedAccount[accountId] = 1;
     const setOnInsert = {
       content: contentId,
-      mappedUser: newMappedUser,
+      mappedAccount: newMappedAccount,
       reachCount: 1
     };
+    console.log('setOnInsert', setOnInsert);
     const dsReach = await this._dsContentReachModel
       .findOne({ content: contentId })
       .exec();
     if (dsReach) {
-      if (dsReach.mappedUser[userId]) {
-        dsReach.mappedUser[userId] = dsReach.mappedUser[userId] + 1;
+      if (dsReach.mappedAccount[accountId]) {
+        dsReach.mappedAccount[accountId] = dsReach.mappedAccount[accountId] + 1;
       } else {
-        dsReach.mappedUser[userId] = 1;
+        dsReach.mappedAccount[accountId] = 1;
       }
       dsReach.reachCount = dsReach.reachCount + 1;
-      dsReach.markModified('mappedUser');
+      dsReach.markModified('mappedAccount');
       return dsReach.save();
     } else {
       return new this._dsContentReachModel(setOnInsert).save();
