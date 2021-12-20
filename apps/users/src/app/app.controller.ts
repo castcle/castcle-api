@@ -34,6 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
+  PageResponseDto,
   PagesResponse,
   SocialSyncDto,
   UpdateUserDto,
@@ -144,23 +145,26 @@ export class UserController {
   @Get('mentions')
   @CastcleAuth(CacheKeyName.Users)
   async getMentions(
+    @Req() { $credential }: CredentialRequest,
     @Query('keyword', KeywordPipe) keyword: string,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
-    console.debug('Call Get mention');
-    const result = await this.userService.getMentionsFromPublic(keyword, {
-      page: pageOption,
-      limit: limitOption
-    });
+    const authorizedUser = await this.userService.getUserFromCredential(
+      $credential
+    );
+    const { pagination, users } = await this.userService.getMentionsFromPublic(
+      authorizedUser,
+      keyword,
+      { page: pageOption, limit: limitOption }
+    );
+
     return {
       message: 'success message',
-      payload: await Promise.all(
-        result.users.map((user) => user.toUserResponse())
-      ),
-      pagination: result.pagination
+      payload: users,
+      pagination
     };
   }
 
@@ -185,19 +189,15 @@ export class UserController {
       );
   }
 
-  @ApiOkResponse({
-    type: UserResponseDto
-  })
+  @ApiOkResponse({ type: UserResponseDto })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const isFollowed = await this.userService.isCredentialFollow(
-      req.$credential,
-      user
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
     );
-    return await user.toUserResponse(isFollowed);
+
+    return this.userService.getById(authorizedUser, id, UserType.People);
   }
 
   @ApiBody({
@@ -294,7 +294,7 @@ export class UserController {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const contents = await this.contentService.getContentsFromUser(user, {
+      const contents = await this.contentService.getContentsFromUser(user.id, {
         sinceId: sinceId,
         sortBy: sortByOption,
         untilId: untilId,
@@ -303,9 +303,9 @@ export class UserController {
       const engagements =
         await this.contentService.getAllEngagementFromContentsAndUser(
           contents.items,
-          user
+          user.id
         );
-      console.debug('all engagements', engagements);
+
       return {
         payload: contents.items.map((item) => {
           const subEngagements = engagements.filter(
@@ -333,8 +333,8 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
-  async getMypages(
-    @Req() req: CredentialRequest,
+  async getMyPages(
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
@@ -342,27 +342,15 @@ export class UserController {
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
-    //TODO !!! hack it to make ui display more than 25
-    /*@Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit*/
   ): Promise<PagesResponse> {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
-      const pages = await this.userService.getUserPages(user, {
-        //limit: limitOption,
-        page: pageOption,
-        sortBy: sortByOption
-      });
-      console.debug('test/me/pages', user._id, JSON.stringify(pages.items));
-      return {
-        pagination: pages.pagination,
-        payload: pages.items.map((item) => item.toPageResponse())
-      };
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    const user = await this.userService.getUserFromCredential($credential);
+    const { users: pages, pagination } = await this.userService.getByCriteria(
+      user,
+      { ownerAccount: $credential.account._id, type: UserType.Page },
+      { page: pageOption, sortBy: sortByOption }
+    );
+
+    return { pagination, payload: pages as PageResponseDto[] };
   }
 
   @ApiOkResponse({
@@ -393,7 +381,7 @@ export class UserController {
   @Get(':id/contents')
   async getUserContents(
     @Param('id') id: string,
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
@@ -405,10 +393,13 @@ export class UserController {
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-
-    const contents = await this.contentService.getContentsFromUser(user, {
+    const user = await this.userService.getUserFromCredential($credential);
+    const targetUser = await this.userService.getById(
+      user,
+      id,
+      UserType.People
+    );
+    const contents = await this.contentService.getContentsFromUser(user.id, {
       maxResults: maxResults,
       sinceId: sinceId,
       untilId: untilId,
@@ -418,7 +409,7 @@ export class UserController {
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
         contents.items,
-        user
+        targetUser.id
       );
     return {
       payload: contents.items.map((item) => {
@@ -544,18 +535,21 @@ export class UserController {
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const followers = await this.userService.getFollower(user, {
-      limit: limitOption,
-      page: pageOption,
-      sortBy: sortByOption,
-      type: userTypeOption
-    });
-    return {
-      payload: followers.items,
-      pagination: followers.pagination
-    } as FollowResponse;
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const { users, pagination } = await this.userService.getFollowers(
+      authorizedUser,
+      id,
+      {
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption,
+        type: userTypeOption
+      }
+    );
+
+    return { pagination, payload: users };
   }
 
   @ApiOkResponse({
@@ -598,18 +592,21 @@ export class UserController {
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const followers = await this.userService.getFollowing(user, {
-      limit: limitOption,
-      page: pageOption,
-      sortBy: sortByOption,
-      type: userTypeOption
-    });
-    return {
-      payload: followers.items,
-      pagination: followers.pagination
-    } as FollowResponse;
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const { users, pagination } = await this.userService.getFollowing(
+      authorizedUser,
+      id,
+      {
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption,
+        type: userTypeOption
+      }
+    );
+
+    return { payload: users, pagination: pagination };
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
@@ -621,9 +618,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const blockUser = await this.userService.getUserFromIdOrCastcleId(
-      blockUserId
-    );
+    const blockUser = await this.userService.getByIdOrCastcleId(blockUserId);
 
     await this.userService.blockUser(user, blockUser);
   }
@@ -637,7 +632,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const unblockUser = await this.userService.getUserFromIdOrCastcleId(
+    const unblockUser = await this.userService.getByIdOrCastcleId(
       unblockUserId
     );
 
@@ -655,7 +650,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const reportedUser = await this.userService.getUserFromIdOrCastcleId(
+    const reportedUser = await this.userService.getByIdOrCastcleId(
       reportedUserId
     );
 

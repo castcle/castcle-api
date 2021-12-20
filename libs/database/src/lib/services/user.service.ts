@@ -22,6 +22,7 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleRegExp } from '@castcle-api/utils';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
@@ -106,13 +107,91 @@ export class UserService {
     }
   };
 
-  getUserFromIdOrCastcleId = (id: string) => {
-    return this._userModel
-      .findOne({
-        [isMongoId(id) ? '_id' : 'displayId']: id,
+  getById = async (user: UserDocument, id: string, type: UserType) => {
+    const targetUser = await this.getByIdOrCastcleId(id, type);
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const [userRelationship, targetRelationship] = await Promise.all([
+      this._relationshipModel.findOne({
+        user: user._id,
+        followedUser: targetUser._id,
+        visibility: EntityVisibility.Publish
+      }),
+      this._relationshipModel.findOne({
+        user: targetUser._id,
+        followedUser: user._id,
         visibility: EntityVisibility.Publish
       })
-      .exec();
+    ]);
+
+    const blocked = Boolean(userRelationship?.blocking);
+    const blocking = Boolean(targetRelationship?.blocking);
+    const followed = Boolean(userRelationship?.following);
+
+    return targetUser.type === UserType.Page
+      ? targetUser.toPageResponse(blocked, blocking, followed)
+      : await targetUser.toUserResponse(blocked, blocking, followed);
+  };
+
+  getByCriteria = async (
+    user: UserDocument,
+    query: FilterQuery<UserDocument>,
+    queryOptions: CastcleQueryOptions
+  ) => {
+    const { items: targetUsers, pagination } = await this.getAllByCriteria(
+      query,
+      queryOptions
+    );
+
+    const targetUserIds = targetUsers.map(({ _id }) => _id);
+    const [userRelationships, pageRelationships] = await Promise.all([
+      this._relationshipModel.find({
+        user: user._id,
+        followedUser: { $in: targetUserIds },
+        visibility: EntityVisibility.Publish
+      }),
+      this._relationshipModel.find({
+        user: { $in: targetUserIds },
+        followedUser: user._id,
+        visibility: EntityVisibility.Publish
+      })
+    ]);
+
+    return {
+      pagination,
+      users: await Promise.all(
+        targetUsers.map(async (targetUser) => {
+          const pageRelationship = pageRelationships.find(
+            ({ user }) => String(user) === targetUser.id
+          );
+
+          const userRelationship = userRelationships.find(
+            ({ followedUser }) => String(followedUser) === targetUser.id
+          );
+
+          const blocked = Boolean(userRelationship?.blocking);
+          const blocking = Boolean(pageRelationship?.blocking);
+          const followed = Boolean(userRelationship?.following);
+
+          return targetUser.type === UserType.Page
+            ? targetUser.toPageResponse(blocked, blocking, followed)
+            : await targetUser.toUserResponse(blocked, blocking, followed);
+        })
+      )
+    };
+  };
+
+  getByIdOrCastcleId = (id: string, type?: UserType) => {
+    const query: FilterQuery<UserDocument> = {
+      visibility: EntityVisibility.Publish
+    };
+
+    if (type) query.type = type;
+    if (isMongoId(String(id))) query._id = id;
+    else query.displayId = CastcleRegExp.fromString(id);
+
+    return this._userModel.findOne(query).exec();
   };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {
@@ -203,13 +282,16 @@ export class UserService {
    * @param {CastcleQueryOptions} queryOptions
    * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
    */
-  getAllPages = async (queryOptions: CastcleQueryOptions) => {
+  getAllByCriteria = async (
+    query: FilterQuery<UserDocument>,
+    queryOptions: CastcleQueryOptions
+  ) => {
     const pagination = createPagination(
       queryOptions,
-      await this._userModel.count({ type: UserType.Page })
+      await this._userModel.count(query)
     );
     const itemsQuery = this._userModel
-      .find({ type: UserType.Page, visibility: EntityVisibility.Publish })
+      .find({ ...query, visibility: EntityVisibility.Publish })
       .skip(queryOptions.page - 1)
       .limit(queryOptions.limit);
     let items: UserDocument[];
@@ -217,6 +299,10 @@ export class UserService {
       items = await itemsQuery.sort(`-${queryOptions.sortBy.field}`).exec();
     else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
     return { items, pagination };
+  };
+
+  getAllPages = (queryOptions: CastcleQueryOptions) => {
+    return this.getAllByCriteria({ type: UserType.Page }, queryOptions);
   };
 
   /**
@@ -249,29 +335,6 @@ export class UserService {
 
   /**
    *
-   * @param credential
-   * @param user
-   * @returns
-   */
-  isCredentialFollow = async (
-    credential: CredentialDocument,
-    user: UserDocument
-  ) => {
-    const credentialUser = await this.getUserFromCredential(credential);
-    const relationship = await this._relationshipModel
-      .findOne({
-        user: credentialUser._id,
-        followedUser: user._id,
-        visibility: EntityVisibility.Publish,
-        blocking: false,
-        following: true
-      })
-      .exec();
-    return Boolean(relationship);
-  };
-
-  /**
-   *
    * @param {UserDocument} user
    * @param {UserDocument} followedUser
    * @returns {Promise<void>}
@@ -296,81 +359,82 @@ export class UserService {
   unfollow = async (user: UserDocument, followedUser: UserDocument) =>
     user.unfollow(followedUser);
 
-  /**
-   *
-   * @param user
-   * @param queryOption
-   * @returns
-   */
-  getFollower = async (
+  getFollowers = async (
     user: UserDocument,
+    targetUserId: string,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: FilterQuery<RelationshipDocument> = {
-      followedUser: user._id,
+    const targetUser = await this.getByIdOrCastcleId(targetUserId);
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
+    const query: FilterQuery<RelationshipDocument> = {
+      followedUser: targetUser.id as any,
       visibility: EntityVisibility.Publish,
-      blocking: false,
       following: true
     };
 
-    if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page;
-    let query = this._relationshipModel
-      .find(filter)
-      .skip(queryOption.page - 1)
-      .limit(queryOption.limit)
-      .populate('user');
-    if (queryOption.sortBy.type === 'desc')
-      query = query.sort(`-${queryOption.sortBy.field}`);
-    else query = query.sort(`${queryOption.sortBy.field}`);
-    const totalFollower = await this._relationshipModel.count(filter).exec();
-    const relationships = await query.exec();
-    console.log('total', totalFollower);
-    console.log(relationships);
-    return {
-      items: relationships.map((r) =>
-        this._userModel.covertToUserResponse(r.user)
-      ),
-      pagination: createPagination(queryOption, totalFollower)
-    };
+    if (queryOption.type) {
+      query.isFollowPage = queryOption.type === UserType.Page;
+    }
+
+    const total = await this._relationshipModel.count(query).exec();
+    const relationships = total
+      ? await this._relationshipModel
+          .find(query)
+          .skip(queryOption.page - 1)
+          .limit(queryOption.limit)
+          .populate('user')
+          .sort(`${direction}${queryOption.sortBy.field}`)
+          .exec()
+      : [];
+
+    const followerIds = relationships.map(({ user }) => user._id);
+
+    return this.getByCriteria(user, { _id: { $in: followerIds } }, queryOption);
   };
 
-  /**
-   *
-   * @param user
-   * @param queryOption
-   * @returns
-   */
   getFollowing = async (
-    user: UserDocument,
+    authorizedUser: UserDocument,
+    userId: string,
     queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
   ) => {
-    const filter: FilterQuery<RelationshipDocument> = {
-      user: user._id,
+    const targetUser = await this.getByIdOrCastcleId(userId);
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
+    const query: FilterQuery<RelationshipDocument> = {
+      user: targetUser.id as any,
       visibility: EntityVisibility.Publish,
-      blocking: false,
       following: true
     };
 
-    if (queryOption.type)
-      filter.isFollowPage = queryOption.type === UserType.Page;
-    let query = this._relationshipModel
-      .find(filter)
-      .populate('followedUser')
-      .skip(queryOption.page - 1)
-      .limit(queryOption.limit);
-    //      .populate('followedUser');
-    if (queryOption.sortBy.type === 'desc')
-      query = query.sort(`-${queryOption.sortBy.field}`);
-    else query = query.sort(`${queryOption.sortBy.field}`);
-    const totalFollowing = await this._relationshipModel.count(filter).exec();
-    const relationships = await query.exec();
-    return {
-      items: relationships.map((r) =>
-        this._userModel.covertToUserResponse(r.followedUser)
-      ),
-      pagination: createPagination(queryOption, totalFollowing)
-    };
+    if (queryOption.type) {
+      query.isFollowPage = queryOption.type === UserType.Page;
+    }
+
+    const total = await this._relationshipModel.count(query).exec();
+    const relationships = total
+      ? await this._relationshipModel
+          .find(query)
+          .skip(queryOption.page - 1)
+          .limit(queryOption.limit)
+          .populate('followedUser')
+          .sort(`${direction}${queryOption.sortBy.field}`)
+          .exec()
+      : [];
+
+    const followingIds = relationships.map(
+      ({ followedUser }) => followedUser._id
+    );
+
+    return this.getByCriteria(
+      authorizedUser,
+      { _id: { $in: followingIds } },
+      queryOption
+    );
   };
 
   /**
@@ -423,7 +487,9 @@ export class UserService {
    * @param {UserDocument} user
    * @returns {ContentDocument[]}
    */
-  _removeAllContentFromUser = async (user: UserDocument) => {
+  _removeAllContentFromUser = async (
+    user: UserDocument
+  ): Promise<ContentDocument[]> => {
     const contents = await this.contentService._contentModel
       .find({ 'author.id': user._id })
       .exec();
@@ -596,31 +662,25 @@ export class UserService {
 
   /**
    * Get all user,pages that could get from the system sort by followerCount
-   * @param {string} query
+   * @param {string} keyword
    * @param {CastcleQueryOptions} queryOption
    * @returns {Promise<{users:UserDocument[], pagination:Pagination}>}
    */
   getMentionsFromPublic = async (
-    query: string,
+    user: UserDocument,
+    keyword: string,
     queryOption: CastcleQueryOptions
   ) => {
-    const filter = {
-      displayId: { $regex: new RegExp('^' + query.toLowerCase(), 'i') }
+    const query = {
+      displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') }
     };
-    const users = await this._userModel
-      .find(filter)
-      .skip(queryOption.page - 1)
-      .limit(queryOption.limit)
-      .sort('-followerCount')
-      .exec();
-    const pagination = createPagination(
-      queryOption,
-      await this._userModel.countDocuments(filter)
-    );
-    return {
-      users: users,
-      pagination: pagination
+
+    queryOption.sortBy = {
+      field: 'followerCount',
+      type: 'desc'
     };
+
+    return this.getByCriteria(user, query, queryOption);
   };
 
   async blockUser(user: UserDocument, blockedUser?: UserDocument) {

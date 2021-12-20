@@ -20,19 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-module.exports = {
-  displayName: 'utils-decorators',
-  preset: '../../../jest.preset.js',
-  setupFiles: ['../../../jest.setup.ts'],
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json'
-    }
-  },
-  testEnvironment: 'node',
-  transform: {
-    '^.+\\.[tj]sx?$': 'ts-jest'
-  },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  coverageDirectory: '../../../coverage/libs/utils/decorators'
-};
+
+export class CastcleRegExp {
+  static replaceEscapeStrings = (str: string) => {
+    return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+  };
+
+  static fromString = (str: string, caseInsensitive = true) => {
+    const strPattern = str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
+    return caseInsensitive
+      ? new RegExp(`^${strPattern}$`, 'i')
+      : new RegExp(`^${strPattern}$`);
+  };
+}
