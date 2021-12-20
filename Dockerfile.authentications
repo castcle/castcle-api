@@ -25,6 +25,4 @@ COPY ./dist/apps/authentications .
 ENV PORT=80
 EXPOSE ${PORT}
 RUN npm install --production
-# dependencies that nestjs needs
-RUN npm install reflect-metadata tslib rxjs @nestjs/platform-express dotenv
 CMD node ./main.js

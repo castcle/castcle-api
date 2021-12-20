@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
@@ -276,11 +276,11 @@ export class ContentService {
    * @returns {Promise<{items:ContentDocument[], total:number, pagination: {Pagination}}>}
    */
   getContentsFromUser = async (
-    user: UserDocument,
+    userId: string,
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    let findFilter: any = {
-      'author.id': user._id,
+    let findFilter: FilterQuery<ContentDocument> = {
+      'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
@@ -838,27 +838,27 @@ export class ContentService {
   /**
    * Get all engagement that this user engage to contents (like, cast, recast, quote)
    * @param {ContentDocument[]} contents
-   * @param {UserDocument} user
+   * @param {UserDocument} userId
    * @returns {EngagementDocument[]}
    */
   getAllEngagementFromContentsAndUser = async (
     contents: ContentDocument[],
-    user: UserDocument
+    userId: string
   ) => {
     const contentIds = contents.map((c) => c._id);
     console.debug('contentIds', contentIds);
-    return this.getAllEngagementFromContentIdsAndUser(contentIds, user);
+    return this.getAllEngagementFromContentIdsAndUser(contentIds, userId);
   };
 
   /**
    *
    * @param contentIds
-   * @param user
+   * @param {string} userId
    * @returns
    */
   getAllEngagementFromContentIdsAndUser = async (
     contentIds: any[],
-    user: UserDocument
+    userId: string
   ) => {
     return this._engagementModel
       .find({
@@ -868,7 +868,7 @@ export class ContentService {
             $id: id
           }))
         },
-        user: user._id
+        user: userId as any
       })
       .exec();
   };

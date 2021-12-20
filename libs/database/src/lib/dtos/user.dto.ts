@@ -96,6 +96,12 @@ export class UserResponseDto {
 
   @ApiProperty()
   followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
 }
 
 export class UpdateUserDto {
@@ -178,6 +184,15 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
+  followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
+
+  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -222,7 +237,7 @@ export class PageResponse {
 
 export class FollowResponse {
   @ApiProperty()
-  payload: UserResponseDto[];
+  payload: (UserResponseDto | PageResponseDto)[];
 
   @ApiProperty()
   pagination: Pagination;

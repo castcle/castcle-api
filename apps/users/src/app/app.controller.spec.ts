@@ -36,7 +36,8 @@ import {
   SaveContentDto,
   ShortPayload,
   SocialSyncDto,
-  UpdateUserDto
+  UpdateUserDto,
+  UserResponseDto
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
@@ -181,10 +182,10 @@ describe('AppController', () => {
   describe('getUserById', () => {
     it('should return UserResponseDto of user id ', async () => {
       const user = await service.getUserFromCredential(userCredential);
-      const response = await appController.getUserById(
+      const response = (await appController.getUserById(
         { $credential: userCredential, $language: 'th' } as any,
         user._id
-      );
+      )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
       expect(response.email).toEqual(userAccount.email);
@@ -299,7 +300,12 @@ describe('AppController', () => {
   });
   describe('getMentions', () => {
     it('should get all mentions user form system', async () => {
-      const response = await appController.getMentions('', 1, 5);
+      const response = await appController.getMentions(
+        { $credential: userCredential } as any,
+        '',
+        1,
+        5
+      );
       expect(response.payload.length).toEqual(1);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
