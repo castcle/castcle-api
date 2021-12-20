@@ -59,7 +59,8 @@ describe('CastcleException', () => {
     'FEATURE_NOT_EXIST',
     'PAYLOAD_TYPE_MISMATCH',
     'NOTIFICATION_NOT_FOUND',
-    'SOCIAL_PROVIDER_IS_EXIST'
+    'SOCIAL_PROVIDER_IS_EXIST',
+    'TWILLIO_MAX_LIMIT'
   ];
   testStatus.forEach((STATUS) => {
     it(`should throw ${STATUS} and code ${

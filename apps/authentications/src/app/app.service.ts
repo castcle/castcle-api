@@ -410,11 +410,7 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        try {
-          if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
-        } catch (ex) {
-          this.logger.warn('Can not cancel otp:', ex);
-        }
+        await this.cancelOtp(exOtp);
         this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         await exOtp.delete();
       }
@@ -588,7 +584,7 @@ export class AppService {
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
       throw new CastcleException(
-        CastcleStatus.SOMETHING_WRONG,
+        CastcleStatus.TWILLIO_MAX_LIMIT,
         credential.$language
       );
     }
@@ -709,6 +705,7 @@ export class AppService {
     const retryCount = otp.retry ? otp.retry : 0;
     if (retryCount >= limitRetry) {
       this.logger.error(`Otp over limit retry : ${limitRetry}`);
+      await this.cancelOtp(otp);
       await otp.delete();
       throw new CastcleException(
         CastcleStatus.LOCKED_OTP,
@@ -726,6 +723,7 @@ export class AppService {
         );
       } catch (ex) {
         this.logger.error(ex.message, ex);
+        await this.cancelOtp(otp);
         await otp.delete();
         throw new CastcleException(
           CastcleStatus.EXPIRED_OTP,
@@ -758,6 +756,7 @@ export class AppService {
       return newOtp;
     } else {
       this.logger.error(`Otp expired.`);
+      await this.cancelOtp(otp);
       this.logger.log('Delete OTP refCode: ' + otp.refCode);
       await otp.delete();
       throw new CastcleException(
@@ -878,5 +877,14 @@ export class AppService {
     }
 
     return { userVerify, tokenData };
+  }
+
+  private async cancelOtp(otp: OtpDocument) {
+    this.logger.log('Cancel Twillio Otp.');
+    try {
+      if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
+    } catch (ex) {
+      this.logger.warn('Can not cancel otp:', ex);
+    }
   }
 }
