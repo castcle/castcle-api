@@ -392,7 +392,8 @@ export class AppService {
   private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
-    channel: string
+    channel: string,
+    reciever: string
   ) {
     const allExistingOtp =
       await this.authService.getAllOtpFromRequestIdObjective(
@@ -404,7 +405,8 @@ export class AppService {
       if (
         exOtp.isValid() &&
         exOtp.channel === channel &&
-        exOtp.action === objective
+        exOtp.action === objective &&
+        exOtp.reciever === reciever
       ) {
         existingOtp = exOtp;
       } else {
@@ -487,18 +489,19 @@ export class AppService {
       );
     }
 
-    const exOtp = await this.validateExistingOtp(
-      objective,
-      credential,
-      request.channel
-    );
-    if (exOtp) {
-      this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
-      return exOtp;
-    }
-
     switch (request.channel) {
       case 'email': {
+        const exOtp = await this.validateExistingOtp(
+          objective,
+          credential,
+          request.channel,
+          request.payload.email
+        );
+        if (exOtp) {
+          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
+          return exOtp;
+        }
+
         account = await this.getAccountFromEmail(
           request.payload.email,
           credential.$language
@@ -516,6 +519,17 @@ export class AppService {
         break;
       }
       case 'mobile': {
+        const exOtp = await this.validateExistingOtp(
+          objective,
+          credential,
+          request.channel,
+          request.payload.countryCode + request.payload.mobileNumber
+        );
+        if (exOtp) {
+          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
+          return exOtp;
+        }
+
         account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
@@ -586,6 +600,7 @@ export class AppService {
       credential.$credential.account._id,
       otpChannel,
       false,
+      reciever,
       sid
     );
     return otp;
@@ -737,7 +752,8 @@ export class AppService {
         objective,
         credential.$credential.account._id,
         request.channel,
-        true
+        true,
+        receiver
       );
       return newOtp;
     } else {

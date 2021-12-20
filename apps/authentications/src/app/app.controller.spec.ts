@@ -1810,6 +1810,43 @@ describe('AppController', () => {
       expect(resultAgain.expiresTime).toEqual(result.expiresTime);
     });
 
+    it('should return new otp when change mobile number', async () => {
+      const mobileNumber = '0817896700';
+      const request = {
+        objective: 'verify_mobile',
+        channel: 'mobile',
+        payload: {
+          email: '',
+          countryCode: countryCodeTest,
+          mobileNumber: mobileNumber
+        }
+      };
+      const result = await appController.requestOTP(request, credentialGuest);
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+      const newMobileNumber = '0817896769';
+      const requestnew = {
+        objective: 'verify_mobile',
+        channel: 'mobile',
+        payload: {
+          email: '',
+          countryCode: countryCodeTest,
+          mobileNumber: newMobileNumber
+        }
+      };
+
+      const resultAgain = await appController.requestOTP(
+        requestnew,
+        credentialGuest
+      );
+
+      expect(resultAgain).toBeDefined;
+      expect(resultAgain.refCode).not.toEqual(result.refCode);
+      expect(resultAgain.expiresTime).not.toEqual(result.expiresTime);
+    });
+
     it('should request otp via email successful', async () => {
       const request = {
         objective: 'forgot_password',
