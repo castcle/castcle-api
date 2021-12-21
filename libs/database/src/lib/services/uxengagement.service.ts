@@ -28,13 +28,16 @@ import { Model } from 'mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
 import { UxEngagementDocument } from '../schemas/uxengagement.schema';
+import { DsContentReachDocument } from '../schemas/ds-content-reach.schema';
 
 @Injectable()
 export class UxEngagementService {
   constructor(
     @InjectModel('Account') public _accountModel: Model<AccountDocument>,
     @InjectModel('UxEngagement')
-    public _uxEngagementModel: Model<UxEngagementDocument>
+    public _uxEngagementModel: Model<UxEngagementDocument>,
+    @InjectModel('DsContentReach')
+    public _dsContentReachModel: Model<DsContentReachDocument>
   ) {}
 
   /**
@@ -51,5 +54,53 @@ export class UxEngagementService {
     } as UxEngagementDto;
     const createResult = await new this._uxEngagementModel(uxDto).save();
     return createResult;
+  }
+
+  /**
+   *
+   * @param contentIds
+   * @param userId
+   * @returns {DsContentReachDocument[]}
+   */
+  async addReachToContents(contentIds: string[], userId: string) {
+    console.log('contents', contentIds);
+    return Promise.all(
+      contentIds.map((id) => this.addReachToSingleContent(id, userId))
+    );
+  }
+
+  /**
+   * Add reach to collection DsContentReach
+   * @param contentId
+   * @param userId
+   * @returns {DsContentReachDocument}
+   */
+  async addReachToSingleContent(
+    contentId: string,
+    accountId: string
+  ): Promise<DsContentReachDocument> {
+    const newMappedAccount: any = {};
+    newMappedAccount[accountId] = 1;
+    const setOnInsert = {
+      content: contentId,
+      mappedAccount: newMappedAccount,
+      reachCount: 1
+    };
+    console.log('setOnInsert', setOnInsert);
+    const dsReach = await this._dsContentReachModel
+      .findOne({ content: contentId })
+      .exec();
+    if (dsReach) {
+      if (dsReach.mappedAccount[accountId]) {
+        dsReach.mappedAccount[accountId] = dsReach.mappedAccount[accountId] + 1;
+      } else {
+        dsReach.mappedAccount[accountId] = 1;
+      }
+      dsReach.reachCount = dsReach.reachCount + 1;
+      dsReach.markModified('mappedAccount');
+      return dsReach.save();
+    } else {
+      return new this._dsContentReachModel(setOnInsert).save();
+    }
   }
 }
