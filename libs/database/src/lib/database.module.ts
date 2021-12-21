@@ -34,6 +34,7 @@ import { CommentSchemaFactory } from './schemas/comment.schema';
 import { ContentSchemaFactory } from './schemas/content.schema';
 import { CountrySchema } from './schemas/country.schema';
 import { CredentialSchemaFactory } from './schemas/credential.schema';
+import { DsContentReachSchema } from './schemas/ds-content-reach.schema';
 import { EngagementSchemaFactory } from './schemas/engagement.schema';
 import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
 import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
@@ -69,7 +70,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema }
+  { name: 'SocialSync', schema: SocialSyncSchema },
+  { name: 'DsContentReach', schema: DsContentReachSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
