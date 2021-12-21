@@ -879,10 +879,7 @@ export class UserController {
     if (user) {
       await this.socialSyncService.delete(body, user);
     } else
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
   }
 
   private async validateGuestAccount(
