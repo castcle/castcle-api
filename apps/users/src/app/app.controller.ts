@@ -872,6 +872,7 @@ export class UserController {
   })
   @CastleClearCacheAuth(CacheKeyName.SyncSocial)
   @Delete('syncSocial')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSyncSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDeleteDto
