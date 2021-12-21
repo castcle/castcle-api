@@ -882,7 +882,6 @@ export class UserController {
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     if (user) {
       await this.socialSyncService.delete(body, user);
-      return '';
     } else
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
