@@ -847,14 +847,10 @@ export class UserController {
     logger.log(`Start update sync social.`);
     logger.log(JSON.stringify(body));
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
-    if (user) {
-      await this.socialSyncService.update(body, user);
-      return '';
-    } else
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+    
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    
+    await this.socialSyncService.update(body, user);
   }
 
   /**
