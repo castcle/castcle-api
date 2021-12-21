@@ -31,10 +31,11 @@ export class Url {
 }
 
 export enum LinkType {
+  Other = 'other',
   Youtube = 'youtube'
 }
 
-class Link {
+export class Link {
   @ApiProperty()
   type: string | LinkType;
 
@@ -43,6 +44,15 @@ class Link {
 
   @ApiProperty()
   image: string | CastcleImage;
+
+  @ApiProperty()
+  title?: string;
+
+  @ApiProperty()
+  description?: string;
+
+  @ApiProperty()
+  imagePreview?: string | CastcleImage;
 }
 
 class BlogPhoto {

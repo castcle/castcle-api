@@ -41,9 +41,9 @@ import {
   transformContentPayloadToV2
 } from '../schemas/content.schema';
 import {
-  FeedItemPayload,
+  GuestFeedItemPayload,
   FeedItemPayloadItem
-} from '../dtos/guestFeedItem.dto';
+} from '../dtos/guest-feed-item.dto';
 import { Configs } from '@castcle-api/environments';
 import { Image, predictContents } from '@castcle-api/utils/aws';
 import { Author } from '../dtos/content.dto';
@@ -140,14 +140,14 @@ export class RankerService {
         users: documents.map((item) => item.content.author)
       }),
       meta: createCastcleMeta(documents)
-    } as FeedItemPayload;
+    } as GuestFeedItemPayload;
   };
 
   /**
    * add member feed item that use data from DS
    * @param viewer
    * @param query
-   * @returns {FeedItemPayload}
+   * @returns {GuestFeedItemPayload}
    */
   getMemberFeedItemsFromViewer = async (
     viewer: Account,
@@ -251,6 +251,6 @@ export class RankerService {
       payload: feedPayload,
       includes: includes,
       meta: meta
-    } as FeedItemPayload;
+    } as GuestFeedItemPayload;
   };
 }

@@ -33,7 +33,7 @@ import {
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { ContentPayloadDto } from '../dtos/content.dto';
 import { EngagementDocument } from './engagement.schema';
-import { FeedItemPayloadItem } from '../dtos/guestFeedItem.dto';
+import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
 export type FeedItemDocument = FeedItem & IFeedItem;
 
