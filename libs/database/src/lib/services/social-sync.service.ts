@@ -145,7 +145,7 @@ export class SocialSyncService {
       socialSync.active = updateSocialSync.active;
       return socialSync.save();
     } else {
-      this.logger.warn('Cnn not found social sync');
+      this.logger.warn('Can not found social sync');
       return null;
     }
   };

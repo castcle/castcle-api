@@ -458,12 +458,7 @@ describe('AppController', () => {
 
       await expect(
         appController.updateMobile(credential, request)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_REFCODE,
-          credential.$language
-        )
-      );
+      ).rejects.toEqual(new CastcleException(CastcleStatus.INVLAID_REFCODE));
     });
 
     it('should return Exception when get guest account', async () => {

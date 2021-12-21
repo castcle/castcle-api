@@ -730,13 +730,10 @@ export class UserController {
       !otp.isVerify
     ) {
       logger.error(`Invalid Ref Code`);
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }
     logger.log('Get account document and validate guest');
-    const account = await this.validateGuestAccount(
-      req.$credential,
-      req.$language
-    );
+    const account = await this.validateGuestAccount(req.$credential);
     logger.log('Get user document');
 
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -754,11 +751,7 @@ export class UserController {
       );
       const response = await afterUpdateUser.toUserResponse();
       return response;
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    } else throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
   }
 
   /**
@@ -782,7 +775,7 @@ export class UserController {
     logger.log(JSON.stringify(body));
 
     logger.log('Validate guest');
-    await this.validateGuestAccount(req.$credential, req.$language);
+    await this.validateGuestAccount(req.$credential);
 
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
@@ -790,10 +783,7 @@ export class UserController {
       logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
       );
-      throw new CastcleException(
-        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-        req.$language
-      );
+      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
@@ -847,9 +837,7 @@ export class UserController {
     logger.log(`Start update sync social.`);
     logger.log(JSON.stringify(body));
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
-    
     if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
-    
     await this.socialSyncService.update(body, user);
   }
 
@@ -878,18 +866,14 @@ export class UserController {
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     if (user) {
       await this.socialSyncService.delete(body, user);
-    } else
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
   }
 
-  private async validateGuestAccount(
-    credential: CredentialDocument,
-    language: string
-  ) {
+  private async validateGuestAccount(credential: CredentialDocument) {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
       logger.error(`Forbidden guest account.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     } else {
       return account;
     }
