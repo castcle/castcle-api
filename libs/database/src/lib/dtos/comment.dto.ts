@@ -83,7 +83,7 @@ export class CommentPayload {
   updatedAt: string;
 }
 
-export class CommentsReponse {
+export class CommentsResponse {
   message?: string;
   payload: CommentPayload[];
   meta: CastcleMeta;

@@ -112,7 +112,6 @@ export class TwitterService {
     userId: string,
     timeline: Tweetv2TimelineResult
   ) {
-    const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
     const toUploadMedia = timeline.includes?.media?.map(async (medium) => {
       const imageUrl = medium?.url || medium?.preview_image_url;
 
@@ -145,7 +144,7 @@ export class TwitterService {
 
         return {
           payload: {
-            message: text.replace(LAST_TWITTER_LINK_PATTERN, ''),
+            message: text,
             photo: images ? { contents: images } : undefined
           },
           type: 'short'

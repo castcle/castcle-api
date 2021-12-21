@@ -52,7 +52,7 @@ export class FeedItemPayloadItem {
   payload: ContentPayloadItem;
 }
 
-export class FeedItemPayload {
+export class GuestFeedItemPayload {
   payload: FeedItemPayloadItem[];
   includes: CastcleIncludes;
   meta: CastcleMeta;

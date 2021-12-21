@@ -38,39 +38,39 @@ import {
   createPagination
 } from '../utils/common';
 import {
-  SaveContentDto,
   Author,
   CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  ContentType,
-  ShortPayload
-} from '../dtos/content.dto';
-import { RevisionDocument } from '../schemas/revision.schema';
-import {
   CastcleIncludes,
   CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
-} from '../dtos/common.dto';
-import {
   CommentDto,
-  CommentsReponse,
+  CommentsResponse,
+  ContentType,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  FeedItemDto,
+  GetLinkPreview,
+  GuestFeedItemDto,
+  Link,
+  LinkType,
+  SaveContentDto,
+  ShortPayload,
   UpdateCommentDto
-} from '../dtos/comment.dto';
+} from '../dtos';
+import { RevisionDocument } from '../schemas/revision.schema';
 import { CommentType } from '../schemas/comment.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
 import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import { GuestFeedItemDto } from '../dtos/guestFeedItem.dto';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CastLogger } from '@castcle-api/logger';
 import { createTransport } from 'nodemailer';
+import { getLinkPreview } from 'link-preview-js';
 
 @Injectable()
 export class ContentService {
@@ -113,17 +113,14 @@ export class ContentService {
    * @returns {ContentDocument} content.save() result
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
-    /*if (!contentDto.author) author = this._getAuthorFromUser(user);
-    else {
-      const page = await this._userModel.findById(contentDto.author.id);
-      author = this._getAuthorFromUser(page);
-    }*/
     const author = this._getAuthorFromUser(user);
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       contentDto.payload
     );
-    //create hashtag
+
     await this.hashtagService.createFromTags(hashtags);
+    await this.updatePayloadMessage(contentDto.payload);
+
     const newContent = {
       author: author,
       payload: contentDto.payload,
@@ -152,6 +149,7 @@ export class ContentService {
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
       await this.hashtagService.createFromTags(hashtags);
+      await this.updatePayloadMessage(payload);
 
       return {
         author,
@@ -167,6 +165,28 @@ export class ContentService {
 
     return this._contentModel.create(contents);
   }
+
+  updatePayloadMessage = async (shortPayload: ShortPayload) => {
+    const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
+    const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
+
+    if (linkIndex >= 0) {
+      const twitterLink = shortPayload.message.slice(linkIndex);
+      const linkPreview = (await getLinkPreview(twitterLink)) as GetLinkPreview;
+      const link = {
+        type: LinkType.Other,
+        url: linkPreview.url,
+        title: linkPreview.title,
+        description: linkPreview.description,
+        imagePreview: linkPreview.images?.[0]
+      } as Link;
+
+      shortPayload.message = shortPayload.message.slice(0, linkIndex);
+      shortPayload.link = shortPayload.link
+        ? [...shortPayload.link, link]
+        : [link];
+    }
+  };
 
   /**
    *
@@ -369,7 +389,7 @@ export class ContentService {
     return engagement;
   };
 
-  getCommentEnagement = async (
+  getCommentEngagement = async (
     comment: CommentDocument,
     engagementType: EngagementType,
     user: UserDocument
@@ -686,7 +706,7 @@ export class ContentService {
   getCommentsFromContent = async (
     content: ContentDocument,
     options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
-  ): Promise<CommentsReponse> => {
+  ): Promise<CommentsResponse> => {
     const filter = {
       targetRef: {
         $id: content._id,
