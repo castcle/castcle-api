@@ -433,6 +433,7 @@ export class AuthenticationService {
     requestId: string,
     channel: string,
     verify: boolean,
+    reciever?: string,
     sid?: string
   ) {
     const otp = await this._otpModel.generate(
@@ -441,6 +442,7 @@ export class AuthenticationService {
       requestId,
       channel,
       verify,
+      reciever,
       sid
     );
     return otp;

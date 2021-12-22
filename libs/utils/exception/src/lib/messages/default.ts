@@ -153,6 +153,11 @@ export const ErrorMessages = {
     code: '3019',
     message: 'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น'
   },
+  '3020': {
+    statusCode: '400',
+    code: '3020',
+    message: 'Max attempts reached'
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
