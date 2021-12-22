@@ -859,10 +859,11 @@ export class AppService {
     }
 
     this.logger.log(`verify google access token.`);
-    const tokenData = await this.googleClient.verifyToken(payload.authToken);
-
-    if (!tokenData) {
-      this.logger.error(`Use token expired.`);
+    let tokenData;
+    try {
+      tokenData = await this.googleClient.verifyToken(payload.authToken);
+    } catch (ex) {
+      this.logger.error(`Use token expired.`, ex);
       throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
 
