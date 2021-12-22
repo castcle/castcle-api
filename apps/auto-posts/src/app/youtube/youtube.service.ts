@@ -23,6 +23,7 @@
 
 import { ContentService, SocialSyncService } from '@castcle-api/database';
 import {
+  Author,
   ContentType,
   LinkType,
   SaveContentDto,
@@ -89,9 +90,10 @@ export class YoutubeService {
       syncAccount.author.id
     );
 
-    await this.contentService.createContentsFromAuthor(syncAccount.author, [
-      shortContent
-    ]);
+    await this.contentService.createContentsFromAuthor(
+      new Author(syncAccount.author),
+      [shortContent]
+    );
 
     syncAccount.displayName = feed.entry.author.name;
     syncAccount.latestSyncId = feed.entry.id;

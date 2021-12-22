@@ -34,7 +34,7 @@ import {
   SocialSyncDocument
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { SaveContentDto } from '@castcle-api/database/dtos';
+import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 
 @Injectable()
@@ -84,7 +84,7 @@ export class TwitterService {
     );
 
     await this.contentService.createContentsFromAuthor(
-      syncAccount.author,
+      new Author(syncAccount.author),
       contents
     );
 
