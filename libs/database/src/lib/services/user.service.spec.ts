@@ -350,7 +350,7 @@ describe('User Service', () => {
     });
   });
   describe('#getFollower()', () => {
-    it('should get user detail from followering', async () => {
+    it('should get user detail from followers', async () => {
       const currentUser: UserDocument = await service.getUserFromCredential(
         result.credentialDocument
       );
@@ -360,12 +360,13 @@ describe('User Service', () => {
       } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       await currentUser.follow(allPages.items[0]);
       await currentUser.follow(allPages.items[1]);
-      const followers = await service.getFollower(
-        allPages.items[0],
+      const followers = await service.getFollowers(
+        currentUser,
+        allPages.items[0].id,
         DEFAULT_QUERY_OPTIONS
       );
-      expect(followers.items.length).toEqual(1);
-      expect(followers.items[0].castcleId).toEqual(
+      expect(followers.users.length).toEqual(1);
+      expect(followers.users[0].castcleId).toEqual(
         (await currentUser.toUserResponse()).castcleId
       );
     });
@@ -376,16 +377,13 @@ describe('User Service', () => {
       const currentUser: UserDocument = await service.getUserFromCredential(
         result.credentialDocument
       );
-      const allPages: {
-        items: UserDocument[];
-        pagination: Pagination;
-      } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
-      const following = await service.getFollowing(currentUser);
+      const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
+      const following = await service.getFollowing(currentUser, currentUser.id);
       //like in #getFollower
-      expect(following.items.length).toEqual(allPages.items.length);
+      expect(following.users.length).toEqual(allPages.items.length);
     });
   });
-  describe('#deactive, reactive', () => {
+  describe('#deactivate, reactivate', () => {
     const userInfo = {
       accountRequirement: {
         device: 'iphone',
@@ -675,10 +673,10 @@ describe('User Service', () => {
     describe('_removeAllContentFromUser()', () => {
       it('should flag all content from user to deleted', async () => {
         //service._removeAllContentFromUser()
-        const preContents = await contentService.getContentsFromUser(userA);
+        const preContents = await contentService.getContentsFromUser(userA.id);
         expect(preContents.total).toEqual(contents.length);
         await service._removeAllContentFromUser(userA);
-        const postContents = await contentService.getContentsFromUser(userA);
+        const postContents = await contentService.getContentsFromUser(userA.id);
         expect(postContents.total).toEqual(0);
       });
       // /it('should update the recast counter from original content', async () => {});
@@ -715,11 +713,17 @@ describe('User Service', () => {
     });
     describe('_removeAllFollower()', () => {
       it('should flag all content from user to deleted', async () => {
-        const preFollower = await service.getFollower(userNotDelete);
-        expect(preFollower.items.length).toEqual(2);
+        const preFollower = await service.getFollowers(
+          userNotDelete,
+          userNotDelete.id
+        );
+        expect(preFollower.users.length).toEqual(2);
         await service._removeAllFollower(userA);
-        const postFollower = await service.getFollower(userNotDelete);
-        expect(postFollower.items.length).toEqual(1);
+        const postFollower = await service.getFollowers(
+          userNotDelete,
+          userNotDelete.id
+        );
+        expect(postFollower.users.length).toEqual(1);
       });
     });
     describe('_removeAllCommentFromUser()', () => {
@@ -749,8 +753,11 @@ describe('User Service', () => {
           fixContents[0]
         );
         expect(comments2.meta.resultCount).toEqual(1);
-        const postFollower = await service.getFollower(userNotDelete);
-        expect(postFollower.items.length).toEqual(0);
+        const postFollower = await service.getFollowers(
+          userNotDelete,
+          userNotDelete.id
+        );
+        expect(postFollower.users.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
           fixContents[0]._id
         );
@@ -782,30 +789,42 @@ describe('User Service', () => {
       await service.follow(mocksUsers[3].user, mocksUsers[1].user);
     });
     it('should get all users and page that order by who has follower the most', async () => {
-      const mentions = await service.getMentionsFromPublic('mock', {
-        limit: 5,
-        page: 1
-      });
+      const mentions = await service.getMentionsFromPublic(
+        mocksUsers[0].user,
+        'mock',
+        {
+          limit: 5,
+          page: 1
+        }
+      );
       const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
       const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
       expect(mentions.users.length).toEqual(5);
-      expect(mentions.users[0]).toEqual(updatedUser);
-      expect(mentions.users[0].followerCount).toEqual(4);
-      expect(mentions.users[1]).toEqual(updatedUser2);
-      expect(mentions.users[1].followerCount).toEqual(3);
+      expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
+      expect(mentions.users[0].followers.count).toEqual(4);
+      expect(mentions.users[1]).toEqual(
+        await updatedUser2.toUserResponse(false, false, true)
+      );
+      expect(mentions.users[1].followers.count).toEqual(3);
     });
     it('should get all users if query is empty string', async () => {
-      const mentions = await service.getMentionsFromPublic('', {
-        limit: 2,
-        page: 1
-      });
+      const mentions = await service.getMentionsFromPublic(
+        mocksUsers[0].user,
+        '',
+        {
+          limit: 2,
+          page: 1
+        }
+      );
       expect(mentions.users.length).toEqual(2);
       const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
       const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
-      expect(mentions.users[0]).toEqual(updatedUser);
-      expect(mentions.users[0].followerCount).toEqual(4);
-      expect(mentions.users[1]).toEqual(updatedUser2);
-      expect(mentions.users[1].followerCount).toEqual(3);
+      expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
+      expect(mentions.users[0].followers.count).toEqual(4);
+      expect(mentions.users[1]).toEqual(
+        await updatedUser2.toUserResponse(false, false, true)
+      );
+      expect(mentions.users[1].followers.count).toEqual(3);
     });
   });
 
@@ -940,7 +959,7 @@ describe('User Service', () => {
     });
   });
 
-  describe('#getUserFromIdOrCastcleId', () => {
+  describe('#getByIdOrCastcleId', () => {
     let user: UserDocument;
 
     beforeAll(async () => {
@@ -960,16 +979,14 @@ describe('User Service', () => {
 
     it('should return null when user to find is not found', async () => {
       await expect(
-        service.getUserFromIdOrCastcleId('xxxxxxxxxx')
+        service.getByIdOrCastcleId('xxxxxxxxxx')
       ).resolves.toBeNull();
     });
 
     it('should return user when find user with castcle ID or ID', async () => {
-      const userFromId = await service.getUserFromIdOrCastcleId(
-        String(user._id)
-      );
+      const userFromId = await service.getByIdOrCastcleId(String(user._id));
 
-      const userFromCastcleId = await service.getUserFromIdOrCastcleId(
+      const userFromCastcleId = await service.getByIdOrCastcleId(
         user.displayId
       );
 

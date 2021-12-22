@@ -58,7 +58,9 @@ describe('CastcleException', () => {
     'MOBILE_NUMBER_IS_EXIST',
     'FEATURE_NOT_EXIST',
     'PAYLOAD_TYPE_MISMATCH',
-    'NOTIFICATION_NOT_FOUND'
+    'NOTIFICATION_NOT_FOUND',
+    'SOCIAL_PROVIDER_IS_EXIST',
+    'TWILLIO_MAX_LIMIT'
   ];
   testStatus.forEach((STATUS) => {
     it(`should throw ${STATUS} and code ${

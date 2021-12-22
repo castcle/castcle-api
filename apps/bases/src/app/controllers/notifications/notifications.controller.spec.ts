@@ -30,7 +30,6 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
-  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
   NotificationType,
   RegisterTokenDto
@@ -221,11 +220,11 @@ describe('NotificationsController', () => {
   });
 
   describe('getNotification', () => {
-    it('should return NotificationReponse that contain all notification default option [profile]', async () => {
+    it('should return NotificationReponse that contain all notification default option all', async () => {
       const responseResult = await controller.getAll({
         $credential: userCredential
       } as any);
-
+      console.log(responseResult);
       const expectResult = {
         payload: [
           {
@@ -239,6 +238,22 @@ describe('NotificationsController', () => {
             },
             comment: {
               id: null
+            },
+            system: {
+              id: null
+            }
+          },
+          {
+            id: '',
+            avatar: '',
+            message: 'sample PAGE',
+            source: 'PAGE',
+            read: false,
+            content: {
+              id: null
+            },
+            comment: {
+              id: '6138afa4f616a467b5c4eb72'
             },
             system: {
               id: null
@@ -262,12 +277,11 @@ describe('NotificationsController', () => {
           }
         ]
       };
-      console.log(responseResult.payload);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
-      expect(responseResult.payload.length).toEqual(2);
+      expect(responseResult.payload.length).toEqual(3);
       expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
-        1
+        2
       );
       expect(
         responseResult.payload.filter(
@@ -282,9 +296,9 @@ describe('NotificationsController', () => {
         {
           $credential: userCredential
         } as any,
-        DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
-        DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
-        DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+        null,
+        null,
+        null,
         NotificationSource.Page
       );
       const expectResult = {
@@ -308,7 +322,6 @@ describe('NotificationsController', () => {
         ]
       };
 
-      console.log(responseResult);
       responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
       expect(responseResult.payload.length).toEqual(1);

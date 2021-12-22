@@ -29,7 +29,6 @@ import {
   TweetUserTimelineV2Paginator,
   TwitterApiv2
 } from 'twitter-api-v2';
-import { ContentType } from '@castcle-api/database/dtos';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastLogger } from '@castcle-api/logger';
 
@@ -201,19 +200,6 @@ describe('Twitter Service', () => {
       );
 
       expect(contents.length).toEqual(1);
-    });
-
-    it('should trim last Twitter URL and convert all tweets to short contents', async () => {
-      const expectedText = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
-      const contents = await twitterService.convertTimelineToContents(
-        author.id,
-        timeline
-      );
-
-      expect(contents.length).toEqual(1);
-      expect(contents[0].type).toEqual(ContentType.Short);
-      expect(contents[0].payload).toMatchObject({ message: expectedText });
-      expect(contents[0].payload.photo.contents[0].image).toEqual(media.url);
     });
   });
 });

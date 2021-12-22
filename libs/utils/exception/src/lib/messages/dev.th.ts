@@ -56,6 +56,11 @@ export const DevErrorMessages = {
     code: '1007',
     message: 'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
   },
+  '1008': {
+    statusCode: '400',
+    code: '1008',
+    message: `The 'maxResults' query parameter value is not between 5 and 100`
+  },
   '3001': {
     statusCode: '400',
     code: '3001',
@@ -147,6 +152,16 @@ export const DevErrorMessages = {
     statusCode: '400',
     code: '3018',
     message: 'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น'
+  },
+  '3019': {
+    statusCode: '400',
+    code: '3019',
+    message: 'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น'
+  },
+  '3020': {
+    statusCode: '400',
+    code: '3020',
+    message: 'Max attempts reached'
   },
   '4001': {
     statusCode: '404',

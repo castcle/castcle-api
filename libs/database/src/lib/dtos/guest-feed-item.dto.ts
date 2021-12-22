@@ -21,17 +21,39 @@
  * or have any questions.
  */
 
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feedItem.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './search.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './ux.engagement.dto';
+import { CastcleIncludes } from '.';
+import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
+import { User } from '../schemas/user.schema';
+import { CastcleMeta } from './common.dto';
+import { ContentPayloadItem } from './content.dto';
+
+export class GuestFeedItemDto {
+  content?: any;
+  type: GuestFeedItemType;
+  user?: User;
+  countryCode?: string;
+  score: number;
+}
+
+export class FeedItemPayloadItem {
+  id: string;
+  feature: {
+    slug: 'feed';
+    key: 'feature.feed';
+    name: 'Feed';
+  };
+  circle: {
+    id: 'for-you';
+    key: 'circle.forYou';
+    name: 'For You';
+    slug: 'forYou';
+  };
+  type: 'content' | 'suggestion' | 'ads'; // content or suggestion or reminder or ads
+  payload: ContentPayloadItem;
+}
+
+export class GuestFeedItemPayload {
+  payload: FeedItemPayloadItem[];
+  includes: CastcleIncludes;
+  meta: CastcleMeta;
+}

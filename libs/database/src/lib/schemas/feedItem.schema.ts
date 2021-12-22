@@ -33,7 +33,7 @@ import {
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { ContentPayloadDto } from '../dtos/content.dto';
 import { EngagementDocument } from './engagement.schema';
-import { GuestFeedItemPayloadItem } from '../dtos/guestFeedItem.dto';
+import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
 export type FeedItemDocument = FeedItem & IFeedItem;
 
@@ -71,9 +71,7 @@ FeedItemSchema.index({
 });
 export interface IFeedItem extends mongoose.Document {
   toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
-  toFeedItemPayloadV2(
-    engagements?: EngagementDocument[]
-  ): GuestFeedItemPayloadItem;
+  toFeedItemPayloadV2(engagements?: EngagementDocument[]): FeedItemPayloadItem;
 }
 
 FeedItemSchema.methods.toFeedItemPayload = function (
@@ -135,7 +133,7 @@ FeedItemSchema.methods.toFeedItemPayloadV2 = function (
     },
     createdAt: (this as FeedItemDocument).createdAt.toISOString(),
     updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
-  } as GuestFeedItemPayloadItem;
+  } as FeedItemPayloadItem;
 };
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {

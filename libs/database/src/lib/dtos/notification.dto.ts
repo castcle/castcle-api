@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleQueryOptions, Pagination } from './common.dto';
+import { CastcleMeta } from './common.dto';
 
 export enum NotificationType {
   Content = 'content',
@@ -72,21 +72,18 @@ export class NotificationResponse {
   payload: NotificationPayloadDto[];
 
   @ApiProperty()
-  pagination: Pagination;
+  meta: CastcleMeta;
 }
 
-export class NotificationQueryOptions extends CastcleQueryOptions {
+export class NotificationQueryOptions {
   source?: NotificationSource;
+  maxResults?: number;
+  sinceId?: string;
+  untilId?: string;
 }
 
 export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'updatedAt',
-    type: 'desc'
-  },
-  source: NotificationSource.Profile,
-  page: 1,
-  limit: 25
+  maxResults: 25
 } as NotificationQueryOptions;
 
 export interface CreateNotification {

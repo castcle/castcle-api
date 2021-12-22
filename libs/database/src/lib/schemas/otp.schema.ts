@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Password } from '@castcle-api/utils';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -70,6 +69,9 @@ export class Otp extends CastcleBase {
 
   @Prop()
   sid: string;
+
+  @Prop()
+  reciever: string;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
@@ -91,6 +93,7 @@ export interface OtpModel extends Model<OtpDocument> {
     requestId: string,
     channel: string,
     verify: boolean,
+    reciever?: string,
     sid?: string
   ): Promise<OtpDocument>;
 }
@@ -101,6 +104,7 @@ OtpSchema.statics.generate = async function (
   requestId: string,
   channel: string,
   verify: boolean,
+  reciever?: string,
   sid?: string
 ) {
   let newRefCode: string;
@@ -123,7 +127,8 @@ OtpSchema.statics.generate = async function (
     channel: channel,
     isVerify: verify,
     sid: sid,
-    expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000)
+    expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000),
+    reciever: reciever
   });
   return otp.save();
 };

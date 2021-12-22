@@ -21,17 +21,13 @@
  * or have any questions.
  */
 
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import {
-  ContentDocument,
-  Content,
-  toSignedContentPayloadItem
-} from '../schemas/content.schema';
+import { ContentDocument, Content } from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
@@ -42,44 +38,39 @@ import {
   createPagination
 } from '../utils/common';
 import {
-  SaveContentDto,
   Author,
   CastcleContentQueryOptions,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  ContentType,
-  ShortPayload
-} from '../dtos/content.dto';
-import { RevisionDocument } from '../schemas/revision.schema';
-import {
   CastcleIncludes,
   CastcleQueryOptions,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
-} from '../dtos/common.dto';
-import {
   CommentDto,
-  CommentsReponse,
+  CommentsResponse,
+  ContentType,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  FeedItemDto,
+  GetLinkPreview,
+  GuestFeedItemDto,
+  Link,
+  LinkType,
+  SaveContentDto,
+  ShortPayload,
   UpdateCommentDto
-} from '../dtos/comment.dto';
+} from '../dtos';
+import { RevisionDocument } from '../schemas/revision.schema';
 import { CommentType } from '../schemas/comment.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { HashtagService } from './hashtag.service';
 import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import {
-  GuestFeedItemDto,
-  GuestFeedItemPayload,
-  GuestFeedItemPayloadItem
-} from '../dtos/guestFeedItem.dto';
-import { QueryOption } from '../dtos/common.dto';
 import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CastLogger } from '@castcle-api/logger';
 import { createTransport } from 'nodemailer';
+import { getLinkPreview } from 'link-preview-js';
 
 @Injectable()
 export class ContentService {
@@ -122,17 +113,14 @@ export class ContentService {
    * @returns {ContentDocument} content.save() result
    */
   async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
-    /*if (!contentDto.author) author = this._getAuthorFromUser(user);
-    else {
-      const page = await this._userModel.findById(contentDto.author.id);
-      author = this._getAuthorFromUser(page);
-    }*/
     const author = this._getAuthorFromUser(user);
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       contentDto.payload
     );
-    //create hashtag
+
     await this.hashtagService.createFromTags(hashtags);
+    await this.updatePayloadMessage(contentDto.payload);
+
     const newContent = {
       author: author,
       payload: contentDto.payload,
@@ -161,6 +149,7 @@ export class ContentService {
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
       await this.hashtagService.createFromTags(hashtags);
+      await this.updatePayloadMessage(payload);
 
       return {
         author,
@@ -176,6 +165,28 @@ export class ContentService {
 
     return this._contentModel.create(contents);
   }
+
+  updatePayloadMessage = async (shortPayload: ShortPayload) => {
+    const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
+    const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
+
+    if (linkIndex >= 0) {
+      const twitterLink = shortPayload.message.slice(linkIndex);
+      const linkPreview = (await getLinkPreview(twitterLink)) as GetLinkPreview;
+      const link = {
+        type: LinkType.Other,
+        url: linkPreview.url,
+        title: linkPreview.title,
+        description: linkPreview.description,
+        imagePreview: linkPreview.images?.[0]
+      } as Link;
+
+      shortPayload.message = shortPayload.message.slice(0, linkIndex);
+      shortPayload.link = shortPayload.link
+        ? [...shortPayload.link, link]
+        : [link];
+    }
+  };
 
   /**
    *
@@ -285,19 +296,15 @@ export class ContentService {
    * @returns {Promise<{items:ContentDocument[], total:number, pagination: {Pagination}}>}
    */
   getContentsFromUser = async (
-    user: UserDocument,
+    userId: string,
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    let findFilter: any = {
-      'author.id': user._id,
+    let findFilter: FilterQuery<ContentDocument> = {
+      'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel.count(findFilter).exec();
     if (options.sortBy.type === 'desc') {
@@ -382,7 +389,7 @@ export class ContentService {
     return engagement;
   };
 
-  getCommentEnagement = async (
+  getCommentEngagement = async (
     comment: CommentDocument,
     engagementType: EngagementType,
     user: UserDocument
@@ -551,11 +558,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(
-      findFilter,
-      options,
-      this._contentModel
-    );
+    findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'
@@ -703,7 +706,7 @@ export class ContentService {
   getCommentsFromContent = async (
     content: ContentDocument,
     options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
-  ): Promise<CommentsReponse> => {
+  ): Promise<CommentsResponse> => {
     const filter = {
       targetRef: {
         $id: content._id,
@@ -855,27 +858,27 @@ export class ContentService {
   /**
    * Get all engagement that this user engage to contents (like, cast, recast, quote)
    * @param {ContentDocument[]} contents
-   * @param {UserDocument} user
+   * @param {UserDocument} userId
    * @returns {EngagementDocument[]}
    */
   getAllEngagementFromContentsAndUser = async (
     contents: ContentDocument[],
-    user: UserDocument
+    userId: string
   ) => {
     const contentIds = contents.map((c) => c._id);
     console.debug('contentIds', contentIds);
-    return this.getAllEngagementFromContentIdsAndUser(contentIds, user);
+    return this.getAllEngagementFromContentIdsAndUser(contentIds, userId);
   };
 
   /**
    *
    * @param contentIds
-   * @param user
+   * @param {string} userId
    * @returns
    */
   getAllEngagementFromContentIdsAndUser = async (
     contentIds: any[],
-    user: UserDocument
+    userId: string
   ) => {
     return this._engagementModel
       .find({
@@ -885,7 +888,7 @@ export class ContentService {
             $id: id
           }))
         },
-        user: user._id
+        user: userId as any
       })
       .exec();
   };
@@ -1012,68 +1015,6 @@ export class ContentService {
       content: contentId
     } as GuestFeedItemDto);
     return newGuestFeedItem.save();
-  };
-
-  /**
-   * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
-   * @param {QueryOption} query
-   * @param {string} accountCountryCode
-   * @returns {GuestFeedItemDocument[]}
-   */
-  getGuestFeedItems = async (
-    query: QueryOption,
-    accountCountryCode?: string
-  ) => {
-    const filter: FilterQuery<GuestFeedItemDocument> = {
-      countryCode: accountCountryCode.toLowerCase() ?? 'en'
-    };
-    if (query.sinceId) {
-      const guestFeedItemSince = await this._guestFeedItemModel
-        .findById(query.sinceId)
-        .exec();
-      filter.createdAt = {
-        $gt: new Date(guestFeedItemSince.createdAt)
-      };
-    } else if (query.untilId) {
-      const guestFeedItemUntil = await this._guestFeedItemModel
-        .findById(query.untilId)
-        .exec();
-      filter.createdAt = {
-        $lt: new Date(guestFeedItemUntil.createdAt)
-      };
-    }
-    const documents = await this._guestFeedItemModel
-      .find(filter)
-      .populate('content')
-      .limit(query.maxResults)
-      .sort({ score: -1, createdAt: -1 })
-      .exec();
-
-    return {
-      payload: documents.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed'
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou'
-            },
-            payload: toSignedContentPayloadItem(item.content),
-            type: 'content'
-          } as GuestFeedItemPayloadItem)
-      ),
-      includes: new CastcleIncludes({
-        users: documents.map((item) => item.content.author)
-      }),
-      meta: createCastcleMeta(documents)
-    } as GuestFeedItemPayload;
   };
 
   async reportContent(
