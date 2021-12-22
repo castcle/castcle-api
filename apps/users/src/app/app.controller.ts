@@ -36,6 +36,7 @@ import {
   FollowResponse,
   PageResponseDto,
   PagesResponse,
+  SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
   UserResponseDto
@@ -43,6 +44,7 @@ import {
 import {
   CredentialDocument,
   OtpObjective,
+  SocialProvider,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -173,6 +175,7 @@ export class UserController {
     logger.log('Root');
     return this.appService.getData();
   }
+
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -187,6 +190,27 @@ export class UserController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
+  }
+
+  @CastcleAuth(CacheKeyName.SyncSocial)
+  @Get('syncSocial')
+  async getSyncSocial(@Req() req: CredentialRequest) {
+    logger.log(`start get all my sync socail.`);
+
+    logger.log(`Get user.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+
+    logger.log(`Get social from user.`);
+    const social = await this.socialSyncService.getSocialSyncByUser(user);
+    const response = {};
+
+    logger.log(`Generate response.`);
+    for (const item in SocialProvider) {
+      const data = social.find((x) => x.provider === SocialProvider[item]);
+      const key = SocialProvider[item];
+      response[key] = data ? data.toSocialSyncPayload() : null;
+    }
+    return response;
   }
 
   @ApiOkResponse({ type: UserResponseDto })
@@ -706,13 +730,10 @@ export class UserController {
       !otp.isVerify
     ) {
       logger.error(`Invalid Ref Code`);
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }
     logger.log('Get account document and validate guest');
-    const account = await this.validateGuestAccount(
-      req.$credential,
-      req.$language
-    );
+    const account = await this.validateGuestAccount(req.$credential);
     logger.log('Get user document');
 
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -730,15 +751,11 @@ export class UserController {
       );
       const response = await afterUpdateUser.toUserResponse();
       return response;
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    } else throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
   }
 
   /**
-   * User {castcleId} sync social media for auto post
+   * User {castcleId} sync social media for create new
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
@@ -758,7 +775,7 @@ export class UserController {
     logger.log(JSON.stringify(body));
 
     logger.log('Validate guest');
-    await this.validateGuestAccount(req.$credential, req.$language);
+    await this.validateGuestAccount(req.$credential);
 
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
@@ -766,10 +783,7 @@ export class UserController {
       logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
       );
-      throw new CastcleException(
-        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-        req.$language
-      );
+      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
@@ -800,14 +814,66 @@ export class UserController {
     }
   }
 
-  private async validateGuestAccount(
-    credential: CredentialDocument,
-    language: string
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Put('syncSocial')
+  async updateSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDto
   ) {
+    logger.log(`Start update sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    await this.socialSyncService.update(body, user);
+  }
+
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDeleteDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete('syncSocial')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDeleteDto
+  ) {
+    logger.log(`Start delete sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (user) {
+      await this.socialSyncService.delete(body, user);
+    } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+  }
+
+  private async validateGuestAccount(credential: CredentialDocument) {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
       logger.error(`Forbidden guest account.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     } else {
       return account;
     }

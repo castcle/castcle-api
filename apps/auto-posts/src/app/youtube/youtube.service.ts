@@ -73,7 +73,7 @@ export class YoutubeService {
     const channelId = feed.entry['yt:channelId'];
     const syncAccount =
       await this.socialSyncService.getAutoSyncAccountBySocialId(
-        SocialProvider.Google,
+        SocialProvider.Youtube,
         channelId
       );
 

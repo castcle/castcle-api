@@ -24,13 +24,8 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  SocialProvider,
-  SocialSync,
-  SocialSyncDocument,
-  UserDocument
-} from '../schemas';
-import { SocialSyncDto } from './../dtos/user.dto';
+import { SocialProvider, SocialSyncDocument, UserDocument } from '../schemas';
+import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {
@@ -39,7 +34,8 @@ export class SocialSyncService {
     CastLoggerOptions
   );
   constructor(
-    @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
+    @InjectModel('SocialSync')
+    private socialSyncModel: Model<SocialSyncDocument>,
     @InjectModel('User')
     public userModel: Model<UserDocument>
   ) {}
@@ -118,5 +114,65 @@ export class SocialSyncService {
    * */
   getSocialSyncByUser = (user: UserDocument): Promise<SocialSyncDocument[]> => {
     return this.socialSyncModel.find({ 'author.id': user.id }).exec();
+  };
+
+  /**
+   * update social sync
+   * @param {SocialSyncDto} updateSocialSync payload
+   * @param {UserDocument} user
+   * @returns {SocialSyncDocument} return update social sync document
+   * */
+  update = async (
+    updateSocialSync: SocialSyncDto,
+    user: UserDocument
+  ): Promise<SocialSyncDocument> => {
+    const socialSyncDoc = await this.getSocialSyncByUser(user);
+    this.logger.log(`find social sync.`);
+    const socialSync = socialSyncDoc.find(
+      (x) => x.provider === updateSocialSync.provider
+    );
+    if (socialSync) {
+      this.logger.log('update social sync.');
+      if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
+      if (updateSocialSync.provider)
+        socialSync.provider = updateSocialSync.provider;
+      if (updateSocialSync.uid) socialSync.socialId = updateSocialSync.uid;
+      if (updateSocialSync.userName)
+        socialSync.userName = updateSocialSync.userName;
+      if (updateSocialSync.displayName)
+        socialSync.displayName = updateSocialSync.displayName;
+      if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
+      socialSync.active = updateSocialSync.active;
+      return socialSync.save();
+    } else {
+      this.logger.warn('Can not found social sync');
+      return null;
+    }
+  };
+
+  /**
+   * delete social sync
+   * @param {SocialSyncDeleteDto} socialSyncDeleteDto payload
+   * @param {UserDocument} user
+   * @returns {SocialSyncDocument} return update social sync document
+   * */
+  delete = async (
+    socialSyncDeleteDto: SocialSyncDeleteDto,
+    user: UserDocument
+  ): Promise<SocialSyncDocument> => {
+    const socialSyncDoc = await this.getSocialSyncByUser(user);
+    this.logger.log(`find social sync.`);
+    const deleteSocialSync = socialSyncDoc.find(
+      (x) =>
+        x.provider === socialSyncDeleteDto.provider &&
+        x.socialId === socialSyncDeleteDto.uid
+    );
+    if (deleteSocialSync) {
+      this.logger.log('delete social sync.');
+      return deleteSocialSync.delete();
+    } else {
+      this.logger.warn('Cnn not found social sync');
+      return null;
+    }
   };
 }
