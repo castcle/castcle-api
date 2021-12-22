@@ -21,11 +21,12 @@
  * or have any questions.
  */
 
-import { Get, Query, Req } from '@nestjs/common';
+import { Get, Query, Req, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RankerService, UxEngagementService } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
+  FeedQuery,
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedItemMode,
   FeedsResponse
@@ -158,83 +159,45 @@ export class FeedController {
     }
   }
 
-  @ApiQuery({
-    name: 'maxResults',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'sinceId',
-    type: String,
-    required: false
-  })
-  @ApiQuery({
-    name: 'untilId',
-    type: String,
-    required: false
-  })
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/guests')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getGuestFeed(
-    @Req() req: CredentialRequest,
-    @Query('maxResults', LimitPipe) maxResults: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string
+    @Req() { $credential }: CredentialRequest,
+    @Query() feedQuery: FeedQuery
   ) {
-    const payload = await this.rankerService.getGuestFeedItems(
-      {
-        maxResults: maxResults,
-        mode: 'current',
-        sinceId: sinceId,
-        untilId: untilId
-      },
-      req.$credential.account.geolocation.countryCode
+    const account = $credential.account;
+    const feedItems = await this.rankerService.getGuestFeedItems(
+      feedQuery,
+      account
     );
-    //track contentIds reach
-    this.uxEngagementService.addReachToContents(
-      payload.payload.map((feed) => feed.payload.id),
-      String(req.$credential.account._id)
-    );
-    return payload;
-  }
 
-  @ApiQuery({
-    name: 'maxResults',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'sinceId',
-    type: String,
-    required: false
-  })
-  @ApiQuery({
-    name: 'untilId',
-    type: String,
-    required: false
-  })
-  @CastcleAuth(CacheKeyName.Feeds)
-  @Get('feeds/members/feed/forYou')
-  async getMemberFeed(
-    @Req() req: CredentialRequest,
-    @Query('maxResults', LimitPipe) maxResults: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string
-  ) {
-    const account = req.$credential.account;
-    const feedItemsResult =
-      await this.rankerService.getMemberFeedItemsFromViewer(account, {
-        maxResults: maxResults,
-        mode: 'current',
-        sinceId: sinceId,
-        untilId: untilId
-      });
-    console.log('feeds', feedItemsResult);
-    //track contentIds reach
     this.uxEngagementService.addReachToContents(
-      feedItemsResult.payload.map((feed) => feed.payload.id),
+      feedItems.payload.map((feed) => feed.payload.id),
       String(account._id)
     );
-    return feedItemsResult;
+
+    return feedItems;
+  }
+
+  @CastcleAuth(CacheKeyName.Feeds)
+  @Get('feeds/members/feed/forYou')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getMemberFeed(
+    @Req() { $credential }: CredentialRequest,
+    @Query() feedQuery: FeedQuery
+  ) {
+    const account = $credential.account;
+    const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
+      account,
+      feedQuery
+    );
+
+    this.uxEngagementService.addReachToContents(
+      feedItems.payload.map((feed) => feed.payload.id),
+      String(account._id)
+    );
+
+    return feedItems;
   }
 }

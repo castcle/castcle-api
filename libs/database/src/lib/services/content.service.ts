@@ -446,16 +446,14 @@ export class ContentService {
    * @returns {Author}
    */
   _getAuthorFromUser = (user: UserDocument) => {
-    const author: Author = {
+    return new Author({
       id: user._id,
       avatar: user.profile?.images?.avatar || null,
       castcleId: user.displayId,
       displayName: user.displayName,
-      followed: false,
       type: user.type === UserType.Page ? UserType.Page : UserType.People,
       verified: user.verified
-    };
-    return author;
+    });
   };
 
   /**

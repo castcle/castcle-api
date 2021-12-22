@@ -162,8 +162,32 @@ export class Author {
   avatar: CastcleImage | null;
   @ApiProperty()
   verified: UserVerified;
-  @ApiProperty()
-  followed: boolean;
+
+  constructor(author: Omit<Author, 'toIncludeUser'>) {
+    this.avatar = author.avatar;
+    this.castcleId = author.castcleId;
+    this.displayName = author.displayName;
+    this.id = author.id;
+    this.type = author.type;
+    this.verified = author.verified;
+  }
+
+  toIncludeUser = ({
+    blocked,
+    blocking,
+    followed
+  }: Partial<IncludeUser> = {}): IncludeUser => ({
+    ...this,
+    blocked,
+    blocking,
+    followed
+  });
+}
+
+export class IncludeUser extends Author {
+  blocked?: boolean;
+  blocking?: boolean;
+  followed?: boolean;
 }
 
 export class ContentPayloadDto {

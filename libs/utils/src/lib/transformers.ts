@@ -20,18 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { CastcleName } from './castcle-name';
-import { Host } from './host';
-import { Password } from './password';
-import { Token } from './token';
 
-@Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsModule {}
+import { Transform, TransformFnParams } from 'class-transformer';
+import { isString } from 'class-validator';
 
-export { Token, Password, CastcleName, Host };
+const stringToArrayOfStrings = ({ value }: TransformFnParams) => {
+  return isString(value) ? value.split(',') : value;
+};
+
+export const TransformStringToArrayOfStrings = () => {
+  return Transform(stringToArrayOfStrings);
+};

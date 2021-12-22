@@ -189,7 +189,6 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
         : Configs.DefaultAvatarImages,
     castcleId: self.displayId,
     displayName: self.displayName,
-    followed: false, //default of followed
     type: self.type,
     verified: self.verified
   } as Author);
@@ -388,7 +387,6 @@ export const UserSchemaFactory = (
           : Configs.DefaultAvatarImages,
       castcleId: self.displayId,
       displayName: self.displayName,
-      followed: false, //default of followed
       type: self.type,
       verified: self.verified
     } as Author;

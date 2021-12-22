@@ -23,6 +23,7 @@
 
 import { AuthenticationService } from '@castcle-api/database';
 import {
+  Author,
   BlogPayload,
   ContentResponse,
   ContentType,
@@ -134,7 +135,7 @@ export class AppService {
     return {
       payload: content.toContentPayloadItem(engagements),
       includes: {
-        users: [content.author],
+        users: [new Author(content.author)],
         casts: castItem
       }
     } as ContentResponse;

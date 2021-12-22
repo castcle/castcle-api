@@ -24,7 +24,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ContentDocument } from '../schemas';
+import { ContentDocument, UserDocument } from '../schemas';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import {
@@ -33,7 +33,11 @@ import {
   createPagination
 } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import { CastcleIncludes, CastcleMeta, QueryOption } from '../dtos/common.dto';
+import {
+  CastcleIncludes,
+  CastcleMeta,
+  EntityVisibility
+} from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
@@ -44,10 +48,11 @@ import {
   GuestFeedItemPayload,
   FeedItemPayloadItem
 } from '../dtos/guest-feed-item.dto';
-import { Configs } from '@castcle-api/environments';
-import { Image, predictContents } from '@castcle-api/utils/aws';
+import { predictContents } from '@castcle-api/utils/aws';
 import { Author } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
+import { RelationshipDocument } from '../schemas/relationship.schema';
+import { FeedQuery, UserField } from '../dtos';
 
 @Injectable()
 export class RankerService {
@@ -57,7 +62,10 @@ export class RankerService {
     @InjectModel('Content')
     public _contentModel: Model<ContentDocument>,
     @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItemDocument>
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>,
+    @InjectModel('Relationship')
+    public relationshipModel: Model<RelationshipDocument>,
+    @InjectModel('User') public userModel: Model<UserDocument>
   ) {}
 
   /**
@@ -96,28 +104,34 @@ export class RankerService {
   /**
    * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
    * @param {QueryOption} query
-   * @param {string} accountCountryCode
+   * @param {Account} viewer
    * @returns {GuestFeedItemDocument[]}
    */
-  getGuestFeedItems = async (
-    query: QueryOption,
-    accountCountryCode?: string
-  ) => {
+  getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
     const filter = await createCastcleFilter(
-      {
-        countryCode: accountCountryCode.toLowerCase() ?? 'en'
-      },
+      { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
       query
     );
-    const documents = await this._guestFeedItemModel
+
+    const feedItems = await this._guestFeedItemModel
       .find(filter)
       .populate('content')
       .limit(query.maxResults)
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
+    const authors = feedItems.map(
+      (feedItem) => new Author(feedItem.content.author)
+    );
+
+    const includes = new CastcleIncludes({
+      users: query.userFields?.includes(UserField.Relationships)
+        ? await this.getIncludesUsers(viewer, authors)
+        : authors.map((author) => author.toIncludeUser())
+    });
+
     return {
-      payload: documents.map(
+      payload: feedItems.map(
         (item) =>
           ({
             id: item.id,
@@ -136,10 +150,8 @@ export class RankerService {
             type: 'content'
           } as FeedItemPayloadItem)
       ),
-      includes: new CastcleIncludes({
-        users: documents.map((item) => item.content.author)
-      }),
-      meta: createCastcleMeta(documents)
+      includes,
+      meta: createCastcleMeta(feedItems)
     } as GuestFeedItemPayload;
   };
 
@@ -149,10 +161,7 @@ export class RankerService {
    * @param query
    * @returns {GuestFeedItemPayload}
    */
-  getMemberFeedItemsFromViewer = async (
-    viewer: Account,
-    query: QueryOption
-  ) => {
+  getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
     const startNow = new Date();
     console.debug('start service');
     const filter = await createCastcleFilter({ viewer: viewer._id }, query);
@@ -161,8 +170,7 @@ export class RankerService {
       const refFilter = await this._feedItemModel
         .findById(query.sinceId || query.untilId)
         .exec();
-      if (!refFilter)
-        return this.getGuestFeedItems(query, viewer.geolocation.countryCode);
+      if (!refFilter) return this.getGuestFeedItems(query, viewer);
     }
     const timeAfterFilter = new Date();
     console.debug(
@@ -214,14 +222,7 @@ export class RankerService {
         } as FeedItemPayloadItem)
     );
     const includes = {
-      users: newAnswer
-        .map((item) => item.content.author as Author)
-        .map((author) => {
-          if (author.avatar)
-            author.avatar = new Image(author.avatar).toSignUrls();
-          else author.avatar = Configs.DefaultAvatarImages;
-          return author;
-        }),
+      users: newAnswer.map((item) => item.content.author),
       casts: newAnswer
         .filter((doc) => doc.content.originalPost)
         .map((c) => c.content.originalPost)
@@ -232,7 +233,7 @@ export class RankerService {
       const guestItemCount = query.maxResults - newAnswer.length;
       const guestFeedPayloads = await this.getGuestFeedItems(
         { ...query, maxResults: guestItemCount },
-        viewer.geolocation.countryCode
+        viewer
       );
       feedPayload = feedPayload.concat(guestFeedPayloads.payload);
       includes.users = includes.users.concat(guestFeedPayloads.includes.users);
@@ -247,10 +248,51 @@ export class RankerService {
         resultCount: guestFeedPayloads.meta.resultCount + meta.resultCount
       };
     }
+
+    const authors = includes.users.map((author) => new Author(author));
+    includes.users = query.userFields?.includes(UserField.Relationships)
+      ? await this.getIncludesUsers(viewer, authors)
+      : authors.map((author) => author.toIncludeUser());
+
     return {
       payload: feedPayload,
-      includes: includes,
+      includes: new CastcleIncludes(includes),
       meta: meta
     } as GuestFeedItemPayload;
+  };
+
+  getIncludesUsers = async (viewerAccount: Account, authors: Author[]) => {
+    const viewer = await this.userModel.findOne({
+      ownerAccount: viewerAccount._id
+    });
+
+    const authorIds = authors.map(({ id }) => id as any);
+    const relationships = await this.relationshipModel.find({
+      $or: [
+        { user: viewer._id, followedUser: { $in: authorIds } },
+        { user: { $in: authorIds }, followedUser: viewer._id }
+      ],
+      visibility: EntityVisibility.Publish
+    });
+
+    return authors.map((author) => {
+      const authorRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(user) === String(author.id) &&
+          String(followedUser) === String(viewer.id)
+      );
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer.id)
+      );
+
+      const blocked = Boolean(getterRelationship?.blocking);
+      const blocking = Boolean(authorRelationship?.blocking);
+      const followed = Boolean(getterRelationship?.following);
+
+      return author.toIncludeUser({ blocked, blocking, followed });
+    });
   };
 }

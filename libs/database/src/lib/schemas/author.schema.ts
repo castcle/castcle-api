@@ -21,9 +21,6 @@ export class Author {
 
   @Prop({ type: Object })
   verified: UserVerified;
-
-  @Prop()
-  followed: boolean;
 }
 
 export const AuthorSchema = SchemaFactory.createForClass(Author);

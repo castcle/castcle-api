@@ -172,15 +172,14 @@ describe('ContentService', () => {
       password: 'test1234567'
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
-    author = {
+    author = new Author({
       id: user.id,
       type: 'page',
       castcleId: 'castcleId',
       displayName: 'Castcle',
       verified: { email: true, mobile: true, official: true, social: true },
-      followed: true,
       avatar: null
-    };
+    });
   });
 
   afterAll(async () => {
