@@ -21,5 +21,5 @@
  * or have any questions.
  */
 
-export * from './lib/models';
-export * from './lib/database.module';
+export * from './social-sync.enum';
+export * from './user.model';

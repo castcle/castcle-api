@@ -23,8 +23,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { CastcleImage, CastcleIncludes } from '.';
-import { UserVerified } from '../schemas/user.schema';
+import { UserVerified } from '../models';
 import { CastcleMeta, QueryOption } from './common.dto';
+
 export class Url {
   @ApiProperty()
   image: string;

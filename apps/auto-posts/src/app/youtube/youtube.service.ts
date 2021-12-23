@@ -29,7 +29,7 @@ import {
   SaveContentDto,
   ShortPayload
 } from '@castcle-api/database/dtos';
-import { SocialProvider } from '@castcle-api/database/schemas';
+import { SocialProvider } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
