@@ -27,7 +27,7 @@ import {
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
-import { AccountSchemaFactory } from './schemas/account.schema';
+import { AccountSchemaFactory } from './schemas/account.schema-factory';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
 import { CommentSchemaFactory } from './schemas/comment.schema';

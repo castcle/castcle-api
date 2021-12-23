@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { UserVerified } from './user.schema';
+import { UserVerified } from '../models';
 import { CastcleImage } from '../dtos';
 
 @Schema({ _id: false, timestamps: false, versionKey: false })

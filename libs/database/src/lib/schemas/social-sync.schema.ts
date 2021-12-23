@@ -24,22 +24,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { SocialSyncDto } from '../dtos/user.dto';
+import { SocialProvider } from '../models';
 import { Author, AuthorSchema } from './author.schema';
 import { CastcleBase } from './base.schema';
-
-export enum SocialProvider {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Youtube = 'youtube',
-  Medium = 'medium'
-}
 
 @Schema({ timestamps: true })
 export class SocialSync extends CastcleBase {
   @Prop({ required: true, type: AuthorSchema })
   author: Author;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   provider: SocialProvider;
 
   @Prop({ required: true })

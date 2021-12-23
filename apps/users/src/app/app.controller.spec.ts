@@ -26,6 +26,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  SocialProvider,
   SocialSyncService,
   UserService
 } from '@castcle-api/database';
@@ -46,7 +47,6 @@ import {
   CredentialDocument,
   EngagementDocument,
   OtpObjective,
-  SocialProvider,
   UserDocument
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';

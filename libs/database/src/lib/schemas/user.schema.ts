@@ -30,6 +30,7 @@ import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
+import { PageVerified, UserVerified } from '../models';
 import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
@@ -65,17 +66,6 @@ export enum UserType {
   People = 'people',
   Page = 'page'
 }
-
-export type UserVerified = {
-  email: boolean;
-  mobile: boolean;
-  official: boolean;
-  social: boolean;
-};
-
-export type PageVerified = {
-  official: boolean;
-};
 
 @Schema({ timestamps: true })
 export class User extends CastcleBase {
