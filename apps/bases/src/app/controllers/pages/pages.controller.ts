@@ -50,7 +50,8 @@ import {
   UpdatePageDto,
   PageResponseDto,
   DEFAULT_QUERY_OPTIONS,
-  CastcleIncludes
+  CastcleIncludes,
+  Author
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
@@ -389,7 +390,7 @@ export class PageController {
     return {
       payload: contents.items.map((c) => c.toContentPayloadItem()),
       includes: new CastcleIncludes({
-        users: contents.items.map(({ author }) => author)
+        users: contents.items.map(({ author }) => new Author(author))
       }),
       meta: createCastcleMeta(contents.items)
     };

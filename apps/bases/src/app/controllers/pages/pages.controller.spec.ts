@@ -43,6 +43,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import {
+  Author,
   CastcleIncludes,
   ContentType,
   PageDto,
@@ -292,13 +293,16 @@ describe('PageController', () => {
       const items = createResult
         .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
         .map((c) => c.toContentPayloadItem());
-      expect(response).toEqual({
+
+      const expectedObject = {
         payload: items,
         includes: new CastcleIncludes({
-          users: createResult.map(({ author }) => author)
+          users: createResult.map(({ author }) => new Author(author))
         }),
         meta: createCastcleMeta(createResult)
-      });
+      };
+
+      expect(JSON.stringify(response)).toEqual(JSON.stringify(expectedObject));
     });
   });
   describe('getAllPages', () => {

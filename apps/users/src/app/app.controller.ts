@@ -44,7 +44,6 @@ import {
 import {
   CredentialDocument,
   OtpObjective,
-  SocialProvider,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -79,6 +78,7 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { SocialProvider } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
 import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
@@ -195,7 +195,7 @@ export class UserController {
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('syncSocial')
   async getSyncSocial(@Req() req: CredentialRequest) {
-    logger.log(`start get all my sync socail.`);
+    logger.log(`start get all my sync social.`);
 
     logger.log(`Get user.`);
     const user = await this.userService.getUserFromCredential(req.$credential);

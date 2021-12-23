@@ -21,5 +21,9 @@
  * or have any questions.
  */
 
+export * from './lib/castcle-name';
+export * from './lib/host';
+export * from './lib/password';
 export * from './lib/regexp';
-export * from './lib/utils.module';
+export * from './lib/token';
+export * from './lib/transformers';
