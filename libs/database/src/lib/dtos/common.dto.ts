@@ -20,10 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Configs } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
-import { Author, ContentPayloadItem } from '.';
 
 export class Pagination {
   @ApiProperty()
@@ -36,14 +33,18 @@ export class Pagination {
   limit?: number;
 }
 
+export enum SortDirection {
+  Asc = 'asc',
+  Desc = 'desc'
+}
+
+export class SortBy {
+  field = 'updatedAt';
+  type = SortDirection.Desc;
+}
+
 export class CastcleQueryOptions {
-  sortBy?: {
-    field: string;
-    type: 'desc' | 'asc';
-  } = {
-    field: 'updatedAt',
-    type: 'desc'
-  };
+  sortBy?: SortBy;
   type?: string;
   page?: number = 1;
   limit?: number = 25;
@@ -52,7 +53,7 @@ export class CastcleQueryOptions {
 export const DEFAULT_QUERY_OPTIONS = {
   sortBy: {
     field: 'updatedAt',
-    type: 'desc'
+    type: SortDirection.Desc
   },
   page: 1,
   limit: 25
@@ -105,23 +106,4 @@ export class CastcleParticipate {
   commented?: boolean;
   quoted?: boolean;
   recasted?: boolean;
-}
-
-export class CastcleIncludes {
-  users: Author[];
-  casts?: ContentPayloadItem[];
-
-  constructor({ casts, users }: CastcleIncludes) {
-    this.casts = casts;
-    this.users = users.filter(
-      (author, index, authors) =>
-        authors.findIndex(({ id }) => String(author.id) == String(id)) === index
-    );
-
-    users.forEach((author) => {
-      author.avatar = author.avatar
-        ? new Image(author.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages;
-    });
-  }
 }

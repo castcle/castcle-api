@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleName, CastcleRegExp } from '@castcle-api/utils';
+import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';

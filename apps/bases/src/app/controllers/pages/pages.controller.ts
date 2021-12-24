@@ -51,15 +51,15 @@ import {
   PageResponseDto,
   DEFAULT_QUERY_OPTIONS,
   CastcleIncludes,
-  Author
+  Author,
+  GetContentsDto
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   SortByPipe,
   PagePipe,
   LimitPipe,
-  SortByEnum,
-  ContentTypePipe
+  SortByEnum
 } from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
@@ -271,10 +271,7 @@ export class PageController {
   async getAllPages(
     @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortBy: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    sortBy = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     page: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
@@ -368,25 +365,16 @@ export class PageController {
   async getPageContents(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
+    @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('maxResults', LimitPipe) maxResults?: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string,
-    @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page.id, {
-      sortBy: sortByOption,
-      maxResults: maxResults,
-      sinceId: sinceId,
-      untilId: untilId,
-      type: contentTypeOption
+      ...getContentsDto,
+      sortBy: sortByOption
     });
+
     return {
       payload: contents.items.map((c) => c.toContentPayloadItem()),
       includes: new CastcleIncludes({

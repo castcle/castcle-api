@@ -28,7 +28,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Host } from '@castcle-api/utils';
+import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
   CastcleController,

@@ -27,7 +27,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentDocument, CredentialModel } from '../schemas';
 import { User, UserDocument, UserType } from '../schemas/user.schema';
-import { ContentDocument, Content } from '../schemas/content.schema';
+import {
+  ContentDocument,
+  Content,
+  toSignedContentPayloadItem
+} from '../schemas/content.schema';
 import {
   EngagementDocument,
   EngagementType
@@ -41,9 +45,13 @@ import {
   Author,
   CastcleContentQueryOptions,
   CastcleIncludes,
+  CastcleMeta,
   CastcleQueryOptions,
   CommentDto,
   CommentsResponse,
+  ContentPayloadItem,
+  ContentResponse,
+  ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
@@ -51,6 +59,7 @@ import {
   FeedItemDto,
   GetLinkPreview,
   GuestFeedItemDto,
+  IncludeUser,
   Link,
   LinkType,
   SaveContentDto,
@@ -71,6 +80,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { CastLogger } from '@castcle-api/logger';
 import { createTransport } from 'nodemailer';
 import { getLinkPreview } from 'link-preview-js';
+import { RelationshipDocument } from '../schemas/relationship.schema';
 
 @Injectable()
 export class ContentService {
@@ -103,7 +113,9 @@ export class ContentService {
     public _feedItemModel: Model<FeedItemDocument>,
     public hashtagService: HashtagService,
     @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItemDocument>
+    public _guestFeedItemModel: Model<GuestFeedItemDocument>,
+    @InjectModel('Relationship')
+    private relationshipModel: Model<RelationshipDocument>
   ) {}
 
   /**
@@ -1049,5 +1061,125 @@ Message: ${message}`
     });
 
     this.logger.log(`Report has been submitted ${mail.messageId}`);
+  }
+
+  /**
+   * @param {UserDocument} viewer
+   * @param {ContentDocument} content
+   * @param {EngagementDocument[]} engagements
+   */
+  async convertContentToContentResponse(
+    viewer: UserDocument,
+    content: ContentDocument,
+    engagements: EngagementDocument[] = []
+  ) {
+    const casts = content.originalPost
+      ? [toSignedContentPayloadItem(content.originalPost)]
+      : [];
+
+    const author = new Author(content.author);
+    const authorId = author.id as any;
+    const relationships = await this.relationshipModel.find({
+      $or: [
+        { user: viewer._id, followedUser: authorId },
+        { user: authorId, followedUser: viewer._id }
+      ],
+      visibility: EntityVisibility.Publish
+    });
+
+    const authorRelationship = relationships.find(
+      ({ followedUser, user }) =>
+        String(user) === String(author.id) &&
+        String(followedUser) === String(viewer.id)
+    );
+
+    const getterRelationship = relationships.find(
+      ({ followedUser, user }) =>
+        String(followedUser) === String(author.id) &&
+        String(user) === String(viewer.id)
+    );
+
+    const blocked = Boolean(getterRelationship?.blocking);
+    const blocking = Boolean(authorRelationship?.blocking);
+    const followed = Boolean(getterRelationship?.following);
+
+    return {
+      payload: content.toContentPayloadItem(engagements),
+      includes: new CastcleIncludes({
+        users: [author.toIncludeUser({ blocked, blocking, followed })],
+        casts
+      })
+    } as ContentResponse;
+  }
+
+  /**
+   * @param {UserDocument} viewer
+   * @param {ContentDocument} content
+   * @param {CastcleMeta} meta
+   * @param hasRelationshipExpansion
+   */
+  async convertContentsToContentResponse(
+    viewer: UserDocument,
+    contents: ContentDocument[],
+    meta: CastcleMeta,
+    hasRelationshipExpansion = false
+  ): Promise<ContentsResponse> {
+    const users: IncludeUser[] = [];
+    const authorIds = [];
+    const casts: ContentPayloadItem[] = [];
+    const payload: ContentPayloadItem[] = [];
+
+    contents.forEach((content) => {
+      payload.push(content.toContentPayloadItem());
+
+      if (content.originalPost) {
+        casts.push(toSignedContentPayloadItem(content.originalPost));
+      }
+
+      if (content.author) {
+        users.push(new Author(content.author).toIncludeUser());
+        authorIds.push(content.author.id);
+      }
+    });
+
+    if (!hasRelationshipExpansion) {
+      return {
+        payload,
+        includes: new CastcleIncludes({ users, casts }),
+        meta
+      };
+    }
+
+    const relationships = await this.relationshipModel.find({
+      $or: [
+        { user: viewer._id, followedUser: { $in: authorIds } },
+        { user: { $in: authorIds }, followedUser: viewer._id }
+      ],
+      visibility: EntityVisibility.Publish
+    });
+
+    users.forEach((author) => {
+      const authorRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(user) === String(author.id) &&
+          String(followedUser) === String(viewer.id)
+      );
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer.id)
+      );
+
+      author.blocked = Boolean(getterRelationship?.blocking);
+      author.blocking = Boolean(authorRelationship?.blocking);
+      author.followed = Boolean(getterRelationship?.following);
+    });
+
+    return {
+      payload,
+      includes: new CastcleIncludes({ users, casts }),
+      meta
+    };
   }
 }

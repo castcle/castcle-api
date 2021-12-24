@@ -33,11 +33,7 @@ import {
   createPagination
 } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import {
-  CastcleIncludes,
-  CastcleMeta,
-  EntityVisibility
-} from '../dtos/common.dto';
+import { CastcleIncludes, CastcleMeta, EntityVisibility } from '../dtos';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,

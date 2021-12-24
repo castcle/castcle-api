@@ -28,7 +28,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures
 } from '../database.module';
-import { CountryPayloadDto } from '../dtos';
+import { CountryPayloadDto, SortDirection } from '../dtos';
 import { env } from '../environment';
 
 let mongod: MongoMemoryServer;
@@ -112,11 +112,11 @@ describe('CountryService', () => {
       expect(result.length).toEqual(3);
     });
 
-    it('should get data in db with serach critiria', async () => {
+    it('should get data in db with search criteria', async () => {
       const result = await service.getAll({
         sortBy: {
           field: 'dialCode',
-          type: 'asc'
+          type: SortDirection.Asc
         }
       });
       expect(result).toBeDefined();

@@ -290,14 +290,16 @@ describe('AppController', () => {
 
     describe('getUserContents', () => {
       it('should get all contents from user id', async () => {
-        const response = await appController.getUserContents(user._id, {
-          $credential: userCredential,
-          $language: 'th'
-        } as any);
+        const response = await appController.getUserContents(
+          user._id,
+          { $credential: userCredential, $language: 'th' } as any,
+          { hasRelationshipExpansion: false }
+        );
         expect(response.meta).toEqual(expectedResponse.meta);
       });
     });
   });
+
   describe('getMentions', () => {
     it('should get all mentions user form system', async () => {
       const response = await appController.getMentions(

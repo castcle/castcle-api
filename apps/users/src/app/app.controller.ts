@@ -34,6 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
+  GetContentsDto,
   PageResponseDto,
   PagesResponse,
   SocialSyncDeleteDto,
@@ -57,7 +58,6 @@ import {
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
-  ContentTypePipe,
   LimitPipe,
   PagePipe,
   SortByEnum,
@@ -306,16 +306,12 @@ export class UserController {
   async getMyContents(
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string,
     @Query('maxResult', LimitPipe)
     limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
   ): Promise<ContentsResponse> {
-    //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
       const contents = await this.contentService.getContentsFromUser(user.id, {
@@ -360,10 +356,7 @@ export class UserController {
   async getMyPages(
     @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
   ): Promise<PagesResponse> {
@@ -406,16 +399,9 @@ export class UserController {
   async getUserContents(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
+    @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('maxResults', LimitPipe) maxResults?: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string,
-    @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
     const user = await this.userService.getUserFromCredential($credential);
     const targetUser = await this.userService.getById(
@@ -425,13 +411,7 @@ export class UserController {
     );
     const contents = await this.contentService.getContentsFromUser(
       targetUser.id,
-      {
-        maxResults: maxResults,
-        sinceId: sinceId,
-        untilId: untilId,
-        sortBy: sortByOption,
-        type: contentTypeOption
-      }
+      { ...getContentsDto, sortBy: sortByOption }
     );
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
@@ -551,10 +531,7 @@ export class UserController {
     @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
@@ -608,10 +585,7 @@ export class UserController {
     @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
