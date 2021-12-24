@@ -423,17 +423,20 @@ export class UserController {
       id,
       UserType.People
     );
-    const contents = await this.contentService.getContentsFromUser(user.id, {
-      maxResults: maxResults,
-      sinceId: sinceId,
-      untilId: untilId,
-      sortBy: sortByOption,
-      type: contentTypeOption
-    });
+    const contents = await this.contentService.getContentsFromUser(
+      targetUser.id,
+      {
+        maxResults: maxResults,
+        sinceId: sinceId,
+        untilId: untilId,
+        sortBy: sortByOption,
+        type: contentTypeOption
+      }
+    );
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
         contents.items,
-        targetUser.id
+        user?.id
       );
     return {
       payload: contents.items.map((item) => {
