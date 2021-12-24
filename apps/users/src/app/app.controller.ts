@@ -436,7 +436,7 @@ export class UserController {
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
         contents.items,
-        user.id
+        user?.id
       );
     return {
       payload: contents.items.map((item) => {
