@@ -188,9 +188,13 @@ export class FeedController {
     @Query() feedQuery: FeedQuery
   ) {
     const account = $credential.account;
-    const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
+    /*const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
       account,
       feedQuery
+    );*/
+    const feedItems = await this.rankerService.getGuestFeedItems(
+      feedQuery,
+      account
     );
 
     this.uxEngagementService.addReachToContents(

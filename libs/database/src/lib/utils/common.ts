@@ -75,11 +75,11 @@ export const createCastcleFilter = async (
 ) => {
   if (queryOption.sinceId) {
     filter._id = {
-      $gt: mongoose.Types.ObjectId(queryOption.sinceId)
+      $lt: mongoose.Types.ObjectId(queryOption.sinceId)
     };
   } else if (queryOption.untilId) {
     filter._id = {
-      $lt: mongoose.Types.ObjectId(queryOption.untilId)
+      $gt: mongoose.Types.ObjectId(queryOption.untilId)
     };
   }
   return filter;
