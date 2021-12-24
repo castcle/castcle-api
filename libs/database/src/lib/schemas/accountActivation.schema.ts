@@ -28,7 +28,7 @@ import { Document, Model } from 'mongoose';
 import { Account } from '../schemas/account.schema';
 import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
-import { Token } from '@castcle-api/utils';
+import { Token } from '@castcle-api/utils/commons';
 
 export type AccountActivationDocument = AccountActivation & IAccountActivation;
 

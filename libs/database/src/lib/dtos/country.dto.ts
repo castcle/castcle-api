@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { SortDirection } from '.';
 import { CastcleQueryOptions } from './common.dto';
 
 export class CountryPayloadDto {
@@ -46,6 +47,6 @@ export class CountryResponse {
 export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
   sortBy: {
     field: 'name',
-    type: 'asc'
+    type: SortDirection.Asc
   }
 } as CastcleQueryOptions;

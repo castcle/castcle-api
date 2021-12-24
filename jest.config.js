@@ -38,7 +38,6 @@ module.exports = {
     '<rootDir>/libs/healthy',
     '<rootDir>/libs/logger',
     '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils',
     '<rootDir>/libs/utils/aws',
     '<rootDir>/libs/utils/cache',
     '<rootDir>/libs/utils/clients',
@@ -46,6 +45,7 @@ module.exports = {
     '<rootDir>/libs/utils/exception',
     '<rootDir>/libs/utils/interceptors',
     '<rootDir>/libs/utils/pipes',
-    '<rootDir>/libs/utils/queue'
+    '<rootDir>/libs/utils/queue',
+    '<rootDir>/libs/utils/commons'
   ]
 };

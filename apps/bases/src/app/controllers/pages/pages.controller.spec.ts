@@ -286,10 +286,11 @@ describe('PageController', () => {
         page,
         contentDtos[1]
       );
-      const response = await pageController.getPageContents(page._id, {
-        $credential: userCredential,
-        $language: 'th'
-      } as any);
+      const response = await pageController.getPageContents(
+        page._id,
+        { $credential: userCredential, $language: 'th' } as any,
+        { hasRelationshipExpansion: false }
+      );
       const items = createResult
         .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
         .map((c) => c.toContentPayloadItem());
