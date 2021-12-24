@@ -214,7 +214,7 @@ export class UserController {
   }
 
   @ApiOkResponse({ type: UserResponseDto })
-  @CastcleAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
     const authorizedUser = await this.userService.getUserFromCredential(
