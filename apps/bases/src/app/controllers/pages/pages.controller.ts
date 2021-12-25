@@ -50,7 +50,8 @@ import {
   UpdatePageDto,
   PageResponseDto,
   DEFAULT_QUERY_OPTIONS,
-  CastcleIncludes
+  CastcleIncludes,
+  Author
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
@@ -170,6 +171,9 @@ export class PageController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     console.debug('create body', body);
     //check if page name exist
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
     const namingResult = await this.authService.getExistedUserFromCastcleId(
       body.castcleId
     );
@@ -182,7 +186,7 @@ export class PageController {
       req.$credential,
       newBody
     );
-    return page.toPageResponse();
+    return this.userService.getById(authorizedUser, page.id, UserType.Page);
   }
 
   @ApiBody({
@@ -239,49 +243,53 @@ export class PageController {
     }
     console.debug('preUpdatePage', page);
     page.markModified('profile');
-    const afterPage = await page.save();
-    return afterPage.toPageResponse();
+    await page.save();
+
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    return this.userService.getById(authorizedUser, id, UserType.Page);
   }
 
-  @ApiOkResponse({
-    type: PageResponseDto
-  })
+  @ApiOkResponse({ type: PageResponseDto })
   @CastcleAuth(CacheKeyName.Pages)
   @Get('pages/:id')
   async getPageFromId(
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Param('id') id: string
-  ): Promise<PageResponseDto> {
-    //check if page name exist
-    const page = await this._getPageByIdOrCastcleId(id, req);
-    return page.toPageResponse();
+  ) {
+    const authorizedUser = await this.userService.getUserFromCredential(
+      $credential
+    );
+
+    return this.userService.getById(authorizedUser, id, UserType.Page);
   }
 
-  @ApiOkResponse({
-    type: PagesResponse
-  })
+  @ApiOkResponse({ type: PagesResponse })
   @CastcleAuth(CacheKeyName.Pages)
   @Get('pages')
   async getAllPages(
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
+    sortBy: {
       field: string;
       type: 'desc' | 'asc';
     } = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    page: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
+    limit: number = DEFAULT_QUERY_OPTIONS.limit
   ): Promise<PagesResponse> {
-    const pages = await this.userService.getAllPages({
-      page: pageOption,
-      sortBy: sortByOption,
-      limit: limitOption
-    });
-    return {
-      payload: pages.items.map((p) => p.toPageResponse()),
-      pagination: pages.pagination
-    };
+    const authorizedUser = await this.userService.getUserFromCredential(
+      $credential
+    );
+    const { users: pages, pagination } = await this.userService.getByCriteria(
+      authorizedUser,
+      { type: UserType.Page },
+      { page, sortBy, limit }
+    );
+
+    return { payload: pages as PageResponseDto[], pagination };
   }
 
   @ApiResponse({
@@ -372,7 +380,7 @@ export class PageController {
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
     const page = await this._getPageByIdOrCastcleId(id, req);
-    const contents = await this.contentService.getContentsFromUser(page, {
+    const contents = await this.contentService.getContentsFromUser(page.id, {
       sortBy: sortByOption,
       maxResults: maxResults,
       sinceId: sinceId,
@@ -382,7 +390,7 @@ export class PageController {
     return {
       payload: contents.items.map((c) => c.toContentPayloadItem()),
       includes: new CastcleIncludes({
-        users: contents.items.map(({ author }) => author)
+        users: contents.items.map(({ author }) => new Author(author))
       }),
       meta: createCastcleMeta(contents.items)
     };

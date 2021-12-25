@@ -20,11 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import {
   AuthenticationService,
   ContentService,
   createCastcleMeta,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -34,11 +34,18 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
+  PageResponseDto,
   PagesResponse,
+  SocialSyncDeleteDto,
+  SocialSyncDto,
   UpdateUserDto,
   UserResponseDto
 } from '@castcle-api/database/dtos';
-import { OtpObjective, UserType } from '@castcle-api/database/schemas';
+import {
+  CredentialDocument,
+  OtpObjective,
+  UserType
+} from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -71,6 +78,7 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { SocialProvider } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
 import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
@@ -91,7 +99,8 @@ export class UserController {
     private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private socialSyncService: SocialSyncService
   ) {
     logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
@@ -138,23 +147,26 @@ export class UserController {
   @Get('mentions')
   @CastcleAuth(CacheKeyName.Users)
   async getMentions(
+    @Req() { $credential }: CredentialRequest,
     @Query('keyword', KeywordPipe) keyword: string,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
-    console.debug('Call Get mention');
-    const result = await this.userService.getMentionsFromPublic(keyword, {
-      page: pageOption,
-      limit: limitOption
-    });
+    const authorizedUser = await this.userService.getUserFromCredential(
+      $credential
+    );
+    const { pagination, users } = await this.userService.getMentionsFromPublic(
+      authorizedUser,
+      keyword,
+      { page: pageOption, limit: limitOption }
+    );
+
     return {
       message: 'success message',
-      payload: await Promise.all(
-        result.users.map((user) => user.toUserResponse())
-      ),
-      pagination: result.pagination
+      payload: users,
+      pagination
     };
   }
 
@@ -180,19 +192,36 @@ export class UserController {
       );
   }
 
-  @ApiOkResponse({
-    type: UserResponseDto
-  })
+  @CastcleAuth(CacheKeyName.SyncSocial)
+  @Get('syncSocial')
+  async getSyncSocial(@Req() req: CredentialRequest) {
+    logger.log(`start get all my sync social.`);
+
+    logger.log(`Get user.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+
+    logger.log(`Get social from user.`);
+    const social = await this.socialSyncService.getSocialSyncByUser(user);
+    const response = {};
+
+    logger.log(`Generate response.`);
+    for (const item in SocialProvider) {
+      const data = social.find((x) => x.provider === SocialProvider[item]);
+      const key = SocialProvider[item];
+      response[key] = data ? data.toSocialSyncPayload() : null;
+    }
+    return response;
+  }
+
+  @ApiOkResponse({ type: UserResponseDto })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
   async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const isFollowed = await this.userService.isCredentialFollow(
-      req.$credential,
-      user
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
     );
-    return await user.toUserResponse(isFollowed);
+
+    return this.userService.getById(authorizedUser, id, UserType.People);
   }
 
   @ApiBody({
@@ -289,7 +318,7 @@ export class UserController {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const contents = await this.contentService.getContentsFromUser(user, {
+      const contents = await this.contentService.getContentsFromUser(user.id, {
         sinceId: sinceId,
         sortBy: sortByOption,
         untilId: untilId,
@@ -298,9 +327,9 @@ export class UserController {
       const engagements =
         await this.contentService.getAllEngagementFromContentsAndUser(
           contents.items,
-          user
+          user.id
         );
-      console.debug('all engagements', engagements);
+
       return {
         payload: contents.items.map((item) => {
           const subEngagements = engagements.filter(
@@ -328,8 +357,8 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
-  async getMypages(
-    @Req() req: CredentialRequest,
+  async getMyPages(
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
@@ -337,27 +366,15 @@ export class UserController {
     } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
-    //TODO !!! hack it to make ui display more than 25
-    /*@Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.limit*/
   ): Promise<PagesResponse> {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
-      const pages = await this.userService.getUserPages(user, {
-        //limit: limitOption,
-        page: pageOption,
-        sortBy: sortByOption
-      });
-      console.debug('test/me/pages', user._id, JSON.stringify(pages.items));
-      return {
-        pagination: pages.pagination,
-        payload: pages.items.map((item) => item.toPageResponse())
-      };
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    const user = await this.userService.getUserFromCredential($credential);
+    const { users: pages, pagination } = await this.userService.getByCriteria(
+      user,
+      { ownerAccount: $credential.account._id, type: UserType.Page },
+      { page: pageOption, sortBy: sortByOption }
+    );
+
+    return { pagination, payload: pages as PageResponseDto[] };
   }
 
   @ApiOkResponse({
@@ -388,7 +405,7 @@ export class UserController {
   @Get(':id/contents')
   async getUserContents(
     @Param('id') id: string,
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
     sortByOption: {
       field: string;
@@ -400,20 +417,26 @@ export class UserController {
     @Query('type', ContentTypePipe)
     contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
   ): Promise<ContentsResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-
-    const contents = await this.contentService.getContentsFromUser(user, {
-      maxResults: maxResults,
-      sinceId: sinceId,
-      untilId: untilId,
-      sortBy: sortByOption,
-      type: contentTypeOption
-    });
+    const user = await this.userService.getUserFromCredential($credential);
+    const targetUser = await this.userService.getById(
+      user,
+      id,
+      UserType.People
+    );
+    const contents = await this.contentService.getContentsFromUser(
+      targetUser.id,
+      {
+        maxResults: maxResults,
+        sinceId: sinceId,
+        untilId: untilId,
+        sortBy: sortByOption,
+        type: contentTypeOption
+      }
+    );
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
         contents.items,
-        user
+        user?.id
       );
     return {
       payload: contents.items.map((item) => {
@@ -539,18 +562,21 @@ export class UserController {
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const followers = await this.userService.getFollower(user, {
-      limit: limitOption,
-      page: pageOption,
-      sortBy: sortByOption,
-      type: userTypeOption
-    });
-    return {
-      payload: followers.items,
-      pagination: followers.pagination
-    } as FollowResponse;
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const { users, pagination } = await this.userService.getFollowers(
+      authorizedUser,
+      id,
+      {
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption,
+        type: userTypeOption
+      }
+    );
+
+    return { pagination, payload: users };
   }
 
   @ApiOkResponse({
@@ -593,18 +619,21 @@ export class UserController {
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    //UserService
-    const user = await this._getUserFromIdOrCastcleId(id, req);
-    const followers = await this.userService.getFollowing(user, {
-      limit: limitOption,
-      page: pageOption,
-      sortBy: sortByOption,
-      type: userTypeOption
-    });
-    return {
-      payload: followers.items,
-      pagination: followers.pagination
-    } as FollowResponse;
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const { users, pagination } = await this.userService.getFollowing(
+      authorizedUser,
+      id,
+      {
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption,
+        type: userTypeOption
+      }
+    );
+
+    return { payload: users, pagination: pagination };
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
@@ -616,9 +645,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const blockUser = await this.userService.getUserFromIdOrCastcleId(
-      blockUserId
-    );
+    const blockUser = await this.userService.getByIdOrCastcleId(blockUserId);
 
     await this.userService.blockUser(user, blockUser);
   }
@@ -632,7 +659,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const unblockUser = await this.userService.getUserFromIdOrCastcleId(
+    const unblockUser = await this.userService.getByIdOrCastcleId(
       unblockUserId
     );
 
@@ -650,7 +677,7 @@ export class UserController {
     @Req() req: CredentialRequest
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
-    const reportedUser = await this.userService.getUserFromIdOrCastcleId(
+    const reportedUser = await this.userService.getByIdOrCastcleId(
       reportedUserId
     );
 
@@ -706,15 +733,14 @@ export class UserController {
       !otp.isVerify
     ) {
       logger.error(`Invalid Ref Code`);
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE, req.$language);
+      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }
-
+    logger.log('Get account document and validate guest');
+    const account = await this.validateGuestAccount(req.$credential);
     logger.log('Get user document');
-    const account = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
+
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (account && user && !account.isGuest) {
+    if (account && user) {
       logger.log('Update mobile number');
       await this.userService.updateMobile(
         user.id,
@@ -728,10 +754,131 @@ export class UserController {
       );
       const response = await afterUpdateUser.toUserResponse();
       return response;
-    } else
+    } else throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+  }
+
+  /**
+   * User {castcleId} sync social media for create new
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('syncSocial')
+  async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
+    logger.log(`Start create sync social.`);
+    logger.log(JSON.stringify(body));
+
+    logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential);
+
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const userSync = await this.socialSyncService.getSocialSyncByUser(user);
+    if (userSync.find((x) => x.provider === body.provider)) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
+      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+    }
+
+    const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
+      body.provider,
+      body.uid
+    );
+
+    if (dupSocialSync?.length) {
+      logger.error(
+        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+      );
       throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
+        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
         req.$language
       );
+    }
+
+    if (user) {
+      logger.log(`create sync data.`);
+      await this.socialSyncService.create(user, body);
+      return '';
+    } else {
+      logger.error(`Can't get user data`);
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+  }
+
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Put('syncSocial')
+  async updateSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDto
+  ) {
+    logger.log(`Start update sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    await this.socialSyncService.update(body, user);
+  }
+
+  /**
+   * User {castcleId} sync social media for update social
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: SocialSyncDeleteDto
+  })
+  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete('syncSocial')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteSyncSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncDeleteDto
+  ) {
+    logger.log(`Start delete sync social.`);
+    logger.log(JSON.stringify(body));
+    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (user) {
+      await this.socialSyncService.delete(body, user);
+    } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+  }
+
+  private async validateGuestAccount(credential: CredentialDocument) {
+    const account = await this.authService.getAccountFromCredential(credential);
+    if (!account || account.isGuest) {
+      logger.error(`Forbidden guest account.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    } else {
+      return account;
+    }
   }
 }

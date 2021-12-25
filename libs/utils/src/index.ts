@@ -20,4 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export * from './lib/utils.module';
+
+export * from './lib/castcle-name';
+export * from './lib/host';
+export * from './lib/password';
+export * from './lib/regexp';
+export * from './lib/token';
+export * from './lib/transformers';

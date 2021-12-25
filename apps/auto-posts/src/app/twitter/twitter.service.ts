@@ -28,14 +28,15 @@ import TwitterApi, {
 } from 'twitter-api-v2';
 import { Environment } from '@castcle-api/environments';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ContentService, SocialSyncService } from '@castcle-api/database';
 import {
+  ContentService,
   SocialProvider,
-  SocialSyncDocument
-} from '@castcle-api/database/schemas';
+  SocialSyncService
+} from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { SaveContentDto } from '@castcle-api/database/dtos';
+import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
+import { SocialSyncDocument } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class TwitterService {
@@ -84,7 +85,7 @@ export class TwitterService {
     );
 
     await this.contentService.createContentsFromAuthor(
-      syncAccount.author,
+      new Author(syncAccount.author),
       contents
     );
 
@@ -112,7 +113,6 @@ export class TwitterService {
     userId: string,
     timeline: Tweetv2TimelineResult
   ) {
-    const LAST_TWITTER_LINK_PATTERN = / https:\/\/t\.co\/[A-Za-z0-9]+$/;
     const toUploadMedia = timeline.includes?.media?.map(async (medium) => {
       const imageUrl = medium?.url || medium?.preview_image_url;
 
@@ -145,7 +145,7 @@ export class TwitterService {
 
         return {
           payload: {
-            message: text.replace(LAST_TWITTER_LINK_PATTERN, ''),
+            message: text,
             photo: images ? { contents: images } : undefined
           },
           type: 'short'

@@ -26,6 +26,8 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  SocialProvider,
+  SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
@@ -34,7 +36,9 @@ import {
   ContentType,
   SaveContentDto,
   ShortPayload,
-  UpdateUserDto
+  SocialSyncDto,
+  UpdateUserDto,
+  UserResponseDto
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
@@ -91,6 +95,7 @@ describe('AppController', () => {
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
   let userAccount: AccountDocument;
+  let socialSyncService: SocialSyncService;
 
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -111,13 +116,15 @@ describe('AppController', () => {
         AuthenticationService,
         ContentService,
         UserProducer,
-        HashtagService
+        HashtagService,
+        SocialSyncService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
+    socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -175,10 +182,10 @@ describe('AppController', () => {
   describe('getUserById', () => {
     it('should return UserResponseDto of user id ', async () => {
       const user = await service.getUserFromCredential(userCredential);
-      const response = await appController.getUserById(
+      const response = (await appController.getUserById(
         { $credential: userCredential, $language: 'th' } as any,
         user._id
-      );
+      )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
       expect(response.email).toEqual(userAccount.email);
@@ -264,8 +271,8 @@ describe('AppController', () => {
         }),
         meta: {
           resultCount: contents.length,
-          oldestId: contents[contents.length - 1].id,
-          newestId: contents[0].id
+          oldestId: contents[0].id,
+          newestId: contents[contents.length - 1].id
         }
       };
       console.debug('liked stuff', JSON.stringify(expectedResponse));
@@ -293,7 +300,12 @@ describe('AppController', () => {
   });
   describe('getMentions', () => {
     it('should get all mentions user form system', async () => {
-      const response = await appController.getMentions('', 1, 5);
+      const response = await appController.getMentions(
+        { $credential: userCredential } as any,
+        '',
+        1,
+        5
+      );
       expect(response.payload.length).toEqual(1);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
@@ -446,21 +458,27 @@ describe('AppController', () => {
 
       await expect(
         appController.updateMobile(credential, request)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_REFCODE,
-          credential.$language
-        )
-      );
+      ).rejects.toEqual(new CastcleException(CastcleStatus.INVLAID_REFCODE));
     });
 
     it('should return Exception when get guest account', async () => {
       const countryCode = '+66';
       const mobile = '0815678901';
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
       const newOtp = await authService.generateOtp(
-        account,
+        guest.accountDocument,
         OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
+        guest.accountDocument._id,
         'mobile',
         true
       );
@@ -472,12 +490,6 @@ describe('AppController', () => {
         mobileNumber: mobile
       };
 
-      const guest = await authService.createAccount({
-        device: 'iPhone8',
-        deviceUUID: 'ios8',
-        header: { platform: 'ios' },
-        languagesPreferences: ['th']
-      });
       const credentialGuest = {
         $credential: guest.credentialDocument,
         $language: 'th'
@@ -487,7 +499,7 @@ describe('AppController', () => {
         appController.updateMobile(credentialGuest, request)
       ).rejects.toEqual(
         new CastcleException(
-          CastcleStatus.INVALID_ACCESS_TOKEN,
+          CastcleStatus.FORBIDDEN_REQUEST,
           credential.$language
         )
       );
@@ -512,6 +524,178 @@ describe('AppController', () => {
           credential.$language
         )
       );
+    });
+  });
+
+  describe('syncSocial', () => {
+    let user: UserDocument;
+    let credential;
+    let defaultRequest: SocialSyncDto;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      defaultRequest = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Twitter,
+        uid: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should create sync social successful', async () => {
+      await appController.syncSocial(credential, defaultRequest);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+
+      expect(userSync.length).toEqual(1);
+      expect(userSync[0].provider).toEqual(SocialProvider.Twitter);
+    });
+
+    it('should return Exception when get guest account', async () => {
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.syncSocial(credentialGuest, defaultRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credential.$language
+        )
+      );
+    });
+
+    it('should return exception when get duplicate socail sync', async () => {
+      await expect(
+        appController.syncSocial(credential, defaultRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+          credential.$language
+        )
+      );
+
+      const mocksNewUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      const newUser = mocksNewUsers[0].user;
+      const newCredential = {
+        $credential: mocksNewUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      const newRequest: SocialSyncDto = {
+        castcleId: newUser.displayId,
+        provider: SocialProvider.Twitter,
+        uid: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+      await expect(
+        appController.syncSocial(newCredential, newRequest)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+          credential.$language
+        )
+      );
+    });
+
+    it('should get all sync social from user', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: 'f89766',
+        userName: 'mockfb',
+        displayName: 'mock fb',
+        avatar: 'www.facebook.com/mockfb',
+        active: true
+      };
+      await appController.syncSocial(credential, request);
+      const result = await appController.getSyncSocial(credential);
+      const expectResult = {
+        twitter: {
+          uid: 't12345678',
+          username: 'mocktw',
+          displayName: 'mock tw',
+          avatar: 'www.twitter.com/mocktw',
+          active: true
+        },
+        facebook: {
+          uid: 'f89766',
+          username: 'mockfb',
+          displayName: 'mock fb',
+          avatar: 'www.facebook.com/mockfb',
+          active: true
+        },
+        youtube: null,
+        medium: null
+      };
+      expect(result).toBeDefined();
+      expect(result).toEqual(expectResult);
+    });
+
+    it('should update sync social successful', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: '56738393',
+        userName: 'mockfb2',
+        displayName: 'mock fb2',
+        avatar: 'www.facebook.com/mockfb2',
+        active: true
+      };
+      await appController.updateSyncSocial(credential, request);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const result = userSync.find((x) => x.provider === request.provider);
+      expect(result.socialId).toEqual(request.uid);
+      expect(result.userName).toEqual(request.userName);
+      expect(result.displayName).toEqual(request.displayName);
+      expect(result.avatar).toEqual(request.avatar);
+    });
+
+    it('should delete sync social successful', async () => {
+      const request = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Facebook,
+        uid: '56738393'
+      };
+      await appController.deleteSyncSocial(credential, request);
+      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const result = userSync.find((x) => x.provider === request.provider);
+      expect(result).toBeUndefined();
     });
   });
 });

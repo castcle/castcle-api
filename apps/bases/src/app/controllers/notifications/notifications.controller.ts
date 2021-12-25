@@ -26,24 +26,21 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
-  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationBadgesResponse,
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto
 } from '@castcle-api/database/dtos';
-
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import {
-  LimitPipe,
-  NotificationSourcePipe,
-  PagePipe,
-  SortByEnum,
-  SortByPipe
-} from '@castcle-api/utils/pipes';
+import { NotificationSourcePipe } from '@castcle-api/utils/pipes';
 import {
   Body,
   Get,
@@ -55,11 +52,6 @@ import {
   Req
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import {
-  CastcleAuth,
-  CastcleController,
-  CastcleBasicAuth
-} from '@castcle-api/utils/decorators';
 
 @CastcleController('1.0')
 export class NotificationsController {
@@ -78,18 +70,18 @@ export class NotificationsController {
   })
   @CastcleAuth(CacheKeyName.NotificationsGet)
   @ApiQuery({
-    name: 'sortBy',
-    enum: SortByEnum,
-    required: false
-  })
-  @ApiQuery({
-    name: 'page',
+    name: 'maxResults',
     type: Number,
     required: false
   })
   @ApiQuery({
-    name: 'limit',
-    type: Number,
+    name: 'sinceId',
+    type: String,
+    required: false
+  })
+  @ApiQuery({
+    name: 'untilId',
+    type: String,
     required: false
   })
   @ApiQuery({
@@ -100,32 +92,36 @@ export class NotificationsController {
   @Get('notifications')
   async getAll(
     @Req() req: CredentialRequest,
-    @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
+    @Query('maxResults') maxResults?: number,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string,
     @Query('source', NotificationSourcePipe)
-    notificationSourceOption: NotificationSource = NotificationSource.Profile
+    notificationSourceOption?: NotificationSource
   ): Promise<NotificationResponse> {
     this.logger.log('Start get all notification');
+    if (maxResults) {
+      this.logger.log('validate min & max maxResults');
+      if (+maxResults < 5 || +maxResults > 100) {
+        throw new CastcleException(
+          CastcleStatus.INVALID_MAX_RESULT,
+          req.$language
+        );
+      }
+    }
+    this.logger.log('Get all notification');
     const notification = await this.notificationService.getAll(
       req.$credential,
       {
-        sortBy: sortByOption,
-        limit: limitOption,
-        page: pageOption,
+        maxResults: maxResults,
+        sinceId: sinceId,
+        untilId: untilId,
         source: notificationSourceOption
       }
     );
     this.logger.log('Success get all notification');
     return {
       payload: notification.items.map((noti) => noti.toNotificationPayload()),
-      pagination: notification.pagination
+      meta: notification.meta
     };
   }
 

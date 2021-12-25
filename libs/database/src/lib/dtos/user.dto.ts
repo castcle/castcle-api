@@ -21,8 +21,8 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
-import { PageVerified, UserVerified } from '../schemas/user.schema';
+import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { SocialProvider, PageVerified, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
 
 class UserImage {
@@ -95,6 +95,12 @@ export class UserResponseDto {
 
   @ApiProperty()
   followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
 }
 
 export class UpdateUserDto {
@@ -177,6 +183,15 @@ export class PageResponseDto {
   };
 
   @ApiProperty()
+  followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
+
+  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -221,8 +236,52 @@ export class PageResponse {
 
 export class FollowResponse {
   @ApiProperty()
-  payload: UserResponseDto[];
+  payload: (UserResponseDto | PageResponseDto)[];
 
   @ApiProperty()
   pagination: Pagination;
+}
+
+export class SocialSyncDto {
+  @ApiProperty()
+  @IsString()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsEnum(SocialProvider)
+  provider?: SocialProvider;
+
+  @ApiProperty()
+  @IsString()
+  uid: string;
+
+  @ApiProperty()
+  @IsString()
+  userName?: string;
+
+  @ApiProperty()
+  @IsString()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsString()
+  avatar?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  active?: boolean;
+}
+
+export class SocialSyncDeleteDto {
+  @ApiProperty()
+  @IsString()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsEnum(SocialProvider)
+  provider?: SocialProvider;
+
+  @ApiProperty()
+  @IsString()
+  uid: string;
 }

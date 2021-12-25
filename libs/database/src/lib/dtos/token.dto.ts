@@ -22,7 +22,7 @@
  */
 
 import { CastcleImage } from '.';
-import { PageVerified, UserVerified } from '../schemas/user.schema';
+import { PageVerified, UserVerified } from '../models';
 
 export interface AccessTokenPayload {
   id: string;

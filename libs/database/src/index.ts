@@ -20,4 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+export * from './lib/models';
 export * from './lib/database.module';

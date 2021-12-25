@@ -32,7 +32,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   CreateNotification,
-  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationSource,
   NotificationType,
   RegisterTokenDto
@@ -149,7 +148,7 @@ describe('NotificationService', () => {
 
     const newNoti = new service._notificationModel({
       avatar: '',
-      message: 'sample profile',
+      message: 'sample profile1',
       source: NotificationSource.Profile,
       sourceUserId: {
         _id: user._id
@@ -167,7 +166,7 @@ describe('NotificationService', () => {
 
     const newNoti2 = new service._notificationModel({
       avatar: '',
-      message: 'sample page',
+      message: 'sample page2',
       source: NotificationSource.Page,
       sourceUserId: {
         _id: user._id
@@ -182,9 +181,10 @@ describe('NotificationService', () => {
       }
     });
     await newNoti2.save();
+
     const newNoti3 = new service._notificationModel({
       avatar: '',
-      message: 'sample page',
+      message: 'sample page3',
       source: NotificationSource.Profile,
       sourceUserId: {
         _id: user._id
@@ -216,20 +216,35 @@ describe('NotificationService', () => {
   describe('#getAll', () => {
     it('should get all notification in db with source as default option', async () => {
       const notification = await service.getAll(result.credentialDocument);
-      expect(notification.items.length).toEqual(2);
-      expect(notification.items[0].source).toEqual(NotificationSource.Profile);
-      expect(notification.items[1].source).toEqual(NotificationSource.Profile);
+      expect(notification.items.length).toEqual(3);
     });
 
     it('should get all notification in db with source as page', async () => {
       const notification = await service.getAll(result.credentialDocument, {
-        sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
-        limit: DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
-        page: DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
         source: NotificationSource.Page
       });
       expect(notification.items.length).toEqual(1);
       expect(notification.items[0].source).toEqual(NotificationSource.Page);
+    });
+
+    it('should get notification filter with sinceId in db', async () => {
+      const notification = await service.getAll(result.credentialDocument);
+      const filterId = notification.items[1].id;
+      const notiResult = await service.getAll(result.credentialDocument, {
+        sinceId: filterId
+      });
+      expect(notiResult.items.length).toEqual(1);
+      expect(notiResult.items[0].message).toEqual('sample page3');
+    });
+
+    it('should get notification filter with untilId in db', async () => {
+      const notification = await service.getAll(result.credentialDocument);
+      const filterId = notification.items[1].id;
+      const notiResult = await service.getAll(result.credentialDocument, {
+        untilId: filterId
+      });
+      expect(notiResult.items.length).toEqual(1);
+      expect(notiResult.items[0].message).toEqual('sample profile1');
     });
   });
 
@@ -271,12 +286,7 @@ describe('NotificationService', () => {
     it('should update read flag all notification in db', async () => {
       const resultUpdate = await service.flagReadAll(result.credentialDocument);
       const profileNoti = await service.getAll(result.credentialDocument);
-      const pageNoti = await service.getAll(result.credentialDocument, {
-        sortBy: DEFAULT_NOTIFICATION_QUERY_OPTIONS.sortBy,
-        limit: DEFAULT_NOTIFICATION_QUERY_OPTIONS.limit,
-        page: DEFAULT_NOTIFICATION_QUERY_OPTIONS.page,
-        source: NotificationSource.Page
-      });
+      const pageNoti = await service.getAll(result.credentialDocument);
 
       expect(resultUpdate.n).toEqual(3);
       expect(profileNoti.items.filter((x) => x.read).length).toEqual(
@@ -324,7 +334,6 @@ describe('NotificationService', () => {
       const totalNoti = await service.getAll(result.credentialDocument);
 
       expect(resultData).toBeDefined();
-      expect(totalNoti.total).toEqual(3);
       expect(resultData.message).toEqual(newNoti.message);
       expect(resultData.source).toEqual(newNoti.source);
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
@@ -356,7 +365,6 @@ describe('NotificationService', () => {
       const totalNoti = await service.getAll(result.credentialDocument);
 
       expect(resultData).toBeDefined();
-      expect(totalNoti.total).toEqual(4);
       expect(resultData.message).toEqual(newNoti.message);
       expect(resultData.source).toEqual(newNoti.source);
       expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);

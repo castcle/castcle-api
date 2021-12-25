@@ -392,7 +392,8 @@ export class AppService {
   private async validateExistingOtp(
     objective: OtpObjective,
     credential: CredentialRequest,
-    channel: string
+    channel: string,
+    reciever: string
   ) {
     const allExistingOtp =
       await this.authService.getAllOtpFromRequestIdObjective(
@@ -404,15 +405,12 @@ export class AppService {
       if (
         exOtp.isValid() &&
         exOtp.channel === channel &&
-        exOtp.action === objective
+        exOtp.action === objective &&
+        exOtp.reciever === reciever
       ) {
         existingOtp = exOtp;
       } else {
-        try {
-          if (exOtp.sid) await this.twillioClient.canceledOtp(exOtp.sid);
-        } catch (ex) {
-          this.logger.warn('Can not cancel otp:', ex);
-        }
+        await this.cancelOtp(exOtp);
         this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         await exOtp.delete();
       }
@@ -487,18 +485,19 @@ export class AppService {
       );
     }
 
-    const exOtp = await this.validateExistingOtp(
-      objective,
-      credential,
-      request.channel
-    );
-    if (exOtp) {
-      this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
-      return exOtp;
-    }
-
     switch (request.channel) {
       case 'email': {
+        const exOtp = await this.validateExistingOtp(
+          objective,
+          credential,
+          request.channel,
+          request.payload.email
+        );
+        if (exOtp) {
+          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
+          return exOtp;
+        }
+
         account = await this.getAccountFromEmail(
           request.payload.email,
           credential.$language
@@ -516,6 +515,17 @@ export class AppService {
         break;
       }
       case 'mobile': {
+        const exOtp = await this.validateExistingOtp(
+          objective,
+          credential,
+          request.channel,
+          request.payload.countryCode + request.payload.mobileNumber
+        );
+        if (exOtp) {
+          this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
+          return exOtp;
+        }
+
         account = await this.getAccount(
           request.payload.mobileNumber,
           request.payload.countryCode,
@@ -574,7 +584,7 @@ export class AppService {
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
       throw new CastcleException(
-        CastcleStatus.SOMETHING_WRONG,
+        CastcleStatus.TWILLIO_MAX_LIMIT,
         credential.$language
       );
     }
@@ -586,6 +596,7 @@ export class AppService {
       credential.$credential.account._id,
       otpChannel,
       false,
+      reciever,
       sid
     );
     return otp;
@@ -694,6 +705,7 @@ export class AppService {
     const retryCount = otp.retry ? otp.retry : 0;
     if (retryCount >= limitRetry) {
       this.logger.error(`Otp over limit retry : ${limitRetry}`);
+      await this.cancelOtp(otp);
       await otp.delete();
       throw new CastcleException(
         CastcleStatus.LOCKED_OTP,
@@ -711,6 +723,7 @@ export class AppService {
         );
       } catch (ex) {
         this.logger.error(ex.message, ex);
+        await this.cancelOtp(otp);
         await otp.delete();
         throw new CastcleException(
           CastcleStatus.EXPIRED_OTP,
@@ -737,11 +750,13 @@ export class AppService {
         objective,
         credential.$credential.account._id,
         request.channel,
-        true
+        true,
+        receiver
       );
       return newOtp;
     } else {
       this.logger.error(`Otp expired.`);
+      await this.cancelOtp(otp);
       this.logger.log('Delete OTP refCode: ' + otp.refCode);
       await otp.delete();
       throw new CastcleException(
@@ -844,10 +859,11 @@ export class AppService {
     }
 
     this.logger.log(`verify google access token.`);
-    const tokenData = await this.googleClient.verifyToken(payload.authToken);
-
-    if (!tokenData) {
-      this.logger.error(`Use token expired.`);
+    let tokenData;
+    try {
+      tokenData = await this.googleClient.verifyToken(payload.authToken);
+    } catch (ex) {
+      this.logger.error(`Use token expired.`, ex);
       throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
     }
 
@@ -862,5 +878,14 @@ export class AppService {
     }
 
     return { userVerify, tokenData };
+  }
+
+  private async cancelOtp(otp: OtpDocument) {
+    this.logger.log('Cancel Twillio Otp.');
+    try {
+      if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
+    } catch (ex) {
+      this.logger.warn('Can not cancel otp:', ex);
+    }
   }
 }

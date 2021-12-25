@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleName } from '@castcle-api/utils';
+import { CastcleName, CastcleRegExp } from '@castcle-api/utils';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -235,11 +235,9 @@ export class AuthenticationService {
     this._accountModel.findById(accountId).exec();
 
   getAccountFromEmail = (email: string) => {
-    const emailPattern = email.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
-
     return this._accountModel
       .findOne({
-        email: new RegExp(`^${emailPattern}$`, 'i'),
+        email: CastcleRegExp.fromString(email),
         visibility: EntityVisibility.Publish
       })
       .exec();
@@ -268,10 +266,8 @@ export class AuthenticationService {
    * @returns {UserDocument}
    */
   getExistedUserFromCastcleId = (id: string) => {
-    const idPattern = id.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
-
     return this._userModel
-      .findOne({ displayId: new RegExp(`^${idPattern}$`, 'i') })
+      .findOne({ displayId: CastcleRegExp.fromString(id) })
       .exec();
   };
 
@@ -281,11 +277,9 @@ export class AuthenticationService {
    * @returns {UserDocument}
    */
   getUserFromCastcleId = (id: string) => {
-    const idPattern = id.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
-
     return this._userModel
       .findOne({
-        displayId: new RegExp(`^${idPattern}$`, 'i'),
+        displayId: CastcleRegExp.fromString(id),
         visibility: EntityVisibility.Publish
       })
       .exec();
@@ -439,6 +433,7 @@ export class AuthenticationService {
     requestId: string,
     channel: string,
     verify: boolean,
+    reciever?: string,
     sid?: string
   ) {
     const otp = await this._otpModel.generate(
@@ -447,6 +442,7 @@ export class AuthenticationService {
       requestId,
       channel,
       verify,
+      reciever,
       sid
     );
     return otp;
