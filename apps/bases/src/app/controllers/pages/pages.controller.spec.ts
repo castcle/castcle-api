@@ -43,6 +43,7 @@ import {
   CredentialDocument
 } from '@castcle-api/database/schemas';
 import {
+  Author,
   CastcleIncludes,
   ContentType,
   PageDto,
@@ -54,6 +55,7 @@ import { Image } from '@castcle-api/utils/aws';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -291,18 +293,23 @@ describe('PageController', () => {
       const items = createResult
         .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
         .map((c) => c.toContentPayloadItem());
-      expect(response).toEqual({
+
+      const expectedObject = {
         payload: items,
         includes: new CastcleIncludes({
-          users: createResult.map(({ author }) => author)
+          users: createResult.map(({ author }) => new Author(author))
         }),
         meta: createCastcleMeta(createResult)
-      });
+      };
+
+      expect(JSON.stringify(response)).toEqual(JSON.stringify(expectedObject));
     });
   });
   describe('getAllPages', () => {
     it('should display all pages that has been created', async () => {
-      const result = await pageController.getAllPages();
+      const result = await pageController.getAllPages({
+        $credential: userCredential
+      } as CredentialRequest);
       console.log(result);
       expect(result.payload.length).toEqual(1);
       expect(result.pagination.self).toEqual(1);

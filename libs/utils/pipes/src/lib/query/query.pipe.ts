@@ -121,13 +121,14 @@ export class NotificationSourcePipe implements PipeTransform {
    * @returns {string}
    */
   transform(sourceQuery?: string): NotificationSource {
+    const source = sourceQuery?.toUpperCase();
     if (
-      sourceQuery &&
-      (sourceQuery === NotificationSource.Profile ||
-        sourceQuery === NotificationSource.Page ||
-        sourceQuery === NotificationSource.System)
+      source &&
+      (source === NotificationSource.Profile ||
+        source === NotificationSource.Page ||
+        source === NotificationSource.System)
     )
-      return sourceQuery;
+      return source;
     return null;
   }
 }

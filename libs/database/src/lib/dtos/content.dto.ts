@@ -23,18 +23,20 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { CastcleImage, CastcleIncludes } from '.';
-import { UserVerified } from '../schemas/user.schema';
+import { UserVerified } from '../models';
 import { CastcleMeta, QueryOption } from './common.dto';
+
 export class Url {
   @ApiProperty()
   image: string;
 }
 
 export enum LinkType {
+  Other = 'other',
   Youtube = 'youtube'
 }
 
-class Link {
+export class Link {
   @ApiProperty()
   type: string | LinkType;
 
@@ -43,6 +45,15 @@ class Link {
 
   @ApiProperty()
   image: string | CastcleImage;
+
+  @ApiProperty()
+  title?: string;
+
+  @ApiProperty()
+  description?: string;
+
+  @ApiProperty()
+  imagePreview?: string | CastcleImage;
 }
 
 class BlogPhoto {
@@ -152,8 +163,32 @@ export class Author {
   avatar: CastcleImage | null;
   @ApiProperty()
   verified: UserVerified;
-  @ApiProperty()
-  followed: boolean;
+
+  constructor(author: Omit<Author, 'toIncludeUser'>) {
+    this.avatar = author.avatar;
+    this.castcleId = author.castcleId;
+    this.displayName = author.displayName;
+    this.id = author.id;
+    this.type = author.type;
+    this.verified = author.verified;
+  }
+
+  toIncludeUser = ({
+    blocked,
+    blocking,
+    followed
+  }: Partial<IncludeUser> = {}): IncludeUser => ({
+    ...this,
+    blocked,
+    blocking,
+    followed
+  });
+}
+
+export class IncludeUser extends Author {
+  blocked?: boolean;
+  blocking?: boolean;
+  followed?: boolean;
 }
 
 export class ContentPayloadDto {

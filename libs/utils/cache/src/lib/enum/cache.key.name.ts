@@ -68,5 +68,9 @@ export const CacheKeyName = {
   Country: {
     Name: 'COUNTRY',
     Ttl: 10
+  },
+  SyncSocial: {
+    Name: 'SYNC_SOCIAL',
+    Ttl: 10
   }
 };

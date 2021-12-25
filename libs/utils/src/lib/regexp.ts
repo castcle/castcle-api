@@ -21,39 +21,16 @@
  * or have any questions.
  */
 
-import { CastcleIncludes } from '.';
-import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
-import { User } from '../schemas/user.schema';
-import { CastcleMeta } from './common.dto';
-import { ContentPayloadItem } from './content.dto';
-
-export class GuestFeedItemDto {
-  content?: any;
-  type: GuestFeedItemType;
-  user?: User;
-  countryCode?: string;
-  score: number;
-}
-
-export class GuestFeedItemPayloadItem {
-  id: string;
-  feature: {
-    slug: 'feed';
-    key: 'feature.feed';
-    name: 'Feed';
+export class CastcleRegExp {
+  static replaceEscapeStrings = (str: string) => {
+    return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
   };
-  circle: {
-    id: 'for-you';
-    key: 'circle.forYou';
-    name: 'For You';
-    slug: 'forYou';
-  };
-  type: 'content' | 'suggestion' | 'ads'; // content or suggestion or reminder or ads
-  payload: ContentPayloadItem;
-}
 
-export class GuestFeedItemPayload {
-  payload: GuestFeedItemPayloadItem[];
-  includes: CastcleIncludes;
-  meta: CastcleMeta;
+  static fromString = (str: string, caseInsensitive = true) => {
+    const strPattern = str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+
+    return caseInsensitive
+      ? new RegExp(`^${strPattern}$`, 'i')
+      : new RegExp(`^${strPattern}$`);
+  };
 }

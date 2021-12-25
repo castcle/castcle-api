@@ -23,12 +23,13 @@
 
 import { ContentService, SocialSyncService } from '@castcle-api/database';
 import {
+  Author,
   ContentType,
   LinkType,
   SaveContentDto,
   ShortPayload
 } from '@castcle-api/database/dtos';
-import { SocialProvider } from '@castcle-api/database/schemas';
+import { SocialProvider } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
@@ -73,7 +74,7 @@ export class YoutubeService {
     const channelId = feed.entry['yt:channelId'];
     const syncAccount =
       await this.socialSyncService.getAutoSyncAccountBySocialId(
-        SocialProvider.Google,
+        SocialProvider.Youtube,
         channelId
       );
 
@@ -89,9 +90,10 @@ export class YoutubeService {
       syncAccount.author.id
     );
 
-    await this.contentService.createContentsFromAuthor(syncAccount.author, [
-      shortContent
-    ]);
+    await this.contentService.createContentsFromAuthor(
+      new Author(syncAccount.author),
+      [shortContent]
+    );
 
     syncAccount.displayName = feed.entry.author.name;
     syncAccount.latestSyncId = feed.entry.id;

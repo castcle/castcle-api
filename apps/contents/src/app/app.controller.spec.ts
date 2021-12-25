@@ -343,7 +343,7 @@ describe('ContentController', () => {
           $language: 'th'
         } as any
       );
-      expect(getResult).toEqual(result);
+      expect(JSON.stringify(getResult)).toEqual(JSON.stringify(result));
     });
   });
 

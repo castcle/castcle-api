@@ -20,13 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   NotificationMessage,
   NotificationProducer
 } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
@@ -41,10 +43,14 @@ import {
   CredentialModel
 } from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
-import { createPagination } from '../utils/common';
+import { createCastcleMeta } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
 @Injectable()
 export class NotificationService {
+  private readonly logger = new CastLogger(
+    NotificationService.name,
+    CastLoggerOptions
+  );
   constructor(
     @InjectModel('Notification')
     public _notificationModel: Model<NotificationDocument>,
@@ -66,33 +72,39 @@ export class NotificationService {
     credential: CredentialDocument,
     options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
   ) => {
-    const findFilter: {
-      account: any;
-      source: string;
-    } = {
-      account: credential.account._id,
-      source: options.source
+    this.logger.log('prepare filter');
+    const filter: FilterQuery<NotificationDocument> = {
+      account: credential.account._id
     };
-    console.log(findFilter);
 
-    let query = this._notificationModel
-      .find(findFilter)
-      .skip(options.page - 1)
-      .limit(options.limit);
-    if (options.sortBy.type === 'desc') {
-      query = query.sort(`-${options.sortBy.field}`);
-    } else {
-      query = query.sort(`${options.sortBy.field}`);
+    if (options.source) filter.source = options.source;
+    if (options.sinceId) {
+      const notificationSince = await this._notificationModel
+        .findById(options.sinceId)
+        .exec();
+      filter.createdAt = {
+        $gt: new Date(notificationSince.createdAt)
+      };
+    } else if (options.untilId) {
+      const notificationUntil = await this._notificationModel
+        .findById(options.untilId)
+        .exec();
+      filter.createdAt = {
+        $lt: new Date(notificationUntil.createdAt)
+      };
     }
-    const totalDocument = await this._notificationModel
-      .count(findFilter)
+
+    this.logger.log('get notification.');
+    const documents = await this._notificationModel
+      .find(filter)
+      .populate('content')
+      .limit(+options.maxResults)
+      .sort({ createdAt: -1 })
       .exec();
-    const result = await query.exec();
 
     return {
-      total: totalDocument,
-      items: result,
-      pagination: createPagination(options, totalDocument)
+      items: documents,
+      meta: createCastcleMeta(documents)
     };
   };
 
@@ -211,10 +223,15 @@ export class NotificationService {
       )
       .exec();
     notificationData.account._id;
+
     const credentials = await this._credentialModel
-      .find({ 'account._id': notificationData.account._id })
+      .find({
+        'account._id': mongoose.Types.ObjectId(notificationData.account._id)
+      })
       .exec();
     if (createResult && notificationData.account) {
+      console.log('testSendStuff', notificationData.account);
+      console.log(JSON.stringify(credentials));
       const message: NotificationMessage = {
         aps: {
           alert: createResult.message,

@@ -38,11 +38,15 @@ import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { UserVerified } from '../schemas/user.schema';
+import { UserVerified } from '../models';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
 
 jest.mock('@castcle-api/logger');
+jest.mock('link-preview-js', () => ({
+  getLinkPreview: jest.fn().mockReturnValue({})
+}));
+
 jest.mock('nodemailer', () => ({
   createTransport: () => ({ sendMail: jest.fn() })
 }));
@@ -168,15 +172,14 @@ describe('ContentService', () => {
       password: 'test1234567'
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
-    author = {
+    author = new Author({
       id: user.id,
       type: 'page',
       castcleId: 'castcleId',
       displayName: 'Castcle',
       verified: { email: true, mobile: true, official: true, social: true },
-      followed: true,
       avatar: null
-    };
+    });
   });
 
   afterAll(async () => {
@@ -334,10 +337,10 @@ describe('ContentService', () => {
         payload: shortPayload2,
         castcleId: user.displayId
       });
-      const contents = await service.getContentsFromUser(user);
+      const contents = await service.getContentsFromUser(user.id);
       expect(contents.items[0].payload).toEqual(shortPayload2);
       expect(contents.items[1].payload).toEqual(shortPayload1);
-      const contentsInverse = await service.getContentsFromUser(user, {
+      const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
           type: 'asc'
@@ -700,10 +703,7 @@ describe('ContentService', () => {
 
   describe('#createContentsFromTweets', () => {
     const message = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
-    const contentDto = {
-      type: 'short',
-      payload: { message }
-    } as SaveContentDto;
+    const expectedMessage = 'Sign Up Now 👉';
 
     it('should not create any content', async () => {
       const contents = await service.createContentsFromAuthor(author, []);
@@ -712,6 +712,10 @@ describe('ContentService', () => {
     });
 
     it('should create a short content from timeline', async () => {
+      const contentDto = {
+        type: 'short',
+        payload: { message }
+      } as SaveContentDto;
       const contents = await service.createContentsFromAuthor(author, [
         contentDto
       ]);
@@ -719,7 +723,30 @@ describe('ContentService', () => {
 
       expect(contents.length).toEqual(1);
       expect(content.type).toEqual(ContentType.Short);
-      expect(content.payload).toEqual({ message });
+      expect(content.payload).toMatchObject({ message: expectedMessage });
+    });
+  });
+
+  describe('#updatePayloadMessage', () => {
+    const messageWithoutLink = 'Sign Up Now';
+    const expectedMessage = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
+    const messageWithLink =
+      'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt';
+
+    it('should trim last URL and create link in payload', async () => {
+      const payload = { message: messageWithLink };
+
+      await service.updatePayloadMessage(payload);
+
+      expect(payload.message).toEqual(expectedMessage);
+    });
+
+    it('should not update payload if there is no link in message', async () => {
+      const payload = { message: messageWithoutLink };
+
+      await service.updatePayloadMessage(payload);
+
+      expect(payload.message).toEqual(messageWithoutLink);
     });
   });
 
