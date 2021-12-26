@@ -81,7 +81,7 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
-import { TargetCastcleDto, UpdateMobileDto } from './dtos/dto';
+import { TargetCastcleDto, UpdateMobileDto, UserSettingsDto } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -877,5 +877,47 @@ export class UserController {
     } else {
       return account;
     }
+  }
+
+  /**
+   * Update setting to account
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {UserSettingsDto} body setting dto payload
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @ApiBody({
+    type: UserSettingsDto
+  })
+  @CastcleBasicAuth()
+  @Put('settings')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateUserSettings(
+    @Req() req: CredentialRequest,
+    @Body() body: UserSettingsDto
+  ) {
+    logger.log(`Start user setting.`);
+    logger.log(JSON.stringify(body));
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (
+      !body ||
+      !body.preferredLanguages ||
+      body.preferredLanguages.length === 0
+    ) {
+      logger.error('Payload is empty.');
+      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
+    }
+
+    if (!account || account.isGuest) {
+      logger.error('Can not get account.');
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+
+    await this.userService.userSettings(account.id, body.preferredLanguages);
   }
 }
