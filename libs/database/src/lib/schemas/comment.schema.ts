@@ -133,7 +133,6 @@ export const CommentSchemaFactory = (
           : Configs.DefaultAvatarImages,
         castcleId: (this as CommentDocument).author.displayId,
         displayName: (this as CommentDocument).author.displayName,
-        followed: false, //need to check with relationships,
         id: (this as CommentDocument).author._id,
         type: (this as CommentDocument).author.type,
         verified: (this as CommentDocument).author.verified
@@ -150,7 +149,6 @@ export const CommentSchemaFactory = (
           castcleId: r.author.displayId,
           displayName: r.author.displayName,
           id: r.author._id,
-          followed: false,
           verified: r.author.verified,
           type: r.author.type
         },

@@ -21,5 +21,9 @@
  * or have any questions.
  */
 
-export * from './lib/models';
-export * from './lib/database.module';
+export enum SocialProvider {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Youtube = 'youtube',
+  Medium = 'medium'
+}

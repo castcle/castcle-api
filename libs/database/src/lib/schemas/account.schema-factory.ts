@@ -20,18 +20,28 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { CastcleName } from './castcle-name';
-import { Host } from './host';
-import { Password } from './password';
-import { Token } from './token';
 
-@Module({
-  imports: [],
-  controllers: [],
-  providers: [],
-  exports: []
-})
-export class UtilsModule {}
+import { Model, Schema } from 'mongoose';
+import { postAccountSave, preAccountSave } from '../hooks/account.save';
+import { AccountDocument, AccountSchema } from './account.schema';
+import { CredentialDocument } from './credential.schema';
+import { UserDocument } from './user.schema';
 
-export { Token, Password, CastcleName, Host };
+export const AccountSchemaFactory = (
+  credentialModel: Model<CredentialDocument>,
+  userModel: Model<UserDocument>
+): Schema<any> => {
+  AccountSchema.pre('save', function (next) {
+    preAccountSave(this as AccountDocument);
+    next();
+  });
+  AccountSchema.post('save', async function (doc, next) {
+    //add activate process
+    await postAccountSave(doc, {
+      credentialModel,
+      userModel
+    });
+    next();
+  });
+  return AccountSchema;
+};

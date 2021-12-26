@@ -21,5 +21,13 @@
  * or have any questions.
  */
 
-export * from './lib/models';
-export * from './lib/database.module';
+import { Transform, TransformFnParams } from 'class-transformer';
+import { isString } from 'class-validator';
+
+const stringToArrayOfStrings = ({ value }: TransformFnParams) => {
+  return isString(value) ? value.split(',') : value;
+};
+
+export const TransformStringToArrayOfStrings = () => {
+  return Transform(stringToArrayOfStrings);
+};

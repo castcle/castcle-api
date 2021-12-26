@@ -114,13 +114,13 @@ export class UserService {
 
     const [userRelationship, targetRelationship] = await Promise.all([
       this._relationshipModel.findOne({
-        user: user._id,
+        user: user?._id,
         followedUser: targetUser._id,
         visibility: EntityVisibility.Publish
       }),
       this._relationshipModel.findOne({
         user: targetUser._id,
-        followedUser: user._id,
+        followedUser: user?._id,
         visibility: EntityVisibility.Publish
       })
     ]);
@@ -147,13 +147,13 @@ export class UserService {
     const targetUserIds = targetUsers.map(({ _id }) => _id);
     const [userRelationships, pageRelationships] = await Promise.all([
       this._relationshipModel.find({
-        user: user._id,
+        user: user?._id,
         followedUser: { $in: targetUserIds },
         visibility: EntityVisibility.Publish
       }),
       this._relationshipModel.find({
         user: { $in: targetUserIds },
-        followedUser: user._id,
+        followedUser: user?._id,
         visibility: EntityVisibility.Publish
       })
     ]);

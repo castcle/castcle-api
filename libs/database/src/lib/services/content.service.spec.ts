@@ -38,7 +38,7 @@ import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
 import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { UserVerified } from '../schemas/user.schema';
+import { UserVerified } from '../models';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { HashtagService } from './hashtag.service';
 
@@ -172,15 +172,14 @@ describe('ContentService', () => {
       password: 'test1234567'
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
-    author = {
+    author = new Author({
       id: user.id,
       type: 'page',
       castcleId: 'castcleId',
       displayName: 'Castcle',
       verified: { email: true, mobile: true, official: true, social: true },
-      followed: true,
       avatar: null
-    };
+    });
   });
 
   afterAll(async () => {

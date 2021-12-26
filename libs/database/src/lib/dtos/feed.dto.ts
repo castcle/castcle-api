@@ -21,5 +21,59 @@
  * or have any questions.
  */
 
-export * from './lib/models';
-export * from './lib/database.module';
+import { TransformStringToArrayOfStrings } from '@castcle-api/utils';
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  Max
+} from 'class-validator';
+import { DEFAULT_QUERY_OPTIONS } from './common.dto';
+
+export enum UserField {
+  Relationships = 'relationships'
+}
+
+export class FeedQuery {
+  @ApiProperty({
+    type: Number,
+    maximum: 1000,
+    required: false
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  @Max(1000)
+  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
+
+  @ApiProperty({
+    type: String,
+    required: false
+  })
+  @IsOptional()
+  @IsMongoId()
+  sinceId?: string;
+
+  @ApiProperty({
+    type: String,
+    required: false
+  })
+  @IsOptional()
+  @IsMongoId()
+  untilId?: string;
+
+  @ApiProperty({
+    enum: UserField,
+    required: false,
+    isArray: true
+  })
+  @TransformStringToArrayOfStrings()
+  @IsOptional()
+  @IsArray()
+  @IsEnum(UserField, { each: true })
+  userFields?: UserField[];
+}

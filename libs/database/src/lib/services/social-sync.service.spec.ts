@@ -30,7 +30,7 @@ import {
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { env } from '../environment';
-import { SocialProvider } from '../schemas/social-sync.schema';
+import { SocialProvider } from '../models';
 import { UserDocument, UserType } from './../schemas/user.schema';
 
 let mongod: MongoMemoryServer;

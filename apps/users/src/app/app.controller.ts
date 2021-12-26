@@ -44,7 +44,6 @@ import {
 import {
   CredentialDocument,
   OtpObjective,
-  SocialProvider,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -79,6 +78,7 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { SocialProvider } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
 import { TargetCastcleDto, UpdateMobileDto, UserSettingsDto } from './dtos/dto';
@@ -195,7 +195,7 @@ export class UserController {
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('syncSocial')
   async getSyncSocial(@Req() req: CredentialRequest) {
-    logger.log(`start get all my sync socail.`);
+    logger.log(`start get all my sync social.`);
 
     logger.log(`Get user.`);
     const user = await this.userService.getUserFromCredential(req.$credential);
@@ -423,17 +423,20 @@ export class UserController {
       id,
       UserType.People
     );
-    const contents = await this.contentService.getContentsFromUser(user.id, {
-      maxResults: maxResults,
-      sinceId: sinceId,
-      untilId: untilId,
-      sortBy: sortByOption,
-      type: contentTypeOption
-    });
+    const contents = await this.contentService.getContentsFromUser(
+      targetUser.id,
+      {
+        maxResults: maxResults,
+        sinceId: sinceId,
+        untilId: untilId,
+        sortBy: sortByOption,
+        type: contentTypeOption
+      }
+    );
     const engagements =
       await this.contentService.getAllEngagementFromContentsAndUser(
         contents.items,
-        targetUser.id
+        user?.id
       );
     return {
       payload: contents.items.map((item) => {

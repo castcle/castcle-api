@@ -21,5 +21,13 @@
  * or have any questions.
  */
 
-export * from './lib/models';
-export * from './lib/database.module';
+export class UserVerified {
+  email: boolean;
+  mobile: boolean;
+  official: boolean;
+  social: boolean;
+}
+
+export class PageVerified {
+  official: boolean;
+}

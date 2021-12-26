@@ -26,6 +26,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  SocialProvider,
   SocialSyncService,
   UserService
 } from '@castcle-api/database';
@@ -46,7 +47,6 @@ import {
   CredentialDocument,
   EngagementDocument,
   OtpObjective,
-  SocialProvider,
   UserDocument
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
@@ -272,8 +272,8 @@ describe('AppController', () => {
         }),
         meta: {
           resultCount: contents.length,
-          oldestId: contents[contents.length - 1].id,
-          newestId: contents[0].id
+          oldestId: contents[0].id,
+          newestId: contents[contents.length - 1].id
         }
       };
       console.debug('liked stuff', JSON.stringify(expectedResponse));

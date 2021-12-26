@@ -58,11 +58,11 @@ export const createCastcleMeta = (documents: Document[]): CastcleMeta => {
     const firstDocDate = documents[0]['createdAt'] as Date;
     const lastDocDate = documents[documents.length - 1]['createdAt'];
     if (firstDocDate.getTime() > lastDocDate.getTime()) {
-      meta.oldestId = documents[documents.length - 1].id;
-      meta.newestId = documents[0].id;
-    } else {
       meta.oldestId = documents[0].id;
       meta.newestId = documents[documents.length - 1].id;
+    } else {
+      meta.oldestId = documents[documents.length - 1].id;
+      meta.newestId = documents[0].id;
     }
   }
   meta.resultCount = documents.length;
@@ -75,11 +75,11 @@ export const createCastcleFilter = async (
 ) => {
   if (queryOption.sinceId) {
     filter._id = {
-      $gt: mongoose.Types.ObjectId(queryOption.sinceId)
+      $lt: mongoose.Types.ObjectId(queryOption.sinceId)
     };
   } else if (queryOption.untilId) {
     filter._id = {
-      $lt: mongoose.Types.ObjectId(queryOption.untilId)
+      $gt: mongoose.Types.ObjectId(queryOption.untilId)
     };
   }
   return filter;

@@ -22,13 +22,9 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
+import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
-import { preAccountSave, postAccountSave } from '../hooks/account.save';
-import { CredentialDocument } from './credential.schema';
 import { Password } from '@castcle-api/utils';
-import { UserDocument } from '.';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
@@ -86,6 +82,7 @@ export interface IAccount extends Document {
   ): Promise<AccountDocument | null>;
   verifyPassword(password: string): Promise<boolean>;
 }
+
 AccountSchema.methods.changePassword = async function (
   password: string,
   email?: string
@@ -97,25 +94,7 @@ AccountSchema.methods.changePassword = async function (
     return this.save();
   } else return null;
 };
+
 AccountSchema.methods.verifyPassword = function (password: string) {
   return Password.verify(password, (this as AccountDocument).password);
-};
-
-export const AccountSchemaFactory = (
-  credentialModel: Model<CredentialDocument>,
-  userModel: Model<UserDocument>
-): mongoose.Schema<any> => {
-  AccountSchema.pre('save', function (next) {
-    preAccountSave(this as AccountDocument);
-    next();
-  });
-  AccountSchema.post('save', async function (doc, next) {
-    //add activate process
-    await postAccountSave(doc, {
-      credentialModel,
-      userModel
-    });
-    next();
-  });
-  return AccountSchema;
 };
