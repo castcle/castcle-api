@@ -347,17 +347,17 @@ export class PageController {
     required: false
   })
   @ApiQuery({
-    name: 'sinceid',
+    name: 'sinceId',
     type: String,
     required: false
   })
   @ApiQuery({
-    name: 'untilid',
+    name: 'untilId',
     type: String,
     required: false
   })
   @ApiQuery({
-    name: 'maxresult',
+    name: 'maxmaxResultsresult',
     type: Number,
     required: false
   })
