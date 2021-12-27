@@ -60,7 +60,8 @@ export class Image {
     );
 
     const imageUrl = sizeName ? this.image[sizeName] : this.image.original;
-    const url = imageUrl?.includes(env.ASSETS_HOST)
+    const HTTPS_PATTERN = /^https?:\/\/.+$/;
+    const url = HTTPS_PATTERN.test(imageUrl)
       ? imageUrl
       : `${env.ASSETS_HOST}/${imageUrl}`;
     console.log({

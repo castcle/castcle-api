@@ -69,9 +69,6 @@
     "users": {
       "tags": []
     },
-    "utils": {
-      "tags": []
-    },
     "utils-aws": {
       "tags": []
     },
@@ -79,6 +76,9 @@
       "tags": []
     },
     "utils-clients": {
+      "tags": []
+    },
+    "utils-commons": {
       "tags": []
     },
     "utils-decorators": {

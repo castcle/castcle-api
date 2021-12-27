@@ -77,10 +77,7 @@ export class CountryController {
   @Get('country')
   async getAllCountry(
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy
+    sortByOption = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy
   ): Promise<CountryResponse> {
     this.logger.log('Start get all country');
     const result = await this.countryService.getAll({

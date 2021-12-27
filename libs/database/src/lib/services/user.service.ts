@@ -22,7 +22,7 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleRegExp } from '@castcle-api/utils';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
@@ -34,7 +34,8 @@ import { CastcleQueryOptions } from '../dtos';
 import {
   CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
-  EntityVisibility
+  EntityVisibility,
+  SortDirection
 } from '../dtos/common.dto';
 import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { CredentialDocument, CredentialModel } from '../schemas';
@@ -677,7 +678,7 @@ export class UserService {
 
     queryOption.sortBy = {
       field: 'followerCount',
-      type: 'desc'
+      type: SortDirection.Desc
     };
 
     return this.getByCriteria(user, query, queryOption);
@@ -765,5 +766,18 @@ Message: ${message}`
       .exec();
     this.logger.log('Success update verify mobile to user');
     return user;
+  };
+
+  userSettings = async (accountId: string, languageCode: string[]) => {
+    await this._accountModel
+      .updateOne(
+        { _id: accountId },
+        {
+          preferences: {
+            langagues: languageCode
+          }
+        }
+      )
+      .exec();
   };
 }

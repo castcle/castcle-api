@@ -535,27 +535,6 @@
         }
       }
     },
-    "utils": {
-      "root": "libs/utils",
-      "sourceRoot": "libs/utils/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/utils/**/*.ts"]
-          }
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/utils"],
-          "options": {
-            "jestConfig": "libs/utils/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      }
-    },
     "utils-aws": {
       "root": "libs/utils/aws",
       "sourceRoot": "libs/utils/aws/src",
@@ -614,6 +593,27 @@
           "outputs": ["coverage/libs/utils/clients"],
           "options": {
             "jestConfig": "libs/utils/clients/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "utils-commons": {
+      "root": "libs/utils/commons",
+      "sourceRoot": "libs/utils/commons/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/utils/commons/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/utils/commons"],
+          "options": {
+            "jestConfig": "libs/utils/commons/jest.config.js",
             "passWithNoTests": true
           }
         }

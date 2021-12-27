@@ -59,6 +59,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { AppService } from './app.service';
+import { UserSettingsDto } from './dtos';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -290,14 +291,16 @@ describe('AppController', () => {
 
     describe('getUserContents', () => {
       it('should get all contents from user id', async () => {
-        const response = await appController.getUserContents(user._id, {
-          $credential: userCredential,
-          $language: 'th'
-        } as any);
+        const response = await appController.getUserContents(
+          user._id,
+          { $credential: userCredential, $language: 'th' } as any,
+          { hasRelationshipExpansion: false }
+        );
         expect(response.meta).toEqual(expectedResponse.meta);
       });
     });
   });
+
   describe('getMentions', () => {
     it('should get all mentions user form system', async () => {
       const response = await appController.getMentions(
@@ -696,6 +699,75 @@ describe('AppController', () => {
       const userSync = await socialSyncService.getSocialSyncByUser(user);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('updateUserSettings', () => {
+    it('should update perferred language from Account schema', async () => {
+      const credentialGuest = {
+        $credential: userCredential,
+        $language: 'th'
+      } as any;
+
+      const req: UserSettingsDto = {
+        preferredLanguages: ['th', 'en']
+      };
+      await appController.updateUserSettings(credentialGuest, req);
+      const account = await authService.getAccountFromCredential(
+        userCredential
+      );
+      expect(account.preferences.langagues).toEqual(['th', 'en']);
+    });
+
+    it('should return Exception when empty language', async () => {
+      const credentialGuest = {
+        $credential: userCredential,
+        $language: 'en'
+      } as any;
+
+      const req: UserSettingsDto = {
+        preferredLanguages: []
+      };
+
+      await expect(
+        appController.updateUserSettings(credentialGuest, req)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
+          credentialGuest.$language
+        )
+      );
+    });
+
+    it('should return Exception when get guest account', async () => {
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66'
+        }
+      });
+
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'en'
+      } as any;
+
+      const req: UserSettingsDto = {
+        preferredLanguages: ['th', 'en']
+      };
+
+      await expect(
+        appController.updateUserSettings(credentialGuest, req)
+      ).rejects.toEqual(
+        new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          credentialGuest.$language
+        )
+      );
     });
   });
 });

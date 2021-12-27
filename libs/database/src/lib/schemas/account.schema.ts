@@ -24,7 +24,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
-import { Password } from '@castcle-api/utils';
+import { Password } from '@castcle-api/utils/commons';
 export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
