@@ -23,6 +23,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  CommentService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -33,7 +34,6 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
 import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
   AccountDocument,
   ContentDocument,
@@ -98,7 +98,7 @@ describe('CommentController', () => {
   let rootCommentId: any;
   const pageDto: PageDto = {
     displayName: 'Super Page',
-    castcleId: 'pageyo'
+    castcleId: 'page'
   };
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -118,7 +118,7 @@ describe('CommentController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        CaslAbilityFactory,
+        CommentService,
         UserProducer,
         NotificationProducer,
         NotificationService,
@@ -173,7 +173,8 @@ describe('CommentController', () => {
           message: 'hello',
           castcleId: user.displayId
         },
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       //console.log(commentResult.payload)
       expect(commentResult.payload).toBeDefined();
@@ -183,10 +184,10 @@ describe('CommentController', () => {
   describe('#replyComment()', () => {
     it('should be able create a comment in comment(reply)', async () => {
       const replyResult = await commentController.replyComment(
-        content._id,
         rootCommentId,
         { message: 'yo', castcleId: user.displayId },
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(replyResult.payload).toBeDefined();
     });
@@ -195,7 +196,8 @@ describe('CommentController', () => {
     it('should display all comments', async () => {
       const comments = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments.payload.length).toEqual(1);
       expect(comments.payload[0].reply.length).toEqual(1);
@@ -215,7 +217,8 @@ describe('CommentController', () => {
     it('should update like engagement', async () => {
       const comments = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
       const result = await commentController.likeComment(
@@ -226,7 +229,8 @@ describe('CommentController', () => {
       );
       const comments2 = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments2.payload[0].metrics.likeCount).toEqual(1);
     });
@@ -247,7 +251,8 @@ describe('CommentController', () => {
     it('should update like engagement', async () => {
       const comments = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(0);
       const result = await commentController.unlikeComment(
@@ -258,7 +263,8 @@ describe('CommentController', () => {
       );
       const comments2 = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments2.payload[0].metrics.likeCount).toEqual(0);
     });
@@ -266,15 +272,16 @@ describe('CommentController', () => {
   describe('#updateComment()', () => {
     it('should update a message of comment', async () => {
       const updateComment = await commentController.updateComment(
-        content._id,
         rootCommentId,
         { message: 'zup' },
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(updateComment.payload).toBeDefined();
       const comments = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0]).toEqual(updateComment.payload);
     });
@@ -289,7 +296,8 @@ describe('CommentController', () => {
       expect(deleteComment).toEqual('');
       const comments = await commentController.getAllComment(
         content._id,
-        userCredentialRequest
+        userCredentialRequest,
+        { hasRelationshipExpansion: false }
       );
       expect(comments.payload.length).toEqual(0);
     });

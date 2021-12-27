@@ -83,6 +83,7 @@ export class CastcleException extends HttpException {
     else return LocalErrorMessage.default[this.errorStatus.code];
   }
 
+  static REQUEST_URL_NOT_FOUND = new CastcleException('1001');
   static FORBIDDEN = new CastcleException('1007');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
   static CONTENT_NOT_FOUND = new CastcleException('5003');

@@ -46,15 +46,12 @@ import {
   CastcleContentQueryOptions,
   CastcleIncludes,
   CastcleMeta,
-  CastcleQueryOptions,
   CommentDto,
-  CommentsResponse,
   ContentPayloadItem,
   ContentResponse,
   ContentsResponse,
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   FeedItemDto,
   GetLinkPreview,
@@ -117,6 +114,19 @@ export class ContentService {
     @InjectModel('Relationship')
     private relationshipModel: Model<RelationshipDocument>
   ) {}
+
+  /**
+   * @param {string} contentId
+   */
+  getContentById = async (contentId: string) => {
+    const content = await this._contentModel
+      .findOne({ _id: contentId, visibility: EntityVisibility.Publish })
+      .exec();
+
+    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    return content;
+  };
 
   /**
    *
@@ -705,50 +715,6 @@ export class ContentService {
     const comment = await newComment.save();
     await this._updateCommentCounter(comment, author._id);
     return comment;
-  };
-
-  /**
-   * Get Total Comment from content
-   * @param {ContentDocument} content
-   * @param {CastcleQueryOptions} options
-   * @returns {total:number, items:CommentPayload[], pagination:Pagination}
-   */
-  getCommentsFromContent = async (
-    content: ContentDocument,
-    options: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
-  ): Promise<CommentsResponse> => {
-    const filter = {
-      targetRef: {
-        $id: content._id,
-        $ref: 'content'
-      },
-      visibility: EntityVisibility.Publish
-    };
-    const rootComments = await this._commentModel
-      .find(filter)
-      .limit(options.limit)
-      .skip(options.page - 1)
-      .sort(
-        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
-      )
-      .exec();
-    const engagements = await this._engagementModel.find({
-      targetRef: {
-        $in: rootComments.map((rComment) => ({
-          $ref: 'comment',
-          $id: rComment._id
-        }))
-      }
-    });
-    const payloads = await Promise.all(
-      rootComments.map((comment) =>
-        comment.toCommentPayload(this._commentModel, engagements)
-      )
-    );
-    return {
-      payload: payloads,
-      meta: createCastcleMeta(rootComments)
-    };
   };
 
   /**
