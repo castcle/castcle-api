@@ -22,7 +22,7 @@
  */
 
 import { Transform, TransformFnParams } from 'class-transformer';
-import { isString } from 'class-validator';
+import { isEnum, isString } from 'class-validator';
 
 const stringToArrayOfStrings = ({ value }: TransformFnParams) => {
   return isString(value) ? value.split(',') : value;
@@ -30,4 +30,14 @@ const stringToArrayOfStrings = ({ value }: TransformFnParams) => {
 
 export const TransformStringToArrayOfStrings = () => {
   return Transform(stringToArrayOfStrings);
+};
+
+const stringToEnum = (T: any) => {
+  return ({ value }: TransformFnParams) => {
+    return isEnum(value, T) ? value : undefined;
+  };
+};
+
+export const TransformStringToEnum = (T: any) => {
+  return Transform(stringToEnum(T));
 };

@@ -22,7 +22,12 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleQueryOptions, ContentPayloadDto, Pagination } from '.';
+import {
+  CastcleQueryOptions,
+  ContentPayloadDto,
+  Pagination,
+  SortDirection
+} from '.';
 
 export class FeedItemDto {
   content: ContentPayloadDto;
@@ -45,7 +50,7 @@ export const DEFAULT_FEED_QUERY_OPTIONS = {
   mode: FeedItemMode.Current,
   sortBy: {
     field: 'updatedAt',
-    type: 'desc'
+    type: SortDirection.Desc
   },
   page: 1,
   limit: 25

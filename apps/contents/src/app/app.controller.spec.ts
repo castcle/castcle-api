@@ -219,6 +219,7 @@ describe('ContentController', () => {
           type: ContentType.Short,
           castcleId: user.displayId
         },
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
@@ -254,6 +255,7 @@ describe('ContentController', () => {
           type: ContentType.Blog,
           castcleId: user.displayId
         },
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
@@ -297,6 +299,7 @@ describe('ContentController', () => {
           type: ContentType.Short,
           castcleId: newPage.displayId
         },
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
@@ -330,6 +333,7 @@ describe('ContentController', () => {
           type: ContentType.Short,
           castcleId: user.displayId
         },
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
@@ -338,6 +342,7 @@ describe('ContentController', () => {
       console.debug('createResult', result.payload.authorId);
       const getResult = await contentController.getContentFromId(
         result.payload.id,
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
@@ -352,11 +357,7 @@ describe('ContentController', () => {
       const shortPayload = {
         message: 'อุบกขา',
         photo: {
-          contents: [
-            {
-              image: 'testImage'
-            }
-          ]
+          contents: [{ image: 'testImage' }]
         },
         link: [
           {
@@ -365,72 +366,71 @@ describe('ContentController', () => {
           }
         ]
       } as ShortPayload;
+
       const result = await contentController.createFeedContent(
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: user.displayId
         },
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
         } as any
       );
-      const updateContentPayload = {
-        message: 'Hello World'
-      } as ShortPayload;
+
+      const updateContentPayload = { message: 'Hello World' } as ShortPayload;
       const updateResult = await contentController.updateContentFromId(
-        result.payload.id,
         {
           payload: updateContentPayload,
           type: ContentType.Short,
           castcleId: user.displayId
         },
-        {
-          $credential: userCredential,
-          $language: 'th'
-        } as any
+        result.payload.id,
+        { hasRelationshipExpansion: false },
+        { $credential: userCredential, $language: 'th' } as any
       );
+
       expect(updateResult.payload.message).toEqual(
         updateContentPayload.message
       );
+
       const getResult = await contentController.getContentFromId(
         result.payload.id,
+        { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
           $language: 'th'
         } as any
       );
+
       expect(getResult.payload).toEqual(updateResult.payload);
     });
+
     it('should be able to update page content', async () => {
       const updateResult = await contentController.updateContentFromId(
-        payloadId as string,
         {
           type: 'short',
-          payload: {
-            message: 'hibro'
-          },
-          castcleId: 'whatsup'
+          payload: { message: 'hi bro' },
+          castcleId: 'whats up'
         },
-        {
-          $credential: userCredential,
-          $language: 'th'
-        } as any
+        payloadId as string,
+        { hasRelationshipExpansion: false },
+        { $credential: userCredential, $language: 'en' } as any
       );
-      expect(updateResult.payload.message).toEqual('hibro');
+
+      expect(updateResult.payload.message).toEqual('hi bro');
     });
   });
+
   describe('deleteContentFromId() ', () => {
     it('it should be able to delete from page', async () => {
       const deleteResult = await contentController.deleteContentFromId(
         payloadId as string,
-        {
-          $credential: userCredential,
-          $language: 'th'
-        } as any
+        { $credential: userCredential, $language: 'th' } as any
       );
-      expect(deleteResult).toEqual('');
+      expect(deleteResult).toEqual(undefined);
       const getContentResultService = await contentService.getContentFromId(
         payloadId as string
       );

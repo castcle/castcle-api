@@ -32,7 +32,12 @@ import { CredentialDocument } from '../schemas/credential.schema';
 import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument } from '../schemas/content.schema';
-import { ContentType, DEFAULT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
+import {
+  ContentType,
+  DEFAULT_QUERY_OPTIONS,
+  EntityVisibility,
+  SortDirection
+} from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
@@ -343,7 +348,7 @@ describe('ContentService', () => {
       const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
-          type: 'asc'
+          type: SortDirection.Asc
         }
       });
       expect(

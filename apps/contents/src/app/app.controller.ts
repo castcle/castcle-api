@@ -43,14 +43,13 @@ import {
   ContentService,
   NotificationService
 } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
-  CastcleIncludes,
   CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
-  ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
+  ExpansionQuery,
+  GetContentsDto,
   NotificationSource,
   NotificationType,
   SaveContentDto
@@ -59,11 +58,7 @@ import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
-import {
-  ContentTypePipe,
-  LimitPipe,
-  SortByPipe
-} from '@castcle-api/utils/pipes';
+import { SortByPipe } from '@castcle-api/utils/pipes';
 import { CaslAbilityFactory, Action } from '@castcle-api/casl';
 import {
   CastcleAuth,
@@ -78,6 +73,7 @@ import { SaveContentPipe } from './pipes/save-content.pipe';
 import { ReportContentDto } from './dtos';
 
 @CastcleController('1.0')
+@UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 @Controller()
 export class ContentController {
   constructor(
@@ -89,62 +85,56 @@ export class ContentController {
     private contentProducer: ContentProducer,
     private notifyService: NotificationService
   ) {}
-  private readonly logger = new CastLogger(
-    ContentController.name,
-    CastLoggerOptions
-  );
 
-  @ApiBody({
-    type: SaveContentDto
-  })
-  @ApiResponse({
-    status: 201,
-    type: ContentResponse
-  })
+  @ApiBody({ type: SaveContentDto })
+  @ApiResponse({ status: HttpStatus.CREATED, type: ContentResponse })
   @CastcleBasicAuth()
   @Post('feed')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async createFeedContent(
     @Body(new SaveContentPipe()) body: SaveContentDto,
+    @Query() expansionQuery: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const ability = this.caslAbility.createForCredential(req.$credential);
-    if (!ability.can(Action.Create, Content))
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
-    const credentialUser = await this.userService.getUserFromCredential(
+
+    if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
+
+    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const authorizedUser = await this.userService.getUserFromCredential(
       req.$credential
     );
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
-    if (String(user.ownerAccount) === String(credentialUser.ownerAccount)) {
-      const newBody = await this.appService.uploadContentToS3(body, user);
-      const content = await this.contentService.createContentFromUser(
-        user,
-        newBody
-      );
-      //TODO !!! need to remove after done feed
-      this.contentProducer.sendMessage({
-        action: CastcleQueueAction.CreateFeedItemToEveryOne,
-        id: content._id
-      });
 
-      return this.appService.convertContentToContentResponse(content);
-    } else {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+    if (String(user.ownerAccount) !== String(authorizedUser.ownerAccount)) {
+      throw CastcleException.FORBIDDEN;
     }
+
+    const uploadedBody = await this.appService.uploadContentToS3(body, user);
+    const content = await this.contentService.createContentFromUser(
+      user,
+      uploadedBody
+    );
+
+    this.contentProducer.sendMessage({
+      action: CastcleQueueAction.CreateFeedItemToEveryOne,
+      id: content._id
+    });
+
+    return expansionQuery.hasRelationshipExpansion
+      ? this.contentService.convertContentToContentResponse(
+          authorizedUser,
+          content
+        )
+      : this.appService.convertContentToContentResponse(content);
   }
 
-  @ApiOkResponse({
-    type: ContentResponse
-  })
+  @ApiOkResponse({ type: ContentResponse })
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':id')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContentFromId(
     @Param('id') id: string,
+    @Query() expansionQuery: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
@@ -154,11 +144,14 @@ export class ContentController {
         content,
         user
       );
-    console.debug('engagements', engagements);
-    return this.appService.convertContentToContentResponse(
-      content,
-      engagements
-    );
+
+    return expansionQuery.hasRelationshipExpansion
+      ? this.contentService.convertContentToContentResponse(
+          user,
+          content,
+          engagements
+        )
+      : this.appService.convertContentToContentResponse(content, engagements);
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
@@ -213,84 +206,73 @@ export class ContentController {
       );
   }
 
-  @ApiBody({
-    type: SaveContentDto
-  })
-  @ApiOkResponse({
-    type: ContentResponse
-  })
+  @ApiBody({ type: SaveContentDto })
+  @ApiOkResponse({ type: ContentResponse })
   @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async updateContentFromId(
-    @Param('id') id: string,
     @Body(new SaveContentPipe()) body: SaveContentDto,
+    @Param('id') id: string,
+    @Query() expansionQuery: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
+
     await this._checkPermissionForUpdate(content, req);
+
     const user = await this.userService.getUserFromCredential(req.$credential);
     const newBody = await this.appService.uploadContentToS3(body, user);
-    console.debug('newBody', newBody);
+
     const updatedContent = await this.contentService.updateContentFromId(
       content._id,
       newBody
     );
-    console.debug('updatedContent', updatedContent);
-    return {
-      payload: updatedContent.toContentPayloadItem()
-    } as ContentResponse;
+
+    return expansionQuery.hasRelationshipExpansion
+      ? this.contentService.convertContentToContentResponse(
+          user,
+          updatedContent
+        )
+      : this.appService.convertContentToContentResponse(updatedContent);
   }
 
-  @ApiResponse({
-    status: 204
-  })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @CastleClearCacheAuth(CacheKeyName.Contents)
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async deleteContentFromId(
     @Param('id') id: string,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
+
     await this._checkPermissionForUpdate(content, req);
     await this.contentService.deleteContentFromId(content._id);
-    //content.delete();
-    return '';
   }
 
-  @ApiOkResponse({
-    type: ContentResponse
-  })
+  @ApiOkResponse({ type: ContentResponse })
   @CastcleAuth(CacheKeyName.Contents)
   @Get()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContents(
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
+    @Query() { hasRelationshipExpansion, ...getContentsDto }: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('maxResults', LimitPipe) maxResults?: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string,
-    @Query('type', ContentTypePipe)
-    contentTypeOption: ContentType = DEFAULT_CONTENT_QUERY_OPTIONS.type
-  ) {
-    const result = await this.contentService.getContentsForAdmin({
-      maxResults: maxResults,
-      sinceId: sinceId,
-      untilId: untilId,
-      sortBy: sortByOption,
-      type: contentTypeOption
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+  ): Promise<ContentsResponse> {
+    const user = await this.userService.getUserFromCredential($credential);
+    const { items, meta } = await this.contentService.getContentsForAdmin({
+      ...getContentsDto,
+      sortBy: sortByOption
     });
 
-    return {
-      payload: result.items.map((c) => c.toContentPayloadItem()),
-      includes: new CastcleIncludes({
-        users: result.items.map(({ author }) => author)
-      }),
-      meta: result.meta
-    } as ContentsResponse;
+    return this.contentService.convertContentsToContentResponse(
+      user,
+      items,
+      meta,
+      hasRelationshipExpansion
+    );
   }
 
   @ApiResponse({

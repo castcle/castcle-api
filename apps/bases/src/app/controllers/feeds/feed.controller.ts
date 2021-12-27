@@ -96,10 +96,7 @@ export class FeedController {
     @Query('mode')
     mode: string = DEFAULT_FEED_QUERY_OPTIONS.mode,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_FEED_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_FEED_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_FEED_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)

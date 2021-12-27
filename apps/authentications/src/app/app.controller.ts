@@ -28,7 +28,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Host } from '@castcle-api/utils';
+import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
   CastcleController,
@@ -154,15 +154,15 @@ export class AuthenticationController {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
         );
-        console.debug(
-          'embedCredentialByDeviceUUID',
-          embedCredentialByDeviceUUID
-        );
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
             .findById(embedCredentialByDeviceUUID._id)
             .exec();
+          req.$credential.account.geolocation = req['$geolocation'];
+          req.$credential.markModified('account');
+          req.$credential.save();
         } else {
+          account.geolocation = req['$geolocation'];
           req.$credential = await this.authService.linkCredentialToAccount(
             req.$credential,
             account
@@ -239,8 +239,8 @@ export class AuthenticationController {
     status: 400,
     description: 'will show if some of header is missing'
   })
-  @UseInterceptors(GuestInterceptor)
   @CastcleTrack()
+  @UseInterceptors(GuestInterceptor)
   @Post('guestLogin')
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
