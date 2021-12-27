@@ -33,7 +33,7 @@ import {
   createPagination
 } from '../utils/common';
 import { Account } from '../schemas/account.schema';
-import { CastcleIncludes, CastcleMeta, EntityVisibility } from '../dtos';
+import { CastcleMeta, EntityVisibility } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
@@ -45,7 +45,7 @@ import {
   FeedItemPayloadItem
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
-import { Author } from '../dtos/content.dto';
+import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { FeedQuery, UserField } from '../dtos';
@@ -187,38 +187,42 @@ export class RankerService {
     const contentIds = documents.map((item) => item.content.id);
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
-    console.log('answer', answer);
-    const newAnswer = Object.keys(answer)
-      .map((id) => {
-        const feedItem = documents.find((k) => k.content.id == id);
-        return {
-          feedItem,
-          score: answer[id] as number
-        };
-      })
-      .sort((a, b) => (a.score > b.score ? -1 : 1))
-      .map((t) => t.feedItem);
-    let feedPayload: FeedItemPayloadItem[] = newAnswer.map(
-      (item) =>
-        ({
-          id: item.id,
-          feature: {
-            slug: 'feed',
-            key: 'feature.feed',
-            name: 'Feed'
-          },
-          circle: {
-            id: 'for-you',
-            key: 'circle.forYou',
-            name: 'For You',
-            slug: 'forYou'
-          },
-          payload: signedContentPayloadItem(
-            transformContentPayloadToV2(item.content, [])
-          ),
-          type: 'content'
-        } as FeedItemPayloadItem)
-    );
+    let feedPayload: FeedItemPayloadItem[] = [];
+    let newAnswer: any[] = [];
+    if (answer) {
+      newAnswer = Object.keys(answer)
+        .map((id) => {
+          const feedItem = documents.find((k) => k.content.id == id);
+          return {
+            feedItem,
+            score: answer[id] as number
+          };
+        })
+        .sort((a, b) => (a.score > b.score ? -1 : 1))
+        .map((t) => t.feedItem);
+      feedPayload = newAnswer.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: signedContentPayloadItem(
+              transformContentPayloadToV2(item.content, [])
+            ),
+            type: 'content'
+          } as FeedItemPayloadItem)
+      );
+    }
+
     const includes = {
       users: newAnswer.map((item) => item.content.author),
       casts: newAnswer

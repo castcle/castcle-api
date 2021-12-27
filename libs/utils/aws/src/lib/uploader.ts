@@ -144,9 +144,9 @@ export class Uploader {
   ) => {
     try {
       const saveName = Uploader.getFileSavedNameFromOptions(fileType, options);
-      console.debug('saveName', saveName);
-      console.debug('bucket', this.bucket);
-      console.debug('key', `${this.destination}/${saveName}`);
+      //console.debug('saveName', saveName);
+      //console.debug('bucket', this.bucket);
+      //console.debug('key', `${this.destination}/${saveName}`);
 
       return this.s3
         .upload({
