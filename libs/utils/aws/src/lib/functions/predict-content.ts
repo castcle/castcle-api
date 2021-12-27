@@ -32,7 +32,7 @@ export const predictContents = (accountId: string, contents: string[]) => {
     accountId,
     contents
   });
-  const p = new Promise<{ [id: string]: number }[]>((res, rej) => {
+  const p = new Promise<{ [id: string]: number }>((res, rej) => {
     const now = new Date(); //for now
     lamda.invoke(
       {
