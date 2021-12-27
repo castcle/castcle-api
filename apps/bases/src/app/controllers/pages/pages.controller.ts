@@ -347,29 +347,6 @@ export class PageController {
     enum: SortByEnum,
     required: false
   })
-<<<<<<< HEAD
-  @ApiQuery({
-    name: 'sinceId',
-    type: String,
-    required: false
-  })
-  @ApiQuery({
-    name: 'untilId',
-    type: String,
-    required: false
-  })
-  @ApiQuery({
-    name: 'maxmaxResultsresult',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'type',
-    enum: ContentType,
-    required: false
-  })
-=======
->>>>>>> 385050b (Add missing validation pipes)
   @Get('pages/:id/contents')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getPageContents(
