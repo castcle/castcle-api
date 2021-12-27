@@ -767,4 +767,17 @@ Message: ${message}`
     this.logger.log('Success update verify mobile to user');
     return user;
   };
+
+  userSettings = async (accountId: string, languageCode: string[]) => {
+    await this._accountModel
+      .updateOne(
+        { _id: accountId },
+        {
+          preferences: {
+            langagues: languageCode
+          }
+        }
+      )
+      .exec();
+  };
 }
