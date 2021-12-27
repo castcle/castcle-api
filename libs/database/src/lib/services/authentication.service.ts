@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleName, CastcleRegExp } from '@castcle-api/utils';
+import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -178,7 +178,6 @@ export class AuthenticationService {
     account: AccountDocument
   ) {
     console.log('want to link');
-    console.log(credential, account);
     if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
     }
@@ -194,7 +193,8 @@ export class AuthenticationService {
       visibility: account.visibility,
       isGuest: account.isGuest,
       preferences: account.preferences,
-      activateDate: account.activateDate //this to add activateDate to primary account
+      activateDate: account.activateDate, //this to add activateDate to primary account
+      geolocation: account.geolocation
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
@@ -218,7 +218,7 @@ export class AuthenticationService {
         )
         .exec();
     } else return null; //this should not happen
-
+    credential.markModified('account');
     //set new account credential to current account
     return credential.save();
   }

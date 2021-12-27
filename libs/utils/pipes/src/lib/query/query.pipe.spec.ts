@@ -21,17 +21,8 @@
  * or have any questions.
  */
 
-import {
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  DEFAULT_QUERY_OPTIONS
-} from '@castcle-api/database/dtos';
-import {
-  ContentTypePipe,
-  LimitPipe,
-  LIMIT_MAX,
-  PagePipe,
-  SortByPipe
-} from './query.pipe';
+import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import { LimitPipe, LIMIT_MAX, PagePipe, SortByPipe } from './query.pipe';
 
 describe('SortByPipe', () => {
   let pipe: SortByPipe;
@@ -77,20 +68,5 @@ describe('PagePipe', () => {
   });
   it(`should return default (${DEFAULT_QUERY_OPTIONS.page}) when pageQuery is not a number`, () => {
     expect(pipe.transform('abc')).toEqual(DEFAULT_QUERY_OPTIONS.page);
-  });
-});
-
-describe('ContentTypePipe', () => {
-  let pipe: ContentTypePipe;
-  beforeAll(() => {
-    pipe = new ContentTypePipe();
-  });
-  it('should return type if it exist in ContentType', () => {
-    expect(pipe.transform('blog')).toEqual('blog');
-  });
-  it(`should return default type (${DEFAULT_CONTENT_QUERY_OPTIONS.type} when type is not exist`, () => {
-    expect(pipe.transform('heello')).toEqual(
-      DEFAULT_CONTENT_QUERY_OPTIONS.type
-    );
   });
 });

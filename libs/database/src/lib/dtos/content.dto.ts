@@ -20,11 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Configs } from '@castcle-api/environments';
+import { TransformStringToEnum } from '@castcle-api/utils/commons';
+import { Image } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
-import { CastcleImage, CastcleIncludes } from '.';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { CastcleImage, SortBy } from './common.dto';
 import { UserVerified } from '../models';
 import { CastcleMeta, QueryOption } from './common.dto';
+import { FeedQuery } from './feed.dto';
 
 export class Url {
   @ApiProperty()
@@ -264,13 +268,6 @@ export class ContentPayloadItem {
   'updatedAt': string;
 }
 
-class AuthorDto {
-  @ApiProperty()
-  id: string;
-  @ApiProperty()
-  type: 'people' | 'page';
-}
-
 export class SaveContentDto {
   @IsString()
   @IsNotEmpty()
@@ -295,10 +292,7 @@ export enum ContentType {
 
 export class CastcleContentQueryOptions extends QueryOption {
   type?: ContentType;
-  sortBy: {
-    field: string;
-    type: 'desc' | 'asc';
-  };
+  sortBy: SortBy;
 }
 
 export const DEFAULT_CONTENT_QUERY_OPTIONS = {
@@ -308,6 +302,25 @@ export const DEFAULT_CONTENT_QUERY_OPTIONS = {
   },
   maxResults: 25
 } as CastcleContentQueryOptions;
+
+export class CastcleIncludes {
+  users: Author[];
+  casts?: ContentPayloadItem[];
+
+  constructor({ casts, users }: CastcleIncludes) {
+    this.casts = casts;
+    this.users = users.filter(
+      (author, index, authors) =>
+        authors.findIndex(({ id }) => String(author.id) == String(id)) === index
+    );
+
+    users.forEach((author) => {
+      author.avatar = author.avatar
+        ? new Image(author.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages;
+    });
+  }
+}
 
 export class ContentResponse {
   @ApiProperty()
@@ -325,4 +338,14 @@ export class ContentsResponse {
 
   @ApiProperty()
   meta: CastcleMeta;
+}
+
+export class GetContentsDto extends FeedQuery {
+  @ApiProperty({
+    enum: ContentType,
+    required: false
+  })
+  @TransformStringToEnum(ContentType)
+  @IsOptional()
+  type?: ContentType;
 }

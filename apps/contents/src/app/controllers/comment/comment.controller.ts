@@ -138,10 +138,7 @@ export class CommentController {
     @Param('id') contentId: string,
     @Req() req: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption: {
-      field: string;
-      type: 'desc' | 'asc';
-    } = DEFAULT_QUERY_OPTIONS.sortBy,
+    sortByOption = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)

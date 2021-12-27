@@ -1024,4 +1024,31 @@ describe('User Service', () => {
       expect(accountUpdate.mobile.number).toEqual(mobile);
     });
   });
+
+  describe('#userSettings', () => {
+    let user: UserDocument;
+    let account: AccountDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      account = mocksUsers[0].account;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should update mobile and verify user and account', async () => {
+      const expectResult = ['th', 'en'];
+      await service.userSettings(account.id, expectResult);
+      const accountUpdate = await authService.getAccountFromId(account.id);
+
+      expect(accountUpdate).not.toBeNull();
+      expect(accountUpdate.preferences.langagues).toEqual(expectResult);
+    });
+  });
 });

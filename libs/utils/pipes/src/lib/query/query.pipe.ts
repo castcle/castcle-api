@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import {
-  ContentType,
   DEFAULT_QUERY_OPTIONS,
   NotificationSource
 } from '@castcle-api/database/dtos';
@@ -88,28 +87,6 @@ export class LimitPipe implements PipeTransform {
     if (limitQuery && !isNaN(Number(limitQuery)))
       return Number(limitQuery) <= LIMIT_MAX ? Number(limitQuery) : LIMIT_MAX;
     return DEFAULT_QUERY_OPTIONS.limit;
-  }
-}
-
-/**
- * ContentTypePipe will transform to actual type in ContentType Enum default would be 'short'
- */
-@Injectable()
-export class ContentTypePipe implements PipeTransform {
-  /**
-   *
-   * @param {string} typeQuery
-   * @returns {string}
-   */
-  transform(typeQuery?: string): ContentType {
-    if (
-      typeQuery &&
-      (typeQuery === ContentType.Short ||
-        typeQuery === ContentType.Blog ||
-        typeQuery === ContentType.Image)
-    )
-      return typeQuery;
-    return undefined; //
   }
 }
 

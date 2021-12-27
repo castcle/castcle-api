@@ -31,7 +31,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Password } from '@castcle-api/utils';
+import { Password } from '@castcle-api/utils/commons';
 import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
   AppleClient,

@@ -22,7 +22,6 @@
  */
 import { Module } from '@nestjs/common';
 import {
-  ContentTypePipe,
   LimitPipe,
   NotificationSourcePipe,
   PagePipe,
@@ -37,11 +36,4 @@ import {
 })
 export class UtilsPipesModule {}
 
-export {
-  SortByPipe,
-  PagePipe,
-  LimitPipe,
-  ContentTypePipe,
-  SortByEnum,
-  NotificationSourcePipe
-};
+export { SortByPipe, PagePipe, LimitPipe, SortByEnum, NotificationSourcePipe };
