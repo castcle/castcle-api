@@ -30,7 +30,9 @@ import {
   Param,
   Post,
   Put,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { AppService } from '../../app.service';
 import {
@@ -43,7 +45,6 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
   ContentsResponse,
-  ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   PageDto,
   PagesResponse,
@@ -346,6 +347,7 @@ export class PageController {
     enum: SortByEnum,
     required: false
   })
+<<<<<<< HEAD
   @ApiQuery({
     name: 'sinceId',
     type: String,
@@ -366,7 +368,10 @@ export class PageController {
     enum: ContentType,
     required: false
   })
+=======
+>>>>>>> 385050b (Add missing validation pipes)
   @Get('pages/:id/contents')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getPageContents(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
