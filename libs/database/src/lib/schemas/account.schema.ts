@@ -58,6 +58,9 @@ export class Account extends CastcleBase {
     langagues: string[];
   };
 
+  @Prop({ type: Array })
+  seenContents: any[];
+
   @Prop({ type: Object })
   mobile: {
     countryCode: string;

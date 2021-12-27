@@ -32,7 +32,7 @@ import {
   createCastcleMeta,
   createPagination
 } from '../utils/common';
-import { Account } from '../schemas/account.schema';
+import { Account, AccountDocument } from '../schemas/account.schema';
 import { CastcleMeta, EntityVisibility } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
@@ -61,7 +61,8 @@ export class RankerService {
     public _guestFeedItemModel: Model<GuestFeedItemDocument>,
     @InjectModel('Relationship')
     public relationshipModel: Model<RelationshipDocument>,
-    @InjectModel('User') public userModel: Model<UserDocument>
+    @InjectModel('User') public userModel: Model<UserDocument>,
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>
   ) {}
 
   /**
@@ -167,12 +168,18 @@ export class RankerService {
         .findById(query.sinceId || query.untilId)
         .exec();
       if (!refFilter) return this.getGuestFeedItems(query, viewer);
+      //reset
+      viewer.seenContents = [];
     }
     const timeAfterFilter = new Date();
     console.debug(
       '- after filter : ',
       timeAfterFilter.getTime() - startNow.getTime()
     );
+    if (viewer.seenContents)
+      filter['content.id'] = {
+        $nin: viewer.seenContents
+      };
     console.debug('filter', filter);
     const documents = await this._feedItemModel
       .find(filter)
@@ -256,6 +263,17 @@ export class RankerService {
       ? await this.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
 
+    const newSeenContents = viewer.seenContents.concat(
+      feedPayload.map((item) => item.payload.id)
+    );
+    this._accountModel
+      .updateOne(
+        { _id: viewer._id },
+        {
+          seenContents: newSeenContents
+        }
+      )
+      .exec();
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),

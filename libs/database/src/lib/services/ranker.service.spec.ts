@@ -40,6 +40,15 @@ import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { HashtagService } from './hashtag.service';
+jest.mock('@castcle-api/utils/aws', () => ({
+  predictContents: jest.fn((accountIds: string, contents: string[]) => {
+    const map: any = {};
+    contents.forEach((item, index) => {
+      map[item] = index + 1;
+    });
+    return map;
+  })
+}));
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
@@ -109,6 +118,7 @@ describe('Ranker Service', () => {
       providers: providers
     }).compile();
     service = module.get<RankerService>(RankerService);
+
     contentService = module.get<ContentService>(ContentService);
     userService = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
@@ -216,4 +226,16 @@ describe('Ranker Service', () => {
       expect(feedItems.items[2]).toBeUndefined();
     });
   });
+  //TODO !!! Have to add test later on
+  /*describe('#getMemberFeedItemsFromViewer', () => {
+    it('should be able to view normal feed', async() => {
+
+    })
+    it('should fill up content from guestFeed if not so much content right now', async() => {
+
+    })
+    it('should not be able to view called content', async () =>{
+
+    })
+  })*/
 });
