@@ -24,6 +24,7 @@ import {
   AuthenticationService,
   ContentService,
   createCastcleMeta,
+  SocialProvider,
   SocialSyncService,
   UserService
 } from '@castcle-api/database';
@@ -78,7 +79,6 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { SocialProvider } from '@castcle-api/database';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
 import { TargetCastcleDto, UpdateMobileDto, UserSettingsDto } from './dtos/dto';
@@ -881,11 +881,7 @@ export class UserController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    if (
-      !body ||
-      !body.preferredLanguages ||
-      body.preferredLanguages.length === 0
-    ) {
+    if (!body?.preferredLanguages?.length) {
       logger.error('Payload is empty.');
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
     }
