@@ -82,6 +82,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
       console.debug('wrong ip', request.$ip);
     }
     try {
+      console.log('update ip ', credential.accessToken);
       const account = await this.authService.getAccountFromCredential(
         credential
       );

@@ -502,7 +502,9 @@ describe('Authentication Service', () => {
           visibility: EntityVisibility.Publish,
           preferences: {
             languages: ['en', 'en']
-          }
+          },
+          activateDate: undefined,
+          geolocation: null
         });
       });
     });
