@@ -33,7 +33,7 @@ import {
   createPagination
 } from '../utils/common';
 import { Account, AccountDocument } from '../schemas/account.schema';
-import { CastcleMeta, EntityVisibility } from '../dtos/common.dto';
+import { CastcleMeta } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
@@ -48,7 +48,8 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedQuery, UserField } from '../dtos';
+import { FeedQuery } from '../dtos';
+import { UserService } from './user.service';
 
 @Injectable()
 export class RankerService {
@@ -62,7 +63,8 @@ export class RankerService {
     @InjectModel('Relationship')
     public relationshipModel: Model<RelationshipDocument>,
     @InjectModel('User') public userModel: Model<UserDocument>,
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    private userService: UserService
   ) {}
 
   /**
@@ -122,8 +124,8 @@ export class RankerService {
     );
 
     const includes = new CastcleIncludes({
-      users: query.userFields?.includes(UserField.Relationships)
-        ? await this.getIncludesUsers(viewer, authors)
+      users: query.hasRelationshipExpansion
+        ? await this.userService.getIncludesUsers(viewer, authors)
         : authors.map((author) => author.toIncludeUser())
     });
 
@@ -259,8 +261,8 @@ export class RankerService {
     }
 
     const authors = includes.users.map((author) => new Author(author));
-    includes.users = query.userFields?.includes(UserField.Relationships)
-      ? await this.getIncludesUsers(viewer, authors)
+    includes.users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
 
     const newSeenContents = viewer.seenContents.concat(
@@ -279,40 +281,5 @@ export class RankerService {
       includes: new CastcleIncludes(includes),
       meta: meta
     } as GuestFeedItemPayload;
-  };
-
-  getIncludesUsers = async (viewerAccount: Account, authors: Author[]) => {
-    const viewer = await this.userModel.findOne({
-      ownerAccount: viewerAccount._id
-    });
-
-    const authorIds = authors.map(({ id }) => id as any);
-    const relationships = await this.relationshipModel.find({
-      $or: [
-        { user: viewer._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer._id }
-      ],
-      visibility: EntityVisibility.Publish
-    });
-
-    return authors.map((author) => {
-      const authorRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(user) === String(author.id) &&
-          String(followedUser) === String(viewer.id)
-      );
-
-      const getterRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(followedUser) === String(author.id) &&
-          String(user) === String(viewer.id)
-      );
-
-      const blocked = Boolean(getterRelationship?.blocking);
-      const blocking = Boolean(authorRelationship?.blocking);
-      const followed = Boolean(getterRelationship?.following);
-
-      return author.toIncludeUser({ blocked, blocking, followed });
-    });
   };
 }
