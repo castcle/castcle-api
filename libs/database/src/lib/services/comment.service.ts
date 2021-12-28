@@ -42,7 +42,7 @@ export class CommentService {
     expansion: ExpansionQuery = { hasRelationshipExpansion: false }
   ) {
     const revisionCount = await this.revisionModel
-      .count({
+      .countDocuments({
         objectRef: {
           $id: comment._id,
           $ref: 'comment'

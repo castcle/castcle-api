@@ -92,7 +92,7 @@ export class RankerService {
       .limit(options.limit)
       .sort('-aggregator.createTime')
       .exec();
-    const totalFeedItems = await this._feedItemModel.count(filter);
+    const totalFeedItems = await this._feedItemModel.countDocuments(filter);
     return {
       total: totalFeedItems,
       items: feedItemResult,
