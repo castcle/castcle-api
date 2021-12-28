@@ -32,8 +32,8 @@ import {
   createCastcleMeta,
   createPagination
 } from '../utils/common';
-import { Account } from '../schemas/account.schema';
-import { CastcleIncludes, CastcleMeta, EntityVisibility } from '../dtos';
+import { Account, AccountDocument } from '../schemas/account.schema';
+import { CastcleMeta, EntityVisibility } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
@@ -45,7 +45,7 @@ import {
   FeedItemPayloadItem
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
-import { Author } from '../dtos/content.dto';
+import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { FeedQuery, UserField } from '../dtos';
@@ -61,7 +61,8 @@ export class RankerService {
     public _guestFeedItemModel: Model<GuestFeedItemDocument>,
     @InjectModel('Relationship')
     public relationshipModel: Model<RelationshipDocument>,
-    @InjectModel('User') public userModel: Model<UserDocument>
+    @InjectModel('User') public userModel: Model<UserDocument>,
+    @InjectModel('Account') public _accountModel: Model<AccountDocument>
   ) {}
 
   /**
@@ -167,12 +168,18 @@ export class RankerService {
         .findById(query.sinceId || query.untilId)
         .exec();
       if (!refFilter) return this.getGuestFeedItems(query, viewer);
+      //reset
+      viewer.seenContents = [];
     }
     const timeAfterFilter = new Date();
     console.debug(
       '- after filter : ',
       timeAfterFilter.getTime() - startNow.getTime()
     );
+    if (viewer.seenContents)
+      filter['content.id'] = {
+        $nin: viewer.seenContents
+      };
     console.debug('filter', filter);
     const documents = await this._feedItemModel
       .find(filter)
@@ -187,38 +194,42 @@ export class RankerService {
     const contentIds = documents.map((item) => item.content.id);
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
-    console.log('answer', answer);
-    const newAnswer = Object.keys(answer)
-      .map((id) => {
-        const feedItem = documents.find((k) => k.content.id == id);
-        return {
-          feedItem,
-          score: answer[id] as number
-        };
-      })
-      .sort((a, b) => (a.score > b.score ? -1 : 1))
-      .map((t) => t.feedItem);
-    let feedPayload: FeedItemPayloadItem[] = newAnswer.map(
-      (item) =>
-        ({
-          id: item.id,
-          feature: {
-            slug: 'feed',
-            key: 'feature.feed',
-            name: 'Feed'
-          },
-          circle: {
-            id: 'for-you',
-            key: 'circle.forYou',
-            name: 'For You',
-            slug: 'forYou'
-          },
-          payload: signedContentPayloadItem(
-            transformContentPayloadToV2(item.content, [])
-          ),
-          type: 'content'
-        } as FeedItemPayloadItem)
-    );
+    let feedPayload: FeedItemPayloadItem[] = [];
+    let newAnswer: any[] = [];
+    if (answer) {
+      newAnswer = Object.keys(answer)
+        .map((id) => {
+          const feedItem = documents.find((k) => k.content.id == id);
+          return {
+            feedItem,
+            score: answer[id] as number
+          };
+        })
+        .sort((a, b) => (a.score > b.score ? -1 : 1))
+        .map((t) => t.feedItem);
+      feedPayload = newAnswer.map(
+        (item) =>
+          ({
+            id: item.id,
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed'
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou'
+            },
+            payload: signedContentPayloadItem(
+              transformContentPayloadToV2(item.content, [])
+            ),
+            type: 'content'
+          } as FeedItemPayloadItem)
+      );
+    }
+
     const includes = {
       users: newAnswer.map((item) => item.content.author),
       casts: newAnswer
@@ -252,6 +263,17 @@ export class RankerService {
       ? await this.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
 
+    const newSeenContents = viewer.seenContents.concat(
+      feedPayload.map((item) => item.payload.id)
+    );
+    this._accountModel
+      .updateOne(
+        { _id: viewer._id },
+        {
+          seenContents: newSeenContents
+        }
+      )
+      .exec();
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),

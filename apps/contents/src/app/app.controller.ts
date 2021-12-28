@@ -90,6 +90,7 @@ export class ContentController {
   @ApiResponse({ status: HttpStatus.CREATED, type: ContentResponse })
   @CastcleBasicAuth()
   @Post('feed')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async createFeedContent(
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Query() expansionQuery: ExpansionQuery,
@@ -130,6 +131,7 @@ export class ContentController {
   @ApiOkResponse({ type: ContentResponse })
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':id')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContentFromId(
     @Param('id') id: string,
     @Query() expansionQuery: ExpansionQuery,
@@ -208,6 +210,7 @@ export class ContentController {
   @ApiOkResponse({ type: ContentResponse })
   @CastleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async updateContentFromId(
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Param('id') id: string,
@@ -251,6 +254,7 @@ export class ContentController {
   @ApiOkResponse({ type: ContentResponse })
   @CastcleAuth(CacheKeyName.Contents)
   @Get()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContents(
     @Req() { $credential }: CredentialRequest,
     @Query() { hasRelationshipExpansion, ...getContentsDto }: GetContentsDto,
@@ -288,9 +292,12 @@ export class ContentController {
     const content = await this._getContentIfExist(id, req);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.likeContent(content, user);
+
+    if (user.id === castcleId) return;
+
     //TODO !!! has to implement message libs and i18N and message functions
     this.notifyService.notifyToUser({
-      type: NotificationType.Content,
+      type: NotificationType.Like,
       message: `${user.displayName} ถูกใจโพสของคุณ`,
       read: false,
       source: NotificationSource.Profile,
@@ -300,7 +307,6 @@ export class ContentController {
       },
       account: { _id: content.author.id }
     });
-    return '';
   }
 
   @ApiResponse({

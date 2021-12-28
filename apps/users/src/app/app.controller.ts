@@ -396,6 +396,7 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id/contents')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getUserContents(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,

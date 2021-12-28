@@ -178,7 +178,6 @@ export class AuthenticationService {
     account: AccountDocument
   ) {
     console.log('want to link');
-    console.log(credential, account);
     if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
     }
@@ -194,7 +193,8 @@ export class AuthenticationService {
       visibility: account.visibility,
       isGuest: account.isGuest,
       preferences: account.preferences,
-      activateDate: account.activateDate //this to add activateDate to primary account
+      activateDate: account.activateDate, //this to add activateDate to primary account
+      geolocation: account.geolocation
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
@@ -218,7 +218,7 @@ export class AuthenticationService {
         )
         .exec();
     } else return null; //this should not happen
-
+    credential.markModified('account');
     //set new account credential to current account
     return credential.save();
   }

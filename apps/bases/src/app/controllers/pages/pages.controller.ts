@@ -30,7 +30,9 @@ import {
   Param,
   Post,
   Put,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import { AppService } from '../../app.service';
 import {
@@ -43,7 +45,6 @@ import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
   ContentsResponse,
-  ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   PageDto,
   PagesResponse,
@@ -346,22 +347,8 @@ export class PageController {
     enum: SortByEnum,
     required: false
   })
-  @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'type',
-    enum: ContentType,
-    required: false
-  })
   @Get('pages/:id/contents')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getPageContents(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
@@ -369,14 +356,31 @@ export class PageController {
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
+    const user = await this.userService.getUserFromCredential(req.$credential);
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page.id, {
       ...getContentsDto,
       sortBy: sortByOption
     });
 
+    const engagements =
+      await this.contentService.getAllEngagementFromContentsAndUser(
+        contents.items,
+        user?.id
+      );
+
+    const payload = contents.items.map((content) => {
+      const contentEngagements = engagements.filter(
+        (eng) =>
+          String(eng.targetRef.$id) === String(content._id) ||
+          String(eng.targetRef.oid) === String(content.id)
+      );
+
+      return content.toContentPayloadItem(contentEngagements);
+    });
+
     return {
-      payload: contents.items.map((c) => c.toContentPayloadItem()),
+      payload,
       includes: new CastcleIncludes({
         users: contents.items.map(({ author }) => new Author(author))
       }),
