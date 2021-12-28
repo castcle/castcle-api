@@ -28,6 +28,7 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
+  Author,
   CastcleIncludes,
   ContentsResponse,
   ContentType,
@@ -419,6 +420,12 @@ export class UserController {
         contents.items,
         user?.id
       );
+
+    const authors = contents.items.map(({ author }) => new Author(author));
+    const includeUsers = getContentsDto.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers($credential.account, authors)
+      : authors;
+
     return {
       payload: contents.items.map((item) => {
         const subEngagements = engagements.filter(
@@ -428,9 +435,7 @@ export class UserController {
         );
         return item.toContentPayloadItem(subEngagements);
       }),
-      includes: new CastcleIncludes({
-        users: contents.items.map(({ author }) => author)
-      }),
+      includes: new CastcleIncludes({ users: includeUsers }),
       meta: createCastcleMeta(contents.items)
     } as ContentsResponse;
   }
