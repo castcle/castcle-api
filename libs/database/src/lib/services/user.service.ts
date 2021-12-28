@@ -30,7 +30,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { CastcleQueryOptions } from '../dtos';
+import { Author, CastcleQueryOptions } from '../dtos';
 import {
   CastcleQueueAction,
   DEFAULT_QUERY_OPTIONS,
@@ -39,7 +39,7 @@ import {
 } from '../dtos/common.dto';
 import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { CredentialDocument, CredentialModel } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
+import { Account, AccountDocument } from '../schemas/account.schema';
 import { ContentDocument } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
@@ -779,5 +779,40 @@ Message: ${message}`
         }
       )
       .exec();
+  };
+
+  getIncludesUsers = async (viewerAccount: Account, authors: Author[]) => {
+    const viewer = await this._userModel.findOne({
+      ownerAccount: viewerAccount._id
+    });
+
+    const authorIds = authors.map(({ id }) => id as any);
+    const relationships = await this._relationshipModel.find({
+      $or: [
+        { user: viewer?._id, followedUser: { $in: authorIds } },
+        { user: { $in: authorIds }, followedUser: viewer?._id }
+      ],
+      visibility: EntityVisibility.Publish
+    });
+
+    return authors.map((author) => {
+      const authorRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(user) === String(author.id) &&
+          String(followedUser) === String(viewer?.id)
+      );
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer?.id)
+      );
+
+      const blocked = Boolean(getterRelationship?.blocking);
+      const blocking = Boolean(authorRelationship?.blocking);
+      const followed = Boolean(getterRelationship?.following);
+
+      return author.toIncludeUser({ blocked, blocking, followed });
+    });
   };
 }
