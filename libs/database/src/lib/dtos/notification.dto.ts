@@ -56,6 +56,9 @@ export class NotificationPayloadDto {
   source: string;
 
   @ApiProperty()
+  type: string;
+
+  @ApiProperty()
   content?: ObjectRef;
 
   @ApiProperty()
