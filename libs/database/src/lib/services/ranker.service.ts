@@ -48,7 +48,7 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedQuery, UserField } from '../dtos';
+import { FeedQuery } from '../dtos';
 
 @Injectable()
 export class RankerService {
@@ -122,7 +122,7 @@ export class RankerService {
     );
 
     const includes = new CastcleIncludes({
-      users: query.userFields?.includes(UserField.Relationships)
+      users: query.hasRelationshipExpansion
         ? await this.getIncludesUsers(viewer, authors)
         : authors.map((author) => author.toIncludeUser())
     });
@@ -259,7 +259,7 @@ export class RankerService {
     }
 
     const authors = includes.users.map((author) => new Author(author));
-    includes.users = query.userFields?.includes(UserField.Relationships)
+    includes.users = query.hasRelationshipExpansion
       ? await this.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
 
@@ -289,8 +289,8 @@ export class RankerService {
     const authorIds = authors.map(({ id }) => id as any);
     const relationships = await this.relationshipModel.find({
       $or: [
-        { user: viewer._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer._id }
+        { user: viewer?._id, followedUser: { $in: authorIds } },
+        { user: { $in: authorIds }, followedUser: viewer?._id }
       ],
       visibility: EntityVisibility.Publish
     });
@@ -299,13 +299,13 @@ export class RankerService {
       const authorRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(user) === String(author.id) &&
-          String(followedUser) === String(viewer.id)
+          String(followedUser) === String(viewer?.id)
       );
 
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
-          String(user) === String(viewer.id)
+          String(user) === String(viewer?.id)
       );
 
       const blocked = Boolean(getterRelationship?.blocking);
