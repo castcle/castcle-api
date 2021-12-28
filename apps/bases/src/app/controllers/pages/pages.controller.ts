@@ -379,11 +379,17 @@ export class PageController {
       return content.toContentPayloadItem(contentEngagements);
     });
 
+    const authors = contents.items.map(({ author }) => new Author(author));
+    const includeUsers = getContentsDto.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(
+          req.$credential.account,
+          authors
+        )
+      : authors;
+
     return {
       payload,
-      includes: new CastcleIncludes({
-        users: contents.items.map(({ author }) => new Author(author))
-      }),
+      includes: new CastcleIncludes({ users: includeUsers }),
       meta: createCastcleMeta(contents.items)
     };
   }
