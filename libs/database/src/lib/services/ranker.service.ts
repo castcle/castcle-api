@@ -123,11 +123,19 @@ export class RankerService {
       (feedItem) => new Author(feedItem.content.author)
     );
 
-    const includes = new CastcleIncludes({
-      users: query.hasRelationshipExpansion
-        ? await this.userService.getIncludesUsers(viewer, authors)
-        : authors.map((author) => author.toIncludeUser())
-    });
+    const casts = feedItems
+      .map((feedItem) => {
+        if (!feedItem.content?.originalPost) return;
+
+        return toSignedContentPayloadItem(feedItem.content.originalPost);
+      })
+      .filter(Boolean);
+
+    const users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, authors)
+      : authors.map((author) => author.toIncludeUser());
+
+    const includes = new CastcleIncludes({ casts, users });
 
     return {
       payload: feedItems.map(

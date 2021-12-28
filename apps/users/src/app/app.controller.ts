@@ -23,16 +23,12 @@
 import {
   AuthenticationService,
   ContentService,
-  createCastcleMeta,
   SocialProvider,
   SocialSyncService,
   UserService
 } from '@castcle-api/database';
 import {
-  Author,
-  CastcleIncludes,
   ContentsResponse,
-  ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   FollowResponse,
@@ -287,9 +283,7 @@ export class UserController {
     }
   }
 
-  @ApiOkResponse({
-    type: ContentsResponse
-  })
+  @ApiOkResponse({ type: ContentsResponse })
   @ApiQuery({
     name: 'sinceId',
     required: false
@@ -305,48 +299,24 @@ export class UserController {
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/contents')
   async getMyContents(
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string,
     @Query('maxResult', LimitPipe)
-    limitOption: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
+    maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
   ): Promise<ContentsResponse> {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
-      const contents = await this.contentService.getContentsFromUser(user.id, {
-        sinceId: sinceId,
-        sortBy: sortByOption,
-        untilId: untilId,
-        maxResults: limitOption
-      });
-      const engagements =
-        await this.contentService.getAllEngagementFromContentsAndUser(
-          contents.items,
-          user.id
-        );
+    const user = await this.userService.getUserFromCredential($credential);
 
-      return {
-        payload: contents.items.map((item) => {
-          const subEngagements = engagements.filter(
-            (eng) =>
-              String(eng.targetRef.$id) === String(item._id) ||
-              String(eng.targetRef.oid) === String(item.id)
-          );
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
-          return item.toContentPayloadItem(subEngagements);
-        }),
-        includes: new CastcleIncludes({
-          users: contents.items.map(({ author }) => author)
-        }),
-        meta: createCastcleMeta(contents.items)
-      } as ContentsResponse;
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    const { items: contents } = await this.contentService.getContentsFromUser(
+      user.id,
+      { sinceId, sortBy, untilId, maxResults }
+    );
+
+    return this.contentService.convertContentsToContentResponse(user, contents);
   }
 
   @ApiOkResponse({
@@ -371,28 +341,10 @@ export class UserController {
     return { pagination, payload: pages as PageResponseDto[] };
   }
 
-  @ApiOkResponse({
-    type: ContentsResponse
-  })
-  @ApiQuery({ name: 'type', enum: ContentType })
+  @ApiOkResponse({ type: ContentsResponse })
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
-  })
-  @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false
-  })
-  @ApiQuery({
-    name: 'type',
-    enum: ContentType,
     required: false
   })
   @CastcleAuth(CacheKeyName.Users)
@@ -403,41 +355,23 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
-    const user = await this.userService.getUserFromCredential($credential);
-    const targetUser = await this.userService.getById(
-      user,
-      id,
-      UserType.People
-    );
-    const contents = await this.contentService.getContentsFromUser(
-      targetUser.id,
-      { ...getContentsDto, sortBy: sortByOption }
-    );
-    const engagements =
-      await this.contentService.getAllEngagementFromContentsAndUser(
-        contents.items,
-        user?.id
-      );
+    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
 
-    const authors = contents.items.map(({ author }) => new Author(author));
-    const includeUsers = getContentsDto.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers($credential.account, authors)
-      : authors;
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
-    return {
-      payload: contents.items.map((item) => {
-        const subEngagements = engagements.filter(
-          (eng) =>
-            String(eng.targetRef.$id) === String(item._id) ||
-            String(eng.targetRef.oid) === String(item.id)
-        );
-        return item.toContentPayloadItem(subEngagements);
-      }),
-      includes: new CastcleIncludes({ users: includeUsers }),
-      meta: createCastcleMeta(contents.items)
-    } as ContentsResponse;
+    const requester = await this.userService.getUserFromCredential($credential);
+    const { items: contents } = await this.contentService.getContentsFromUser(
+      user.id,
+      { ...getContentsDto, sortBy }
+    );
+
+    return this.contentService.convertContentsToContentResponse(
+      requester,
+      contents,
+      getContentsDto.hasRelationshipExpansion
+    );
   }
 
   /**

@@ -38,8 +38,7 @@ import { AppService } from '../../app.service';
 import {
   AuthenticationService,
   UserService,
-  ContentService,
-  createCastcleMeta
+  ContentService
 } from '@castcle-api/database';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
@@ -51,8 +50,6 @@ import {
   UpdatePageDto,
   PageResponseDto,
   DEFAULT_QUERY_OPTIONS,
-  CastcleIncludes,
-  Author,
   GetContentsDto
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -129,30 +126,6 @@ export class PageController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
-    else
-      throw new CastcleException(
-        CastcleStatus.REQUEST_URL_NOT_FOUND,
-        req.$language
-      );
-  };
-
-  /**
-   * get Page(UserDocument) from idOrCastcleId if ownerAccount of page is not same in req.$credential will throw CastcleStatus.INVALID_ACCESS_TOKEN
-   * @param {string} idOrCastCleId
-   * @param {CredentialRequest} req
-   * @returns {UserDocument} User schema that got from userService.getUserFromId() or authService.getUserFromCastcleId()
-   */
-  _getPageByIdOrCastcleId = async (
-    idOrCastCleId: string,
-    req: CredentialRequest
-  ) => {
-    const idResult = await this.userService.getUserFromId(idOrCastCleId);
-    if (idResult && idResult.type === UserType.Page) return idResult;
-    const castcleIdResult = await this.authService.getUserFromCastcleId(
-      idOrCastCleId
-    );
-    if (castcleIdResult && castcleIdResult.type === UserType.Page)
-      return castcleIdResult;
     else
       throw new CastcleException(
         CastcleStatus.REQUEST_URL_NOT_FOUND,
@@ -338,9 +311,7 @@ export class PageController {
    * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
    */
 
-  @ApiOkResponse({
-    type: ContentResponse
-  })
+  @ApiOkResponse({ type: ContentResponse })
   @CastcleAuth(CacheKeyName.Pages)
   @ApiQuery({
     name: 'sortBy',
@@ -351,46 +322,25 @@ export class PageController {
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getPageContents(
     @Param('id') id: string,
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const page = await this._getPageByIdOrCastcleId(id, req);
-    const contents = await this.contentService.getContentsFromUser(page.id, {
-      ...getContentsDto,
-      sortBy: sortByOption
-    });
+    const page = await this.userService.getByIdOrCastcleId(id, UserType.Page);
 
-    const engagements =
-      await this.contentService.getAllEngagementFromContentsAndUser(
-        contents.items,
-        user?.id
-      );
+    if (!page) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
-    const payload = contents.items.map((content) => {
-      const contentEngagements = engagements.filter(
-        (eng) =>
-          String(eng.targetRef.$id) === String(content._id) ||
-          String(eng.targetRef.oid) === String(content.id)
-      );
+    const requester = await this.userService.getUserFromCredential($credential);
+    const { items: contents } = await this.contentService.getContentsFromUser(
+      page.id,
+      { ...getContentsDto, sortBy }
+    );
 
-      return content.toContentPayloadItem(contentEngagements);
-    });
-
-    const authors = contents.items.map(({ author }) => new Author(author));
-    const includeUsers = getContentsDto.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(
-          req.$credential.account,
-          authors
-        )
-      : authors;
-
-    return {
-      payload,
-      includes: new CastcleIncludes({ users: includeUsers }),
-      meta: createCastcleMeta(contents.items)
-    };
+    return this.contentService.convertContentsToContentResponse(
+      requester,
+      contents,
+      getContentsDto.hasRelationshipExpansion
+    );
   }
 }
