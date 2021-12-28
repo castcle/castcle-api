@@ -24,17 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Document, Model } from 'mongoose';
-import { CommentPayload } from '../dtos/comment.dto';
-import { Image } from '@castcle-api/utils/aws';
-import { Configs } from '@castcle-api/environments';
 import { preCommentSave, postCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
 import { ContentDocument, User } from '.';
 import { RevisionDocument } from './revision.schema';
-import { EntityVisibility } from '../dtos';
-import { EngagementDocument, EngagementType } from './engagement.schema';
 
-export type CommentDocument = Comment & IComment;
+export type CommentDocument = Comment & Document;
 
 export enum CommentType {
   Comment = 'comment',
@@ -69,120 +64,14 @@ export class Comment extends CastcleBase {
   hashtags: any[];
 }
 
-interface IComment extends Document {
-  toCommentPayload(
-    commentModel: Model<CommentDocument>,
-    engagements?: EngagementDocument[]
-  ): Promise<CommentPayload>;
-}
-
 export const CommentSchema = SchemaFactory.createForClass(Comment);
+
 CommentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
+
 export const CommentSchemaFactory = (
   revisionModel: Model<RevisionDocument>,
   contentModel: Model<ContentDocument>
 ): mongoose.Schema<any> => {
-  CommentSchema.methods.toCommentPayload = async function (
-    commentModel: Model<CommentDocument>,
-    engagements: EngagementDocument[] = []
-  ) {
-    //check if have revision
-    const revisionCount = await revisionModel
-      .count({
-        objectRef: {
-          $id: (this as CommentDocument)._id,
-          $ref: 'comment'
-        },
-        'payload.author._id': (this as CommentDocument).author._id
-      })
-      .exec();
-
-    const replies = await commentModel
-      .find({
-        type: CommentType.Reply,
-        targetRef: { $id: this._id, $ref: 'comment' },
-        visibility: EntityVisibility.Publish
-      })
-      .exec();
-    const findEngagement = engagements
-      ? engagements.find(
-          (engagement) =>
-            engagement.type === EngagementType.Like &&
-            String(engagement.targetRef.$id) === this.id
-        )
-      : null;
-    const payload: CommentPayload = {
-      id: (this as CommentDocument)._id,
-      message: (this as CommentDocument).message,
-      /*like: {
-        liked: findEngagement ? true : false,
-        count: (this as CommentDocument).engagements.like.count,
-        participant: [] //TODO !!! need to fix later on
-      },*/
-      metrics: {
-        likeCount: (this as CommentDocument).engagements.like.count
-      },
-      participate: {
-        liked: findEngagement ? true : false
-      },
-      author: {
-        avatar: (this as CommentDocument).author.profile
-          ? new Image(
-              (this as CommentDocument).author.profile.images.avatar
-            ).toSignUrls()
-          : Configs.DefaultAvatarImages,
-        castcleId: (this as CommentDocument).author.displayId,
-        displayName: (this as CommentDocument).author.displayName,
-        id: (this as CommentDocument).author._id,
-        type: (this as CommentDocument).author.type,
-        verified: (this as CommentDocument).author.verified
-      },
-      hasHistory: revisionCount > 1 ? true : false,
-      reply: replies.map((r) => ({
-        id: r._id,
-        createdAt: r.createdAt.toISOString(),
-        message: r.message,
-        author: {
-          avatar: r.author.profile
-            ? new Image(r.author.profile.images.avatar).toSignUrls()
-            : Configs.DefaultAvatarImages,
-          castcleId: r.author.displayId,
-          displayName: r.author.displayName,
-          id: r.author._id,
-          verified: r.author.verified,
-          type: r.author.type
-        },
-        /*like: {
-          liked: engagements.find(
-            (engagement) =>
-              engagement.type === EngagementType.Like &&
-              String(engagement.targetRef.$id) === r.id
-          )
-            ? true
-            : false,
-          count: r.engagements.like.count,
-          participant: []
-        }*/
-        metrics: {
-          likeCount: r.engagements.like.count
-        },
-        participate: {
-          liked: engagements.find(
-            (engagement) =>
-              engagement.type === EngagementType.Like &&
-              String(engagement.targetRef.$id) === r.id
-          )
-            ? true
-            : false
-        }
-      })),
-      createdAt: (this as CommentDocument).createdAt.toISOString(),
-      updatedAt: (this as CommentDocument).updatedAt.toISOString()
-    } as CommentPayload;
-
-    return payload;
-  };
-
   CommentSchema.pre('save', function (next) {
     preCommentSave(this as CommentDocument);
     next();
@@ -195,5 +84,6 @@ export const CommentSchemaFactory = (
     });
     next();
   });
+
   return CommentSchema;
 };
