@@ -292,9 +292,12 @@ export class ContentController {
     const content = await this._getContentIfExist(id, req);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.likeContent(content, user);
+
+    if (user.id === castcleId) return;
+
     //TODO !!! has to implement message libs and i18N and message functions
     this.notifyService.notifyToUser({
-      type: NotificationType.Content,
+      type: NotificationType.Like,
       message: `${user.displayName} ถูกใจโพสของคุณ`,
       read: false,
       source: NotificationSource.Profile,
@@ -304,7 +307,6 @@ export class ContentController {
       },
       account: { _id: content.author.id }
     });
-    return '';
   }
 
   @ApiResponse({

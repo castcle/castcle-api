@@ -24,7 +24,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CommentType } from '../schemas/comment.schema';
 import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
-import { Author } from './content.dto';
+import { IncludeUser } from './content.dto';
 
 export class CommentDto {
   author: any; //mongooseId
@@ -61,7 +61,7 @@ export class CommentPayload {
   metrics: CastcleMetric;
 
   @ApiProperty()
-  author: Author;
+  author: IncludeUser;
 
   @ApiProperty()
   participate: CastcleParticipate;
@@ -71,7 +71,7 @@ export class CommentPayload {
     id: string;
     message: string;
     createdAt: string;
-    author: Author;
+    author: IncludeUser;
     metrics: CastcleMetric;
     participate: CastcleParticipate;
   }[];

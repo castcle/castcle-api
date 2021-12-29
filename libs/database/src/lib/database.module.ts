@@ -48,6 +48,7 @@ import { SocialSyncSchema } from './schemas/social-sync.schema';
 import { UserSchemaFactory } from './schemas/user.schema';
 import { UxEngagementSchema } from './schemas/uxengagement.schema';
 import { AuthenticationService } from './services/authentication.service';
+import { CommentService } from './services/comment.service';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
 import { HashtagService } from './services/hashtag.service';
@@ -139,7 +140,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     HashtagService,
     SearchService,
     CountryService,
-    SocialSyncService
+    SocialSyncService,
+    CommentService
   ],
   exports: [
     AuthenticationService,
@@ -152,7 +154,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     HashtagService,
     SearchService,
     CountryService,
-    SocialSyncService
+    SocialSyncService,
+    CommentService
   ]
 })
 export class DatabaseModule {}
@@ -169,5 +172,6 @@ export {
   SearchService,
   CountryService,
   createCastcleMeta,
-  SocialSyncService
+  SocialSyncService,
+  CommentService
 };

@@ -45,6 +45,7 @@ import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
 import { UserDocument } from '../schemas/user.schema';
 import { AuthenticationService } from './authentication.service';
+import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
@@ -86,6 +87,7 @@ describe('User Service', () => {
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
+  let commentService: CommentService;
 
   console.log('test in real db = ', env.DB_TEST_IN_DB);
   const importModules = env.DB_TEST_IN_DB
@@ -105,6 +107,7 @@ describe('User Service', () => {
     UserService,
     AuthenticationService,
     ContentService,
+    CommentService,
     UserProducer,
     HashtagService
   ];
@@ -120,6 +123,7 @@ describe('User Service', () => {
     service = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
     contentService = module.get<ContentService>(ContentService);
+    commentService = module.get(CommentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -692,10 +696,7 @@ describe('User Service', () => {
         );
         console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
-        expect(
-          (await preComment.toCommentPayload(contentService._commentModel))
-            .metrics.likeCount
-        ).toEqual(2);
+        expect(preComment.engagements.like.count).toEqual(2);
         await service._removeAllEngagements(userA);
         const postContent = await contentService.getContentFromId(
           fixContents[0]._id
@@ -705,10 +706,7 @@ describe('User Service', () => {
         const postComment = await contentService.getCommentById(
           testLikeComment._id
         );
-        expect(
-          (await postComment.toCommentPayload(contentService._commentModel))
-            .metrics.likeCount
-        ).toEqual(1);
+        expect(postComment.engagements.like.count).toEqual(1);
       });
     });
     describe('_removeAllFollower()', () => {
@@ -728,14 +726,16 @@ describe('User Service', () => {
     });
     describe('_removeAllCommentFromUser()', () => {
       it('should flag all comment from user to hidden', async () => {
-        const comments = await contentService.getCommentsFromContent(
-          fixContents[0]
+        const comments = await commentService.getCommentsByContentId(
+          userA,
+          fixContents[0]._id
         );
         expect(comments.payload.length).toEqual(3);
         expect(comments.meta.resultCount).toEqual(3);
         await service._removeAllCommentFromUser(userA);
-        const comments2 = await contentService.getCommentsFromContent(
-          fixContents[0]
+        const comments2 = await commentService.getCommentsByContentId(
+          userA,
+          fixContents[0]._id
         );
         expect(comments2.meta.resultCount).toEqual(2);
         expect(comments2.payload.length).toEqual(2);
@@ -749,8 +749,9 @@ describe('User Service', () => {
           .exec();
         expect(postAccountB.visibility).toEqual(EntityVisibility.Deleted);
         //remove all comment / follower and engagement
-        const comments2 = await contentService.getCommentsFromContent(
-          fixContents[0]
+        const comments2 = await commentService.getCommentsByContentId(
+          userA,
+          fixContents[0]._id
         );
         expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollowers(
@@ -766,10 +767,7 @@ describe('User Service', () => {
         const postComment = await contentService.getCommentById(
           testLikeComment._id
         );
-        expect(
-          (await postComment.toCommentPayload(contentService._commentModel))
-            .metrics.likeCount
-        ).toEqual(0);
+        expect(postComment.engagements.like.count).toEqual(0);
       });
     });
   });
