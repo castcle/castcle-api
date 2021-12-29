@@ -70,143 +70,66 @@ export const EngagementSchemaFactory = (
   commentModel: Model<CommentDocument>,
   feedItemModel: Model<FeedItemDocument>
 ): mongoose.Schema<any> => {
-  EngagementSchema.post('save', async function (doc, next) {
-    const incEngagment: { [key: string]: number } = {};
-    const feedIncEngagement: { [key: string]: number } = {};
-    incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] =
-      (doc as EngagementDocument).visibility === EntityVisibility.Publish
-        ? 1
-        : -1;
-    feedIncEngagement[
-      `content.${feedItemKey[(doc as EngagementDocument).type]}.count`
-    ] =
-      (doc as EngagementDocument).visibility === EntityVisibility.Publish
-        ? 1
-        : -1;
-    if (
-      (doc as EngagementDocument).targetRef.$ref &&
-      (doc as EngagementDocument).targetRef.$ref === 'content'
-    ) {
-      await contentModel
-        .updateOne(
-          { _id: (doc as EngagementDocument).targetRef.$id },
-          {
-            $inc: incEngagment
-          }
-        )
-        .exec();
+  EngagementSchema.post('save', async function (doc: EngagementDocument, next) {
+    const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;
+    const contentInc = { $inc: { [`engagements.${doc.type}.count`]: count } };
+    const feedInc = {
+      $inc: { [`content.${feedItemKey[doc.type]}.count`]: count }
+    };
 
-      await feedItemModel
-        .updateMany(
-          {
-            'content.id': (doc as EngagementDocument).targetRef.$id
-          },
-          {
-            $inc: feedIncEngagement
-          }
-        )
-        .exec();
+    if (['content', 'comment'].includes(doc.targetRef.$ref)) {
+      await Promise.all([
+        (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
+          .updateOne({ _id: doc.targetRef.$id }, contentInc)
+          .exec(),
+        feedItemModel
+          .updateMany({ 'content.id': doc.targetRef.$id }, feedInc)
+          .exec()
+      ]);
     } else if (
-      (doc as EngagementDocument).targetRef.$ref &&
-      (doc as EngagementDocument).targetRef.$ref === 'comment'
+      doc.targetRef.namespace === 'content' &&
+      doc.visibility !== EntityVisibility.Publish
     ) {
-      console.log('updateComment', (doc as EngagementDocument).targetRef.$id);
+      await Promise.all([
+        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec(),
+        feedItemModel
+          .updateMany({ 'content.id': doc.targetRef.oid }, feedInc)
+          .exec()
+      ]);
+    } else if (
+      doc.targetRef.namespace === 'comment' &&
+      doc.visibility !== EntityVisibility.Publish
+    ) {
       await commentModel
-        .updateOne(
-          { _id: (doc as EngagementDocument).targetRef.$id },
-          { $inc: incEngagment }
-        )
-        .exec();
-      await feedItemModel
-        .updateMany(
-          {
-            'content.id': (doc as EngagementDocument).targetRef.$id
-          },
-          {
-            $inc: feedIncEngagement
-          }
-        )
-        .exec();
-    } else if (
-      doc.targetRef.namespace &&
-      (doc as EngagementDocument).visibility !== EntityVisibility.Publish
-    ) {
-      if (doc.targetRef.namespace === 'content') {
-        await contentModel
-          .updateOne(
-            { _id: (doc as EngagementDocument).targetRef.oid },
-            {
-              $inc: incEngagment
-            }
-          )
-          .exec();
-        await feedItemModel
-          .updateMany(
-            {
-              'content.id': (doc as EngagementDocument).targetRef.oid
-            },
-            {
-              $inc: feedIncEngagement
-            }
-          )
-          .exec();
-      }
-      if (doc.targetRef.namespace === 'comment')
-        await commentModel
-          .updateOne(
-            { _id: (doc as EngagementDocument).targetRef.oid },
-            { $inc: incEngagment }
-          )
-          .exec();
-    }
-    next();
-  });
-  //TODO !!! cant use $id dont know why
-  EngagementSchema.post('remove', async (doc, next) => {
-    const incEngagment: { [key: string]: number } = {};
-    incEngagment[`engagements.${(doc as EngagementDocument).type}.count`] = -1;
-    const feedIncEngagement: { [key: string]: number } = {};
-    feedIncEngagement[
-      `content.${feedItemKey[(doc as EngagementDocument).type]}.count`
-    ] = -1;
-    if ((doc as EngagementDocument).targetRef.namespace === 'content') {
-      const content = await contentModel
-        .findById((doc as EngagementDocument).targetRef.oid)
-        .exec();
-      const result = await contentModel
-        .updateOne(
-          { _id: (doc as EngagementDocument).targetRef.oid },
-          {
-            $inc: incEngagment
-          }
-        )
-        .exec();
-      console.log(result);
-      await feedItemModel
-        .updateMany(
-          {
-            'content.id': (doc as EngagementDocument).targetRef.oid
-          },
-          {
-            $inc: feedIncEngagement
-          }
-        )
-        .exec();
-    } else {
-      const comment = await commentModel
-        .findById((doc as EngagementDocument).targetRef.oid)
-        .exec();
-      const result2 = await commentModel
-        .updateOne(
-          { _id: (doc as EngagementDocument).targetRef.oid },
-          {
-            $inc: incEngagment
-          }
-        )
+        .updateOne({ _id: doc.targetRef.oid }, contentInc)
         .exec();
     }
 
     next();
   });
+
+  EngagementSchema.post('remove', async (doc: EngagementDocument, next) => {
+    const contentInc = { $inc: { [`engagements.${doc.type}.count`]: -1 } };
+
+    if (doc.targetRef.namespace === 'content') {
+      const feedInc = {
+        $inc: { [`content.${feedItemKey[doc.type]}.count`]: -1 }
+      };
+
+      await Promise.all([
+        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec(),
+        feedItemModel
+          .updateMany({ 'content.id': doc.targetRef.oid }, feedInc)
+          .exec()
+      ]);
+    } else {
+      await commentModel
+        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .exec();
+    }
+
+    next();
+  });
+
   return EngagementSchema;
 };

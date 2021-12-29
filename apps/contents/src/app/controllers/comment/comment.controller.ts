@@ -87,20 +87,18 @@ export class CommentController {
     @Query() expansionQuery: ExpansionQuery
   ) {
     try {
-      const authorizedUser = await this.authService.getUserFromAccount(
-        $credential.account
-      );
-      const content = await this.contentService.getContentById(contentId);
-      const user = await this.authService.getUserFromCastcleId(
-        commentBody.castcleId
-      );
+      const [authorizedUser, content, user] = await Promise.all([
+        this.authService.getUserFromAccount($credential.account),
+        this.contentService.getContentById(contentId),
+        this.authService.getUserFromCastcleId(commentBody.castcleId)
+      ]);
+
       const comment = await this.contentService.createCommentForContent(
         user,
         content,
-        {
-          message: commentBody.message
-        }
+        { message: commentBody.message }
       );
+
       this.notifyService.notifyToUser({
         type: NotificationType.Comment,
         message: `${user.displayName} ตอบกลับโพสต์ของคุณ`,
@@ -113,14 +111,14 @@ export class CommentController {
         account: { _id: content.author.id }
       });
 
-      return {
-        payload: await this.commentService.convertCommentToCommentResponse(
-          authorizedUser,
-          comment,
-          [],
-          expansionQuery
-        )
-      };
+      const payload = await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        comment,
+        [],
+        expansionQuery
+      );
+
+      return { payload };
     } catch (error) {
       throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
     }
