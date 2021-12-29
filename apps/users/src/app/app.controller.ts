@@ -404,7 +404,7 @@ export class UserController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    await currentUser.follow(followedUser);
+    this.userService.follow(currentUser, followedUser);
     return '';
   }
 
@@ -438,7 +438,7 @@ export class UserController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    await currentUser.unfollow(followedUser);
+    await this.userService.unfollow(currentUser, followedUser);
     return '';
   }
 
