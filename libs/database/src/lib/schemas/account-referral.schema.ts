@@ -36,7 +36,7 @@ export class AccountReferral extends CastcleBase {
   })
   referrerAccount: Account;
 
-  @Prop()
+  @Prop({ index: true })
   referrerDisplayId: string;
 
   @Prop({
