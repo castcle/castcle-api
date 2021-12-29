@@ -52,7 +52,7 @@ export class Comment extends CastcleBase {
   };
 
   @Prop({ required: true })
-  type: string;
+  type: CommentType;
 
   @Prop()
   revisionCount: number;

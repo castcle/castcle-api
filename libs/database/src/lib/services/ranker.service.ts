@@ -109,7 +109,7 @@ export class RankerService {
   getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
     const filter = await createCastcleFilter(
       { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
-      query
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
 
     const feedItems = await this._guestFeedItemModel
@@ -171,7 +171,10 @@ export class RankerService {
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
     const startNow = new Date();
     console.debug('start service');
-    const filter = await createCastcleFilter({ viewer: viewer._id }, query);
+    const filter = await createCastcleFilter(
+      { viewer: viewer._id },
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
+    );
     //if have sinceId or untilId but can't find filter.createAt => this is guestFeed
     if (query.sinceId || query.untilId) {
       const refFilter = await this._feedItemModel
