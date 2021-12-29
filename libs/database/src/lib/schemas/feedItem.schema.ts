@@ -63,12 +63,15 @@ export class FeedItem extends CastcleBase {
 }
 
 export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
+
+FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({
   viewer: 1,
   'content.id': 1,
   'content.author.id': 1,
   'content.author.castcleId': 1
 });
+
 export interface IFeedItem extends mongoose.Document {
   toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
   toFeedItemPayloadV2(engagements?: EngagementDocument[]): FeedItemPayloadItem;

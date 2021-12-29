@@ -315,7 +315,6 @@ export class UserController {
       user.id,
       { sinceId, sortBy, untilId, maxResults }
     );
-
     return this.contentService.convertContentsToContentResponse(user, contents);
   }
 
@@ -366,7 +365,6 @@ export class UserController {
       user.id,
       { ...getContentsDto, sortBy }
     );
-
     return this.contentService.convertContentsToContentResponse(
       requester,
       contents,
@@ -404,7 +402,7 @@ export class UserController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    await currentUser.follow(followedUser);
+    await this.userService.follow(currentUser, followedUser);
     return '';
   }
 
@@ -438,7 +436,7 @@ export class UserController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    await currentUser.unfollow(followedUser);
+    await this.userService.unfollow(currentUser, followedUser);
     return '';
   }
 
