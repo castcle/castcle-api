@@ -22,7 +22,7 @@
  */
 import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 export class TargetCastcleDto {
   @ApiProperty()
   targetCastcleId: string;
@@ -48,6 +48,6 @@ export class UpdateMobileDto {
 
 export class UserSettingsDto {
   @ApiProperty()
-  @IsArray()
+  @IsString({ each: true })
   preferredLanguages: string[];
 }
