@@ -298,7 +298,8 @@ describe('PageController', () => {
       const expectedObject = {
         payload: items,
         includes: new CastcleIncludes({
-          users: createResult.map(({ author }) => new Author(author))
+          users: createResult.map(({ author }) => new Author(author)),
+          casts: []
         }),
         meta: createCastcleMeta(createResult)
       };
