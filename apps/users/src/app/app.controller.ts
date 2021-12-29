@@ -315,7 +315,11 @@ export class UserController {
       user.id,
       { sinceId, sortBy, untilId, maxResults }
     );
-
+    console.log('done load old stuff');
+    console.log(
+      'AFter old query ',
+      contents.map((t) => t.id)
+    );
     return this.contentService.convertContentsToContentResponse(user, contents);
   }
 
@@ -366,7 +370,6 @@ export class UserController {
       user.id,
       { ...getContentsDto, sortBy }
     );
-
     return this.contentService.convertContentsToContentResponse(
       requester,
       contents,

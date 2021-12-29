@@ -332,6 +332,7 @@ export class ContentService {
       .exec();
 
     if (options.sortBy.type === 'desc') {
+      console.log('sort');
       return {
         total: totalDocument,
         items: await query.sort(`-${options.sortBy.field}`).exec(),
