@@ -21,17 +21,32 @@
  * or have any questions.
  */
 
-export * from './account-referral.schema';
-export * from './account.schema';
-export * from './accountAuthenId.schema';
-export * from './comment.schema';
-export * from './content.schema';
-export * from './country.schema';
-export * from './credential.schema';
-export * from './engagement.schema';
-export * from './hashtag.schema';
-export * from './language.schema';
-export * from './notification.schema';
-export * from './otp.schema';
-export * from './social-sync.schema';
-export * from './user.schema';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+export class AccountReferral extends CastcleBase {
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true
+  })
+  referrerAccount: Account;
+
+  @Prop()
+  referrerDisplayId: string;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true
+  })
+  referringAccount: Account;
+}
+
+export type AccountReferralDocument = AccountReferral & Document;
+export const AccountReferralSchema =
+  SchemaFactory.createForClass(AccountReferral);

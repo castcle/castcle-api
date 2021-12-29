@@ -22,7 +22,7 @@
  */
 import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
@@ -122,6 +122,9 @@ export class RegisterByEmailDto {
   @IsNotEmpty()
   @ApiProperty()
   channel: 'email';
+  @IsString()
+  @ApiPropertyOptional()
+  referral?: string;
   @IsNotEmpty()
   @ApiProperty()
   payload: RegisterPayload;

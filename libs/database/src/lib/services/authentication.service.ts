@@ -33,6 +33,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload
 } from '../dtos/token.dto';
+import { AccountReferral } from '../schemas/account-referral.schema';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
@@ -67,6 +68,7 @@ export interface SignupRequirements {
   password: string;
   displayName: string;
   displayId: string;
+  referral?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -91,7 +93,9 @@ export class AuthenticationService {
     @InjectModel('Otp')
     public _otpModel: OtpModel,
     @InjectModel('AccountAuthenId')
-    public _accountAuthenId: Model<AccountAuthenIdDocument>
+    public _accountAuthenId: Model<AccountAuthenIdDocument>,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -364,7 +368,18 @@ export class AuthenticationService {
       type: UserType.People
     });
     await user.save();
-    return this.createAccountActivation(account, 'email');
+    const updateAccount = await this.createAccountActivation(account, 'email');
+
+    if (requirements.referral) {
+      const refAccount = await this.getUserFromCastcleId(requirements.referral);
+      const accRef = new this._accountReferral({
+        referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
+        referrerDisplayId: requirements.referral,
+        referringAccount: account._id
+      });
+      await accRef.save();
+    }
+    return updateAccount;
   }
 
   createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
