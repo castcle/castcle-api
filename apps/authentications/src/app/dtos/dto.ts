@@ -122,6 +122,7 @@ export class RegisterByEmailDto {
   @IsNotEmpty()
   @ApiProperty()
   channel: 'email';
+  @IsOptional()
   @IsString()
   @ApiPropertyOptional()
   referral?: string;
