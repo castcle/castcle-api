@@ -328,7 +328,10 @@ export class ContentService {
     if (options.type) findFilter.type = options.type;
     findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
-    const totalDocument = await this._contentModel.count(findFilter).exec();
+    const totalDocument = await this._contentModel
+      .countDocuments(findFilter)
+      .exec();
+
     if (options.sortBy.type === 'desc') {
       return {
         total: totalDocument,
