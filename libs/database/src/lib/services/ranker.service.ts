@@ -92,7 +92,7 @@ export class RankerService {
       .limit(options.limit)
       .sort('-aggregator.createTime')
       .exec();
-    const totalFeedItems = await this._feedItemModel.count(filter);
+    const totalFeedItems = await this._feedItemModel.countDocuments(filter);
     return {
       total: totalFeedItems,
       items: feedItemResult,
@@ -109,7 +109,7 @@ export class RankerService {
   getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
     const filter = await createCastcleFilter(
       { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
-      query
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
 
     const feedItems = await this._guestFeedItemModel
@@ -123,11 +123,19 @@ export class RankerService {
       (feedItem) => new Author(feedItem.content.author)
     );
 
-    const includes = new CastcleIncludes({
-      users: query.hasRelationshipExpansion
-        ? await this.userService.getIncludesUsers(viewer, authors)
-        : authors.map((author) => author.toIncludeUser())
-    });
+    const casts = feedItems
+      .map((feedItem) => {
+        if (!feedItem.content?.originalPost) return;
+
+        return toSignedContentPayloadItem(feedItem.content.originalPost);
+      })
+      .filter(Boolean);
+
+    const users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, authors)
+      : authors.map((author) => author.toIncludeUser());
+
+    const includes = new CastcleIncludes({ casts, users });
 
     return {
       payload: feedItems.map(
@@ -163,7 +171,10 @@ export class RankerService {
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
     const startNow = new Date();
     console.debug('start service');
-    const filter = await createCastcleFilter({ viewer: viewer._id }, query);
+    const filter = await createCastcleFilter(
+      { viewer: viewer._id },
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
+    );
     //if have sinceId or untilId but can't find filter.createAt => this is guestFeed
     if (query.sinceId || query.untilId) {
       const refFilter = await this._feedItemModel
