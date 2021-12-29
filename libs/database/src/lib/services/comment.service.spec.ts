@@ -91,7 +91,8 @@ describe('ContentService', () => {
       const response = await service.convertCommentToCommentResponse(
         user,
         comment,
-        []
+        [],
+        { hasRelationshipExpansion: false }
       );
 
       expect(response.author.followed).toBeUndefined();

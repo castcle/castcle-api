@@ -2,7 +2,7 @@ import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { createCastcleMeta } from '../database.module';
 import {
   CastcleQueryOptions,
@@ -39,70 +39,97 @@ export class CommentService {
     viewer: UserDocument,
     comment: CommentDocument,
     engagements: EngagementDocument[],
-    expansion: ExpansionQuery = { hasRelationshipExpansion: false }
+    { hasRelationshipExpansion }: ExpansionQuery
   ) {
-    const revisionCount = await this.revisionModel
-      .countDocuments({
-        objectRef: {
-          $id: comment._id,
-          $ref: 'comment'
-        },
-        'payload.author._id': comment.author._id
-      })
-      .exec();
-
-    const replies = await this.commentModel
-      .find({
-        type: CommentType.Reply,
-        targetRef: { $id: comment._id, $ref: 'comment' },
-        visibility: EntityVisibility.Publish
-      })
-      .exec();
-
-    const likedBy = (id: string) =>
-      engagements?.some(
-        ({ targetRef, type }) =>
-          type === EngagementType.Like && String(targetRef.$id) === id
-      ) ?? false;
+    const [replies, revisionCount] = await Promise.all([
+      this.commentModel
+        .find({
+          type: CommentType.Reply,
+          targetRef: { $id: comment._id, $ref: 'comment' },
+          visibility: EntityVisibility.Publish
+        })
+        .exec(),
+      this.revisionModel
+        .countDocuments({
+          objectRef: { $id: comment._id, $ref: 'comment' },
+          'payload.author._id': comment.author._id
+        })
+        .exec()
+    ]);
 
     const authorIds = [
       comment.author._id,
       ...replies.map((reply) => reply.author._id)
     ];
 
-    const relationships = await this.relationshipModel.find({
-      $or: [
-        { user: viewer._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer._id }
-      ],
-      visibility: EntityVisibility.Publish
+    const relationships = hasRelationshipExpansion
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    return this.mapContentToContentResponse(
+      comment,
+      engagements,
+      relationships,
+      viewer,
+      hasRelationshipExpansion,
+      revisionCount,
+      replies
+    );
+  }
+
+  private getLike(engagements: EngagementDocument[], id: string) {
+    return engagements.some(({ targetRef, type }) => {
+      return type === EngagementType.Like && String(targetRef.$id) === id;
     });
+  }
+
+  private getRelationship(
+    relationships: RelationshipDocument[],
+    viewerId: string,
+    authorId: string,
+    hasRelationshipExpansion: boolean
+  ) {
+    if (!hasRelationshipExpansion) return {};
 
     const authorRelationship = relationships.find(
       ({ followedUser, user }) =>
-        String(user) === String(comment.author._id) &&
-        String(followedUser) === String(viewer.id)
+        String(user) === String(authorId) &&
+        String(followedUser) === String(viewerId)
     );
 
     const getterRelationship = relationships.find(
       ({ followedUser, user }) =>
-        String(followedUser) === String(comment.author._id) &&
-        String(user) === String(viewer.id)
+        String(followedUser) === String(authorId) &&
+        String(user) === String(viewerId)
     );
 
-    const relationship = expansion.hasRelationshipExpansion
-      ? {
-          blocked: Boolean(getterRelationship?.blocking),
-          blocking: Boolean(authorRelationship?.blocking),
-          followed: Boolean(getterRelationship?.following)
-        }
-      : {};
+    return {
+      blocked: Boolean(getterRelationship?.blocking),
+      blocking: Boolean(authorRelationship?.blocking),
+      followed: Boolean(getterRelationship?.following)
+    };
+  }
 
+  private mapContentToContentResponse(
+    comment: CommentDocument,
+    engagements: EngagementDocument[],
+    relationships: any,
+    viewer: UserDocument,
+    hasRelationshipExpansion: boolean,
+    revisionCount: number,
+    replies: CommentDocument[]
+  ) {
     return {
       id: comment._id,
       message: comment.message,
       metrics: { likeCount: comment.engagements.like.count },
-      participate: { liked: likedBy(comment.id) },
+      participate: { liked: this.getLike(engagements, comment.id) },
       author: {
         avatar: comment.author.profile
           ? new Image(comment.author.profile.images.avatar).toSignUrls()
@@ -112,30 +139,15 @@ export class CommentService {
         id: comment.author._id,
         type: comment.author.type,
         verified: comment.author.verified,
-        ...relationship
+        ...this.getRelationship(
+          relationships,
+          viewer._id,
+          comment.author._id,
+          hasRelationshipExpansion
+        )
       },
       hasHistory: revisionCount > 1,
       reply: replies.map((reply) => {
-        const authorRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(user) === String(reply.author._id) &&
-            String(followedUser) === String(viewer.id)
-        );
-
-        const getterRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(followedUser) === String(reply.author._id) &&
-            String(user) === String(viewer.id)
-        );
-
-        const relationship = expansion.hasRelationshipExpansion
-          ? {
-              blocked: Boolean(getterRelationship?.blocking),
-              blocking: Boolean(authorRelationship?.blocking),
-              followed: Boolean(getterRelationship?.following)
-            }
-          : {};
-
         return {
           id: reply._id,
           createdAt: reply.createdAt.toISOString(),
@@ -149,15 +161,85 @@ export class CommentService {
             id: reply.author._id,
             verified: reply.author.verified,
             type: reply.author.type,
-            ...relationship
+            ...this.getRelationship(
+              relationships,
+              viewer._id,
+              reply.author._id,
+              hasRelationshipExpansion
+            )
           },
           metrics: { likeCount: reply.engagements.like.count },
-          participate: { liked: likedBy(reply.id) }
+          participate: { liked: this.getLike(engagements, reply.id) }
         };
       }),
       createdAt: comment.createdAt.toISOString(),
       updatedAt: comment.updatedAt.toISOString()
     } as CommentPayload;
+  }
+
+  async convertCommentsToCommentResponse(
+    viewer: UserDocument,
+    comments: CommentDocument[],
+    engagements: EngagementDocument[],
+    { hasRelationshipExpansion }: ExpansionQuery
+  ) {
+    const commentsIds = comments.map(({ _id }) => _id);
+    const commentsAuthorIds = comments.map(({ author }) => author._id);
+    const [replies, revisions] = await Promise.all([
+      this.commentModel
+        .find({
+          'targetRef.$id': { $in: commentsIds },
+          'targetRef.$ref': 'comment',
+          type: CommentType.Reply,
+          visibility: EntityVisibility.Publish
+        })
+        .exec(),
+      this.revisionModel
+        .find(
+          {
+            'objectRef.$id': { $in: commentsIds },
+            'objectRef.$ref': 'comment',
+            'payload.author._id': { $in: commentsAuthorIds }
+          },
+          { 'objectRef.$id': true }
+        )
+        .exec()
+    ]);
+
+    const authorIds = [
+      ...commentsAuthorIds,
+      ...replies.map((reply) => reply.author._id)
+    ];
+
+    const relationships = hasRelationshipExpansion
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    return comments.map((comment) => {
+      const revisionCount = revisions.filter(
+        ({ objectRef }) => String(objectRef.$id) === String(comment._id)
+      ).length;
+
+      const commentReplies = replies.filter(({ targetRef }) => {
+        return String(targetRef.oid) === String(comment._id);
+      });
+
+      return this.mapContentToContentResponse(
+        comment,
+        engagements,
+        relationships,
+        viewer,
+        hasRelationshipExpansion,
+        revisionCount,
+        commentReplies
+      );
+    });
   }
 
   /**
@@ -174,16 +256,13 @@ export class CommentService {
       hasRelationshipExpansion: false
     }
   ): Promise<CommentsResponse> => {
-    const filter = {
-      targetRef: {
-        $id: contentId,
-        $ref: 'content'
-      },
+    const query: FilterQuery<CommentDocument> = {
+      targetRef: { $id: contentId, $ref: 'content' },
       visibility: EntityVisibility.Publish
     };
 
     const comments = await this.commentModel
-      .find(filter)
+      .find(query)
       .limit(options.limit)
       .skip(options.page - 1)
       .sort(
@@ -197,19 +276,15 @@ export class CommentService {
       }
     });
 
-    const payloads = await Promise.all(
-      comments.map((comment) =>
-        this.convertCommentToCommentResponse(
-          viewer,
-          comment,
-          engagements,
-          options
-        )
-      )
+    const payload = await this.convertCommentsToCommentResponse(
+      viewer,
+      comments,
+      engagements,
+      options
     );
 
     return {
-      payload: payloads,
+      payload,
       meta: createCastcleMeta(comments)
     };
   };
