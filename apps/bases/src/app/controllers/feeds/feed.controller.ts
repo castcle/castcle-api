@@ -23,7 +23,6 @@
 
 import { Get, Query, Req, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RankerService, UxEngagementService } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   FeedQuery,
@@ -44,6 +43,7 @@ import { ContentService, UserService } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 
 @CastcleController('1.0')
+@UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 export class FeedController {
   constructor(
     private rankerService: RankerService,
@@ -51,10 +51,6 @@ export class FeedController {
     private userService: UserService,
     private uxEngagementService: UxEngagementService
   ) {}
-  private readonly logger = new CastLogger(
-    FeedController.name,
-    CastLoggerOptions
-  );
 
   @ApiOkResponse({
     type: FeedsResponse
@@ -158,7 +154,6 @@ export class FeedController {
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/guests')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getGuestFeed(
     @Req() { $credential }: CredentialRequest,
     @Query() feedQuery: FeedQuery
@@ -179,7 +174,6 @@ export class FeedController {
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/members/feed/forYou')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getMemberFeed(
     @Req() { $credential }: CredentialRequest,
     @Query() feedQuery: FeedQuery

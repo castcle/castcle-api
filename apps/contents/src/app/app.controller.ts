@@ -262,15 +262,14 @@ export class ContentController {
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
     const user = await this.userService.getUserFromCredential($credential);
-    const { items, meta } = await this.contentService.getContentsForAdmin({
+    const { items: contents } = await this.contentService.getContentsForAdmin({
       ...getContentsDto,
       sortBy: sortByOption
     });
 
     return this.contentService.convertContentsToContentResponse(
       user,
-      items,
-      meta,
+      contents,
       hasRelationshipExpansion
     );
   }

@@ -241,7 +241,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'system'
           },
           {
             id: '',
@@ -257,7 +258,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           },
           {
             id: '',
@@ -273,7 +275,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           }
         ]
       };
@@ -317,7 +320,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           }
         ]
       };
