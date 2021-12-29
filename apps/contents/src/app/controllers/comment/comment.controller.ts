@@ -31,17 +31,19 @@ import {
   Post,
   Put,
   Query,
-  Req
+  Req,
+  UsePipes,
+  ValidationPipe
 } from '@nestjs/common';
 import {
   AuthenticationService,
-  UserService,
   ContentService,
-  NotificationService
+  NotificationService,
+  CommentService
 } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   DEFAULT_QUERY_OPTIONS,
+  ExpansionQuery,
   NotificationSource,
   NotificationType
 } from '@castcle-api/database/dtos';
@@ -49,7 +51,6 @@ import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
 import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
-import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
   CreateCommentBody,
   EditCommentBody,
@@ -65,29 +66,14 @@ import {
 
 @CastcleController('1.0')
 @Controller()
+@UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 export class CommentController {
   constructor(
     private authService: AuthenticationService,
-    private userService: UserService,
+    private commentService: CommentService,
     private contentService: ContentService,
-    private caslAbility: CaslAbilityFactory,
     private notifyService: NotificationService
   ) {}
-  private readonly logger = new CastLogger(
-    CommentController.name,
-    CastLoggerOptions
-  );
-
-  //TO BE REMOVED !!! this should be check at interceptor or guards
-  async _getContentIfExist(id: string, req: CredentialRequest) {
-    const content = await this.contentService.getContentFromId(id);
-    if (content) return content;
-    else
-      throw new CastcleException(
-        CastcleStatus.REQUEST_URL_NOT_FOUND,
-        req.$language
-      );
-  }
 
   @ApiBody({
     type: CreateCommentBody
@@ -97,10 +83,14 @@ export class CommentController {
   async createComment(
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
-    @Req() req: CredentialRequest
+    @Req() { $credential }: CredentialRequest,
+    @Query() expansionQuery: ExpansionQuery
   ) {
     try {
-      const content = await this._getContentIfExist(contentId, req);
+      const authorizedUser = await this.authService.getUserFromAccount(
+        $credential.account
+      );
+      const content = await this.contentService.getContentById(contentId);
       const user = await this.authService.getUserFromCastcleId(
         commentBody.castcleId
       );
@@ -122,9 +112,13 @@ export class CommentController {
         },
         account: { _id: content.author.id }
       });
+
       return {
-        payload: await comment.toCommentPayload(
-          this.contentService._commentModel
+        payload: await this.commentService.convertCommentToCommentResponse(
+          authorizedUser,
+          comment,
+          [],
+          expansionQuery
         )
       };
     } catch (error) {
@@ -136,7 +130,8 @@ export class CommentController {
   @Get(':id/comments')
   async getAllComment(
     @Param('id') contentId: string,
-    @Req() req: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
+    @Query() expansionQuery: ExpansionQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
@@ -144,12 +139,20 @@ export class CommentController {
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_QUERY_OPTIONS.limit
   ) {
-    const content = await this._getContentIfExist(contentId, req);
-    const comments = await this.contentService.getCommentsFromContent(content, {
-      limit: limitOption,
-      page: pageOption,
-      sortBy: sortByOption
-    });
+    const authorizedUser = await this.authService.getUserFromAccount(
+      $credential.account
+    );
+    const content = await this.contentService.getContentById(contentId);
+    const comments = await this.commentService.getCommentsByContentId(
+      authorizedUser,
+      content._id,
+      {
+        ...expansionQuery,
+        limit: limitOption,
+        page: pageOption,
+        sortBy: sortByOption
+      }
+    );
     return comments;
   }
 
@@ -159,11 +162,14 @@ export class CommentController {
   @CastcleBasicAuth()
   @Post(':id/comments/:commentId/reply')
   async replyComment(
-    @Param('id') contentId: string,
     @Param('commentId') commentId: string,
     @Body() replyCommentBody: ReplyCommentBody,
-    @Req() req: CredentialRequest
+    @Req() { $credential }: CredentialRequest,
+    @Query() expansionQuery: ExpansionQuery
   ) {
+    const authorizedUser = await this.authService.getUserFromAccount(
+      $credential.account
+    );
     const comment = await this.contentService.getCommentById(commentId);
     const user = await this.authService.getUserFromCastcleId(
       replyCommentBody.castcleId
@@ -182,9 +188,13 @@ export class CommentController {
       },
       account: { _id: comment.author._id }
     });
+
     return {
-      payload: await replyComment.toCommentPayload(
-        this.contentService._commentModel
+      payload: await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        replyComment,
+        [],
+        expansionQuery
       )
     };
   }
@@ -195,19 +205,25 @@ export class CommentController {
   @CastcleBasicAuth()
   @Put(':id/comments/:commentId')
   async updateComment(
-    @Param('id') contentId: string,
     @Param('commentId') commentId: string,
     @Body() editCommentBody: EditCommentBody,
-    @Req() req: CredentialRequest
+    @Req() { $credential }: CredentialRequest,
+    @Query() expansionQuery: ExpansionQuery
   ) {
-    //const content = await this._getContentIfExist(contentId, req);
+    const authorizedUser = await this.authService.getUserFromAccount(
+      $credential.account
+    );
     const comment = await this.contentService.getCommentById(commentId);
     const updatedComment = await this.contentService.updateComment(comment, {
       message: editCommentBody.message
     });
+
     return {
-      payload: await updatedComment.toCommentPayload(
-        this.contentService._commentModel
+      payload: await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        updatedComment,
+        [],
+        expansionQuery
       )
     };
   }

@@ -51,8 +51,8 @@ export class Notification extends CastcleBase {
   })
   sourceUserId: User;
 
-  @Prop({ required: true })
-  type: string;
+  @Prop({ required: true, type: String })
+  type: NotificationType;
 
   @Prop({ required: true, type: Object })
   targetRef: any;

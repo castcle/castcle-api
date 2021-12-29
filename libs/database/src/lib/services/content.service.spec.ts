@@ -29,15 +29,14 @@ import { ContentService } from './content.service';
 import { env } from '../environment';
 import { AccountDocument } from '../schemas/account.schema';
 import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
+import {
+  MongooseForFeatures,
+  MongooseAsyncFeatures,
+  CommentService
+} from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentDocument } from '../schemas/content.schema';
-import {
-  ContentType,
-  DEFAULT_QUERY_OPTIONS,
-  EntityVisibility,
-  SortDirection
-} from '../dtos';
+import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { CommentDocument, UserDocument } from '../schemas';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { EngagementDocument } from '../schemas/engagement.schema';
@@ -77,6 +76,7 @@ const rootMongooseTestModule = (
 
 describe('ContentService', () => {
   let service: ContentService;
+  let commentService: CommentService;
   let userService: UserService;
   let authService: AuthenticationService;
   let user: UserDocument;
@@ -153,12 +153,14 @@ describe('ContentService', () => {
       providers: [
         AuthenticationService,
         ContentService,
+        CommentService,
         HashtagService,
         UserProducer,
         UserService
       ]
     }).compile();
     service = module.get<ContentService>(ContentService);
+    commentService = module.get(CommentService);
     userService = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
@@ -628,16 +630,6 @@ describe('ContentService', () => {
           expect(helloTag.score).toEqual(0);
         });
       });
-      describe('#getCommentsFromContent()', () => {
-        it('should get comment and reply from content', async () => {
-          const comments = await service.getCommentsFromContent(
-            contentA,
-            DEFAULT_QUERY_OPTIONS
-          );
-          expect(comments.meta.resultCount).toEqual(1);
-          expect(comments.payload[0].reply.length).toEqual(1);
-        });
-      });
       describe('#likeComment()', () => {
         it('should update engagement.like of comment', async () => {
           await service.likeComment(user, rootComment);
@@ -676,14 +668,14 @@ describe('ContentService', () => {
             .findById(rootComment._id)
             .exec();
           expect(preComment.engagements.comment.count).toEqual(1);
-          const result = await service.deleteComment(replyComment);
+          await service.deleteComment(replyComment);
           const postReply = await service._commentModel
             .findById(replyComment._id)
             .exec();
           expect(postReply.visibility).toEqual(EntityVisibility.Deleted);
-          const comments = await service.getCommentsFromContent(
-            contentA,
-            DEFAULT_QUERY_OPTIONS
+          const comments = await commentService.getCommentsByContentId(
+            user,
+            contentA._id
           );
           expect(comments.meta.resultCount).toEqual(1);
           expect(comments.payload[0].reply.length).toEqual(0);
@@ -695,10 +687,10 @@ describe('ContentService', () => {
         });
 
         it('should remove a comment from content', async () => {
-          const result = await service.deleteComment(rootComment);
-          const comments = await service.getCommentsFromContent(
-            contentA,
-            DEFAULT_QUERY_OPTIONS
+          await service.deleteComment(rootComment);
+          const comments = await commentService.getCommentsByContentId(
+            user,
+            contentA._id
           );
           expect(comments.meta.resultCount).toEqual(0);
         });

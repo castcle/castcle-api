@@ -25,8 +25,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CastcleMeta } from './common.dto';
 
 export enum NotificationType {
-  Content = 'content',
   Comment = 'comment',
+  Content = 'content',
+  Like = 'like',
   System = 'system'
 }
 

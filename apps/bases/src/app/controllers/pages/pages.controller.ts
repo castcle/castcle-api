@@ -356,17 +356,40 @@ export class PageController {
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
+    const user = await this.userService.getUserFromCredential(req.$credential);
     const page = await this._getPageByIdOrCastcleId(id, req);
     const contents = await this.contentService.getContentsFromUser(page.id, {
       ...getContentsDto,
       sortBy: sortByOption
     });
 
+    const engagements =
+      await this.contentService.getAllEngagementFromContentsAndUser(
+        contents.items,
+        user?.id
+      );
+
+    const payload = contents.items.map((content) => {
+      const contentEngagements = engagements.filter(
+        (eng) =>
+          String(eng.targetRef.$id) === String(content._id) ||
+          String(eng.targetRef.oid) === String(content.id)
+      );
+
+      return content.toContentPayloadItem(contentEngagements);
+    });
+
+    const authors = contents.items.map(({ author }) => new Author(author));
+    const includeUsers = getContentsDto.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(
+          req.$credential.account,
+          authors
+        )
+      : authors;
+
     return {
-      payload: contents.items.map((c) => c.toContentPayloadItem()),
-      includes: new CastcleIncludes({
-        users: contents.items.map(({ author }) => new Author(author))
-      }),
+      payload,
+      includes: new CastcleIncludes({ users: includeUsers }),
       meta: createCastcleMeta(contents.items)
     };
   }
