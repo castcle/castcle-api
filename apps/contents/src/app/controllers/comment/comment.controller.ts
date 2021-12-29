@@ -133,27 +133,22 @@ export class CommentController {
     @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_QUERY_OPTIONS.sortBy,
+    sortBy = DEFAULT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
+    page = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
+    limit = DEFAULT_QUERY_OPTIONS.limit
   ) {
-    const authorizedUser = await this.authService.getUserFromAccount(
-      $credential.account
-    );
-    const content = await this.contentService.getContentById(contentId);
-    const comments = await this.commentService.getCommentsByContentId(
+    const [authorizedUser, content] = await Promise.all([
+      this.authService.getUserFromAccount($credential.account),
+      this.contentService.getContentById(contentId)
+    ]);
+
+    return this.commentService.getCommentsByContentId(
       authorizedUser,
       content._id,
-      {
-        ...expansionQuery,
-        limit: limitOption,
-        page: pageOption,
-        sortBy: sortByOption
-      }
+      { ...expansionQuery, limit, page, sortBy }
     );
-    return comments;
   }
 
   @ApiBody({
