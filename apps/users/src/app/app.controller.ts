@@ -315,11 +315,6 @@ export class UserController {
       user.id,
       { sinceId, sortBy, untilId, maxResults }
     );
-    console.log('done load old stuff');
-    console.log(
-      'AFter old query ',
-      contents.map((t) => t.id)
-    );
     return this.contentService.convertContentsToContentResponse(user, contents);
   }
 
@@ -407,7 +402,7 @@ export class UserController {
         CastcleStatus.FORBIDDEN_REQUEST,
         req.$language
       );
-    this.userService.follow(currentUser, followedUser);
+    await this.userService.follow(currentUser, followedUser);
     return '';
   }
 
