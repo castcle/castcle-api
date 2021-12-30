@@ -160,26 +160,38 @@ export class CommentService {
       author: author,
       hasHistory: revisionCount > 1,
       reply: replies.map((reply) => {
+        const replyAuthor = viewer
+          ? {
+              avatar: reply.author.profile
+                ? new Image(reply.author.profile.images.avatar).toSignUrls()
+                : Configs.DefaultAvatarImages,
+              castcleId: reply.author.displayId,
+              displayName: reply.author.displayName,
+              id: reply.author._id,
+              verified: reply.author.verified,
+              type: reply.author.type,
+              ...this.getRelationship(
+                relationships,
+                viewer._id,
+                reply.author._id,
+                hasRelationshipExpansion
+              )
+            }
+          : {
+              avatar: reply.author.profile
+                ? new Image(reply.author.profile.images.avatar).toSignUrls()
+                : Configs.DefaultAvatarImages,
+              castcleId: reply.author.displayId,
+              displayName: reply.author.displayName,
+              id: reply.author._id,
+              verified: reply.author.verified,
+              type: reply.author.type
+            };
         return {
           id: reply._id,
           createdAt: reply.createdAt.toISOString(),
           message: reply.message,
-          author: {
-            avatar: reply.author.profile
-              ? new Image(reply.author.profile.images.avatar).toSignUrls()
-              : Configs.DefaultAvatarImages,
-            castcleId: reply.author.displayId,
-            displayName: reply.author.displayName,
-            id: reply.author._id,
-            verified: reply.author.verified,
-            type: reply.author.type,
-            ...this.getRelationship(
-              relationships,
-              viewer._id,
-              reply.author._id,
-              hasRelationshipExpansion
-            )
-          },
+          author: replyAuthor,
           metrics: { likeCount: reply.engagements.like.count },
           participate: { liked: this.getLike(engagements, reply.id) }
         };
@@ -212,11 +224,6 @@ export class CommentService {
         )
         .exec()
     ]);
-
-    const authorIds = [
-      ...commentsAuthorIds,
-      ...replies.map((reply) => reply.author._id)
-    ];
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
         ({ objectRef }) => String(objectRef.$id) === String(comment._id)
