@@ -141,12 +141,20 @@ export class CommentController {
       this.authService.getUserFromAccount($credential.account),
       this.contentService.getContentById(contentId)
     ]);
-
-    return this.commentService.getCommentsByContentId(
-      authorizedUser,
-      content._id,
-      { ...expansionQuery, limit, page, sortBy }
-    );
+    if (authorizedUser)
+      return this.commentService.getCommentsByContentId(
+        authorizedUser,
+        content._id,
+        { ...expansionQuery, limit, page, sortBy }
+      );
+    else {
+      //guestCase
+      return this.commentService.getCommentsByContentIdFromGuest(content._id, {
+        limit,
+        page,
+        sortBy
+      });
+    }
   }
 
   @ApiBody({
