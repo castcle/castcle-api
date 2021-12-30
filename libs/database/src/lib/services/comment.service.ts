@@ -127,9 +127,12 @@ export class CommentService {
   ) {
     const author = viewer
       ? {
-          avatar: comment.author.profile
-            ? new Image(comment.author.profile.images.avatar).toSignUrls()
-            : Configs.DefaultAvatarImages,
+          avatar:
+            comment.author.profile &&
+            comment.author.profile.images &&
+            comment.author.profile.images.avatar
+              ? new Image(comment.author.profile.images.avatar).toSignUrls()
+              : Configs.DefaultAvatarImages,
           castcleId: comment.author.displayId,
           displayName: comment.author.displayName,
           id: comment.author._id,
@@ -143,9 +146,12 @@ export class CommentService {
           )
         }
       : {
-          avatar: comment.author.profile
-            ? new Image(comment.author.profile.images.avatar).toSignUrls()
-            : Configs.DefaultAvatarImages,
+          avatar:
+            comment.author.profile &&
+            comment.author.profile.images &&
+            comment.author.profile.images.avatar
+              ? new Image(comment.author.profile.images.avatar).toSignUrls()
+              : Configs.DefaultAvatarImages,
           castcleId: comment.author.displayId,
           displayName: comment.author.displayName,
           id: comment.author._id,
@@ -162,9 +168,12 @@ export class CommentService {
       reply: replies.map((reply) => {
         const replyAuthor = viewer
           ? {
-              avatar: reply.author.profile
-                ? new Image(reply.author.profile.images.avatar).toSignUrls()
-                : Configs.DefaultAvatarImages,
+              avatar:
+                reply.author.profile &&
+                reply.author.profile.images &&
+                reply.author.profile.images.avatar
+                  ? new Image(reply.author.profile.images.avatar).toSignUrls()
+                  : Configs.DefaultAvatarImages,
               castcleId: reply.author.displayId,
               displayName: reply.author.displayName,
               id: reply.author._id,
@@ -178,9 +187,12 @@ export class CommentService {
               )
             }
           : {
-              avatar: reply.author.profile
-                ? new Image(reply.author.profile.images.avatar).toSignUrls()
-                : Configs.DefaultAvatarImages,
+              avatar:
+                reply.author.profile &&
+                reply.author.profile.images &&
+                reply.author.profile.images.avatar
+                  ? new Image(reply.author.profile.images.avatar).toSignUrls()
+                  : Configs.DefaultAvatarImages,
               castcleId: reply.author.displayId,
               displayName: reply.author.displayName,
               id: reply.author._id,
