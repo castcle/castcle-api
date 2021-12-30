@@ -23,54 +23,54 @@
 export const CacheKeyName = {
   NotificationsGet: {
     Name: 'NOTIFICATIONS_GET',
-    Ttl: 3
+    Ttl: 1
   },
   NotificationsBadges: {
     Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 3
+    Ttl: 1
   },
   LanguagesGet: {
     Name: 'LANGUAGES_GET',
-    Ttl: 3600
+    Ttl: 1
   },
   HashtagsGet: {
     Name: 'HASHTAGS_GET',
-    Ttl: 3
+    Ttl: 1
   },
   TopTrends: {
     Name: 'TOPTRENDS',
-    Ttl: 3
+    Ttl: 1
   },
   Searches: {
     Name: 'SEARCHES',
-    Ttl: 3
+    Ttl: 1
   },
   Pages: {
     Name: 'PAGES',
-    Ttl: 3
+    Ttl: 1
   },
   Feeds: {
     Name: 'FEEDS',
-    Ttl: 3
+    Ttl: 1
   },
   Contents: {
     Name: 'CONTENTS',
-    Ttl: 3
+    Ttl: 1
   },
   Comments: {
     Name: 'COMMENTS',
-    Ttl: 3
+    Ttl: 1
   },
   Users: {
     Name: 'USERS',
-    Ttl: 3
+    Ttl: 1
   },
   Country: {
     Name: 'COUNTRY',
-    Ttl: 10
+    Ttl: 1
   },
   SyncSocial: {
     Name: 'SYNC_SOCIAL',
-    Ttl: 10
+    Ttl: 1
   }
 };
