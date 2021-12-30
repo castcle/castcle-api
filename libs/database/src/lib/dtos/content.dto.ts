@@ -297,7 +297,7 @@ export class CastcleContentQueryOptions extends QueryOption {
 
 export const DEFAULT_CONTENT_QUERY_OPTIONS = {
   sortBy: {
-    field: 'updatedAt',
+    field: 'createdAt',
     type: 'desc'
   },
   maxResults: 25

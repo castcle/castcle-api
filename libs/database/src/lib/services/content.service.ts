@@ -45,7 +45,6 @@ import {
   Author,
   CastcleContentQueryOptions,
   CastcleIncludes,
-  CastcleMeta,
   CommentDto,
   ContentPayloadItem,
   ContentResponse,
@@ -213,13 +212,11 @@ export class ContentService {
   /**
    *
    * @param {string} id get content from content's id
-   * @returns {ContentDocument}
    */
-  getContentFromId = async (id: string) => {
-    const content = await this._contentModel.findById(id).exec();
-    if (content && content.visibility === EntityVisibility.Publish)
-      return content;
-    return null;
+  getContentFromId = (id: string) => {
+    return this._contentModel
+      .findOne({ _id: id, visibility: EntityVisibility.Publish })
+      .exec();
   };
 
   /**
@@ -328,8 +325,12 @@ export class ContentService {
     if (options.type) findFilter.type = options.type;
     findFilter = await createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
-    const totalDocument = await this._contentModel.count(findFilter).exec();
+    const totalDocument = await this._contentModel
+      .countDocuments(findFilter)
+      .exec();
+
     if (options.sortBy.type === 'desc') {
+      console.log('sort');
       return {
         total: totalDocument,
         items: await query.sort(`-${options.sortBy.field}`).exec(),
@@ -595,67 +596,33 @@ export class ContentService {
 
   /**
    * Update Comment Engagement from Content or Comment
-   * @param {CommentDocument} replyComment
-   * @returns {true}
+   * @param {CommentDocument} comment
    */
-  _updateCommentCounter = async (
-    replyComment: CommentDocument,
-    commentByUserId?: any
-  ) => {
-    if (replyComment.type === CommentType.Reply) {
-      if (replyComment.visibility === EntityVisibility.Publish)
-        await new this._engagementModel({
-          type: EngagementType.Comment,
-          targetRef: {
-            $ref: 'comment',
-            $id: replyComment.targetRef.$id
-              ? replyComment.targetRef.$id
-              : replyComment.targetRef.oid
-          },
-          visibility: EntityVisibility.Publish,
-          user: commentByUserId
-        }).save();
-      else {
-        const engagements = await this._engagementModel
-          .find({
-            type: EngagementType.Comment,
-            targetRef: {
-              $ref: 'comment',
-              $id: replyComment.targetRef.$id
-                ? replyComment.targetRef.$id
-                : replyComment.targetRef.oid
-            }
-          })
-          .exec();
-        await Promise.all(engagements.map((e) => e.remove()));
+  _updateCommentCounter = async (comment: CommentDocument, commentBy?: any) => {
+    if (![CommentType.Comment, CommentType.Reply].includes(comment.type)) {
+      return true;
+    }
+
+    const query: FilterQuery<EngagementDocument> = {
+      type: EngagementType.Comment,
+      targetRef: {
+        $ref: comment.type === CommentType.Comment ? 'content' : 'comment',
+        $id: comment.targetRef.$id ?? comment.targetRef.oid
       }
-    } else if (replyComment.type === CommentType.Comment)
-      if (replyComment.visibility === EntityVisibility.Publish)
-        await new this._engagementModel({
-          type: EngagementType.Comment,
-          targetRef: {
-            $ref: 'content',
-            $id: replyComment.targetRef.$id
-              ? replyComment.targetRef.$id
-              : replyComment.targetRef.oid
-          },
-          visibility: EntityVisibility.Publish,
-          user: commentByUserId
-        }).save();
-      else {
-        const engagements = await this._engagementModel
-          .find({
-            type: EngagementType.Comment,
-            targetRef: {
-              $ref: 'content',
-              $id: replyComment.targetRef.$id
-                ? replyComment.targetRef.$id
-                : replyComment.targetRef.oid
-            }
-          })
-          .exec();
-        await Promise.all(engagements.map((e) => e.remove()));
-      }
+    };
+
+    if (comment.visibility === EntityVisibility.Publish) {
+      await new this._engagementModel({
+        ...query,
+        visibility: EntityVisibility.Publish,
+        user: commentBy
+      }).save();
+    } else {
+      const engagements = await this._engagementModel.find(query).exec();
+
+      await Promise.all(engagements.map((engagement) => engagement.remove()));
+    }
+
     return true;
   };
 
@@ -680,11 +647,18 @@ export class ContentService {
       },
       type: CommentType.Comment
     } as CommentDto;
-    const newComment = new this._commentModel(dto);
-    newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
-    await this.hashtagService.createFromTags(newComment.hashtags);
-    const comment = await newComment.save();
+
+    const comment = new this._commentModel(dto);
+
+    comment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
+
+    await Promise.all([
+      this.hashtagService.createFromTags(comment.hashtags),
+      comment.save()
+    ]);
+
     await this._updateCommentCounter(comment, author._id);
+
     return comment;
   };
 
@@ -1087,16 +1061,26 @@ Message: ${message}`
   async convertContentsToContentResponse(
     viewer: UserDocument,
     contents: ContentDocument[],
-    meta: CastcleMeta,
     hasRelationshipExpansion = false
   ): Promise<ContentsResponse> {
+    const meta = createCastcleMeta(contents);
     const users: IncludeUser[] = [];
     const authorIds = [];
     const casts: ContentPayloadItem[] = [];
     const payload: ContentPayloadItem[] = [];
+    const engagements = await this.getAllEngagementFromContentsAndUser(
+      contents,
+      viewer?.id
+    );
 
     contents.forEach((content) => {
-      payload.push(content.toContentPayloadItem());
+      const contentEngagements = engagements.filter(
+        (engagement) =>
+          String(engagement.targetRef.$id) === String(content.id) ||
+          String(engagement.targetRef.oid) === String(content.id)
+      );
+
+      payload.push(content.toContentPayloadItem(contentEngagements));
 
       if (content.originalPost) {
         casts.push(toSignedContentPayloadItem(content.originalPost));
@@ -1108,39 +1092,33 @@ Message: ${message}`
       }
     });
 
-    if (!hasRelationshipExpansion) {
-      return {
-        payload,
-        includes: new CastcleIncludes({ users, casts }),
-        meta
-      };
+    if (hasRelationshipExpansion) {
+      const relationships = await this.relationshipModel.find({
+        $or: [
+          { user: viewer._id, followedUser: { $in: authorIds } },
+          { user: { $in: authorIds }, followedUser: viewer._id }
+        ],
+        visibility: EntityVisibility.Publish
+      });
+
+      users.forEach((author) => {
+        const authorRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(user) === String(author.id) &&
+            String(followedUser) === String(viewer.id)
+        );
+
+        const getterRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(followedUser) === String(author.id) &&
+            String(user) === String(viewer.id)
+        );
+
+        author.blocked = Boolean(getterRelationship?.blocking);
+        author.blocking = Boolean(authorRelationship?.blocking);
+        author.followed = Boolean(getterRelationship?.following);
+      });
     }
-
-    const relationships = await this.relationshipModel.find({
-      $or: [
-        { user: viewer._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer._id }
-      ],
-      visibility: EntityVisibility.Publish
-    });
-
-    users.forEach((author) => {
-      const authorRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(user) === String(author.id) &&
-          String(followedUser) === String(viewer.id)
-      );
-
-      const getterRelationship = relationships.find(
-        ({ followedUser, user }) =>
-          String(followedUser) === String(author.id) &&
-          String(user) === String(viewer.id)
-      );
-
-      author.blocked = Boolean(getterRelationship?.blocking);
-      author.blocking = Boolean(authorRelationship?.blocking);
-      author.followed = Boolean(getterRelationship?.following);
-    });
 
     return {
       payload,

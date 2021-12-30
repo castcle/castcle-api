@@ -224,7 +224,7 @@ describe('NotificationsController', () => {
       const responseResult = await controller.getAll({
         $credential: userCredential
       } as any);
-      console.log(responseResult);
+
       const expectResult = {
         payload: [
           {
@@ -241,7 +241,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'system'
           },
           {
             id: '',
@@ -257,7 +258,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           },
           {
             id: '',
@@ -273,16 +275,20 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           }
         ]
       };
+
       responseResult.payload.forEach((x) => (x.id = ''));
-      expect(responseResult.payload).toEqual(expectResult.payload);
-      expect(responseResult.payload.length).toEqual(3);
-      expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
-        2
+      expect(responseResult.payload).toEqual(
+        expect.arrayContaining(expectResult.payload)
       );
+      expect(responseResult.payload.length).toEqual(3);
+      expect(
+        responseResult.payload.filter(({ comment }) => comment.id).length
+      ).toEqual(2);
       expect(
         responseResult.payload.filter(
           (x) =>
@@ -317,7 +323,8 @@ describe('NotificationsController', () => {
             },
             system: {
               id: null
-            }
+            },
+            type: 'comment'
           }
         ]
       };

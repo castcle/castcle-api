@@ -272,8 +272,8 @@ describe('AppController', () => {
         }),
         meta: {
           resultCount: contents.length,
-          oldestId: contents[0].id,
-          newestId: contents[contents.length - 1].id
+          oldestId: contents[contents.length - 1].id,
+          newestId: contents[0].id
         }
       };
       console.debug('liked stuff', JSON.stringify(expectedResponse));

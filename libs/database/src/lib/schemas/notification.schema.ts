@@ -80,10 +80,12 @@ NotificationSchema.methods.toNotificationPayload = function () {
     avatar: (this as NotificationDocument).avatar,
     message: (this as NotificationDocument).message,
     source: (this as NotificationDocument).source,
+    type: (this as NotificationDocument).type,
     read: (this as NotificationDocument).read,
     content: {
       id:
-        (this as NotificationDocument).type === NotificationType.Content
+        (this as NotificationDocument).type === NotificationType.Content ||
+        (this as NotificationDocument).type === NotificationType.Like
           ? (this as NotificationDocument).targetRef.oid
           : null
     },

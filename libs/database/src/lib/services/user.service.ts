@@ -289,7 +289,7 @@ export class UserService {
   ) => {
     const pagination = createPagination(
       queryOptions,
-      await this._userModel.count(query)
+      await this._userModel.countDocuments(query)
     );
     const itemsQuery = this._userModel
       .find({ ...query, visibility: EntityVisibility.Publish })
@@ -380,7 +380,7 @@ export class UserService {
       query.isFollowPage = queryOption.type === UserType.Page;
     }
 
-    const total = await this._relationshipModel.count(query).exec();
+    const total = await this._relationshipModel.countDocuments(query).exec();
     const relationships = total
       ? await this._relationshipModel
           .find(query)
@@ -416,7 +416,7 @@ export class UserService {
       query.isFollowPage = queryOption.type === UserType.Page;
     }
 
-    const total = await this._relationshipModel.count(query).exec();
+    const total = await this._relationshipModel.countDocuments(query).exec();
     const relationships = total
       ? await this._relationshipModel
           .find(query)
