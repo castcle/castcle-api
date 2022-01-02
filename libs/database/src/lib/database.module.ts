@@ -27,6 +27,7 @@ import {
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
+import { AccountReferralSchema } from './schemas/account-referral.schema';
 import { AccountSchemaFactory } from './schemas/account.schema-factory';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
@@ -72,7 +73,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Country', schema: CountrySchema },
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
   { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'DsContentReach', schema: DsContentReachSchema }
+  { name: 'DsContentReach', schema: DsContentReachSchema },
+  { name: 'AccountReferral', schema: AccountReferralSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

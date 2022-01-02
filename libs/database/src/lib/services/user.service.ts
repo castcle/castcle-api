@@ -44,6 +44,7 @@ import { ContentDocument } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
 import { createPagination } from '../utils/common';
+import { AccountReferral } from './../schemas/account-referral.schema';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -68,7 +69,9 @@ export class UserService {
     @InjectModel('Relationship')
     public _relationshipModel: Model<RelationshipDocument>,
     private contentService: ContentService,
-    private userProducer: UserProducer
+    private userProducer: UserProducer,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
