@@ -819,7 +819,7 @@ Message: ${message}`
     });
   };
 
-  getRelationships = async (
+  getRelationshipData = async (
     hasRelationshipExpansion: boolean,
     relationUserId: string,
     viewerId: string
@@ -841,10 +841,10 @@ Message: ${message}`
       : [];
   };
 
-  getReferrer = async (refAccountId: Account) => {
+  getReferrer = async (accountId: Account) => {
     const accountRef = await this._accountReferral
       .findOne({
-        referrerAccount: refAccountId
+        referringAccount: accountId
       })
       .exec();
 

@@ -848,7 +848,7 @@ export class UserController {
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referrer')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  async getPageContents(
+  async getReferrer(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
     @Query() userQuery: ExpansionQuery
@@ -862,26 +862,33 @@ export class UserController {
     logger.log('Get User from credential.');
     const requester = await this.userService.getUserFromCredential($credential);
     logger.log('Get User relationship');
-    const relationships = await this.userService.getRelationships(
-      userQuery.hasRelationshipExpansion,
-      userReferrer.id,
-      requester._id
-    );
+    let response;
+    if (userQuery?.hasRelationshipExpansion) {
+      const relationships = await this.userService.getRelationshipData(
+        userQuery.hasRelationshipExpansion,
+        userReferrer.id,
+        requester._id
+      );
 
-    logger.log('Get User relation status');
-    const relationStatus = this.commentService.getRelationship(
-      relationships,
-      requester._id,
-      userReferrer._id,
-      userQuery.hasRelationshipExpansion
-    );
+      logger.log('Get User relation status');
+      const relationStatus = this.commentService.getRelationship(
+        relationships,
+        requester._id,
+        userReferrer._id,
+        userQuery.hasRelationshipExpansion
+      );
 
-    logger.log('build response');
-    const response = await userReferrer.toUserResponse(
-      relationStatus.blocked,
-      relationStatus.blocking,
-      relationStatus.followed
-    );
+      logger.log('build response');
+      response = await userReferrer.toUserResponse(
+        relationStatus.blocked,
+        relationStatus.blocking,
+        relationStatus.followed
+      );
+    } else {
+      logger.log('build response');
+      response = await userReferrer.toUserResponse();
+    }
+
     return response;
   }
 }

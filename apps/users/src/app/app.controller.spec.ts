@@ -772,4 +772,48 @@ describe('AppController', () => {
       );
     });
   });
+
+  describe('referrer', () => {
+    let user: UserDocument;
+    let credential;
+    let defaultRequest: SocialSyncDto;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      const newAccount = await authService.createAccount({
+        deviceUUID: 'refTest12354',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+      //sign up to create actual account
+      await authService.signupByEmail(newAccount.accountDocument, {
+        displayId: 'ref1',
+        displayName: 'ref01',
+        email: 'ref1@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get referrer from Account Referrer schema', async () => {
+      const result = await appController.getReferrer('ref1', credential, null);
+      expect(result.castcleId).toEqual(user.displayId);
+    });
+  });
 });
