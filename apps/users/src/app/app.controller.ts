@@ -22,6 +22,7 @@
  */
 import {
   AuthenticationService,
+  CommentService,
   ContentService,
   SocialProvider,
   SocialSyncService,
@@ -31,6 +32,7 @@ import {
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
+  ExpansionQuery,
   FollowResponse,
   GetContentsDto,
   PageResponseDto,
@@ -97,7 +99,8 @@ export class UserController {
     private userService: UserService,
     private contentService: ContentService,
     private authService: AuthenticationService,
-    private socialSyncService: SocialSyncService
+    private socialSyncService: SocialSyncService,
+    private commentService: CommentService
   ) {
     logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
@@ -830,5 +833,55 @@ export class UserController {
     }
 
     await this.userService.userSettings(account.id, body.preferredLanguages);
+  }
+
+  /**
+   *
+   * @param {string} idOrCastcleId of page
+   * @param {CredentialRequest} req that contain current user credential
+   * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
+   */
+
+  @ApiOkResponse({
+    type: UserResponseDto
+  })
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':id/referrer')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getPageContents(
+    @Param('id') id: string,
+    @Req() { $credential }: CredentialRequest,
+    @Query() userQuery: ExpansionQuery
+  ): Promise<UserResponseDto> {
+    logger.log('Get User from param.');
+    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
+
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    const userReferrer = await this.userService.getReferrer(user.ownerAccount);
+    logger.log('Get User from credential.');
+    const requester = await this.userService.getUserFromCredential($credential);
+    logger.log('Get User relationship');
+    const relationships = await this.userService.getRelationships(
+      userQuery.hasRelationshipExpansion,
+      userReferrer.id,
+      requester._id
+    );
+
+    logger.log('Get User relation status');
+    const relationStatus = this.commentService.getRelationship(
+      relationships,
+      requester._id,
+      userReferrer._id,
+      userQuery.hasRelationshipExpansion
+    );
+
+    logger.log('build response');
+    const response = await userReferrer.toUserResponse(
+      relationStatus.blocked,
+      relationStatus.blocking,
+      relationStatus.followed
+    );
+    return response;
   }
 }

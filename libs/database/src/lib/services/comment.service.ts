@@ -89,7 +89,7 @@ export class CommentService {
     });
   }
 
-  private getRelationship(
+  getRelationship(
     relationships: RelationshipDocument[],
     viewerId: string,
     authorId: string,

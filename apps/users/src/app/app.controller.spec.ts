@@ -22,6 +22,7 @@
  */
 import {
   AuthenticationService,
+  CommentService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -118,7 +119,8 @@ describe('AppController', () => {
         ContentService,
         UserProducer,
         HashtagService,
-        SocialSyncService
+        SocialSyncService,
+        CommentService
       ]
     }).compile();
     service = app.get<UserService>(UserService);

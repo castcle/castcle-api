@@ -72,5 +72,9 @@ export const CacheKeyName = {
   SyncSocial: {
     Name: 'SYNC_SOCIAL',
     Ttl: 1
+  },
+  Referrer: {
+    Name: 'REFERRER',
+    Ttl: 1
   }
 };

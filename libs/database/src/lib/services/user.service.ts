@@ -818,4 +818,46 @@ Message: ${message}`
       return author.toIncludeUser({ blocked, blocking, followed });
     });
   };
+
+  getRelationships = async (
+    hasRelationshipExpansion: boolean,
+    relationUserId: string,
+    viewerId: string
+  ) => {
+    return hasRelationshipExpansion
+      ? await this._relationshipModel.find({
+          $or: [
+            {
+              user: viewerId as any,
+              followedUser: { $in: relationUserId as any }
+            },
+            {
+              user: { $in: relationUserId as any },
+              followedUser: viewerId as any
+            }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+  };
+
+  getReferrer = async (refAccountId: Account) => {
+    const accountRef = await this._accountReferral
+      .findOne({
+        referrerAccount: refAccountId
+      })
+      .exec();
+
+    if (accountRef) {
+      const userRef = this.getByIdOrCastcleId(
+        accountRef.referrerDisplayId,
+        UserType.People
+      );
+      this.logger.log('Success get referrer.');
+      return userRef;
+    } else {
+      this.logger.error('Referrer not found!');
+      throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    }
+  };
 }
