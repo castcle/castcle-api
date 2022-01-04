@@ -80,7 +80,12 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
-import { TargetCastcleDto, UpdateMobileDto, UserSettingsDto } from './dtos/dto';
+import {
+  TargetCastcleDto,
+  UpdateMobileDto,
+  UserReferrerResponse,
+  UserSettingsDto
+} from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -843,7 +848,7 @@ export class UserController {
    */
 
   @ApiOkResponse({
-    type: UserResponseDto
+    type: UserReferrerResponse
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referrer')
@@ -852,7 +857,7 @@ export class UserController {
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
     @Query() userQuery: ExpansionQuery
-  ): Promise<UserResponseDto> {
+  ): Promise<UserReferrerResponse> {
     logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
 
@@ -861,8 +866,11 @@ export class UserController {
     const userReferrer = await this.userService.getReferrer(user.ownerAccount);
     logger.log('Get User from credential.');
     const requester = await this.userService.getUserFromCredential($credential);
+
+    if (!userReferrer) return { payload: null };
+
+    let response = null;
     logger.log('Get User relationship');
-    let response;
     if (userQuery?.hasRelationshipExpansion) {
       const relationships = await this.userService.getRelationshipData(
         userQuery.hasRelationshipExpansion,
@@ -888,7 +896,6 @@ export class UserController {
       logger.log('build response');
       response = await userReferrer.toUserResponse();
     }
-
-    return response;
+    return { payload: response };
   }
 }

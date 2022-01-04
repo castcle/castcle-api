@@ -856,8 +856,8 @@ Message: ${message}`
       this.logger.log('Success get referrer.');
       return userRef;
     } else {
-      this.logger.error('Referrer not found!');
-      throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+      this.logger.warn('Referrer not found!');
+      return null;
     }
   };
 }

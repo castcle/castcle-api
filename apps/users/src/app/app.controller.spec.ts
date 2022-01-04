@@ -813,7 +813,16 @@ describe('AppController', () => {
 
     it('should get referrer from Account Referrer schema', async () => {
       const result = await appController.getReferrer('ref1', credential, null);
-      expect(result.castcleId).toEqual(user.displayId);
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get empty data when use wrong referrer', async () => {
+      const result = await appController.getReferrer(
+        user.displayId,
+        credential,
+        null
+      );
+      expect(result.payload).toBeNull();
     });
   });
 });
