@@ -40,11 +40,20 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
     if (cacheKey) {
       const request = context.switchToHttp().getRequest();
       const token = util.getTokenFromRequest(request);
-      console.debug(
-        'cache key:',
-        `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`
-      );
-      return `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
+      const finalKey = `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
+      console.debug('cache key:', finalKey);
+      //get old setting
+      console.debug('this.cacheManager.get(token)', token);
+      this.cacheManager.get(token).then((resultSetting) => {
+        console.debug('result get', resultSetting);
+        const setting: { [key: string]: any } = JSON.parse(resultSetting) || {};
+        console.log(token, 'setting', setting);
+        setting[finalKey] = true;
+        console.debug('new setting', setting);
+        this.cacheManager.set(token, JSON.stringify(setting));
+      });
+
+      return finalKey;
     }
 
     return super.trackBy(context);

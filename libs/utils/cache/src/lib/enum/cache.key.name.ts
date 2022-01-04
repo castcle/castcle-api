@@ -31,50 +31,50 @@ export const CacheKeyName = {
   },
   LanguagesGet: {
     Name: 'LANGUAGES_GET',
-    Ttl: 1
+    Ttl: 3600
   },
   HashtagsGet: {
     Name: 'HASHTAGS_GET',
-    Ttl: 1
+    Ttl: 10
   },
   TopTrends: {
     Name: 'TOPTRENDS',
-    Ttl: 1
+    Ttl: 10
   },
   Searches: {
     Name: 'SEARCHES',
-    Ttl: 1
+    Ttl: 10
   },
   Pages: {
     Name: 'PAGES',
-    Ttl: 1
+    Ttl: 10
   },
   Feeds: {
     Name: 'FEEDS',
-    Ttl: 1
+    Ttl: 10
   },
   Contents: {
     Name: 'CONTENTS',
-    Ttl: 1
+    Ttl: 10
   },
   Comments: {
     Name: 'COMMENTS',
-    Ttl: 1
+    Ttl: 10
   },
   Users: {
     Name: 'USERS',
-    Ttl: 1
+    Ttl: 10
   },
   Country: {
     Name: 'COUNTRY',
-    Ttl: 1
+    Ttl: 10
   },
   SyncSocial: {
     Name: 'SYNC_SOCIAL',
-    Ttl: 1
+    Ttl: 10
   },
   Referrer: {
     Name: 'REFERRER',
-    Ttl: 1
+    Ttl: 10
   }
 };
