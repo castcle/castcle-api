@@ -48,9 +48,6 @@ export class HttpCacheClearInterceptor implements NestInterceptor {
     if (cacheKey) {
       const request = context.switchToHttp().getRequest();
       const token = util.getTokenFromRequest(request);
-      const finalKey = `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
-      console.debug('cache key:', finalKey);
-      await this.cacheManager.del(finalKey);
       const setting: { [key: string]: any } =
         JSON.parse(await this.cacheManager.get(token)) || {};
       await Promise.all(
