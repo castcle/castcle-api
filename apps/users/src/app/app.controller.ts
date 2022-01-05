@@ -83,6 +83,7 @@ import { ReportUserDto } from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
+  UserRefereeResponse,
   UserReferrerResponse,
   UserSettingsDto
 } from './dtos/dto';
@@ -844,7 +845,7 @@ export class UserController {
    *
    * @param {string} idOrCastcleId of page
    * @param {CredentialRequest} req that contain current user credential
-   * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
+   * @returns {Promise<UserReferrerResponse>} referrer user
    */
 
   @ApiOkResponse({
@@ -895,6 +896,70 @@ export class UserController {
     } else {
       logger.log('build response');
       response = await userReferrer.toUserResponse();
+    }
+    return { payload: response };
+  }
+
+  /**
+   *
+   * @param {string} idOrCastcleId of page
+   * @param {CredentialRequest} req that contain current user credential
+   * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
+   */
+
+  @ApiOkResponse({
+    type: UserRefereeResponse
+  })
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':id/referee')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getReferee(
+    @Param('id') id: string,
+    @Req() { $credential }: CredentialRequest,
+    @Query() userQuery: ExpansionQuery
+  ): Promise<UserRefereeResponse> {
+    logger.log('Get User from param.');
+    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
+
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    const userReferrer = await this.userService.getReferee(user.ownerAccount);
+    logger.log('Get User from credential.');
+    const requester = await this.userService.getUserFromCredential($credential);
+
+    if (!userReferrer) return { payload: [] };
+
+    const userID = userReferrer.map((u) => u._id);
+    let response = null;
+    logger.log('Get User relationship');
+    if (userQuery?.hasRelationshipExpansion) {
+      const relationships = await this.userService.getRelationshipData(
+        userQuery.hasRelationshipExpansion,
+        userID,
+        requester._id
+      );
+
+      response = await Promise.all(
+        userReferrer.map((x) => {
+          logger.log('Get User relation status');
+          const relationStatus = this.commentService.getRelationship(
+            relationships,
+            requester._id,
+            x._id,
+            userQuery.hasRelationshipExpansion
+          );
+
+          logger.log('build response with relation');
+          return x.toUserResponse(
+            relationStatus.blocked,
+            relationStatus.blocking,
+            relationStatus.followed
+          );
+        })
+      );
+    } else {
+      logger.log('build response without relation');
+      response = await Promise.all(userReferrer.map((x) => x.toUserResponse()));
     }
     return { payload: response };
   }

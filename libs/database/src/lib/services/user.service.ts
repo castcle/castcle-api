@@ -83,6 +83,14 @@ export class UserService {
       })
       .exec();
 
+  getUserFromAccountId = (accountId: string) =>
+    this._userModel
+      .findOne({
+        ownerAccount: accountId as any,
+        type: UserType.People,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   /**
    * Get all user and page that this credentials is own
    * @param credential
@@ -821,7 +829,7 @@ Message: ${message}`
 
   getRelationshipData = async (
     hasRelationshipExpansion: boolean,
-    relationUserId: string,
+    relationUserId: any[],
     viewerId: string
   ) => {
     return hasRelationshipExpansion
@@ -829,10 +837,10 @@ Message: ${message}`
           $or: [
             {
               user: viewerId as any,
-              followedUser: { $in: relationUserId as any }
+              followedUser: { $in: relationUserId }
             },
             {
-              user: { $in: relationUserId as any },
+              user: { $in: relationUserId },
               followedUser: viewerId as any
             }
           ],
@@ -859,5 +867,24 @@ Message: ${message}`
       this.logger.warn('Referrer not found!');
       return null;
     }
+  };
+
+  getReferee = async (accountId: Account) => {
+    const accountReferee = await this._accountReferral
+      .find({
+        referrerAccount: accountId
+      })
+      .exec();
+
+    const result: UserDocument[] = [];
+    if (accountReferee && accountReferee.length > 0) {
+      Promise.all(
+        accountReferee.map(async (x) =>
+          result.push(await this.getUserFromAccountId(x.referringAccount._id))
+        )
+      );
+      this.logger.log('Success get referee.');
+    }
+    return result;
   };
 }

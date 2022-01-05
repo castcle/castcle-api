@@ -57,3 +57,8 @@ export class UserReferrerResponse {
   @ApiProperty()
   payload: UserResponseDto;
 }
+
+export class UserRefereeResponse {
+  @ApiProperty()
+  payload: UserResponseDto[];
+}
