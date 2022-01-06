@@ -337,7 +337,7 @@ export class PageController {
       { ...getContentsDto, sortBy }
     );
 
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       requester,
       contents,
       getContentsDto.hasRelationshipExpansion

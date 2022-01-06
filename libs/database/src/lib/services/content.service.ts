@@ -1058,8 +1058,8 @@ Message: ${message}`
    * @param {CastcleMeta} meta
    * @param hasRelationshipExpansion
    */
-  async convertContentsToContentResponse(
-    viewer: UserDocument,
+  async convertContentsToContentsResponse(
+    viewer: UserDocument | null,
     contents: ContentDocument[],
     hasRelationshipExpansion = false
   ): Promise<ContentsResponse> {
@@ -1093,25 +1093,27 @@ Message: ${message}`
     });
 
     if (hasRelationshipExpansion) {
-      const relationships = await this.relationshipModel.find({
-        $or: [
-          { user: viewer._id, followedUser: { $in: authorIds } },
-          { user: { $in: authorIds }, followedUser: viewer._id }
-        ],
-        visibility: EntityVisibility.Publish
-      });
+      const relationships = viewer
+        ? await this.relationshipModel.find({
+            $or: [
+              { user: viewer._id, followedUser: { $in: authorIds } },
+              { user: { $in: authorIds }, followedUser: viewer._id }
+            ],
+            visibility: EntityVisibility.Publish
+          })
+        : [];
 
       users.forEach((author) => {
         const authorRelationship = relationships.find(
           ({ followedUser, user }) =>
             String(user) === String(author.id) &&
-            String(followedUser) === String(viewer.id)
+            String(followedUser) === String(viewer?.id)
         );
 
         const getterRelationship = relationships.find(
           ({ followedUser, user }) =>
             String(followedUser) === String(author.id) &&
-            String(user) === String(viewer.id)
+            String(user) === String(viewer?.id)
         );
 
         author.blocked = Boolean(getterRelationship?.blocking);
