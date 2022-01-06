@@ -43,8 +43,15 @@ import { Account, AccountDocument } from '../schemas/account.schema';
 import { ContentDocument } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
-import { createPagination } from '../utils/common';
-import { AccountReferral } from './../schemas/account-referral.schema';
+import {
+  createCastcleFilter,
+  createPagination,
+  getRelationship
+} from '../utils/common';
+import {
+  AccountReferral,
+  AccountReferralDocument
+} from './../schemas/account-referral.schema';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -849,6 +856,20 @@ Message: ${message}`
       : [];
   };
 
+  buildRelationship = (
+    relationships: RelationshipDocument[],
+    viewerId: string,
+    relationUserId: string,
+    hasRelationshipExpansion: boolean
+  ) => {
+    return getRelationship(
+      relationships,
+      viewerId,
+      relationUserId,
+      hasRelationshipExpansion
+    );
+  };
+
   getReferrer = async (accountId: Account) => {
     const accountRef = await this._accountReferral
       .findOne({
@@ -869,15 +890,31 @@ Message: ${message}`
     }
   };
 
-  getReferee = async (accountId: Account) => {
+  getReferee = async (
+    accountId: Account,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<AccountReferralDocument> = {
+      referrerAccount: accountId
+    };
+    filter = await createCastcleFilter(filter, {
+      sinceId: sinceId,
+      untilId: untilId
+    });
+    this.logger.log('Get referee.');
     const accountReferee = await this._accountReferral
-      .find({
-        referrerAccount: accountId
-      })
+      .find(filter)
+      .limit(maxResults)
+      .exec();
+    const totalDocument = await this._accountReferral
+      .countDocuments(filter)
       .exec();
 
     const result: UserDocument[] = [];
     if (accountReferee && accountReferee.length > 0) {
+      this.logger.log('Get user.');
       Promise.all(
         accountReferee.map(async (x) =>
           result.push(await this.getUserFromAccountId(x.referringAccount._id))
@@ -885,6 +922,9 @@ Message: ${message}`
       );
       this.logger.log('Success get referee.');
     }
-    return result;
+    return {
+      total: totalDocument,
+      items: result
+    };
   };
 }

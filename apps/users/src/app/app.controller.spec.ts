@@ -22,7 +22,6 @@
  */
 import {
   AuthenticationService,
-  CommentService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -119,8 +118,7 @@ describe('AppController', () => {
         ContentService,
         UserProducer,
         HashtagService,
-        SocialSyncService,
-        CommentService
+        SocialSyncService
       ]
     }).compile();
     service = app.get<UserService>(UserService);
@@ -812,7 +810,9 @@ describe('AppController', () => {
     });
 
     it('should get referrer from Account Referrer schema', async () => {
-      const result = await appController.getReferrer('ref1', credential, null);
+      const result = await appController.getReferrer('ref1', credential, {
+        hasRelationshipExpansion: true
+      });
       expect(result.payload.castcleId).toEqual(user.displayId);
     });
 
@@ -820,9 +820,18 @@ describe('AppController', () => {
       const result = await appController.getReferrer(
         user.displayId,
         credential,
-        null
+        {
+          hasRelationshipExpansion: true
+        }
       );
       expect(result.payload).toBeNull();
     });
   });
+
+  // it('should get referrer from Account Referrer schema', async () => {
+  //   const result = await appController.getReferrer('ref1', credential, {
+  //     hasRelationshipExpansion: true
+  //   });
+  //   expect(result.payload.castcleId).toEqual(user.displayId);
+  // });
 });

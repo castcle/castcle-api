@@ -22,8 +22,8 @@
  */
 import {
   AuthenticationService,
-  CommentService,
   ContentService,
+  createCastcleMeta,
   SocialProvider,
   SocialSyncService,
   UserService
@@ -105,8 +105,7 @@ export class UserController {
     private userService: UserService,
     private contentService: ContentService,
     private authService: AuthenticationService,
-    private socialSyncService: SocialSyncService,
-    private commentService: CommentService
+    private socialSyncService: SocialSyncService
   ) {
     logger = new CastLogger(UserController.name, CastLoggerOptions);
   }
@@ -880,7 +879,7 @@ export class UserController {
       );
 
       logger.log('Get User relation status');
-      const relationStatus = this.commentService.getRelationship(
+      const relationStatus = this.userService.buildRelationship(
         relationships,
         requester._id,
         userReferrer._id,
@@ -906,7 +905,6 @@ export class UserController {
    * @param {CredentialRequest} req that contain current user credential
    * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
    */
-
   @ApiOkResponse({
     type: UserRefereeResponse
   })
@@ -916,20 +914,46 @@ export class UserController {
   async getReferee(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
-    @Query() userQuery: ExpansionQuery
+    @Query('') userQuery: ExpansionQuery,
+    @Query('maxResults')
+    maxResults: number = DEFAULT_QUERY_OPTIONS.limit,
+    @Query('sinceId') sinceId?: string,
+    @Query('untilId') untilId?: string
   ): Promise<UserRefereeResponse> {
+    if (maxResults) {
+      logger.log('validate min & max maxResults');
+      if (+maxResults < 5 || +maxResults > 100) {
+        throw new CastcleException(CastcleStatus.INVALID_MAX_RESULT);
+      }
+    }
+
+    // const user = await this.userService.getUserFromCredential($credential);
+
+    // if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    // const { items: contents } = await this.contentService.getContentsFromUser(
+    //   user.id,
+    //   { sinceId, sortBy, untilId, maxResults }
+    // );
+    // return this.contentService.convertContentsToContentResponse(user, contents);
+
     logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
 
     if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
-    const userReferrer = await this.userService.getReferee(user.ownerAccount);
+    const userReferrer = await this.userService.getReferee(
+      user.ownerAccount,
+      maxResults,
+      sinceId,
+      untilId
+    );
     logger.log('Get User from credential.');
     const requester = await this.userService.getUserFromCredential($credential);
 
-    if (!userReferrer) return { payload: [] };
+    if (!userReferrer) return { payload: [], meta: null };
 
-    const userID = userReferrer.map((u) => u._id);
+    const userID = userReferrer.items.map((u) => u._id);
     let response = null;
     logger.log('Get User relationship');
     if (userQuery?.hasRelationshipExpansion) {
@@ -940,9 +964,9 @@ export class UserController {
       );
 
       response = await Promise.all(
-        userReferrer.map((x) => {
+        userReferrer.items.map((x) => {
           logger.log('Get User relation status');
-          const relationStatus = this.commentService.getRelationship(
+          const relationStatus = this.userService.buildRelationship(
             relationships,
             requester._id,
             x._id,
@@ -959,8 +983,11 @@ export class UserController {
       );
     } else {
       logger.log('build response without relation');
-      response = await Promise.all(userReferrer.map((x) => x.toUserResponse()));
+      response = await Promise.all(
+        userReferrer.items.map((x) => x.toUserResponse())
+      );
     }
-    return { payload: response };
+    const meta = createCastcleMeta(userReferrer.items, userReferrer.total);
+    return { payload: response, meta: meta };
   }
 }
