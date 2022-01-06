@@ -844,9 +844,9 @@ export class UserController {
    *
    * @param {string} idOrCastcleId of page
    * @param {CredentialRequest} req that contain current user credential
+   * @param {string[]} userFields Available values : relationships
    * @returns {Promise<UserReferrerResponse>} referrer user
    */
-
   @ApiOkResponse({
     type: UserReferrerResponse
   })
@@ -903,7 +903,11 @@ export class UserController {
    *
    * @param {string} idOrCastcleId of page
    * @param {CredentialRequest} req that contain current user credential
-   * @returns {Promise<ContentsResponse>} all contents that has been map with contentService.getContentsFromUser()
+   * @param {string[]} userFields Available values : relationships
+   * @param {number} maxResults limit return result
+   * @param {string} sinceId Returns results with an ID greater than (that is, more recent than) the specified ID
+   * @param {string} untilId Returns results with an ID less less than (that is, older than) the specified ID
+   * @returns {Promise<UserRefereeResponse>} all User Referee
    */
   @ApiOkResponse({
     type: UserRefereeResponse
@@ -926,17 +930,6 @@ export class UserController {
         throw new CastcleException(CastcleStatus.INVALID_MAX_RESULT);
       }
     }
-
-    // const user = await this.userService.getUserFromCredential($credential);
-
-    // if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    // const { items: contents } = await this.contentService.getContentsFromUser(
-    //   user.id,
-    //   { sinceId, sortBy, untilId, maxResults }
-    // );
-    // return this.contentService.convertContentsToContentResponse(user, contents);
-
     logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
 

@@ -771,7 +771,7 @@ describe('AppController', () => {
     });
   });
 
-  describe('referrer', () => {
+  describe('Referrer & Referee', () => {
     let user: UserDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
@@ -826,12 +826,40 @@ describe('AppController', () => {
       );
       expect(result.payload).toBeNull();
     });
-  });
 
-  // it('should get referrer from Account Referrer schema', async () => {
-  //   const result = await appController.getReferrer('ref1', credential, {
-  //     hasRelationshipExpansion: true
-  //   });
-  //   expect(result.payload.castcleId).toEqual(user.displayId);
-  // });
+    it('should get Referee from Account Referrer schema', async () => {
+      const newAccount2 = await authService.createAccount({
+        deviceUUID: 'refTest789',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+
+      await authService.signupByEmail(newAccount2.accountDocument, {
+        displayId: 'ref2',
+        displayName: 'ref02',
+        email: 'ref2@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+
+      const result = await appController.getReferee(
+        user.displayId,
+        credential,
+        {
+          hasRelationshipExpansion: true
+        }
+      );
+      expect(result.payload.length).toEqual(2);
+    });
+
+    it('should get empty data when use wrong Referee', async () => {
+      const result = await appController.getReferee('ref2', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.length).toEqual(0);
+    });
+  });
 });
