@@ -301,7 +301,7 @@ export class UserController {
     required: false
   })
   @ApiQuery({
-    name: 'maxResult',
+    name: 'maxResults',
     required: false
   })
   @CastcleAuth(CacheKeyName.Users)
@@ -312,7 +312,7 @@ export class UserController {
     sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string,
-    @Query('maxResult', LimitPipe)
+    @Query('maxResults', LimitPipe)
     maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
   ): Promise<ContentsResponse> {
     const user = await this.userService.getUserFromCredential($credential);
