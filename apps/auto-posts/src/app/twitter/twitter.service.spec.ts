@@ -102,7 +102,10 @@ describe('Twitter Service', () => {
         TwitterService,
         {
           provide: ContentService,
-          useValue: { createContentsFromAuthor: jest.fn() }
+          useValue: {
+            createContentsFromAuthor: jest.fn(),
+            getAuthorFromId: jest.fn()
+          }
         },
         {
           provide: Downloader,
@@ -163,6 +166,10 @@ describe('Twitter Service', () => {
       jest
         .spyOn(twitterService, 'convertTimelineToContents')
         .mockResolvedValueOnce([]);
+
+      jest
+        .spyOn(contentService, 'getAuthorFromId')
+        .mockResolvedValueOnce(syncAccount.author);
 
       jest
         .spyOn(contentService, 'createContentsFromAuthor')

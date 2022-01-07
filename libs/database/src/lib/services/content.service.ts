@@ -187,6 +187,12 @@ export class ContentService {
     return this._contentModel.create(contents);
   }
 
+  async getAuthorFromId(authorId: string) {
+    const user = await this._userModel.findById(authorId);
+
+    return this._getAuthorFromUser(user);
+  }
+
   updatePayloadMessage = async (shortPayload: ShortPayload) => {
     const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
     const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
