@@ -62,6 +62,8 @@ export class GuestFeedItem extends CastcleBase {
 }
 
 export const GuestFeedItemSchema = SchemaFactory.createForClass(GuestFeedItem);
+
+GuestFeedItemSchema.index({ score: -1, createdAt: -1 });
 GuestFeedItemSchema.index({
   score: 1,
   countryCode: 1,
