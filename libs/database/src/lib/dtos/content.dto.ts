@@ -309,16 +309,27 @@ export class CastcleIncludes {
 
   constructor({ casts, users }: CastcleIncludes) {
     this.casts = casts;
-    this.users = users.filter(
-      (author, index, authors) =>
-        authors.findIndex(({ id }) => String(author.id) == String(id)) === index
-    );
+    this.users = CastcleIncludes.filterAuthors(users);
+  }
 
-    users.forEach((author) => {
+  static filterAuthors(rawAuthors: Author[]) {
+    const authors: Author[] = [];
+
+    rawAuthors.forEach((author) => {
+      const authorIndex = authors.findIndex(
+        ({ id }) => String(author.id) == String(id)
+      );
+
+      if (authorIndex >= 0) return;
+
       author.avatar = author.avatar
         ? new Image(author.avatar).toSignUrls()
         : Configs.DefaultAvatarImages;
+
+      authors.push(new Author(author));
     });
+
+    return authors;
   }
 }
 
