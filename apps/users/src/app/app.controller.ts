@@ -190,7 +190,7 @@ export class UserController {
   }
 
   @CastcleAuth(CacheKeyName.SyncSocial)
-  @Get('syncSocial')
+  @Get('sync_social')
   async getSyncSocial(@Req() req: CredentialRequest) {
     logger.log(`start get all my sync social.`);
 
@@ -684,7 +684,7 @@ export class UserController {
   })
   @CastleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('syncSocial')
+  @Post('sync_social')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
     logger.log(`Start create sync social.`);
     logger.log(JSON.stringify(body));
@@ -696,19 +696,19 @@ export class UserController {
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
     if (userSync.find((x) => x.provider === body.provider)) {
       logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
       body.provider,
-      body.uid
+      body.socialId
     );
 
     if (dupSocialSync?.length) {
       logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(
         CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
@@ -744,7 +744,7 @@ export class UserController {
   })
   @CastleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Put('syncSocial')
+  @Put('sync_social')
   async updateSyncSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDto
@@ -770,7 +770,7 @@ export class UserController {
     type: SocialSyncDeleteDto
   })
   @CastleClearCacheAuth(CacheKeyName.SyncSocial)
-  @Delete('syncSocial')
+  @Delete('sync_social')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSyncSocial(
     @Req() req: CredentialRequest,

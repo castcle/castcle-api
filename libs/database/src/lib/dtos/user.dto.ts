@@ -22,7 +22,7 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { SocialProvider, PageVerified, UserVerified } from '../models';
+import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
 
 class UserImage {
@@ -253,7 +253,7 @@ export class SocialSyncDto {
 
   @ApiProperty()
   @IsString()
-  uid: string;
+  socialId: string;
 
   @ApiProperty()
   @IsString()
@@ -283,5 +283,5 @@ export class SocialSyncDeleteDto {
 
   @ApiProperty()
   @IsString()
-  uid: string;
+  socialId: string;
 }

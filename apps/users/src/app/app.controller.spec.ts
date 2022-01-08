@@ -549,7 +549,7 @@ describe('AppController', () => {
       defaultRequest = {
         castcleId: user.displayId,
         provider: SocialProvider.Twitter,
-        uid: 't12345678',
+        socialId: 't12345678',
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
@@ -620,7 +620,7 @@ describe('AppController', () => {
       const newRequest: SocialSyncDto = {
         castcleId: newUser.displayId,
         provider: SocialProvider.Twitter,
-        uid: 't12345678',
+        socialId: 't12345678',
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
@@ -640,7 +640,7 @@ describe('AppController', () => {
       const request = {
         castcleId: user.displayId,
         provider: SocialProvider.Facebook,
-        uid: 'f89766',
+        socialId: 'f89766',
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
@@ -650,14 +650,14 @@ describe('AppController', () => {
       const result = await appController.getSyncSocial(credential);
       const expectResult = {
         twitter: {
-          uid: 't12345678',
+          socialId: 't12345678',
           username: 'mocktw',
           displayName: 'mock tw',
           avatar: 'www.twitter.com/mocktw',
           active: true
         },
         facebook: {
-          uid: 'f89766',
+          socialId: 'f89766',
           username: 'mockfb',
           displayName: 'mock fb',
           avatar: 'www.facebook.com/mockfb',
@@ -674,7 +674,7 @@ describe('AppController', () => {
       const request = {
         castcleId: user.displayId,
         provider: SocialProvider.Facebook,
-        uid: '56738393',
+        socialId: '56738393',
         userName: 'mockfb2',
         displayName: 'mock fb2',
         avatar: 'www.facebook.com/mockfb2',
@@ -683,7 +683,7 @@ describe('AppController', () => {
       await appController.updateSyncSocial(credential, request);
       const userSync = await socialSyncService.getSocialSyncByUser(user);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result.socialId).toEqual(request.uid);
+      expect(result.socialId).toEqual(request.socialId);
       expect(result.userName).toEqual(request.userName);
       expect(result.displayName).toEqual(request.displayName);
       expect(result.avatar).toEqual(request.avatar);
@@ -693,7 +693,7 @@ describe('AppController', () => {
       const request = {
         castcleId: user.displayId,
         provider: SocialProvider.Facebook,
-        uid: '56738393'
+        socialId: '56738393'
       };
       await appController.deleteSyncSocial(credential, request);
       const userSync = await socialSyncService.getSocialSyncByUser(user);
