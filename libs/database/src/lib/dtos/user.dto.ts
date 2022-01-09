@@ -21,7 +21,13 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString
+} from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
 
@@ -257,14 +263,17 @@ export class SocialSyncDto {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   userName?: string;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   displayName?: string;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   avatar?: string;
 
   @ApiProperty()
