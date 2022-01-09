@@ -83,6 +83,14 @@ export class UserService {
       })
       .exec();
 
+  getPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   /**
    * Get all user and page that this credentials is own
    * @param credential

@@ -532,10 +532,11 @@ describe('AppController', () => {
 
   describe('syncSocial', () => {
     let user: UserDocument;
+    let page: UserDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(1, 0, {
+      const mocksUsers = await generateMockUsers(1, 1, {
         userService: service,
         accountService: authService
       });
@@ -546,8 +547,10 @@ describe('AppController', () => {
         $language: 'th'
       } as any;
 
+      page = mocksUsers[0].pages[0];
+
       defaultRequest = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Twitter,
         socialId: 't12345678',
         userName: 'mocktw',
@@ -563,7 +566,7 @@ describe('AppController', () => {
 
     it('should create sync social successful', async () => {
       await appController.syncSocial(credential, defaultRequest);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
 
       expect(userSync.length).toEqual(1);
       expect(userSync[0].provider).toEqual(SocialProvider.Twitter);
@@ -600,25 +603,22 @@ describe('AppController', () => {
       await expect(
         appController.syncSocial(credential, defaultRequest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-          credential.$language
-        )
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
 
-      const mocksNewUsers = await generateMockUsers(1, 0, {
+      const mocksNewUsers = await generateMockUsers(1, 1, {
         userService: service,
         accountService: authService
       });
 
-      const newUser = mocksNewUsers[0].user;
+      const newPage = mocksNewUsers[0].pages[0];
       const newCredential = {
         $credential: mocksNewUsers[0].credential,
         $language: 'th'
       } as any;
 
       const newRequest: SocialSyncDto = {
-        castcleId: newUser.displayId,
+        castcleId: newPage.displayId,
         provider: SocialProvider.Twitter,
         socialId: 't12345678',
         userName: 'mocktw',
@@ -629,16 +629,28 @@ describe('AppController', () => {
       await expect(
         appController.syncSocial(newCredential, newRequest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-          credential.$language
-        )
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
+    });
+
+    it('should return exception when socail sync with user people', async () => {
+      const userRequest: SocialSyncDto = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+      await expect(
+        appController.syncSocial(credential, userRequest)
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
     });
 
     it('should get all sync social from user', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
         socialId: 'f89766',
         userName: 'mockfb',
@@ -672,7 +684,7 @@ describe('AppController', () => {
 
     it('should update sync social successful', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
         socialId: '56738393',
         userName: 'mockfb2',
@@ -681,7 +693,7 @@ describe('AppController', () => {
         active: true
       };
       await appController.updateSyncSocial(credential, request);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result.socialId).toEqual(request.socialId);
       expect(result.userName).toEqual(request.userName);
@@ -691,12 +703,12 @@ describe('AppController', () => {
 
     it('should delete sync social successful', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
         socialId: '56738393'
       };
       await appController.deleteSyncSocial(credential, request);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result).toBeUndefined();
     });
