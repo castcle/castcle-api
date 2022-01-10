@@ -23,22 +23,22 @@
 
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
+import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UserController } from './app.controller';
 import { AppService } from './app.service';
 
-import { HealthyController } from './controllers/healthy/healthy.controller';
-
 @Module({
   imports: [
     DatabaseModule,
+    HealthyModule,
     UtilsCacheModule,
     UtilsInterceptorsModule,
     UtilsAwsModule
   ],
-  controllers: [HealthyController, UserController],
+  controllers: [UserController],
   providers: [AppService]
 })
 export class UserModule {}
