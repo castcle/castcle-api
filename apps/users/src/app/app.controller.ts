@@ -324,7 +324,10 @@ export class UserController {
       user.id,
       { sinceId, sortBy, untilId, maxResults }
     );
-    return this.contentService.convertContentsToContentResponse(user, contents);
+    return this.contentService.convertContentsToContentsResponse(
+      user,
+      contents
+    );
   }
 
   @ApiOkResponse({
@@ -374,7 +377,7 @@ export class UserController {
       user.id,
       { ...getContentsDto, sortBy }
     );
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       requester,
       contents,
       getContentsDto.hasRelationshipExpansion

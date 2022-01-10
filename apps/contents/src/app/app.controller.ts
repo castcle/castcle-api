@@ -267,7 +267,7 @@ export class ContentController {
       sortBy: sortByOption
     });
 
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       user,
       contents,
       hasRelationshipExpansion

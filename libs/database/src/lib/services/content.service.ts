@@ -187,6 +187,12 @@ export class ContentService {
     return this._contentModel.create(contents);
   }
 
+  async getAuthorFromId(authorId: string) {
+    const user = await this._userModel.findById(authorId);
+
+    return this._getAuthorFromUser(user);
+  }
+
   updatePayloadMessage = async (shortPayload: ShortPayload) => {
     const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
     const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
@@ -323,7 +329,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(findFilter, options);
+    findFilter = createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel
       .countDocuments(findFilter)
@@ -579,7 +585,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(findFilter, options);
+    findFilter = createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'
@@ -1058,8 +1064,8 @@ Message: ${message}`
    * @param {CastcleMeta} meta
    * @param hasRelationshipExpansion
    */
-  async convertContentsToContentResponse(
-    viewer: UserDocument,
+  async convertContentsToContentsResponse(
+    viewer: UserDocument | null,
     contents: ContentDocument[],
     hasRelationshipExpansion = false
   ): Promise<ContentsResponse> {
@@ -1093,25 +1099,27 @@ Message: ${message}`
     });
 
     if (hasRelationshipExpansion) {
-      const relationships = await this.relationshipModel.find({
-        $or: [
-          { user: viewer._id, followedUser: { $in: authorIds } },
-          { user: { $in: authorIds }, followedUser: viewer._id }
-        ],
-        visibility: EntityVisibility.Publish
-      });
+      const relationships = viewer
+        ? await this.relationshipModel.find({
+            $or: [
+              { user: viewer._id, followedUser: { $in: authorIds } },
+              { user: { $in: authorIds }, followedUser: viewer._id }
+            ],
+            visibility: EntityVisibility.Publish
+          })
+        : [];
 
       users.forEach((author) => {
         const authorRelationship = relationships.find(
           ({ followedUser, user }) =>
             String(user) === String(author.id) &&
-            String(followedUser) === String(viewer.id)
+            String(followedUser) === String(viewer?.id)
         );
 
         const getterRelationship = relationships.find(
           ({ followedUser, user }) =>
             String(followedUser) === String(author.id) &&
-            String(user) === String(viewer.id)
+            String(user) === String(viewer?.id)
         );
 
         author.blocked = Boolean(getterRelationship?.blocking);
