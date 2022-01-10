@@ -23,7 +23,6 @@
 
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@castcle-api/database';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
@@ -37,7 +36,6 @@ import { HealthyController } from './controllers/healthy/healthy.controller';
     DatabaseModule,
     UtilsCacheModule,
     UtilsInterceptorsModule,
-    UtilsDecoratorsModule,
     UtilsAwsModule
   ],
   controllers: [HealthyController, UserController],
