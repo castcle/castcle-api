@@ -24,6 +24,7 @@ import {
   AuthenticationService,
   ContentService,
   createCastcleMeta,
+  getRelationship,
   SocialProvider,
   SocialSyncService,
   UserService
@@ -33,6 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
+  FeedQuery,
   FollowResponse,
   GetContentsDto,
   PageResponseDto,
@@ -882,7 +884,7 @@ export class UserController {
       );
 
       logger.log('Get User relation status');
-      const relationStatus = this.userService.buildRelationship(
+      const relationStatus = getRelationship(
         relationships,
         requester._id,
         userReferrer._id,
@@ -921,7 +923,8 @@ export class UserController {
   async getReferee(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
-    @Query() { hasRelationshipExpansion, maxResult, sinceId, untilId }: FeedQuery
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: FeedQuery
   ): Promise<UserRefereeResponse> {
     logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
@@ -942,9 +945,9 @@ export class UserController {
     const userID = userReferrer.items.map((u) => u._id);
     let response = null;
     logger.log('Get User relationship');
-    if (userQuery?.hasRelationshipExpansion) {
+    if (hasRelationshipExpansion) {
       const relationships = await this.userService.getRelationshipData(
-        userQuery.hasRelationshipExpansion,
+        hasRelationshipExpansion,
         userID,
         requester._id
       );
@@ -952,11 +955,11 @@ export class UserController {
       response = await Promise.all(
         userReferrer.items.map((x) => {
           logger.log('Get User relation status');
-          const relationStatus = this.userService.buildRelationship(
+          const relationStatus = getRelationship(
             relationships,
             requester._id,
             x._id,
-            userQuery.hasRelationshipExpansion
+            hasRelationshipExpansion
           );
 
           logger.log('build response with relation');

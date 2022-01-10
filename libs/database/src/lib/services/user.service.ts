@@ -42,16 +42,13 @@ import { CredentialDocument, CredentialModel } from '../schemas';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { ContentDocument } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
-import {
-  createCastcleFilter,
-  createPagination,
-  getRelationship
-} from '../utils/common';
+import { UserModel, UserType } from '../schemas/user.schema';
+import { createCastcleFilter, createPagination } from '../utils/common';
 import {
   AccountReferral,
   AccountReferralDocument
 } from './../schemas/account-referral.schema';
+import { UserDocument } from './../schemas/user.schema';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -856,7 +853,6 @@ Message: ${message}`
       : [];
   };
 
-
   getReferrer = async (accountId: Account) => {
     const accountRef = await this._accountReferral
       .findOne({
@@ -899,9 +895,15 @@ Message: ${message}`
       .countDocuments(filter)
       .exec();
 
-    const result = await Promise.all(
-        accountReferee?.map((x) => this.getUserFromAccountId(x.referringAccount._id) ?? []
+    const result: UserDocument[] = [];
+    this.logger.log('Get user.');
+    Promise.all(
+      accountReferee?.map(async (x) =>
+        result.push(await this.getUserFromAccountId(x.referringAccount._id))
+      )
     );
+    this.logger.log('Success get referee.');
+
     return {
       total: totalDocument,
       items: result
