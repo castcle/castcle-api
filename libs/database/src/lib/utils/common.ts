@@ -67,10 +67,7 @@ export const createCastcleMeta = (
   return meta;
 };
 
-export const createCastcleFilter = async (
-  filter: any,
-  queryOption: QueryOption
-) => {
+export const createCastcleFilter = (filter: any, queryOption: QueryOption) => {
   if (queryOption.sinceId) {
     filter._id = {
       $gt: mongoose.Types.ObjectId(queryOption.sinceId)
