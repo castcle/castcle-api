@@ -191,7 +191,7 @@ export class UserController {
   }
 
   @CastcleAuth(CacheKeyName.SyncSocial)
-  @Get('sync_social')
+  @Get('sync-social')
   async getSyncSocial(@Req() req: CredentialRequest) {
     logger.log(`start get all my sync social.`);
 
@@ -696,7 +696,7 @@ export class UserController {
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('sync_social')
+  @Post('sync-social')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
     logger.log(`Start create sync social.`);
     logger.log(JSON.stringify(body));
@@ -757,7 +757,7 @@ export class UserController {
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Put('sync_social')
+  @Put('sync-social')
   async updateSyncSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDto
@@ -783,7 +783,7 @@ export class UserController {
     type: SocialSyncDeleteDto
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @Delete('syncSocial')
+  @Delete('sync-social')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSyncSocial(
     @Req() req: CredentialRequest,
