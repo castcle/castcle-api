@@ -38,7 +38,7 @@ import {
   HeadersRequest
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
-import { ExceptionalInterceptor } from './exception/exception.interceptor';
+import { ExceptionFilter } from './exception/exception.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 
 @Module({
@@ -60,6 +60,6 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionalInterceptor,
+  ExceptionFilter,
   IpTrackerInterceptor
 };

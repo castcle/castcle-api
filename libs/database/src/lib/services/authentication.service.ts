@@ -547,7 +547,7 @@ export class AuthenticationService {
     if (credential.account.isGuest) {
       return {
         id: credential.account._id,
-        preferredLanguage: credential.account.preferences.langagues,
+        preferredLanguage: credential.account.preferences.languages,
         role: credential.account.isGuest ? 'guest' : 'member',
         showAds: true //TODO !!! need to change this later
       } as AccessTokenPayload;

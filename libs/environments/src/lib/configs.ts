@@ -31,7 +31,7 @@ export const Configs = {
       description: 'Version of api',
       example: '1.0'
     },
-    AcceptLanguague: {
+    AcceptLanguage: {
       name: 'Accept-Language',
       description: 'Expected language response',
       example: 'th'
