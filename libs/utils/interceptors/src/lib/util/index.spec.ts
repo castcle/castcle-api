@@ -25,7 +25,7 @@ import * as util from '.';
 import { CastcleException } from '@castcle-api/utils/exception';
 describe('Util', () => {
   describe('#getTokenFromContext()', () => {
-    it('shoud return token from request.headers.authorization as string', () => {
+    it('should return token from request.headers.authorization as string', () => {
       const result = util.getTokenFromRequest({
         headers: {
           authorization: 'Bearer testyo'
@@ -43,9 +43,9 @@ describe('Util', () => {
         ).toThrow(CastcleException);
       });
   });
-  describe('#getLangagueFromRequest()', () => {
-    it('should return langague from request.headers[accept-langague] as string', () => {
-      const result = util.getLangagueFromRequest({
+  describe('#getLanguageFromRequest()', () => {
+    it('should return language from request.headers[accept-language] as string', () => {
+      const result = util.getLanguageFromRequest({
         headers: {
           'accept-language': 'th'
         }
@@ -54,7 +54,7 @@ describe('Util', () => {
     });
     it('should throw exception when there is no header', () => {
       expect(() =>
-        util.getLangagueFromRequest({
+        util.getLanguageFromRequest({
           headers: {
             authorization: 'Bearer test yo'
           }

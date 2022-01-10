@@ -32,7 +32,7 @@ describe('TokenInterceptor', () => {
   it('should be defined', () => {
     expect(new HeadersInterceptor()).toBeDefined();
   });
-  it('should modify request header to have token if the request contain Accept-Langague: {langage}', () => {
+  it('should modify request header to have token if the request contain Accept-language: {langage}', () => {
     const interceptor = new HeadersInterceptor();
     const mockExecutionContext = createMock<ExecutionContext>({
       switchToHttp: () => ({

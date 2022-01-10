@@ -51,7 +51,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
   CastcleController,
-  CastleClearCacheAuth
+  CastcleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -227,7 +227,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @CastleClearCacheAuth(CacheKeyName.Users)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put('me')
   async updateMyData(
     @Req() req: CredentialRequest,
@@ -252,7 +252,7 @@ export class UserController {
   @ApiBody({
     type: DeleteUserBody
   })
-  @CastleClearCacheAuth(CacheKeyName.Users)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   async deleteMyData(
     @Body('channel') channel: string,
@@ -388,7 +388,7 @@ export class UserController {
   @ApiBody({
     type: TargetCastcleDto
   })
-  @CastleClearCacheAuth(CacheKeyName.Users)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/following')
   async follow(
     @Param('id') id: string,
@@ -422,7 +422,7 @@ export class UserController {
   @ApiBody({
     type: TargetCastcleDto
   })
-  @CastleClearCacheAuth(CacheKeyName.Users)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
   async unfollow(
     @Param('id') id: string,
@@ -606,7 +606,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserResponseDto
   })
-  @CastleClearCacheAuth(CacheKeyName.Users)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put('me/mobile')
   async updateMobile(
     @Req() req: CredentialRequest,
@@ -685,7 +685,7 @@ export class UserController {
   @ApiBody({
     type: SocialSyncDto
   })
-  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('syncSocial')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
@@ -745,7 +745,7 @@ export class UserController {
   @ApiBody({
     type: SocialSyncDto
   })
-  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put('syncSocial')
   async updateSyncSocial(
@@ -772,7 +772,7 @@ export class UserController {
   @ApiBody({
     type: SocialSyncDeleteDto
   })
-  @CastleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Delete('syncSocial')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSyncSocial(

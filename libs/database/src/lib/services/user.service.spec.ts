@@ -1046,7 +1046,7 @@ describe('User Service', () => {
       const accountUpdate = await authService.getAccountFromId(account.id);
 
       expect(accountUpdate).not.toBeNull();
-      expect(accountUpdate.preferences.langagues).toEqual(expectResult);
+      expect(accountUpdate.preferences.languages).toEqual(expectResult);
     });
   });
 });

@@ -777,7 +777,7 @@ Message: ${message}`
         { _id: accountId },
         {
           preferences: {
-            langagues: languageCode
+            languages: languageCode
           }
         }
       )

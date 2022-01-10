@@ -24,7 +24,6 @@ import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UtilsDecoratorsModule } from '@castcle-api/utils/decorators';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
@@ -41,7 +40,6 @@ import { SearchesController } from './controllers/searches/searches.controller';
     DatabaseModule,
     CaslModule,
     UtilsInterceptorsModule,
-    UtilsDecoratorsModule,
     UtilsPipesModule,
     UtilsCacheModule,
     UtilsQueueModule

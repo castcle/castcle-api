@@ -38,7 +38,7 @@ import {
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { ExceptionalInterceptor } from '@castcle-api/utils/interceptors';
+import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -61,7 +61,7 @@ async function bootstrap() {
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
-  app.useGlobalFilters(new ExceptionalInterceptor());
+  app.useGlobalFilters(new ExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
   await app.listen(port, () => {

@@ -38,7 +38,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
-import { ExceptionalInterceptor } from '@castcle-api/utils/interceptors';
+import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap', CastLoggerOptions);
@@ -65,7 +65,7 @@ async function bootstrap() {
     forbidUnknownValues:true
   }));*/
   app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalFilters(new ExceptionalInterceptor());
+  app.useGlobalFilters(new ExceptionFilter());
   app.enableCors();
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
