@@ -728,7 +728,7 @@ describe('AppController', () => {
       const account = await authService.getAccountFromCredential(
         userCredential
       );
-      expect(account.preferences.langagues).toEqual(['th', 'en']);
+      expect(account.preferences.languages).toEqual(['th', 'en']);
     });
 
     it('should return Exception when empty language', async () => {

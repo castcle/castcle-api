@@ -52,9 +52,9 @@ import {
   ApiQuery
 } from '@nestjs/swagger';
 @ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  name: Configs.RequiredHeaders.AcceptLanguage.name,
+  description: Configs.RequiredHeaders.AcceptLanguage.description,
+  example: Configs.RequiredHeaders.AcceptLanguage.example,
   required: true
 })
 @ApiHeader({

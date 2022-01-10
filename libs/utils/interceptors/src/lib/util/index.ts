@@ -41,7 +41,7 @@ export const getTokenFromRequest = (request: HeadersRequest) => {
     );
 };
 
-export const getLangagueFromRequest = (request: Request) => {
+export const getLanguageFromRequest = (request: Request) => {
   if (request.headers && request.headers['accept-language']) {
     return request.headers['accept-language'];
   } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);

@@ -51,7 +51,7 @@ export function CastcleBasicAuth() {
   );
 }
 
-export function CastleClearCacheAuth(cacheConfig: {
+export function CastcleClearCacheAuth(cacheConfig: {
   Name: string;
   Ttl: number;
 }) {
