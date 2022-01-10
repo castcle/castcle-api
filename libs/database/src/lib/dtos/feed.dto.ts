@@ -20,11 +20,39 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsMongoId, IsNumber, IsOptional, Max } from 'class-validator';
-import { DEFAULT_QUERY_OPTIONS, ExpansionQuery } from './common.dto';
+import {
+  IsArray,
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  Max
+} from 'class-validator';
+import { DEFAULT_QUERY_OPTIONS } from './common.dto';
+
+export enum UserField {
+  Relationships = 'relationships'
+}
+
+export class ExpansionQuery {
+  @ApiProperty({
+    enum: UserField,
+    required: false,
+    isArray: true
+  })
+  @TransformStringToArrayOfStrings()
+  @IsOptional()
+  @IsArray()
+  @IsEnum(UserField, { each: true })
+  userFields?: UserField[];
+
+  hasRelationshipExpansion = (() => {
+    return Boolean(this.userFields?.includes(UserField.Relationships));
+  }) as unknown as boolean;
+}
 
 export class FeedQuery extends ExpansionQuery {
   @ApiProperty({

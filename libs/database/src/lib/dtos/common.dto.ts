@@ -20,9 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsOptional } from 'class-validator';
 
 export class Pagination {
   @ApiProperty()
@@ -43,10 +41,6 @@ export enum SortDirection {
 export class SortBy {
   field = 'updatedAt';
   type = SortDirection.Desc;
-}
-
-export enum UserField {
-  Relationships = 'relationships'
 }
 
 export class CastcleQueryOptions {
@@ -113,21 +107,4 @@ export class CastcleParticipate {
   commented?: boolean;
   quoted?: boolean;
   recasted?: boolean;
-}
-
-export class ExpansionQuery {
-  @ApiProperty({
-    enum: UserField,
-    required: false,
-    isArray: true
-  })
-  @TransformStringToArrayOfStrings()
-  @IsOptional()
-  @IsArray()
-  @IsEnum(UserField, { each: true })
-  userFields?: UserField[];
-
-  hasRelationshipExpansion = (() => {
-    return Boolean(this.userFields?.includes(UserField.Relationships));
-  }) as unknown as boolean;
 }

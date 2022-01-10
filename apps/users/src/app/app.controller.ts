@@ -54,8 +54,8 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleController,
-  CastcleClearCacheAuth
+  CastcleClearCacheAuth,
+  CastcleController
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
