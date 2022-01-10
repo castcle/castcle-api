@@ -55,8 +55,10 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleBasicAuth,
+  CastcleController,
   CastcleClearCacheAuth,
-  CastcleController
+  Auth,
+  Authorizer
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -82,7 +84,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { ReportUserDto } from './dtos';
+import { ReportingDto } from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -606,16 +608,31 @@ export class UserController {
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   async reportUser(
-    @Body() { message }: ReportUserDto,
-    @Param('id') reportedUserId: string,
-    @Req() req: CredentialRequest
+    @Body() { message, targetCastcleId, targetContentId }: ReportingDto,
+    @Param('id') reportedById: string,
+    @Auth() authorizer: Authorizer
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const reportedUser = await this.userService.getByIdOrCastcleId(
-      reportedUserId
-    );
+    authorizer.requestAccessForUser(reportedById);
 
-    await this.userService.reportUser(user, reportedUser, message);
+    if (targetCastcleId) {
+      const reportedUser = await this.userService.getByIdOrCastcleId(
+        targetCastcleId
+      );
+
+      await this.userService.reportUser(authorizer.user, reportedUser, message);
+    }
+
+    if (targetContentId) {
+      const content = await this.contentService.getContentFromId(
+        targetContentId
+      );
+
+      await this.contentService.reportContent(
+        authorizer.user,
+        content,
+        message
+      );
+    }
   }
 
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))

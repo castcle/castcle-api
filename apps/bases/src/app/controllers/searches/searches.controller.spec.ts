@@ -25,7 +25,8 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  SearchService
+  SearchService,
+  UserService
 } from '@castcle-api/database';
 import { CreateHashtag } from '@castcle-api/database/dtos';
 import { CredentialDocument, UserType } from '@castcle-api/database/schemas';
@@ -83,7 +84,12 @@ describe('NotificationsController', () => {
         })
       ],
       controllers: [SearchesController],
-      providers: [HashtagService, SearchService, AuthenticationService]
+      providers: [
+        HashtagService,
+        SearchService,
+        AuthenticationService,
+        { provide: UserService, useValue: { getUserFromCredential: jest.fn() } }
+      ]
     }).compile();
     controller = app.get<SearchesController>(SearchesController);
     search = app.get<SearchService>(SearchService);

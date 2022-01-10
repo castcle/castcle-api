@@ -20,47 +20,37 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Request } from 'express';
-import { HeadersRequest } from '../headers/headers.interceptor';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 
-export const getTokenFromRequest = (request: HeadersRequest) => {
-  if (request.headers && request.headers.authorization) {
-    const token = request.headers.authorization.split(' ')[1];
-    if (token) return token;
-    else {
-      throw new CastcleException(
-        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
-        request.$language
-      );
-    }
-  } else
-    throw new CastcleException(
-      CastcleStatus.MISSING_AUTHORIZATION_HEADER,
-      request.$language
-    );
+export const getTokenFromRequest = (request: Request) => {
+  const token = request.headers.authorization?.split(' ')?.[1];
+
+  if (!token) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+
+  return token;
 };
 
 export const getLanguageFromRequest = (request: Request) => {
-  if (request.headers && request.headers['accept-language']) {
-    return request.headers['accept-language'];
-  } else throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
+  const language = request.headers['accept-language'];
+
+  if (!language) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+
+  return language;
 };
 
 /**
  * get ip from current request
  * @param {Request} request
- * @returns {string}
  */
 export const getIpFromRequest = (request: Request) => {
-  //API-Metadata: "ip=127.0.0.1,src=iOS,dest=castcle-authentications"
-  if (request.headers && request.headers['api-metadata']) {
-    const regexResult = (request.headers['api-metadata'] as string).match(
-      /ip=(\d+\.\d+\.\d+\.\d+),src=(\w+),dest=(.+)/
-    );
-    if (regexResult) {
-      return regexResult[1];
-    }
-    throw new CastcleException(CastcleStatus.INVALID_FORMAT);
-  } else throw new CastcleException(CastcleStatus.INVALID_FORMAT);
+  /** Example: `API-Metadata="ip=127.0.0.1,src=iOS,dest=castcle-authentications"` */
+  const API_METADATA_PATTERN = /ip=(\d+\.\d+\.\d+\.\d+),src=(\w+),dest=(.+)/;
+  const metadata = request.headers['api-metadata'] as string;
+  const ip = metadata?.match(API_METADATA_PATTERN)?.[1];
+
+  if (!ip) throw new CastcleException(CastcleStatus.INVALID_FORMAT);
+
+  return ip;
 };

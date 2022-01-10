@@ -21,45 +21,65 @@
  * or have any questions.
  */
 
-import * as util from '.';
 import { CastcleException } from '@castcle-api/utils/exception';
-describe('Util', () => {
-  describe('#getTokenFromContext()', () => {
-    it('should return token from request.headers.authorization as string', () => {
-      const result = util.getTokenFromRequest({
-        headers: {
-          authorization: 'Bearer testyo'
-        }
-      } as any);
-      expect(result).toBe('testyo');
-    }),
-      it('shoud throw exception when there is no header', () => {
-        expect(() =>
-          util.getTokenFromRequest({
-            headers: {
-              authorization: 'Bearer'
-            }
-          } as any)
-        ).toThrow(CastcleException);
-      });
+import {
+  getIpFromRequest,
+  getLanguageFromRequest,
+  getTokenFromRequest
+} from '.';
+
+describe('#getTokenFromRequest', () => {
+  it('should return token from headers as string', () => {
+    const headers = { authorization: 'Bearer token' };
+    const token = getTokenFromRequest({ headers } as any);
+
+    expect(token).toBe('token');
   });
-  describe('#getLanguageFromRequest()', () => {
-    it('should return language from request.headers[accept-language] as string', () => {
-      const result = util.getLanguageFromRequest({
-        headers: {
-          'accept-language': 'th'
-        }
-      } as any);
-      expect(result).toBe('th');
-    });
-    it('should throw exception when there is no header', () => {
-      expect(() =>
-        util.getLanguageFromRequest({
-          headers: {
-            authorization: 'Bearer test yo'
-          }
-        } as any)
-      ).toThrow(CastcleException);
-    });
+
+  it('should throw exception when authorization header have no access token', () => {
+    const headers = { authorization: 'Bearer' };
+
+    expect(() => getTokenFromRequest({ headers } as any)).toThrow(
+      CastcleException
+    );
+  });
+
+  it('should throw exception when there is no authorization header', () => {
+    expect(() => getTokenFromRequest({ headers: {} } as any)).toThrow(
+      CastcleException
+    );
+  });
+});
+
+describe('#getLanguageFromRequest', () => {
+  it('should return language from headers as string', () => {
+    const headers = { 'accept-language': 'th' };
+    const language = getLanguageFromRequest({ headers } as any);
+
+    expect(language).toBe('th');
+  });
+
+  it('should throw exception when there is no header', () => {
+    expect(() => getLanguageFromRequest({ headers: {} } as any)).toThrow(
+      CastcleException
+    );
+  });
+});
+
+describe('#getIpFromRequest', () => {
+  it('should return IP from headers as string', () => {
+    const headers = {
+      'api-metadata': 'ip=127.0.0.1,src=iOS,dest=castcle-authentications'
+    };
+
+    const ip = getIpFromRequest({ headers } as any);
+
+    expect(ip).toBe('127.0.0.1');
+  });
+
+  it('should throw exception when there is no header', () => {
+    expect(() => getIpFromRequest({ headers: {} } as any)).toThrow(
+      CastcleException
+    );
   });
 });

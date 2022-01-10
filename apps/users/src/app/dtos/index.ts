@@ -22,4 +22,4 @@
  */
 
 export * from './dto';
-export * from './report-user.dto';
+export * from './reporting.dto';

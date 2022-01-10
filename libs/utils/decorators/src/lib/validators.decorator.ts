@@ -21,11 +21,9 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { ValidateIf } from 'class-validator';
 
-export class ReportContentDto {
-  @ApiProperty()
-  @IsString()
-  message: string;
-}
+export const RequireAtLeastOne = (...keys: string[]) =>
+  ValidateIf((object, value) => {
+    return value ?? !keys?.some((key) => object[key] ?? false);
+  });

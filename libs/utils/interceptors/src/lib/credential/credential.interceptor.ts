@@ -20,9 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AuthenticationService } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { AuthenticationService, UserService } from '@castcle-api/database';
+import {
+  CredentialDocument,
+  UserDocument
+} from '@castcle-api/database/schemas';
+import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
   ExecutionContext,
@@ -30,35 +33,43 @@ import {
   NestInterceptor
 } from '@nestjs/common';
 import { TokenRequest } from '../token/token.interceptor';
-import * as util from '../util';
-//for delete
+import { getLanguageFromRequest, getTokenFromRequest } from '../util';
+
 export interface CredentialRequest extends TokenRequest {
-  $credential: CredentialDocument;
+  $credential?: CredentialDocument;
+  $user?: Promise<UserDocument>;
 }
 
 @Injectable()
 export class CredentialInterceptor implements NestInterceptor {
-  constructor(private authService: AuthenticationService) {}
+  constructor(
+    private authService: AuthenticationService,
+    private userService: UserService
+  ) {}
+
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest<CredentialRequest>();
-    request.$language = util.getLanguageFromRequest(request);
-    request.$token = util.getTokenFromRequest(request);
-    const accessToken = util.getTokenFromRequest(request);
-    request.$credential = await this.authService.getCredentialFromAccessToken(
+    const accessToken = getTokenFromRequest(request);
+    const language = getLanguageFromRequest(request);
+    const credential = await this.authService.getCredentialFromAccessToken(
       accessToken
     );
+
+    request.$credential = credential;
+    request.$language = language;
+    request.$token = accessToken;
+    request.$user = this.userService.getUserFromCredential(credential);
+
+    const isAccessTokenValid = request.$credential?.isAccessTokenValid();
+
     console.debug('Credential', request.$credential);
     console.debug(
       'isAccessTokenValid',
-      request.$credential ? request.$credential.isAccessTokenValid() : null
+      request.$credential ? isAccessTokenValid : null
     );
-    if (request.$credential && request.$credential.isAccessTokenValid()) {
-      return next.handle();
-    } else {
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        request.$language
-      );
-    }
+
+    if (!isAccessTokenValid) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    return next.handle();
   }
 }
