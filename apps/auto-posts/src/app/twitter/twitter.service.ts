@@ -47,9 +47,9 @@ export class TwitterService {
   );
 
   constructor(
-    private readonly socialSyncService: SocialSyncService,
     private readonly contentService: ContentService,
-    private readonly downloader: Downloader
+    private readonly downloader: Downloader,
+    private readonly socialSyncService: SocialSyncService
   ) {
     this.client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
   }
@@ -79,16 +79,17 @@ export class TwitterService {
 
     if (!timeline.meta.result_count) return;
 
-    const contents = await this.convertTimelineToContents(
-      syncAccount.author.id,
-      timeline.data
-    );
+    const [author, contents] = await Promise.all([
+      this.contentService.getAuthorFromId(syncAccount.author.id),
+      this.convertTimelineToContents(syncAccount.author.id, timeline.data)
+    ]);
 
     await this.contentService.createContentsFromAuthor(
-      new Author(syncAccount.author),
+      new Author(author),
       contents
     );
 
+    syncAccount.author = author;
     syncAccount.displayName = timeline.includes?.users?.[0]?.name;
     syncAccount.latestSyncId = timeline.data.data[0].id;
     syncAccount.latestSyncDate = new Date();

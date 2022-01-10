@@ -71,7 +71,8 @@ describe('Youtube Webhook Service', () => {
         {
           provide: ContentService,
           useValue: {
-            createContentsFromAuthor: jest.fn()
+            createContentsFromAuthor: jest.fn(),
+            getAuthorFromId: jest.fn()
           }
         },
         {
@@ -169,6 +170,10 @@ describe('Youtube Webhook Service', () => {
       jest
         .spyOn(socialSyncService, 'getAutoSyncAccountBySocialId')
         .mockResolvedValueOnce(syncAccount);
+
+      jest
+        .spyOn(contentService, 'getAuthorFromId')
+        .mockResolvedValueOnce(syncAccount.author);
 
       jest
         .spyOn(contentService, 'createContentsFromAuthor')

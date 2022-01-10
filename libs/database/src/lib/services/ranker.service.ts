@@ -107,7 +107,7 @@ export class RankerService {
    * @returns {GuestFeedItemDocument[]}
    */
   getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
-    const filter = await createCastcleFilter(
+    const filter = createCastcleFilter(
       { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
@@ -119,10 +119,7 @@ export class RankerService {
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
-    const authors = feedItems.map(
-      (feedItem) => new Author(feedItem.content.author)
-    );
-
+    const authors = feedItems.map((feedItem) => feedItem.content.author);
     const casts = feedItems
       .map((feedItem) => {
         if (!feedItem.content?.originalPost) return;
@@ -131,11 +128,11 @@ export class RankerService {
       })
       .filter(Boolean);
 
-    const users = query.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(viewer, authors)
-      : authors.map((author) => author.toIncludeUser());
+    const includes = new CastcleIncludes({ casts, users: authors });
 
-    const includes = new CastcleIncludes({ casts, users });
+    includes.users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, includes.users)
+      : includes.users.map((author) => author.toIncludeUser());
 
     return {
       payload: feedItems.map(
@@ -171,7 +168,7 @@ export class RankerService {
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
     const startNow = new Date();
     console.debug('start service');
-    const filter = await createCastcleFilter(
+    const filter = createCastcleFilter(
       { viewer: viewer._id },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
