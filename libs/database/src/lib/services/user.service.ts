@@ -856,19 +856,6 @@ Message: ${message}`
       : [];
   };
 
-  buildRelationship = (
-    relationships: RelationshipDocument[],
-    viewerId: string,
-    relationUserId: string,
-    hasRelationshipExpansion: boolean
-  ) => {
-    return getRelationship(
-      relationships,
-      viewerId,
-      relationUserId,
-      hasRelationshipExpansion
-    );
-  };
 
   getReferrer = async (accountId: Account) => {
     const accountRef = await this._accountReferral
