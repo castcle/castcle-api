@@ -24,7 +24,8 @@ import {
   AuthenticationService,
   HashtagService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  UserService
 } from '@castcle-api/database';
 import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common';
@@ -69,7 +70,11 @@ describe('HashtagsController', () => {
         })
       ],
       controllers: [HashtagsController],
-      providers: [HashtagService, AuthenticationService]
+      providers: [
+        HashtagService,
+        AuthenticationService,
+        { provide: UserService, useValue: { getUserFromCredential: jest.fn() } }
+      ]
     }).compile();
 
     appController = app.get<HashtagsController>(HashtagsController);

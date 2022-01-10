@@ -70,7 +70,6 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
 import { ContentLikeBody } from '../dtos/content.dto';
 import { SaveContentPipe } from './pipes/save-content.pipe';
-import { ReportContentDto } from './dtos';
 
 @CastcleController('1.0')
 @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
@@ -373,21 +372,5 @@ export class ContentController {
     return {
       payload: result.quoteContent.toContentPayloadItem()
     } as ContentResponse;
-  }
-
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @Post(':id/reporting')
-  @CastcleBasicAuth()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async reportContent(
-    @Body() { message }: ReportContentDto,
-    @Param('id') reportingContentId: string,
-    @Req() req: CredentialRequest
-  ) {
-    const content = await this._getContentIfExist(reportingContentId, req);
-    const user = await this.userService.getUserFromCredential(req.$credential);
-
-    await this.contentService.reportContent(user, content, message);
   }
 }
