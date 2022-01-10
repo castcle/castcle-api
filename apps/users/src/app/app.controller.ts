@@ -923,12 +923,6 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() { hasRelationshipExpansion, maxResult, sinceId, untilId }: FeedQuery
   ): Promise<UserRefereeResponse> {
-    if (maxResults) {
-      logger.log('validate min & max maxResults');
-      if (+maxResults < 5 || +maxResults > 100) {
-        throw new CastcleException(CastcleStatus.INVALID_MAX_RESULT);
-      }
-    }
     logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
 
