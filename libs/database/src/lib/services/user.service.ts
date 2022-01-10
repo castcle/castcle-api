@@ -899,16 +899,9 @@ Message: ${message}`
       .countDocuments(filter)
       .exec();
 
-    const result: UserDocument[] = [];
-    if (accountReferee && accountReferee.length > 0) {
-      this.logger.log('Get user.');
-      Promise.all(
-        accountReferee.map(async (x) =>
-          result.push(await this.getUserFromAccountId(x.referringAccount._id))
-        )
-      );
-      this.logger.log('Success get referee.');
-    }
+    const result = await Promise.all(
+        accountReferee?.map((x) => this.getUserFromAccountId(x.referringAccount._id) ?? []
+    );
     return {
       total: totalDocument,
       items: result
