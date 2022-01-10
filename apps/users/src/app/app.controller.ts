@@ -921,11 +921,7 @@ export class UserController {
   async getReferee(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
-    @Query('') userQuery: ExpansionQuery,
-    @Query('maxResults')
-    maxResults: number = DEFAULT_QUERY_OPTIONS.limit,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string
+    @Query() { hasRelationshipExpansion, maxResult, sinceId, untilId }: FeedQuery
   ): Promise<UserRefereeResponse> {
     if (maxResults) {
       logger.log('validate min & max maxResults');
