@@ -319,6 +319,27 @@
         }
       }
     },
+    "e2e": {
+      "root": "libs/e2e",
+      "sourceRoot": "libs/e2e/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["libs/e2e/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/e2e"],
+          "options": {
+            "jestConfig": "libs/e2e/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
     "engagements": {
       "root": "apps/engagements",
       "sourceRoot": "apps/engagements/src",
