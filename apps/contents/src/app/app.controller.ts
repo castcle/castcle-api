@@ -64,7 +64,7 @@ import {
   CastcleAuth,
   CastcleController,
   CastcleBasicAuth,
-  CastleClearCacheAuth
+  CastcleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { ContentProducer } from '@castcle-api/utils/queue';
@@ -208,7 +208,7 @@ export class ContentController {
 
   @ApiBody({ type: SaveContentDto })
   @ApiOkResponse({ type: ContentResponse })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async updateContentFromId(
@@ -238,7 +238,7 @@ export class ContentController {
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async deleteContentFromId(
@@ -267,7 +267,7 @@ export class ContentController {
       sortBy: sortByOption
     });
 
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       user,
       contents,
       hasRelationshipExpansion
@@ -280,7 +280,7 @@ export class ContentController {
   @ApiBody({
     type: ContentLikeBody
   })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
@@ -311,7 +311,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(

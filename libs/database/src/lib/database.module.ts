@@ -27,6 +27,7 @@ import {
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { env } from './environment';
+import { AccountReferralSchema } from './schemas/account-referral.schema';
 import { AccountSchemaFactory } from './schemas/account.schema-factory';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
 import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
@@ -59,7 +60,7 @@ import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { createCastcleMeta } from './utils/common';
+import { createCastcleMeta, getRelationship } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -72,7 +73,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Country', schema: CountrySchema },
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
   { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'DsContentReach', schema: DsContentReachSchema }
+  { name: 'DsContentReach', schema: DsContentReachSchema },
+  { name: 'AccountReferral', schema: AccountReferralSchema }
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -173,5 +175,6 @@ export {
   CountryService,
   createCastcleMeta,
   SocialSyncService,
-  CommentService
+  CommentService,
+  getRelationship
 };

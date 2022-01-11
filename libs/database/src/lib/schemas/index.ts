@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+export * from './account-referral.schema';
 export * from './account.schema';
 export * from './accountAuthenId.schema';
 export * from './comment.schema';

@@ -30,21 +30,17 @@ import {
   ShortPayload
 } from '@castcle-api/database/dtos';
 import { SocialProvider } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { Request } from 'express';
 import { XMLParser } from 'fast-xml-parser';
-import { TwitterService } from '../twitter/twitter.service';
-import { PublishedContent, SubscriptionContent, Youtube } from './models';
+import { PublishedContent, SubscriptionContent, Youtube } from '../models';
 
 @Injectable()
-export class YoutubeService {
+export class YoutubeWebhookService {
   private readonly parser: XMLParser;
-  private readonly logger = new CastLogger(
-    TwitterService.name,
-    CastLoggerOptions
-  );
+  private readonly logger = new CastLogger(YoutubeWebhookService.name);
 
   constructor(
     private readonly contentService: ContentService,
@@ -85,16 +81,16 @@ export class YoutubeService {
       `New youtube feed from: ${feed.entry.author.name}, Video Title: ${feed.entry.title}`
     );
 
-    const shortContent = await this.convertFeedToShortContent(
-      feed,
-      syncAccount.author.id
-    );
+    const [author, shortContent] = await Promise.all([
+      this.contentService.getAuthorFromId(syncAccount.author.id),
+      await this.convertFeedToShortContent(feed, syncAccount.author.id)
+    ]);
 
-    await this.contentService.createContentsFromAuthor(
-      new Author(syncAccount.author),
-      [shortContent]
-    );
+    await this.contentService.createContentsFromAuthor(new Author(author), [
+      shortContent
+    ]);
 
+    syncAccount.author = author;
     syncAccount.displayName = feed.entry.author.name;
     syncAccount.latestSyncId = feed.entry.id;
     syncAccount.latestSyncDate = feed.entry.published;

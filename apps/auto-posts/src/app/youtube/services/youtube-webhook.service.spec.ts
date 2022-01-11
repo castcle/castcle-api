@@ -23,22 +23,21 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContentService, SocialSyncService } from '@castcle-api/database';
-import { YoutubeService } from './youtube.service';
+import { YoutubeWebhookService } from './youtube-webhook.service';
 import { Downloader, Image } from '@castcle-api/utils/aws';
-import { PublishedContent, SubscriptionContent } from './models';
+import { PublishedContent, SubscriptionContent } from '../models';
 import { CastLogger } from '@castcle-api/logger';
 import { XMLParser } from 'fast-xml-parser';
 
 jest.mock('@castcle-api/utils/aws');
-jest.mock('fast-xml-parser');
 
 type Extend<T, R> = Pick<T, Exclude<keyof T, keyof R>> & R;
 
-describe('Twitter Service', () => {
+describe('Youtube Webhook Service', () => {
   let contentService: ContentService;
   let socialSyncService: SocialSyncService;
   let youtubeService: Extend<
-    YoutubeService,
+    YoutubeWebhookService,
     { parser: XMLParser; logger: CastLogger }
   >;
 
@@ -68,11 +67,12 @@ describe('Twitter Service', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        YoutubeService,
+        YoutubeWebhookService,
         {
           provide: ContentService,
           useValue: {
-            createContentsFromAuthor: jest.fn()
+            createContentsFromAuthor: jest.fn(),
+            getAuthorFromId: jest.fn()
           }
         },
         {
@@ -92,13 +92,63 @@ describe('Twitter Service', () => {
 
     contentService = module.get(ContentService);
     socialSyncService = module.get(SocialSyncService);
-    youtubeService = module.get(YoutubeService);
+    youtubeService = module.get(YoutubeWebhookService);
     youtubeService.logger = { log: jest.fn() } as any;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
+  });
+
+  describe('#getSubscriptionContentFromRequest', () => {
+    class MockRequest {
+      callback: Record<string, any> = {};
+      raw = `<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns="http://www.w3.org/2005/Atom">
+<link rel="hub" href="https://pubsubhubbub.appspot.com"/>
+<link rel="self" href="https://www.youtube.com/xml/feeds/videos.xml?channel_id=CHANNEL_ID"/>
+<title>YouTube video feed</title>
+<updated>2015-04-01T19:05:24.552394234+00:00</updated>
+<entry>
+ <id>yt:video:VIDEO_ID</id>
+ <yt:videoId>VIDEO_ID</yt:videoId>
+ <yt:channelId>CHANNEL_ID</yt:channelId>
+ <title>Video title</title>
+ <link rel="alternate" href="http://www.youtube.com/watch?v=VIDEO_ID"/>
+ <author>
+  <name>Channel title</name>
+  <uri>http://www.youtube.com/channel/CHANNEL_ID</uri>
+ </author>
+ <published>2015-03-06T21:40:57+00:00</published>
+ <updated>2015-03-09T19:05:24.552394234+00:00</updated>
+</entry>
+</feed>`;
+
+      on = (event: string, callback: any) => {
+        this.callback[event] = callback;
+      };
+
+      emit = (event: string, arg?: any) => {
+        this.callback[event](arg);
+      };
+    }
+
+    it('should return data if there is no error', async () => {
+      const request = new MockRequest();
+      const context = youtubeService.getSubscriptionContentFromRequest(
+        request as any
+      );
+
+      request.emit('data', request.raw);
+      request.emit('end');
+
+      const data = await context;
+      const feed = data.feed as PublishedContent;
+
+      expect(data.isPublishedContent).toBeTruthy();
+      expect(feed.entry['yt:channelId']).toEqual('CHANNEL_ID');
+      expect(feed.entry.author.name).toEqual('Channel title');
+    });
   });
 
   describe('#createContentFromYoutubeFeed', () => {
@@ -120,6 +170,10 @@ describe('Twitter Service', () => {
       jest
         .spyOn(socialSyncService, 'getAutoSyncAccountBySocialId')
         .mockResolvedValueOnce(syncAccount);
+
+      jest
+        .spyOn(contentService, 'getAuthorFromId')
+        .mockResolvedValueOnce(syncAccount.author);
 
       jest
         .spyOn(contentService, 'createContentsFromAuthor')

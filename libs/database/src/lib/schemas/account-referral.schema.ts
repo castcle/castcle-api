@@ -21,19 +21,32 @@
  * or have any questions.
  */
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Document } from 'mongoose';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
 
-@Controller('healthy')
-export class HealthyController {
-  private readonly logger = new CastLogger(
-    HealthyController.name,
-    CastLoggerOptions
-  );
+@Schema({ timestamps: true })
+export class AccountReferral extends CastcleBase {
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true
+  })
+  referrerAccount: Account;
 
-  @Get()
-  getData() {
-    this.logger.log('Health Check');
-    return '';
-  }
+  @Prop({ index: true })
+  referrerDisplayId: string;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true
+  })
+  referringAccount: Account;
 }
+
+export type AccountReferralDocument = AccountReferral & Document;
+export const AccountReferralSchema =
+  SchemaFactory.createForClass(AccountReferral);

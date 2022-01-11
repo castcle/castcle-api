@@ -143,13 +143,13 @@ export class AppService {
   /**
    * Validate if password pass Password.validate() if not will throw CastcleException
    * @param password
-   * @param langagues en is default
+   * @param languages en is default
    * @returns {boolean}
    */
-  validatePassword(password: string, langagues?: string) {
+  validatePassword(password: string, languages?: string) {
     if (Password.validate(password)) return true;
     else {
-      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, langagues);
+      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, languages);
     }
   }
 

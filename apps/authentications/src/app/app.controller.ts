@@ -327,7 +327,8 @@ export class AuthenticationController {
           displayId: body.payload.castcleId,
           displayName: body.payload.displayName,
           email: body.payload.email,
-          password: body.payload.password
+          password: body.payload.password,
+          referral: body.referral
         }
       );
       //check if display id exist

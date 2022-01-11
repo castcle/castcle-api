@@ -21,6 +21,7 @@ import {
 } from '../schemas';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { RevisionDocument } from '../schemas/revision.schema';
+import { getRelationship } from '../utils/common';
 
 @Injectable()
 export class CommentService {
@@ -89,33 +90,6 @@ export class CommentService {
     });
   }
 
-  private getRelationship(
-    relationships: RelationshipDocument[],
-    viewerId: string,
-    authorId: string,
-    hasRelationshipExpansion: boolean
-  ) {
-    if (!hasRelationshipExpansion) return {};
-
-    const authorRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(user) === String(authorId) &&
-        String(followedUser) === String(viewerId)
-    );
-
-    const getterRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(followedUser) === String(authorId) &&
-        String(user) === String(viewerId)
-    );
-
-    return {
-      blocked: Boolean(getterRelationship?.blocking),
-      blocking: Boolean(authorRelationship?.blocking),
-      followed: Boolean(getterRelationship?.following)
-    };
-  }
-
   private mapContentToContentResponse(
     comment: CommentDocument,
     engagements: EngagementDocument[],
@@ -138,7 +112,7 @@ export class CommentService {
           id: comment.author._id,
           type: comment.author.type,
           verified: comment.author.verified,
-          ...this.getRelationship(
+          ...getRelationship(
             relationships,
             viewer._id,
             comment.author._id,
@@ -179,7 +153,7 @@ export class CommentService {
               id: reply.author._id,
               verified: reply.author.verified,
               type: reply.author.type,
-              ...this.getRelationship(
+              ...getRelationship(
                 relationships,
                 viewer._id,
                 reply.author._id,

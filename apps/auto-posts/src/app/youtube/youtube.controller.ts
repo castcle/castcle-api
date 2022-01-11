@@ -25,11 +25,11 @@ import { Environment } from '@castcle-api/environments';
 import { Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { ValidateWebhookQuery } from './dto';
-import { YoutubeService } from './youtube.service';
+import { YoutubeWebhookService } from './services';
 
 @Controller('youtube')
 export class YoutubeController {
-  constructor(private readonly youtubeService: YoutubeService) {}
+  constructor(private readonly youtubeWebhookService: YoutubeWebhookService) {}
 
   @Get()
   async validateWebhook(
@@ -47,8 +47,10 @@ export class YoutubeController {
   @Post()
   async handleWebhook(@Req() req: Request) {
     const subscriptionContent =
-      await this.youtubeService.getSubscriptionContentFromRequest(req);
+      await this.youtubeWebhookService.getSubscriptionContentFromRequest(req);
 
-    await this.youtubeService.createContentFromYoutubeFeed(subscriptionContent);
+    await this.youtubeWebhookService.createContentFromYoutubeFeed(
+      subscriptionContent
+    );
   }
 }

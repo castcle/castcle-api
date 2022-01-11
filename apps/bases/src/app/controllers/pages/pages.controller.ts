@@ -73,7 +73,7 @@ import {
   CastcleAuth,
   CastcleController,
   CastcleBasicAuth,
-  CastleClearCacheAuth
+  CastcleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { DeletePageDto } from '../../dtos/delete.page.dto';
@@ -171,7 +171,7 @@ export class PageController {
     type: PageDto
   })
   @HttpCode(201)
-  @CastleClearCacheAuth(CacheKeyName.Pages)
+  @CastcleClearCacheAuth(CacheKeyName.Pages)
   @Put('pages/:id')
   async updatePage(
     @Req() req: CredentialRequest,
@@ -267,7 +267,7 @@ export class PageController {
     status: 204
   })
   @HttpCode(204)
-  @CastleClearCacheAuth(CacheKeyName.Pages)
+  @CastcleClearCacheAuth(CacheKeyName.Pages)
   @Delete('pages/:id')
   async deletePage(
     @Req() req: CredentialRequest,
@@ -337,7 +337,7 @@ export class PageController {
       { ...getContentsDto, sortBy }
     );
 
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       requester,
       contents,
       getContentsDto.hasRelationshipExpansion

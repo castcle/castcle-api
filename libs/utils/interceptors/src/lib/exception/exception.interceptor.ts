@@ -20,33 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CredentialDocument } from '@castcle-api/database/schemas';
 import { Request, Response } from 'express';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
-import { TokenRequest } from '../token/token.interceptor';
-import * as util from '../util';
+import {
+  ExceptionFilter as NestExceptionFilter,
+  Catch,
+  ArgumentsHost
+} from '@nestjs/common';
+import { getLanguageFromRequest } from '../util';
 import { Environment } from '@castcle-api/environments';
-//for delete
-export interface CredentialRequest extends TokenRequest {
-  $credential: CredentialDocument;
-}
 
 @Catch(CastcleException)
-export class ExceptionalInterceptor implements ExceptionFilter {
+export class ExceptionFilter implements NestExceptionFilter {
   catch(exception: CastcleException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
-    const langague = util.getLangagueFromRequest(request);
+    const language = getLanguageFromRequest(request);
+
     response
       .status(exception.getStatus())
       .json(
-        Environment?.NODE_ENV &&
-          (Environment.NODE_ENV === 'localhost' ||
-            Environment.NODE_ENV === 'development')
+        ['development', 'localhost'].includes(Environment?.NODE_ENV)
           ? exception.getLocalStatus('dev')
-          : exception.getLocalStatus(langague)
+          : exception.getLocalStatus(language)
       );
   }
 }

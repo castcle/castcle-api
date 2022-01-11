@@ -21,19 +21,5 @@
  * or have any questions.
  */
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
-import { Controller, Get } from '@nestjs/common';
-
-@Controller('healthy')
-export class HealthyController {
-  private readonly logger = new CastLogger(
-    HealthyController.name,
-    CastLoggerOptions
-  );
-
-  @Get()
-  getData() {
-    this.logger.log('Health Check');
-    return '';
-  }
-}
+export * from './youtube-subscriptions.service';
+export * from './youtube-webhook.service';
