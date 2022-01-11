@@ -47,6 +47,7 @@ import {
 import {
   CredentialDocument,
   OtpObjective,
+  SocialSyncDocument,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
@@ -200,17 +201,25 @@ export class UserController {
   }
 
   @CastcleAuth(CacheKeyName.SyncSocial)
-  @Get('syncSocial')
+  @Get('sync-social')
   async getSyncSocial(@Req() req: CredentialRequest) {
     logger.log(`start get all my sync social.`);
 
     logger.log(`Get user.`);
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    const pages = await this.userService.getPagesFromCredential(
+      req.$credential
+    );
 
     logger.log(`Get social from user.`);
-    const social = await this.socialSyncService.getSocialSyncByUser(user);
-    const response = {};
+    const social: SocialSyncDocument[] = [];
+    await Promise.all(
+      pages.map(async (x) => {
+        const syncData = await this.socialSyncService.getSocialSyncByUser(x);
+        social.push(...syncData);
+      })
+    );
 
+    const response = {};
     logger.log(`Generate response.`);
     for (const item in SocialProvider) {
       const data = social.find((x) => x.provider === SocialProvider[item]);
@@ -697,7 +706,7 @@ export class UserController {
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('syncSocial')
+  @Post('sync-social')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
     logger.log(`Start create sync social.`);
     logger.log(JSON.stringify(body));
@@ -706,22 +715,31 @@ export class UserController {
     await this.validateGuestAccount(req.$credential);
 
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    if (!user) {
+      logger.error(`Can't get user data`);
+      throw new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND);
+    }
+    if (user?.type === UserType.People) {
+      logger.error(`People User is forbiden.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
     if (userSync.find((x) => x.provider === body.provider)) {
       logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
       body.provider,
-      body.uid
+      body.socialId
     );
 
     if (dupSocialSync?.length) {
       logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.uid}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(
         CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
@@ -729,17 +747,9 @@ export class UserController {
       );
     }
 
-    if (user) {
-      logger.log(`create sync data.`);
-      await this.socialSyncService.create(user, body);
-      return '';
-    } else {
-      logger.error(`Can't get user data`);
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
-    }
+    logger.log(`create sync data.`);
+    await this.socialSyncService.create(user, body);
+    return '';
   }
 
   /**
@@ -757,7 +767,7 @@ export class UserController {
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Put('syncSocial')
+  @Put('sync-social')
   async updateSyncSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDto
@@ -783,7 +793,7 @@ export class UserController {
     type: SocialSyncDeleteDto
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @Delete('syncSocial')
+  @Delete('sync-social')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSyncSocial(
     @Req() req: CredentialRequest,

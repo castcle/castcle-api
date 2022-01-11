@@ -98,7 +98,7 @@ export class SocialSyncService {
     const newSocialSync = new this.socialSyncModel({
       author: { id: user.id },
       provider: socialSync.provider,
-      socialId: socialSync.uid,
+      socialId: socialSync.socialId,
       userName: socialSync.userName,
       displayName: socialSync.displayName,
       avatar: socialSync.avatar,
@@ -137,7 +137,8 @@ export class SocialSyncService {
       if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
       if (updateSocialSync.provider)
         socialSync.provider = updateSocialSync.provider;
-      if (updateSocialSync.uid) socialSync.socialId = updateSocialSync.uid;
+      if (updateSocialSync.socialId)
+        socialSync.socialId = updateSocialSync.socialId;
       if (updateSocialSync.userName)
         socialSync.userName = updateSocialSync.userName;
       if (updateSocialSync.displayName)
@@ -166,7 +167,7 @@ export class SocialSyncService {
     const deleteSocialSync = socialSyncDoc.find(
       (x) =>
         x.provider === socialSyncDeleteDto.provider &&
-        x.socialId === socialSyncDeleteDto.uid
+        x.socialId === socialSyncDeleteDto.socialId
     );
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');

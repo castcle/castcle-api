@@ -87,6 +87,15 @@ export class UserService {
       })
       .exec();
 
+  getPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
   getUserFromAccountId = (accountId: string) =>
     this._userModel
       .findOne({
