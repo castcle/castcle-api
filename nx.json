@@ -51,6 +51,9 @@
     "database": {
       "tags": []
     },
+    "e2e": {
+      "tags": []
+    },
     "engagements": {
       "tags": []
     },

@@ -24,6 +24,7 @@
       "@castcle-api/database/schemas": [
         "libs/database/src/lib/schemas/index.ts"
       ],
+      "@castcle-api/e2e": ["libs/e2e/src/index.ts"],
       "@castcle-api/environments": ["libs/environments/src/index.ts"],
       "@castcle-api/healthy": ["libs/healthy/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
