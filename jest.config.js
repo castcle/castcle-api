@@ -34,6 +34,7 @@ module.exports = {
     '<rootDir>/libs/casl',
     '<rootDir>/libs/commonDate',
     '<rootDir>/libs/database',
+    '<rootDir>/libs/e2e',
     '<rootDir>/libs/environments',
     '<rootDir>/libs/healthy',
     '<rootDir>/libs/logger',
@@ -41,11 +42,11 @@ module.exports = {
     '<rootDir>/libs/utils/aws',
     '<rootDir>/libs/utils/cache',
     '<rootDir>/libs/utils/clients',
+    '<rootDir>/libs/utils/commons',
     '<rootDir>/libs/utils/decorators',
     '<rootDir>/libs/utils/exception',
     '<rootDir>/libs/utils/interceptors',
     '<rootDir>/libs/utils/pipes',
-    '<rootDir>/libs/utils/queue',
-    '<rootDir>/libs/utils/commons'
+    '<rootDir>/libs/utils/queue'
   ]
 };
