@@ -68,7 +68,7 @@ export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
 
 SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {
-    uid: (this as SocialSyncDocument).socialId,
+    socialId: (this as SocialSyncDocument).socialId,
     username: (this as SocialSyncDocument).userName,
     displayName: (this as SocialSyncDocument).displayName,
     avatar: (this as SocialSyncDocument).avatar,

@@ -90,7 +90,7 @@ describe('SocialSyncService', () => {
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Facebook,
-        uid: '12345678',
+        socialId: '12345678',
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
@@ -110,7 +110,7 @@ describe('SocialSyncService', () => {
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Twitter,
-        uid: 't12345678',
+        socialId: 't12345678',
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
@@ -143,7 +143,7 @@ describe('SocialSyncService', () => {
       const updateSocialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Facebook,
-        uid: '7891234',
+        socialId: '7891234',
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
@@ -166,7 +166,7 @@ describe('SocialSyncService', () => {
       const deleteSocial: SocialSyncDeleteDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Facebook,
-        uid: '7891234'
+        socialId: '7891234'
       };
       await service.delete(deleteSocial, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);

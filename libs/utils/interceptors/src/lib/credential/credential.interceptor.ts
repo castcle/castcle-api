@@ -40,8 +40,8 @@ export interface CredentialRequest extends TokenRequest {
 export class CredentialInterceptor implements NestInterceptor {
   constructor(private authService: AuthenticationService) {}
   async intercept(context: ExecutionContext, next: CallHandler) {
-    const request = context.switchToHttp().getRequest();
-    request.$language = util.getLangagueFromRequest(request);
+    const request = context.switchToHttp().getRequest<CredentialRequest>();
+    request.$language = util.getLanguageFromRequest(request);
     request.$token = util.getTokenFromRequest(request);
     const accessToken = util.getTokenFromRequest(request);
     request.$credential = await this.authService.getCredentialFromAccessToken(

@@ -42,9 +42,13 @@ import { CredentialDocument, CredentialModel } from '../schemas';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { ContentDocument } from '../schemas/content.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
-import { createPagination } from '../utils/common';
-import { AccountReferral } from './../schemas/account-referral.schema';
+import { UserModel, UserType } from '../schemas/user.schema';
+import { createCastcleFilter, createPagination } from '../utils/common';
+import {
+  AccountReferral,
+  AccountReferralDocument
+} from './../schemas/account-referral.schema';
+import { UserDocument } from './../schemas/user.schema';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -83,6 +87,23 @@ export class UserService {
       })
       .exec();
 
+  getPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
+  getUserFromAccountId = (accountId: string) =>
+    this._userModel
+      .findOne({
+        ownerAccount: accountId as any,
+        type: UserType.People,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   /**
    * Get all user and page that this credentials is own
    * @param credential
@@ -777,7 +798,7 @@ Message: ${message}`
         { _id: accountId },
         {
           preferences: {
-            langagues: languageCode
+            languages: languageCode
           }
         }
       )
@@ -817,5 +838,84 @@ Message: ${message}`
 
       return author.toIncludeUser({ blocked, blocking, followed });
     });
+  };
+
+  getRelationshipData = async (
+    hasRelationshipExpansion: boolean,
+    relationUserId: any[],
+    viewerId: string
+  ) => {
+    return hasRelationshipExpansion
+      ? await this._relationshipModel.find({
+          $or: [
+            {
+              user: viewerId as any,
+              followedUser: { $in: relationUserId }
+            },
+            {
+              user: { $in: relationUserId },
+              followedUser: viewerId as any
+            }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+  };
+
+  getReferrer = async (accountId: Account) => {
+    const accountRef = await this._accountReferral
+      .findOne({
+        referringAccount: accountId
+      })
+      .exec();
+
+    if (accountRef) {
+      const userRef = this.getByIdOrCastcleId(
+        accountRef.referrerDisplayId,
+        UserType.People
+      );
+      this.logger.log('Success get referrer.');
+      return userRef;
+    } else {
+      this.logger.warn('Referrer not found!');
+      return null;
+    }
+  };
+
+  getReferee = async (
+    accountId: Account,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<AccountReferralDocument> = {
+      referrerAccount: accountId
+    };
+    filter = await createCastcleFilter(filter, {
+      sinceId: sinceId,
+      untilId: untilId
+    });
+    this.logger.log('Get referee.');
+    const accountReferee = await this._accountReferral
+      .find(filter)
+      .limit(maxResults)
+      .exec();
+    const totalDocument = await this._accountReferral
+      .countDocuments(filter)
+      .exec();
+
+    const result: UserDocument[] = [];
+    this.logger.log('Get user.');
+    Promise.all(
+      accountReferee?.map(async (x) =>
+        result.push(await this.getUserFromAccountId(x.referringAccount._id))
+      )
+    );
+    this.logger.log('Success get referee.');
+
+    return {
+      total: totalDocument,
+      items: result
+    };
   };
 }

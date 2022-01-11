@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
 import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
@@ -50,4 +51,16 @@ export class UserSettingsDto {
   @ApiProperty()
   @IsString({ each: true })
   preferredLanguages: string[];
+}
+
+export class UserReferrerResponse {
+  @ApiProperty()
+  payload: UserResponseDto;
+}
+
+export class UserRefereeResponse {
+  @ApiProperty()
+  payload: UserResponseDto[];
+  @ApiProperty()
+  meta: CastcleMeta;
 }

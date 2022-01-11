@@ -55,7 +55,7 @@ export class Account extends CastcleBase {
 
   @Prop({ required: true, type: Object })
   preferences: {
-    langagues: string[];
+    languages: string[];
   };
 
   @Prop({ type: Array })
