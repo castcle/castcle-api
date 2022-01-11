@@ -84,6 +84,7 @@ export class CastcleMeta {
   'oldestId'?: string;
   'newestId'?: string;
   'resultCount': number;
+  'resultTotal'?: number;
 }
 
 export class QueryOption {

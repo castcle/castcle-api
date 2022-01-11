@@ -23,6 +23,8 @@
 import {
   AuthenticationService,
   ContentService,
+  createCastcleMeta,
+  getRelationship,
   SocialProvider,
   SocialSyncService,
   UserService
@@ -31,6 +33,8 @@ import {
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
+  ExpansionQuery,
+  FeedQuery,
   FollowResponse,
   GetContentsDto,
   PageResponseDto,
@@ -79,7 +83,13 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { ReportUserDto } from './dtos';
-import { TargetCastcleDto, UpdateMobileDto, UserSettingsDto } from './dtos/dto';
+import {
+  TargetCastcleDto,
+  UpdateMobileDto,
+  UserRefereeResponse,
+  UserReferrerResponse,
+  UserSettingsDto
+} from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
 let logger: CastLogger;
@@ -843,5 +853,140 @@ export class UserController {
     }
 
     await this.userService.userSettings(account.id, body.preferredLanguages);
+  }
+
+  /**
+   *
+   * @param {string} idOrCastcleId of page
+   * @param {CredentialRequest} req that contain current user credential
+   * @param {string[]} userFields Available values : relationships
+   * @returns {Promise<UserReferrerResponse>} referrer user
+   */
+  @ApiOkResponse({
+    type: UserReferrerResponse
+  })
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':id/referrer')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getReferrer(
+    @Param('id') id: string,
+    @Req() { $credential }: CredentialRequest,
+    @Query() userQuery: ExpansionQuery
+  ): Promise<UserReferrerResponse> {
+    logger.log('Get User from param.');
+    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
+
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    const userReferrer = await this.userService.getReferrer(user.ownerAccount);
+    logger.log('Get User from credential.');
+    const requester = await this.userService.getUserFromCredential($credential);
+
+    if (!userReferrer) return { payload: null };
+
+    let response = null;
+    logger.log('Get User relationship');
+    if (userQuery?.hasRelationshipExpansion) {
+      const relationships = await this.userService.getRelationshipData(
+        userQuery.hasRelationshipExpansion,
+        userReferrer.id,
+        requester._id
+      );
+
+      logger.log('Get User relation status');
+      const relationStatus = getRelationship(
+        relationships,
+        requester._id,
+        userReferrer._id,
+        userQuery.hasRelationshipExpansion
+      );
+
+      logger.log('build response');
+      response = await userReferrer.toUserResponse(
+        relationStatus.blocked,
+        relationStatus.blocking,
+        relationStatus.followed
+      );
+    } else {
+      logger.log('build response');
+      response = await userReferrer.toUserResponse();
+    }
+    return { payload: response };
+  }
+
+  /**
+   *
+   * @param {string} idOrCastcleId of page
+   * @param {CredentialRequest} req that contain current user credential
+   * @param {string[]} userFields Available values : relationships
+   * @param {number} maxResults limit return result
+   * @param {string} sinceId Returns results with an ID greater than (that is, more recent than) the specified ID
+   * @param {string} untilId Returns results with an ID less less than (that is, older than) the specified ID
+   * @returns {Promise<UserRefereeResponse>} all User Referee
+   */
+  @ApiOkResponse({
+    type: UserRefereeResponse
+  })
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':id/referee')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getReferee(
+    @Param('id') id: string,
+    @Req() { $credential }: CredentialRequest,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: FeedQuery
+  ): Promise<UserRefereeResponse> {
+    logger.log('Get User from param.');
+    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
+
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    const userReferrer = await this.userService.getReferee(
+      user.ownerAccount,
+      maxResults,
+      sinceId,
+      untilId
+    );
+    logger.log('Get User from credential.');
+    const requester = await this.userService.getUserFromCredential($credential);
+
+    if (!userReferrer) return { payload: [], meta: null };
+
+    const userID = userReferrer.items.map((u) => u._id);
+    let response = null;
+    logger.log('Get User relationship');
+    if (hasRelationshipExpansion) {
+      const relationships = await this.userService.getRelationshipData(
+        hasRelationshipExpansion,
+        userID,
+        requester._id
+      );
+
+      response = await Promise.all(
+        userReferrer.items.map((x) => {
+          logger.log('Get User relation status');
+          const relationStatus = getRelationship(
+            relationships,
+            requester._id,
+            x._id,
+            hasRelationshipExpansion
+          );
+
+          logger.log('build response with relation');
+          return x.toUserResponse(
+            relationStatus.blocked,
+            relationStatus.blocking,
+            relationStatus.followed
+          );
+        })
+      );
+    } else {
+      logger.log('build response without relation');
+      response = await Promise.all(
+        userReferrer.items.map((x) => x.toUserResponse())
+      );
+    }
+    const meta = createCastcleMeta(userReferrer.items, userReferrer.total);
+    return { payload: response, meta: meta };
   }
 }

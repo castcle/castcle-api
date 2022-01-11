@@ -60,7 +60,7 @@ import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { createCastcleMeta } from './utils/common';
+import { createCastcleMeta, getRelationship } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -175,5 +175,6 @@ export {
   CountryService,
   createCastcleMeta,
   SocialSyncService,
-  CommentService
+  CommentService,
+  getRelationship
 };

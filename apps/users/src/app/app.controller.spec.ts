@@ -782,4 +782,96 @@ describe('AppController', () => {
       );
     });
   });
+
+  describe('Referrer & Referee', () => {
+    let user: UserDocument;
+    let credential;
+    let defaultRequest: SocialSyncDto;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      const newAccount = await authService.createAccount({
+        deviceUUID: 'refTest12354',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+      //sign up to create actual account
+      await authService.signupByEmail(newAccount.accountDocument, {
+        displayId: 'ref1',
+        displayName: 'ref01',
+        email: 'ref1@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get referrer from Account Referrer schema', async () => {
+      const result = await appController.getReferrer('ref1', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get empty data when use wrong referrer', async () => {
+      const result = await appController.getReferrer(
+        user.displayId,
+        credential,
+        {
+          hasRelationshipExpansion: true
+        }
+      );
+      expect(result.payload).toBeNull();
+    });
+
+    it('should get Referee from Account Referrer schema', async () => {
+      const newAccount2 = await authService.createAccount({
+        deviceUUID: 'refTest789',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+
+      await authService.signupByEmail(newAccount2.accountDocument, {
+        displayId: 'ref2',
+        displayName: 'ref02',
+        email: 'ref2@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+
+      const result = await appController.getReferee(
+        user.displayId,
+        credential,
+        {
+          hasRelationshipExpansion: true
+        }
+      );
+      expect(result.payload.length).toEqual(2);
+    });
+
+    it('should get empty data when use wrong Referee', async () => {
+      const result = await appController.getReferee('ref2', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.length).toEqual(0);
+    });
+  });
 });
