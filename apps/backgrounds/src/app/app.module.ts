@@ -25,11 +25,10 @@ import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
 import { DatabaseModule } from '@castcle-api/database';
-import { BackgroundController } from './app.controller';
-import { AppService } from './app.service';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
 import { ContentConsumer } from './consumers/content.consumer';
+
 @Module({
   imports: [
     DatabaseModule,
@@ -44,7 +43,6 @@ import { ContentConsumer } from './consumers/content.consumer';
       }
     })
   ],
-  controllers: [BackgroundController],
-  providers: [AppService, NotificationConsumer, UserConsumer, ContentConsumer]
+  providers: [NotificationConsumer, UserConsumer, ContentConsumer]
 })
 export class BackgroundModule {}

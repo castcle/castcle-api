@@ -20,18 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  AuthenticationService,
-  NotificationService,
-  UserService
-} from '@castcle-api/database';
+import { NotificationService, UserService } from '@castcle-api/database';
 import {
   NotificationBadgesResponse,
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto
 } from '@castcle-api/database/dtos';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
@@ -55,15 +51,12 @@ import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
 @CastcleController('1.0')
 export class NotificationsController {
+  private logger = new CastLogger(NotificationsController.name);
+
   constructor(
     private notificationService: NotificationService,
-    private authService: AuthenticationService,
     private userService: UserService
   ) {}
-  private readonly logger = new CastLogger(
-    NotificationsController.name,
-    CastLoggerOptions
-  );
 
   @ApiOkResponse({
     type: NotificationResponse

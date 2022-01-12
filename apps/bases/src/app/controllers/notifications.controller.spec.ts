@@ -49,7 +49,6 @@ import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { AppService } from '../../app.service';
 import { NotificationsController } from './notifications.controller';
 
 let mongodMock: MongoMemoryServer;
@@ -170,7 +169,6 @@ describe('NotificationsController', () => {
       ],
       controllers: [NotificationsController],
       providers: [
-        AppService,
         UserService,
         AuthenticationService,
         ContentService,

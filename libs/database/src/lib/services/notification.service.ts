@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import {
   NotificationMessage,
   NotificationProducer
@@ -47,10 +47,8 @@ import { createCastcleMeta } from '../utils/common';
 import { NotificationDocument } from './../schemas/notification.schema';
 @Injectable()
 export class NotificationService {
-  private readonly logger = new CastLogger(
-    NotificationService.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(NotificationService.name);
+
   constructor(
     @InjectModel('Notification')
     public _notificationModel: Model<NotificationDocument>,

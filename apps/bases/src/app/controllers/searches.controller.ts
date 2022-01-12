@@ -27,7 +27,7 @@ import {
   TopTrendsResponse
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CredentialInterceptor,
@@ -51,6 +51,7 @@ import {
   ApiOkResponse,
   ApiQuery
 } from '@nestjs/swagger';
+
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
@@ -68,11 +69,9 @@ import {
 })
 @Controller()
 export class SearchesController {
+  private logger = new CastLogger(SearchesController.name);
+
   constructor(private searchService: SearchService) {}
-  private readonly logger = new CastLogger(
-    SearchesController.name,
-    CastLoggerOptions
-  );
 
   @ApiBearerAuth()
   @ApiOkResponse({

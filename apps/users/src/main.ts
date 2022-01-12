@@ -29,19 +29,15 @@
 import { NestFactory } from '@nestjs/core';
 import { UserModule } from './app/app.module';
 import { Configs, Environment as env } from '@castcle-api/environments';
-import * as express from 'express';
-import {
-  CastLogger,
-  CastLoggerOptions,
-  CastLoggerLevel
-} from '@castcle-api/logger';
+import { json, urlencoded } from 'express';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(UserModule, {
     logger: CastLoggerLevel
   });
@@ -59,8 +55,8 @@ async function bootstrap() {
   // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
   app.useGlobalFilters(new ExceptionFilter());
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();

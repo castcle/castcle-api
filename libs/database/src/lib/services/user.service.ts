@@ -22,6 +22,11 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Image
+} from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
@@ -37,7 +42,12 @@ import {
   EntityVisibility,
   SortDirection
 } from '../dtos/common.dto';
-import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import {
+  PageDto,
+  UpdateModelUserDto,
+  UpdateUserDto,
+  UserModelImage
+} from '../dtos/user.dto';
 import { CredentialDocument, CredentialModel } from '../schemas';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { ContentDocument } from '../schemas/content.schema';
@@ -286,13 +296,13 @@ export class UserService {
 
   createPageFromCredential = async (
     credential: CredentialDocument,
-    pageDto: PageModelDto
+    pageDto: PageDto
   ) => {
     const user = await this.getUserFromCredential(credential);
     return this.createPageFromUser(user, pageDto);
   };
 
-  createPageFromUser = (user: UserDocument, pageDto: PageModelDto) => {
+  createPageFromUser = (user: UserDocument, pageDto: PageDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
       type: UserType.Page,
@@ -918,4 +928,45 @@ Message: ${message}`
       items: result
     };
   };
+
+  /**
+   * Upload any image in s3 and transform UpdateUserDto to UpdateModelUserDto
+   * @param {UpdateUserDto} body
+   * @param {CredentialRequest} req
+   * @returns {UpdateModelUserDto}
+   */
+  async uploadUserInfo(
+    body: UpdateUserDto,
+    accountId: string
+  ): Promise<UpdateModelUserDto> {
+    this.logger.debug(`uploading info avatar-${accountId}`);
+    this.logger.debug(body);
+
+    const images: UserModelImage = {};
+
+    if (body.images?.avatar) {
+      const avatar = await Image.upload(body.images.avatar as string, {
+        filename: `avatar-${accountId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `account_${accountId}`
+      });
+
+      images.avatar = avatar.image;
+      this.logger.debug('after update', images);
+    }
+
+    if (body.images?.cover) {
+      const cover = await Image.upload(body.images.cover as string, {
+        filename: `cover-${accountId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `account_${accountId}`
+      });
+
+      images.cover = cover.image;
+    }
+
+    return { ...body, images };
+  }
 }

@@ -22,18 +22,14 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
   const app = await NestFactory.create(AppModule, {

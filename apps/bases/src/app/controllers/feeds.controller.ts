@@ -44,7 +44,7 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 
 @CastcleController('1.0')
 @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-export class FeedController {
+export class FeedsController {
   constructor(
     private rankerService: RankerService,
     private contentService: ContentService,

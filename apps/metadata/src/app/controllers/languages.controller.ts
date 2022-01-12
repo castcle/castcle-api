@@ -20,25 +20,20 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { HashtagService } from '@castcle-api/database';
-import { HashtagResponse, LanguageResponse } from '@castcle-api/database/dtos';
+import { LanguageService } from '@castcle-api/database';
+import { LanguageResponse } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-  HttpCacheSharedInterceptor
-} from '@castcle-api/utils/interceptors';
+import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
   Controller,
   Get,
-  Req,
   UseInterceptors
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
@@ -56,31 +51,24 @@ import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
   version: '1.0'
 })
 @Controller()
-export class HashtagsController {
-  constructor(private hashtagService: HashtagService) {}
-  private readonly logger = new CastLogger(
-    HashtagsController.name,
-    CastLoggerOptions
-  );
+export class LanguagesController {
+  constructor(private languageService: LanguageService) {}
 
-  @ApiBearerAuth()
+  private logger = new CastLogger(LanguagesController.name);
+
   @ApiOkResponse({
     type: LanguageResponse
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
-  @CacheKey(CacheKeyName.HashtagsGet.Name)
-  @CacheTTL(CacheKeyName.HashtagsGet.Ttl)
-  @UseInterceptors(CredentialInterceptor)
-  @Get('hashtags')
-  async getAllHashtags(
-    @Req() req: CredentialRequest
-  ): Promise<HashtagResponse> {
-    this.logger.log('Start get all hashtags');
-    const result = await this.hashtagService.getAll();
-    this.logger.log('Success get all hashtags');
+  @CacheKey(CacheKeyName.LanguagesGet.Name)
+  @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
+  @Get('languages')
+  async getAllLanguage(): Promise<LanguageResponse> {
+    this.logger.log('Start get all language');
+    const result = await this.languageService.getAll();
+    this.logger.log('Success get all language');
     return {
-      message: 'success',
-      payload: result.map((hashtag) => hashtag.toHashtagPayload())
+      payload: result.map((lang) => lang.toLanguagePayload())
     };
   }
 }

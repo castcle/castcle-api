@@ -20,25 +20,25 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CountryService } from '@castcle-api/database';
-import {
-  CountryResponse,
-  DEFAULT_COUNTRY_QUERY_OPTIONS
-} from '@castcle-api/database/dtos';
+import { HashtagService } from '@castcle-api/database';
+import { HashtagResponse, LanguageResponse } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
-import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
-import { SortByEnum, SortByPipe } from '@castcle-api/utils/pipes';
+import {
+  CredentialInterceptor,
+  CredentialRequest,
+  HttpCacheSharedInterceptor
+} from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
   Controller,
   Get,
-  Query,
+  Req,
   UseInterceptors
 } from '@nestjs/common';
-import { ApiHeader, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
@@ -56,36 +56,29 @@ import { ApiHeader, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
   version: '1.0'
 })
 @Controller()
-export class CountryController {
-  constructor(private countryService: CountryService) {}
-  private readonly logger = new CastLogger(
-    CountryController.name,
-    CastLoggerOptions
-  );
+export class HashtagsController {
+  constructor(private hashtagService: HashtagService) {}
 
+  private logger = new CastLogger(HashtagsController.name);
+
+  @ApiBearerAuth()
   @ApiOkResponse({
-    type: CountryResponse
+    type: LanguageResponse
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
-  @CacheKey(CacheKeyName.Country.Name)
-  @CacheTTL(CacheKeyName.Country.Ttl)
-  @ApiQuery({
-    name: 'sortBy',
-    enum: SortByEnum,
-    required: false
-  })
-  @Get('country')
-  async getAllCountry(
-    @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy
-  ): Promise<CountryResponse> {
-    this.logger.log('Start get all country');
-    const result = await this.countryService.getAll({
-      sortBy: sortByOption
-    });
-    this.logger.log('Success get all country');
+  @CacheKey(CacheKeyName.HashtagsGet.Name)
+  @CacheTTL(CacheKeyName.HashtagsGet.Ttl)
+  @UseInterceptors(CredentialInterceptor)
+  @Get('hashtags')
+  async getAllHashtags(
+    @Req() req: CredentialRequest
+  ): Promise<HashtagResponse> {
+    this.logger.log('Start get all hashtags');
+    const result = await this.hashtagService.getAll();
+    this.logger.log('Success get all hashtags');
     return {
-      payload: result.map((country) => country.toCountryPayload())
+      message: 'success',
+      payload: result.map((hashtag) => hashtag.toHashtagPayload())
     };
   }
 }

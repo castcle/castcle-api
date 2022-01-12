@@ -45,9 +45,6 @@ import {
 @Injectable()
 export class AppService {
   constructor(private authService: AuthenticationService) {}
-  getData(): { message: string } {
-    return { message: 'Welcome to contents!' };
-  }
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
