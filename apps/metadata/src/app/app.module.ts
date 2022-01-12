@@ -25,11 +25,9 @@ import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { MetadataController } from './app.controller';
-import { AppService } from './app.service';
-import { CountryController } from './controllers/country/country.controller';
-import { HashtagsController } from './controllers/hashtags/hashtags.controller';
-import { LanguagesController } from './controllers/languages/languages.controller';
+import { CountryController } from './controllers/country.controller';
+import { HashtagsController } from './controllers/hashtags.controller';
+import { LanguagesController } from './controllers/languages.controller';
 
 @Module({
   imports: [
@@ -38,12 +36,6 @@ import { LanguagesController } from './controllers/languages/languages.controlle
     UtilsInterceptorsModule,
     UtilsCacheModule
   ],
-  controllers: [
-    MetadataController,
-    LanguagesController,
-    HashtagsController,
-    CountryController
-  ],
-  providers: [AppService]
+  controllers: [LanguagesController, HashtagsController, CountryController]
 })
 export class MetadataModule {}

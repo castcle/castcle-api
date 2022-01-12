@@ -38,7 +38,7 @@ class UserImage {
   cover: string | CastcleImage;
 }
 
-class UserModelImage {
+export class UserModelImage {
   avatar?: CastcleImage;
   cover?: CastcleImage;
 }
@@ -139,11 +139,6 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  displayName: string;
-}
-
-export class PageModelDto {
-  castcleId: string;
   displayName: string;
 }
 

@@ -20,20 +20,25 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { LanguageService } from '@castcle-api/database';
-import { LanguageResponse } from '@castcle-api/database/dtos';
+import { CountryService } from '@castcle-api/database';
+import {
+  CountryResponse,
+  DEFAULT_COUNTRY_QUERY_OPTIONS
+} from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
+import { SortByEnum, SortByPipe } from '@castcle-api/utils/pipes';
 import {
   CacheKey,
   CacheTTL,
   Controller,
   Get,
+  Query,
   UseInterceptors
 } from '@nestjs/common';
-import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { ApiHeader, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
@@ -51,26 +56,34 @@ import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
   version: '1.0'
 })
 @Controller()
-export class LanguagesController {
-  constructor(private languageService: LanguageService) {}
-  private readonly logger = new CastLogger(
-    LanguagesController.name,
-    CastLoggerOptions
-  );
+export class CountryController {
+  constructor(private countryService: CountryService) {}
+
+  private logger = new CastLogger(CountryController.name);
 
   @ApiOkResponse({
-    type: LanguageResponse
+    type: CountryResponse
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
-  @CacheKey(CacheKeyName.LanguagesGet.Name)
-  @CacheTTL(CacheKeyName.LanguagesGet.Ttl)
-  @Get('languages')
-  async getAllLanguage(): Promise<LanguageResponse> {
-    this.logger.log('Start get all language');
-    const result = await this.languageService.getAll();
-    this.logger.log('Success get all language');
+  @CacheKey(CacheKeyName.Country.Name)
+  @CacheTTL(CacheKeyName.Country.Ttl)
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortByEnum,
+    required: false
+  })
+  @Get('country')
+  async getAllCountry(
+    @Query('sortBy', SortByPipe)
+    sortByOption = DEFAULT_COUNTRY_QUERY_OPTIONS.sortBy
+  ): Promise<CountryResponse> {
+    this.logger.log('Start get all country');
+    const result = await this.countryService.getAll({
+      sortBy: sortByOption
+    });
+    this.logger.log('Success get all country');
     return {
-      payload: result.map((lang) => lang.toLanguagePayload())
+      payload: result.map((country) => country.toCountryPayload())
     };
   }
 }

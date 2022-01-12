@@ -56,7 +56,7 @@ import {
   EditCommentBody,
   LikeCommentBody,
   ReplyCommentBody
-} from '../../dtos/comment.dto';
+} from '../dtos/comment.dto';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleController,

@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
@@ -28,10 +28,7 @@ import { TopicName } from '../enum/topic.name';
 import { ContentMessage } from '../messages/content.message';
 @Injectable()
 export class ContentProducer {
-  private readonly logger = new CastLogger(
-    ContentProducer.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(ContentProducer.name);
 
   constructor(@InjectQueue(TopicName.Contents) private queue: Queue) {}
 

@@ -25,12 +25,10 @@ import { Module } from '@nestjs/common';
 import { EngagementController } from './app.controller';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { DatabaseModule } from '@castcle-api/database';
-import { AppService } from './app.service';
 import { HealthyModule } from '@castcle-api/healthy';
 
 @Module({
   imports: [DatabaseModule, HealthyModule, UtilsInterceptorsModule],
-  controllers: [EngagementController],
-  providers: [AppService]
+  controllers: [EngagementController]
 })
 export class EngagementModule {}

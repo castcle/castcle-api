@@ -20,14 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CommonDate } from '@castcle-api/commonDate';
 import { AuthenticationService } from '@castcle-api/database';
 import {
   AccountAuthenIdType,
   OtpObjective
 } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
@@ -93,10 +92,8 @@ export class AuthenticationController {
     private readonly appService: AppService,
     private authService: AuthenticationService
   ) {}
-  private readonly logger = new CastLogger(
-    AuthenticationController.name,
-    CastLoggerOptions
-  );
+
+  private logger = new CastLogger(AuthenticationController.name);
 
   @ApiResponse({
     status: 400,
@@ -566,23 +563,6 @@ export class AuthenticationController {
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
-  }
-
-  @Get()
-  getData() {
-    const dt = new CommonDate();
-    const birthDay = dt.getDateFormat(
-      dt.getDateFromString('1981-11-10', 'YYYY-MM-DD'),
-      'DD-MM-YY'
-    );
-    this.logger.log('Root');
-    return this.appService.getData().message + birthDay;
-  }
-
-  @Version('beta')
-  @Get()
-  getDataBeta() {
-    return 'hello';
   }
 
   /*

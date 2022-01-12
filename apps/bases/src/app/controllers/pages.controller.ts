@@ -34,13 +34,11 @@ import {
   UsePipes,
   ValidationPipe
 } from '@nestjs/common';
-import { AppService } from '../../app.service';
 import {
   AuthenticationService,
   UserService,
   ContentService
 } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
 import {
   ContentResponse,
   ContentsResponse,
@@ -76,21 +74,16 @@ import {
   CastcleClearCacheAuth
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
-import { DeletePageDto } from '../../dtos/delete.page.dto';
+import { DeletePageDto } from '../dtos/delete.page.dto';
 
 @CastcleController('1.0')
 @Controller()
-export class PageController {
+export class PagesController {
   constructor(
-    private readonly appService: AppService,
     private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService
   ) {}
-  private readonly logger = new CastLogger(
-    PageController.name,
-    CastLoggerOptions
-  );
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
@@ -153,13 +146,12 @@ export class PageController {
     );
     if (namingResult)
       throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
-    //TODO !!! performance issue
-    const newBody = await this.appService.uploadPage(body);
-    console.debug('newBody', newBody);
+
     const page = await this.userService.createPageFromCredential(
       req.$credential,
-      newBody
+      body
     );
+
     return this.userService.getById(authorizedUser, page.id, UserType.Page);
   }
 

@@ -22,7 +22,7 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import * as Twilio from 'twilio';
 import { TwillioChannel } from './twillio.message';
@@ -40,10 +40,7 @@ export class TwillioClient {
       : 'VA356353'
   };
 
-  private readonly logger = new CastLogger(
-    TwillioClient.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(TwillioClient.name);
 
   private readonly client = new Twilio.Twilio(
     this.env.twilioAccountSid,

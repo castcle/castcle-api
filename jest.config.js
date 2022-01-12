@@ -32,7 +32,6 @@ module.exports = {
     '<rootDir>/apps/metadata',
     '<rootDir>/apps/users',
     '<rootDir>/libs/casl',
-    '<rootDir>/libs/commonDate',
     '<rootDir>/libs/database',
     '<rootDir>/libs/e2e',
     '<rootDir>/libs/environments',

@@ -226,27 +226,6 @@
         }
       }
     },
-    "commonDate": {
-      "root": "libs/commonDate",
-      "sourceRoot": "libs/commonDate/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/commonDate/**/*.ts"]
-          }
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/commonDate"],
-          "options": {
-            "jestConfig": "libs/commonDate/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      }
-    },
     "contents": {
       "root": "apps/contents",
       "sourceRoot": "apps/contents/src",

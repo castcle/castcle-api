@@ -34,8 +34,7 @@ import {
   AuthenticationService,
   ContentService
 } from '@castcle-api/database';
-import { PageController } from '../pages/pages.controller';
-import { AppService } from '../../app.service';
+import { PagesController } from './pages.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   AccountDocument,
@@ -85,9 +84,8 @@ const closeInMongodConnection = async () => {
 
 describe('PageController', () => {
   let app: TestingModule;
-  let pageController: PageController;
+  let pageController: PagesController;
   let service: UserService;
-  let appService: AppService;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userAccount: AccountDocument;
@@ -112,9 +110,8 @@ describe('PageController', () => {
         MongooseForFeatures,
         fakeBull
       ],
-      controllers: [PageController],
+      controllers: [PagesController],
       providers: [
-        AppService,
         UserService,
         AuthenticationService,
         ContentService,
@@ -123,10 +120,9 @@ describe('PageController', () => {
       ]
     }).compile();
     service = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
-    pageController = app.get<PageController>(PageController);
+    pageController = app.get<PagesController>(PagesController);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -150,13 +146,6 @@ describe('PageController', () => {
       });
       return mockImage;
     });
-    jest
-      .spyOn(appService, 'uploadPage')
-      .mockImplementation(async (body: PageDto) => {
-        return {
-          ...body
-        };
-      });
     userCredential = result.credentialDocument;
   });
   afterAll(async () => {
