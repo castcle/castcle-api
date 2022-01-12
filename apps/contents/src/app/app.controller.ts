@@ -92,7 +92,7 @@ export class ContentController {
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async createFeedContent(
     @Body(new SaveContentPipe()) body: SaveContentDto,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const ability = this.caslAbility.createForCredential(req.$credential);
@@ -119,12 +119,12 @@ export class ContentController {
       id: content._id
     });
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          authorizedUser,
-          content
-        )
-      : this.appService.convertContentToContentResponse(content);
+    return this.contentService.convertContentToContentResponse(
+      authorizedUser,
+      content,
+      [],
+      hasRelationshipExpansion
+    );
   }
 
   @ApiOkResponse({ type: ContentResponse })
@@ -133,7 +133,7 @@ export class ContentController {
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContentFromId(
     @Param('id') id: string,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
@@ -144,13 +144,12 @@ export class ContentController {
         user
       );
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          user,
-          content,
-          engagements
-        )
-      : this.appService.convertContentToContentResponse(content, engagements);
+    return this.contentService.convertContentToContentResponse(
+      user,
+      content,
+      engagements,
+      hasRelationshipExpansion
+    );
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
@@ -213,7 +212,7 @@ export class ContentController {
   async updateContentFromId(
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Param('id') id: string,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
@@ -228,12 +227,12 @@ export class ContentController {
       newBody
     );
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          user,
-          updatedContent
-        )
-      : this.appService.convertContentToContentResponse(updatedContent);
+    return this.contentService.convertContentToContentResponse(
+      user,
+      updatedContent,
+      [],
+      hasRelationshipExpansion
+    );
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
