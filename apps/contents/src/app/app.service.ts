@@ -23,10 +23,7 @@
 
 import { AuthenticationService } from '@castcle-api/database';
 import {
-  Author,
   BlogPayload,
-  CastcleIncludes,
-  ContentResponse,
   ContentType,
   SaveContentDto,
   Url
@@ -35,19 +32,11 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import {
-  ContentDocument,
-  EngagementDocument,
-  toSignedContentPayloadItem,
-  UserDocument
-} from '@castcle-api/database/schemas';
+import { UserDocument } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {
   constructor(private authService: AuthenticationService) {}
-  getData(): { message: string } {
-    return { message: 'Welcome to contents!' };
-  }
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -109,26 +98,5 @@ export class AppService {
       ).image;
     }
     return body;
-  }
-
-  /**
-   *
-   * @param content
-   * @param engagements
-   * @returns {ContentResponse}
-   */
-  convertContentToContentResponse(
-    content: ContentDocument,
-    engagements: EngagementDocument[] = []
-  ): ContentResponse {
-    const users = [new Author(content.author).toIncludeUser()];
-    const casts = content.originalPost
-      ? [toSignedContentPayloadItem(content.originalPost)]
-      : [];
-
-    return {
-      payload: content.toContentPayloadItem(engagements),
-      includes: new CastcleIncludes({ users, casts })
-    };
   }
 }

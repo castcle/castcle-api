@@ -1017,44 +1017,32 @@ Message: ${message}`
   async convertContentToContentResponse(
     viewer: UserDocument,
     content: ContentDocument,
-    engagements: EngagementDocument[] = []
+    engagements: EngagementDocument[] = [],
+    hasRelationshipExpansion = false
   ) {
+    const users: IncludeUser[] = [];
+    const authorIds = [];
     const casts = content.originalPost
       ? [toSignedContentPayloadItem(content.originalPost)]
       : [];
 
-    const author = new Author(content.author);
-    const authorId = author.id as any;
-    const relationships = await this.relationshipModel.find({
-      $or: [
-        { user: viewer._id, followedUser: authorId },
-        { user: authorId, followedUser: viewer._id }
-      ],
-      visibility: EntityVisibility.Publish
-    });
+    if (content.author) {
+      users.push(new Author(content.author));
+      authorIds.push(content.author.id);
+    }
 
-    const authorRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(user) === String(author.id) &&
-        String(followedUser) === String(viewer.id)
-    );
+    if (content.originalPost?.author) {
+      users.push(new Author(content.originalPost.author));
+      authorIds.push(content.originalPost.author.id);
+    }
 
-    const getterRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(followedUser) === String(author.id) &&
-        String(user) === String(viewer.id)
-    );
-
-    const blocked = Boolean(getterRelationship?.blocking);
-    const blocking = Boolean(authorRelationship?.blocking);
-    const followed = Boolean(getterRelationship?.following);
+    if (hasRelationshipExpansion) {
+      await this.updateUserRelationships(viewer, authorIds, users);
+    }
 
     return {
       payload: content.toContentPayloadItem(engagements),
-      includes: new CastcleIncludes({
-        users: [author.toIncludeUser({ blocked, blocking, followed })],
-        casts
-      })
+      includes: new CastcleIncludes({ casts, users })
     } as ContentResponse;
   }
 
@@ -1092,6 +1080,11 @@ Message: ${message}`
         casts.push(toSignedContentPayloadItem(content.originalPost));
       }
 
+      if (content.originalPost?.author) {
+        users.push(new Author(content.originalPost.author).toIncludeUser());
+        authorIds.push(content.originalPost.author.id);
+      }
+
       if (content.author) {
         users.push(new Author(content.author).toIncludeUser());
         authorIds.push(content.author.id);
@@ -1099,33 +1092,7 @@ Message: ${message}`
     });
 
     if (hasRelationshipExpansion) {
-      const relationships = viewer
-        ? await this.relationshipModel.find({
-            $or: [
-              { user: viewer._id, followedUser: { $in: authorIds } },
-              { user: { $in: authorIds }, followedUser: viewer._id }
-            ],
-            visibility: EntityVisibility.Publish
-          })
-        : [];
-
-      users.forEach((author) => {
-        const authorRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(user) === String(author.id) &&
-            String(followedUser) === String(viewer?.id)
-        );
-
-        const getterRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(followedUser) === String(author.id) &&
-            String(user) === String(viewer?.id)
-        );
-
-        author.blocked = Boolean(getterRelationship?.blocking);
-        author.blocking = Boolean(authorRelationship?.blocking);
-        author.followed = Boolean(getterRelationship?.following);
-      });
+      await this.updateUserRelationships(viewer, authorIds, users);
     }
 
     return {
@@ -1133,5 +1100,39 @@ Message: ${message}`
       includes: new CastcleIncludes({ users, casts }),
       meta
     };
+  }
+
+  private async updateUserRelationships(
+    viewer: UserDocument,
+    authorIds: any[],
+    users: IncludeUser[]
+  ) {
+    const relationships = viewer
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    users.forEach((author) => {
+      const authorRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(user) === String(author.id) &&
+          String(followedUser) === String(viewer?.id)
+      );
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer?.id)
+      );
+
+      author.blocked = Boolean(getterRelationship?.blocking);
+      author.blocking = Boolean(authorRelationship?.blocking);
+      author.followed = Boolean(getterRelationship?.following);
+    });
   }
 }
