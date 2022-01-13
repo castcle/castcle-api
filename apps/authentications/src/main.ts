@@ -29,11 +29,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AuthenticationModule } from './app/app.module';
 import { Environment as env } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerOptions,
-  CastLoggerLevel
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
@@ -41,7 +37,7 @@ import { Configs } from '@castcle-api/environments';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(AuthenticationModule, {
     logger: CastLoggerLevel
   });

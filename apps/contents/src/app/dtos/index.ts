@@ -22,4 +22,3 @@
  */
 
 export * from './comment.dto';
-export * from './report-content.dto';

@@ -22,16 +22,13 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import * as OAuth from 'oauth';
 import { TwitterAccessToken, TwitterUserData } from './twitter.message';
 @Injectable()
 export class TwitterClient {
-  private readonly logger = new CastLogger(
-    TwitterClient.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(TwitterClient.name);
 
   private readonly requestTokenUrl = `${Environment.TWITTER_HOST}/oauth/request_token`;
   private readonly accessTokenUrl = `${Environment.TWITTER_HOST}/oauth/access_token `;

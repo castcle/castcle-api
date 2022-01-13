@@ -33,7 +33,7 @@ import {
   SocialProvider,
   SocialSyncService
 } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { SocialSyncDocument } from '@castcle-api/database/schemas';
@@ -41,10 +41,7 @@ import { SocialSyncDocument } from '@castcle-api/database/schemas';
 @Injectable()
 export class TwitterService {
   private readonly client: TwitterApiv2;
-  private readonly logger = new CastLogger(
-    TwitterService.name,
-    CastLoggerOptions
-  );
+  private readonly logger = new CastLogger(TwitterService.name);
 
   constructor(
     private readonly contentService: ContentService,

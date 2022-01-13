@@ -58,7 +58,6 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
-import { AppService } from './app.service';
 import { UserSettingsDto } from './dtos';
 
 const fakeProcessor = jest.fn();
@@ -91,7 +90,6 @@ describe('AppController', () => {
   let app: TestingModule;
   let appController: UserController;
   let service: UserService;
-  let appService: AppService;
   let contentService: ContentService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
@@ -112,7 +110,6 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
-        AppService,
         UserService,
         AuthenticationService,
         ContentService,
@@ -121,8 +118,8 @@ describe('AppController', () => {
         SocialSyncService
       ]
     }).compile();
+    appController = app.get(UserController);
     service = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
@@ -144,7 +141,7 @@ describe('AppController', () => {
     userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
     jest
-      .spyOn(appService, 'uploadUserInfo')
+      .spyOn(service, 'uploadUserInfo')
       .mockImplementation(async (body: UpdateUserDto, req: any) => {
         return {
           ...body,
@@ -158,12 +155,6 @@ describe('AppController', () => {
 
   afterAll(async () => {
     await closeInMongodConnection();
-  });
-  describe('getData', () => {
-    it('should return "Welcome to users!"', () => {
-      appController = app.get<UserController>(UserController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to users!' });
-    });
   });
 
   describe('getMyData', () => {

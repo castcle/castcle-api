@@ -23,7 +23,7 @@
 
 import { Module } from '@nestjs/common';
 import { ContentController } from './app.controller';
-import { CommentController } from './controllers/comment/comment.controller';
+import { CommentController } from './controllers/comment.controller';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { DatabaseModule } from '@castcle-api/database';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
