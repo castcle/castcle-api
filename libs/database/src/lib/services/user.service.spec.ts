@@ -798,7 +798,9 @@ describe('User Service', () => {
       const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
       const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
       expect(mentions.users.length).toEqual(5);
-      expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
+      expect(mentions.users[0]).toEqual(
+        await updatedUser.toUserResponse(false, false, false)
+      );
       expect(mentions.users[0].followers.count).toEqual(4);
       expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
       expect(mentions.users[1].followers.count).toEqual(3);
@@ -815,7 +817,9 @@ describe('User Service', () => {
       expect(mentions.users.length).toEqual(2);
       const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
       const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
-      expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
+      expect(mentions.users[0]).toEqual(
+        await updatedUser.toUserResponse(false, false, false)
+      );
       expect(mentions.users[0].followers.count).toEqual(4);
       expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
       expect(mentions.users[1].followers.count).toEqual(3);

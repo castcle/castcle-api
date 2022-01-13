@@ -913,6 +913,28 @@ export class UserController {
     await this.userService.userSettings(account.id, body.preferredLanguages);
   }
 
+  getUserAndViewer = async (id: string, credential: CredentialDocument) => {
+    if (id.toLocaleLowerCase() === 'me') {
+      this.logger.log('Get Me User from credential.');
+      const me = await this.userService.getUserFromCredential(credential);
+      if (!me) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      return { user: me, viewer: me };
+    } else {
+      this.logger.log('Get User from param.');
+      const user = await this.userService.getByIdOrCastcleId(
+        id,
+        UserType.People
+      );
+      if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      this.logger.log('Get User from credential.');
+      const viewer = await this.userService.getUserFromCredential(credential);
+
+      return { user: user, viewer: viewer };
+    }
+  };
+
   /**
    *
    * @param {string} idOrCastcleId of page
@@ -931,31 +953,25 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() userQuery: ExpansionQuery
   ): Promise<UserReferrerResponse> {
-    this.logger.log('Get User from param.');
-    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
-
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    const { user, viewer } = await this.getUserAndViewer(id, $credential);
 
     const userReferrer = await this.userService.getReferrer(user.ownerAccount);
-    this.logger.log('Get User from credential.');
-    const requester = await this.userService.getUserFromCredential($credential);
-
     if (!userReferrer) return { payload: null };
 
     let response = null;
     this.logger.log('Get User relationship');
-    if (userQuery?.hasRelationshipExpansion) {
+    if (userQuery?.hasRelationshipExpansion && viewer) {
       const relationships = await this.userService.getRelationshipData(
         userQuery.hasRelationshipExpansion,
         userReferrer.id,
-        requester._id
+        viewer.id
       );
 
       this.logger.log('Get User relation status');
       const relationStatus = getRelationship(
         relationships,
-        requester._id,
-        userReferrer._id,
+        viewer.id,
+        userReferrer.id,
         userQuery.hasRelationshipExpansion
       );
 
@@ -994,44 +1010,38 @@ export class UserController {
     @Query()
     { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
   ): Promise<UserRefereeResponse> {
-    this.logger.log('Get User from param.');
-    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
-
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    const userReferrer = await this.userService.getReferee(
+    const { user, viewer } = await this.getUserAndViewer(id, $credential);
+    const usersReferrer = await this.userService.getReferee(
       user.ownerAccount,
       maxResults,
       sinceId,
       untilId
     );
-    this.logger.log('Get User from credential.');
-    const requester = await this.userService.getUserFromCredential($credential);
 
-    if (!userReferrer) return { payload: [], meta: null };
+    if (!usersReferrer) return { payload: [], meta: null };
 
-    const userID = userReferrer.items.map((u) => u._id);
+    const userID = usersReferrer.items.map((u) => u.id);
     let response = null;
     this.logger.log('Get User relationship');
-    if (hasRelationshipExpansion) {
+    if (hasRelationshipExpansion && viewer) {
       const relationships = await this.userService.getRelationshipData(
         hasRelationshipExpansion,
         userID,
-        requester._id
+        viewer.id
       );
 
       response = await Promise.all(
-        userReferrer.items.map((x) => {
+        usersReferrer.items.map(async (x) => {
           this.logger.log('Get User relation status');
           const relationStatus = getRelationship(
             relationships,
-            requester._id,
-            x._id,
+            viewer.id,
+            x.id,
             hasRelationshipExpansion
           );
 
           this.logger.log('build response with relation');
-          return x.toUserResponse(
+          return await x.toUserResponse(
             relationStatus.blocked,
             relationStatus.blocking,
             relationStatus.followed
@@ -1041,10 +1051,10 @@ export class UserController {
     } else {
       this.logger.log('build response without relation');
       response = await Promise.all(
-        userReferrer.items.map((x) => x.toUserResponse())
+        usersReferrer.items.map(async (x) => await x.toUserResponse())
       );
     }
-    const meta = createCastcleMeta(userReferrer.items, userReferrer.total);
+    const meta = createCastcleMeta(usersReferrer.items, usersReferrer.total);
     return { payload: response, meta: meta };
   }
 
