@@ -34,13 +34,13 @@ export class Pagination {
 }
 
 export enum SortDirection {
-  Asc = 'asc',
-  Desc = 'desc'
+  ASC = 'asc',
+  DESC = 'desc'
 }
 
 export class SortBy {
   field = 'updatedAt';
-  type = SortDirection.Desc;
+  type = SortDirection.DESC;
 }
 
 export class CastcleQueryOptions {
@@ -53,7 +53,7 @@ export class CastcleQueryOptions {
 export const DEFAULT_QUERY_OPTIONS = {
   sortBy: {
     field: 'updatedAt',
-    type: SortDirection.Desc
+    type: SortDirection.DESC
   },
   page: 1,
   limit: 25

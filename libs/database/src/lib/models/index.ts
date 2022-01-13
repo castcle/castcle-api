@@ -21,5 +21,6 @@
  * or have any questions.
  */
 
+export * from './feed.enum';
 export * from './social-sync.enum';
-export * from './user.model';
+export * from './user.enum';

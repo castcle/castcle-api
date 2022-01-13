@@ -21,32 +21,13 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { SortDirection } from '.';
-import { CastcleQueryOptions } from './common.dto';
+import { FilterQuery } from 'mongoose';
 
-export class CountryPayloadDto {
-  @ApiProperty()
-  code: string;
+export const createFilterQuery = <T>(sinceId: string, untilId: string) => {
+  const query: FilterQuery<unknown> = {};
 
-  @ApiProperty()
-  dialCode: string;
+  if (sinceId) query._id = { $gt: sinceId };
+  else if (untilId) query._id = { $lt: untilId };
 
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  flag: string;
-}
-
-export class CountryResponse {
-  @ApiProperty({ type: CountryPayloadDto, isArray: true })
-  payload: CountryPayloadDto[];
-}
-
-export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'name',
-    type: SortDirection.ASC
-  }
-} as CastcleQueryOptions;
+  return query as FilterQuery<T>;
+};

@@ -350,7 +350,7 @@ describe('ContentService', () => {
       const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
-          type: SortDirection.Asc
+          type: SortDirection.ASC
         }
       });
       expect(

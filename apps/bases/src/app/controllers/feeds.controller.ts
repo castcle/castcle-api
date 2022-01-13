@@ -25,10 +25,12 @@ import { Get, Query, Req, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RankerService, UxEngagementService } from '@castcle-api/database';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
-  FeedQuery,
+  PaginationQuery,
   DEFAULT_FEED_QUERY_OPTIONS,
   FeedItemMode,
-  FeedsResponse
+  FeedsResponse,
+  GetSearchRecentDto,
+  ResponseDto
 } from '@castcle-api/database/dtos';
 import { ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -38,7 +40,12 @@ import {
   SortByEnum,
   SortByPipe
 } from '@castcle-api/utils/pipes';
-import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';
+import {
+  Auth,
+  Authorizer,
+  CastcleAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
 import { ContentService, UserService } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 
@@ -156,11 +163,11 @@ export class FeedsController {
   @Get('feeds/guests')
   async getGuestFeed(
     @Req() { $credential }: CredentialRequest,
-    @Query() feedQuery: FeedQuery
+    @Query() paginationQuery: PaginationQuery
   ) {
     const account = $credential.account;
     const feedItems = await this.rankerService.getGuestFeedItems(
-      feedQuery,
+      paginationQuery,
       account
     );
 
@@ -176,7 +183,7 @@ export class FeedsController {
   @Get('feeds/members/feed/forYou')
   async getMemberFeed(
     @Req() { $credential }: CredentialRequest,
-    @Query() feedQuery: FeedQuery
+    @Query() paginationQuery: PaginationQuery
   ) {
     const account = $credential.account;
     /*const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
@@ -184,7 +191,7 @@ export class FeedsController {
       feedQuery
     );*/
     const feedItems = await this.rankerService.getGuestFeedItems(
-      feedQuery,
+      paginationQuery,
       account
     );
 
@@ -194,5 +201,25 @@ export class FeedsController {
     );
 
     return feedItems;
+  }
+
+  @CastcleAuth(CacheKeyName.Feeds)
+  @Get('feeds/search/recent')
+  async getSearchRecent(
+    @Auth() { user }: Authorizer,
+    @Query() getSearchRecentDto: GetSearchRecentDto
+  ) {
+    const { contents, meta } = await this.contentService.getSearchRecent(
+      getSearchRecentDto
+    );
+
+    const { includes, payload } =
+      await this.contentService.convertContentsToContentsResponse(
+        user,
+        contents,
+        getSearchRecentDto.hasRelationshipExpansion
+      );
+
+    return ResponseDto.ok({ payload, includes, meta });
   }
 }

@@ -21,32 +21,7 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { SortDirection } from '.';
-import { CastcleQueryOptions } from './common.dto';
-
-export class CountryPayloadDto {
-  @ApiProperty()
-  code: string;
-
-  @ApiProperty()
-  dialCode: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  flag: string;
+export enum SearchType {
+  PHOTO = 'photo',
+  VIDEO = 'video'
 }
-
-export class CountryResponse {
-  @ApiProperty({ type: CountryPayloadDto, isArray: true })
-  payload: CountryPayloadDto[];
-}
-
-export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'name',
-    type: SortDirection.ASC
-  }
-} as CastcleQueryOptions;
