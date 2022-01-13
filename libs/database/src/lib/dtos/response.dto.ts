@@ -22,31 +22,45 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { SortDirection } from '.';
-import { CastcleQueryOptions } from './common.dto';
+import { Document } from 'mongoose';
+import { CastcleIncludes } from './content.dto';
 
-export class CountryPayloadDto {
-  @ApiProperty()
-  code: string;
+export class Meta {
+  oldestId?: string;
+  newestId?: string;
+  resultCount: number;
+  resultTotal?: number;
 
-  @ApiProperty()
-  dialCode: string;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  flag: string;
+  static fromDocuments = (
+    documents: Document[],
+    resultTotal?: number
+  ): Meta => {
+    return {
+      oldestId: documents[documents.length - 1]?.id,
+      newestId: documents[0]?.id,
+      resultCount: documents.length,
+      resultTotal
+    };
+  };
 }
 
-export class CountryResponse {
-  @ApiProperty({ type: CountryPayloadDto, isArray: true })
-  payload: CountryPayloadDto[];
-}
+export class ResponseDto<T = any> {
+  @ApiProperty()
+  payload: T;
 
-export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
-  sortBy: {
-    field: 'name',
-    type: SortDirection.ASC
-  }
-} as CastcleQueryOptions;
+  @ApiProperty()
+  includes?: CastcleIncludes;
+
+  @ApiProperty()
+  meta?: Meta;
+
+  static ok = <U>({ includes, meta, payload }: ResponseDto<U>) => {
+    const responseDto = new ResponseDto<U>();
+
+    responseDto.payload = payload;
+    responseDto.includes ??= includes;
+    responseDto.meta ??= meta;
+
+    return responseDto;
+  };
+}

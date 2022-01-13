@@ -712,7 +712,7 @@ export class UserService {
 
     queryOption.sortBy = {
       field: 'followerCount',
-      type: SortDirection.Desc
+      type: SortDirection.DESC
     };
 
     return this.getByCriteria(user, query, queryOption);

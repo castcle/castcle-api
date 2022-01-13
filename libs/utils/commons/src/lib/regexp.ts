@@ -26,11 +26,15 @@ export class CastcleRegExp {
     return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
   };
 
-  static fromString = (str: string, caseInsensitive = true) => {
-    const strPattern = str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+  static fromString = (
+    str: string,
+    { exactMatch = true, caseInsensitive = true } = {}
+  ) => {
+    const escapeStr = CastcleRegExp.replaceEscapeStrings(str);
+    const strPattern = exactMatch ? `^${escapeStr}$` : escapeStr;
 
     return caseInsensitive
-      ? new RegExp(`^${strPattern}$`, 'i')
-      : new RegExp(`^${strPattern}$`);
+      ? new RegExp(strPattern, 'i')
+      : new RegExp(strPattern);
   };
 }

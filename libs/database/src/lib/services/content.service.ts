@@ -50,16 +50,20 @@ import {
   ContentResponse,
   ContentsResponse,
   ContentType,
+  createFilterQuery,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
   FeedItemDto,
   GetLinkPreview,
+  GetSearchRecentDto,
   GuestFeedItemDto,
   IncludeUser,
   Link,
   LinkType,
+  Meta,
   SaveContentDto,
   ShortPayload,
+  SortDirection,
   UpdateCommentDto
 } from '../dtos';
 import { RevisionDocument } from '../schemas/revision.schema';
@@ -77,6 +81,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { createTransport } from 'nodemailer';
 import { getLinkPreview } from 'link-preview-js';
 import { RelationshipDocument } from '../schemas/relationship.schema';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
 
 @Injectable()
 export class ContentService {
@@ -1134,5 +1139,41 @@ Message: ${message}`
       author.blocking = Boolean(authorRelationship?.blocking);
       author.followed = Boolean(getterRelationship?.following);
     });
+  }
+
+  getSearchRecent({
+    contentType,
+    keyword,
+    maxResults,
+    sinceId,
+    untilId
+  }: GetSearchRecentDto) {
+    const query = createFilterQuery<ContentDocument>(sinceId, untilId);
+
+    if (contentType) query.type = contentType;
+    if (keyword) {
+      const keywordPattern = CastcleRegExp.fromString(keyword, {
+        exactMatch: false
+      });
+
+      query.$or = [
+        { 'payload.message': keywordPattern },
+        { hashtags: keywordPattern }
+      ];
+    }
+
+    return this.getContents(query, maxResults);
+  }
+
+  async getContents(query: FilterQuery<ContentDocument>, maxResults: number) {
+    const total = await this._contentModel.countDocuments(query);
+    const contents = total
+      ? await this._contentModel
+          .find(query)
+          .limit(maxResults)
+          .sort({ createdAt: SortDirection.DESC })
+      : [];
+
+    return { contents, meta: Meta.fromDocuments(contents, total) };
   }
 }

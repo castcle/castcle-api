@@ -28,7 +28,7 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { CastcleImage, SortBy } from './common.dto';
 import { UserVerified } from '../models';
 import { CastcleMeta, QueryOption } from './common.dto';
-import { FeedQuery } from './feed.dto';
+import { PaginationQuery } from './pagination.dto';
 
 export class Url {
   @ApiProperty()
@@ -351,7 +351,7 @@ export class ContentsResponse {
   meta: CastcleMeta;
 }
 
-export class GetContentsDto extends FeedQuery {
+export class GetContentsDto extends PaginationQuery {
   @ApiProperty({
     enum: ContentType,
     required: false
