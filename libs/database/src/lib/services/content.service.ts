@@ -1150,16 +1150,11 @@ Message: ${message}`
   }: GetSearchRecentDto) {
     const query = createFilterQuery<ContentDocument>(sinceId, untilId);
 
-    if (contentType) query.type = contentType;
+    if (contentType) query[`payload.${contentType}`] = { $exists: true };
     if (keyword) {
-      const keywordPattern = CastcleRegExp.fromString(keyword, {
-        exactMatch: false
-      });
+      const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
 
-      query.$or = [
-        { 'payload.message': keywordPattern },
-        { hashtags: keywordPattern }
-      ];
+      query.$or = [{ 'payload.message': pattern }, { hashtags: pattern }];
     }
 
     return this.getContents(query, maxResults);
