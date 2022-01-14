@@ -33,5 +33,6 @@ export * from './hashtag.schema';
 export * from './language.schema';
 export * from './notification.schema';
 export * from './otp.schema';
+export * from './relationship.schema';
 export * from './social-sync.schema';
 export * from './user.schema';

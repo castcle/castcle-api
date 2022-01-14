@@ -43,7 +43,9 @@ import {
   SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
-  UserResponseDto
+  UserResponseDto,
+  ResponseDto,
+  GetSearchUsersDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -250,6 +252,21 @@ export class UserController {
       response[key] = data ? data.toSocialSyncPayload() : null;
     }
     return response;
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('search')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getSearch(
+    @Auth() { user }: Authorizer,
+    @Query() getSearchUsersDto: GetSearchUsersDto
+  ) {
+    const { users, meta } = await this.userService.getSearchUsers(
+      user,
+      getSearchUsersDto
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 
   @ApiOkResponse({ type: UserResponseDto })

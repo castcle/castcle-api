@@ -24,7 +24,6 @@ import { Action, CaslAbilityFactory } from '@castcle-api/casl';
 import {
   AuthenticationService,
   ContentService,
-  createCastcleMeta,
   NotificationService,
   UserService
 } from '@castcle-api/database';
@@ -38,12 +37,15 @@ import {
   NotificationSource,
   NotificationType,
   PaginationQuery,
+  ResponseDto,
   SaveContentDto
 } from '@castcle-api/database/dtos';
 import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
+  Auth,
+  Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
@@ -382,11 +384,11 @@ export class ContentController {
   @Get(':id/recasted')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getUserRecasted(
-    @Req() { $credential }: CredentialRequest,
+    @Auth() { user }: Authorizer,
     @Param('id') contentId: string,
     @Query()
     { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
-  ): Promise<UserRecastedResponse> {
+  ) {
     this.logger.log(`Get OriginalPost from content : ${contentId}`);
     const contents = await this.contentService.getContentFromOriginalPost(
       contentId,
@@ -394,32 +396,18 @@ export class ContentController {
       sinceId,
       untilId
     );
-    if (!contents || contents?.items.length === 0)
-      return { payload: [], meta: null };
 
-    if (hasRelationshipExpansion) {
-      const viewer = await this.userService.getUserFromCredential($credential);
-      const authorID = contents.items.map((x) => x.author.id);
-      this.logger.log('Get user.');
-      const { users, userDocument } = await this.userService.getByCriteria(
-        viewer,
-        { _id: { $in: authorID } }
-      );
-      const meta = createCastcleMeta(userDocument, contents.total);
-      return { payload: users, meta: meta };
-    } else {
-      this.logger.log('Get user.');
-      const users = await Promise.all(
-        contents.items.map(
-          async (x) => await this.userService.getUserFromId(x.author.id)
-        )
-      );
-      this.logger.log('build response without relation');
-      const response = await Promise.all(
-        users.map(async (x) => await x.toUserResponse())
-      );
-      const meta = createCastcleMeta(users, contents.total);
-      return { payload: response, meta: meta };
-    }
+    if (!contents?.total) return { payload: [], meta: null };
+
+    const authorIds = contents.items.map((x) => x.author.id);
+    const query = { _id: { $in: authorIds } };
+    const { users, meta } = await this.userService.getByCriteria(
+      user,
+      query,
+      {},
+      hasRelationshipExpansion
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 }

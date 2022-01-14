@@ -12,8 +12,9 @@ export class Authorizer {
   requestAccessForUser(targetUserId: string) {
     const isMe = targetUserId.toLowerCase() === 'me';
     const isSameId = this.user.id === targetUserId;
+    const isSameCastcleId = this.user.displayId === targetUserId;
 
-    if (isMe || isSameId) return;
+    if (isMe || isSameId || isSameCastcleId) return;
 
     throw CastcleException.FORBIDDEN;
   }
