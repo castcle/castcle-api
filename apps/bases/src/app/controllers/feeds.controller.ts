@@ -222,4 +222,29 @@ export class FeedsController {
 
     return ResponseDto.ok({ payload, includes, meta });
   }
+
+  @CastcleAuth(CacheKeyName.Feeds)
+  @Get('feeds/search/trends')
+  async getSearchTrends(
+    @Auth() { account, user }: Authorizer,
+    @Query() getSearchTrendsDto: GetSearchRecentDto
+  ) {
+    const { contents, meta } = await this.contentService.getSearchRecent(
+      getSearchTrendsDto
+    );
+
+    const sortedContents = await this.rankerService.sortContentsByScore(
+      account.id,
+      contents
+    );
+
+    const { includes, payload } =
+      await this.contentService.convertContentsToContentsResponse(
+        user,
+        sortedContents,
+        getSearchTrendsDto.hasRelationshipExpansion
+      );
+
+    return ResponseDto.ok({ payload, includes, meta });
+  }
 }

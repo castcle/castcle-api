@@ -293,4 +293,11 @@ export class RankerService {
       meta: meta
     } as GuestFeedItemPayload;
   };
+
+  async sortContentsByScore(accountId: string, contents: ContentDocument[]) {
+    const contentIds = contents.map((content) => content.id);
+    const score = await predictContents(accountId, contentIds);
+
+    return contents.sort((a, b) => score[a.id] - score[b.id]);
+  }
 }
