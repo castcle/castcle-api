@@ -20,7 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
+import {
+  CastcleMeta,
+  PageResponseDto,
+  UserResponseDto
+} from '@castcle-api/database/dtos';
 import { ApiProperty } from '@nestjs/swagger';
 export class CreateCommentBody {
   @ApiProperty()
@@ -52,7 +56,7 @@ export class LikeCommentBody {
 
 export class UserRecastedResponse {
   @ApiProperty()
-  payload: UserResponseDto[];
+  payload: (UserResponseDto | PageResponseDto)[];
   @ApiProperty()
   meta: CastcleMeta;
 }

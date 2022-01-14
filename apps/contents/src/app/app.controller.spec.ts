@@ -20,40 +20,43 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
+import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
+  AuthenticationService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService
+  NotificationService,
+  UserService
 } from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { UserService, AuthenticationService } from '@castcle-api/database';
-import { ContentController } from './app.controller';
-import { AppService } from './app.service';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { CaslAbilityFactory } from '@castcle-api/casl';
+import {
+  BlogPayload,
+  ContentType,
+  PageDto,
+  SaveContentDto,
+  ShortPayload
+} from '@castcle-api/database/dtos';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountDocument,
+  ContentDocument,
   CredentialDocument,
   UserDocument
 } from '@castcle-api/database/schemas';
 import {
-  BlogPayload,
-  PageDto,
-  SaveContentDto
-} from '@castcle-api/database/dtos';
-import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import {
+  ContentProducer,
   NotificationProducer,
   TopicName,
   UserProducer
 } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { ContentProducer } from '@castcle-api/utils/queue';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { ContentController } from './app.controller';
+import { AppService } from './app.service';
 
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
@@ -435,6 +438,57 @@ describe('ContentController', () => {
         payloadId as string
       );
       expect(getContentResultService).toBeNull();
+    });
+  });
+
+  describe('#getUserRecasted', () => {
+    let contentA: ContentDocument;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(5, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      //userA create a content
+      contentA = await contentService.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+
+      await contentService.recastContentFromUser(contentA, mockUsers[1].user);
+      await contentService.recastContentFromUser(contentA, mockUsers[2].user);
+      await contentService.recastContentFromUser(contentA, mockUsers[3].user);
+      await contentService.recastContentFromUser(contentA, mockUsers[4].user);
+    });
+
+    it('should get all recast content users', async () => {
+      const result = await contentController.getUserRecasted(
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any,
+        contentA.id,
+        { hasRelationshipExpansion: false }
+      );
+      expect(result).toBeDefined();
+      expect(result.payload.length).toEqual(4);
+      expect(result.meta.resultTotal).toEqual(4);
+
+      const resultHasRelation = await contentController.getUserRecasted(
+        {
+          $credential: userCredential,
+          $language: 'th'
+        } as any,
+        contentA.id,
+        { hasRelationshipExpansion: true }
+      );
+      expect(resultHasRelation).toBeDefined();
+      expect(resultHasRelation.payload.length).toEqual(4);
+      expect(resultHasRelation.meta.resultTotal).toEqual(4);
     });
   });
 });
