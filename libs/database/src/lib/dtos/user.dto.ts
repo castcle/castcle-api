@@ -30,6 +30,7 @@ import {
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
+import { PaginationQuery } from './pagination.dto';
 
 class UserImage {
   @ApiProperty()
@@ -288,4 +289,10 @@ export class SocialSyncDeleteDto {
   @ApiProperty()
   @IsString()
   socialId: string;
+}
+
+export class GetSearchUsersDto extends PaginationQuery {
+  @IsString()
+  @IsNotEmpty()
+  keyword: string;
 }

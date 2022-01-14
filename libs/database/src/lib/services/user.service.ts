@@ -35,30 +35,35 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { Author, CastcleQueryOptions } from '../dtos';
 import {
+  Author,
+  CastcleQueryOptions,
   CastcleQueueAction,
+  createFilterQuery,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  SortDirection
-} from '../dtos/common.dto';
-import {
+  GetSearchUsersDto,
+  Meta,
   PageDto,
+  SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
   UserModelImage
-} from '../dtos/user.dto';
-import { CredentialDocument, CredentialModel } from '../schemas';
-import { Account, AccountDocument } from '../schemas/account.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { UserModel, UserType } from '../schemas/user.schema';
-import { createCastcleFilter, createPagination } from '../utils/common';
+} from '../dtos';
 import {
+  Account,
+  AccountDocument,
   AccountReferral,
-  AccountReferralDocument
-} from './../schemas/account-referral.schema';
-import { UserDocument } from './../schemas/user.schema';
+  AccountReferralDocument,
+  ContentDocument,
+  CredentialDocument,
+  CredentialModel,
+  RelationshipDocument,
+  UserDocument,
+  UserModel,
+  UserType
+} from '../schemas';
+import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -169,15 +174,41 @@ export class UserService {
       : await targetUser.toUserResponse(blocked, blocking, followed);
   };
 
+  getSearchUsers(
+    user: UserDocument,
+    {
+      hasRelationshipExpansion,
+      keyword,
+      maxResults,
+      sinceId,
+      untilId
+    }: GetSearchUsersDto
+  ) {
+    const queryOptions = { ...DEFAULT_QUERY_OPTIONS, limit: maxResults };
+    const query = createFilterQuery<UserDocument>(sinceId, untilId);
+    const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
+
+    query.$or = [{ displayId: pattern }, { displayName: pattern }];
+
+    return this.getByCriteria(
+      user,
+      query,
+      queryOptions,
+      hasRelationshipExpansion
+    );
+  }
+
   getByCriteria = async (
     user: UserDocument,
     query: FilterQuery<UserDocument>,
-    queryOptions?: CastcleQueryOptions
+    queryOptions: CastcleQueryOptions,
+    hasRelationshipExpansion = false
   ) => {
-    const { items: targetUsers, pagination } = await this.getAllByCriteria(
-      query,
-      queryOptions
-    );
+    const {
+      items: targetUsers,
+      pagination,
+      meta
+    } = await this.getAllByCriteria(query, queryOptions);
 
     const targetUserIds = targetUsers.map(({ _id }) => _id);
     const [userRelationships, pageRelationships] = await Promise.all([
@@ -193,10 +224,14 @@ export class UserService {
       })
     ]);
 
-    return {
-      pagination,
-      users: await Promise.all(
-        targetUsers.map(async (targetUser) => {
+    const users = await Promise.all(
+      targetUsers.map(async (targetUser) => {
+        const userResponse =
+          targetUser.type === UserType.Page
+            ? targetUser.toPageResponse()
+            : await targetUser.toUserResponse();
+
+        if (hasRelationshipExpansion) {
           const pageRelationship = pageRelationships.find(
             ({ user }) => String(user) === targetUser.id
           );
@@ -205,17 +240,16 @@ export class UserService {
             ({ followedUser }) => String(followedUser) === targetUser.id
           );
 
-          const blocked = Boolean(userRelationship?.blocking);
-          const blocking = Boolean(pageRelationship?.blocking);
-          const followed = Boolean(userRelationship?.following);
+          userResponse.blocked = Boolean(userRelationship?.blocking);
+          userResponse.blocking = Boolean(pageRelationship?.blocking);
+          userResponse.followed = Boolean(userRelationship?.following);
+        }
 
-          return targetUser.type === UserType.Page
-            ? targetUser.toPageResponse(blocked, blocking, followed)
-            : await targetUser.toUserResponse(blocked, blocking, followed);
-        })
-      ),
-      userDocument: targetUsers
-    };
+        return userResponse;
+      })
+    );
+
+    return { pagination, users, meta };
   };
 
   getByIdOrCastcleId = (id: string, type?: UserType) => {
@@ -314,7 +348,7 @@ export class UserService {
   };
 
   /**
-   * get all pages
+   * get all users/pages by criteria
    * @param {CastcleQueryOptions} queryOptions
    * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
    */
@@ -322,27 +356,26 @@ export class UserService {
     query: FilterQuery<UserDocument>,
     queryOptions?: CastcleQueryOptions
   ) => {
-    let items: UserDocument[];
-    const pagination = createPagination(
-      queryOptions,
-      await this._userModel.countDocuments(query)
-    );
+    const filterQuery = { ...query, visibility: EntityVisibility.Publish };
+    const total = await this._userModel.countDocuments(filterQuery);
+    let usersQuery = this._userModel.find(filterQuery);
 
-    if (!queryOptions) {
-      items = await this._userModel
-        .find({ ...query, visibility: EntityVisibility.Publish })
-        .exec();
-      return { items, pagination };
+    if (queryOptions.limit) usersQuery = usersQuery.limit(queryOptions.limit);
+    if (queryOptions.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
+    if (queryOptions.sortBy) {
+      const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
+      const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
+
+      usersQuery = usersQuery.sort(sortOrder);
     }
 
-    const itemsQuery = this._userModel
-      .find({ ...query, visibility: EntityVisibility.Publish })
-      .skip(queryOptions.page - 1)
-      .limit(queryOptions.limit);
-    if (queryOptions.sortBy.type === 'desc')
-      items = await itemsQuery.sort(`-${queryOptions.sortBy.field}`).exec();
-    else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
-    return { items, pagination };
+    const users = await usersQuery.exec();
+
+    return {
+      items: users,
+      pagination: createPagination(queryOptions, total),
+      meta: Meta.fromDocuments(users, total)
+    };
   };
 
   getAllPages = (queryOptions: CastcleQueryOptions) => {
