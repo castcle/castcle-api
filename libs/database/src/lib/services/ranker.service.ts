@@ -132,7 +132,7 @@ export class RankerService {
 
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, includes.users)
-      : includes.users.map((author) => author.toIncludeUser());
+      : includes.users.map((author) => new Author(author).toIncludeUser());
 
     return {
       payload: feedItems.map(

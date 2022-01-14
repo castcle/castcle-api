@@ -326,7 +326,7 @@ export class CastcleIncludes {
         ? new Image(author.avatar).toSignUrls()
         : Configs.DefaultAvatarImages;
 
-      authors.push(new Author(author));
+      authors.push(author);
     });
 
     return authors;

@@ -20,27 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { FilterQuery, Model, Types } from 'mongoose';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument } from '../schemas/account.schema';
-import { CommentDocument, CredentialModel } from '../schemas';
-import { User, UserDocument, UserType } from '../schemas/user.schema';
-import {
-  ContentDocument,
-  Content,
-  toSignedContentPayloadItem
-} from '../schemas/content.schema';
-import {
-  EngagementDocument,
-  EngagementType
-} from '../schemas/engagement.schema';
-import {
-  createCastcleFilter,
-  createCastcleMeta,
-  createPagination
-} from '../utils/common';
+import { getLinkPreview } from 'link-preview-js';
+import * as mongoose from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { createTransport } from 'nodemailer';
+import { ContentAggregator } from '../aggregator/content.aggregator';
 import {
   Author,
   CastcleContentQueryOptions,
@@ -66,22 +56,37 @@ import {
   SortDirection,
   UpdateCommentDto
 } from '../dtos';
-import { RevisionDocument } from '../schemas/revision.schema';
+import {
+  CommentDocument,
+  CredentialModel,
+  User,
+  UserDocument,
+  UserType
+} from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
 import { CommentType } from '../schemas/comment.schema';
+import {
+  Content,
+  ContentDocument,
+  toSignedContentPayloadItem
+} from '../schemas/content.schema';
+import {
+  EngagementDocument,
+  EngagementType
+} from '../schemas/engagement.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { ContentAggregator } from '../aggregator/content.aggregator';
-import { HashtagService } from './hashtag.service';
 import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import { Environment } from '@castcle-api/environments';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { CastLogger } from '@castcle-api/logger';
-import { createTransport } from 'nodemailer';
-import { getLinkPreview } from 'link-preview-js';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { RevisionDocument } from '../schemas/revision.schema';
+import {
+  createCastcleFilter,
+  createCastcleMeta,
+  createPagination
+} from '../utils/common';
+import { HashtagService } from './hashtag.service';
 
 @Injectable()
 export class ContentService {
@@ -252,6 +257,38 @@ export class ContentService {
     return content.save();
   };
 
+  /**
+   * Delete Content from orginal post and author
+   * @param {string} originalPostId
+   * @param {string} authorId
+   * @returns {null}
+   */
+  deleteContentFromOriginalAndAuthor = async (
+    originalPostId: string,
+    authorId: string
+  ) => {
+    this.logger.log('get content for delete.');
+    const content = await this._contentModel
+      .findOne({
+        'author.id': mongoose.Types.ObjectId(authorId),
+        'originalPost._id': mongoose.Types.ObjectId(originalPostId)
+      })
+      .exec();
+
+    if (!content) return;
+
+    if (content.isRecast || content.isQuote) {
+      this.logger.log('delete engagement.');
+      await this._engagementModel
+        .findOneAndRemove({ itemId: content._id })
+        .exec();
+    }
+    if (content.hashtags) {
+      this.hashtagService.removeFromTags(content.hashtags);
+    }
+    this.logger.log('delete content.');
+    await content.remove();
+  };
   /**
    * update aggregator of recast/quote and get content status back to publish
    * @param {string} id of content
@@ -1107,6 +1144,53 @@ Message: ${message}`
     };
   }
 
+  /**
+   * Get Content from orginal post
+   * @param {string} originalPostId
+   * @param {number} maxResults
+   * @param {string} sinceId
+   * @param {string} untilId
+   * @returns {ContentDocument[], totalDocument}
+   */
+  getContentFromOriginalPost = async (
+    originalPostId: string,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<ContentDocument> = {
+      'originalPost._id': mongoose.Types.ObjectId(originalPostId)
+    };
+    const totalDocument = await this._contentModel
+      .countDocuments(filter)
+      .exec();
+    if (sinceId) {
+      filter = {
+        ...filter,
+        'author.id': {
+          $gt: mongoose.Types.ObjectId(sinceId)
+        }
+      };
+    } else if (untilId) {
+      filter = {
+        ...filter,
+        'author.id': {
+          $lt: mongoose.Types.ObjectId(untilId)
+        }
+      };
+    }
+    const result = await this._contentModel
+      .find(filter)
+      .limit(maxResults)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      total: totalDocument,
+      items: result
+    };
+  };
+
   private async updateUserRelationships(
     viewer: UserDocument,
     authorIds: any[],
@@ -1150,16 +1234,11 @@ Message: ${message}`
   }: GetSearchRecentDto) {
     const query = createFilterQuery<ContentDocument>(sinceId, untilId);
 
-    if (contentType) query.type = contentType;
+    if (contentType) query[`payload.${contentType}`] = { $exists: true };
     if (keyword) {
-      const keywordPattern = CastcleRegExp.fromString(keyword, {
-        exactMatch: false
-      });
+      const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
 
-      query.$or = [
-        { 'payload.message': keywordPattern },
-        { hashtags: keywordPattern }
-      ];
+      query.$or = [{ 'payload.message': pattern }, { hashtags: pattern }];
     }
 
     return this.getContents(query, maxResults);

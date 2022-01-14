@@ -30,6 +30,7 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
+  ContentResponse,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
@@ -42,7 +43,9 @@ import {
   SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
-  UserResponseDto
+  UserResponseDto,
+  ResponseDto,
+  GetSearchUsersDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -53,12 +56,12 @@ import {
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
+  Auth,
+  Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleController,
   CastcleClearCacheAuth,
-  Auth,
-  Authorizer
+  CastcleController
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -133,6 +136,36 @@ export class UserController {
         CastcleStatus.REQUEST_URL_NOT_FOUND,
         req.$language
       );
+  };
+
+  /**
+   * return user document that has same castcleId but check if this request should have access to that user
+   * @param {CredentialRequest} credentialRequest
+   * @param {string} castcleId
+   * @returns {UserDocument}
+   */
+  _getUserFromBody = async (
+    credentialRequest: CredentialRequest,
+    castcleId: string
+  ) => {
+    const account = await this.authService.getAccountFromCredential(
+      credentialRequest.$credential
+    );
+    const user = await this.authService.getUserFromCastcleId(castcleId);
+    if (String(user.ownerAccount) !== String(account._id)) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    return user;
+  };
+
+  _getContentIfExist = async (id: string) => {
+    try {
+      const content = await this.contentService.getContentFromId(id);
+      if (content) return content;
+      else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+    } catch (e) {
+      throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+    }
   };
 
   @ApiQuery({
@@ -219,6 +252,21 @@ export class UserController {
       response[key] = data ? data.toSocialSyncPayload() : null;
     }
     return response;
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('search')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getSearch(
+    @Auth() { user }: Authorizer,
+    @Query() getSearchUsersDto: GetSearchUsersDto
+  ) {
+    const { users, meta } = await this.userService.getSearchUsers(
+      user,
+      getSearchUsersDto
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 
   @ApiOkResponse({ type: UserResponseDto })
@@ -998,5 +1046,54 @@ export class UserController {
     }
     const meta = createCastcleMeta(userReferrer.items, userReferrer.total);
     return { payload: response, meta: meta };
+  }
+
+  @CastcleBasicAuth()
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @Post(':id/recasted')
+  async recastContent(
+    @Param('id') id: string,
+    @Body('contentId') contentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(contentId);
+    const recastUser = await this._getUserFromBody(req, id);
+    const result = await this.contentService.recastContentFromUser(
+      content,
+      recastUser
+    );
+
+    return this.contentService.convertContentToContentResponse(
+      recastUser,
+      result.recastContent
+    );
+  }
+
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @CastcleBasicAuth()
+  @Post(':id/quotecast')
+  async quoteContent(
+    @Param('id') id: string,
+    @Body('contentId') contentId: string,
+    @Body('message') message: string,
+    @Req() req: CredentialRequest
+  ) {
+    const quoteUser = await this._getUserFromBody(req, id);
+    const content = await this._getContentIfExist(contentId);
+    const result = await this.contentService.quoteContentFromUser(
+      content,
+      quoteUser,
+      message
+    );
+    return this.contentService.convertContentToContentResponse(
+      quoteUser,
+      result.quoteContent
+    );
   }
 }
