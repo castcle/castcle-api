@@ -865,4 +865,95 @@ describe('AppController', () => {
       expect(result.payload.length).toEqual(0);
     });
   });
+
+  describe('RecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newUser = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      contentA = await contentService.createContentFromUser(newUser[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: newUser[0].user.displayId
+      });
+
+      const result = await appController.recastContent(
+        user.displayId,
+        contentA._id,
+        credential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
+    });
+  });
+
+  describe('QuotecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newUser = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      contentA = await contentService.createContentFromUser(newUser[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: newUser[0].user.displayId
+      });
+
+      const result = await appController.quoteContent(
+        user.displayId,
+        contentA._id,
+        'this is good content',
+        credential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
+    });
+  });
 });
