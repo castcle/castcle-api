@@ -20,7 +20,40 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { Action, CaslAbilityFactory } from '@castcle-api/casl';
+import {
+  AuthenticationService,
+  ContentService,
+  createCastcleMeta,
+  getRelationship,
+  NotificationService,
+  UserService
+} from '@castcle-api/database';
+import {
+  CastcleQueueAction,
+  ContentResponse,
+  ContentsResponse,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  ExpansionQuery,
+  GetContentsDto,
+  NotificationSource,
+  NotificationType,
+  PaginationQuery,
+  SaveContentDto
+} from '@castcle-api/database/dtos';
+import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
+import { CastLogger } from '@castcle-api/logger';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleClearCacheAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { SortByPipe } from '@castcle-api/utils/pipes';
+import { ContentProducer } from '@castcle-api/utils/queue';
 import {
   Body,
   Controller,
@@ -36,45 +69,17 @@ import {
   UsePipes,
   ValidationPipe
 } from '@nestjs/common';
-import { AppService } from './app.service';
-import {
-  AuthenticationService,
-  UserService,
-  ContentService,
-  NotificationService
-} from '@castcle-api/database';
-import {
-  CastcleQueueAction,
-  ContentResponse,
-  ContentsResponse,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  ExpansionQuery,
-  GetContentsDto,
-  NotificationSource,
-  NotificationType,
-  SaveContentDto
-} from '@castcle-api/database/dtos';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
-import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
-import { SortByPipe } from '@castcle-api/utils/pipes';
-import { CaslAbilityFactory, Action } from '@castcle-api/casl';
-import {
-  CastcleAuth,
-  CastcleController,
-  CastcleBasicAuth,
-  CastcleClearCacheAuth
-} from '@castcle-api/utils/decorators';
-import { CacheKeyName } from '@castcle-api/utils/cache';
-import { ContentProducer } from '@castcle-api/utils/queue';
 import { ContentLikeBody } from '../dtos/content.dto';
+import { AppService } from './app.service';
+import { UserRecastedResponse } from './dtos';
 import { SaveContentPipe } from './pipes/save-content.pipe';
 
 @CastcleController('1.0')
 @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 @Controller()
 export class ContentController {
+  private logger = new CastLogger(ContentController.name);
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService,
@@ -371,5 +376,65 @@ export class ContentController {
     return {
       payload: result.quoteContent.toContentPayloadItem()
     } as ContentResponse;
+  }
+
+  @ApiOkResponse({ type: UserRecastedResponse })
+  @CastcleBasicAuth()
+  @Get(':id/recasted')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getUserRecasted(
+    @Req() { $credential }: CredentialRequest,
+    @Param('id') contentId: string,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ): Promise<UserRecastedResponse> {
+    this.logger.log(`Get OriginalPost from content : ${contentId}`);
+    const contents = await this.contentService.getContentFromOriginalPost(
+      contentId,
+      maxResults,
+      sinceId,
+      untilId
+    );
+    if (!contents || contents?.items.length === 0)
+      return { payload: [], meta: null };
+
+    const viewer = await this.userService.getUserFromCredential($credential);
+    this.logger.log('Get user.');
+    const users = await Promise.all(
+      contents.items.map((x) => this.userService.getUserFromId(x.author.id))
+    );
+    let response = null;
+    if (hasRelationshipExpansion) {
+      const usersID = users.map((u) => u.id);
+      const relationships = await this.userService.getRelationshipData(
+        hasRelationshipExpansion,
+        usersID,
+        viewer._id
+      );
+
+      response = await Promise.all(
+        users.map((u) => {
+          this.logger.log('Get User relation status');
+          const relationStatus = getRelationship(
+            relationships,
+            viewer._id,
+            u._id,
+            hasRelationshipExpansion
+          );
+
+          this.logger.log('build response with relation');
+          return u.toUserResponse(
+            relationStatus.blocked,
+            relationStatus.blocking,
+            relationStatus.followed
+          );
+        })
+      );
+    } else {
+      this.logger.log('build response without relation');
+      response = users.map((x) => x.toUserResponse());
+    }
+    const meta = createCastcleMeta(users, contents.total);
+    return { payload: response, meta: meta };
   }
 }
