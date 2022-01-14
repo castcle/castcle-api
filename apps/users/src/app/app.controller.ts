@@ -35,17 +35,17 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
-  PaginationQuery,
   FollowResponse,
   GetContentsDto,
+  GetSearchUsersDto,
   PageResponseDto,
   PagesResponse,
+  PaginationQuery,
+  ResponseDto,
   SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
-  UserResponseDto,
-  ResponseDto,
-  GetSearchUsersDto
+  UserResponseDto
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
@@ -1094,6 +1094,33 @@ export class UserController {
     return this.contentService.convertContentToContentResponse(
       quoteUser,
       result.quoteContent
+    );
+  }
+
+  /**
+   * Undo a Recast
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} id user id
+   * @param {string} sourceContentId original content id
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @CastcleBasicAuth()
+  @Delete(':id/recast/:sourceContentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoRecast(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Param('sourceContentId') sourceContentId: string
+  ) {
+    const user = await this._getUserFromIdOrCastcleId(id, req);
+    this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
+    this.contentService.deleteContentFromOriginalAndAuthor(
+      sourceContentId,
+      user.id
     );
   }
 }
