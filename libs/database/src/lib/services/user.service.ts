@@ -888,7 +888,7 @@ Message: ${message}`
       const blocking = Boolean(authorRelationship?.blocking);
       const followed = Boolean(getterRelationship?.following);
 
-      return author.toIncludeUser({ blocked, blocking, followed });
+      return new Author(author).toIncludeUser({ blocked, blocking, followed });
     });
   };
 
