@@ -172,7 +172,7 @@ export class UserService {
   getByCriteria = async (
     user: UserDocument,
     query: FilterQuery<UserDocument>,
-    queryOptions: CastcleQueryOptions
+    queryOptions?: CastcleQueryOptions
   ) => {
     const { items: targetUsers, pagination } = await this.getAllByCriteria(
       query,
@@ -213,7 +213,8 @@ export class UserService {
             ? targetUser.toPageResponse(blocked, blocking, followed)
             : await targetUser.toUserResponse(blocked, blocking, followed);
         })
-      )
+      ),
+      userDocument: targetUsers
     };
   };
 
@@ -319,17 +320,25 @@ export class UserService {
    */
   getAllByCriteria = async (
     query: FilterQuery<UserDocument>,
-    queryOptions: CastcleQueryOptions
+    queryOptions?: CastcleQueryOptions
   ) => {
+    let items: UserDocument[];
     const pagination = createPagination(
       queryOptions,
       await this._userModel.countDocuments(query)
     );
+
+    if (!queryOptions) {
+      items = await this._userModel
+        .find({ ...query, visibility: EntityVisibility.Publish })
+        .exec();
+      return { items, pagination };
+    }
+
     const itemsQuery = this._userModel
       .find({ ...query, visibility: EntityVisibility.Publish })
       .skip(queryOptions.page - 1)
       .limit(queryOptions.limit);
-    let items: UserDocument[];
     if (queryOptions.sortBy.type === 'desc')
       items = await itemsQuery.sort(`-${queryOptions.sortBy.field}`).exec();
     else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();

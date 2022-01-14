@@ -25,7 +25,6 @@ import {
   AuthenticationService,
   ContentService,
   createCastcleMeta,
-  getRelationship,
   NotificationService,
   UserService
 } from '@castcle-api/database';
@@ -398,43 +397,29 @@ export class ContentController {
     if (!contents || contents?.items.length === 0)
       return { payload: [], meta: null };
 
-    const viewer = await this.userService.getUserFromCredential($credential);
-    this.logger.log('Get user.');
-    const users = await Promise.all(
-      contents.items.map((x) => this.userService.getUserFromId(x.author.id))
-    );
-    let response = null;
     if (hasRelationshipExpansion) {
-      const usersID = users.map((u) => u.id);
-      const relationships = await this.userService.getRelationshipData(
-        hasRelationshipExpansion,
-        usersID,
-        viewer._id
+      const viewer = await this.userService.getUserFromCredential($credential);
+      const authorID = contents.items.map((x) => x.author.id);
+      this.logger.log('Get user.');
+      const { users, userDocument } = await this.userService.getByCriteria(
+        viewer,
+        { _id: { $in: authorID } }
       );
-
-      response = await Promise.all(
-        users.map((u) => {
-          this.logger.log('Get User relation status');
-          const relationStatus = getRelationship(
-            relationships,
-            viewer._id,
-            u._id,
-            hasRelationshipExpansion
-          );
-
-          this.logger.log('build response with relation');
-          return u.toUserResponse(
-            relationStatus.blocked,
-            relationStatus.blocking,
-            relationStatus.followed
-          );
-        })
-      );
+      const meta = createCastcleMeta(userDocument, contents.total);
+      return { payload: users, meta: meta };
     } else {
+      this.logger.log('Get user.');
+      const users = await Promise.all(
+        contents.items.map(
+          async (x) => await this.userService.getUserFromId(x.author.id)
+        )
+      );
       this.logger.log('build response without relation');
-      response = users.map((x) => x.toUserResponse());
+      const response = await Promise.all(
+        users.map(async (x) => await x.toUserResponse())
+      );
+      const meta = createCastcleMeta(users, contents.total);
+      return { payload: response, meta: meta };
     }
-    const meta = createCastcleMeta(users, contents.total);
-    return { payload: response, meta: meta };
   }
 }

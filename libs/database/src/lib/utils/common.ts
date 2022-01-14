@@ -42,6 +42,7 @@ export const createPagination = (
   totalDocuments: number
 ): Pagination => {
   const pagination = new Pagination();
+  if (!queryOptions) return pagination;
 
   pagination.self = queryOptions.page;
   if (queryOptions.page - 1 > 0) {
