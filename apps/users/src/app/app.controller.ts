@@ -34,7 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
-  FeedQuery,
+  PaginationQuery,
   FollowResponse,
   GetContentsDto,
   PageResponseDto,
@@ -944,7 +944,7 @@ export class UserController {
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: FeedQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
   ): Promise<UserRefereeResponse> {
     this.logger.log('Get User from param.');
     const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
