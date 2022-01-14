@@ -613,6 +613,24 @@ export class UserController {
     return { payload: users, pagination: pagination };
   }
 
+  @Get(':id/blocking')
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getBlockedUsers(
+    @Auth() authorizer: Authorizer,
+    @Query() paginationQuery: PaginationQuery,
+    @Param('id') requestById: string
+  ) {
+    authorizer.requestAccessForUser(requestById);
+
+    const { users, meta } = await this.userService.getBlockedUsers(
+      authorizer.user,
+      paginationQuery
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/blocking')
   @CastcleBasicAuth()

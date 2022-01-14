@@ -184,9 +184,9 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
-  blocked = false,
-  blocking = false,
-  followed = false
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean
 ) {
   const self = await (this as UserDocument)
     .populate('ownerAccount')
@@ -200,9 +200,9 @@ UserSchema.methods.toUserResponse = async function (
 };
 
 UserSchema.methods.toPageResponse = function (
-  blocked = false,
-  blocking = false,
-  followed = false
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean
 ) {
   return {
     id: (this as UserDocument)._id,
