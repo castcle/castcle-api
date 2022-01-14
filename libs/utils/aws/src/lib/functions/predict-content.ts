@@ -25,28 +25,22 @@ import * as AWS from 'aws-sdk';
 import { Configs } from '@castcle-api/environments';
 
 export const predictContents = (accountId: string, contents: string[]) => {
-  const lamda = new AWS.Lambda({
-    region: 'us-east-1'
-  });
-  const payload = JSON.stringify({
-    accountId,
-    contents
-  });
-  const p = new Promise<{ [id: string]: number }>((res, rej) => {
-    const now = new Date(); //for now
-    lamda.invoke(
+  const lambda = new AWS.Lambda({ region: 'us-east-1' });
+
+  return new Promise<{ [contentId: string]: number }>((resolve, reject) => {
+    console.time('Spend time on AWS lambda');
+
+    lambda.invoke(
       {
         FunctionName: Configs.PredictFunctionName,
         InvocationType: 'RequestResponse',
-        Payload: payload
+        Payload: JSON.stringify({ accountId, contents })
       },
       (err, data) => {
-        const after = new Date();
-        console.debug('spend time on lambda', after.getTime() - now.getTime());
-        if (err) rej(err);
-        res(JSON.parse(data.Payload as string).result);
+        console.timeEnd('Spend time on AWS lambda');
+
+        err ? reject(err) : resolve(JSON.parse(data.Payload as string).result);
       }
     );
   });
-  return p;
 };
