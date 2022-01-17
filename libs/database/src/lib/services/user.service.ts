@@ -45,6 +45,7 @@ import {
   GetSearchUsersDto,
   Meta,
   PageDto,
+  PaginationQuery,
   SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
@@ -147,31 +148,77 @@ export class UserService {
     }
   };
 
-  getById = async (user: UserDocument, id: string, type: UserType) => {
+  private async convertUsersToUserResponses(
+    viewer: UserDocument | null,
+    users: UserDocument[],
+    hasRelationshipExpansion = false
+  ) {
+    if (!hasRelationshipExpansion) {
+      return Promise.all(
+        users.map(async (user) => {
+          return user.type === UserType.Page
+            ? user.toPageResponse()
+            : await user.toUserResponse();
+        })
+      );
+    }
+
+    const userIds: any[] = users.map((user) => user.id);
+    const relationships = viewer
+      ? await this._relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: userIds } },
+            { user: { $in: userIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    return Promise.all(
+      users.map(async (user) => {
+        const userResponse =
+          user.type === UserType.Page
+            ? user.toPageResponse()
+            : await user.toUserResponse();
+
+        const targetRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(user) === String(user.id) &&
+            String(followedUser) === String(viewer?.id)
+        );
+
+        const getterRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(followedUser) === String(user.id) &&
+            String(user) === String(viewer?.id)
+        );
+
+        userResponse.blocked = Boolean(getterRelationship?.blocking);
+        userResponse.blocking = Boolean(targetRelationship?.blocking);
+        userResponse.followed = Boolean(getterRelationship?.following);
+
+        return userResponse;
+      })
+    );
+  }
+
+  getById = async (
+    user: UserDocument,
+    id: string,
+    type: UserType,
+    hasRelationshipExpansion = false
+  ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const [userRelationship, targetRelationship] = await Promise.all([
-      this._relationshipModel.findOne({
-        user: user?._id,
-        followedUser: targetUser._id,
-        visibility: EntityVisibility.Publish
-      }),
-      this._relationshipModel.findOne({
-        user: targetUser._id,
-        followedUser: user?._id,
-        visibility: EntityVisibility.Publish
-      })
-    ]);
+    const [userResponse] = await this.convertUsersToUserResponses(
+      user,
+      [targetUser],
+      hasRelationshipExpansion
+    );
 
-    const blocked = Boolean(userRelationship?.blocking);
-    const blocking = Boolean(targetRelationship?.blocking);
-    const followed = Boolean(userRelationship?.following);
-
-    return targetUser.type === UserType.Page
-      ? targetUser.toPageResponse(blocked, blocking, followed)
-      : await targetUser.toUserResponse(blocked, blocking, followed);
+    return userResponse;
   };
 
   getSearchUsers(
@@ -198,6 +245,38 @@ export class UserService {
     );
   }
 
+  async getBlockedUsers(
+    user: UserDocument,
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ) {
+    const query: FilterQuery<RelationshipDocument> = {};
+
+    if (sinceId || untilId) {
+      query.followedUser = {};
+
+      if (sinceId) query.followedUser.$gt = sinceId as any;
+      if (untilId) query.followedUser.$lt = untilId as any;
+    }
+
+    query.user = user._id;
+    query.blocking = true;
+
+    const relationships = await this._relationshipModel
+      .find(query)
+      .sort({ followedUser: SortDirection.DESC })
+      .limit(maxResults)
+      .exec();
+
+    const userIds = relationships.map(({ followedUser }) => followedUser);
+
+    return this.getByCriteria(
+      user,
+      { _id: userIds },
+      {},
+      hasRelationshipExpansion
+    );
+  }
+
   getByCriteria = async (
     user: UserDocument,
     query: FilterQuery<UserDocument>,
@@ -210,43 +289,10 @@ export class UserService {
       meta
     } = await this.getAllByCriteria(query, queryOptions);
 
-    const targetUserIds = targetUsers.map(({ _id }) => _id);
-    const [userRelationships, pageRelationships] = await Promise.all([
-      this._relationshipModel.find({
-        user: user?._id,
-        followedUser: { $in: targetUserIds },
-        visibility: EntityVisibility.Publish
-      }),
-      this._relationshipModel.find({
-        user: { $in: targetUserIds },
-        followedUser: user?._id,
-        visibility: EntityVisibility.Publish
-      })
-    ]);
-
-    const users = await Promise.all(
-      targetUsers.map(async (targetUser) => {
-        const userResponse =
-          targetUser.type === UserType.Page
-            ? targetUser.toPageResponse()
-            : await targetUser.toUserResponse();
-
-        if (hasRelationshipExpansion) {
-          const pageRelationship = pageRelationships.find(
-            ({ user }) => String(user) === targetUser.id
-          );
-
-          const userRelationship = userRelationships.find(
-            ({ followedUser }) => String(followedUser) === targetUser.id
-          );
-
-          userResponse.blocked = Boolean(userRelationship?.blocking);
-          userResponse.blocking = Boolean(pageRelationship?.blocking);
-          userResponse.followed = Boolean(userRelationship?.following);
-        }
-
-        return userResponse;
-      })
+    const users = await this.convertUsersToUserResponses(
+      user,
+      targetUsers,
+      hasRelationshipExpansion
     );
 
     return { pagination, users, meta };
