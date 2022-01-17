@@ -51,6 +51,7 @@ import {
   CredentialDocument,
   OtpObjective,
   SocialSyncDocument,
+  UserDocument,
   UserType
 } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
@@ -141,21 +142,42 @@ export class UserController {
   /**
    * return user document that has same castcleId but check if this request should have access to that user
    * @param {CredentialRequest} credentialRequest
-   * @param {string} castcleId
+   * @param {UserDocument} user
    * @returns {UserDocument}
    */
-  _getUserFromBody = async (
+  _validateOwnerAccount = async (
     credentialRequest: CredentialRequest,
-    castcleId: string
+    user: UserDocument
   ) => {
     const account = await this.authService.getAccountFromCredential(
       credentialRequest.$credential
     );
-    const user = await this.authService.getUserFromCastcleId(castcleId);
     if (String(user.ownerAccount) !== String(account._id)) {
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     }
     return user;
+  };
+
+  _getUserAndViewer = async (id: string, credential: CredentialDocument) => {
+    if (id.toLocaleLowerCase() === 'me') {
+      this.logger.log('Get Me User from credential.');
+      const me = await this.userService.getUserFromCredential(credential);
+      if (!me) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      return { user: me, viewer: me };
+    } else {
+      this.logger.log('Get User from param.');
+      const user = await this.userService.getByIdOrCastcleId(
+        id,
+        UserType.People
+      );
+      if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      this.logger.log('Get User from credential.');
+      const viewer = await this.userService.getUserFromCredential(credential);
+
+      return { user: user, viewer: viewer };
+    }
   };
 
   _getContentIfExist = async (id: string) => {
@@ -938,28 +960,6 @@ export class UserController {
     await this.userService.userSettings(account.id, body.preferredLanguages);
   }
 
-  getUserAndViewer = async (id: string, credential: CredentialDocument) => {
-    if (id.toLocaleLowerCase() === 'me') {
-      this.logger.log('Get Me User from credential.');
-      const me = await this.userService.getUserFromCredential(credential);
-      if (!me) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-      return { user: me, viewer: me };
-    } else {
-      this.logger.log('Get User from param.');
-      const user = await this.userService.getByIdOrCastcleId(
-        id,
-        UserType.People
-      );
-      if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-      this.logger.log('Get User from credential.');
-      const viewer = await this.userService.getUserFromCredential(credential);
-
-      return { user: user, viewer: viewer };
-    }
-  };
-
   /**
    *
    * @param {string} idOrCastcleId of page
@@ -978,7 +978,7 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() userQuery: ExpansionQuery
   ): Promise<UserReferrerResponse> {
-    const { user, viewer } = await this.getUserAndViewer(id, $credential);
+    const { user, viewer } = await this._getUserAndViewer(id, $credential);
 
     const userReferrer = await this.userService.getReferrer(user.ownerAccount);
     if (!userReferrer) return { payload: null };
@@ -1035,7 +1035,7 @@ export class UserController {
     @Query()
     { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
   ): Promise<UserRefereeResponse> {
-    const { user, viewer } = await this.getUserAndViewer(id, $credential);
+    const { user, viewer } = await this._getUserAndViewer(id, $credential);
     const usersReferrer = await this.userService.getReferee(
       user.ownerAccount,
       maxResults,
@@ -1088,21 +1088,23 @@ export class UserController {
     status: 201,
     type: ContentResponse
   })
-  @Post(':id/recasted')
+  @Post(':id/recast')
   async recastContent(
     @Param('id') id: string,
     @Body('contentId') contentId: string,
     @Req() req: CredentialRequest
   ) {
+    this.logger.log(`Start recast content id: ${contentId}, user: ${id}`);
     const content = await this._getContentIfExist(contentId);
-    const recastUser = await this._getUserFromBody(req, id);
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const userRecast = await this._validateOwnerAccount(req, user);
     const result = await this.contentService.recastContentFromUser(
       content,
-      recastUser
+      userRecast
     );
 
     return this.contentService.convertContentToContentResponse(
-      recastUser,
+      userRecast,
       result.recastContent
     );
   }
@@ -1119,15 +1121,19 @@ export class UserController {
     @Body('message') message: string,
     @Req() req: CredentialRequest
   ) {
-    const quoteUser = await this._getUserFromBody(req, id);
+    this.logger.log(
+      `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`
+    );
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const userQuotecast = await this._validateOwnerAccount(req, user);
     const content = await this._getContentIfExist(contentId);
     const result = await this.contentService.quoteContentFromUser(
       content,
-      quoteUser,
+      userQuotecast,
       message
     );
     return this.contentService.convertContentToContentResponse(
-      quoteUser,
+      userQuotecast,
       result.quoteContent
     );
   }
@@ -1151,8 +1157,8 @@ export class UserController {
     @Param('id') id: string,
     @Param('sourceContentId') sourceContentId: string
   ) {
-    const user = await this._getUserFromIdOrCastcleId(id, req);
     this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
+    const { user } = await this._getUserAndViewer(id, req.$credential);
     this.contentService.deleteContentFromOriginalAndAuthor(
       sourceContentId,
       user.id
