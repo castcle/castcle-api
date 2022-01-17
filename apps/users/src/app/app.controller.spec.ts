@@ -867,14 +867,12 @@ describe('AppController', () => {
           hasRelationshipExpansion: true
         }
       );
-      expect(result.payload.length).toEqual(2);
-    });
 
-    it('should get Referee from Account Referrer schema By ME', async () => {
-      const result = await appController.getReferee('me', credential, {
+      const resultMe = await appController.getReferee('me', credential, {
         hasRelationshipExpansion: true
       });
       expect(result.payload.length).toEqual(2);
+      expect(resultMe.payload.length).toEqual(2);
     });
 
     it('should get empty data when use wrong Referee', async () => {
