@@ -21,7 +21,17 @@
  * or have any questions.
  */
 
-export * from './blocking.dto';
-export * from './dto';
-export * from './reporting.dto';
-export * from './unblocking.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
+
+export class UnblockingDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  targetCastcleId: string;
+}

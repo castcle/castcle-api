@@ -86,7 +86,7 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { ReportingDto } from './dtos';
+import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -613,34 +613,59 @@ export class UserController {
     return { payload: users, pagination: pagination };
   }
 
+  @Get(':id/blocking')
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getBlockedUsers(
+    @Auth() authorizer: Authorizer,
+    @Query() paginationQuery: PaginationQuery,
+    @Param('id') requestById: string
+  ) {
+    authorizer.requestAccessForUser(requestById);
+
+    const { users, meta } = await this.userService.getBlockedUsers(
+      authorizer.user,
+      paginationQuery
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/blocking')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async blockUser(
-    @Param('id') blockUserId: string,
-    @Req() req: CredentialRequest
+    @Auth() authorizer: Authorizer,
+    @Body() { targetCastcleId }: BlockingDto,
+    @Param('id') requestById: string
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const blockUser = await this.userService.getByIdOrCastcleId(blockUserId);
+    authorizer.requestAccessForUser(requestById);
 
-    await this.userService.blockUser(user, blockUser);
+    const blockUser = await this.userService.getByIdOrCastcleId(
+      targetCastcleId
+    );
+
+    await this.userService.blockUser(authorizer.user, blockUser);
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @Post(':id/unblocking')
+  @Delete(':id/unblocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async unblockUser(
-    @Param('id') unblockUserId: string,
-    @Req() req: CredentialRequest
+    @Auth() authorizer: Authorizer,
+    @Param() { id: requestById, targetCastcleId }: UnblockingDto
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    authorizer.requestAccessForUser(requestById);
+
     const unblockUser = await this.userService.getByIdOrCastcleId(
-      unblockUserId
+      targetCastcleId
     );
 
-    await this.userService.unblockUser(user, unblockUser);
+    await this.userService.unblockUser(authorizer.user, unblockUser);
   }
 
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
