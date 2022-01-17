@@ -778,6 +778,7 @@ describe('AppController', () => {
     let user: UserDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
+    let newAccount;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
@@ -790,7 +791,7 @@ describe('AppController', () => {
         $language: 'th'
       } as any;
 
-      const newAccount = await authService.createAccount({
+      newAccount = await authService.createAccount({
         deviceUUID: 'refTest12354',
         languagesPreferences: ['th', 'en'],
         header: {
@@ -814,6 +815,17 @@ describe('AppController', () => {
 
     it('should get referrer from Account Referrer schema', async () => {
       const result = await appController.getReferrer('ref1', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get referrer from Account Referrer schema By ME', async () => {
+      const meCredential = {
+        $credential: newAccount.credentialDocument,
+        $language: 'th'
+      } as any;
+      const result = await appController.getReferrer('me', meCredential, {
         hasRelationshipExpansion: true
       });
       expect(result.payload.castcleId).toEqual(user.displayId);
@@ -855,6 +867,13 @@ describe('AppController', () => {
           hasRelationshipExpansion: true
         }
       );
+      expect(result.payload.length).toEqual(2);
+    });
+
+    it('should get Referee from Account Referrer schema By ME', async () => {
+      const result = await appController.getReferee('me', credential, {
+        hasRelationshipExpansion: true
+      });
       expect(result.payload.length).toEqual(2);
     });
 

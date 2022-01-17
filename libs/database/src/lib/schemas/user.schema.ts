@@ -131,7 +131,10 @@ export interface UserModel extends mongoose.Model<UserDocument> {
   toAuthor(user: User | UserDocument): Author;
 }
 
-const _covertToUserResponse = (self: User | UserDocument, followed = false) => {
+const _covertToUserResponse = (
+  self: User | UserDocument,
+  followed?: boolean
+) => {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
