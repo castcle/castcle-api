@@ -812,7 +812,7 @@ describe('ContentService', () => {
         mockUsers[1].user
       );
       const contentB = resultB.recastContent;
-      await service.deleteContentFromOriginalAndAuthor(
+      await service.deleteRecastContentFromOriginalAndAuthor(
         contentA.id,
         mockUsers[1].user.id
       );
@@ -883,7 +883,7 @@ describe('ContentService', () => {
         mockUsers[1].user
       );
       const contentB = resultB.recastContent;
-      await service.deleteContentFromOriginalAndAuthor(
+      await service.deleteRecastContentFromOriginalAndAuthor(
         contentA.id,
         mockUsers[1].user.id
       );

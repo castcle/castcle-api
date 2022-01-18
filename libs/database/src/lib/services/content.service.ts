@@ -257,32 +257,35 @@ export class ContentService {
     return content.save();
   };
 
+  getRecastContent = (originalPostId: string, authorId: string) => {
+    return this._contentModel
+      .findOne({
+        'author.id': mongoose.Types.ObjectId(authorId),
+        'originalPost._id': mongoose.Types.ObjectId(originalPostId),
+        isRecast: true
+      })
+      .exec();
+  };
+
   /**
-   * Delete Content from orginal post and author
+   * Delete Recast Content from orginal post and author
    * @param {string} originalPostId
    * @param {string} authorId
    * @returns {null}
    */
-  deleteContentFromOriginalAndAuthor = async (
+  deleteRecastContentFromOriginalAndAuthor = async (
     originalPostId: string,
     authorId: string
   ) => {
     this.logger.log('get content for delete.');
-    const content = await this._contentModel
-      .findOne({
-        'author.id': mongoose.Types.ObjectId(authorId),
-        'originalPost._id': mongoose.Types.ObjectId(originalPostId)
-      })
-      .exec();
+    const content = await this.getRecastContent(originalPostId, authorId);
 
     if (!content) return;
 
-    if (content.isRecast || content.isQuote) {
-      this.logger.log('delete engagement.');
-      await this._engagementModel
-        .findOneAndRemove({ itemId: content._id })
-        .exec();
-    }
+    this.logger.log('delete engagement.');
+    await this._engagementModel
+      .findOneAndRemove({ itemId: content._id })
+      .exec();
     if (content.hashtags) {
       this.hashtagService.removeFromTags(content.hashtags);
     }

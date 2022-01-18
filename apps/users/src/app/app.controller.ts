@@ -1097,6 +1097,16 @@ export class UserController {
     this.logger.log(`Start recast content id: ${contentId}, user: ${id}`);
     const content = await this._getContentIfExist(contentId);
     const { user } = await this._getUserAndViewer(id, req.$credential);
+    const recastContent = await this.contentService.getRecastContent(
+      content.id,
+      user.id
+    );
+
+    if (recastContent) {
+      this.logger.error(`Already recast this content id: ${contentId}.`);
+      throw new CastcleException(CastcleStatus.RECAST_IS_EXIST);
+    }
+
     const userRecast = await this._validateOwnerAccount(req, user);
     const result = await this.contentService.recastContentFromUser(
       content,
@@ -1159,7 +1169,7 @@ export class UserController {
   ) {
     this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    this.contentService.deleteContentFromOriginalAndAuthor(
+    this.contentService.deleteRecastContentFromOriginalAndAuthor(
       sourceContentId,
       user.id
     );
