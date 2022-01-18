@@ -183,6 +183,11 @@ export const DevErrorMessages = {
     code: '5003',
     message: 'ไม่พบโพสต์หรือหัวข้อ กรุณาลองใหม่อีกครั้ง'
   },
+  '5004': {
+    statusCode: '404',
+    code: '5004',
+    message: 'You already recast this cast'
+  },
   '6001': {
     statusCode: '400',
     code: '6001',
