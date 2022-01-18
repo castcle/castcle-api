@@ -1004,7 +1004,7 @@ Message: ${message}`
 
     const result: UserDocument[] = [];
     this.logger.log('Get user.');
-    Promise.all(
+    await Promise.all(
       accountReferee?.map(async (x) =>
         result.push(await this.getUserFromAccountId(x.referringAccount._id))
       )
