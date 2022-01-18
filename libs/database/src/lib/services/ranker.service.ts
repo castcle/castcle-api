@@ -37,8 +37,7 @@ import { CastcleMeta } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
-  toUnsignedContentPayloadItem,
-  transformContentPayloadToV2
+  toUnsignedContentPayloadItem
 } from '../schemas/content.schema';
 import {
   GuestFeedItemPayload,
@@ -89,6 +88,7 @@ export class RankerService {
     const feedItemResult = await this._feedItemModel
       .find(filter)
       .skip(options.page - 1)
+      .populate('content')
       .limit(options.limit)
       .sort('-aggregator.createTime')
       .exec();
@@ -197,6 +197,7 @@ export class RankerService {
     const documents = await this._feedItemModel
       .find(filter)
       .limit(query.maxResults)
+      .populate('content')
       .sort('-aggregator.createTime')
       .exec();
     const timeAfterFind = new Date();
@@ -204,7 +205,7 @@ export class RankerService {
       '- after find document : ',
       timeAfterFind.getTime() - timeAfterFilter.getTime()
     );
-    const contentIds = documents.map((item) => item.content.id);
+    const contentIds = documents.map((item) => String(item.content._id));
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
     let feedPayload: FeedItemPayloadItem[] = [];
@@ -212,7 +213,7 @@ export class RankerService {
     if (answer) {
       newAnswer = Object.keys(answer)
         .map((id) => {
-          const feedItem = documents.find((k) => k.content.id == id);
+          const feedItem = documents.find((k) => String(k.content._id) == id);
           return {
             feedItem,
             score: answer[id] as number
@@ -236,7 +237,7 @@ export class RankerService {
               slug: 'forYou'
             },
             payload: signedContentPayloadItem(
-              transformContentPayloadToV2(item.content, [])
+              toUnsignedContentPayloadItem(item.content, [])
             ),
             type: 'content'
           } as FeedItemPayloadItem)

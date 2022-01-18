@@ -25,13 +25,8 @@ import * as mongoose from 'mongoose';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import {
-  signContentPayload,
-  signedContentPayloadItem,
-  transformContentPayloadToV2
-} from './content.schema';
+import { Content } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
-import { ContentPayloadDto } from '../dtos/content.dto';
 import { EngagementDocument } from './engagement.schema';
 import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
@@ -41,9 +36,11 @@ export type FeedItemDocument = FeedItem & IFeedItem;
 export class FeedItem extends CastcleBase {
   @Prop({
     required: true,
-    type: Object
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Content',
+    index: true
   })
-  content: ContentPayloadDto;
+  content: Content;
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -66,78 +63,13 @@ export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
 
 FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({
-  viewer: 1,
-  'content.id': 1,
-  'content.author.id': 1,
-  'content.author.castcleId': 1
+  viewer: 1
 });
 
 export interface IFeedItem extends mongoose.Document {
   toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
   toFeedItemPayloadV2(engagements?: EngagementDocument[]): FeedItemPayloadItem;
 }
-
-FeedItemSchema.methods.toFeedItemPayload = function (
-  engagements: EngagementDocument[] = []
-) {
-  return {
-    id: (this as FeedItemDocument)._id,
-    feature: {
-      id: 'feed',
-      key: 'feature.feed',
-      name: 'Feed',
-      slug: 'feed'
-    },
-    circle: {
-      id: 'for-you',
-      key: 'circle.forYou',
-      name: 'For You',
-      slug: 'forYou'
-    },
-    type: 'content',
-    payload: signContentPayload(
-      (this as FeedItemDocument).content,
-      engagements
-    ),
-    aggregator: {
-      type: 'createTime'
-    },
-    createdAt: (this as FeedItemDocument).createdAt.toISOString(),
-    updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
-  } as FeedItemPayload;
-};
-
-FeedItemSchema.methods.toFeedItemPayloadV2 = function (
-  engagements: EngagementDocument[] = []
-) {
-  return {
-    id: (this as FeedItemDocument)._id,
-    feature: {
-      id: 'feed',
-      key: 'feature.feed',
-      name: 'Feed',
-      slug: 'feed'
-    },
-    circle: {
-      id: 'for-you',
-      key: 'circle.forYou',
-      name: 'For You',
-      slug: 'forYou'
-    },
-    type: 'content',
-    payload: signedContentPayloadItem(
-      transformContentPayloadToV2(
-        (this as FeedItemDocument).content,
-        engagements
-      )
-    ),
-    aggregator: {
-      type: 'createTime'
-    },
-    createdAt: (this as FeedItemDocument).createdAt.toISOString(),
-    updatedAt: (this as FeedItemDocument).updatedAt.toISOString()
-  } as FeedItemPayloadItem;
-};
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
   return FeedItemSchema;

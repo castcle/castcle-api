@@ -398,12 +398,13 @@ describe('ContentService', () => {
     it('should showup in feedItem', async () => {
       const feedItems = await service._feedItemModel
         .find({
-          'content.id': content._id
+          content: content._id
         })
+        .populate('content')
         .exec();
       expect(feedItems.length > 0).toEqual(true);
       for (let i = 0; i < feedItems.length; i++)
-        expect(feedItems[i].content.liked.count).toEqual(1);
+        expect(feedItems[i].content.engagements['like'].count).toEqual(1);
     });
     describe('#unLikeContent()', () => {
       it('should update total like after call', async () => {
@@ -421,12 +422,13 @@ describe('ContentService', () => {
       it('should unlike on feedItems too', async () => {
         const feedItems = await service._feedItemModel
           .find({
-            'content.id': content._id
+            content: content._id
           })
+          .populate('content')
           .exec();
         expect(feedItems.length > 0).toEqual(true);
         for (let i = 0; i < feedItems.length; i++)
-          expect(feedItems[i].content.liked.count).toEqual(0);
+          expect(feedItems[i].content.engagements['like'].count).toEqual(0);
       });
     });
   });

@@ -926,7 +926,7 @@ export class ContentService {
         seen: false,
         called: false,
         viewer: viewer,
-        content: content.toContentPayload(),
+        content: content._id,
         aggregator: {
           createTime: new Date(),
           following: true
@@ -951,7 +951,7 @@ export class ContentService {
         seen: false,
         called: false,
         viewer: viewer,
-        content: content.toUnsignedContentPayload(),
+        content: content._id,
         aggregator: {
           createTime: new Date(),
           following: true
