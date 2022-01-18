@@ -882,8 +882,9 @@ describe('AppController', () => {
     let user: UserDocument;
     let credential;
     let contentA: ContentDocument;
+    let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(1, 0, {
+      mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
         accountService: authService
       });
@@ -893,6 +894,14 @@ describe('AppController', () => {
         $credential: mocksUsers[0].credential,
         $language: 'th'
       } as any;
+
+      contentA = await contentService.createContentFromUser(user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
     });
 
     afterAll(async () => {
@@ -900,26 +909,33 @@ describe('AppController', () => {
     });
 
     it('should recast content successful', async () => {
-      const newUser = await generateMockUsers(1, 0, {
-        userService: service,
-        accountService: authService
-      });
-
-      contentA = await contentService.createContentFromUser(newUser[0].user, {
-        payload: {
-          message: 'hello world'
-        } as ShortPayload,
-        type: ContentType.Short,
-        castcleId: newUser[0].user.displayId
-      });
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
 
       const result = await appController.recastContent(
-        user.displayId,
+        mocksUsers[1].user.displayId,
         contentA._id,
-        credential
+        newCredential
       );
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
       expect(result.includes).toBeDefined;
+    });
+
+    it('should exception when recast content same content', async () => {
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.recastContent(
+          mocksUsers[1].user.displayId,
+          contentA._id,
+          newCredential
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.RECAST_IS_EXIST));
     });
   });
 
