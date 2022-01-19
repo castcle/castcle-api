@@ -562,7 +562,7 @@ describe('Authentication Service', () => {
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
-        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
+        expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
         expect({
@@ -571,7 +571,6 @@ describe('Authentication Service', () => {
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
-        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.socialToken).toEqual('testtoken');
       });
     });

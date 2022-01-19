@@ -21,8 +21,8 @@
  * or have any questions.
  */
 import { HttpException } from '@nestjs/common';
-import { ErrorMessages } from './messages/default';
 import { LocalErrorMessage } from './messages';
+import { ErrorMessages } from './messages/default';
 
 export enum CastcleStatus {
   REQUEST_URL_NOT_FOUND = '1001',
@@ -53,6 +53,7 @@ export enum CastcleStatus {
   MOBILE_NUMBER_IS_EXIST = '3018',
   SOCIAL_PROVIDER_IS_EXIST = '3019',
   TWILLIO_MAX_LIMIT = '3020',
+  DUPLICATE_EMAIL = '3021',
   USER_OR_PAGE_NOT_FOUND = '4001',
   FEATURE_NOT_EXIST = '5001',
   PAYLOAD_TYPE_MISMATCH = '5002',

@@ -107,6 +107,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
   toUserResponse(
+    passwordNotSet?: boolean,
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean
@@ -187,6 +188,7 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
+  passwordNotSet = false,
   blocked?: boolean,
   blocking?: boolean,
   followed?: boolean
@@ -198,7 +200,7 @@ UserSchema.methods.toUserResponse = async function (
   response.email = self.ownerAccount.email;
   response.blocking = blocking;
   response.blocked = blocked;
-
+  response.passwordNotSet = passwordNotSet;
   return response;
 };
 

@@ -28,7 +28,7 @@ import {
   MongooseForFeatures,
   UserService
 } from '@castcle-api/database';
-import { generateMockUsers } from '@castcle-api/database/mocks';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
   CredentialDocument,
@@ -845,32 +845,29 @@ describe('AppController', () => {
     });
   });
 
-  describe('loginWithSocial Facebook', () => {
+  describe('loginWithSocial', () => {
     let credentialGuest = null;
+    let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
-      const testId = '';
-      const password = '';
-      const deviceUUID = 'sompo007';
-      const emailTest = '';
+      mockUsers = await generateMockUsers(3, 0, {
+        userService: userService,
+        accountService: service
+      });
 
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc',
-        emailTest,
-        password,
-        true
-      );
+      credentialGuest = {
+        $credential: mockUsers[0].credential,
+        $language: 'th'
+      } as any;
     });
 
     it('should create new account with new user by social ', async () => {
       const result = await appController.loginWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        payload: {
-          authToken: '109364223'
-        }
+        uid: '109364223',
+        displayName: 'test facebook',
+        avatar: '',
+        email: 'testfb@gmail.com',
+        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -883,429 +880,94 @@ describe('AppController', () => {
       expect(accountSocial.socialId).toEqual('109364223');
     });
 
-    it('should return Exception when invalid user token', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: ''
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
+    it('should create new account with generate castcle id', async () => {
+      const guestResult = await appController.guestLogin(
+        { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
+        { deviceUUID: 'test1232425' }
       );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: 'test_empty'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
+      const guestAccount = await service.getCredentialFromAccessToken(
+        guestResult.accessToken
       );
-    });
+      const newCredentialGuest = {
+        $credential: guestAccount,
+        $token: guestResult.accessToken,
+        $language: 'th'
+      } as any;
 
-    it('should return Exception when get exception user data', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: 'exception'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty authen token', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: ''
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('loginWithSocial Telegram', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = '';
-      const password = '';
-      const deviceUUID = 'sompo008';
-      const emailTest = '';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc',
-        emailTest,
-        password,
-        true
-      );
-    });
-
-    it('should create new account with new user by social ', async () => {
-      const socialId = '424242424242';
-      const result = await appController.loginWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Telegram,
-        payload: {
-          socialUser: {
-            id: socialId,
-            first_name: 'John',
-            last_name: 'Doe',
-            username: 'username',
-            photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000'
-          },
-          hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
-        }
-      });
-      const accountSocial = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Telegram
-      );
-
-      expect(result).toBeDefined();
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
-      expect(accountSocial.socialId).toEqual('424242424242');
-    });
-
-    it('should return Exception when invalid hash', async () => {
-      const socialId = '424242424242';
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
-            socialUser: {
-              id: socialId,
-              first_name: 'John',
-              last_name: 'Doe',
-              username: 'username',
-              photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000'
-            },
-            hash: '1'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
-            socialUser: {
-              id: ''
-            }
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('loginWithSocial Twitter', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = '';
-      const password = '';
-      const deviceUUID = 'sompo0070';
-      const emailTest = '';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc',
-        emailTest,
-        password,
-        true
-      );
-    });
-
-    it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Twitter,
-        payload: {
-          authToken: 'wAAAAABUZusAAABfHLxV60',
-          authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-          authVerifierToken: '88888888'
-        }
-      });
-      const accountSocial = await service.getAccountAuthenIdFromSocialId(
-        '999999',
-        AccountAuthenIdType.Twitter
-      );
-
-      expect(result).toBeDefined();
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
-      expect(accountSocial.socialId).toEqual('999999');
-    });
-
-    it('should return Exception when invalid user token', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: ''
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty authen token', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: '55555555',
-            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-            authVerifierToken: '88888888'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get exception user data', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: '77777777',
-            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-            authVerifierToken: '88888888'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('loginWithSocial Apple', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = 'verify01';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'apple01';
-      const emailTest = 'test@apple.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc',
-        emailTest,
-        password,
-        true
-      );
-    });
-    it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Apple,
-        payload: {
-          authToken:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-          code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
-          socialUser: {
-            first_name: 'John',
-            last_name: 'Doe',
-            email: 'user@apple.com'
-          }
-        }
-      });
-      const accountSocial = await service.getAccountAuthenIdFromSocialId(
-        'xxx.yyy.zzz',
-        AccountAuthenIdType.Apple
-      );
-
-      expect(result).toBeDefined();
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
-      expect(accountSocial.socialId).toEqual('xxx.yyy.zzz');
-    });
-
-    it('should return Exception when invalid idToken', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Apple,
-          payload: {
-            authToken: '1',
-            code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
-            socialUser: {
-              first_name: 'John',
-              last_name: 'Doe',
-              email: 'user@apple.com'
-            }
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Apple,
-          payload: {
-            authToken:
-              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('loginWithSocial Google', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = 'google01';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'android01';
-      const emailTest = 'test@gmail.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'goo',
-        emailTest,
-        password,
-        true
-      );
-    });
-    it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(credentialGuest, {
+      const result = await appController.loginWithSocial(newCredentialGuest, {
         provider: AccountAuthenIdType.Google,
-        payload: {
-          authToken:
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
-        }
+        uid: '109364223777'
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
-        'mock_user_google',
+        '109364223777',
         AccountAuthenIdType.Google
       );
+      const user = await userService.getUserAndPagesFromAccountId(
+        accountSocial.account._id
+      );
+
+      expect(user).toBeDefined();
+      expect(user[0].displayId).toEqual('gg109364223777');
+    });
+
+    it('should get existing user and return', async () => {
+      const newCredentialGuest = {
+        $credential: mockUsers[1].credential,
+        $language: 'th'
+      } as any;
+      const result = await appController.loginWithSocial(newCredentialGuest, {
+        provider: AccountAuthenIdType.Facebook,
+        uid: '109364223',
+        displayName: 'test facebook',
+        avatar: '',
+        email: 'testfb@gmail.com',
+        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+      });
+      const accountSocial = await service.getAccountAuthenIdFromSocialId(
+        '109364223',
+        AccountAuthenIdType.Facebook
+      );
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
-      expect(accountSocial.socialId).toEqual('mock_user_google');
+      expect(accountSocial.socialId).toEqual('109364223');
     });
 
-    it('should return Exception when invalid token', async () => {
-      await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Google,
-          payload: {
-            authToken: '1'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
+    it('should return Exception when invalid use duplicate email', async () => {
+      const newCredentialGuest = {
+        $credential: mockUsers[2].credential,
+        $language: 'th'
+      } as any;
 
-    it('should return Exception when get empty user data', async () => {
       await expect(
-        appController.loginWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Apple,
-          payload: {
-            authToken: ''
-          }
+        appController.loginWithSocial(newCredentialGuest, {
+          provider: AccountAuthenIdType.Twitter,
+          uid: '01234567892388',
+          displayName: 'test twitter',
+          avatar: '',
+          email: 'testfb@gmail.com',
+          authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
         })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
+      ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
     });
   });
 
-  describe('connectWithSocial Facebook', () => {
+  describe('connectWithSocial', () => {
     let credentialGuest = null;
+    let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
-      const testId = 'fb01';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'sompo009';
-      const emailTest = 'testfb@castcle.com';
+      mockUsers = await generateMockUsers(1, 0, {
+        userService: userService,
+        accountService: service
+      });
 
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'fb01',
-        emailTest,
-        password,
-        false
-      );
+      credentialGuest = {
+        $credential: mockUsers[0].credential,
+        $language: 'th'
+      } as any;
     });
+
     it('should create new social connect map to user ', async () => {
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
@@ -1313,9 +975,11 @@ describe('AppController', () => {
       );
       await appController.connectWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        payload: {
-          authToken: '10936456'
-        }
+        uid: '10936456',
+        displayName: 'test facebook',
+        avatar: '',
+        email: mockUsers[0].account.email,
+        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
       });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
@@ -1326,422 +990,19 @@ describe('AppController', () => {
       expect(afterConnect.socialId).toEqual('10936456');
     });
 
-    it('should return Exception when invalid user token', async () => {
+    it('should return Exception when use duplicate social id', async () => {
       await expect(
         appController.connectWithSocial(credentialGuest, {
           provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: ''
-          }
+          uid: '10936456',
+          displayName: 'test facebook',
+          avatar: '',
+          email: mockUsers[0].account.email,
+          authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
         })
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: 'test_empty'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception get exception user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Facebook,
-          payload: {
-            authToken: 'exception'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('connectWithSocial Telegram', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = 'test1234';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'sompo010';
-      const emailTest = 'test123@castcle.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abcdv',
-        emailTest,
-        password,
-        false
-      );
-    });
-
-    it('should create new social connect map to user ', async () => {
-      const socialId = '12345';
-      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Telegram
-      );
-      await appController.connectWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Telegram,
-        payload: {
-          socialUser: {
-            id: socialId,
-            first_name: 'John',
-            last_name: 'Doe',
-            username: 'username',
-            photo_url: 'https://t.me/i/userpic/320/username.jpg',
-            auth_date: '1519400000'
-          },
-          hash: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505'
-        }
-      });
-      const afterConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Telegram
-      );
-
-      expect(beforeConnect).toBeNull();
-      expect(afterConnect.socialId).toEqual(socialId);
-    });
-
-    it('should return Exception when invalid hash', async () => {
-      const socialId = '12345';
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
-            socialUser: {
-              id: socialId,
-              first_name: 'John',
-              last_name: 'Doe',
-              username: 'username',
-              photo_url: 'https://t.me/i/userpic/320/username.jpg',
-              auth_date: '1519400000'
-            },
-            hash: '1'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Telegram,
-          payload: {
-            socialUser: {
-              id: ''
-            }
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('connectWithSocial Twitter', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      await service._accountAuthenId.deleteMany({ socialId: '999999' });
-      const testId = 'twitter01';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'sompo109';
-      const emailTest = 'test_twitter@castcle.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'tw01',
-        emailTest,
-        password,
-        false
-      );
-    });
-    it('should create new social connect map to user ', async () => {
-      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
-        '999999',
-        AccountAuthenIdType.Twitter
-      );
-      await appController.connectWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Twitter,
-        payload: {
-          authToken: 'wAAAAABUZusAAABfHLxV60',
-          authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-          authVerifierToken: '88888888'
-        }
-      });
-      const afterConnect = await service.getAccountAuthenIdFromSocialId(
-        '999999',
-        AccountAuthenIdType.Twitter
-      );
-
-      expect(beforeConnect).toBeNull();
-      expect(afterConnect.socialId).toEqual('999999');
-    });
-
-    it('should return Exception when invalid user token', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: ''
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          payload: {
-            authToken: '77777777',
-            authTokenSecret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
-            authVerifierToken: '88888888'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('connectWithSocial Apple', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      const testId = 'apple01';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'apple02';
-      const emailTest = 'test_connect@apple.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc apple',
-        emailTest,
-        password,
-        false
-      );
-    });
-    it('should create new social connect map to user ', async () => {
-      const socialId = 'aaa.bbb.ccc';
-      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Apple
-      );
-      await appController.connectWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Apple,
-        payload: {
-          authToken: '2',
-          code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
-          socialUser: {
-            first_name: 'John',
-            last_name: 'Doe',
-            email: 'user@apple.com'
-          }
-        }
-      });
-      const afterConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Apple
-      );
-
-      expect(beforeConnect).toBeNull();
-      expect(afterConnect.socialId).toEqual(socialId);
-    });
-
-    it('should return Exception when invalid idToken', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Apple,
-          payload: {
-            authToken: '1',
-            code: '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505',
-            socialUser: {
-              first_name: 'John',
-              last_name: 'Doe',
-              email: 'user@apple.com'
-            }
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_AUTH_TOKEN,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Apple,
-          payload: {
-            authToken:
-              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('connectWithSocial Google', () => {
-    let credentialGuest = null;
-    beforeAll(async () => {
-      await service._accountAuthenId.deleteMany({
-        socialId: 'mock_user_google_2'
-      });
-      const testId = 'google02';
-      const password = '2@HelloWorld';
-      const deviceUUID = 'google02';
-      const emailTest = 'test_connect@gmail.com';
-
-      credentialGuest = await createMockCredential(
-        appController,
-        service,
-        deviceUUID,
-        testId,
-        'abc google',
-        emailTest,
-        password,
-        false
-      );
-    });
-    it('should create new social connect map to user ', async () => {
-      const socialId = 'mock_user_google_2';
-      const beforeConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Google
-      );
-      await appController.connectWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Google,
-        payload: {
-          authToken: '2'
-        }
-      });
-      const afterConnect = await service.getAccountAuthenIdFromSocialId(
-        socialId,
-        AccountAuthenIdType.Google
-      );
-
-      expect(beforeConnect).toBeNull();
-      expect(afterConnect.socialId).toEqual(socialId);
-    });
-
-    it('should return Exception when invalid token', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Google,
-          payload: {
-            authToken: '1'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-
-    it('should return Exception when get empty user data', async () => {
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Google,
-          payload: {
-            authToken: ''
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
-
-      await expect(
-        appController.connectWithSocial(credentialGuest, {
-          provider: AccountAuthenIdType.Google,
-          payload: {
-            authToken: '3'
-          }
-        })
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
-    });
-  });
-
-  describe('requestTwitterToken', () => {
-    let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
-    const deviceUUID = 'sompo011';
-    beforeAll(async () => {
-      guestResult = await appController.guestLogin(
-        { $device: 'iphone99999', $language: 'th', $platform: 'ios' } as any,
-        { deviceUUID: deviceUUID }
-      );
-      credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
-      );
-    });
-    it('should get access token', async () => {
-      const token = await appController.requestTwitterToken({
-        $credential: credentialGuest,
-        $token: guestResult.accessToken,
-        $language: 'th'
-      } as any);
-      expect(token).toBeDefined;
-      expect(token.oauthToken).toBeDefined;
     });
   });
 

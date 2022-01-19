@@ -126,9 +126,12 @@ export class UserService {
    * @returns {UserDocument[]}
    */
   getUserAndPagesFromCredential = (credential: CredentialDocument) =>
+    this.getUserAndPagesFromAccountId(credential.account._id);
+
+  getUserAndPagesFromAccountId = (accountId: string) =>
     this._userModel
       .find({
-        ownerAccount: credential.account._id,
+        ownerAccount: accountId as any,
         visibility: EntityVisibility.Publish
       })
       .exec();

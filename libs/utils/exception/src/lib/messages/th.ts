@@ -163,6 +163,11 @@ export const ThErrorMessages = {
     code: '3020',
     message: 'Max attempts reached'
   },
+  '3021': {
+    statusCode: '400',
+    code: '3021',
+    message: 'Already have this email and want to merge?'
+  },
   '4001': {
     statusCode: '404',
     code: '4001',

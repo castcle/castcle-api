@@ -21,10 +21,7 @@
  * or have any questions.
  */
 import { AuthenticationService } from '@castcle-api/database';
-import {
-  AccountAuthenIdType,
-  OtpObjective
-} from '@castcle-api/database/schemas';
+import { OtpObjective } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';
@@ -33,7 +30,11 @@ import {
   CastcleController,
   CastcleTrack
 } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import {
+  CastcleException,
+  CastcleStatus,
+  ErrorMessages
+} from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -45,6 +46,8 @@ import {
   Body,
   Get,
   HttpCode,
+  HttpException,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -70,7 +73,6 @@ import {
   GuestLoginDto,
   LoginDto,
   LoginResponse,
-  OauthTokenResponse,
   otpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
@@ -397,9 +399,15 @@ export class AuthenticationController {
       const newAccessToken = await credential.renewAccessToken(
         accessTokenPayload
       );
+
+      const account = await this.authService.getAccountFromId(
+        credential.account._id
+      );
       return {
         profile: userProfile.profile
-          ? await userProfile.profile.toUserResponse()
+          ? await userProfile.profile.toUserResponse(
+              account.password ? false : true
+            )
           : null,
         pages: userProfile.pages
           ? userProfile.pages.items.map((item) => item.toPageResponse())
@@ -697,177 +705,45 @@ export class AuthenticationController {
   })
   @UseInterceptors(CredentialInterceptor)
   @CastcleTrack()
-  @Post('loginWithSocial')
-  @HttpCode(200)
+  @Post('login-with-social')
   async loginWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialConnectDto
   ) {
-    let token: TokenResponse;
     this.logger.log(`login with social: ${body.provider}`);
-    switch (body.provider) {
-      case AccountAuthenIdType.Facebook: {
-        const userFB = await this.appService.facebookConnect(
-          body.payload.authToken,
-          req.$language
-        );
-        if (userFB) {
-          this.logger.log(`social login Facebook`);
-          token = await this.appService.socialLogin(
-            {
-              socialId: userFB.id,
-              email: userFB.email ? userFB.email : '',
-              name: userFB.name,
-              provider: AccountAuthenIdType.Facebook,
-              profileImage: userFB.picture.data.url,
-              socialToken: body.payload.authToken,
-              socialSecretToken: ''
-            },
-            req.$credential
-          );
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Telegram: {
-        const isValid = await this.appService.telegramConnect(
-          body.payload,
-          req.$language
-        );
-        if (isValid) {
-          this.logger.log(`social login Telegram`);
-          token = await this.appService.socialLogin(
-            {
-              socialId: body.payload.socialUser.id,
-              email: '',
-              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
-              provider: AccountAuthenIdType.Telegram,
-              profileImage: body.payload.socialUser.photo_url
-                ? body.payload.socialUser.photo_url
-                : '',
-              socialToken: body.payload.hash,
-              socialSecretToken: ''
-            },
-            req.$credential
-          );
-        } else {
-          this.logger.error(`Use token expired.`);
-          throw new CastcleException(
-            CastcleStatus.INVLAID_AUTH_TOKEN,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Twitter: {
-        const userTW = await this.appService.twitterConnect(
-          body.payload,
-          req.$language
-        );
-        if (userTW && userTW.userVerify && userTW.tokenData) {
-          this.logger.log(`social login Twitter`);
-          token = await this.appService.socialLogin(
-            {
-              socialId: userTW.userVerify.id_str,
-              email: userTW.userVerify.email ? userTW.userVerify.email : '',
-              name: userTW.userVerify.screen_name,
-              provider: AccountAuthenIdType.Twitter,
-              profileImage: userTW.userVerify.profile_image_url_https,
-              socialToken: userTW.tokenData.oauth_token,
-              socialSecretToken: userTW.tokenData.oauth_token_secret
-            },
-            req.$credential
-          );
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Apple: {
-        const userApple = await this.appService.appleConnect(
-          body.payload,
-          req.$language
-        );
-        if (userApple && userApple.user.sub) {
-          this.logger.log(`social login Apple`);
-          token = await this.appService.socialLogin(
-            {
-              socialId: userApple.user.sub,
-              email: userApple.user.email ? userApple.user.email : '',
-              name: `${body.payload.socialUser.first_name} ${body.payload.socialUser.last_name}`,
-              provider: AccountAuthenIdType.Apple,
-              profileImage: '',
-              socialToken: body.payload.authToken,
-              socialSecretToken:
-                userApple.token && userApple.token.refresh_token
-                  ? userApple.token.refresh_token
-                  : ''
-            },
-            req.$credential
-          );
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Google: {
-        const userGoogle = await this.appService.googleConnect(
-          body.payload,
-          req.$language
-        );
-        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
-          this.logger.log(
-            `social login Google id: ${userGoogle.userVerify.id}`
-          );
-          token = await this.appService.socialLogin(
-            {
-              socialId: userGoogle.userVerify.id
-                ? userGoogle.userVerify.id
-                : '',
-              email: userGoogle.userVerify.email
-                ? userGoogle.userVerify.email
-                : '',
-              name: userGoogle.userVerify.name,
-              provider: AccountAuthenIdType.Google,
-              profileImage: userGoogle.userVerify.picture
-                ? userGoogle.userVerify.picture
-                : '',
-              socialToken: body.payload.authTokenSecret,
-              socialSecretToken: ''
-            },
-            req.$credential
-          );
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
+    this.logger.log(`payload: ${JSON.stringify(body)}`);
+
+    const { token, users, account } = await this.appService.socialLogin(
+      body,
+      req.$credential
+    );
+    if (!token) {
+      this.logger.log(`response merge account.`);
+      const error = ErrorMessages[CastcleStatus.DUPLICATE_EMAIL];
+      throw new HttpException(
+        {
+          ...error,
+          ...{
+            payload: {
+              profile: users.profile
+                ? await users.profile.toUserResponse(
+                    account.password ? false : true
+                  )
+                : null
+            }
+          }
+        },
+        400
+      );
     }
-    this.logger.log('get User Profile');
-    const userProfile = await this.appService.getUserProfile(req.$credential);
+
+    this.logger.log(`response success.`);
     return {
-      profile: userProfile.profile
-        ? await userProfile.profile.toUserResponse()
+      profile: users.profile
+        ? await users.profile.toUserResponse(account.password ? false : true)
         : null,
-      pages: userProfile.pages
-        ? userProfile.pages.items.map((item) => item.toPageResponse())
+      pages: users.pages
+        ? users.pages.items.map((item) => item.toPageResponse())
         : null,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken
@@ -878,213 +754,37 @@ export class AuthenticationController {
   @ApiBody({
     type: SocialConnectDto
   })
-  @ApiOkResponse({
-    status: 200,
-    type: TokenResponse
-  })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @UseInterceptors(CredentialInterceptor)
-  @Post('connectWithSocial')
-  @HttpCode(200)
+  @Post('connect-with-social')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async connectWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialConnectDto
   ) {
     this.logger.log(`connect with social: ${body.provider}`);
+    this.logger.log(`payload: ${JSON.stringify(body)}`);
+    const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
+      body.uid,
+      body.provider
+    );
+    if (socialAccount) {
+      this.logger.error(`already connect social: ${body.provider}.`);
+      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+    }
+
     const currentAccount = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    switch (body.provider) {
-      case AccountAuthenIdType.Facebook: {
-        this.logger.log(`facebook Connect`);
-        const userFB = await this.appService.facebookConnect(
-          body.payload.authToken,
-          req.$language
-        );
 
-        if (userFB) {
-          this.logger.log('get AccountAuthenIdFromSocialId');
-          const socialAccount =
-            await this.authService.getAccountAuthenIdFromSocialId(
-              userFB.id,
-              AccountAuthenIdType.Facebook
-            );
-          if (!socialAccount) {
-            await this.authService.createAccountAuthenId(
-              currentAccount,
-              AccountAuthenIdType.Facebook,
-              userFB.id,
-              body.payload.authToken,
-              ''
-            );
-          } else {
-            this.logger.warn(`already connect social: ${body.provider}.`);
-          }
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Telegram: {
-        this.logger.log(`Telegram Connect`);
-        const isValid = await this.appService.telegramConnect(
-          body.payload,
-          req.$language
-        );
-        if (isValid) {
-          this.logger.log('get AccountAuthenIdFromSocialId');
-          const socialAccount =
-            await this.authService.getAccountAuthenIdFromSocialId(
-              body.payload.socialUser.id,
-              AccountAuthenIdType.Telegram
-            );
-          if (!socialAccount) {
-            await this.authService.createAccountAuthenId(
-              currentAccount,
-              AccountAuthenIdType.Telegram,
-              body.payload.socialUser.id,
-              body.payload.hash,
-              ''
-            );
-          } else {
-            this.logger.warn(`already connect social: ${body.provider}.`);
-          }
-        } else {
-          this.logger.error(`Use token expired.`);
-          throw new CastcleException(
-            CastcleStatus.INVLAID_AUTH_TOKEN,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Twitter: {
-        this.logger.log(`Twitter Connect`);
-        const userTW = await this.appService.twitterConnect(
-          body.payload,
-          req.$language
-        );
-
-        if (userTW) {
-          this.logger.log('get AccountAuthenIdFromSocialId');
-          const socialAccount =
-            await this.authService.getAccountAuthenIdFromSocialId(
-              userTW.userVerify.id_str,
-              AccountAuthenIdType.Twitter
-            );
-          if (!socialAccount) {
-            await this.authService.createAccountAuthenId(
-              currentAccount,
-              AccountAuthenIdType.Twitter,
-              userTW.userVerify.id_str,
-              userTW.tokenData.oauth_token,
-              userTW.tokenData.oauth_token_secret
-            );
-          } else {
-            this.logger.warn(`already connect social: ${body.provider}.`);
-          }
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Apple: {
-        this.logger.log(`Apple Connect`);
-        const userApp = await this.appService.appleConnect(
-          body.payload,
-          req.$language
-        );
-
-        if (userApp) {
-          this.logger.log('get AccountAuthenIdFromSocialId');
-          const socialAccount =
-            await this.authService.getAccountAuthenIdFromSocialId(
-              userApp.user.sub,
-              AccountAuthenIdType.Apple
-            );
-          if (!socialAccount) {
-            await this.authService.createAccountAuthenId(
-              currentAccount,
-              AccountAuthenIdType.Apple,
-              userApp.user.sub,
-              body.payload.authToken,
-              userApp.token && userApp.token.refresh_token
-                ? userApp.token.refresh_token
-                : ''
-            );
-          } else {
-            this.logger.warn(`already connect social: ${body.provider}.`);
-          }
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-      case AccountAuthenIdType.Google: {
-        this.logger.log(`Google Connect`);
-        const userGoogle = await this.appService.googleConnect(
-          body.payload,
-          req.$language
-        );
-
-        if (userGoogle && userGoogle.userVerify && userGoogle.tokenData) {
-          this.logger.log('get AccountAuthenIdFromSocialId');
-          const socialAccount =
-            await this.authService.getAccountAuthenIdFromSocialId(
-              userGoogle.userVerify.id,
-              AccountAuthenIdType.Google
-            );
-          if (!socialAccount) {
-            this.logger.log(
-              `Connect account id:${currentAccount._id} to google id: ${userGoogle.userVerify.id}`
-            );
-            await this.authService.createAccountAuthenId(
-              currentAccount,
-              AccountAuthenIdType.Google,
-              userGoogle.userVerify.id,
-              body.payload.authToken,
-              ''
-            );
-          } else {
-            this.logger.warn(`already connect social: ${body.provider}.`);
-          }
-        } else {
-          this.logger.error(`Can't get user data.`);
-          throw new CastcleException(
-            CastcleStatus.FORBIDDEN_REQUEST,
-            req.$language
-          );
-        }
-        break;
-      }
-    }
-  }
-
-  @CastcleBasicAuth()
-  @ApiOkResponse({
-    status: 200,
-    type: OauthTokenResponse
-  })
-  @UseInterceptors(CredentialInterceptor)
-  @Get('requestTwitterToken')
-  @HttpCode(200)
-  async requestTwitterToken(@Req() req: CredentialRequest) {
-    this.logger.log(`request twitter token`);
-    const result = await this.appService.twitterRequestToken(req.$language);
-    const response = new OauthTokenResponse();
-    response.oauthToken = result.oauth_token;
-    response.oauthTokenSecret = result.oauth_token_secret;
-    return response;
+    this.logger.log(`connect account with social`);
+    await this.authService.createAccountAuthenId(
+      currentAccount,
+      body.provider,
+      body.uid,
+      body.authToken,
+      '',
+      body.avatar
+    );
   }
 }

@@ -108,6 +108,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   blocking: boolean;
+
+  @ApiProperty()
+  passwordNotSet: boolean;
 }
 
 export class UpdateUserDto {
