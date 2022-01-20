@@ -867,7 +867,7 @@ describe('AppController', () => {
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
-        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        authToken: ''
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -921,7 +921,7 @@ describe('AppController', () => {
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
-        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        authToken: ''
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -947,7 +947,7 @@ describe('AppController', () => {
           displayName: 'test twitter',
           avatar: '',
           email: 'testfb@gmail.com',
-          authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+          authToken: ''
         })
       ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
     });
@@ -979,7 +979,7 @@ describe('AppController', () => {
         displayName: 'test facebook',
         avatar: '',
         email: mockUsers[0].account.email,
-        authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        authToken: ''
       });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
@@ -998,7 +998,7 @@ describe('AppController', () => {
           displayName: 'test facebook',
           avatar: '',
           email: mockUsers[0].account.email,
-          authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+          authToken: ''
         })
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
