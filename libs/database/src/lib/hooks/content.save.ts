@@ -90,7 +90,7 @@ const createRelatedContentItem = async (
           createTime: new Date(),
           following: true
         } as ContentAggregator,
-        __v:2 //add version
+        __v: 2 //add version
       } as FeedItemDto)
   );
   return models.feedItemModel.insertMany(feedItemDtos);
