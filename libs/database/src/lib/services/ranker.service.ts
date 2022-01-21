@@ -205,7 +205,7 @@ export class RankerService {
       '- after find document : ',
       timeAfterFind.getTime() - timeAfterFilter.getTime()
     );
-    const contentIds = documents.map((item) => String(item.content._id));
+    const contentIds = documents.map((item) => String(item.content.id));
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
     let feedPayload: FeedItemPayloadItem[] = [];
@@ -213,7 +213,7 @@ export class RankerService {
     if (answer) {
       newAnswer = Object.keys(answer)
         .map((id) => {
-          const feedItem = documents.find((k) => String(k.content._id) == id);
+          const feedItem = documents.find((k) => String(k.content.id) == id);
           return {
             feedItem,
             score: answer[id] as number
