@@ -23,6 +23,7 @@
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
+  AccountAuthenIdType,
   AccountDocument,
   CredentialDocument,
   OtpDocument,
@@ -31,34 +32,19 @@ import {
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { Password } from '@castcle-api/utils/commons';
 import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
-import {
-  AppleClient,
-  FacebookAccessToken,
-  FacebookClient,
-  FacebookUserInfo,
-  GoogleClient,
-  TelegramClient,
-  TelegramUserInfo,
-  TwillioChannel,
-  TwillioClient,
-  TwitterAccessToken,
-  TwitterClient,
-  TwitterUserData
-} from '@castcle-api/utils/clients';
+import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
+import { Password } from '@castcle-api/utils/commons';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Injectable } from '@nestjs/common';
-import { AccessTokenResponse } from 'apple-sign-in-rest';
 import * as nodemailer from 'nodemailer';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
   RequestOtpDto,
-  SocialConnect,
-  SocialConnectInfo,
+  SocialConnectDto,
   TokenResponse,
   verificationOtpDto
 } from './dtos/dto';
@@ -85,14 +71,9 @@ const transporter = nodemailer.createTransport({
 export class AppService {
   constructor(
     private authService: AuthenticationService,
-    private fbClient: FacebookClient,
     private download: Downloader,
-    private telegramClient: TelegramClient,
-    private twitterClient: TwitterClient,
-    private googleClient: GoogleClient,
     private userService: UserService,
-    private twillioClient: TwillioClient,
-    private appleClient: AppleClient
+    private twillioClient: TwillioClient
   ) {}
 
   private logger = new CastLogger(AppService.name);
@@ -157,199 +138,86 @@ export class AppService {
    * @param {CredentialDocument} credential
    * @returns {TokenResponse}
    */
-  async socialLogin(social: SocialConnect, credential: CredentialDocument) {
-    this.logger.log('get AccountFromCredential');
-    const currentAccount = await this.authService.getAccountFromCredential(
-      credential
-    );
-
+  async socialLogin(body: SocialConnectDto, credential: CredentialDocument) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
-      social.socialId,
-      social.provider
+      body.uid,
+      body.provider
     );
+    if (socialAccount) {
+      this.logger.log('Existing Social Account');
+      const account = await this.authService.getAccountFromId(
+        socialAccount.account._id
+      );
 
-    this.logger.log('get UserFromAccountId');
-    const user = await this.authService.getUserFromAccountId(credential);
+      this.logger.log('get All User');
+      credential.account = account;
+      const users = await this.getUserProfile(credential);
 
-    if (!socialAccount) {
-      currentAccount.email = currentAccount.email
-        ? social.email
-        : currentAccount.email;
-      if (user.length === 0) {
-        this.logger.log(`download avatar from ${social.provider}`);
-        const img = await this.download.getImageFromUrl(social.profileImage);
+      this.logger.log('renew Tokens');
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(credential);
+      const tokenResult: TokenResponse = await credential.renewTokens(
+        accessTokenPayload,
+        {
+          id: account.id as any
+        }
+      );
+      return { token: tokenResult, users: users, account: account };
+    } else {
+      if (body.email) {
+        this.logger.log('get account from email.');
+        const account = await this.authService.getAccountFromEmail(body.email);
+        if (account) {
+          this.logger.log('Existing Email Account');
+          credential.account = account;
+          const users = await this.getUserProfile(credential);
+          return { token: null, users: users, account: account };
+        }
+      }
+
+      this.logger.log('Reister new social account');
+      const currentAccount = await this.authService.getAccountFromCredential(
+        credential
+      );
+      let avatar;
+      if (body.avatar) {
+        this.logger.log(`download avatar from ${body.provider}`);
+        const img = await this.download.getImageFromUrl(body.avatar);
 
         this.logger.log('upload avatar to s3');
-
-        const avatar = await this._uploadImage(img, {
+        avatar = await this._uploadImage(img, {
           filename: `avatar-${credential.account._id}`
         });
-
-        this.logger.log('signup by Social');
-        await this.authService.signupBySocial(currentAccount, {
-          displayName: social.name,
-          socialId: social.socialId,
-          provider: social.provider,
-          avatar: avatar.image.original,
-          socialToken: social.socialToken,
-          socialSecretToken: social.socialSecretToken
-        });
-      } else {
-        await this.authService.createAccountAuthenId(
-          currentAccount,
-          social.provider,
-          social.socialId,
-          social.socialToken,
-          social.socialSecretToken
-        );
       }
-    }
 
-    this.logger.log('get AccessTokenPayload FromCredential');
-    const accessTokenPayload =
-      await this.authService.getAccessTokenPayloadFromCredential(credential);
-    this.logger.log('renew Tokens');
-    const tokenResult: TokenResponse = await credential.renewTokens(
-      accessTokenPayload,
-      {
-        id: currentAccount._id as unknown as string
-      }
-    );
-    return tokenResult;
-  }
+      this.logger.log('Update Email to Account.');
+      currentAccount.email = body.email ? body.email : currentAccount.email;
+      this.logger.log('signup by Social');
+      await this.authService.signupBySocial(currentAccount, {
+        displayName: body.displayName
+          ? body.displayName
+          : this.getSocialProfix(body.uid, body.provider),
+        socialId: body.uid,
+        provider: body.provider,
+        avatar: avatar ? avatar.image.original : null,
+        socialToken: body.authToken,
+        socialSecretToken: null
+      });
+      this.logger.log('get All User');
+      const users = await this.getUserProfile(credential);
 
-  /**
-   * Connect Facebook API
-   * @param {string} accessToken access token from facebook
-   * @param {string} language en is default
-   * @returns {FacebookUserInfo}
-   */
-  async facebookConnect(authToken: string, language: string) {
-    if (!authToken) {
-      this.logger.error(`token missing.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    }
-
-    this.logger.log(`get facebook access token.`);
-    const fbToken: FacebookAccessToken = await this.fbClient.getAccessToken();
-
-    this.logger.log(`verify fcaebook user token.`);
-    const tokenVerify = await this.fbClient.verifyUserToken(
-      fbToken.access_token,
-      authToken
-    );
-
-    if (!tokenVerify.is_valid) {
-      this.logger.error(`Use token expired.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    }
-    this.logger.log(`get fcaebook user data.`);
-    let user: FacebookUserInfo;
-    try {
-      user = await this.fbClient.getUserInfo(authToken);
-    } catch (error) {
-      this.logger.error(`Can't get user data.`);
-      this.logger.error(error);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
-    }
-
-    return user;
-  }
-
-  /**
-   * Connect Telegram
-   * @param {SocialConnectInfo} payload response from telegram
-   * @param {string} language en is default
-   * @returns {boolean}
-   */
-  async telegramConnect(payload: SocialConnectInfo, language: string) {
-    this.logger.log('Validate Data');
-    if (
-      !payload ||
-      !payload.socialUser.id ||
-      !payload.socialUser.first_name ||
-      !payload.socialUser.last_name ||
-      !payload.socialUser.username ||
-      !payload.socialUser.auth_date ||
-      !payload.hash
-    ) {
-      this.logger.error(`payload data missing.`);
-      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
-    }
-
-    const message: TelegramUserInfo = {
-      id: payload.socialUser.id,
-      first_name: payload.socialUser.first_name,
-      last_name: payload.socialUser.last_name,
-      username: payload.socialUser.username,
-      photo_url: payload.socialUser.photo_url
-        ? payload.socialUser.photo_url
-        : '',
-      auth_date: payload.socialUser.auth_date,
-      hash: payload.hash
-    };
-    this.logger.log('Validate Hash');
-    return await this.telegramClient.verifyUserToken(message);
-  }
-
-  /**
-   * Connect Twitter API
-   * @param {SocialConnectInfo} payload response from twitter
-   * @param {string} language en is default
-   * @returns {TwitterUserData, TwitterAccessToken}
-   */
-  async twitterConnect(payload: SocialConnectInfo, language: string) {
-    if (
-      !payload.authToken ||
-      !payload.authTokenSecret ||
-      !payload.authVerifierToken
-    ) {
-      this.logger.error(`token missing.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    }
-
-    this.logger.log(`get twitter access token.`);
-    const tokenData: TwitterAccessToken =
-      await this.twitterClient.requestAccessToken(
-        payload.authToken,
-        payload.authTokenSecret,
-        payload.authVerifierToken
+      this.logger.log('renew Tokens');
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(credential);
+      const tokenResult: TokenResponse = await credential.renewTokens(
+        accessTokenPayload,
+        {
+          id: currentAccount.id as any
+        }
       );
-
-    if (!tokenData) {
-      this.logger.error(`Use token expired.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
+      return { token: tokenResult, users: users, account: currentAccount };
     }
-
-    this.logger.log(`verify twitter user token.`);
-    const userVerify: TwitterUserData =
-      await this.twitterClient.requestVerifyToken(
-        tokenData.oauth_token,
-        tokenData.oauth_token_secret
-      );
-
-    if (!userVerify) {
-      this.logger.error(`Can't get user data.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
-    }
-
-    return { userVerify, tokenData };
-  }
-
-  /**
-   * Request Access Twitter Token API
-   * @param {string} language en is default
-   * @returns {oauth_token,oauth_token_secret,oauth_callback_confirmed} token data
-   */
-  async twitterRequestToken(language: string) {
-    const data = await this.twitterClient.requestToken();
-    this.logger.log(
-      `Twitter callback confirmed status : ${data.results.oauth_callback_confirmed}`
-    );
-
-    if (data.results.oauth_callback_confirmed === 'true') return data;
-    else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
   }
 
   /**User Profile and Pages
@@ -804,86 +672,32 @@ export class AppService {
     }
   }
 
-  /**
-   * Connect Apple API
-   * @param {SocialConnectInfo} payload response from twitter
-   * @param {string} language en is default
-   * @returns {AppleIdTokenType}
-   */
-  async appleConnect(payload: SocialConnectInfo, language: string) {
-    if (
-      !payload.authToken ||
-      !payload.socialUser ||
-      !payload.socialUser.first_name ||
-      !payload.socialUser.last_name ||
-      !payload.socialUser.email
-    ) {
-      this.logger.error(`payload missing.`);
-      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
-    }
-
-    let tokenDetail: AccessTokenResponse;
-    if (payload.code) {
-      this.logger.log(`authorize apple user token.`);
-      tokenDetail = await this.appleClient.authorizationToken(
-        payload.code,
-        payload.redirectUrl
-      );
-    }
-
-    this.logger.log(`verify apple user token.`);
-    const userVerify = await this.appleClient.verifyToken(
-      payload.authToken,
-      payload.socialUser.id
-    );
-
-    if (!userVerify) {
-      this.logger.error(`Can't get user data.`);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    }
-    return { user: userVerify, token: tokenDetail };
-  }
-
-  /**
-   * Connect Google API
-   * @param {SocialConnectInfo} payload response from google
-   * @param {string} language en is default
-   * @returns {TwitterUserData, TwitterAccessToken}
-   */
-  async googleConnect(payload: SocialConnectInfo, language: string) {
-    if (!payload.authToken) {
-      this.logger.error(`token missing.`);
-      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, language);
-    }
-
-    this.logger.log(`verify google access token.`);
-    let tokenData;
-    try {
-      tokenData = await this.googleClient.verifyToken(payload.authToken);
-    } catch (ex) {
-      this.logger.error(`Use token expired.`, ex);
-      throw new CastcleException(CastcleStatus.INVLAID_AUTH_TOKEN, language);
-    }
-
-    this.logger.log(`verify google user token.`);
-    const userVerify = await this.googleClient.getGoogleUserInfo(
-      payload.authToken
-    );
-
-    if (!userVerify) {
-      this.logger.error(`Can't get user data.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, language);
-    }
-
-    return { userVerify, tokenData };
-  }
-
   private async cancelOtp(otp: OtpDocument) {
     this.logger.log('Cancel Twillio Otp.');
     try {
       if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
+    }
+  }
+
+  getSocialProfix(socialId: string, provider: AccountAuthenIdType) {
+    switch (provider) {
+      case AccountAuthenIdType.Facebook: {
+        return `FB${socialId}`;
+      }
+      case AccountAuthenIdType.Twitter: {
+        return `TW${socialId}`;
+      }
+      case AccountAuthenIdType.Google: {
+        return `GG${socialId}`;
+      }
+      case AccountAuthenIdType.Apple: {
+        return `AP${socialId}`;
+      }
+      default: {
+        return socialId;
+      }
     }
   }
 }

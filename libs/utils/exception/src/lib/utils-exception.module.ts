@@ -22,6 +22,8 @@
  */
 import { Module } from '@nestjs/common';
 import { CastcleException, CastcleStatus } from './castcle.exception';
+import { LocalErrorMessage } from './messages';
+import { ErrorMessages } from './messages/default';
 
 @Module({
   controllers: [],
@@ -30,4 +32,4 @@ import { CastcleException, CastcleStatus } from './castcle.exception';
 })
 export class UtilsExceptionModule {}
 
-export { CastcleException, CastcleStatus };
+export { CastcleException, CastcleStatus, LocalErrorMessage, ErrorMessages };

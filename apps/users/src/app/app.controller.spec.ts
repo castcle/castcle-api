@@ -315,7 +315,7 @@ describe('AppController', () => {
         userService: service
       });
 
-      const result = await appController.follow(
+      const result = await appController.following(
         mocks[0].user.displayId,
         {
           $credential: mocks[0].credential,
