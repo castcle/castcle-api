@@ -27,6 +27,7 @@ import {
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { getMongoOptions } from './environment';
+import { CampaignSchema, TransactionSchema } from './schemas';
 import { AccountReferralSchema } from './schemas/account-referral.schema';
 import { AccountSchemaFactory } from './schemas/account.schema-factory';
 import { AccountActivationSchema } from './schemas/accountActivation.schema';
@@ -64,17 +65,19 @@ import { createCastcleMeta, getRelationship } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'Otp', schema: OtpSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'Notification', schema: NotificationSchema },
-  { name: 'Language', schema: LanguageSchema },
-  { name: 'Hashtag', schema: HashtagSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-  { name: 'Country', schema: CountrySchema },
-  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'DsContentReach', schema: DsContentReachSchema },
   { name: 'AccountReferral', schema: AccountReferralSchema },
+  { name: 'Campaign', schema: CampaignSchema },
+  { name: 'Country', schema: CountrySchema },
+  { name: 'DsContentReach', schema: DsContentReachSchema },
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
+  { name: 'Hashtag', schema: HashtagSchema },
+  { name: 'Language', schema: LanguageSchema },
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'SocialSync', schema: SocialSyncSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'Transaction', schema: TransactionSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

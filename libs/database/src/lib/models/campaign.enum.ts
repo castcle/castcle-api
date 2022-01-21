@@ -21,20 +21,8 @@
  * or have any questions.
  */
 
-export * from './account-referral.schema';
-export * from './account.schema';
-export * from './accountAuthenId.schema';
-export * from './campaign.schema';
-export * from './comment.schema';
-export * from './content.schema';
-export * from './country.schema';
-export * from './credential.schema';
-export * from './engagement.schema';
-export * from './hashtag.schema';
-export * from './language.schema';
-export * from './notification.schema';
-export * from './otp.schema';
-export * from './relationship.schema';
-export * from './social-sync.schema';
-export * from './transaction.schema';
-export * from './user.schema';
+export enum CampaignType {
+  CONTENT_REACH = 'content-reach',
+  FRIEND_REFERRAL = 'friend-referral',
+  VERIFY_MOBILE = 'verify-mobile',
+}
