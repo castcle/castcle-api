@@ -52,7 +52,8 @@
     "lint:contents": "nx lint contents --with-deps",
     "lint:engagements": "nx lint engagements --with-deps",
     "lint:backgrounds": "nx lint backgrounds --with-deps",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "db": "ts-node -P tsconfig.base.json -O \"{\\\"module\\\": \\\"CommonJS\\\"}\""
   },
   "private": true,
   "dependencies": {
