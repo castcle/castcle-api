@@ -31,21 +31,21 @@ import {
   AccessTokenPayload,
   EmailVerifyToken,
   RefreshTokenPayload,
-  UserAccessTokenPayload
+  UserAccessTokenPayload,
 } from '../dtos/token.dto';
 import { AccountReferral } from '../schemas/account-referral.schema';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
-  AccountActivationModel
+  AccountActivationModel,
 } from '../schemas/accountActivation.schema';
 import {
   AccountAuthenIdDocument,
-  AccountAuthenIdType
+  AccountAuthenIdType,
 } from '../schemas/accountAuthenId.schema';
 import {
   CredentialDocument,
-  CredentialModel
+  CredentialModel,
 } from '../schemas/credential.schema';
 import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
 import { UserDocument, UserType } from '../schemas/user.schema';
@@ -127,30 +127,30 @@ export class AuthenticationService {
     const newAccount = new this._accountModel({
       isGuest: true,
       preferences: {
-        languages: accountRequirements.languagesPreferences
+        languages: accountRequirements.languagesPreferences,
       },
       geolocation: accountRequirements.geolocation
         ? accountRequirements.geolocation
-        : null
+        : null,
     } as CreateAccountDto);
     newAccount.visibility = EntityVisibility.Publish;
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
       role: 'guest',
-      showAds: true
+      showAds: true,
     });
     const refreshTokenResult = this._generateRefreshToken({
-      id: accountDocument._id as string
+      id: accountDocument._id as string,
     });
     const credential = new this._credentialModel({
       account: {
         _id: mongoose.Types.ObjectId(accountDocument._id),
         isGuest: true,
         preferences: {
-          languages: accountRequirements.languagesPreferences
+          languages: accountRequirements.languagesPreferences,
         },
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       },
       accessToken: accessTokenResult.accessToken,
       accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
@@ -158,14 +158,14 @@ export class AuthenticationService {
       refreshTokenExpireDate: refreshTokenResult.refreshTokenExpireDate,
       device: accountRequirements.device,
       platform: accountRequirements.header.platform,
-      deviceUUID: accountRequirements.deviceUUID
+      deviceUUID: accountRequirements.deviceUUID,
     } as CreateCredentialDto);
     const credentialDocument = await credential.save();
     //TODO !!! : how to reduct this
     if (!newAccount.credentials) newAccount.credentials = [];
     newAccount.credentials.push({
       _id: mongoose.Types.ObjectId(credentialDocument._id),
-      deviceUUID: credentialDocument.deviceUUID
+      deviceUUID: credentialDocument.deviceUUID,
     });
     await newAccount.save();
     return { accountDocument, credentialDocument };
@@ -198,7 +198,7 @@ export class AuthenticationService {
       isGuest: account.isGuest,
       preferences: account.preferences,
       activateDate: account.activateDate, //this to add activateDate to primary account
-      geolocation: account.geolocation
+      geolocation: account.geolocation,
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
@@ -215,9 +215,9 @@ export class AuthenticationService {
             $push: {
               credentials: {
                 _id: mongoose.Types.ObjectId(credential._id),
-                deviceUUID: credential.deviceUUID
-              }
-            }
+                deviceUUID: credential.deviceUUID,
+              },
+            },
           }
         )
         .exec();
@@ -242,7 +242,7 @@ export class AuthenticationService {
     return this._accountModel
       .findOne({
         email: CastcleRegExp.fromString(email),
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -259,7 +259,7 @@ export class AuthenticationService {
       .findOne({
         'mobile.countryCode': countryCode,
         'mobile.number': new RegExp(`${mobile}`),
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -284,7 +284,7 @@ export class AuthenticationService {
     return this._userModel
       .findOne({
         displayId: CastcleRegExp.fromString(id),
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -365,7 +365,7 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayName: requirements.displayName,
       displayId: requirements.displayId, //make sure all id is lower case
-      type: UserType.People
+      type: UserType.People,
     });
     await user.save();
     const updateAccount = await this.createAccountActivation(account, 'email');
@@ -375,7 +375,7 @@ export class AuthenticationService {
       const accRef = new this._accountReferral({
         referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
         referrerDisplayId: requirements.referral,
-        referringAccount: account._id
+        referringAccount: account._id,
       });
       await accRef.save();
     }
@@ -384,20 +384,20 @@ export class AuthenticationService {
 
   createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
     const emailTokenResult = this._generateEmailVerifyToken({
-      id: account._id
+      id: account._id,
     });
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
       verifyToken: emailTokenResult.verifyToken,
-      verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate
+      verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate,
     });
     return accountActivation.save();
   }
 
   revokeAccountActivation(accountActivation: AccountActivationDocument) {
     const emailTokenResult = this._generateEmailVerifyToken({
-      id: accountActivation.account as unknown as string
+      id: accountActivation.account as unknown as string,
     });
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = emailTokenResult.verifyToken;
@@ -549,14 +549,14 @@ export class AuthenticationService {
         id: credential.account._id,
         preferredLanguage: credential.account.preferences.languages,
         role: credential.account.isGuest ? 'guest' : 'member',
-        showAds: true //TODO !!! need to change this later
+        showAds: true, //TODO !!! need to change this later
       } as AccessTokenPayload;
     } else {
       const user = await this._userModel
         .findOne({
           ownerAccount: credential.account._id,
           type: UserType.People,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
         .exec();
       console.debug('mainUser', user);
@@ -564,7 +564,7 @@ export class AuthenticationService {
         id: credential.account._id,
         role: 'member',
         showAds: true,
-        verified: user.verified
+        verified: user.verified,
       } as UserAccessTokenPayload;
       console.debug('payload', payload);
       return payload;
@@ -596,10 +596,10 @@ export class AuthenticationService {
       profile: {
         images: {
           avatar: {
-            original: requirements.avatar
-          }
-        }
-      }
+            original: requirements.avatar,
+          },
+        },
+      },
     });
     await user.save();
     return this.createAccountAuthenId(
@@ -633,7 +633,7 @@ export class AuthenticationService {
       socialId: socialUserId,
       socialToken: socialUserToken,
       socialSecretToken: socialSecretToken,
-      avatar: avatar
+      avatar: avatar,
     });
     return accountActivation.save();
   }

@@ -29,7 +29,6 @@ import { CommentDocument } from './comment.schema';
 import { ContentDocument } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
-import { FeedItemDocument } from './feedItem.schema';
 
 export type EngagementDocument = Engagement & Document;
 
@@ -38,15 +37,8 @@ export enum EngagementType {
   Recast = 'recast',
   Quote = 'quote',
   Comment = 'comment',
-  Report = 'report'
+  Report = 'report',
 }
-
-const feedItemKey = {
-  like: 'liked',
-  comment: 'commented',
-  recast: 'recasted',
-  quote: 'quoteCast'
-};
 
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {
@@ -67,29 +59,23 @@ export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
   contentModel: Model<ContentDocument>,
-  commentModel: Model<CommentDocument>,
-  feedItemModel: Model<FeedItemDocument>
+  commentModel: Model<CommentDocument>
 ): mongoose.Schema<any> => {
   EngagementSchema.post('save', async function (doc: EngagementDocument, next) {
     const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;
     const contentInc = { $inc: { [`engagements.${doc.type}.count`]: count } };
-    const feedInc = {
-      $inc: { [`content.${feedItemKey[doc.type]}.count`]: count }
-    };
 
     if (['content', 'comment'].includes(doc.targetRef.$ref)) {
-      await Promise.all([
-        (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
-          .updateOne({ _id: doc.targetRef.$id }, contentInc)
-          .exec()
-      ]);
+      await (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
+        .updateOne({ _id: doc.targetRef.$id }, contentInc)
+        .exec();
     } else if (
       doc.targetRef.namespace === 'content' &&
       doc.visibility !== EntityVisibility.Publish
     ) {
-      await Promise.all([
-        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec()
-      ]);
+      await contentModel
+        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .exec();
     } else if (
       doc.targetRef.namespace === 'comment' &&
       doc.visibility !== EntityVisibility.Publish
@@ -106,13 +92,9 @@ export const EngagementSchemaFactory = (
     const contentInc = { $inc: { [`engagements.${doc.type}.count`]: -1 } };
 
     if (doc.targetRef.namespace === 'content') {
-      const feedInc = {
-        $inc: { [`content.${feedItemKey[doc.type]}.count`]: -1 }
-      };
-
-      await Promise.all([
-        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec()
-      ]);
+      await contentModel
+        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .exec();
     } else {
       await commentModel
         .updateOne({ _id: doc.targetRef.oid }, contentInc)

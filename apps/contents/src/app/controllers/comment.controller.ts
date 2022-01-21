@@ -33,19 +33,19 @@ import {
   Query,
   Req,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   AuthenticationService,
   ContentService,
   NotificationService,
-  CommentService
+  CommentService,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
   NotificationSource,
-  NotificationType
+  NotificationType,
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -55,13 +55,13 @@ import {
   CreateCommentBody,
   EditCommentBody,
   LikeCommentBody,
-  ReplyCommentBody
+  ReplyCommentBody,
 } from '../dtos/comment.dto';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleController,
   CastcleAuth,
-  CastcleBasicAuth
+  CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
 
 @CastcleController('1.0')
@@ -76,7 +76,7 @@ export class CommentController {
   ) {}
 
   @ApiBody({
-    type: CreateCommentBody
+    type: CreateCommentBody,
   })
   @CastcleBasicAuth()
   @Post(':id/comments')
@@ -90,7 +90,7 @@ export class CommentController {
       const [authorizedUser, content, user] = await Promise.all([
         this.authService.getUserFromAccount($credential.account),
         this.contentService.getContentById(contentId),
-        this.authService.getUserFromCastcleId(commentBody.castcleId)
+        this.authService.getUserFromCastcleId(commentBody.castcleId),
       ]);
 
       const comment = await this.contentService.createCommentForContent(
@@ -106,9 +106,9 @@ export class CommentController {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         targetRef: {
-          _id: comment._id
+          _id: comment._id,
         },
-        account: { _id: content.author.id }
+        account: { _id: content.author.id },
       });
 
       const payload = await this.commentService.convertCommentToCommentResponse(
@@ -139,7 +139,7 @@ export class CommentController {
   ) {
     const [authorizedUser, content] = await Promise.all([
       this.authService.getUserFromAccount($credential.account),
-      this.contentService.getContentById(contentId)
+      this.contentService.getContentById(contentId),
     ]);
     if (authorizedUser)
       return this.commentService.getCommentsByContentId(
@@ -152,13 +152,13 @@ export class CommentController {
       return this.commentService.getCommentsByContentIdFromGuest(content._id, {
         limit,
         page,
-        sortBy
+        sortBy,
       });
     }
   }
 
   @ApiBody({
-    type: ReplyCommentBody
+    type: ReplyCommentBody,
   })
   @CastcleBasicAuth()
   @Post(':id/comments/:commentId/reply')
@@ -176,7 +176,7 @@ export class CommentController {
       replyCommentBody.castcleId
     );
     const replyComment = await this.contentService.replyComment(user, comment, {
-      message: replyCommentBody.message
+      message: replyCommentBody.message,
     });
     this.notifyService.notifyToUser({
       type: NotificationType.Comment,
@@ -185,9 +185,9 @@ export class CommentController {
       source: NotificationSource.Profile,
       sourceUserId: user._id,
       targetRef: {
-        _id: comment._id
+        _id: comment._id,
       },
-      account: { _id: comment.author._id }
+      account: { _id: comment.author._id },
     });
 
     return {
@@ -196,12 +196,12 @@ export class CommentController {
         replyComment,
         [],
         expansionQuery
-      )
+      ),
     };
   }
 
   @ApiBody({
-    type: EditCommentBody
+    type: EditCommentBody,
   })
   @CastcleBasicAuth()
   @Put(':id/comments/:commentId')
@@ -216,7 +216,7 @@ export class CommentController {
     );
     const comment = await this.contentService.getCommentById(commentId);
     const updatedComment = await this.contentService.updateComment(comment, {
-      message: editCommentBody.message
+      message: editCommentBody.message,
     });
 
     return {
@@ -225,26 +225,22 @@ export class CommentController {
         updatedComment,
         [],
         expansionQuery
-      )
+      ),
     };
   }
 
   @HttpCode(204)
   @CastcleBasicAuth()
   @Delete(':id/comments/:commentId')
-  async deleteComment(
-    @Param('id') contentId: string,
-    @Param('commentId') commentId: string,
-    @Req() req: CredentialRequest
-  ) {
+  async deleteComment(@Param('commentId') commentId: string) {
     //const content = await this._getContentIfExist(contentId, req);
     const comment = await this.contentService.getCommentById(commentId);
-    const deleteResult = await this.contentService.deleteComment(comment);
+    await this.contentService.deleteComment(comment);
     return '';
   }
 
   @ApiBody({
-    type: LikeCommentBody
+    type: LikeCommentBody,
   })
   @HttpCode(204)
   @CastcleBasicAuth()
@@ -252,8 +248,7 @@ export class CommentController {
   async likeComment(
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
-    @Body() likeCommentBody: LikeCommentBody,
-    @Req() req: CredentialRequest
+    @Body() likeCommentBody: LikeCommentBody
   ) {
     const comment = await this.contentService.getCommentById(commentId);
     const user = await this.authService.getUserFromCastcleId(
@@ -267,24 +262,22 @@ export class CommentController {
       source: NotificationSource.Profile,
       sourceUserId: user._id,
       targetRef: {
-        _id: comment._id
+        _id: comment._id,
       },
-      account: { _id: comment.author._id }
+      account: { _id: comment.author._id },
     });
     return '';
   }
 
   @ApiBody({
-    type: LikeCommentBody
+    type: LikeCommentBody,
   })
   @CastcleBasicAuth()
   @HttpCode(204)
   @Put(':id/comments/:commentId/unliked')
   async unlikeComment(
-    @Param('id') contentId: string,
     @Param('commentId') commentId: string,
-    @Body() likeCommentBody: LikeCommentBody,
-    @Req() req: CredentialRequest
+    @Body() likeCommentBody: LikeCommentBody
   ) {
     const comment = await this.contentService.getCommentById(commentId);
     const user = await this.authService.getUserFromCastcleId(

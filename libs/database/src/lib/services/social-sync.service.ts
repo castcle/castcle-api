@@ -100,7 +100,7 @@ export class SocialSyncService {
       userName: socialSync.userName,
       displayName: socialSync.displayName,
       avatar: socialSync.avatar,
-      active: socialSync.active ? socialSync.active : true
+      active: socialSync.active ? socialSync.active : true,
     });
     return newSocialSync.save();
   };

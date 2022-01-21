@@ -50,7 +50,7 @@ export class UxEngagementService {
     const uxDto = {
       ...info,
       account: mongoose.Types.ObjectId(info.accountId),
-      timestamp: new Date(Number(info.timestamp))
+      timestamp: new Date(Number(info.timestamp)),
     } as UxEngagementDto;
     const createResult = await new this._uxEngagementModel(uxDto).save();
     return createResult;
@@ -84,7 +84,7 @@ export class UxEngagementService {
     const setOnInsert = {
       content: contentId,
       mappedAccount: newMappedAccount,
-      reachCount: 1
+      reachCount: 1,
     };
     console.log('setOnInsert', setOnInsert);
     const dsReach = await this._dsContentReachModel

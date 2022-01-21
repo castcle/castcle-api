@@ -64,7 +64,7 @@ export interface UserProfile {
 
 export enum UserType {
   People = 'people',
-  Page = 'page'
+  Page = 'page',
 }
 
 @Schema({ timestamps: true })
@@ -73,7 +73,7 @@ export class User extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   ownerAccount: Account;
 
@@ -146,10 +146,10 @@ const _covertToUserResponse = (
     displayName: self.displayName,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
-      count: self.followerCount
+      count: self.followerCount,
     },
     following: {
-      count: self.followedCount
+      count: self.followedCount,
     },
     images: {
       avatar:
@@ -159,13 +159,13 @@ const _covertToUserResponse = (
       cover:
         self.profile && self.profile.images && self.profile.images.cover
           ? new Image(self.profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers
+          : Configs.DefaultAvatarCovers,
     },
     overview:
       self.profile && self.profile.overview ? self.profile.overview : null,
     links: selfSocial,
     verified: self.verified, //self.verified ? true : false,
-    followed: followed
+    followed: followed,
   } as UserResponseDto;
 };
 
@@ -184,7 +184,7 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
     castcleId: self.displayId,
     displayName: self.displayName,
     type: self.type,
-    verified: self.verified
+    verified: self.verified,
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
@@ -225,13 +225,13 @@ UserSchema.methods.toPageResponse = function (
         (this as UserDocument).profile.images &&
         (this as UserDocument).profile.images.cover
           ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers
+          : Configs.DefaultAvatarCovers,
     },
     followers: {
-      count: (this as UserDocument).followerCount
+      count: (this as UserDocument).followerCount,
     },
     following: {
-      count: (this as UserDocument).followedCount
+      count: (this as UserDocument).followedCount,
     },
     overview:
       (this as UserDocument).profile && (this as UserDocument).profile.overview
@@ -266,16 +266,16 @@ UserSchema.methods.toPageResponse = function (
         (this as UserDocument).profile &&
         (this as UserDocument).profile.websites
           ? (this as UserDocument).profile.websites[0].website
-          : null
+          : null,
     },
     verified: {
-      official: (this as UserDocument).verified.official
+      official: (this as UserDocument).verified.official,
     } as PageVerified,
     blocked,
     blocking,
     followed,
     updatedAt: (this as UserDocument).updatedAt.toISOString(),
-    createdAt: (this as UserDocument).createdAt.toISOString()
+    createdAt: (this as UserDocument).createdAt.toISOString(),
   } as PageResponseDto;
 };
 
@@ -300,14 +300,14 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       type: '',
       id: '',
       action: '',
-      message: ''
+      message: '',
     },
     verified:
       (this as UserDocument).verified &&
       ((this as UserDocument).verified.email ||
         (this as UserDocument).verified.mobile ||
         (this as UserDocument).verified.official),
-    count: (this as UserDocument).followerCount
+    count: (this as UserDocument).followerCount,
   } as SearchFollowsResponseDto;
 };
 
@@ -333,7 +333,7 @@ UserSchema.methods.toSearchResponse = function () {
       id: '',
       action: '',
       message: '',
-      count: 1234
+      count: 1234,
     },
     verified:
       (this as UserDocument).verified &&
@@ -341,7 +341,7 @@ UserSchema.methods.toSearchResponse = function () {
         (this as UserDocument).verified.mobile ||
         (this as UserDocument).verified.official),
     // TODO !!! need implement followed
-    followed: true
+    followed: true,
   } as SearchFollowsResponseDto;
 };
 
@@ -367,7 +367,7 @@ export const UserSchemaFactory = (
         email: false,
         mobile: false,
         official: false,
-        social: false
+        social: false,
       } as UserVerified;
     next();
   });
@@ -383,7 +383,7 @@ export const UserSchemaFactory = (
       castcleId: self.displayId,
       displayName: self.displayName,
       type: self.type,
-      verified: self.verified
+      verified: self.verified,
     } as Author;
   };
 
@@ -396,7 +396,7 @@ export const UserSchemaFactory = (
         followedUser: followedUser._id,
         isFollowPage: false,
         blocking: false,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       };
       if ((followedUser as UserDocument).type === UserType.Page)
         setObject.isFollowPage = true;
@@ -404,14 +404,14 @@ export const UserSchemaFactory = (
         .updateOne(
           {
             user: (this as UserDocument)._id,
-            followedUser: followedUser._id
+            followedUser: followedUser._id,
           },
           {
             $setOnInsert: setObject,
-            $set: { following: true }
+            $set: { following: true },
           },
           {
-            upsert: true
+            upsert: true,
           }
         )
         .exec();
@@ -432,7 +432,7 @@ export const UserSchemaFactory = (
         .findOne({
           user: (this as UserDocument)._id,
           followedUser: followedUser._id,
-          following: true
+          following: true,
         })
         .exec();
 
@@ -443,7 +443,7 @@ export const UserSchemaFactory = (
 
       const toSaveDocuments: Promise<any>[] = [
         this.save(),
-        followedUser.save()
+        followedUser.save(),
       ];
 
       if (relationship.blocking) {

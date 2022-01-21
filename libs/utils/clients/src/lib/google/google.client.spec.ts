@@ -30,7 +30,7 @@ describe('GoogleClient', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [GoogleClient],
-      imports: [HttpModule]
+      imports: [HttpModule],
     }).compile();
 
     service = module.get<GoogleClient>(GoogleClient);

@@ -39,7 +39,7 @@ export class NotificationProducer {
    */
   async sendMessage(message: NotificationMessage) {
     await this.queue.add({
-      notification: message
+      notification: message,
     });
     this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }

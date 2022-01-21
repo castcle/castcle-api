@@ -31,7 +31,7 @@ describe('TwitterClient', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [TwitterClient],
-      imports: [HttpModule]
+      imports: [HttpModule],
     }).compile();
 
     service = module.get<TwitterClient>(TwitterClient);

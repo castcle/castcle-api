@@ -29,7 +29,7 @@ import { map } from 'rxjs/operators';
 import {
   FacebookAccessToken,
   FacebookTokenData,
-  FacebookUserInfo
+  FacebookUserInfo,
 } from './facebook.message';
 
 @Injectable()

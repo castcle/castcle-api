@@ -33,10 +33,10 @@ import { CacheKeyName } from './enum/cache.key.name';
       store: redisStore,
       host: Environment.REDIS_HOST,
       port: Environment.REDIS_PORT,
-      ttl: 1000
-    })
+      ttl: 1000,
+    }),
   ],
-  exports: [CacheModule]
+  exports: [CacheModule],
 })
 export class UtilsCacheModule {}
 

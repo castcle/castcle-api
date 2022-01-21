@@ -26,7 +26,7 @@ import { Model } from 'mongoose';
 import {
   CastcleQueryOptions,
   CountryPayloadDto,
-  DEFAULT_COUNTRY_QUERY_OPTIONS
+  DEFAULT_COUNTRY_QUERY_OPTIONS,
 } from '../dtos';
 import { CountryDocument } from '../schemas/country.schema';
 
@@ -60,7 +60,7 @@ export class CountryService {
   async getByDialCode(dialCode: string) {
     return this._countryModel
       .findOne({
-        dialCode: dialCode
+        dialCode: dialCode,
       })
       .exec();
   }

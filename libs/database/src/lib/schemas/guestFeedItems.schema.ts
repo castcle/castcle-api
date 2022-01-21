@@ -31,7 +31,7 @@ export type GuestFeedItemDocument = GuestFeedItem & mongoose.Document;
 export enum GuestFeedItemType {
   Content = 'content',
   Advertisement = 'ads',
-  SuggestFollow = 'suggest_follow'
+  SuggestFollow = 'suggest_follow',
 }
 
 @Schema({ timestamps: true })
@@ -39,24 +39,24 @@ export class GuestFeedItem extends CastcleBase {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Content',
-    index: true
+    index: true,
   })
   content?: Content;
 
   @Prop({
-    required: true
+    required: true,
   })
   type: string;
 
   @Prop({
-    type: Object
+    type: Object,
   })
   user?: User;
 
   countryCode?: string;
 
   @Prop({
-    required: true
+    required: true,
   })
   score: number;
 }
@@ -69,5 +69,5 @@ GuestFeedItemSchema.index({
   countryCode: 1,
   'content.id': 1,
   'content.author.id': 1,
-  'content.author.castcleId': 1
+  'content.author.castcleId': 1,
 });

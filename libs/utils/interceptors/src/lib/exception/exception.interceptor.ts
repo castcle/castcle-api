@@ -25,7 +25,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import {
   ExceptionFilter as NestExceptionFilter,
   Catch,
-  ArgumentsHost
+  ArgumentsHost,
 } from '@nestjs/common';
 import { getLanguageFromRequest } from '../util';
 import { Environment } from '@castcle-api/environments';

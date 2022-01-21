@@ -56,8 +56,8 @@ export class HashtagService {
     const newHashtag = {
       ...hashtag,
       aggregator: {
-        $id: hashtag.aggregator._id
-      }
+        $id: hashtag.aggregator._id,
+      },
     };
 
     const createResult = await new this._hashtagModel(newHashtag).save();
@@ -74,22 +74,22 @@ export class HashtagService {
     return this._hashtagModel
       .updateOne(
         {
-          tag: name.slug
+          tag: name.slug,
         },
         {
           $setOnInsert: {
             tag: name.slug,
             name: name.name,
             aggregator: {
-              name: 'default'
-            }
+              name: 'default',
+            },
           },
           $inc: {
-            score: 1
-          }
+            score: 1,
+          },
         },
         {
-          upsert: true
+          upsert: true,
         }
       )
       .exec();
@@ -107,13 +107,13 @@ export class HashtagService {
         {
           tag: name.slug,
           score: {
-            $gt: 0
-          }
+            $gt: 0,
+          },
         },
         {
           $inc: {
-            score: -1
-          }
+            score: -1,
+          },
         }
       )
       .exec();

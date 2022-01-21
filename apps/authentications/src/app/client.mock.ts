@@ -20,18 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { TelegramUserInfo, TwillioChannel } from '@castcle-api/utils/clients';
+import { TelegramUserInfo } from '@castcle-api/utils/clients';
 import {
   AccessTokenResponse,
   AppleIdTokenType,
-  RefreshTokenResponse
+  RefreshTokenResponse,
 } from 'apple-sign-in-rest';
 
 export class FacebookClientMock {
   getAccessToken() {
     return {
       access_token: '210058044|uBgVr1NhacSzS7UtJ387yI',
-      token_type: 'bearer'
+      token_type: 'bearer',
     };
   }
 
@@ -45,10 +45,10 @@ export class FacebookClientMock {
         expires_at: 1633107600,
         is_valid: true,
         metadata: {
-          auth_type: 'rerequest'
+          auth_type: 'rerequest',
         },
         scopes: ['email', 'public_profile'],
-        user_id: userToken
+        user_id: userToken,
       };
     } else {
       return {
@@ -59,10 +59,10 @@ export class FacebookClientMock {
         expires_at: 1633107600,
         is_valid: false,
         metadata: {
-          auth_type: 'rerequest'
+          auth_type: 'rerequest',
         },
         scopes: ['email', 'public_profile'],
-        user_id: userToken
+        user_id: userToken,
       };
     }
   }
@@ -81,19 +81,19 @@ export class FacebookClientMock {
             height: 50,
             is_silhouette: false,
             url: 'https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=109364223&height=50&width=50&ext=1635588772&hash=AeQnpX0QDwSuye2Q-ZA',
-            width: 50
-          }
+            width: 50,
+          },
         },
         email: 'jb@gmail.com',
         name: 'John Block',
-        id: userToken
+        id: userToken,
       };
     }
   }
 }
 
 export class DownloaderMock {
-  getImageFromUrl(url: string) {
+  getImageFromUrl() {
     return '/9j/4AAQSkZJRgABAQAAAQABAAD/7QCcUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAIAcAmcAFHF3bnYxc0hvaDBRRDN6Z0FzU3VzHAIoAGJGQk1EMGEwMDBhODgwMTAwMDBmYzAxMDAwMDg3MDIwMDAwY2EwMjAwMDAxYzAzMDAwMDllMDMwMDAwM2IwNDAwMDA3NDA0MDAwMGI1MDQwMDAwZjkwNDAwMDBmODA1MDAwMP/bAEMABgQFBgUEBgYFBgcHBggKEAoKCQkKFA4PDBAXFBgYFxQWFhodJR8aGyMcFhYgLCAjJicpKikZHy0wLSgwJSgpKP/bAEMBBwcHCggKEwoKEygaFhooKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKP/CABEIADIAMgMBIgACEQEDEQH/xAAbAAACAwEBAQAAAAAAAAAAAAAABQMEBgECB//EABoBAQADAQEBAAAAAAAAAAAAAAECAwQABQb/2gAMAwEAAhADEAAAAU0jSb3/AJ5dcYW8+mhbv2M2teNCuyn3Mszix851cJ7fmXmF0IhM9yj2qytqcrdrsfUlPmcGIsBj4CRWwe8xBFXgSP/EACIQAAIBBAICAwEAAAAAAAAAAAACAwEEEhMRFAUhECJCMf/aAAgBAQABBQLEoosYsYsYsZrNIsQsQsYqFEMTSajyVXhtPFy9izop743kbXCFLmVhbmSe66lco7WY685ruBZMUWbisiwtfK6tRbngkvsJO+fZjFqEa5zbcWZq8/0xoXDVoS+oael/X4k+P//EAB0RAAICAgMBAAAAAAAAAAAAAAABAhIDEBExQVH/2gAIAQMBAT8BWKTIYCOIoRjGXQ1UTfw5KRXQq+oS42t//8QAHxEAAgEEAgMAAAAAAAAAAAAAAAECAxESMRATQlGB/9oACAECAQE/AXURKsSqnYSnKOxPIaXssjOT2PPxY3c+iHz/AP/EACsQAAECBAIIBwAAAAAAAAAAAAABAhEhMYEDUQQQEyI0QXGiEiAzQGGRwf/aAAgBAQAGPwL2D3YUs1y+RmI7opJCiLc9N5u6QsMnTKt+hUxnrDEcni/CO3hYlpULHF9pxfaTXUyrWrNYZm66KkJjk1LGYu0WthZUQ5WJ06nIowkqkUqJAh5P/8QAJBABAAICAQMDBQAAAAAAAAAAAQARITFhEEFRcZHwIIGhscH/2gAIAQEAAT8hhXpcXR4eg4zhnFOP6G+iFJTEg5T4QbJe5xaYuYMD95je53CPiJ7VAfvKIbeIxPnAwp4eJjd5dGGvFwR+Iz+zuiv48zne2Wl11FPLb2I8btFSQwEDJGYslqZRs1fMtzBpAWxrUBo60zYl9aa0NwXYOrwirZ705Sw3RfA9CqqHozBwLaQiMF3UqqsGMTue8x1DJbuf/9oADAMBAAIAAwAAABCxaIIHJr+/5r6OL8L/xAAdEQADAAICAwAAAAAAAAAAAAAAAREQMSFRYdHw/9oACAEDAQE/EGXI5CkSP4ULIQexf0Ewmkh5YToiLoeC1j//xAAcEQEAAgMAAwAAAAAAAAAAAAABABEQIYEx0fD/2gAIAQIBAT8QHCiuJVwju5Y9J9biRFcNzTyN5tTrK4//xAAhEAEAAgIDAAMAAwAAAAAAAAABABEhMUFRYXGR8IGh0f/aAAgBAQABPxAV6jmCWUpHxF9WQyoMNRxhRIpq4AqBKxAOJXqGFg1e4XCOBRLKVjos6Yv2FCo+w8cP8sSyCZExZpyL2x/WZYw3fnUfvD4IHgiyFC9bYtr1qYwh+uaCmgPBKTNWaxLS6A+uohtoYmbrr7lbMUY0fjcBJrWniWooZ8JewajhVvOs1qA05bGT3qJAFcMUXKVexYK8Z9i6uHxqKNdMmo4vBX3D3wdauyvzBpaeVsu293QXxCpj2xs0aaNYmCKKt5Vb437C7AYOV6/5O274gGSubC8sa1qcBdbYDRUEKW93KEArcYNPEQO0M87YmyqQar4mBkRavM//2Q==';
   }
 }
@@ -112,8 +112,8 @@ export class TwitterClientMock {
       oauth_token: 'wAAAAABUZusAAABfHLxV60',
       oauth_token_secret: 'FvPJ0hv0AF9ut6RxuAmHJUdpgZPKSEn7',
       results: {
-        oauth_callback_confirmed: 'true'
-      }
+        oauth_callback_confirmed: 'true',
+      },
     };
   }
 
@@ -132,8 +132,8 @@ export class TwitterClientMock {
         oauth_token_secret: 'CWxdy113hukVwJ6HgvBZTF1uXHuQXtLLP5A',
         results: {
           user_id: '999999',
-          screen_name: 'john'
-        }
+          screen_name: 'john',
+        },
       };
     } else if (accessToken === '77777777') {
       return {
@@ -141,8 +141,8 @@ export class TwitterClientMock {
         oauth_token_secret: 'CukVwJ6HgvBZTF1uXHuQXtLLP5A',
         results: {
           user_id: '9999',
-          screen_name: 'johnb'
-        }
+          screen_name: 'johnb',
+        },
       };
     } else {
       return null;
@@ -163,7 +163,7 @@ export class TwitterClientMock {
           'http://pbs.twimg.com/profile_images/291766490/kzq622-02_normal.jpg',
         profile_image_url_https:
           'https://pbs.twimg.com/profile_images/291766490/kzq622-02_normal.jpg',
-        email: 'john@hotmail.com'
+        email: 'john@hotmail.com',
       };
     } else {
       return null;
@@ -172,7 +172,7 @@ export class TwitterClientMock {
 }
 
 export class TwillioClientMock {
-  async requestOtp(receiver: string, channel: TwillioChannel) {
+  async requestOtp() {
     return {
       sid: 'VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       service_sid: 'VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
@@ -189,8 +189,8 @@ export class TwillioClientMock {
           name: 'Carrier Name',
           mobile_country_code: '310',
           mobile_network_code: '150',
-          type: 'mobile'
-        }
+          type: 'mobile',
+        },
       },
       amount: null,
       payee: null,
@@ -198,10 +198,10 @@ export class TwillioClientMock {
         {
           time: '2015-07-30T20:00:00Z',
           channel: 'SMS',
-          channel_id: null
-        }
+          channel_id: null,
+        },
       ],
-      url: 'https://verify.twilio.com/v2/Services/VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+      url: 'https://verify.twilio.com/v2/Services/VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     };
   }
 
@@ -213,7 +213,7 @@ export class TwillioClientMock {
     }
   }
 
-  async canceledOtp(sid: string) {
+  async canceledOtp() {
     return true;
   }
 }
@@ -223,10 +223,7 @@ export class AppleClientMock {
     return callBackUrl;
   }
 
-  async verifyToken(
-    idToken: string,
-    subject: string
-  ): Promise<AppleIdTokenType> {
+  async verifyToken(idToken: string): Promise<AppleIdTokenType> {
     let result;
     if (idToken === '1') {
       result = null;
@@ -243,7 +240,7 @@ export class AppleClientMock {
         email: 'xxxx@privaterelay.appleid.com',
         email_verified: true,
         is_private_email: true,
-        auth_time: 1577943013
+        auth_time: 1577943013,
       } as AppleIdTokenType;
     } else {
       result = {
@@ -258,24 +255,21 @@ export class AppleClientMock {
         email: 'xxxx@privaterelay.appleid.com',
         email_verified: true,
         is_private_email: true,
-        auth_time: 1577943013
+        auth_time: 1577943013,
       } as AppleIdTokenType;
     }
     return result;
   }
 
-  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
+  async refreshToken(): Promise<RefreshTokenResponse> {
     return {
       access_token: 'ACCESS_TOKEN',
       expires_in: 1577943013,
-      token_type: 'refresh_token'
+      token_type: 'refresh_token',
     };
   }
 
-  async authorizationToken(
-    code: string,
-    redirectUrl: string
-  ): Promise<AccessTokenResponse> {
+  async authorizationToken(): Promise<AccessTokenResponse> {
     return {
       // A token used to access allowed data. Currently has no use
       access_token: 'ACCESS_TOKEN',
@@ -286,7 +280,7 @@ export class AppleClientMock {
       // used to regenerate new access tokens. Store this token securely on your server.
       refresh_token: 'REFRESH_TOKEN',
       // A JSON Web Token that contains the user’s identity information.
-      id_token: 'ID_TOKEN'
+      id_token: 'ID_TOKEN',
     };
   }
 }
@@ -305,7 +299,7 @@ export class GoogleClientMock {
         azp: '',
         access_type: '',
         email: 'test@gmail.com',
-        email_verified: true
+        email_verified: true,
       };
     }
   }
@@ -318,13 +312,13 @@ export class GoogleClientMock {
       result = {
         email: 'test@gmail.com',
         id: 'mock_user_google_2',
-        name: 'John Dow'
+        name: 'John Dow',
       };
     } else {
       result = {
         email: 'test@gmail.com',
         id: 'mock_user_google',
-        name: 'John Dow'
+        name: 'John Dow',
       };
     }
 

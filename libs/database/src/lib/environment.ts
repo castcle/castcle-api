@@ -26,7 +26,7 @@ import { MongooseModuleOptions } from '@nestjs/mongoose';
 
 export const getMongoOptions = (): MongooseModuleOptions => ({
   ...env.DB_OPTIONS,
-  uri: env.DB_URI
+  uri: env.DB_URI,
 });
 
 export const env = {
@@ -42,5 +42,5 @@ export const env = {
   JWT_REFRESH_SECRET: Environment?.JWT_REFRESH_SECRET || 'secretjing',
   JWT_VERIFY_SECRET: Environment?.JWT_VERIFY_SECRET || 'secretlen',
   OTP_DIGITS: Environment?.OTP_DIGITS || 8,
-  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 60
+  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 60,
 };

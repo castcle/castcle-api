@@ -25,7 +25,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import {
   getIpFromRequest,
   getLanguageFromRequest,
-  getTokenFromRequest
+  getTokenFromRequest,
 } from '.';
 
 describe('#getTokenFromRequest', () => {
@@ -69,7 +69,7 @@ describe('#getLanguageFromRequest', () => {
 describe('#getIpFromRequest', () => {
   it('should return IP from headers as string', () => {
     const headers = {
-      'api-metadata': 'ip=127.0.0.1,src=iOS,dest=castcle-authentications'
+      'api-metadata': 'ip=127.0.0.1,src=iOS,dest=castcle-authentications',
     };
 
     const ip = getIpFromRequest({ headers } as any);

@@ -27,7 +27,7 @@ import {
   getRelationship,
   SocialProvider,
   SocialSyncService,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import {
   ContentResponse,
@@ -45,14 +45,14 @@ import {
   SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
-  UserResponseDto
+  UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
   CredentialDocument,
   OtpObjective,
   SocialSyncDocument,
   UserDocument,
-  UserType
+  UserType,
 } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
@@ -62,7 +62,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleController
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -70,7 +70,7 @@ import {
   LimitPipe,
   PagePipe,
   SortByEnum,
-  SortByPipe
+  SortByPipe,
 } from '@castcle-api/utils/pipes';
 import {
   Body,
@@ -84,7 +84,7 @@ import {
   Query,
   Req,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
@@ -93,7 +93,7 @@ import {
   UpdateMobileDto,
   UserRefereeResponse,
   UserReferrerResponse,
-  UserSettingsDto
+  UserSettingsDto,
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 
@@ -193,17 +193,17 @@ export class UserController {
   @ApiQuery({
     name: 'page',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'keyword',
     type: String,
-    required: true
+    required: true,
   })
   @Get('mentions')
   @CastcleAuth(CacheKeyName.Users)
@@ -227,12 +227,12 @@ export class UserController {
     return {
       message: 'success message',
       payload: users,
-      pagination
+      pagination,
     };
   }
 
   @ApiOkResponse({
-    type: UserResponseDto
+    type: UserResponseDto,
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me')
@@ -303,10 +303,10 @@ export class UserController {
   }
 
   @ApiBody({
-    type: UpdateUserDto
+    type: UpdateUserDto,
   })
   @ApiOkResponse({
-    type: UserResponseDto
+    type: UserResponseDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put('me')
@@ -331,10 +331,10 @@ export class UserController {
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: DeleteUserBody
+    type: DeleteUserBody,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
@@ -370,15 +370,15 @@ export class UserController {
   @ApiOkResponse({ type: ContentsResponse })
   @ApiQuery({
     name: 'sinceId',
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'untilId',
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'maxResults',
-    required: false
+    required: false,
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/contents')
@@ -406,7 +406,7 @@ export class UserController {
   }
 
   @ApiOkResponse({
-    type: PagesResponse
+    type: PagesResponse,
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
@@ -431,7 +431,7 @@ export class UserController {
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id/contents')
@@ -468,10 +468,10 @@ export class UserController {
    * @returns {''}
    */
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: TargetCastcleDto
+    type: TargetCastcleDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/following')
@@ -502,10 +502,10 @@ export class UserController {
    * @returns {''}
    */
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: TargetCastcleDto
+    type: TargetCastcleDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Post(':id/following')
@@ -538,10 +538,10 @@ export class UserController {
    * @returns {''}
    */
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: TargetCastcleDto
+    type: TargetCastcleDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
@@ -572,10 +572,10 @@ export class UserController {
    * @returns {''}
    */
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: TargetCastcleDto
+    type: TargetCastcleDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete(':id/following/:target_castcle_id')
@@ -599,28 +599,28 @@ export class UserController {
   }
 
   @ApiOkResponse({
-    type: FollowResponse
+    type: FollowResponse,
   })
   @CastcleAuth(CacheKeyName.Users)
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'page',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'type',
     enum: UserType,
-    required: false
+    required: false,
   })
   @Get(':id/followers')
   async getUserFollower(
@@ -645,7 +645,7 @@ export class UserController {
         limit: limitOption,
         page: pageOption,
         sortBy: sortByOption,
-        type: userTypeOption
+        type: userTypeOption,
       }
     );
 
@@ -653,27 +653,27 @@ export class UserController {
   }
 
   @ApiOkResponse({
-    type: FollowResponse
+    type: FollowResponse,
   })
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'page',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'type',
     enum: UserType,
-    required: false
+    required: false,
   })
   @Get(':id/following')
   @CastcleAuth(CacheKeyName.Users)
@@ -699,7 +699,7 @@ export class UserController {
         limit: limitOption,
         page: pageOption,
         sortBy: sortByOption,
-        type: userTypeOption
+        type: userTypeOption,
       }
     );
 
@@ -796,10 +796,10 @@ export class UserController {
 
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiBody({
-    type: UpdateMobileDto
+    type: UpdateMobileDto,
   })
   @ApiOkResponse({
-    type: UserResponseDto
+    type: UserResponseDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put('me/mobile')
@@ -875,10 +875,10 @@ export class UserController {
    */
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT
+    status: HttpStatus.NO_CONTENT,
   })
   @ApiBody({
-    type: SocialSyncDto
+    type: SocialSyncDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -936,10 +936,10 @@ export class UserController {
    */
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT
+    status: HttpStatus.NO_CONTENT,
   })
   @ApiBody({
-    type: SocialSyncDto
+    type: SocialSyncDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -963,10 +963,10 @@ export class UserController {
    */
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT
+    status: HttpStatus.NO_CONTENT,
   })
   @ApiBody({
-    type: SocialSyncDeleteDto
+    type: SocialSyncDeleteDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Delete('sync-social')
@@ -1001,10 +1001,10 @@ export class UserController {
    */
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT
+    status: HttpStatus.NO_CONTENT,
   })
   @ApiBody({
-    type: UserSettingsDto
+    type: UserSettingsDto,
   })
   @CastcleBasicAuth()
   @Put('settings')
@@ -1039,7 +1039,7 @@ export class UserController {
    * @returns {Promise<UserReferrerResponse>} referrer user
    */
   @ApiOkResponse({
-    type: UserReferrerResponse
+    type: UserReferrerResponse,
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referrer')
@@ -1096,7 +1096,7 @@ export class UserController {
    * @returns {Promise<UserRefereeResponse>} all User Referee
    */
   @ApiOkResponse({
-    type: UserRefereeResponse
+    type: UserRefereeResponse,
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referee')
@@ -1159,7 +1159,7 @@ export class UserController {
   @CastcleBasicAuth()
   @ApiResponse({
     status: 201,
-    type: ContentResponse
+    type: ContentResponse,
   })
   @Post(':id/recast')
   async recastContent(
@@ -1194,7 +1194,7 @@ export class UserController {
 
   @ApiResponse({
     status: 201,
-    type: ContentResponse
+    type: ContentResponse,
   })
   @CastcleBasicAuth()
   @Post(':id/quotecast')
@@ -1230,7 +1230,7 @@ export class UserController {
    */
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT
+    status: HttpStatus.NO_CONTENT,
   })
   @CastcleBasicAuth()
   @Delete(':id/recast/:sourceContentId')

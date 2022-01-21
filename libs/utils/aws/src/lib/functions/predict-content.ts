@@ -34,7 +34,7 @@ export const predictContents = (accountId: string, contents: string[]) => {
       {
         FunctionName: Configs.PredictFunctionName,
         InvocationType: 'RequestResponse',
-        Payload: JSON.stringify({ accountId, contents })
+        Payload: JSON.stringify({ accountId, contents }),
       },
       (err, data) => {
         console.timeEnd('Spend time on AWS lambda');

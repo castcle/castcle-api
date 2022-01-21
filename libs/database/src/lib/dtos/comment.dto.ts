@@ -40,17 +40,6 @@ export class UpdateCommentDto {
   message: string;
 }
 
-class Like {
-  count: number;
-  liked: boolean;
-  participant: {
-    type: 'people' | 'page'; // people or page
-    id: string; //userId
-    castcleId: string; // @castcle
-    displayName: string;
-  }[];
-}
-
 export class CommentPayload {
   @ApiProperty()
   id: string; //commentId

@@ -24,7 +24,6 @@
 import * as bcrypt from 'bcryptjs';
 
 const saltRounds = 10;
-const PASSWORD_MIN = 6;
 
 const generate = async (password: string) => bcrypt.hash(password, saltRounds);
 
@@ -67,5 +66,5 @@ export const Password = {
   create,
   verify,
   validate,
-  generateRandomDigits
+  generateRandomDigits,
 };

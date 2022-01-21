@@ -31,7 +31,7 @@ import {
   CacheTTL,
   Controller,
   Get,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 
@@ -39,16 +39,16 @@ import { ApiHeader, ApiOkResponse } from '@nestjs/swagger';
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
   example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true
+  required: true,
 })
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptVersion.name,
   description: Configs.RequiredHeaders.AcceptVersion.description,
   example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
+  required: true,
 })
 @Controller({
-  version: '1.0'
+  version: '1.0',
 })
 @Controller()
 export class LanguagesController {
@@ -57,7 +57,7 @@ export class LanguagesController {
   private logger = new CastLogger(LanguagesController.name);
 
   @ApiOkResponse({
-    type: LanguageResponse
+    type: LanguageResponse,
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.LanguagesGet.Name)
@@ -68,7 +68,7 @@ export class LanguagesController {
     const result = await this.languageService.getAll();
     this.logger.log('Success get all language');
     return {
-      payload: result.map((lang) => lang.toLanguagePayload())
+      payload: result.map((lang) => lang.toLanguagePayload()),
     };
   }
 }

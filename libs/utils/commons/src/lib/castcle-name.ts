@@ -26,7 +26,7 @@ import {
   RANDOM_ADJECTIVE,
   RANDOM_SUBJECTS,
   LENGTH_MAX,
-  LENGTH_MIN
+  LENGTH_MIN,
 } from './configs/names';
 
 export class CastcleName {

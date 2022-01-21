@@ -74,10 +74,10 @@ export class NotificationConsumer {
         tokens: job.data.notification.firebaseTokens,
         apns: {
           payload: {
-            aps: job.data.notification.aps
-          }
+            aps: job.data.notification.aps,
+          },
         },
-        data: job.data.notification.payload
+        data: job.data.notification.payload,
       });
     } catch (error) {
       this.logger.error(error);

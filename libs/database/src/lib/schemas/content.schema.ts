@@ -29,7 +29,7 @@ import {
   BlogPayload,
   Author,
   ImagePayload,
-  ContentPayloadItem
+  ContentPayloadItem,
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { RevisionDocument } from './revision.schema';
@@ -56,7 +56,7 @@ const engagementNameMap = {
   like: 'liked',
   comment: 'commented',
   quote: 'quoteCast',
-  recast: 'recasted'
+  recast: 'recasted',
 };
 
 /**
@@ -76,7 +76,7 @@ const getEngagementObject = (
     count: doc.engagements[engagementType]
       ? doc.engagements[engagementType].count
       : 0,
-    participant: []
+    participant: [],
   };
   engagementObject[engagementNameMap[engagementType]] = isEngage;
   return engagementObject;
@@ -212,7 +212,7 @@ export const transformContentPayloadToV2 = (
       likeCount: content.liked.count,
       commentCount: content.commented.count,
       quoteCount: 0,
-      recastCount: content.recasted.count
+      recastCount: content.recasted.count,
     },
     participate: {
       liked: engagements.find((item) => item.type === EngagementType.Like)
@@ -228,15 +228,15 @@ export const transformContentPayloadToV2 = (
         : false,
       recasted: engagements.find((item) => item.type === EngagementType.Recast)
         ? true
-        : false
+        : false,
     },
     createdAt: content.createdAt,
-    updatedAt: content.updatedAt
+    updatedAt: content.updatedAt,
   } as ContentPayloadItem;
   if (content.isRecast || content.isQuote) {
     contentPayloadItem.referencedCasts = {
       type: content.isRecast ? 'recasted' : 'quoted',
-      id: content.originalPost._id as string
+      id: content.originalPost._id as string,
     };
   }
   return contentPayloadItem;
@@ -258,7 +258,7 @@ export const toUnsignedContentPayloadItem = (
       likeCount: content.engagements?.like?.count | 0,
       commentCount: content.engagements?.comment?.count | 0,
       quoteCount: content.engagements?.quote?.count | 0,
-      recastCount: content.engagements?.recast?.count | 0
+      recastCount: content.engagements?.recast?.count | 0,
     },
     participate: {
       liked: engagements.some(({ type }) => type === EngagementType.Like),
@@ -267,16 +267,16 @@ export const toUnsignedContentPayloadItem = (
       ),
       quoted: engagements.some(({ type }) => type === EngagementType.Quote),
       recasted: engagements.some(({ type }) => type === EngagementType.Recast),
-      reported: engagements.some(({ type }) => type === EngagementType.Report)
+      reported: engagements.some(({ type }) => type === EngagementType.Report),
     },
 
     createdAt: content.createdAt.toISOString(),
-    updatedAt: content.updatedAt.toISOString()
+    updatedAt: content.updatedAt.toISOString(),
   } as ContentPayloadItem;
   if (content.isRecast || content.isQuote) {
     result.referencedCasts = {
       type: content.isRecast ? 'recasted' : 'quoted',
-      id: content.originalPost._id as string
+      id: content.originalPost._id as string,
     };
   }
   return result;
@@ -347,8 +347,8 @@ export const ContentSchemaFactory = (
       feature: {
         slug: 'feed',
         key: 'feature.feed',
-        name: 'Feed'
-      }
+        name: 'Feed',
+      },
     } as ContentPayloadDto;
     //get owner relate enagement
     for (const key in engagementNameMap) {
@@ -389,10 +389,10 @@ export const ContentSchemaFactory = (
       feature: {
         slug: 'feed',
         key: 'feature.feed',
-        name: 'Feed'
+        name: 'Feed',
       },
       isQuote: (this as ContentDocument).isQuote,
-      isRecast: (this as ContentDocument).isRecast
+      isRecast: (this as ContentDocument).isRecast,
     } as ContentPayloadDto;
     //get owner relate enagement
     for (const key in engagementNameMap) {
@@ -419,11 +419,11 @@ export const ContentSchemaFactory = (
     next();
   });
   ContentSchema.post('save', async function (doc, next) {
-    const result = await postContentSave(doc as ContentDocument, {
+    await postContentSave(doc as ContentDocument, {
       revisionModel,
       feedItemModel,
       userModel,
-      relationshipModel
+      relationshipModel,
     });
     next();
   });

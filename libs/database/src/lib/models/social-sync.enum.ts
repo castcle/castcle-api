@@ -25,5 +25,5 @@ export enum SocialProvider {
   Twitter = 'twitter',
   Facebook = 'facebook',
   Youtube = 'youtube',
-  Medium = 'medium'
+  Medium = 'medium',
 }

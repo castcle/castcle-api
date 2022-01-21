@@ -39,10 +39,10 @@ import { ContentConsumer } from './consumers/content.consumer';
         clientEmail: Environment.FIREBASE_CLIENT_EMAIL,
         privateKey: Buffer.from(Environment.FIREBASE_PRIVATE_KEY, 'base64')
           .toString('ascii')
-          .replace(/\\n/g, '\n')
-      }
-    })
+          .replace(/\\n/g, '\n'),
+      },
+    }),
   ],
-  providers: [NotificationConsumer, UserConsumer, ContentConsumer]
+  providers: [NotificationConsumer, UserConsumer, ContentConsumer],
 })
 export class BackgroundModule {}

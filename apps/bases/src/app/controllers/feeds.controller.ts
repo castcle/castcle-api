@@ -30,7 +30,7 @@ import {
   FeedItemMode,
   FeedsResponse,
   GetSearchRecentDto,
-  ResponseDto
+  ResponseDto,
 } from '@castcle-api/database/dtos';
 import { ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -38,13 +38,13 @@ import {
   LimitPipe,
   PagePipe,
   SortByEnum,
-  SortByPipe
+  SortByPipe,
 } from '@castcle-api/utils/pipes';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
-  CastcleController
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { ContentService, UserService } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/utils/cache';
@@ -60,37 +60,37 @@ export class FeedsController {
   ) {}
 
   @ApiOkResponse({
-    type: FeedsResponse
+    type: FeedsResponse,
   })
   @ApiQuery({
     name: 'mode',
     enum: FeedItemMode,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'hashtag',
     type: String,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'page',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'exclude',
     type: String,
-    required: false
+    required: false,
   })
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('feeds/feed/forYou')
@@ -114,7 +114,7 @@ export class FeedsController {
           mode: mode,
           sortBy: sortByOption,
           page: pageOption,
-          limit: limitOption
+          limit: limitOption,
         }
       );
       console.debug('rankerFeeds', feedItemsResult);
@@ -142,14 +142,14 @@ export class FeedsController {
             );
             return t.toFeedItemPayload(engagements);
           }),
-          pagination: feedItemsResult.pagination
+          pagination: feedItemsResult.pagination,
         } as FeedsResponse;
       }
 
       //
       return {
         payload: feedItemsResult.items.map((t) => t.toFeedItemPayload()),
-        pagination: feedItemsResult.pagination
+        pagination: feedItemsResult.pagination,
       } as FeedsResponse;
     } catch (error) {
       throw new CastcleException(

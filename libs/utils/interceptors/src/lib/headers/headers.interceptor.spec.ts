@@ -25,7 +25,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { HeadersInterceptor } from './headers.interceptor';
 
 const callHandler = {
-  handle: jest.fn()
+  handle: jest.fn(),
 };
 
 describe('TokenInterceptor', () => {
@@ -38,15 +38,15 @@ describe('TokenInterceptor', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers: {
-            'accept-language': 'th'
-          }
-        })
-      })
+            'accept-language': 'th',
+          },
+        }),
+      }),
     });
     expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
       headers: {
-        'accept-language': 'th'
-      }
+        'accept-language': 'th',
+      },
     });
     interceptor.intercept(mockExecutionContext, callHandler);
     expect(callHandler.handle).toBeCalled();

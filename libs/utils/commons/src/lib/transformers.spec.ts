@@ -24,7 +24,7 @@
 import { plainToClass } from 'class-transformer';
 import {
   TransformStringToArrayOfStrings,
-  TransformStringToEnum
+  TransformStringToEnum,
 } from './transformers';
 
 describe('TransformStringToArrayOfStrings', () => {
@@ -57,7 +57,7 @@ describe('TransformStringToArrayOfStrings', () => {
 
 describe('TransformStringToEnum', () => {
   enum TargetType {
-    Short = 'short'
+    Short = 'short',
   }
 
   class Target {

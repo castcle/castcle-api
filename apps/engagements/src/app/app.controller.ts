@@ -27,13 +27,13 @@ import {
   HttpCode,
   Post,
   Req,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { UxEngagementBody } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
-  CredentialRequest
+  CredentialRequest,
 } from '@castcle-api/utils/interceptors';
 import { UxEngagementService } from '@castcle-api/database';
 import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
@@ -43,23 +43,23 @@ import { Configs } from '@castcle-api/environments';
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
   example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true
+  required: true,
 })
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptVersion.name,
   description: Configs.RequiredHeaders.AcceptVersion.description,
   example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
+  required: true,
 })
 @Controller()
 export class EngagementController {
   constructor(private uxEngagementService: UxEngagementService) {}
 
   @ApiBody({
-    type: UxEngagementBody
+    type: UxEngagementBody,
   })
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @UseInterceptors(CredentialInterceptor)
   @HttpCode(204)

@@ -31,7 +31,7 @@ export class TopTrendsQueryOptions {
 
 export const DEFAULT_TOP_TREND_QUERY_OPTIONS = {
   limit: 10,
-  exclude: ''
+  exclude: '',
 } as TopTrendsQueryOptions;
 
 export class SearchHashtagResponseDto {

@@ -42,9 +42,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -62,7 +62,7 @@ describe('UxEngagement Service', () => {
     UxEngagementService,
     AuthenticationService,
     ContentService,
-    HashtagService
+    HashtagService,
   ];
 
   beforeAll(async () => {
@@ -70,9 +70,9 @@ describe('UxEngagement Service', () => {
       imports: [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ],
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<UxEngagementService>(UxEngagementService);
     authService = module.get<AuthenticationService>(AuthenticationService);
@@ -80,16 +80,16 @@ describe('UxEngagement Service', () => {
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
   });
   afterAll(async () => {
@@ -111,7 +111,7 @@ describe('UxEngagement Service', () => {
         target: 'testTarget',
         targetId: 'testTargetId',
         timestamp: now.getTime() + '',
-        uxSessionId: 'ux-track-01'
+        uxSessionId: 'ux-track-01',
       };
       const uxTrackResult = await service.track(body);
       expect(uxTrackResult).toBeDefined();

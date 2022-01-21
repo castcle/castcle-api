@@ -28,27 +28,25 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import {
   BlogPayload,
   ContentType,
-  PageDto,
   SaveContentDto,
-  ShortPayload
+  ShortPayload,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
-  AccountDocument,
   ContentDocument,
   CredentialDocument,
-  UserDocument
+  UserDocument,
 } from '@castcle-api/database/schemas';
 import {
   ContentProducer,
   NotificationProducer,
   TopicName,
-  UserProducer
+  UserProducer,
 } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -63,25 +61,25 @@ const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 const fakeBull2 = BullModule.registerQueue({
   name: TopicName.Contents,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 const fakeBull3 = BullModule.registerQueue({
   name: TopicName.Notifications,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -91,9 +89,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -107,28 +105,23 @@ describe('ContentController', () => {
   let appService: AppService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   let user: UserDocument;
-  let page: UserDocument;
   let payloadId: any;
-  const pageDto: PageDto = {
-    displayName: 'Super Page',
-    castcleId: 'pageyo'
-  };
+
   beforeAll(async () => {
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
+          ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull,
         fakeBull2,
-        fakeBull3
+        fakeBull3,
       ],
       controllers: [ContentController],
       providers: [
@@ -141,8 +134,8 @@ describe('ContentController', () => {
         ContentProducer,
         NotificationProducer,
         NotificationService,
-        HashtagService
-      ]
+        HashtagService,
+      ],
     }).compile();
     service = app.get<UserService>(UserService);
     appService = app.get<AppService>(AppService);
@@ -151,27 +144,25 @@ describe('ContentController', () => {
     contentController = app.get<ContentController>(ContentController);
     jest
       .spyOn(appService, 'uploadContentToS3')
-      .mockImplementation(
-        async (body: SaveContentDto, uploader: UserDocument) => {
-          //let body: SaveContentDto = JSON.parse(JSON.stringify(refBody));
-          if (body.payload.photo && body.payload.photo.contents) {
-            body.payload.photo.contents = body.payload.photo.contents.map(
-              (item) => {
-                return {
-                  original: item.image
-                };
-              }
-            );
-          }
-
-          return body;
+      .mockImplementation(async (body: SaveContentDto) => {
+        //let body: SaveContentDto = JSON.parse(JSON.stringify(refBody));
+        if (body.payload.photo && body.payload.photo.contents) {
+          body.payload.photo.contents = body.payload.photo.contents.map(
+            (item) => {
+              return {
+                original: item.image,
+              };
+            }
+          );
         }
-      );
+
+        return body;
+      });
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
     const accountActivation = await authService.signupByEmail(
       result.accountDocument,
@@ -179,19 +170,19 @@ describe('ContentController', () => {
         email: 'test@gmail.com',
         displayId: 'test1234',
         displayName: 'test',
-        password: '1234AbcD'
+        password: '1234AbcD',
       }
     );
-    userAccount = await authService.verifyAccount(accountActivation);
+    await authService.verifyAccount(accountActivation);
     userCredential = await authService.getCredentialFromAccessToken(
       result.credentialDocument.accessToken
     ); //result.credentialDocument;
     user = await service.getUserFromCredential(userCredential);
     console.debug('======USER FROM TEST=====');
     console.debug(user);
-    page = await service.createPageFromUser(user, {
+    await service.createPageFromUser(user, {
       castcleId: 'pageTest',
-      displayName: 'pageTest'
+      displayName: 'pageTest',
     });
   });
   afterAll(async () => {
@@ -205,27 +196,27 @@ describe('ContentController', () => {
         photo: {
           contents: [
             {
-              image: 'testImage'
-            }
-          ]
+              image: 'testImage',
+            },
+          ],
         },
         link: [
           {
             type: 'other',
-            url: 'https://www.facebook.com/watch/?v=345357500470873'
-          }
-        ]
+            url: 'https://www.facebook.com/watch/?v=345357500470873',
+          },
+        ],
       } as ShortPayload;
       const result = await contentController.createFeedContent(
         {
           payload: shortPayload,
           type: ContentType.Short,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
       expect(result.payload.id).toBeDefined();
@@ -244,44 +235,44 @@ describe('ContentController', () => {
         message: 'Sell quick',
         photo: {
           cover: {
-            image: 'http://placehold.it/500x500'
+            image: 'http://placehold.it/500x500',
           },
           contents: [
             { image: 'http://placehold.it/200x200' },
-            { image: 'http://placehold.it/300x300' }
-          ]
-        }
+            { image: 'http://placehold.it/300x300' },
+          ],
+        },
       } as BlogPayload;
       const result = await contentController.createFeedContent(
         {
           payload: blogPayload,
           type: ContentType.Blog,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Blog);
       expect(result.payload.photo).toEqual(blogPayload.photo);
       expect(result.payload.message).toEqual(blogPayload.message);
-      const content = await contentService.getContentFromId(result.payload.id);
+      await contentService.getContentFromId(result.payload.id);
       //expect(result.payload.).toEqual(content.toContentPayload());
       expect(result.payload.authorId).toEqual(user._id);
     });
     it('should be able to create a content by page', async () => {
       const pageDto = {
         avatar: {
-          original: 'http://placehold.it/200x200'
+          original: 'http://placehold.it/200x200',
         },
         cover: {
-          original: 'http://placehold.it/1200x500'
+          original: 'http://placehold.it/1200x500',
         },
         displayName: 'Whatsupidoo',
-        castcleId: 'whatsup'
+        castcleId: 'whatsup',
       };
       const newPage = await service.createPageFromCredential(
         userCredential,
@@ -292,20 +283,20 @@ describe('ContentController', () => {
         link: [
           {
             type: 'other',
-            url: 'https://www.facebook.com/watch/?v=345357500470873'
-          }
-        ]
+            url: 'https://www.facebook.com/watch/?v=345357500470873',
+          },
+        ],
       } as ShortPayload;
       const result = await contentController.createFeedContent(
         {
           payload: shortPayload,
           type: ContentType.Short,
-          castcleId: newPage.displayId
+          castcleId: newPage.displayId,
         },
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
       payloadId = result.payload.id;
@@ -319,39 +310,41 @@ describe('ContentController', () => {
         photo: {
           contents: [
             {
-              image: 'testImage'
-            }
-          ]
+              image: 'testImage',
+            },
+          ],
         },
         link: [
           {
             type: 'other',
-            url: 'https://www.facebook.com/watch/?v=345357500470873'
-          }
-        ]
+            url: 'https://www.facebook.com/watch/?v=345357500470873',
+          },
+        ],
       } as ShortPayload;
-      const result = await contentController.createFeedContent(
+      const actual = await contentController.createFeedContent(
         {
           payload: shortPayload,
           type: ContentType.Short,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
-      console.debug('createResult', result.payload.authorId);
-      const getResult = await contentController.getContentFromId(
-        result.payload.id,
+      console.debug('createResult', actual.payload.authorId);
+      const expected = await contentController.getContentFromId(
+        actual.payload.id,
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
-      expect(JSON.stringify(getResult)).toEqual(JSON.stringify(result));
+      expected.payload.photo.contents[0].original =
+        actual.payload.photo.contents[0].original;
+      expect(JSON.stringify(expected)).toEqual(JSON.stringify(actual));
     });
   });
 
@@ -360,26 +353,26 @@ describe('ContentController', () => {
       const shortPayload = {
         message: 'อุบกขา',
         photo: {
-          contents: [{ image: 'testImage' }]
+          contents: [{ image: 'testImage' }],
         },
         link: [
           {
             type: 'other',
-            url: 'https://www.facebook.com/watch/?v=345357500470873'
-          }
-        ]
+            url: 'https://www.facebook.com/watch/?v=345357500470873',
+          },
+        ],
       } as ShortPayload;
 
       const result = await contentController.createFeedContent(
         {
           payload: shortPayload,
           type: ContentType.Short,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
 
@@ -388,7 +381,7 @@ describe('ContentController', () => {
         {
           payload: updateContentPayload,
           type: ContentType.Short,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         result.payload.id,
         { hasRelationshipExpansion: false },
@@ -404,7 +397,7 @@ describe('ContentController', () => {
         { hasRelationshipExpansion: false },
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any
       );
 
@@ -416,7 +409,7 @@ describe('ContentController', () => {
         {
           type: 'short',
           payload: { message: 'hi bro' },
-          castcleId: 'whats up'
+          castcleId: 'whats up',
         },
         payloadId as string,
         { hasRelationshipExpansion: false },
@@ -447,16 +440,16 @@ describe('ContentController', () => {
     beforeAll(async () => {
       mockUsers = await generateMockUsers(5, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       //userA create a content
       contentA = await contentService.createContentFromUser(mockUsers[0].user, {
         payload: {
-          message: 'hello world'
+          message: 'hello world',
         } as ShortPayload,
         type: ContentType.Short,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
 
       await contentService.recastContentFromUser(contentA, mockUsers[1].user);
@@ -469,7 +462,7 @@ describe('ContentController', () => {
       const result = await contentController.getUserRecasted(
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any,
         contentA.id,
         { hasRelationshipExpansion: false }
@@ -481,7 +474,7 @@ describe('ContentController', () => {
       const resultHasRelation = await contentController.getUserRecasted(
         {
           $credential: userCredential,
-          $language: 'th'
+          $language: 'th',
         } as any,
         contentA.id,
         { hasRelationshipExpansion: true }

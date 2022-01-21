@@ -28,7 +28,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  NestInterceptor
+  NestInterceptor,
 } from '@nestjs/common';
 import { CredentialRequest } from '../..';
 import * as util from '../util';
@@ -73,7 +73,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
             ({ data }) =>
               ({
                 continentCode: data.continentCode.toLowerCase(),
-                countryCode: data.countryCode.toLowerCase()
+                countryCode: data.countryCode.toLowerCase(),
               } as CheckIp)
           )
         )

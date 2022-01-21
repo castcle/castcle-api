@@ -28,7 +28,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
-  NestInterceptor
+  NestInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as util from '../util';

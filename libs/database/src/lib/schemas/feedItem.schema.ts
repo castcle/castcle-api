@@ -38,13 +38,13 @@ export class FeedItem extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Content',
-    index: true
+    index: true,
   })
   content: ContentDocument;
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
   })
   viewer: Account;
   @Prop({ required: true })
@@ -54,7 +54,7 @@ export class FeedItem extends CastcleBase {
 
   @Prop({
     required: true,
-    type: Object
+    type: Object,
   })
   aggregator: ContentAggregator;
 }
@@ -63,7 +63,7 @@ export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
 
 FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({
-  viewer: 1
+  viewer: 1,
 });
 
 export interface IFeedItem extends mongoose.Document {

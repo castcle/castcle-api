@@ -27,16 +27,14 @@ import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CredentialInterceptor,
-  CredentialRequest,
-  HttpCacheSharedInterceptor
+  HttpCacheSharedInterceptor,
 } from '@castcle-api/utils/interceptors';
 import {
   CacheKey,
   CacheTTL,
   Controller,
   Get,
-  Req,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
 
@@ -44,16 +42,16 @@ import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
   example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true
+  required: true,
 })
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptVersion.name,
   description: Configs.RequiredHeaders.AcceptVersion.description,
   example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
+  required: true,
 })
 @Controller({
-  version: '1.0'
+  version: '1.0',
 })
 @Controller()
 export class HashtagsController {
@@ -63,22 +61,20 @@ export class HashtagsController {
 
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: LanguageResponse
+    type: LanguageResponse,
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.HashtagsGet.Name)
   @CacheTTL(CacheKeyName.HashtagsGet.Ttl)
   @UseInterceptors(CredentialInterceptor)
   @Get('hashtags')
-  async getAllHashtags(
-    @Req() req: CredentialRequest
-  ): Promise<HashtagResponse> {
+  async getAllHashtags(): Promise<HashtagResponse> {
     this.logger.log('Start get all hashtags');
     const result = await this.hashtagService.getAll();
     this.logger.log('Success get all hashtags');
     return {
       message: 'success',
-      payload: result.map((hashtag) => hashtag.toHashtagPayload())
+      payload: result.map((hashtag) => hashtag.toHashtagPayload()),
     };
   }
 }

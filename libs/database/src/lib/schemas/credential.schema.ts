@@ -28,7 +28,7 @@ import { EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
   MemberAccessTokenPayload,
-  RefreshTokenPayload
+  RefreshTokenPayload,
 } from '../dtos/token.dto';
 import { env } from '../environment';
 import { Account } from '../schemas/account.schema';
@@ -40,7 +40,7 @@ export type CredentialDocument = Credential & ICredential;
 export class Credential extends CastcleBase {
   @Prop({
     required: true,
-    type: Object
+    type: Object,
   })
   account: Account;
 
@@ -97,7 +97,7 @@ CredentialSchema.statics.generateAccessToken = (
   );
   return {
     accessToken,
-    accessTokenExpireDate
+    accessTokenExpireDate,
   };
 };
 CredentialSchema.statics.generateRefreshToken = (
@@ -116,7 +116,7 @@ CredentialSchema.statics.generateRefreshToken = (
 
   return {
     refreshToken,
-    refreshTokenExpireDate
+    refreshTokenExpireDate,
   };
 };
 
@@ -153,7 +153,7 @@ CredentialSchema.methods.renewTokens = async function (
   await this.save();
   return {
     accessToken: accessTokenResult.accessToken,
-    refreshToken: refreshTokenResult.refreshToken
+    refreshToken: refreshTokenResult.refreshToken,
   };
 };
 

@@ -54,37 +54,37 @@ import {
   SaveContentDto,
   ShortPayload,
   SortDirection,
-  UpdateCommentDto
+  UpdateCommentDto,
 } from '../dtos';
 import {
   CommentDocument,
   CredentialModel,
   User,
   UserDocument,
-  UserType
+  UserType,
 } from '../schemas';
 import { AccountDocument } from '../schemas/account.schema';
 import { CommentType } from '../schemas/comment.schema';
 import {
   Content,
   ContentDocument,
-  toSignedContentPayloadItem
+  toSignedContentPayloadItem,
 } from '../schemas/content.schema';
 import {
   EngagementDocument,
-  EngagementType
+  EngagementType,
 } from '../schemas/engagement.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
 import {
   GuestFeedItemDocument,
-  GuestFeedItemType
+  GuestFeedItemType,
 } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { RevisionDocument } from '../schemas/revision.schema';
 import {
   createCastcleFilter,
   createCastcleMeta,
-  createPagination
+  createPagination,
 } from '../utils/common';
 import { HashtagService } from './hashtag.service';
 
@@ -97,8 +97,8 @@ export class ContentService {
     secure: true,
     auth: {
       user: Environment.SMTP_USERNAME,
-      pass: Environment.SMTP_PASSWORD
-    }
+      pass: Environment.SMTP_PASSWORD,
+    },
   });
 
   constructor(
@@ -158,7 +158,7 @@ export class ContentService {
       revisionCount: 0,
       type: contentDto.type,
       visibility: EntityVisibility.Publish,
-      hashtags: hashtags
+      hashtags: hashtags,
     } as Content;
     const content = new this._contentModel(newContent);
 
@@ -188,7 +188,7 @@ export class ContentService {
         revisionCount: 0,
         type,
         visibility: EntityVisibility.Publish,
-        hashtags: hashtags
+        hashtags: hashtags,
       } as Content;
     });
 
@@ -215,7 +215,7 @@ export class ContentService {
         url: linkPreview.url,
         title: linkPreview.title,
         description: linkPreview.description,
-        imagePreview: linkPreview.images?.[0]
+        imagePreview: linkPreview.images?.[0],
       } as Link;
 
       shortPayload.message = shortPayload.message.slice(0, linkIndex);
@@ -262,7 +262,7 @@ export class ContentService {
       .findOne({
         'author.id': mongoose.Types.ObjectId(authorId),
         'originalPost._id': mongoose.Types.ObjectId(originalPostId),
-        isRecast: true
+        isRecast: true,
       })
       .exec();
   };
@@ -315,7 +315,7 @@ export class ContentService {
           .updateOne(
             { _id: sourceContent._id },
             {
-              $inc: incEngagement
+              $inc: incEngagement,
             }
           )
           .exec();
@@ -371,7 +371,7 @@ export class ContentService {
   ) => {
     let findFilter: FilterQuery<ContentDocument> = {
       'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     };
     if (options.type) findFilter.type = options.type;
     findFilter = createCastcleFilter(findFilter, options);
@@ -385,13 +385,13 @@ export class ContentService {
       return {
         total: totalDocument,
         items: await query.sort(`-${options.sortBy.field}`).exec(),
-        pagination: createPagination(options, totalDocument)
+        pagination: createPagination(options, totalDocument),
       };
     } else
       return {
         total: totalDocument,
         items: await query.sort(`${options.sortBy.field}`).exec(),
-        pagination: createPagination(options, totalDocument)
+        pagination: createPagination(options, totalDocument),
       };
   };
 
@@ -400,8 +400,8 @@ export class ContentService {
       .find({
         objectRef: {
           $ref: 'content',
-          $id: content._id
-        }
+          $id: content._id,
+        },
       })
       .exec();
 
@@ -410,9 +410,9 @@ export class ContentService {
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: content._id
+        $id: content._id,
       },
-      type: EngagementType.Like
+      type: EngagementType.Like,
     });
     if (!engagement)
       engagement = new this._engagementModel({
@@ -420,9 +420,9 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'content',
-          $id: content._id
+          $id: content._id,
         },
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
@@ -435,9 +435,9 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'content',
-          $id: content._id
+          $id: content._id,
         },
-        type: EngagementType.Like
+        type: EngagementType.Like,
       })
       .exec();
     if (!engagement) return null;
@@ -454,10 +454,10 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'content',
-          $id: content._id
+          $id: content._id,
         },
         type: engagementType,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
     return engagement;
@@ -473,10 +473,10 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'comment',
-          $id: comment._id
+          $id: comment._id,
         },
         type: engagementType,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
     return engagement;
@@ -497,10 +497,10 @@ export class ContentService {
       .find({
         targetRef: {
           $ref: 'content',
-          $id: content._id
+          $id: content._id,
         },
         type: EngagementType.Like,
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .populate('user')
       .exec();
@@ -526,7 +526,7 @@ export class ContentService {
       castcleId: user.displayId,
       displayName: user.displayName,
       type: user.type === UserType.Page ? UserType.Page : UserType.People,
-      verified: user.verified
+      verified: user.verified,
     });
   };
 
@@ -554,13 +554,13 @@ export class ContentService {
     const newContent = {
       author: author,
       payload: {
-        message: message
+        message: message,
       } as ShortPayload,
       revisionCount: 0,
       type: ContentType.Short,
       isQuote: true,
       originalPost:
-        content.isQuote || content.isRecast ? content.originalPost : content
+        content.isQuote || content.isRecast ? content.originalPost : content,
     } as Content;
     const quoteContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
@@ -568,10 +568,10 @@ export class ContentService {
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: sourceContentId
+        $id: sourceContentId,
       },
       itemId: quoteContent._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     }).save();
     return { quoteContent, engagement };
   };
@@ -602,7 +602,7 @@ export class ContentService {
       type: ContentType.Short,
       originalPost:
         content.isQuote || content.isRecast ? content.originalPost : content,
-      isRecast: true
+      isRecast: true,
     } as Content;
     const recastContent = await new this._contentModel(newContent).save();
     const engagement = await new this._engagementModel({
@@ -610,10 +610,10 @@ export class ContentService {
       user: user._id,
       targetRef: {
         $ref: 'content',
-        $id: sourceContentId
+        $id: sourceContentId,
       },
       itemId: recastContent._id,
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     }).save();
     return { recastContent, engagement };
   };
@@ -627,7 +627,7 @@ export class ContentService {
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
     let findFilter: any = {
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     };
     if (options.type) findFilter.type = options.type;
     findFilter = createCastcleFilter(findFilter, options);
@@ -639,9 +639,9 @@ export class ContentService {
     return {
       items,
       includes: new CastcleIncludes({
-        users: items.map(({ author }) => author)
+        users: items.map(({ author }) => author),
       }),
-      meta: createCastcleMeta(items)
+      meta: createCastcleMeta(items),
     };
   };
 
@@ -658,15 +658,15 @@ export class ContentService {
       type: EngagementType.Comment,
       targetRef: {
         $ref: comment.type === CommentType.Comment ? 'content' : 'comment',
-        $id: comment.targetRef.$id ?? comment.targetRef.oid
-      }
+        $id: comment.targetRef.$id ?? comment.targetRef.oid,
+      },
     };
 
     if (comment.visibility === EntityVisibility.Publish) {
       await new this._engagementModel({
         ...query,
         visibility: EntityVisibility.Publish,
-        user: commentBy
+        user: commentBy,
       }).save();
     } else {
       const engagements = await this._engagementModel.find(query).exec();
@@ -694,9 +694,9 @@ export class ContentService {
       message: updateCommentDto.message,
       targetRef: {
         $id: content._id,
-        $ref: 'content'
+        $ref: 'content',
       },
-      type: CommentType.Comment
+      type: CommentType.Comment,
     } as CommentDto;
 
     const comment = new this._commentModel(dto);
@@ -705,7 +705,7 @@ export class ContentService {
 
     await Promise.all([
       this.hashtagService.createFromTags(comment.hashtags),
-      comment.save()
+      comment.save(),
     ]);
 
     await this._updateCommentCounter(comment, author._id);
@@ -730,9 +730,9 @@ export class ContentService {
       message: updateCommentDto.message,
       targetRef: {
         $id: rootComment._id,
-        $ref: 'comment'
+        $ref: 'comment',
       },
-      type: CommentType.Reply
+      type: CommentType.Reply,
     } as CommentDto;
     const newComment = new this._commentModel(dto);
     newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
@@ -752,7 +752,6 @@ export class ContentService {
     rootComment: CommentDocument,
     updateCommentDto: UpdateCommentDto
   ) => {
-    const session = this._accountModel.startSession();
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
     const tags = this.hashtagService.extractHashtagFromText(
@@ -789,9 +788,9 @@ export class ContentService {
       user: user._id,
       targetRef: {
         $ref: 'comment',
-        $id: comment._id
+        $id: comment._id,
       },
-      type: EngagementType.Like
+      type: EngagementType.Like,
     });
     if (!engagement)
       engagement = new this._engagementModel({
@@ -799,9 +798,9 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'comment',
-          $id: comment._id
+          $id: comment._id,
         },
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
@@ -820,9 +819,9 @@ export class ContentService {
         user: user._id,
         targetRef: {
           $ref: 'comment',
-          $id: comment._id
+          $id: comment._id,
         },
-        type: EngagementType.Like
+        type: EngagementType.Like,
       })
       .exec();
     if (!engagement) return null;
@@ -852,7 +851,7 @@ export class ContentService {
     this._engagementModel
       .find({
         targetRef: { $ref: 'content', $id: content._id },
-        user: user._id
+        user: user._id,
       })
       .exec();
 
@@ -886,10 +885,10 @@ export class ContentService {
         targetRef: {
           $in: contentIds.map((id) => ({
             $ref: 'content',
-            $id: id
-          }))
+            $id: id,
+          })),
         },
-        user: userId as any
+        user: userId as any,
       })
       .exec();
   };
@@ -907,7 +906,7 @@ export class ContentService {
     this._engagementModel
       .find({
         targetRef: { $ref: 'comment', $id: comment._id },
-        user: user._id
+        user: user._id,
       })
       .exec();
 
@@ -932,8 +931,8 @@ export class ContentService {
         content: content._id,
         aggregator: {
           createTime: new Date(),
-          following: true
-        } as ContentAggregator
+          following: true,
+        } as ContentAggregator,
       } as FeedItemDto).save()
     );
     return await Promise.all(promisesFeedItem);
@@ -957,8 +956,8 @@ export class ContentService {
         content: content._id,
         aggregator: {
           createTime: new Date(),
-          following: true
-        } as ContentAggregator
+          following: true,
+        } as ContentAggregator,
       } as FeedItemDto).save();
     });
     const result = await Promise.all(promisesFeedItem);
@@ -1013,7 +1012,7 @@ export class ContentService {
     const newGuestFeedItem = new this._guestFeedItemModel({
       score: 0,
       type: GuestFeedItemType.Content,
-      content: contentId
+      content: contentId,
     } as GuestFeedItemDto);
     newGuestFeedItem.__v = 2;
     return newGuestFeedItem.save();
@@ -1029,7 +1028,7 @@ export class ContentService {
     const engagementFilter = {
       user: user._id,
       targetRef: { $ref: 'content', $id: content._id },
-      type: EngagementType.Report
+      type: EngagementType.Report,
     };
 
     await this._engagementModel
@@ -1049,7 +1048,7 @@ Author: ${content.author.displayName} (${content.author.id})
 Body: ${JSON.stringify(content.payload, null, 2)}
 
 ReportedBy: ${user.displayName} (${user._id})
-Message: ${message}`
+Message: ${message}`,
     });
 
     this.logger.log(`Report has been submitted ${mail.messageId}`);
@@ -1088,7 +1087,7 @@ Message: ${message}`
 
     return {
       payload: content.toContentPayloadItem(engagements),
-      includes: new CastcleIncludes({ casts, users })
+      includes: new CastcleIncludes({ casts, users }),
     } as ContentResponse;
   }
 
@@ -1144,7 +1143,7 @@ Message: ${message}`
     return {
       payload,
       includes: new CastcleIncludes({ users, casts }),
-      meta
+      meta,
     };
   }
 
@@ -1163,7 +1162,7 @@ Message: ${message}`
     untilId?: string
   ) => {
     let filter: FilterQuery<ContentDocument> = {
-      'originalPost._id': mongoose.Types.ObjectId(originalPostId)
+      'originalPost._id': mongoose.Types.ObjectId(originalPostId),
     };
     const totalDocument = await this._contentModel
       .countDocuments(filter)
@@ -1172,15 +1171,15 @@ Message: ${message}`
       filter = {
         ...filter,
         'author.id': {
-          $gt: mongoose.Types.ObjectId(sinceId)
-        }
+          $gt: mongoose.Types.ObjectId(sinceId),
+        },
       };
     } else if (untilId) {
       filter = {
         ...filter,
         'author.id': {
-          $lt: mongoose.Types.ObjectId(untilId)
-        }
+          $lt: mongoose.Types.ObjectId(untilId),
+        },
       };
     }
     const result = await this._contentModel
@@ -1191,7 +1190,7 @@ Message: ${message}`
 
     return {
       total: totalDocument,
-      items: result
+      items: result,
     };
   };
 
@@ -1204,9 +1203,9 @@ Message: ${message}`
       ? await this.relationshipModel.find({
           $or: [
             { user: viewer._id, followedUser: { $in: authorIds } },
-            { user: { $in: authorIds }, followedUser: viewer._id }
+            { user: { $in: authorIds }, followedUser: viewer._id },
           ],
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
       : [];
 
@@ -1234,7 +1233,7 @@ Message: ${message}`
     keyword,
     maxResults,
     sinceId,
-    untilId
+    untilId,
   }: GetSearchRecentDto) {
     const query = createFilterQuery<ContentDocument>(sinceId, untilId);
 

@@ -27,7 +27,7 @@ import { CastcleBase } from './base.schema';
 
 export enum CircleType {
   Default = 'default',
-  Topic = 'Topic'
+  Topic = 'Topic',
 }
 
 export type CircleDocument = Circle & Document;

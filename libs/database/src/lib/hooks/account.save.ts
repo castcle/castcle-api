@@ -27,7 +27,7 @@ import {
   AccountDocument,
   CredentialDocument,
   UserDocument,
-  UserType
+  UserType,
 } from '../schemas';
 
 type HookModels = {
@@ -71,7 +71,7 @@ export const postAccountSave = async (
           'account.visibility': doc.visibility,
           'account.preferences': doc.preferences,
           'account.email': doc.email,
-          'account.geolocation': doc.geolocation ? doc.geolocation : null
+          'account.geolocation': doc.geolocation ? doc.geolocation : null,
         }
       )
       .exec();
