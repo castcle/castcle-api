@@ -116,7 +116,7 @@ describe('CountryService', () => {
       const result = await service.getAll({
         sortBy: {
           field: 'dialCode',
-          type: SortDirection.Asc
+          type: SortDirection.ASC
         }
       });
       expect(result).toBeDefined();

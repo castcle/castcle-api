@@ -21,30 +21,31 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { AuthenticationService } from './authentication.service';
-import { UserService } from './user.service';
-import { ContentService } from './content.service';
-import { env } from '../environment';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import {
-  MongooseForFeatures,
-  MongooseAsyncFeatures,
-  CommentService
-} from '../database.module';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { ContentDocument } from '../schemas/content.schema';
-import { ContentType, EntityVisibility, SortDirection } from '../dtos';
-import { CommentDocument, UserDocument } from '../schemas';
-import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
-import { EngagementDocument } from '../schemas/engagement.schema';
-import { BullModule } from '@nestjs/bull';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import { BullModule } from '@nestjs/bull';
+import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import {
+  CommentService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures
+} from '../database.module';
+import { ContentType, EntityVisibility, SortDirection } from '../dtos';
+import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
+import { env } from '../environment';
+import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { UserVerified } from '../models';
+import { CommentDocument, UserDocument } from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
+import { ContentDocument } from '../schemas/content.schema';
+import { CredentialDocument } from '../schemas/credential.schema';
+import { EngagementDocument } from '../schemas/engagement.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
+import { UserService } from './user.service';
 
 jest.mock('@castcle-api/logger');
 jest.mock('link-preview-js', () => ({
@@ -350,7 +351,7 @@ describe('ContentService', () => {
       const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
-          type: SortDirection.Asc
+          type: SortDirection.ASC
         }
       });
       expect(
@@ -786,6 +787,40 @@ describe('ContentService', () => {
     });
   });
 
+  describe('#deleteContentFromOriginalAndAuthor()', () => {
+    let contentA: ContentDocument;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(2, 0, {
+        userService: userService,
+        accountService: authService
+      });
+
+      //userA create a content
+      contentA = await service.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+    });
+
+    it('should set delete content successful', async () => {
+      const resultB = await service.recastContentFromUser(
+        contentA,
+        mockUsers[1].user
+      );
+      const contentB = resultB.recastContent;
+      await service.deleteRecastContentFromOriginalAndAuthor(
+        contentA.id,
+        mockUsers[1].user.id
+      );
+      const postDelete = await service.getContentFromId(contentB.id);
+      expect(postDelete).toBeNull();
+    });
+  });
+
   describe('#convertContentsToContentsResponse', () => {
     let contents: ContentDocument[];
 
@@ -820,6 +855,126 @@ describe('ContentService', () => {
       expect(contentsResponse.includes.users.length).toEqual(1);
       expect(contentsResponse.payload.length).toEqual(1);
       expect(contentsResponse.meta.resultCount).toEqual(1);
+    });
+  });
+
+  describe('#deleteContentFromOriginalAndAuthor', () => {
+    let contentA: ContentDocument;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(2, 0, {
+        userService: userService,
+        accountService: authService
+      });
+
+      //userA create a content
+      contentA = await service.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+    });
+
+    it('should set delete content successful', async () => {
+      const resultB = await service.recastContentFromUser(
+        contentA,
+        mockUsers[1].user
+      );
+      const contentB = resultB.recastContent;
+      await service.deleteRecastContentFromOriginalAndAuthor(
+        contentA.id,
+        mockUsers[1].user.id
+      );
+      const postDelete = await service.getContentFromId(contentB.id);
+      expect(postDelete).toBeNull();
+    });
+  });
+
+  describe('#getContentFromOriginalPost', () => {
+    let contentA: ContentDocument;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(5, 0, {
+        userService: userService,
+        accountService: authService
+      });
+
+      //userA create a content
+      contentA = await service.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+
+      await service.recastContentFromUser(contentA, mockUsers[1].user);
+      await service.recastContentFromUser(contentA, mockUsers[2].user);
+      await service.recastContentFromUser(contentA, mockUsers[3].user);
+      await service.recastContentFromUser(contentA, mockUsers[4].user);
+    });
+
+    it('should get all recast content', async () => {
+      const result = await service.getContentFromOriginalPost(contentA.id, 100);
+      expect(result.items).toBeDefined();
+      expect(result.items.length).toEqual(4);
+      expect(result.total).toEqual(4);
+    });
+
+    it('should get recast content with untilId', async () => {
+      const allRecast = await service.getContentFromOriginalPost(
+        contentA.id,
+        100
+      );
+      const result = await service.getContentFromOriginalPost(
+        contentA.id,
+        100,
+        null,
+        allRecast.items[1].author.id
+      );
+
+      const foundData = result.items.find(
+        (x) =>
+          x.author.id.toString() === allRecast.items[2].author.id.toString()
+      );
+      const findMissing = result.items.find(
+        (x) =>
+          x.author.id.toString() === allRecast.items[0].author.id.toString()
+      );
+      expect(result.items).toBeDefined();
+      expect(result.items.length).toEqual(2);
+      expect(result.total).toEqual(4);
+      expect(foundData).toBeDefined();
+      expect(findMissing).toBeUndefined();
+    });
+
+    it('should get recast content with sinceId', async () => {
+      const allRecast = await service.getContentFromOriginalPost(
+        contentA.id,
+        100
+      );
+      const result = await service.getContentFromOriginalPost(
+        contentA.id,
+        100,
+        allRecast.items[2].author.id,
+        null
+      );
+
+      const findMissing = result.items.find(
+        (x) =>
+          x.author.id.toString() === allRecast.items[2].author.id.toString()
+      );
+      const foundData = result.items.find(
+        (x) =>
+          x.author.id.toString() === allRecast.items[0].author.id.toString()
+      );
+      expect(result.items).toBeDefined();
+      expect(result.items.length).toEqual(2);
+      expect(result.total).toEqual(4);
+      expect(foundData).toBeDefined();
+      expect(findMissing).toBeUndefined();
     });
   });
 });

@@ -30,6 +30,7 @@ import {
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
+import { PaginationQuery } from './pagination.dto';
 
 class UserImage {
   @ApiProperty()
@@ -38,7 +39,7 @@ class UserImage {
   cover: string | CastcleImage;
 }
 
-class UserModelImage {
+export class UserModelImage {
   avatar?: CastcleImage;
   cover?: CastcleImage;
 }
@@ -139,11 +140,6 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  displayName: string;
-}
-
-export class PageModelDto {
-  castcleId: string;
   displayName: string;
 }
 
@@ -293,4 +289,10 @@ export class SocialSyncDeleteDto {
   @ApiProperty()
   @IsString()
   socialId: string;
+}
+
+export class GetSearchUsersDto extends PaginationQuery {
+  @IsString()
+  @IsNotEmpty()
+  keyword: string;
 }

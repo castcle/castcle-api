@@ -58,7 +58,6 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
-import { AppService } from './app.service';
 import { UserSettingsDto } from './dtos';
 
 const fakeProcessor = jest.fn();
@@ -91,7 +90,6 @@ describe('AppController', () => {
   let app: TestingModule;
   let appController: UserController;
   let service: UserService;
-  let appService: AppService;
   let contentService: ContentService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
@@ -112,7 +110,6 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
-        AppService,
         UserService,
         AuthenticationService,
         ContentService,
@@ -121,8 +118,8 @@ describe('AppController', () => {
         SocialSyncService
       ]
     }).compile();
+    appController = app.get(UserController);
     service = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
@@ -144,7 +141,7 @@ describe('AppController', () => {
     userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
     jest
-      .spyOn(appService, 'uploadUserInfo')
+      .spyOn(service, 'uploadUserInfo')
       .mockImplementation(async (body: UpdateUserDto, req: any) => {
         return {
           ...body,
@@ -158,12 +155,6 @@ describe('AppController', () => {
 
   afterAll(async () => {
     await closeInMongodConnection();
-  });
-  describe('getData', () => {
-    it('should return "Welcome to users!"', () => {
-      appController = app.get<UserController>(UserController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to users!' });
-    });
   });
 
   describe('getMyData', () => {
@@ -787,6 +778,7 @@ describe('AppController', () => {
     let user: UserDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
+    let newAccount;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
@@ -799,7 +791,7 @@ describe('AppController', () => {
         $language: 'th'
       } as any;
 
-      const newAccount = await authService.createAccount({
+      newAccount = await authService.createAccount({
         deviceUUID: 'refTest12354',
         languagesPreferences: ['th', 'en'],
         header: {
@@ -823,6 +815,17 @@ describe('AppController', () => {
 
     it('should get referrer from Account Referrer schema', async () => {
       const result = await appController.getReferrer('ref1', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get referrer from Account Referrer schema By ME', async () => {
+      const meCredential = {
+        $credential: newAccount.credentialDocument,
+        $language: 'th'
+      } as any;
+      const result = await appController.getReferrer('me', meCredential, {
         hasRelationshipExpansion: true
       });
       expect(result.payload.castcleId).toEqual(user.displayId);
@@ -867,11 +870,125 @@ describe('AppController', () => {
       expect(result.payload.length).toEqual(2);
     });
 
+    it('should get Referee from Account Referrer schema By ME', async () => {
+      const result = await appController.getReferee('me', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.length).toEqual(2);
+    });
+
     it('should get empty data when use wrong Referee', async () => {
       const result = await appController.getReferee('ref2', credential, {
         hasRelationshipExpansion: true
       });
       expect(result.payload.length).toEqual(0);
+    });
+  });
+
+  describe('RecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      contentA = await contentService.createContentFromUser(user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
+
+      const result = await appController.recastContent(
+        mocksUsers[1].user.displayId,
+        contentA._id,
+        newCredential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
+    });
+
+    it('should exception when recast content same content', async () => {
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.recastContent(
+          mocksUsers[1].user.displayId,
+          contentA._id,
+          newCredential
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.RECAST_IS_EXIST));
+    });
+  });
+
+  describe('QuotecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newUser = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      contentA = await contentService.createContentFromUser(newUser[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: newUser[0].user.displayId
+      });
+
+      const result = await appController.quoteContent(
+        user.displayId,
+        contentA._id,
+        'this is good content',
+        credential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
     });
   });
 });

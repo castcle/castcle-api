@@ -29,17 +29,13 @@
 import { NestFactory } from '@nestjs/core';
 import { MetadataModule } from './app/app.module';
 import { Configs, Environment as env } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerOptions,
-  CastLoggerLevel
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(MetadataModule, {
     logger: CastLoggerLevel
   });

@@ -21,5 +21,7 @@
  * or have any questions.
  */
 
+export * from './blocking.dto';
 export * from './dto';
-export * from './report-user.dto';
+export * from './reporting.dto';
+export * from './unblocking.dto';

@@ -48,7 +48,7 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedQuery } from '../dtos';
+import { PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -106,7 +106,7 @@ export class RankerService {
    * @param {Account} viewer
    * @returns {GuestFeedItemDocument[]}
    */
-  getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
+  getGuestFeedItems = async (query: PaginationQuery, viewer: Account) => {
     const filter = createCastcleFilter(
       { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
@@ -132,7 +132,7 @@ export class RankerService {
 
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, includes.users)
-      : includes.users.map((author) => author.toIncludeUser());
+      : includes.users.map((author) => new Author(author).toIncludeUser());
 
     return {
       payload: feedItems.map(
@@ -165,7 +165,10 @@ export class RankerService {
    * @param query
    * @returns {GuestFeedItemPayload}
    */
-  getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
+  getMemberFeedItemsFromViewer = async (
+    viewer: Account,
+    query: PaginationQuery
+  ) => {
     const startNow = new Date();
     console.debug('start service');
     const filter = createCastcleFilter(
@@ -290,4 +293,11 @@ export class RankerService {
       meta: meta
     } as GuestFeedItemPayload;
   };
+
+  async sortContentsByScore(accountId: string, contents: ContentDocument[]) {
+    const contentIds = contents.map((content) => content.id);
+    const score = await predictContents(accountId, contentIds);
+
+    return contents.sort((a, b) => score[a.id] - score[b.id]);
+  }
 }

@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { ContentMessage, TopicName } from '@castcle-api/utils/queue';
 import { ContentService } from '@castcle-api/database';
 import { Process, Processor } from '@nestjs/bull';
@@ -34,10 +34,7 @@ import { Environment } from '@castcle-api/environments';
 export class ContentConsumer {
   constructor(private contentService: ContentService) {}
 
-  private readonly logger = new CastLogger(
-    ContentConsumer.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(ContentConsumer.name);
 
   @Process()
   readOperationJob(job: Job<{ content: ContentMessage }>) {

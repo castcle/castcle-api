@@ -28,7 +28,6 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UserController } from './app.controller';
-import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -38,7 +37,6 @@ import { AppService } from './app.service';
     UtilsInterceptorsModule,
     UtilsAwsModule
   ],
-  controllers: [UserController],
-  providers: [AppService]
+  controllers: [UserController]
 })
 export class UserModule {}

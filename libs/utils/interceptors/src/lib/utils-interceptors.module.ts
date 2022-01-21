@@ -24,11 +24,11 @@ import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { CacheModule, Module } from '@nestjs/common';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
-import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
+import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor
-} from './cache/http.cache.shared.intercapter';
+} from './cache/http.cache.shared.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest

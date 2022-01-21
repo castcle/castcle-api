@@ -30,7 +30,7 @@ import {
   UserDocument
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Password } from '@castcle-api/utils/commons';
 import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
 import {
@@ -49,7 +49,6 @@ import {
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { AccessTokenResponse } from 'apple-sign-in-rest';
 import * as nodemailer from 'nodemailer';
@@ -93,11 +92,10 @@ export class AppService {
     private googleClient: GoogleClient,
     private userService: UserService,
     private twillioClient: TwillioClient,
-    private httpService: HttpService,
     private appleClient: AppleClient
   ) {}
 
-  private readonly logger = new CastLogger(AppService.name, CastLoggerOptions);
+  private logger = new CastLogger(AppService.name);
 
   _uploadImage = (base64: string, options?: UploadOptions) =>
     Image.upload(base64, options);

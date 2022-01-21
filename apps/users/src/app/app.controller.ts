@@ -30,15 +30,18 @@ import {
   UserService
 } from '@castcle-api/database';
 import {
+  ContentResponse,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
-  FeedQuery,
   FollowResponse,
   GetContentsDto,
+  GetSearchUsersDto,
   PageResponseDto,
   PagesResponse,
+  PaginationQuery,
+  ResponseDto,
   SocialSyncDeleteDto,
   SocialSyncDto,
   UpdateUserDto,
@@ -48,11 +51,14 @@ import {
   CredentialDocument,
   OtpObjective,
   SocialSyncDocument,
+  UserDocument,
   UserType
 } from '@castcle-api/database/schemas';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
+  Auth,
+  Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
@@ -81,8 +87,7 @@ import {
   ValidationPipe
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { AppService } from './app.service';
-import { ReportUserDto } from './dtos';
+import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -91,8 +96,6 @@ import {
   UserSettingsDto
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
-
-let logger: CastLogger;
 
 class DeleteUserBody {
   channel: string;
@@ -103,15 +106,14 @@ class DeleteUserBody {
 
 @CastcleController('1.0')
 export class UserController {
+  private logger = new CastLogger(UserController.name);
+
   constructor(
-    private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
     private authService: AuthenticationService,
     private socialSyncService: SocialSyncService
-  ) {
-    logger = new CastLogger(UserController.name, CastLoggerOptions);
-  }
+  ) {}
 
   /**
    *
@@ -135,6 +137,57 @@ export class UserController {
         CastcleStatus.REQUEST_URL_NOT_FOUND,
         req.$language
       );
+  };
+
+  /**
+   * return user document that has same castcleId but check if this request should have access to that user
+   * @param {CredentialRequest} credentialRequest
+   * @param {UserDocument} user
+   * @returns {UserDocument}
+   */
+  _validateOwnerAccount = async (
+    credentialRequest: CredentialRequest,
+    user: UserDocument
+  ) => {
+    const account = await this.authService.getAccountFromCredential(
+      credentialRequest.$credential
+    );
+    if (String(user.ownerAccount) !== String(account._id)) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    return user;
+  };
+
+  _getUserAndViewer = async (id: string, credential: CredentialDocument) => {
+    if (id.toLocaleLowerCase() === 'me') {
+      this.logger.log('Get Me User from credential.');
+      const me = await this.userService.getUserFromCredential(credential);
+      if (!me) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      return { user: me, viewer: me };
+    } else {
+      this.logger.log('Get User from param.');
+      const user = await this.userService.getByIdOrCastcleId(
+        id,
+        UserType.People
+      );
+      if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+      this.logger.log('Get User from credential.');
+      const viewer = await this.userService.getUserFromCredential(credential);
+
+      return { user: user, viewer: viewer };
+    }
+  };
+
+  _getContentIfExist = async (id: string) => {
+    try {
+      const content = await this.contentService.getContentFromId(id);
+      if (content) return content;
+      else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+    } catch (e) {
+      throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+    }
   };
 
   @ApiQuery({
@@ -178,12 +231,6 @@ export class UserController {
     };
   }
 
-  @Get()
-  getData() {
-    logger.log('Root');
-    return this.appService.getData();
-  }
-
   @ApiOkResponse({
     type: UserResponseDto
   })
@@ -203,14 +250,14 @@ export class UserController {
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('sync-social')
   async getSyncSocial(@Req() req: CredentialRequest) {
-    logger.log(`start get all my sync social.`);
+    this.logger.log(`start get all my sync social.`);
 
-    logger.log(`Get user.`);
+    this.logger.log(`Get user.`);
     const pages = await this.userService.getPagesFromCredential(
       req.$credential
     );
 
-    logger.log(`Get social from user.`);
+    this.logger.log(`Get social from user.`);
     const social: SocialSyncDocument[] = [];
     await Promise.all(
       pages.map(async (x) => {
@@ -220,13 +267,28 @@ export class UserController {
     );
 
     const response = {};
-    logger.log(`Generate response.`);
+    this.logger.log(`Generate response.`);
     for (const item in SocialProvider) {
       const data = social.find((x) => x.provider === SocialProvider[item]);
       const key = SocialProvider[item];
       response[key] = data ? data.toSocialSyncPayload() : null;
     }
     return response;
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('search')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getSearch(
+    @Auth() { user }: Authorizer,
+    @Query() getSearchUsersDto: GetSearchUsersDto
+  ) {
+    const { users, meta } = await this.userService.getSearchUsers(
+      user,
+      getSearchUsersDto
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 
   @ApiOkResponse({ type: UserResponseDto })
@@ -254,7 +316,10 @@ export class UserController {
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (user) {
-      const newBody = await this.appService.uploadUserInfo(body, req);
+      const newBody = await this.userService.uploadUserInfo(
+        body,
+        req.$credential.account._id
+      );
       const afterUpdateUser = await this.userService.updateUser(user, newBody);
       const response = await afterUpdateUser.toUserResponse();
       return response;
@@ -570,34 +635,59 @@ export class UserController {
     return { payload: users, pagination: pagination };
   }
 
+  @Get(':id/blocking')
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getBlockedUsers(
+    @Auth() authorizer: Authorizer,
+    @Query() paginationQuery: PaginationQuery,
+    @Param('id') requestById: string
+  ) {
+    authorizer.requestAccessForUser(requestById);
+
+    const { users, meta } = await this.userService.getBlockedUsers(
+      authorizer.user,
+      paginationQuery
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/blocking')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async blockUser(
-    @Param('id') blockUserId: string,
-    @Req() req: CredentialRequest
+    @Auth() authorizer: Authorizer,
+    @Body() { targetCastcleId }: BlockingDto,
+    @Param('id') requestById: string
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const blockUser = await this.userService.getByIdOrCastcleId(blockUserId);
+    authorizer.requestAccessForUser(requestById);
 
-    await this.userService.blockUser(user, blockUser);
+    const blockUser = await this.userService.getByIdOrCastcleId(
+      targetCastcleId
+    );
+
+    await this.userService.blockUser(authorizer.user, blockUser);
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @Post(':id/unblocking')
+  @Delete(':id/unblocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async unblockUser(
-    @Param('id') unblockUserId: string,
-    @Req() req: CredentialRequest
+    @Auth() authorizer: Authorizer,
+    @Param() { id: requestById, targetCastcleId }: UnblockingDto
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    authorizer.requestAccessForUser(requestById);
+
     const unblockUser = await this.userService.getByIdOrCastcleId(
-      unblockUserId
+      targetCastcleId
     );
 
-    await this.userService.unblockUser(user, unblockUser);
+    await this.userService.unblockUser(authorizer.user, unblockUser);
   }
 
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
@@ -606,16 +696,31 @@ export class UserController {
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   async reportUser(
-    @Body() { message }: ReportUserDto,
-    @Param('id') reportedUserId: string,
-    @Req() req: CredentialRequest
+    @Body() { message, targetCastcleId, targetContentId }: ReportingDto,
+    @Param('id') reportedById: string,
+    @Auth() authorizer: Authorizer
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const reportedUser = await this.userService.getByIdOrCastcleId(
-      reportedUserId
-    );
+    authorizer.requestAccessForUser(reportedById);
 
-    await this.userService.reportUser(user, reportedUser, message);
+    if (targetCastcleId) {
+      const reportedUser = await this.userService.getByIdOrCastcleId(
+        targetCastcleId
+      );
+
+      await this.userService.reportUser(authorizer.user, reportedUser, message);
+    }
+
+    if (targetContentId) {
+      const content = await this.contentService.getContentFromId(
+        targetContentId
+      );
+
+      await this.contentService.reportContent(
+        authorizer.user,
+        content,
+        message
+      );
+    }
   }
 
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
@@ -632,7 +737,7 @@ export class UserController {
     @Body() body: UpdateMobileDto
   ) {
     if (body.objective !== OtpObjective.VerifyMobile) {
-      logger.error(`Invalid objective.`);
+      this.logger.error(`Invalid objective.`);
       throw new CastcleException(
         CastcleStatus.PAYLOAD_TYPE_MISMATCH,
         req.$language
@@ -645,7 +750,7 @@ export class UserController {
     );
 
     if (dupAccount) {
-      logger.error(
+      this.logger.error(
         'Dupplicate mobile : ' + body.countryCode + body.mobileNumber
       );
       throw new CastcleException(
@@ -654,7 +759,7 @@ export class UserController {
       );
     }
 
-    logger.log('Get otp document');
+    this.logger.log('Get otp document');
     const otp = await this.authService.getOtpFromRequestIdRefCode(
       req.$credential.account._id,
       body.refCode
@@ -666,23 +771,23 @@ export class UserController {
       otp.action !== OtpObjective.VerifyMobile ||
       !otp.isVerify
     ) {
-      logger.error(`Invalid Ref Code`);
+      this.logger.error(`Invalid Ref Code`);
       throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
     }
-    logger.log('Get account document and validate guest');
+    this.logger.log('Get account document and validate guest');
     const account = await this.validateGuestAccount(req.$credential);
-    logger.log('Get user document');
+    this.logger.log('Get user document');
 
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (account && user) {
-      logger.log('Update mobile number');
+      this.logger.log('Update mobile number');
       await this.userService.updateMobile(
         user.id,
         account._id,
         body.countryCode,
         body.mobileNumber
       );
-      logger.log('Get update user document');
+      this.logger.log('Get update user document');
       const afterUpdateUser = await this.userService.getUserFromCredential(
         req.$credential
       );
@@ -708,25 +813,25 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('sync-social')
   async syncSocial(@Req() req: CredentialRequest, @Body() body: SocialSyncDto) {
-    logger.log(`Start create sync social.`);
-    logger.log(JSON.stringify(body));
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(body));
 
-    logger.log('Validate guest');
+    this.logger.log('Validate guest');
     await this.validateGuestAccount(req.$credential);
 
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     if (!user) {
-      logger.error(`Can't get user data`);
+      this.logger.error(`Can't get user data`);
       throw new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND);
     }
     if (user?.type === UserType.People) {
-      logger.error(`People User is forbiden.`);
+      this.logger.error(`People User is forbiden.`);
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     }
 
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
     if (userSync.find((x) => x.provider === body.provider)) {
-      logger.error(
+      this.logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
@@ -738,7 +843,7 @@ export class UserController {
     );
 
     if (dupSocialSync?.length) {
-      logger.error(
+      this.logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
       throw new CastcleException(
@@ -747,7 +852,7 @@ export class UserController {
       );
     }
 
-    logger.log(`create sync data.`);
+    this.logger.log(`create sync data.`);
     await this.socialSyncService.create(user, body);
     return '';
   }
@@ -772,8 +877,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDto
   ) {
-    logger.log(`Start update sync social.`);
-    logger.log(JSON.stringify(body));
+    this.logger.log(`Start update sync social.`);
+    this.logger.log(JSON.stringify(body));
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     await this.socialSyncService.update(body, user);
@@ -799,8 +904,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: SocialSyncDeleteDto
   ) {
-    logger.log(`Start delete sync social.`);
-    logger.log(JSON.stringify(body));
+    this.logger.log(`Start delete sync social.`);
+    this.logger.log(JSON.stringify(body));
     const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
     if (user) {
       await this.socialSyncService.delete(body, user);
@@ -810,7 +915,7 @@ export class UserController {
   private async validateGuestAccount(credential: CredentialDocument) {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
-      logger.error(`Forbidden guest account.`);
+      this.logger.error(`Forbidden guest account.`);
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     } else {
       return account;
@@ -837,18 +942,18 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: UserSettingsDto
   ) {
-    logger.log(`Start user setting.`);
-    logger.log(JSON.stringify(body));
+    this.logger.log(`Start user setting.`);
+    this.logger.log(JSON.stringify(body));
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
     if (!body?.preferredLanguages?.length) {
-      logger.error('Payload is empty.');
+      this.logger.error('Payload is empty.');
       throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
     }
 
     if (!account || account.isGuest) {
-      logger.error('Can not get account.');
+      this.logger.error('Can not get account.');
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     }
 
@@ -873,42 +978,36 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() userQuery: ExpansionQuery
   ): Promise<UserReferrerResponse> {
-    logger.log('Get User from param.');
-    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
-
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    const { user, viewer } = await this._getUserAndViewer(id, $credential);
 
     const userReferrer = await this.userService.getReferrer(user.ownerAccount);
-    logger.log('Get User from credential.');
-    const requester = await this.userService.getUserFromCredential($credential);
-
     if (!userReferrer) return { payload: null };
 
     let response = null;
-    logger.log('Get User relationship');
-    if (userQuery?.hasRelationshipExpansion) {
+    this.logger.log('Get User relationship');
+    if (userQuery?.hasRelationshipExpansion && viewer) {
       const relationships = await this.userService.getRelationshipData(
         userQuery.hasRelationshipExpansion,
         userReferrer.id,
-        requester._id
+        viewer.id
       );
 
-      logger.log('Get User relation status');
+      this.logger.log('Get User relation status');
       const relationStatus = getRelationship(
         relationships,
-        requester._id,
-        userReferrer._id,
+        viewer.id,
+        userReferrer.id,
         userQuery.hasRelationshipExpansion
       );
 
-      logger.log('build response');
+      this.logger.log('build response');
       response = await userReferrer.toUserResponse(
         relationStatus.blocked,
         relationStatus.blocking,
         relationStatus.followed
       );
     } else {
-      logger.log('build response');
+      this.logger.log('build response');
       response = await userReferrer.toUserResponse();
     }
     return { payload: response };
@@ -934,46 +1033,40 @@ export class UserController {
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: FeedQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
   ): Promise<UserRefereeResponse> {
-    logger.log('Get User from param.');
-    const user = await this.userService.getByIdOrCastcleId(id, UserType.People);
-
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    const userReferrer = await this.userService.getReferee(
+    const { user, viewer } = await this._getUserAndViewer(id, $credential);
+    const usersReferrer = await this.userService.getReferee(
       user.ownerAccount,
       maxResults,
       sinceId,
       untilId
     );
-    logger.log('Get User from credential.');
-    const requester = await this.userService.getUserFromCredential($credential);
 
-    if (!userReferrer) return { payload: [], meta: null };
+    if (!usersReferrer) return { payload: [], meta: null };
 
-    const userID = userReferrer.items.map((u) => u._id);
+    const userID = usersReferrer.items.map((u) => u.id);
     let response = null;
-    logger.log('Get User relationship');
-    if (hasRelationshipExpansion) {
+    this.logger.log('Get User relationship');
+    if (hasRelationshipExpansion && viewer) {
       const relationships = await this.userService.getRelationshipData(
         hasRelationshipExpansion,
         userID,
-        requester._id
+        viewer.id
       );
 
       response = await Promise.all(
-        userReferrer.items.map((x) => {
-          logger.log('Get User relation status');
+        usersReferrer.items.map(async (x) => {
+          this.logger.log('Get User relation status');
           const relationStatus = getRelationship(
             relationships,
-            requester._id,
-            x._id,
+            viewer.id,
+            x.id,
             hasRelationshipExpansion
           );
 
-          logger.log('build response with relation');
-          return x.toUserResponse(
+          this.logger.log('build response with relation');
+          return await x.toUserResponse(
             relationStatus.blocked,
             relationStatus.blocking,
             relationStatus.followed
@@ -981,12 +1074,104 @@ export class UserController {
         })
       );
     } else {
-      logger.log('build response without relation');
+      this.logger.log('build response without relation');
       response = await Promise.all(
-        userReferrer.items.map((x) => x.toUserResponse())
+        usersReferrer.items.map(async (x) => await x.toUserResponse())
       );
     }
-    const meta = createCastcleMeta(userReferrer.items, userReferrer.total);
+    const meta = createCastcleMeta(usersReferrer.items, usersReferrer.total);
     return { payload: response, meta: meta };
+  }
+
+  @CastcleBasicAuth()
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @Post(':id/recast')
+  async recastContent(
+    @Param('id') id: string,
+    @Body('contentId') contentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log(`Start recast content id: ${contentId}, user: ${id}`);
+    const content = await this._getContentIfExist(contentId);
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const recastContent = await this.contentService.getRecastContent(
+      content.id,
+      user.id
+    );
+
+    if (recastContent) {
+      this.logger.error(`Already recast this content id: ${contentId}.`);
+      throw new CastcleException(CastcleStatus.RECAST_IS_EXIST);
+    }
+
+    const userRecast = await this._validateOwnerAccount(req, user);
+    const result = await this.contentService.recastContentFromUser(
+      content,
+      userRecast
+    );
+
+    return this.contentService.convertContentToContentResponse(
+      userRecast,
+      result.recastContent
+    );
+  }
+
+  @ApiResponse({
+    status: 201,
+    type: ContentResponse
+  })
+  @CastcleBasicAuth()
+  @Post(':id/quotecast')
+  async quoteContent(
+    @Param('id') id: string,
+    @Body('contentId') contentId: string,
+    @Body('message') message: string,
+    @Req() req: CredentialRequest
+  ) {
+    this.logger.log(
+      `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`
+    );
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const userQuotecast = await this._validateOwnerAccount(req, user);
+    const content = await this._getContentIfExist(contentId);
+    const result = await this.contentService.quoteContentFromUser(
+      content,
+      userQuotecast,
+      message
+    );
+    return this.contentService.convertContentToContentResponse(
+      userQuotecast,
+      result.quoteContent
+    );
+  }
+
+  /**
+   * Undo a Recast
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} id user id
+   * @param {string} sourceContentId original content id
+   * @returns {''}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT
+  })
+  @CastcleBasicAuth()
+  @Delete(':id/recast/:sourceContentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoRecast(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Param('sourceContentId') sourceContentId: string
+  ) {
+    this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    this.contentService.deleteRecastContentFromOriginalAndAuthor(
+      sourceContentId,
+      user.id
+    );
   }
 }

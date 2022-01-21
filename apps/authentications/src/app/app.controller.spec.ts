@@ -214,14 +214,6 @@ describe('AppController', () => {
     await closeInMongodConnection();
   });
 
-  describe('getData', () => {
-    it('should return "Welcome to authentications!"', () => {
-      expect(appController.getData()).toEqual(
-        'Welcome to authentications!10-11-81'
-      );
-    });
-  });
-
   describe('guestLogin', () => {
     it('should always return {accessToken, refreshToken} if it pass the interceptor', async () => {
       const response = await appController.guestLogin(

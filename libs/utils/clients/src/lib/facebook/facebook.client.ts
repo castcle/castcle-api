@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
@@ -34,10 +34,7 @@ import {
 
 @Injectable()
 export class FacebookClient {
-  private readonly logger = new CastLogger(
-    FacebookClient.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(FacebookClient.name);
 
   constructor(private httpService: HttpService) {}
   private readonly accessTokenUrl = `${Environment.FACEBOOK_HOST}/oauth/access_token?`;

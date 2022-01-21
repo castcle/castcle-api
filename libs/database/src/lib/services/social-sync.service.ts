@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -30,10 +30,8 @@ import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {
-  private readonly logger = new CastLogger(
-    SocialSyncService.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(SocialSyncService.name);
+
   constructor(
     @InjectModel('SocialSync')
     private socialSyncModel: Model<SocialSyncDocument>,

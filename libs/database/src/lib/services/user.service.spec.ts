@@ -37,7 +37,7 @@ import {
   EntityVisibility,
   Pagination
 } from '../dtos/common.dto';
-import { PageDto, PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { CommentDocument, ContentDocument } from '../schemas';
@@ -413,7 +413,7 @@ describe('User Service', () => {
             original: 'http://placehold.it/200x200'
           },
           displayName: 'hello12345'
-        } as PageModelDto
+        } as PageDto
       ]
     };
 
@@ -800,9 +800,7 @@ describe('User Service', () => {
       expect(mentions.users.length).toEqual(5);
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
-      expect(mentions.users[1]).toEqual(
-        await updatedUser2.toUserResponse(false, false, true)
-      );
+      expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
       expect(mentions.users[1].followers.count).toEqual(3);
     });
     it('should get all users if query is empty string', async () => {
@@ -819,9 +817,7 @@ describe('User Service', () => {
       const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
-      expect(mentions.users[1]).toEqual(
-        await updatedUser2.toUserResponse(false, false, true)
-      );
+      expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
       expect(mentions.users[1].followers.count).toEqual(3);
     });
   });

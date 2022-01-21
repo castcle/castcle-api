@@ -173,24 +173,19 @@ CredentialSchema.methods.renewAccessToken = async function (
 };
 
 CredentialSchema.methods.isAccessTokenValid = function () {
-  if (
-    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
-  )
-    return false;
-  return Token.isTokenValid(
-    (this as CredentialDocument).accessToken,
-    env.JWT_ACCESS_SECRET
-  );
+  const { account, accessToken } = this as CredentialDocument;
+
+  if (account.visibility !== EntityVisibility.Publish) return false;
+
+  return Token.isTokenValid(accessToken, env.JWT_ACCESS_SECRET);
 };
+
 CredentialSchema.methods.isRefreshTokenValid = function () {
-  if (
-    (this as CredentialDocument).account.visibility !== EntityVisibility.Publish
-  )
-    return false;
-  return Token.isTokenValid(
-    (this as CredentialDocument).refreshToken,
-    env.JWT_REFRESH_SECRET
-  );
+  const { account, refreshToken } = this as CredentialDocument;
+
+  if (account.visibility !== EntityVisibility.Publish) return false;
+
+  return Token.isTokenValid(refreshToken, env.JWT_REFRESH_SECRET);
 };
 
 export const CredentialSchemaFactory = (): mongoose.Schema<any> => {
