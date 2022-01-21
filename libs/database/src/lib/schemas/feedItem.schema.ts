@@ -25,7 +25,7 @@ import * as mongoose from 'mongoose';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-import { Content } from './content.schema';
+import { ContentDocument } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { EngagementDocument } from './engagement.schema';
 import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
@@ -40,7 +40,7 @@ export class FeedItem extends CastcleBase {
     ref: 'Content',
     index: true
   })
-  content: Content;
+  content: ContentDocument;
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
