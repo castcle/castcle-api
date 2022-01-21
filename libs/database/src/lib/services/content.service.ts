@@ -1012,6 +1012,7 @@ export class ContentService {
       type: GuestFeedItemType.Content,
       content: contentId
     } as GuestFeedItemDto);
+    newGuestFeedItem.__v = 2;
     return newGuestFeedItem.save();
   };
 

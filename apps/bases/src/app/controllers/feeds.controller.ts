@@ -122,7 +122,7 @@ export class FeedsController {
         const user = await this.userService.getUserFromCredential(
           req.$credential
         );
-        const contentIds = feedItemsResult.items.map((item) => item.content.id);
+        const contentIds = feedItemsResult.items.map((item) => item.content._id);
         const allContentsEngagements =
           await this.contentService.getAllEngagementFromContentIdsAndUser(
             contentIds,
@@ -137,8 +137,8 @@ export class FeedsController {
           payload: feedItemsResult.items.map((t) => {
             const engagements = allContentsEngagements.filter(
               (c) =>
-                String(c.targetRef.$id) === String(t.content.id) ||
-                String(c.targetRef.oid) === String(t.content.id)
+                String(c.targetRef.$id) === String(t.content._id) ||
+                String(c.targetRef.oid) === String(t.content._id)
             );
             return t.toFeedItemPayload(engagements);
           }),

@@ -34,6 +34,7 @@ export class FeedItemDto {
   viewer: any;
   seen: boolean;
   called: boolean;
+  __v?:any
 }
 
 export enum FeedItemMode {
