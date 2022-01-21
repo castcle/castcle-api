@@ -357,11 +357,6 @@ export class UserService {
     await this.contentService._commentModel
       .updateMany({ 'author._id': user._id }, { author: user })
       .exec();
-    console.debug('updating feedItem of user');
-    await this.contentService._feedItemModel.updateMany(
-      { 'content.author.id': user._id },
-      { 'content.author': user.toAuthor() }
-    );
   };
 
   updateUserInEmbedContentBackground = async (userId: any) => {

@@ -81,9 +81,6 @@ export const EngagementSchemaFactory = (
       await Promise.all([
         (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
           .updateOne({ _id: doc.targetRef.$id }, contentInc)
-          .exec(),
-        feedItemModel
-          .updateMany({ 'content.id': doc.targetRef.$id }, feedInc)
           .exec()
       ]);
     } else if (
@@ -91,10 +88,7 @@ export const EngagementSchemaFactory = (
       doc.visibility !== EntityVisibility.Publish
     ) {
       await Promise.all([
-        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec(),
-        feedItemModel
-          .updateMany({ 'content.id': doc.targetRef.oid }, feedInc)
-          .exec()
+        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec()
       ]);
     } else if (
       doc.targetRef.namespace === 'comment' &&
@@ -117,10 +111,7 @@ export const EngagementSchemaFactory = (
       };
 
       await Promise.all([
-        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec(),
-        feedItemModel
-          .updateMany({ 'content.id': doc.targetRef.oid }, feedInc)
-          .exec()
+        contentModel.updateOne({ _id: doc.targetRef.oid }, contentInc).exec()
       ]);
     } else {
       await commentModel
