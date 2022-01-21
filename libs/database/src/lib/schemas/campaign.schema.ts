@@ -30,7 +30,7 @@ export class Campaign extends CastcleBase {
   @Prop()
   name: string;
 
-  @Prop()
+  @Prop({ type: String })
   type: CampaignType;
 
   @Prop()
@@ -40,10 +40,10 @@ export class Campaign extends CastcleBase {
   endDate: Date;
 
   @Prop()
-  maxClaims: number;
+  maxClaims?: number;
 
   @Prop()
-  rewardsPerClaim: number;
+  rewardsPerClaim?: number;
 
   @Prop()
   rewardBalance: number;
