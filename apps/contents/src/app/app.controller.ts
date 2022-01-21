@@ -330,6 +330,9 @@ export class ContentController {
     return '';
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] users/:id/recast
+   */
   @CastcleBasicAuth()
   @ApiResponse({
     status: 201,
@@ -353,6 +356,9 @@ export class ContentController {
     } as ContentResponse;
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] /users/:id/quotecast
+   */
   @ApiResponse({
     status: 201,
     type: ContentResponse

@@ -584,9 +584,13 @@ export class AuthenticationService {
     account.isGuest = false;
     await account.save();
 
+    const sugguestDisplayId = await this.suggestCastcleId(
+      requirements.displayName
+    );
+
     const user = new this._userModel({
       ownerAccount: account._id,
-      displayId: requirements.socialId,
+      displayId: sugguestDisplayId,
       displayName: requirements.displayName,
       type: UserType.People,
       profile: {
@@ -620,14 +624,16 @@ export class AuthenticationService {
     provider: AccountAuthenIdType,
     socialUserId: string,
     socialUserToken: string,
-    socialSecretToken: string
+    socialSecretToken: string,
+    avatar?: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
       type: provider,
       socialId: socialUserId,
       socialToken: socialUserToken,
-      socialSecretToken: socialSecretToken
+      socialSecretToken: socialSecretToken,
+      avatar: avatar
     });
     return accountActivation.save();
   }
