@@ -21,20 +21,35 @@
  * or have any questions.
  */
 
-export * from './account-referral.schema';
-export * from './account.schema';
-export * from './accountAuthenId.schema';
-export * from './campaign.schema';
-export * from './comment.schema';
-export * from './content.schema';
-export * from './country.schema';
-export * from './credential.schema';
-export * from './engagement.schema';
-export * from './hashtag.schema';
-export * from './language.schema';
-export * from './notification.schema';
-export * from './otp.schema';
-export * from './relationship.schema';
-export * from './social-sync.schema';
-export * from './transaction.schema';
-export * from './user.schema';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { CampaignType } from '../models';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+export class Campaign extends CastcleBase {
+  @Prop()
+  name: string;
+
+  @Prop()
+  type: CampaignType;
+
+  @Prop()
+  startDate: Date;
+
+  @Prop()
+  endDate: Date;
+
+  @Prop()
+  maxClaims: number;
+
+  @Prop()
+  rewardsPerClaim: number;
+
+  @Prop()
+  rewardBalance: number;
+
+  @Prop()
+  totalRewards: number;
+}
+
+export const CampaignSchema = SchemaFactory.createForClass(Campaign);
