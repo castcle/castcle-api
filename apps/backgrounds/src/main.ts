@@ -29,7 +29,7 @@ import { BackgroundModule } from './app/app.module';
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(BackgroundModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
   const port = process.env.PORT || 3341;
 

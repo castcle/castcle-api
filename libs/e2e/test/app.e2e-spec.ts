@@ -6,7 +6,7 @@ import {
   closeAuthenticationsModule,
   closeUsersModule,
   setupAuthenticationsModule,
-  setupUsersModule
+  setupUsersModule,
 } from './setups';
 
 describe('Castcle E2E Tests', () => {
@@ -14,7 +14,10 @@ describe('Castcle E2E Tests', () => {
 
   beforeAll(async () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
-    (getMongoOptions as any) = () => ({ uri: mongoMemoryReplSet.getUri() });
+    (getMongoOptions as jest.Mock).mockReturnValue({
+      uri: mongoMemoryReplSet.getUri(),
+    });
+    // (getMongoOptions as any) = () => ({ uri: mongoMemoryReplSet.getUri() });
 
     await setupAuthenticationsModule();
     await initializeUsers();

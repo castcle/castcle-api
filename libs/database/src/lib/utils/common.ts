@@ -27,7 +27,7 @@ import {
   CastcleMeta,
   CastcleQueryOptions,
   Pagination,
-  QueryOption
+  QueryOption,
 } from '../dtos/common.dto';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 
@@ -71,11 +71,11 @@ export const createCastcleMeta = (
 export const createCastcleFilter = (filter: any, queryOption: QueryOption) => {
   if (queryOption.sinceId) {
     filter._id = {
-      $gt: mongoose.Types.ObjectId(queryOption.sinceId)
+      $gt: mongoose.Types.ObjectId(queryOption.sinceId),
     };
   } else if (queryOption.untilId) {
     filter._id = {
-      $lt: mongoose.Types.ObjectId(queryOption.untilId)
+      $lt: mongoose.Types.ObjectId(queryOption.untilId),
     };
   }
   return filter;
@@ -104,6 +104,6 @@ export const getRelationship = (
   return {
     blocked: Boolean(getterRelationship?.blocking),
     blocking: Boolean(authorRelationship?.blocking),
-    followed: Boolean(getterRelationship?.following)
+    followed: Boolean(getterRelationship?.following),
   };
 };

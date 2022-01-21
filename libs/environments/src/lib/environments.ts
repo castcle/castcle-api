@@ -43,7 +43,7 @@ const DB_OPTIONS: MongooseModuleOptions =
     ? {}
     : {
         useNewUrlParser: true,
-        useUnifiedTopology: true
+        useUnifiedTopology: true,
       };
 
 export const Environment = {
@@ -124,5 +124,5 @@ export const Environment = {
   GOOGLE_SECRET: process.env.GOOGLE_SECRE,
   // Feed Setting
   AUTO_CREATE_GUEST_FEED:
-    process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false
+    process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false,
 };

@@ -25,7 +25,7 @@ import { Observable } from 'rxjs';
 import * as util from '../util';
 import {
   HeadersInterceptor,
-  HeadersRequest
+  HeadersRequest,
 } from '../headers/headers.interceptor';
 
 export interface TokenRequest extends HeadersRequest {

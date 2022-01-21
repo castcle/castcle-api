@@ -28,19 +28,19 @@ import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
   CastcleController,
-  CastcleTrack
+  CastcleTrack,
 } from '@castcle-api/utils/decorators';
 import {
   CastcleException,
   CastcleStatus,
-  ErrorMessages
+  ErrorMessages,
 } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
   HeadersRequest,
   TokenInterceptor,
-  TokenRequest
+  TokenRequest,
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
@@ -53,14 +53,14 @@ import {
   Res,
   UseInterceptors,
   Version,
-  VERSION_NEUTRAL
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiHeader,
   ApiOkResponse,
-  ApiResponse
+  ApiResponse,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AppService } from './app.service';
@@ -81,11 +81,11 @@ import {
   SuggestCastcleIdReponse,
   TokenResponse,
   verificationOtpDto,
-  VerificationPasswordBody
+  VerificationPasswordBody,
 } from './dtos/dto';
 import {
   GuestInterceptor,
-  GuestRequest
+  GuestRequest,
 } from './interceptors/guest.interceptor';
 
 @CastcleController('1.0')
@@ -99,14 +99,14 @@ export class AuthenticationController {
 
   @ApiResponse({
     status: 400,
-    description: 'will show if some of header is missing'
+    description: 'will show if some of header is missing',
   })
   @ApiOkResponse({
     status: 201,
-    type: CheckingResponse
+    type: CheckingResponse,
   })
   @ApiBody({
-    type: CheckEmailExistDto
+    type: CheckEmailExistDto,
   })
   @Post('checkEmailExists')
   @HttpCode(200)
@@ -121,8 +121,8 @@ export class AuthenticationController {
       return {
         message: 'success message',
         payload: {
-          exist: account ? true : false
-        }
+          exist: account ? true : false,
+        },
       };
     } catch (error) {
       throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
@@ -131,11 +131,11 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiBody({
-    type: LoginDto
+    type: LoginDto,
   })
   @ApiOkResponse({
     status: 200,
-    type: LoginResponse
+    type: LoginResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @CastcleTrack()
@@ -180,7 +180,7 @@ export class AuthenticationController {
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
-            id: account._id as unknown as string
+            id: account._id as unknown as string,
           }
         );
         const result = new LoginResponse();
@@ -220,23 +220,23 @@ export class AuthenticationController {
     name: 'Device',
     description: 'Device name',
     example: 'iPhone',
-    required: true
+    required: true,
   })
   @ApiHeader({
     name: 'Platform',
     description: 'platform',
     example: 'android',
-    required: true
+    required: true,
   })
   @ApiOkResponse({
-    type: TokenResponse
+    type: TokenResponse,
   })
   @ApiBody({
-    type: GuestLoginDto
+    type: GuestLoginDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'will show if some of header is missing'
+    description: 'will show if some of header is missing',
   })
   @CastcleTrack()
   @UseInterceptors(GuestInterceptor)
@@ -252,10 +252,10 @@ export class AuthenticationController {
         {
           id: credential.account._id as unknown as string,
           role: 'guest',
-          showAds: true
+          showAds: true,
         },
         {
-          id: credential.account._id as unknown as string
+          id: credential.account._id as unknown as string,
         }
       );
       //update geolocation if current geolocaiton is not the same from service
@@ -266,11 +266,11 @@ export class AuthenticationController {
         deviceUUID: deviceUUID,
         header: { platform: req.$platform },
         languagesPreferences: [req.$language],
-        geolocation: req.$geolocation
+        geolocation: req.$geolocation,
       });
       return {
         accessToken: result.credentialDocument.accessToken,
-        refreshToken: result.credentialDocument.refreshToken
+        refreshToken: result.credentialDocument.refreshToken,
       } as TokenResponse;
     }
   }
@@ -278,7 +278,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 201,
-    type: LoginResponse
+    type: LoginResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('register')
@@ -327,7 +327,7 @@ export class AuthenticationController {
           displayName: body.payload.displayName,
           email: body.payload.email,
           password: body.payload.password,
-          referral: body.referral
+          referral: body.referral,
         }
       );
       //check if display id exist
@@ -350,7 +350,7 @@ export class AuthenticationController {
       const tokenResult = await req.$credential.renewTokens(
         accessTokenPayload,
         {
-          id: currentAccount._id as unknown as string
+          id: currentAccount._id as unknown as string,
         }
       );
 
@@ -373,12 +373,12 @@ export class AuthenticationController {
 
   @ApiResponse({
     status: 201,
-    type: RefreshTokenResponse
+    type: RefreshTokenResponse,
   })
   @ApiResponse({
     status: 400,
     description:
-      'will show if some of header is missing or invalid refresh token'
+      'will show if some of header is missing or invalid refresh token',
   })
   @ApiBearerAuth()
   @UseInterceptors(TokenInterceptor)
@@ -412,7 +412,7 @@ export class AuthenticationController {
         pages: userProfile.pages
           ? userProfile.pages.items.map((item) => item.toPageResponse())
           : null,
-        accessToken: newAccessToken
+        accessToken: newAccessToken,
       } as RefreshTokenResponse;
     }
     throw new CastcleException(
@@ -423,11 +423,11 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiResponse({
     status: 403,
-    description: 'will reject if token is invalid'
+    description: 'will reject if token is invalid',
   })
   @Post('verificationEmail')
   @HttpCode(204)
@@ -453,11 +453,11 @@ export class AuthenticationController {
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiResponse({
     status: 403,
-    description: 'will reject if token is invalid'
+    description: 'will reject if token is invalid',
   })
   @Post('requestLinkVerify')
   @UseInterceptors(CredentialInterceptor)
@@ -484,7 +484,7 @@ export class AuthenticationController {
       );
     if (accountActivation.activationDate) {
       const returnObj = {
-        message: 'This email has been verified.'
+        message: 'This email has been verified.',
       };
       response.status(200).json(returnObj);
       return returnObj;
@@ -504,7 +504,7 @@ export class AuthenticationController {
   }
 
   @ApiOkResponse({
-    type: CheckingResponse
+    type: CheckingResponse,
   })
   @Post('checkCastcleIdExists')
   @HttpCode(200)
@@ -515,15 +515,15 @@ export class AuthenticationController {
     return {
       message: 'success message',
       payload: {
-        exist: user ? true : false // true=มีในระบบ, false=ไม่มีในระบบ
-      }
+        exist: user ? true : false, // true=มีในระบบ, false=ไม่มีในระบบ
+      },
     } as CheckingResponse;
   }
 
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse
+    type: otpResponse,
   })
   @CastcleBasicAuth()
   @Post('verificationOTP')
@@ -540,7 +540,7 @@ export class AuthenticationController {
       const response: otpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
+        expiresTime: otp.expireDate.toISOString(),
       };
       return response;
     } else {
@@ -551,7 +551,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse
+    type: otpResponse,
   })
   @CastcleBasicAuth()
   @Post('requestOTP')
@@ -565,7 +565,7 @@ export class AuthenticationController {
       const response: otpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
+        expiresTime: otp.expireDate.toISOString(),
       };
       return response;
     } else {
@@ -586,7 +586,7 @@ export class AuthenticationController {
     const token = req.query.code as string;
     await this.verificationEmail({
       $language: req.$language,
-      $token: token
+      $token: token,
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken(token);
 
@@ -600,28 +600,27 @@ export class AuthenticationController {
   }
 
   @ApiOkResponse({
-    type: SuggestCastcleIdReponse
+    type: SuggestCastcleIdReponse,
   })
   @Post('suggestCastcleId')
   @HttpCode(200)
   async suggestCastcleId(
-    @Body('displayName') displayName: string,
-    @Req() req: CredentialRequest
+    @Body('displayName') displayName: string
   ): Promise<SuggestCastcleIdReponse> {
     const suggestId = await this.authService.suggestCastcleId(displayName);
     return {
       payload: {
-        suggestCastcleId: suggestId
-      }
+        suggestCastcleId: suggestId,
+      },
     };
   }
 
   @ApiBody({
-    type: VerificationPasswordBody
+    type: VerificationPasswordBody,
   })
   @ApiResponse({
     status: 201,
-    type: otpResponse
+    type: otpResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('verificationPassword')
@@ -658,7 +657,7 @@ export class AuthenticationController {
       return {
         objective: payload.objective,
         refCode: otp.refCode,
-        expiresTime: otp.expireDate.toISOString()
+        expiresTime: otp.expireDate.toISOString(),
       };
     } else
       throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
@@ -666,10 +665,10 @@ export class AuthenticationController {
 
   @CastcleBasicAuth()
   @ApiBody({
-    type: ChangePasswordBody
+    type: ChangePasswordBody,
   })
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @Post('changePasswordSubmit')
   @HttpCode(204)
@@ -697,11 +696,11 @@ export class AuthenticationController {
 
   @CastcleBasicAuth()
   @ApiBody({
-    type: SocialConnectDto
+    type: SocialConnectDto,
   })
   @ApiOkResponse({
     status: 200,
-    type: LoginResponse
+    type: LoginResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @CastcleTrack()
@@ -729,9 +728,9 @@ export class AuthenticationController {
                 ? await users.profile.toUserResponse(
                     account.password ? false : true
                   )
-                : null
-            }
-          }
+                : null,
+            },
+          },
         },
         400
       );
@@ -746,13 +745,13 @@ export class AuthenticationController {
         ? users.pages.items.map((item) => item.toPageResponse())
         : null,
       accessToken: token.accessToken,
-      refreshToken: token.refreshToken
+      refreshToken: token.refreshToken,
     } as LoginResponse;
   }
 
   @CastcleBasicAuth()
   @ApiBody({
-    type: SocialConnectDto
+    type: SocialConnectDto,
   })
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @UseInterceptors(CredentialInterceptor)

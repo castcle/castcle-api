@@ -26,7 +26,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
-  IsString
+  IsString,
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';

@@ -35,8 +35,8 @@ import { UserController } from './app.controller';
     HealthyModule,
     UtilsCacheModule,
     UtilsInterceptorsModule,
-    UtilsAwsModule
+    UtilsAwsModule,
   ],
-  controllers: [UserController]
+  controllers: [UserController],
 })
 export class UserModule {}

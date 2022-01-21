@@ -7,7 +7,7 @@ import { authenticationsApp } from '../variables';
 
 export const setupAuthenticationsModule = async () => {
   const moduleFixture = await Test.createTestingModule({
-    imports: [AuthenticationModule]
+    imports: [AuthenticationModule],
   }).compile();
 
   (authenticationsApp as any) = moduleFixture.createNestApplication();
@@ -16,7 +16,7 @@ export const setupAuthenticationsModule = async () => {
   authenticationsApp.useGlobalFilters(new ExceptionFilter());
   authenticationsApp.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
   await authenticationsApp.init();

@@ -35,9 +35,9 @@ import { AppService } from './app.service';
     CaslModule,
     HealthyModule,
     UtilsClientsModule,
-    UtilsAwsModule
+    UtilsAwsModule,
   ],
   controllers: [AuthenticationController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class AuthenticationModule {}

@@ -22,7 +22,7 @@ export class User {
       castcleId: this.castcleId,
       displayName: this.displayName,
       email: this.email,
-      password: this.password
-    }
+      password: this.password,
+    },
   });
 }

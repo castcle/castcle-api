@@ -26,7 +26,7 @@ import {
   BlogPayload,
   ContentType,
   SaveContentDto,
-  Url
+  Url,
 } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -75,7 +75,7 @@ export class AppService {
           return Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`
+            subpath: `contents/${uploader._id}`,
           }).then((r) => r.image);
         })
       );
@@ -92,7 +92,7 @@ export class AppService {
           {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`
+            subpath: `contents/${uploader._id}`,
           }
         )
       ).image;

@@ -41,13 +41,13 @@ import { SearchesController } from './controllers/searches.controller';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsCacheModule,
-    UtilsQueueModule
+    UtilsQueueModule,
   ],
   controllers: [
     PagesController,
     NotificationsController,
     FeedsController,
-    SearchesController
-  ]
+    SearchesController,
+  ],
 })
 export class BaseModule {}

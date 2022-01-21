@@ -28,7 +28,7 @@ import { ErrorMessages } from './messages/default';
 @Module({
   controllers: [],
   providers: [],
-  exports: []
+  exports: [],
 })
 export class UtilsExceptionModule {}
 

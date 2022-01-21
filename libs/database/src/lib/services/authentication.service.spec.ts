@@ -35,7 +35,7 @@ import { UserDocument } from '../schemas/user.schema';
 import {
   AuthenticationService,
   SignupRequirements,
-  SignupSocialRequirements
+  SignupSocialRequirements,
 } from './authentication.service';
 
 let mongod: MongoMemoryServer;
@@ -46,9 +46,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -62,14 +62,14 @@ describe('Authentication Service', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [AuthenticationService];
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<AuthenticationService>(AuthenticationService);
   });
@@ -85,13 +85,9 @@ describe('Authentication Service', () => {
       credentialDocument: CredentialDocument;
     };
     let accountDocumentCountBefore: number;
-    let credentialDocumentCountBefore: number;
     const newDeviceUUID = '83b696d7-320b-4402-a412-d9cee10fc6a3';
     beforeAll(async () => {
       accountDocumentCountBefore = await service._accountModel
-        .countDocuments()
-        .exec();
-      credentialDocumentCountBefore = await service._credentialModel
         .countDocuments()
         .exec();
       createAccountResult = await service.createAccount({
@@ -99,8 +95,8 @@ describe('Authentication Service', () => {
         deviceUUID: newDeviceUUID,
         languagesPreferences: ['en', 'en'],
         header: {
-          platform: 'iOs'
-        }
+          platform: 'iOs',
+        },
       });
     });
 
@@ -109,21 +105,17 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          showAds: true
+          showAds: true,
         });
         expect(result.accessToken).toBeDefined();
         expect(typeof result.accessToken).toBe('string');
         expect(result.accessTokenExpireDate).toBeDefined();
       });
       it(`expire date should be in the next ${env.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
-        const now = new Date();
-        const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
-        );
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          showAds: true
+          showAds: true,
         });
         expect(result.accessTokenExpireDate).toBeDefined();
         //expect(result.accessTokenExpireDate).toEqual(expectedExpireDate);
@@ -133,19 +125,15 @@ describe('Authentication Service', () => {
     describe('#_generateRefreshToken()', () => {
       it('should return  refreshToken and refreshTokenExpireDate', () => {
         const result = service._generateRefreshToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.refreshToken).toBeDefined();
         expect(typeof result.refreshToken).toBe('string');
         expect(result.refreshTokenExpireDate).toBeDefined();
       });
       it(`expire date should be in the next ${env.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
-        const now = new Date();
-        const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
-        );
         const result = service._generateRefreshToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.refreshTokenExpireDate).toBeDefined();
         //expect(result.refreshTokenExpireDate).toEqual(expectedExpireDate);
@@ -155,7 +143,7 @@ describe('Authentication Service', () => {
     describe('#_generateEmailVerifyToken()', () => {
       it('should return  emailVerifyToken and emailVerifyTokenExpireDate', () => {
         const result = service._generateEmailVerifyToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.verifyToken).toBeDefined();
         expect(typeof result.verifyToken).toBe('string');
@@ -168,7 +156,7 @@ describe('Authentication Service', () => {
         );
 
         const result = service._generateEmailVerifyToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.verifyTokenExpireDate.getMinutes()).toEqual(
           expectedExpireDate.getMinutes()
@@ -199,8 +187,8 @@ describe('Authentication Service', () => {
           isGuest: createAccountResult.accountDocument.isGuest,
           visibility: EntityVisibility.Publish,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
@@ -250,7 +238,7 @@ describe('Authentication Service', () => {
         //find a create account credential
         const credentialFromAccessToken = await service._credentialModel
           .findOne({
-            accessToken: createAccountResult.credentialDocument.accessToken
+            accessToken: createAccountResult.credentialDocument.accessToken,
           })
           .exec();
         expect(credentialFromAccessToken).toBeDefined();
@@ -329,8 +317,8 @@ describe('Authentication Service', () => {
           password: 'sompop2@Hello',
           isGuest: true,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromEmail(newlyInsertEmail);
@@ -348,7 +336,7 @@ describe('Authentication Service', () => {
           displayId: 'testNew',
           displayName: 'testName',
           type: 'people',
-          ownerAccount: createAccountResult.accountDocument._id
+          ownerAccount: createAccountResult.accountDocument._id,
         });
         await newUser.save();
         const result = await service.getUserFromCastcleId('testNew');
@@ -379,7 +367,7 @@ describe('Authentication Service', () => {
         displayId: 'dudethisisnew',
         displayName: 'Dudeee',
         email: 'sompopdude@dudedude.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       };
       beforeAll(async () => {
         signupResult = await service.signupByEmail(
@@ -388,7 +376,7 @@ describe('Authentication Service', () => {
             displayId: 'dudethisisnew',
             displayName: 'Dudeee',
             email: signupRequirements.email,
-            password: signupRequirements.password
+            password: signupRequirements.password,
           }
         );
         afterSaveAccount = await service._accountModel.findById(
@@ -421,14 +409,14 @@ describe('Authentication Service', () => {
       beforeAll(async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
-            id: 'randomId'
+            id: 'randomId',
           }
         );
         accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
           type: 'email',
           verifyToken: tokenResult.verifyToken,
-          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate,
         }).save();
         beforeVerifyAccount = { ...accountActivation };
         afterVerifyAccount = await service.verifyAccount(accountActivation);
@@ -459,14 +447,14 @@ describe('Authentication Service', () => {
       it('should update revocation date and verifyToken after called()', async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
-            id: 'randomId'
+            id: 'randomId',
           }
         );
         const accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
           type: 'email',
           verifyToken: tokenResult.verifyToken,
-          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate,
         }).save();
         expect(accountActivation.revocationDate).not.toBeDefined();
         const newActivation = await service.revokeAccountActivation(
@@ -484,9 +472,9 @@ describe('Authentication Service', () => {
           device: 'abc',
           deviceUUID: 'uuid1234',
           header: {
-            platform: 'ios'
+            platform: 'ios',
           },
-          languagesPreferences: ['en', 'en']
+          languagesPreferences: ['en', 'en'],
         });
         expect(randomAcc.accountDocument._id).not.toEqual(
           createAccountResult.accountDocument._id
@@ -501,10 +489,10 @@ describe('Authentication Service', () => {
           isGuest: false,
           visibility: EntityVisibility.Publish,
           preferences: {
-            languages: ['en', 'en']
+            languages: ['en', 'en'],
           },
           activateDate: undefined,
-          geolocation: null
+          geolocation: null,
         });
       });
     });
@@ -533,7 +521,7 @@ describe('Authentication Service', () => {
         provider: AccountAuthenIdType.Facebook,
         avatar: '/image/test.jpg',
         socialToken: 'testtoken',
-        socialSecretToken: ''
+        socialSecretToken: '',
       };
       beforeAll(async () => {
         mockAccountResult = await service.createAccount({
@@ -541,8 +529,8 @@ describe('Authentication Service', () => {
           deviceUUID: newDeviceUUID,
           languagesPreferences: ['en', 'en'],
           header: {
-            platform: 'iOs'
-          }
+            platform: 'iOs',
+          },
         });
         signupResult = await service.signupBySocial(
           mockAccountResult.accountDocument,
@@ -566,7 +554,7 @@ describe('Authentication Service', () => {
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
         expect({
-          original: signupRequirements.avatar
+          original: signupRequirements.avatar,
         }).toEqual(afterSaveUser[0].profile.images.avatar);
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
@@ -601,7 +589,7 @@ describe('Authentication Service', () => {
       it('should get social account from provider and social id', async () => {
         const twsocialId = '453455242';
         const fbsocialId = '453457890';
-        const result = await service.createAccountAuthenId(
+        await service.createAccountAuthenId(
           createAccountResult.accountDocument,
           AccountAuthenIdType.Facebook,
           fbsocialId,
@@ -640,12 +628,12 @@ describe('Authentication Service', () => {
           password: 'sompop234@Hello',
           mobile: {
             countryCode: '+66',
-            number: '0817896767'
+            number: '0817896767',
           },
           isGuest: true,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromMobile('817896767', '+66');
@@ -668,12 +656,12 @@ describe('Authentication Service', () => {
           password: password,
           mobile: {
             countryCode: countryCodeTest,
-            number: numberTest
+            number: numberTest,
           },
           isGuest: false,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         account = await newAccount.save();
       });

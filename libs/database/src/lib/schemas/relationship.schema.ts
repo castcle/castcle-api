@@ -33,7 +33,7 @@ export class Relationship extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true
+    index: true,
   })
   user: UserDocument;
 
@@ -41,7 +41,7 @@ export class Relationship extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true
+    index: true,
   })
   followedUser: UserDocument;
 

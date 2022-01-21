@@ -44,9 +44,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -60,7 +60,7 @@ describe('HashtagService', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [HashtagService];
@@ -68,7 +68,7 @@ describe('HashtagService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<HashtagService>(HashtagService);
   });
@@ -83,9 +83,9 @@ describe('HashtagService', () => {
         tag: 'castcle',
         score: 90,
         aggregator: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
-        name: 'Castcle'
+        name: 'Castcle',
       };
 
       const resultData = await service.create(newHashtag);
@@ -107,7 +107,7 @@ describe('HashtagService', () => {
     it('should return all #hashtag from content', () => {
       expect(service.extractHashtagFromText('this is #good #stuff')).toEqual([
         'good',
-        'stuff'
+        'stuff',
       ]);
     });
     it('should return all #hashtag with space infront only', () => {
@@ -130,7 +130,7 @@ describe('HashtagService', () => {
         'IDO',
         'BSC',
         'PreSale',
-        'Airdrop'
+        'Airdrop',
       ]);
     });
   });
@@ -138,19 +138,19 @@ describe('HashtagService', () => {
   describe('#extractHashtagFromContentPayload', () => {
     it('should return all #hashtag from ShortContent', () => {
       const short: ShortPayload = {
-        message: 'helloworld #castcle'
+        message: 'helloworld #castcle',
       };
       expect(service.extractHashtagFromContentPayload(short)).toEqual([
-        'castcle'
+        'castcle',
       ]);
     });
     it('should return all #hashtag from BlogContent', () => {
       const blog: BlogPayload = {
         message: 'helloworld #castcle',
-        header: 'cool stuff'
+        header: 'cool stuff',
       };
       expect(service.extractHashtagFromContentPayload(blog)).toEqual([
-        'castcle'
+        'castcle',
       ]);
     });
     it('should return all #hashtag from ImageContent', () => {
@@ -166,12 +166,12 @@ describe('HashtagService', () => {
         author: 'test',
         targetRef: {
           $id: 'cool',
-          $ref: 'bean'
+          $ref: 'bean',
         },
-        type: CommentType.Comment
+        type: CommentType.Comment,
       };
       expect(service.extractHashtagFromCommentDto(commentDto)).toEqual([
-        'bean'
+        'bean',
       ]);
     });
   });
@@ -182,7 +182,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(currentTag).toBeNull();
-      const result = await service.createFromTag('sompop');
+      await service.createFromTag('sompop');
       const newTag = await service._hashtagModel
         .findOne({ tag: 'sompop' })
         .exec();
@@ -195,7 +195,7 @@ describe('HashtagService', () => {
         .findOne({ tag: 'sompop' })
         .exec();
       expect(currentTag.score).toEqual(1);
-      const result = await service.createFromTag('soMPop');
+      await service.createFromTag('soMPop');
       const newTag = await service._hashtagModel
         .findOne({ tag: 'sompop' })
         .exec();
@@ -206,11 +206,7 @@ describe('HashtagService', () => {
   });
   describe('#createFromTags', () => {
     it('should perform creatFromTag for multiple tags', async () => {
-      const result = await service.createFromTags([
-        'CastClesSs',
-        'jUl',
-        'bEnz'
-      ]);
+      await service.createFromTags(['CastClesSs', 'jUl', 'bEnz']);
       const newTag = await service._hashtagModel
         .findOne({ tag: 'castclesss' })
         .exec();

@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   LanguageService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '../database.module';
 import { LanguagePayloadDto } from '../dtos';
 import { env } from '../environment';
@@ -41,9 +41,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -57,7 +57,7 @@ describe('LanguageService', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [LanguageService];
@@ -65,7 +65,7 @@ describe('LanguageService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<LanguageService>(LanguageService);
   });
@@ -79,7 +79,7 @@ describe('LanguageService', () => {
       const newLanguage: LanguagePayloadDto = {
         code: 'th',
         title: 'Thai',
-        display: 'ภาษาไทย'
+        display: 'ภาษาไทย',
       };
 
       const resultData = await service.create(newLanguage);

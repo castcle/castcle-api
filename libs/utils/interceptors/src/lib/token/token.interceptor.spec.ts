@@ -25,7 +25,7 @@ import { createMock } from '@golevelup/ts-jest';
 import { TokenInterceptor } from './token.interceptor';
 
 const callHandler = {
-  handle: jest.fn()
+  handle: jest.fn(),
 };
 
 describe('TokenInterceptor', () => {
@@ -39,16 +39,16 @@ describe('TokenInterceptor', () => {
         getRequest: () => ({
           headers: {
             authorization: 'Bearer tokenBefore',
-            'accept-language': 'th'
-          }
-        })
-      })
+            'accept-language': 'th',
+          },
+        }),
+      }),
     });
     expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
       headers: {
         authorization: 'Bearer tokenBefore',
-        'accept-language': 'th'
-      }
+        'accept-language': 'th',
+      },
     });
     interceptor.intercept(mockExecutionContext, callHandler);
     expect(callHandler.handle).toBeCalled();

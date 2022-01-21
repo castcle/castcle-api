@@ -51,8 +51,8 @@ const convertUserIdsToAccountIds = async (
   const users = await models.userModel
     .find({
       _id: {
-        $in: userIds
-      }
+        $in: userIds,
+      },
     })
     .exec();
   return users.map(
@@ -88,9 +88,9 @@ const createRelatedContentItem = async (
         seen: false,
         aggregator: {
           createTime: new Date(),
-          following: true
+          following: true,
         } as ContentAggregator,
-        __v: 2 //add version
+        __v: 2,
       } as FeedItemDto)
   );
   return models.feedItemModel.insertMany(feedItemDtos);
@@ -113,11 +113,11 @@ export const postContentSave = async (
     const newRevison = new models.revisionModel({
       objectRef: {
         $ref: 'content',
-        $id: mongoose.Types.ObjectId((doc as ContentDocument)._id)
+        $id: mongoose.Types.ObjectId((doc as ContentDocument)._id),
       },
-      payload: doc as Content
+      payload: doc as Content,
     });
-    const result = await newRevison.save();
+    await newRevison.save();
     //change all embed content from recast/quotecast
 
     if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
@@ -149,20 +149,20 @@ export const preContentSave = async (doc: ContentDocument) => {
     doc.engagements = {
       like: {
         count: 0,
-        refs: []
+        refs: [],
       },
       comment: {
         count: 0,
-        refs: []
+        refs: [],
       },
       recast: {
         count: 0,
-        refs: []
+        refs: [],
       },
       quote: {
         count: 0,
-        refs: []
-      }
+        refs: [],
+      },
     };
   }
   return doc;

@@ -32,7 +32,7 @@ import {
   AccountDocument,
   ContentDocument,
   CredentialDocument,
-  UserDocument
+  UserDocument,
 } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
@@ -47,16 +47,16 @@ jest.mock('@castcle-api/utils/aws', () => ({
       map[item] = index + 1;
     });
     return map;
-  })
+  }),
 }));
 const fakeProcessor = jest.fn();
 const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -68,9 +68,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -92,13 +92,13 @@ describe('Ranker Service', () => {
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ]
     : [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ];
   const providers = [
     ContentService,
@@ -106,7 +106,7 @@ describe('Ranker Service', () => {
     AuthenticationService,
     RankerService,
     UserProducer,
-    HashtagService
+    HashtagService,
   ];
   let result: {
     accountDocument: AccountDocument;
@@ -115,7 +115,7 @@ describe('Ranker Service', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<RankerService>(RankerService);
 
@@ -126,31 +126,31 @@ describe('Ranker Service', () => {
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
     const followerResult = await authService.createAccount({
       deviceUUID: 'followerAbcde',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     await authService.signupByEmail(followerResult.accountDocument, {
       displayId: 'followerNa',
       displayName: 'followerNa002',
       email: 'sompop2.kulapalanont@gmail.com',
-      password: '2@Test12345678'
+      password: '2@Test12345678',
     });
     //let follower follow user
     follower = await userService.getUserFromCredential(
@@ -167,45 +167,45 @@ describe('Ranker Service', () => {
   });
   describe('#getAndcreateFeedItemByCreateTime()', () => {
     const shortPayload: ShortPayload = {
-      message: 'this is test status'
+      message: 'this is test status',
     };
     const shortPayload2: ShortPayload = {
-      message: 'this is test status2'
+      message: 'this is test status2',
     };
     const shortPayload3: ShortPayload = {
-      message: 'this is test status3'
+      message: 'this is test status3',
     };
     const shortPayload4: ShortPayload = {
-      message: 'this is test status4'
+      message: 'this is test status4',
     };
     const shortPayload5: ShortPayload = {
-      message: 'this is test status5'
+      message: 'this is test status5',
     };
     beforeAll(async () => {
       contents[0] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[1] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload2,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[2] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload3,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[2] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload4,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[4] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload5,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
     });
     it('should create feedItem after create a content', async () => {
@@ -217,7 +217,7 @@ describe('Ranker Service', () => {
     it('should get documents from ContentItems that seen = false', async () => {
       const feedItems = await service.getFeedItemsFromViewer(followerAccount, {
         ...DEFAULT_FEED_QUERY_OPTIONS,
-        limit: 2
+        limit: 2,
       });
       expect(feedItems.total).toEqual(contents.length);
       expect(feedItems.pagination.limit).toEqual(2);

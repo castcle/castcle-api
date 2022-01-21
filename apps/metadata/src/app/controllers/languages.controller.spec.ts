@@ -24,9 +24,8 @@ import {
   AuthenticationService,
   LanguageService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -42,9 +41,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongodMock.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -54,7 +53,6 @@ const closeInMongodConnection = async () => {
 describe('LanguagesController', () => {
   let appController: LanguagesController;
   let languageService: LanguageService;
-  let userCredential: CredentialDocument;
   let authService: AuthenticationService;
 
   beforeAll(async () => {
@@ -65,24 +63,23 @@ describe('LanguagesController', () => {
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
-        })
+          ttl: 1000,
+        }),
       ],
       controllers: [LanguagesController],
-      providers: [LanguageService, AuthenticationService]
+      providers: [LanguageService, AuthenticationService],
     }).compile();
 
     appController = app.get<LanguagesController>(LanguagesController);
     languageService = app.get<LanguageService>(LanguageService);
     authService = app.get<AuthenticationService>(AuthenticationService);
 
-    const resultAccount = await authService.createAccount({
+    await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
-    userCredential = resultAccount.credentialDocument;
   });
 
   afterAll(async () => {
@@ -94,7 +91,7 @@ describe('LanguagesController', () => {
       await languageService.create({
         code: 'th',
         title: 'Thai',
-        display: 'ภาษาไทย'
+        display: 'ภาษาไทย',
       });
       const result = await appController.getAllLanguage();
       const expectResult = {
@@ -102,9 +99,9 @@ describe('LanguagesController', () => {
           {
             code: 'th',
             title: 'Thai',
-            display: 'ภาษาไทย'
-          }
-        ]
+            display: 'ภาษาไทย',
+          },
+        ],
       };
       console.log(result);
 

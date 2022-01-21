@@ -39,7 +39,7 @@ export const AccountSchemaFactory = (
     //add activate process
     await postAccountSave(doc, {
       credentialModel,
-      userModel
+      userModel,
     });
     next();
   });

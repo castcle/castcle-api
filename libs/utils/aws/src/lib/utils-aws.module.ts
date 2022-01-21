@@ -10,12 +10,12 @@ import { predictContents } from './functions/predict-content';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: Environment.HTTP_TIME_OUT
-    })
+      timeout: Environment.HTTP_TIME_OUT,
+    }),
   ],
   controllers: [],
   providers: [Downloader],
-  exports: [HttpModule, Downloader]
+  exports: [HttpModule, Downloader],
 })
 export class UtilsAwsModule {}
 
@@ -27,5 +27,5 @@ export {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   ImageUploadOptions,
-  predictContents
+  predictContents,
 };

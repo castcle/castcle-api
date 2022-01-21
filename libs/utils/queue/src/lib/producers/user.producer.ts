@@ -39,7 +39,7 @@ export class UserProducer {
    */
   async sendMessage(message: UserMessage) {
     await this.queue.add({
-      user: message
+      user: message,
     });
     this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }

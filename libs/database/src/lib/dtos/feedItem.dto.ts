@@ -26,7 +26,7 @@ import {
   CastcleQueryOptions,
   ContentPayloadDto,
   Pagination,
-  SortDirection
+  SortDirection,
 } from '.';
 
 export class FeedItemDto {
@@ -39,7 +39,7 @@ export class FeedItemDto {
 
 export enum FeedItemMode {
   Current = 'current',
-  Previous = 'previous'
+  Previous = 'previous',
 }
 
 export class CastcleFeedQueryOptions extends CastcleQueryOptions {
@@ -51,10 +51,10 @@ export const DEFAULT_FEED_QUERY_OPTIONS = {
   mode: FeedItemMode.Current,
   sortBy: {
     field: 'updatedAt',
-    type: SortDirection.DESC
+    type: SortDirection.DESC,
   },
   page: 1,
-  limit: 25
+  limit: 25,
 } as CastcleFeedQueryOptions;
 
 export interface FeedItemPayload {

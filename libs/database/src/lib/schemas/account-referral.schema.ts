@@ -32,7 +32,7 @@ export class AccountReferral extends CastcleBase {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   referrerAccount: Account;
 
@@ -42,7 +42,7 @@ export class AccountReferral extends CastcleBase {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   referringAccount: Account;
 }

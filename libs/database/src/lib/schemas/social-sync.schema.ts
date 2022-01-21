@@ -72,6 +72,6 @@ SocialSyncSchema.methods.toSocialSyncPayload = function () {
     username: (this as SocialSyncDocument).userName,
     displayName: (this as SocialSyncDocument).displayName,
     avatar: (this as SocialSyncDocument).avatar,
-    active: (this as SocialSyncDocument).active
+    active: (this as SocialSyncDocument).active,
   } as SocialSyncDto;
 };

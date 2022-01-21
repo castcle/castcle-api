@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   CountryService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '../database.module';
 import { CountryPayloadDto, SortDirection } from '../dtos';
 import { env } from '../environment';
@@ -41,9 +41,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -57,7 +57,7 @@ describe('CountryService', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [CountryService];
@@ -65,7 +65,7 @@ describe('CountryService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<CountryService>(CountryService);
   });
@@ -80,19 +80,19 @@ describe('CountryService', () => {
         code: 'TH',
         dialCode: '+66',
         name: 'Thailand',
-        flag: 'url'
+        flag: 'url',
       };
       const newCountry2: CountryPayloadDto = {
         code: 'US',
         dialCode: '+1',
         name: 'U.S.A.',
-        flag: 'url'
+        flag: 'url',
       };
       const newCountry3: CountryPayloadDto = {
         code: 'CN',
         dialCode: '+86',
         name: 'China',
-        flag: 'url'
+        flag: 'url',
       };
       const resultData = await service.create(newCountry);
       const resultData2 = await service.create(newCountry2);
@@ -116,8 +116,8 @@ describe('CountryService', () => {
       const result = await service.getAll({
         sortBy: {
           field: 'dialCode',
-          type: SortDirection.ASC
-        }
+          type: SortDirection.ASC,
+        },
       });
       expect(result).toBeDefined();
       expect(result[0].dialCode).toEqual('+1');

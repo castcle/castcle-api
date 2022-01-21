@@ -27,7 +27,7 @@ import {
   AccessTokenResponse,
   AppleIdTokenType,
   AppleSignIn,
-  RefreshTokenResponse
+  RefreshTokenResponse,
 } from 'apple-sign-in-rest';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -47,13 +47,13 @@ export class AppleClient {
       : 'U3B842SVGC',
     privateKey: Environment.APPLE_PRIVATE_KEY
       ? Environment.APPLE_PRIVATE_KEY
-      : '-----BEGIN PRIVATE KEY-----\nMIGTAgEHIHMJKJyqGSM32AgEGC...'
+      : '-----BEGIN PRIVATE KEY-----\nMIGTAgEHIHMJKJyqGSM32AgEGC...',
   });
 
   private getClientSecret() {
     this.logger.log('generate client secret.');
     return this.appleSignIn.createClientSecret({
-      expirationDuration: 5 * 60 // 5 minutes
+      expirationDuration: 5 * 60, // 5 minutes
     });
   }
 
@@ -68,7 +68,7 @@ export class AppleClient {
       scope: ['name', 'email'],
       redirectUri: callBackUrl,
       state: new Date().getTime().toString(),
-      nonce: uuidv4()
+      nonce: uuidv4(),
     });
   }
 
@@ -85,7 +85,7 @@ export class AppleClient {
     this.logger.log('Verify apple token.');
     return await this.appleSignIn.verifyIdToken(idToken, {
       subject: subject,
-      ignoreExpiration: true
+      ignoreExpiration: true,
     });
   }
 
@@ -118,7 +118,7 @@ export class AppleClient {
       code,
       {
         // Optional, use the same value which you passed to authorisation URL. In case of iOS you skip the value
-        redirectUri: redirectUrl
+        redirectUri: redirectUrl,
       }
     );
   }

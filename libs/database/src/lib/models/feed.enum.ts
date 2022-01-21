@@ -23,5 +23,5 @@
 
 export enum SearchType {
   PHOTO = 'photo',
-  VIDEO = 'video'
+  VIDEO = 'video',
 }

@@ -33,7 +33,7 @@ export type CommentDocument = Comment & Document;
 
 export enum CommentType {
   Comment = 'comment',
-  Reply = 'reply'
+  Reply = 'reply',
 }
 @Schema({ timestamps: true })
 export class Comment extends CastcleBase {
@@ -80,7 +80,7 @@ export const CommentSchemaFactory = (
   CommentSchema.post('save', async function (doc, next) {
     await postCommentSave(doc as CommentDocument, {
       revisionModel,
-      contentModel
+      contentModel,
     });
     next();
   });

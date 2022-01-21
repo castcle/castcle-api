@@ -29,13 +29,13 @@ export const Configs = {
     AcceptVersion: {
       name: 'Accept-Version',
       description: 'Version of api',
-      example: '1.0'
+      example: '1.0',
     },
     AcceptLanguage: {
       name: 'Accept-Language',
       description: 'Expected language response',
-      example: 'th'
-    }
+      example: 'th',
+    },
   },
   DefaultAvatar:
     'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
@@ -49,7 +49,7 @@ export const Configs = {
     large:
       'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
     fullHd:
-      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png'
+      'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
   },
   DefaultAvatarCovers: {
     original:
@@ -59,7 +59,7 @@ export const Configs = {
     large:
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
     fullHd:
-      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png'
+      'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
   },
-  PredictFunctionName: 'dev-ds-predict-per-ct-predictor'
+  PredictFunctionName: 'dev-ds-predict-per-ct-predictor',
 };

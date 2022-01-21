@@ -48,6 +48,6 @@ LanguageSchema.methods.toLanguagePayload = function () {
   return {
     code: (this as LanguageDocument).code,
     title: (this as LanguageDocument).title,
-    display: (this as LanguageDocument).display
+    display: (this as LanguageDocument).display,
   } as LanguagePayloadDto;
 };

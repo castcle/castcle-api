@@ -45,23 +45,23 @@ describe('Youtube Webhook Service', () => {
     id: '1234567890',
     type: 'page',
     castcleId: 'castcleId',
-    displayName: 'Castcle'
+    displayName: 'Castcle',
   };
 
   const syncAccount = {
     active: true,
     author,
     socialId: '1234567890',
-    save: jest.fn()
+    save: jest.fn(),
   } as any;
 
   const feed = {
-    entry: { 'yt:channelId': '1234567890', author: { name: 'KT' } }
+    entry: { 'yt:channelId': '1234567890', author: { name: 'KT' } },
   } as PublishedContent;
 
   const subscriptionContent = {
     feed,
-    isPublishedContent: true
+    isPublishedContent: true,
   } as SubscriptionContent;
 
   beforeAll(async () => {
@@ -72,22 +72,22 @@ describe('Youtube Webhook Service', () => {
           provide: ContentService,
           useValue: {
             createContentsFromAuthor: jest.fn(),
-            getAuthorFromId: jest.fn()
-          }
+            getAuthorFromId: jest.fn(),
+          },
         },
         {
           provide: Downloader,
           useValue: {
-            getImageFromUrl: jest.fn()
-          }
+            getImageFromUrl: jest.fn(),
+          },
         },
         {
           provide: SocialSyncService,
           useValue: {
-            getAutoSyncAccountBySocialId: jest.fn()
-          }
-        }
-      ]
+            getAutoSyncAccountBySocialId: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     contentService = module.get(ContentService);
@@ -154,7 +154,7 @@ describe('Youtube Webhook Service', () => {
   describe('#createContentFromYoutubeFeed', () => {
     it('should abort process if subscription content is instance of deleted content', async () => {
       const deletedContent = {
-        isPublishedContent: false
+        isPublishedContent: false,
       } as SubscriptionContent;
 
       await youtubeService.createContentFromYoutubeFeed(deletedContent);

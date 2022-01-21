@@ -67,7 +67,7 @@ export class Image {
 
     return signer.getSignedUrl({
       url,
-      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000)
+      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000),
     });
   }
 
@@ -77,7 +77,7 @@ export class Image {
       original: string;
       [key: string]: string;
     } = {
-      original: this.toSignUrl()
+      original: this.toSignUrl(),
     };
     Object.keys(this.image).forEach((sizeName) => {
       newImage[sizeName] = this.toSignUrl(sizeName);
@@ -105,12 +105,12 @@ export class Image {
       return {
         name: maxSize.name,
         height: Math.floor(originalHeight),
-        width: Math.floor(originalWidth)
+        width: Math.floor(originalWidth),
       } as Size;
     return {
       name: maxSize.name,
       height: Math.floor(originalHeight / ratio),
-      width: Math.floor(originalWidth / ratio)
+      width: Math.floor(originalWidth / ratio),
     } as Size;
   };
 
@@ -141,7 +141,7 @@ export class Image {
     );
     return uploader.uploadBufferToS3(newBuffer, fileType, {
       ...options,
-      suffix: size.name
+      suffix: size.name,
     });
   };
 
@@ -160,7 +160,7 @@ export class Image {
       return imageInstance.toSignUrls();
     } else if (defaultImage) {
       return {
-        original: defaultImage
+        original: defaultImage,
       };
     } else return undefined;
   }
@@ -184,9 +184,9 @@ export class Image {
         .uploadBufferToS3(buffer, fileType, {
           ...options,
           contentType: contentType,
-          suffix: OriginalSuffix
+          suffix: OriginalSuffix,
         })
-        .then((data) => data.Key)
+        .then((data) => data.Key),
     };
 
     //Multisize opton
@@ -199,7 +199,7 @@ export class Image {
           fileType,
           {
             ...options,
-            contentType: contentType
+            contentType: contentType,
           }
         ).then((data) => data.Key);
       }

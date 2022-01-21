@@ -34,7 +34,7 @@ export enum AccountAuthenIdType {
   Facebook = 'facebook',
   Google = 'google',
   Telegram = 'telegram',
-  Apple = 'apple'
+  Apple = 'apple',
 }
 
 @Schema({ timestamps: true })
@@ -43,7 +43,7 @@ export class AccountAuthenId extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   account: Account;
 
@@ -51,7 +51,7 @@ export class AccountAuthenId extends CastcleBase {
   type: string;
 
   @Prop({
-    index: true
+    index: true,
   })
   socialId: string;
 

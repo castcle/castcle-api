@@ -25,14 +25,14 @@ import {
   NotificationBadgesResponse,
   NotificationResponse,
   NotificationSource,
-  RegisterTokenDto
+  RegisterTokenDto,
 } from '@castcle-api/database/dtos';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleBasicAuth,
-  CastcleController
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -45,7 +45,7 @@ import {
   Post,
   Put,
   Query,
-  Req
+  Req,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
@@ -59,28 +59,28 @@ export class NotificationsController {
   ) {}
 
   @ApiOkResponse({
-    type: NotificationResponse
+    type: NotificationResponse,
   })
   @CastcleAuth(CacheKeyName.NotificationsGet)
   @ApiQuery({
     name: 'maxResults',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'sinceId',
     type: String,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'untilId',
     type: String,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'source',
     enum: NotificationSource,
-    required: false
+    required: false,
   })
   @Get('notifications')
   async getAll(
@@ -108,13 +108,13 @@ export class NotificationsController {
         maxResults: maxResults,
         sinceId: sinceId,
         untilId: untilId,
-        source: notificationSourceOption
+        source: notificationSourceOption,
       }
     );
     this.logger.log('Success get all notification');
     return {
       payload: notification.items.map((noti) => noti.toNotificationPayload()),
-      meta: notification.meta
+      meta: notification.meta,
     };
   }
 
@@ -129,7 +129,7 @@ export class NotificationsController {
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @CastcleBasicAuth()
   @Put('notifications/:id/read')
@@ -153,7 +153,7 @@ export class NotificationsController {
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @CastcleBasicAuth()
   @Put('notifications/readAll')
@@ -173,10 +173,10 @@ export class NotificationsController {
   }
 
   @ApiBody({
-    type: RegisterTokenDto
+    type: RegisterTokenDto,
   })
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @CastcleBasicAuth()
   @Post('notifications/registerToken')
@@ -199,7 +199,7 @@ export class NotificationsController {
   }
 
   @ApiOkResponse({
-    type: NotificationBadgesResponse
+    type: NotificationBadgesResponse,
   })
   @CastcleAuth(CacheKeyName.NotificationsBadges)
   @Get('notifications/badges')
@@ -211,8 +211,8 @@ export class NotificationsController {
     this.logger.log('Success get notification badges');
     return {
       payload: {
-        badges: result
-      }
+        badges: result,
+      },
     };
   }
 }
