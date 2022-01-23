@@ -602,13 +602,32 @@ export class AuthenticationService {
       },
     });
     await user.save();
-    return this.createAccountAuthenId(
+
+    return await this.createAccountAuthenId(
       account,
       requirements.provider,
       requirements.socialId,
       requirements.socialToken,
-      requirements.socialSecretToken
+      requirements.socialSecretToken,
+      requirements.avatar,
+      requirements.displayName
     );
+  }
+
+  async updateSocialFlag(account: AccountDocument) {
+    const user = this._userModel
+      .updateOne(
+        {
+          ownerAccount: account._id,
+          type: UserType.People,
+          visibility: EntityVisibility.Publish,
+        },
+        {
+          'verified.social': true,
+        }
+      )
+      .exec();
+    return user;
   }
 
   /**
@@ -617,15 +636,19 @@ export class AuthenticationService {
    * @param {AccountAuthenIdType} provider
    * @param {string} socialUserId
    * @param {string} socialUserToken
+   * @param {string} socialSecretToken
+   * @param {string} avatar
+   * @param {string} displayName
    * @returns {AccountAuthenIdDocument}
    */
-  createAccountAuthenId(
+  async createAccountAuthenId(
     account: AccountDocument,
     provider: AccountAuthenIdType,
     socialUserId: string,
-    socialUserToken: string,
-    socialSecretToken: string,
-    avatar?: string
+    socialUserToken?: string,
+    socialSecretToken?: string,
+    avatar?: string,
+    displayName?: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
@@ -634,7 +657,10 @@ export class AuthenticationService {
       socialToken: socialUserToken,
       socialSecretToken: socialSecretToken,
       avatar: avatar,
+      displayName: displayName,
     });
-    return accountActivation.save();
+    const result = await accountActivation.save();
+    await this.updateSocialFlag(account);
+    return result;
   }
 }

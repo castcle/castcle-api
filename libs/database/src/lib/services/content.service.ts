@@ -1067,8 +1067,14 @@ Message: ${message}`,
   ) {
     const users: IncludeUser[] = [];
     const authorIds = [];
+    const engagementsOriginal = content.originalPost
+      ? await this.getAllEngagementFromContentIdsAndUser(
+          [content.originalPost?._id],
+          viewer?.id
+        )
+      : [];
     const casts = content.originalPost
-      ? [toSignedContentPayloadItem(content.originalPost)]
+      ? [toSignedContentPayloadItem(content.originalPost, engagementsOriginal)]
       : [];
 
     if (content.author) {

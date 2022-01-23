@@ -97,7 +97,7 @@ export class UserService {
   getUserFromCredential = (credential: CredentialDocument) =>
     this._userModel
       .findOne({
-        ownerAccount: credential.account._id,
+        ownerAccount: credential?.account?._id,
         type: UserType.People,
         visibility: EntityVisibility.Publish,
       })
