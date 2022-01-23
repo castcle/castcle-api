@@ -63,6 +63,9 @@ export class AccountAuthenId extends CastcleBase {
 
   @Prop()
   avatar: string;
+
+  @Prop()
+  displayName: string;
 }
 
 export const AccountAuthenIdSchema =

@@ -782,8 +782,9 @@ export class AuthenticationController {
       body.provider,
       body.uid,
       body.authToken,
-      '',
-      body.avatar
+      undefined,
+      body.avatar,
+      body.displayName
     );
   }
 }
