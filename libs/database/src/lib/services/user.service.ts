@@ -126,9 +126,12 @@ export class UserService {
    * @returns {UserDocument[]}
    */
   getUserAndPagesFromCredential = (credential: CredentialDocument) =>
+    this.getUserAndPagesFromAccountId(credential.account._id);
+
+  getUserAndPagesFromAccountId = (accountId: string) =>
     this._userModel
       .find({
-        ownerAccount: credential.account._id,
+        ownerAccount: accountId as any,
         visibility: EntityVisibility.Publish
       })
       .exec();
@@ -357,11 +360,6 @@ export class UserService {
     await this.contentService._commentModel
       .updateMany({ 'author._id': user._id }, { author: user })
       .exec();
-    console.debug('updating feedItem of user');
-    await this.contentService._feedItemModel.updateMany(
-      { 'content.author.id': user._id },
-      { 'content.author': user.toAuthor() }
-    );
   };
 
   updateUserInEmbedContentBackground = async (userId: any) => {

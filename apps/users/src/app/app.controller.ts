@@ -460,6 +460,7 @@ export class UserController {
   }
 
   /**
+   * @deprecated The method should not be used. Please use POST instead
    * User {castcleId} follow user from {Id} by
    * @param {string} id idOrCastcleId that user want to follow
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
@@ -494,6 +495,42 @@ export class UserController {
   }
 
   /**
+   * User {castcleId} follow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBody({
+    type: TargetCastcleDto
+  })
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':id/following')
+  async following(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Body() body: TargetCastcleDto
+  ) {
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const followedUser = await this._getUserFromIdOrCastcleId(
+      body.targetCastcleId,
+      req
+    );
+
+    if (!user.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await this.userService.follow(user, followedUser);
+    return '';
+  }
+
+  /**
+   * @deprecated The method should not be used. Please use [DEL] /users/:id/following/:target_castcle_id
    * User {castcleId} unfollow user from {Id} by
    * @param {string} id idOrCastcleId that user want to follow
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
@@ -508,7 +545,7 @@ export class UserController {
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put(':id/unfollow')
-  async unfollow(
+  async _unfollow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
@@ -524,6 +561,40 @@ export class UserController {
         req.$language
       );
     await this.userService.unfollow(currentUser, followedUser);
+    return '';
+  }
+
+  /**
+   * User {castcleId} unfollow user from {Id} by
+   * @param {string} id idOrCastcleId that user want to follow
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} castcleId Body.castcleId
+   * @returns {''}
+   */
+  @ApiResponse({
+    status: 204
+  })
+  @ApiBody({
+    type: TargetCastcleDto
+  })
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Delete(':id/following/:target_castcle_id')
+  async unfollow(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Param('target_castcle_id') targetCastcleId: string
+  ) {
+    const { user } = await this._getUserAndViewer(id, req.$credential);
+    const followedUser = await this._getUserFromIdOrCastcleId(
+      targetCastcleId,
+      req
+    );
+    if (!user.ownerAccount === req.$credential.account._id)
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    await this.userService.unfollow(user, followedUser);
     return '';
   }
 
@@ -1002,6 +1073,7 @@ export class UserController {
 
       this.logger.log('build response');
       response = await userReferrer.toUserResponse(
+        undefined,
         relationStatus.blocked,
         relationStatus.blocking,
         relationStatus.followed
@@ -1067,6 +1139,7 @@ export class UserController {
 
           this.logger.log('build response with relation');
           return await x.toUserResponse(
+            undefined,
             relationStatus.blocked,
             relationStatus.blocking,
             relationStatus.followed
