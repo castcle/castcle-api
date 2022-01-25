@@ -122,8 +122,8 @@ export class RankerService {
     let authors = feedItems.map((feedItem) => feedItem.content.author);
     authors = authors.concat(
       feedItems
-        .filter((item) => item.content.isRecast || item.content.isQuote)
-        .map((feedItem) => feedItem.content.author)
+        .filter((feedItem) => feedItem.content.originalPost)
+        .map((feedItem) => feedItem.content.originalPost.author)
     );
     const casts = feedItems
       .map((feedItem) => {
@@ -279,8 +279,8 @@ export class RankerService {
     let authors = includes.users.map((author) => new Author(author));
     authors = authors.concat(
       newAnswer
-        .filter((item) => item.content.isRecast || item.content.isQuote)
-        .map((feedItem) => feedItem.content.author)
+        .filter((feedItem) => feedItem.content.originalPost)
+        .map((feedItem) => feedItem.content.originalPost.author)
     );
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, authors)
