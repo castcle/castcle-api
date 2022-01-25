@@ -88,7 +88,7 @@ export class TwitterClient {
             resolve({
               oauth_token,
               oauth_token_secret,
-              results
+              results,
             });
           }
         }
@@ -113,7 +113,7 @@ export class TwitterClient {
         'GET',
         accessToken,
         tokenSecret,
-        (error, data, response) => {
+        (error, data) => {
           if (error) {
             reject(error);
           } else {

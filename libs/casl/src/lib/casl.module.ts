@@ -3,7 +3,7 @@ import { DatabaseModule } from '@castcle-api/database';
 import {
   Action,
   AppAbility,
-  CaslAbilityFactory
+  CaslAbilityFactory,
 } from './abilities/abilities.factory';
 import { PolicyHandler } from './policies';
 
@@ -11,7 +11,7 @@ import { PolicyHandler } from './policies';
   imports: [DatabaseModule],
   controllers: [],
   providers: [CaslAbilityFactory],
-  exports: [CaslAbilityFactory]
+  exports: [CaslAbilityFactory],
 })
 export class CaslModule {}
 

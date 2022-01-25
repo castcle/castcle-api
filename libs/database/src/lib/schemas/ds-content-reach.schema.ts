@@ -33,7 +33,7 @@ export class DsContentReach extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Content',
-    index: true
+    index: true,
   })
   content: Content;
 

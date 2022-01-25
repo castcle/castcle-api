@@ -76,7 +76,7 @@ describe('Uploader', () => {
     it('should get fileName as set in options', () => {
       expect(
         Uploader.getFileSavedNameFromOptions('png', {
-          filename: 'sompop-test'
+          filename: 'sompop-test',
         })
       ).toEqual('sompop-test.png');
     });
@@ -84,7 +84,7 @@ describe('Uploader', () => {
       expect(
         Uploader.getFileSavedNameFromOptions('png', {
           filename: 'sompop-test',
-          subpath: 'usera'
+          subpath: 'usera',
         })
       ).toEqual('usera/sompop-test.png');
     });

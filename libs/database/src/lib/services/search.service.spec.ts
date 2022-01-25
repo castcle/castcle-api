@@ -41,9 +41,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -58,7 +58,7 @@ describe('SearchService', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [HashtagService, SearchService];
@@ -66,7 +66,7 @@ describe('SearchService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     hashtagService = module.get<HashtagService>(HashtagService);
     service = module.get<SearchService>(SearchService);
@@ -77,7 +77,7 @@ describe('SearchService', () => {
         displayId: name,
         displayName: name,
         type: type,
-        followerCount: follow
+        followerCount: follow,
       });
       await user.save();
     };
@@ -87,9 +87,9 @@ describe('SearchService', () => {
         tag: slug,
         score: hScore,
         aggregator: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
-        name: hName
+        name: hName,
       };
       await hashtagService.create(newHashtag);
     };
@@ -146,7 +146,7 @@ describe('SearchService', () => {
     it('should get top trend exclude hashtags', async () => {
       const result = await service.getTopTrends({
         limit: DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
-        exclude: 'hashtags'
+        exclude: 'hashtags',
       });
 
       expect(result.hashtags.length).toEqual(0);
@@ -156,7 +156,7 @@ describe('SearchService', () => {
     it('should get top trend exclude follows', async () => {
       const result = await service.getTopTrends({
         limit: DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
-        exclude: 'follows'
+        exclude: 'follows',
       });
       expect(result.hashtags.length).toEqual(10);
       expect(result.follows.length).toEqual(0);
@@ -164,7 +164,7 @@ describe('SearchService', () => {
 
     it('should get top trend with limit 20', async () => {
       const result = await service.getTopTrends({
-        limit: 20
+        limit: 20,
       });
       expect(result.hashtags.length).toEqual(20);
       expect(result.follows.length).toEqual(20);
@@ -172,7 +172,7 @@ describe('SearchService', () => {
 
     it('should get empty top trend with exclude all', async () => {
       const result = await service.getTopTrends({
-        exclude: 'follows,hashtags'
+        exclude: 'follows,hashtags',
       });
       expect(result.hashtags.length).toEqual(0);
       expect(result.follows.length).toEqual(0);

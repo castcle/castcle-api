@@ -28,6 +28,6 @@ import { TwitterService } from './twitter.service';
 
 @Module({
   imports: [DatabaseModule, UtilsAwsModule],
-  providers: [TwitterService]
+  providers: [TwitterService],
 })
 export class TwitterModule {}

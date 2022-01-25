@@ -28,24 +28,22 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  NotificationService
+  NotificationService,
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
 import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  AccountDocument,
   ContentDocument,
   CredentialDocument,
-  UserDocument
+  UserDocument,
 } from '@castcle-api/database/schemas';
-import { PageDto } from '@castcle-api/database/dtos';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import {
   NotificationProducer,
   TopicName,
-  UserProducer
+  UserProducer,
 } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -55,17 +53,17 @@ const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 const fakeBull3 = BullModule.registerQueue({
   name: TopicName.Notifications,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -75,9 +73,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -90,28 +88,23 @@ describe('CommentController', () => {
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   let user: UserDocument;
   let content: ContentDocument;
   let userCredentialRequest: any;
   let rootCommentId: any;
-  const pageDto: PageDto = {
-    displayName: 'Super Page',
-    castcleId: 'page'
-  };
   beforeAll(async () => {
     app = await Test.createTestingModule({
       imports: [
         rootMongooseTestModule(),
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
+          ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         fakeBull,
-        fakeBull3
+        fakeBull3,
       ],
       controllers: [CommentController],
       providers: [
@@ -122,8 +115,8 @@ describe('CommentController', () => {
         UserProducer,
         NotificationProducer,
         NotificationService,
-        HashtagService
-      ]
+        HashtagService,
+      ],
     }).compile();
     service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
@@ -133,7 +126,7 @@ describe('CommentController', () => {
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
     const accountActivation = await authService.signupByEmail(
       result.accountDocument,
@@ -141,10 +134,10 @@ describe('CommentController', () => {
         email: 'test@gmail.com',
         displayId: 'test1234',
         displayName: 'test',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       }
     );
-    userAccount = await authService.verifyAccount(accountActivation);
+    await authService.verifyAccount(accountActivation);
     userCredential = await authService.getCredentialFromAccessToken(
       result.credentialDocument.accessToken
     ); //result.credentialDocument;
@@ -152,13 +145,13 @@ describe('CommentController', () => {
     content = await contentService.createContentFromUser(user, {
       type: ContentType.Short,
       payload: {
-        message: 'Hi Jack'
+        message: 'Hi Jack',
       } as ShortPayload,
-      castcleId: user.displayId
+      castcleId: user.displayId,
     });
     userCredentialRequest = {
       $credential: userCredential,
-      $language: 'th'
+      $language: 'th',
     } as any;
   });
   afterAll(async () => {
@@ -171,7 +164,7 @@ describe('CommentController', () => {
         content._id,
         {
           message: 'hello',
-          castcleId: user.displayId
+          castcleId: user.displayId,
         },
         userCredentialRequest,
         { hasRelationshipExpansion: false }
@@ -209,8 +202,7 @@ describe('CommentController', () => {
       const result = await commentController.likeComment(
         content._id,
         rootCommentId,
-        { castcleId: user.displayId, feedItemId: 'test' },
-        userCredentialRequest
+        { castcleId: user.displayId, feedItemId: 'test' }
       );
       expect(result).toEqual('');
     });
@@ -221,12 +213,10 @@ describe('CommentController', () => {
         { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
-      const result = await commentController.likeComment(
-        content._id,
-        rootCommentId,
-        { castcleId: user.displayId, feedItemId: 'test' },
-        userCredentialRequest
-      );
+      await commentController.likeComment(content._id, rootCommentId, {
+        castcleId: user.displayId,
+        feedItemId: 'test',
+      });
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
@@ -237,15 +227,10 @@ describe('CommentController', () => {
   });
   describe('#unlikeComment()', () => {
     it('should unlike a like of comment', async () => {
-      const result = await commentController.unlikeComment(
-        content._id,
-        rootCommentId,
-        {
-          castcleId: user.displayId,
-          feedItemId: 'test'
-        },
-        userCredentialRequest
-      );
+      const result = await commentController.unlikeComment(rootCommentId, {
+        castcleId: user.displayId,
+        feedItemId: 'test',
+      });
       expect(result).toEqual('');
     });
     it('should update like engagement', async () => {
@@ -255,12 +240,10 @@ describe('CommentController', () => {
         { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(0);
-      const result = await commentController.unlikeComment(
-        content._id,
-        rootCommentId,
-        { castcleId: user.displayId, feedItemId: 'test' },
-        userCredentialRequest
-      );
+      await commentController.unlikeComment(rootCommentId, {
+        castcleId: user.displayId,
+        feedItemId: 'test',
+      });
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
@@ -289,9 +272,7 @@ describe('CommentController', () => {
   describe('#deleteComment()', () => {
     it('should delete a comment', async () => {
       const deleteComment = await commentController.deleteComment(
-        content._id,
-        rootCommentId,
-        userCredentialRequest
+        rootCommentId
       );
       expect(deleteComment).toEqual('');
       const comments = await commentController.getAllComment(

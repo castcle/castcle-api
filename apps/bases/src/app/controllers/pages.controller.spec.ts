@@ -26,20 +26,19 @@ import {
   createCastcleMeta,
   HashtagService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '@castcle-api/database';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import {
   UserService,
   AuthenticationService,
-  ContentService
+  ContentService,
 } from '@castcle-api/database';
 import { PagesController } from './pages.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  AccountDocument,
   ContentDocument,
-  CredentialDocument
+  CredentialDocument,
 } from '@castcle-api/database/schemas';
 import {
   Author,
@@ -47,7 +46,7 @@ import {
   ContentType,
   PageDto,
   SaveContentDto,
-  ShortPayload
+  ShortPayload,
 } from '@castcle-api/database/dtos';
 import { Image } from '@castcle-api/utils/aws';
 
@@ -61,9 +60,9 @@ const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -73,9 +72,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -85,18 +84,16 @@ const closeInMongodConnection = async () => {
 describe('PageController', () => {
   let app: TestingModule;
   let pageController: PagesController;
-  let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userAccount: AccountDocument;
   let userCredential: CredentialDocument;
   const pageDto: PageDto = {
     displayName: 'Super Page',
-    castcleId: 'pageyo'
+    castcleId: 'pageyo',
   };
   const pageDto2: PageDto = {
     displayName: 'Super Page2',
-    castcleId: 'pageyo2'
+    castcleId: 'pageyo2',
   };
   beforeAll(async () => {
     app = await Test.createTestingModule({
@@ -104,11 +101,11 @@ describe('PageController', () => {
         rootMongooseTestModule(),
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
+          ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ],
       controllers: [PagesController],
       providers: [
@@ -116,10 +113,9 @@ describe('PageController', () => {
         AuthenticationService,
         ContentService,
         UserProducer,
-        HashtagService
-      ]
+        HashtagService,
+      ],
     }).compile();
-    service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     pageController = app.get<PagesController>(PagesController);
@@ -127,7 +123,7 @@ describe('PageController', () => {
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
     const accountActivation = await authService.signupByEmail(
       result.accountDocument,
@@ -135,14 +131,14 @@ describe('PageController', () => {
         email: 'test@gmail.com',
         displayId: 'test1234',
         displayName: 'test',
-        password: '1234AbcD'
+        password: '1234AbcD',
       }
     );
-    userAccount = await authService.verifyAccount(accountActivation);
+    await authService.verifyAccount(accountActivation);
     jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image({
-        original: 'mockUri'
+        original: 'mockUri',
       });
       return mockImage;
     });
@@ -188,8 +184,8 @@ describe('PageController', () => {
             facebook: 'https://facebook.com',
             twitter: 'https://twitter.com',
             youtube: 'https://youtube.com',
-            medium: 'https://medium.com'
-          }
+            medium: 'https://medium.com',
+          },
         }
       );
       //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
@@ -211,7 +207,7 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
         {
-          password: '1234AbcD'
+          password: '1234AbcD',
         }
       );
       expect(result).toEqual('');
@@ -223,7 +219,7 @@ describe('PageController', () => {
   });
   describe('getPageFromId', () => {
     it('should be able to get page from user ID', async () => {
-      const newPageResponse = await pageController.createPage(
+      await pageController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
         pageDto2
       );
@@ -254,17 +250,17 @@ describe('PageController', () => {
         {
           type: ContentType.Short,
           payload: {
-            message: 'hello'
+            message: 'hello',
           } as ShortPayload,
-          castcleId: page.displayId
+          castcleId: page.displayId,
         },
         {
           type: ContentType.Short,
           payload: {
-            message: 'hi'
+            message: 'hi',
           } as ShortPayload,
-          castcleId: page.displayId
-        }
+          castcleId: page.displayId,
+        },
       ];
       const createResult: ContentDocument[] = [];
       createResult[0] = await contentService.createContentFromUser(
@@ -288,9 +284,9 @@ describe('PageController', () => {
         payload: items,
         includes: new CastcleIncludes({
           users: createResult.map(({ author }) => new Author(author)),
-          casts: []
+          casts: [],
         }),
-        meta: createCastcleMeta(createResult)
+        meta: createCastcleMeta(createResult),
       };
 
       expect(JSON.stringify(response)).toEqual(JSON.stringify(expectedObject));
@@ -299,7 +295,7 @@ describe('PageController', () => {
   describe('getAllPages', () => {
     it('should display all pages that has been created', async () => {
       const result = await pageController.getAllPages({
-        $credential: userCredential
+        $credential: userCredential,
       } as CredentialRequest);
       console.log(result);
       expect(result.payload.length).toEqual(1);

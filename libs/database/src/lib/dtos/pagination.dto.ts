@@ -30,19 +30,19 @@ import {
   IsMongoId,
   IsNumber,
   IsOptional,
-  Max
+  Max,
 } from 'class-validator';
 import { DEFAULT_QUERY_OPTIONS } from './common.dto';
 
 export enum UserField {
-  Relationships = 'relationships'
+  Relationships = 'relationships',
 }
 
 export class ExpansionQuery {
   @ApiProperty({
     enum: UserField,
     required: false,
-    isArray: true
+    isArray: true,
   })
   @TransformStringToArrayOfStrings()
   @IsOptional()
@@ -59,7 +59,7 @@ export class PaginationQuery extends ExpansionQuery {
   @ApiProperty({
     type: Number,
     maximum: 1000,
-    required: false
+    required: false,
   })
   @Type(() => Number)
   @IsOptional()
@@ -69,7 +69,7 @@ export class PaginationQuery extends ExpansionQuery {
 
   @ApiProperty({
     type: String,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsMongoId()
@@ -77,7 +77,7 @@ export class PaginationQuery extends ExpansionQuery {
 
   @ApiProperty({
     type: String,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsMongoId()

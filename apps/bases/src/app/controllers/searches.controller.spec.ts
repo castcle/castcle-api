@@ -26,7 +26,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   SearchService,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import { CreateHashtag } from '@castcle-api/database/dtos';
 import { CredentialDocument, UserType } from '@castcle-api/database/schemas';
@@ -45,9 +45,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongodMock.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -66,9 +66,9 @@ describe('NotificationsController', () => {
       tag: slug,
       score: hScore,
       aggregator: {
-        _id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72',
       },
-      name: hName
+      name: hName,
     };
     await hashtagService.create(newHashtag);
   };
@@ -80,16 +80,19 @@ describe('NotificationsController', () => {
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
-        })
+          ttl: 1000,
+        }),
       ],
       controllers: [SearchesController],
       providers: [
         HashtagService,
         SearchService,
         AuthenticationService,
-        { provide: UserService, useValue: { getUserFromCredential: jest.fn() } }
-      ]
+        {
+          provide: UserService,
+          useValue: { getUserFromCredential: jest.fn() },
+        },
+      ],
     }).compile();
     controller = app.get<SearchesController>(SearchesController);
     search = app.get<SearchService>(SearchService);
@@ -100,7 +103,7 @@ describe('NotificationsController', () => {
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
 
     userCredential = resultAccount.credentialDocument;
@@ -111,7 +114,7 @@ describe('NotificationsController', () => {
         displayName: name,
         displayId: name,
         type: type,
-        followerCount: follow
+        followerCount: follow,
       });
       await user.save();
     };
@@ -160,7 +163,7 @@ describe('NotificationsController', () => {
   describe('getTopTrends', () => {
     it('should return TopTrendsResponse that contain all data', async () => {
       const responseResult = await controller.getTopTrends({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       expect(responseResult.hashtags.length).toEqual(10);
@@ -190,7 +193,7 @@ describe('NotificationsController', () => {
     it('should return TopTrendsResponse that contain with exclude hashtags', async () => {
       const responseResult = await controller.getTopTrends(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         20,
         'hashtags'
@@ -215,7 +218,7 @@ describe('NotificationsController', () => {
     it('should return Empty TopTrendsResponse that contain with exclude hashtags and follows', async () => {
       const responseResult = await controller.getTopTrends(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         20,
         'hashtags,follows'
@@ -230,7 +233,7 @@ describe('NotificationsController', () => {
     it('should return SearchesResponse that contain all data', async () => {
       const responseResult = await controller.getSearches(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         10,
         'c'
@@ -266,7 +269,7 @@ describe('NotificationsController', () => {
     it('should return SearchesResponse that only hashtag', async () => {
       const responseResult = await controller.getSearches(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         10,
         '#ca'
@@ -287,7 +290,7 @@ describe('NotificationsController', () => {
     it('should return SearchesResponse that only follower', async () => {
       const responseResult = await controller.getSearches(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         10,
         '@cuse'
@@ -301,7 +304,7 @@ describe('NotificationsController', () => {
     it('should return SearchesResponse with empty data', async () => {
       const responseResult = await controller.getSearches(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         10,
         'abc'

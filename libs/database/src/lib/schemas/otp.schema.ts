@@ -31,7 +31,7 @@ import { CastcleBase } from './base.schema';
 export enum OtpObjective {
   ChangePassword = 'change_password',
   ForgotPassword = 'forgot_password',
-  VerifyMobile = 'verify_mobile'
+  VerifyMobile = 'verify_mobile',
 }
 
 export type OtpDocument = Otp & IOtp;
@@ -42,7 +42,7 @@ export class Otp extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   account: Account;
 
@@ -114,7 +114,7 @@ OtpSchema.statics.generate = async function (
     otpFindingResult = await this.findOne({
       account: accountId,
       action: objective,
-      refCode: newRefCode
+      refCode: newRefCode,
     }).exec();
   } while (otpFindingResult);
   const now = new Date();
@@ -128,7 +128,7 @@ OtpSchema.statics.generate = async function (
     isVerify: verify,
     sid: sid,
     expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000),
-    reciever: reciever
+    reciever: reciever,
   });
   return otp.save();
 };

@@ -39,7 +39,7 @@ export class UxEngagement extends CastcleBase {
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
+    ref: 'Account',
   })
   account: Account;
 

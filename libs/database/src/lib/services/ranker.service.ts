@@ -30,18 +30,18 @@ import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import {
   createCastcleFilter,
   createCastcleMeta,
-  createPagination
+  createPagination,
 } from '../utils/common';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
-  toUnsignedContentPayloadItem
+  toUnsignedContentPayloadItem,
 } from '../schemas/content.schema';
 import {
   GuestFeedItemPayload,
-  FeedItemPayloadItem
+  FeedItemPayloadItem,
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
@@ -83,7 +83,7 @@ export class RankerService {
   ) {
     const filter = {
       viewer: viewer._id,
-      seen: options.mode === FeedItemMode.Current ? false : true
+      seen: options.mode === FeedItemMode.Current ? false : true,
     };
     const feedItemResult = await this._feedItemModel
       .find(filter)
@@ -96,7 +96,7 @@ export class RankerService {
     return {
       total: totalFeedItems,
       items: feedItemResult,
-      pagination: createPagination(options, totalFeedItems)
+      pagination: createPagination(options, totalFeedItems),
     };
   }
 
@@ -119,7 +119,12 @@ export class RankerService {
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
-    const authors = feedItems.map((feedItem) => feedItem.content.author);
+    let authors = feedItems.map((feedItem) => feedItem.content.author);
+    authors = authors.concat(
+      feedItems
+        .filter((feedItem) => feedItem.content.originalPost)
+        .map((feedItem) => feedItem.content.originalPost.author)
+    );
     const casts = feedItems
       .map((feedItem) => {
         if (!feedItem.content?.originalPost) return;
@@ -142,20 +147,20 @@ export class RankerService {
             feature: {
               slug: 'feed',
               key: 'feature.feed',
-              name: 'Feed'
+              name: 'Feed',
             },
             circle: {
               id: 'for-you',
               key: 'circle.forYou',
               name: 'For You',
-              slug: 'forYou'
+              slug: 'forYou',
             },
             payload: toSignedContentPayloadItem(item.content),
-            type: 'content'
+            type: 'content',
           } as FeedItemPayloadItem)
       ),
       includes,
-      meta: createCastcleMeta(feedItems)
+      meta: createCastcleMeta(feedItems),
     } as GuestFeedItemPayload;
   };
 
@@ -191,7 +196,7 @@ export class RankerService {
     );
     if (viewer.seenContents)
       filter['content.id'] = {
-        $nin: viewer.seenContents
+        $nin: viewer.seenContents,
       };
     console.debug('filter', filter);
     const documents = await this._feedItemModel
@@ -216,7 +221,7 @@ export class RankerService {
           const feedItem = documents.find((k) => String(k.content.id) == id);
           return {
             feedItem,
-            score: answer[id] as number
+            score: answer[id] as number,
           };
         })
         .sort((a, b) => (a.score > b.score ? -1 : 1))
@@ -228,18 +233,18 @@ export class RankerService {
             feature: {
               slug: 'feed',
               key: 'feature.feed',
-              name: 'Feed'
+              name: 'Feed',
             },
             circle: {
               id: 'for-you',
               key: 'circle.forYou',
               name: 'For You',
-              slug: 'forYou'
+              slug: 'forYou',
             },
             payload: signedContentPayloadItem(
               toUnsignedContentPayloadItem(item.content, [])
             ),
-            type: 'content'
+            type: 'content',
           } as FeedItemPayloadItem)
       );
     }
@@ -249,7 +254,7 @@ export class RankerService {
       casts: newAnswer
         .filter((doc) => doc.content.originalPost)
         .map((c) => c.content.originalPost)
-        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c)))
+        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c))),
     };
     let meta: CastcleMeta = createCastcleMeta(newAnswer);
     if (query.maxResults && newAnswer.length < query.maxResults) {
@@ -268,11 +273,15 @@ export class RankerService {
       }
       meta = {
         ...guestFeedPayloads.meta,
-        resultCount: guestFeedPayloads.meta.resultCount + meta.resultCount
+        resultCount: guestFeedPayloads.meta.resultCount + meta.resultCount,
       };
     }
-
-    const authors = includes.users.map((author) => new Author(author));
+    let authors = includes.users.map((author) => new Author(author));
+    authors = authors.concat(
+      newAnswer
+        .filter((feedItem) => feedItem.content.originalPost)
+        .map((feedItem) => feedItem.content.originalPost.author)
+    );
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
@@ -284,14 +293,14 @@ export class RankerService {
       .updateOne(
         { _id: viewer._id },
         {
-          seenContents: newSeenContents
+          seenContents: newSeenContents,
         }
       )
       .exec();
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),
-      meta: meta
+      meta: meta,
     } as GuestFeedItemPayload;
   };
 

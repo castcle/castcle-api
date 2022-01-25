@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+export * from './campaign.enum';
 export * from './feed.enum';
 export * from './social-sync.enum';
 export * from './user.enum';
+export * from './user.model';

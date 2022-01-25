@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  SocialSyncService
+  SocialSyncService,
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { env } from '../environment';
@@ -43,9 +43,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -60,7 +60,7 @@ describe('SocialSyncService', () => {
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
   const providers = [SocialSyncService];
@@ -68,7 +68,7 @@ describe('SocialSyncService', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<SocialSyncService>(SocialSyncService);
 
@@ -76,7 +76,7 @@ describe('SocialSyncService', () => {
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
-      type: UserType.People
+      type: UserType.People,
     });
     await mocksUser.save();
   });
@@ -94,7 +94,7 @@ describe('SocialSyncService', () => {
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
-        active: true
+        active: true,
       };
       const resultData = await service.create(mocksUser, socialSyncDto);
 
@@ -114,7 +114,7 @@ describe('SocialSyncService', () => {
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
-        active: true
+        active: true,
       };
       await service.create(mocksUser, socialSyncDto);
 
@@ -147,7 +147,7 @@ describe('SocialSyncService', () => {
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
-        active: false
+        active: false,
       };
       await service.update(updateSocialSyncDto, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
@@ -166,7 +166,7 @@ describe('SocialSyncService', () => {
       const deleteSocial: SocialSyncDeleteDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Facebook,
-        socialId: '7891234'
+        socialId: '7891234',
       };
       await service.delete(deleteSocial, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);

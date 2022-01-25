@@ -27,7 +27,7 @@ describe('Image Unit Test', () => {
       const fixSize: Size = {
         name: 'test',
         width: 200,
-        height: 200
+        height: 200,
       };
       const newSize = Image._getNewSameRatioSize(500, 200, fixSize);
       expect(newSize.name).toEqual(fixSize.name);
@@ -42,7 +42,7 @@ describe('Image Unit Test', () => {
       const fixSize: Size = {
         name: 'test',
         width: 200,
-        height: 200
+        height: 200,
       };
       const newSize = Image._getNewSameRatioSize(140, 50, fixSize);
       expect(newSize.name).toEqual(fixSize.name);

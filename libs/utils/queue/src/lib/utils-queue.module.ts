@@ -36,22 +36,22 @@ import { ContentMessage } from './messages/content.message';
     BullModule.forRoot({
       redis: {
         host: Environment.REDIS_HOST,
-        port: Environment.REDIS_PORT
-      }
+        port: Environment.REDIS_PORT,
+      },
     }),
     BullModule.registerQueue({
-      name: TopicName.Notifications
+      name: TopicName.Notifications,
     }),
     BullModule.registerQueue({
-      name: TopicName.Users
+      name: TopicName.Users,
     }),
     BullModule.registerQueue({
-      name: TopicName.Contents
-    })
+      name: TopicName.Contents,
+    }),
   ],
   controllers: [],
   providers: [NotificationProducer, UserProducer, ContentProducer],
-  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer]
+  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer],
 })
 export class UtilsQueueModule {}
 
@@ -62,5 +62,5 @@ export {
   UserProducer,
   UserMessage,
   ContentProducer,
-  ContentMessage
+  ContentMessage,
 };

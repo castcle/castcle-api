@@ -30,12 +30,12 @@ import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  ShortPayload
+  ShortPayload,
 } from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  Pagination
+  Pagination,
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { env } from '../environment';
@@ -52,7 +52,7 @@ import { UserService } from './user.service';
 
 jest.mock('@castcle-api/logger');
 jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn() })
+  createTransport: () => ({ sendMail: jest.fn() }),
 }));
 
 const fakeProcessor = jest.fn();
@@ -60,9 +60,9 @@ const fakeBull = BullModule.registerQueue({
   name: TopicName.Users,
   redis: {
     host: '0.0.0.0',
-    port: 6380
+    port: 6380,
   },
-  processors: [fakeProcessor]
+  processors: [fakeProcessor],
 });
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -74,9 +74,9 @@ const rootMongooseTestModule = (
       const mongoUri = mongod.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -95,13 +95,13 @@ describe('User Service', () => {
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ]
     : [
         rootMongooseTestModule(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ];
   const providers = [
     UserService,
@@ -109,7 +109,7 @@ describe('User Service', () => {
     ContentService,
     CommentService,
     UserProducer,
-    HashtagService
+    HashtagService,
   ];
   let result: {
     accountDocument: AccountDocument;
@@ -118,7 +118,7 @@ describe('User Service', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers
+      providers: providers,
     }).compile();
     service = module.get<UserService>(UserService);
     authService = module.get<AuthenticationService>(AuthenticationService);
@@ -128,16 +128,16 @@ describe('User Service', () => {
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
   });
   afterAll(async () => {
@@ -162,50 +162,50 @@ describe('User Service', () => {
         overview: 'this is short overview',
         images: {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           cover: {
-            original: 'http://placehold.it/200x200'
-          }
+            original: 'http://placehold.it/200x200',
+          },
         },
         links: {
           website: 'https://djjam.app',
           facebook: 'https://facebook.com/modernduck',
           medium: 'https://medium.com/xbcd',
           twitter: 'https://twitter.com/npop',
-          youtube: ' https://youtube.com/channel/abcd'
-        }
+          youtube: ' https://youtube.com/channel/abcd',
+        },
       } as UpdateModelUserDto;
       const FullDTO = {
         dob: '1987-01-01',
         overview: 'long overview',
         images: {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           cover: {
-            original: 'http://placehold.it/200x200'
-          }
+            original: 'http://placehold.it/200x200',
+          },
         },
         links: {
           website: 'https://ddjjam.app',
           facebook: 'https://facebook.com/modernduck1',
           medium: 'https://medium.com/xbcd2',
           twitter: 'https://twitter.com/npop3',
-          youtube: ' https://youtube.com/channel/abcd4'
-        }
+          youtube: ' https://youtube.com/channel/abcd4',
+        },
       } as UpdateModelUserDto;
       const userFromCredential = await service.getUserFromCredential(
         result.credentialDocument
       );
       expect((await userFromCredential.toUserResponse()).dob).toBeNull();
       let updatingUser = await service.updateUser(userFromCredential, {
-        dob: partialDTO.dob
+        dob: partialDTO.dob,
       });
       expect(updatingUser.profile.birthdate).toEqual(partialDTO.dob);
       expect((await updatingUser.toUserResponse()).dob).toEqual(partialDTO.dob);
       updatingUser = await service.updateUser(userFromCredential, {
-        overview: partialDTO.overview
+        overview: partialDTO.overview,
       });
       expect((await updatingUser.toUserResponse()).overview).toEqual(
         partialDTO.overview
@@ -214,8 +214,8 @@ describe('User Service', () => {
         images: partialDTO.images,
         links: {
           website: partialDTO.links.website,
-          facebook: partialDTO.links.facebook
-        }
+          facebook: partialDTO.links.facebook,
+        },
       });
       expect(updatingUser.profile.images.avatar).toEqual(
         partialDTO.images.avatar
@@ -226,7 +226,7 @@ describe('User Service', () => {
       expect((await updatingUser.toUserResponse()).images).toBeDefined();
       expect((await updatingUser.toUserResponse()).links).toEqual({
         website: partialDTO.links.website,
-        facebook: partialDTO.links.facebook
+        facebook: partialDTO.links.facebook,
       });
       updatingUser = await service.updateUser(userFromCredential, FullDTO);
       const fullResponse = await updatingUser.toUserResponse();
@@ -243,7 +243,7 @@ describe('User Service', () => {
       );
       const page = await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
-        castcleId: 'npop'
+        castcleId: 'npop',
       });
       expect(page.type).toEqual('page');
       expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
@@ -257,9 +257,9 @@ describe('User Service', () => {
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
-      const page = await service.createPageFromUser(currentUser, {
+      await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
-        castcleId: 'npop2'
+        castcleId: 'npop2',
       });
       const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages2.items.length).toEqual(2);
@@ -393,28 +393,28 @@ describe('User Service', () => {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop',
         displayName: 'npop',
         email: 'sompop.k@gmail.com',
-        password: '123456789'
+        password: '123456789',
       },
       pages: [
         {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           castcleId: 'test-12345',
           cover: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
 
     let userA: UserDocument;
@@ -496,72 +496,72 @@ describe('User Service', () => {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop2',
         displayName: 'npop2',
         email: 'sompop.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testC2345',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
     const userOverAllInfo = {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop7',
         displayName: 'npop7',
         email: 'sompop7.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testC2347',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12347'
-        } as PageDto
-      ]
+          displayName: 'hello12347',
+        } as PageDto,
+      ],
     };
     const userNotDeleteInfo = {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop3',
         displayName: 'npop3',
         email: 'sompop3.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testYoC2345',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
     let testLikeComment: CommentDocument;
 
@@ -605,31 +605,31 @@ describe('User Service', () => {
       contents[0] = await contentService.createContentFromUser(userA, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short1'
+          message: 'this is short1',
         } as ShortPayload,
-        castcleId: userA.displayId
+        castcleId: userA.displayId,
       });
       contents[1] = await contentService.createContentFromUser(userA, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short2'
+          message: 'this is short2',
         } as ShortPayload,
-        castcleId: userA.displayId
+        castcleId: userA.displayId,
       });
       //b
       contentsB[0] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short1'
+          message: 'this is short1',
         } as ShortPayload,
-        castcleId: userB.displayId
+        castcleId: userB.displayId,
       });
       contentsB[1] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short2'
+          message: 'this is short2',
         } as ShortPayload,
-        castcleId: userB.displayId
+        castcleId: userB.displayId,
       });
 
       fixContents[0] = await contentService.createContentFromUser(
@@ -637,9 +637,9 @@ describe('User Service', () => {
         {
           type: ContentType.Short,
           payload: {
-            message: 'this is short1'
+            message: 'this is short1',
           } as ShortPayload,
-          castcleId: userNotDelete.displayId
+          castcleId: userNotDelete.displayId,
         }
       );
 
@@ -648,9 +648,9 @@ describe('User Service', () => {
         {
           type: ContentType.Short,
           payload: {
-            message: 'this is short2'
+            message: 'this is short2',
           } as ShortPayload,
-          castcleId: userNotDelete.displayId
+          castcleId: userNotDelete.displayId,
         }
       );
 
@@ -660,10 +660,10 @@ describe('User Service', () => {
         { message: 'testLikeComment' }
       );
       await contentService.createCommentForContent(userA, fixContents[0], {
-        message: 'test Comment'
+        message: 'test Comment',
       });
       await contentService.createCommentForContent(userB, fixContents[0], {
-        message: 'test Comment'
+        message: 'test Comment',
       });
 
       await contentService.likeContent(fixContents[0], userA);
@@ -776,7 +776,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       mocksUsers = await generateMockUsers(5, 2, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
       await service.follow(mocksUsers[1].user, mocksUsers[0].user);
       await service.follow(mocksUsers[2].user, mocksUsers[0].user);
@@ -792,7 +792,7 @@ describe('User Service', () => {
         'mock',
         {
           limit: 5,
-          page: 1
+          page: 1,
         }
       );
       const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
@@ -809,7 +809,7 @@ describe('User Service', () => {
         '',
         {
           limit: 2,
-          page: 1
+          page: 1,
         }
       );
       expect(mentions.users.length).toEqual(2);
@@ -829,7 +829,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -843,7 +843,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' }
+        response: { code: '4001' },
       });
     });
 
@@ -878,7 +878,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -892,7 +892,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to unblock is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' }
+        response: { code: '4001' },
       });
     });
 
@@ -925,7 +925,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -959,7 +959,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user = mocksUsers[0].user;
@@ -994,7 +994,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user = mocksUsers[0].user;
@@ -1020,15 +1020,13 @@ describe('User Service', () => {
   });
 
   describe('#userSettings', () => {
-    let user: UserDocument;
     let account: AccountDocument;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
-      user = mocksUsers[0].user;
       account = mocksUsers[0].account;
     });
 

@@ -34,7 +34,7 @@ export type AccountActivationDocument = AccountActivation & IAccountActivation;
 
 export enum AccountActivationType {
   Email = 'email',
-  Mobile = 'mobile'
+  Mobile = 'mobile',
 }
 
 @Schema({ timestamps: true })
@@ -43,7 +43,7 @@ export class AccountActivation extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   account: Account;
 
@@ -100,6 +100,6 @@ AccountActivationSchema.statics.generateVerifyToken = function (
   );
   return {
     verifyToken,
-    verifyTokenExpireDate
+    verifyTokenExpireDate,
   };
 };

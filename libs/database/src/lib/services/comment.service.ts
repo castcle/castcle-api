@@ -10,14 +10,14 @@ import {
   CommentsResponse,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  ExpansionQuery
+  ExpansionQuery,
 } from '../dtos';
 import {
   CommentDocument,
   CommentType,
   EngagementDocument,
   EngagementType,
-  UserDocument
+  UserDocument,
 } from '../schemas';
 import { RelationshipDocument } from '../schemas/relationship.schema';
 import { RevisionDocument } from '../schemas/revision.schema';
@@ -47,29 +47,29 @@ export class CommentService {
         .find({
           type: CommentType.Reply,
           targetRef: { $id: comment._id, $ref: 'comment' },
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
         .exec(),
       this.revisionModel
         .countDocuments({
           objectRef: { $id: comment._id, $ref: 'comment' },
-          'payload.author._id': comment.author._id
+          'payload.author._id': comment.author._id,
         })
-        .exec()
+        .exec(),
     ]);
 
     const authorIds = [
       comment.author._id,
-      ...replies.map((reply) => reply.author._id)
+      ...replies.map((reply) => reply.author._id),
     ];
 
     const relationships = hasRelationshipExpansion
       ? await this.relationshipModel.find({
           $or: [
             { user: viewer._id, followedUser: { $in: authorIds } },
-            { user: { $in: authorIds }, followedUser: viewer._id }
+            { user: { $in: authorIds }, followedUser: viewer._id },
           ],
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
       : [];
 
@@ -117,7 +117,7 @@ export class CommentService {
             viewer._id,
             comment.author._id,
             hasRelationshipExpansion
-          )
+          ),
         }
       : {
           avatar:
@@ -130,7 +130,7 @@ export class CommentService {
           displayName: comment.author.displayName,
           id: comment.author._id,
           type: comment.author.type,
-          verified: comment.author.verified
+          verified: comment.author.verified,
         };
     return {
       id: comment._id,
@@ -158,7 +158,7 @@ export class CommentService {
                 viewer._id,
                 reply.author._id,
                 hasRelationshipExpansion
-              )
+              ),
             }
           : {
               avatar:
@@ -171,7 +171,7 @@ export class CommentService {
               displayName: reply.author.displayName,
               id: reply.author._id,
               verified: reply.author.verified,
-              type: reply.author.type
+              type: reply.author.type,
             };
         return {
           id: reply._id,
@@ -179,11 +179,11 @@ export class CommentService {
           message: reply.message,
           author: replyAuthor,
           metrics: { likeCount: reply.engagements.like.count },
-          participate: { liked: this.getLike(engagements, reply.id) }
+          participate: { liked: this.getLike(engagements, reply.id) },
         };
       }),
       createdAt: comment.createdAt.toISOString(),
-      updatedAt: comment.updatedAt.toISOString()
+      updatedAt: comment.updatedAt.toISOString(),
     } as CommentPayload;
   }
 
@@ -196,7 +196,7 @@ export class CommentService {
           'targetRef.$id': { $in: commentsIds },
           'targetRef.$ref': 'comment',
           type: CommentType.Reply,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
         .exec(),
       this.revisionModel
@@ -204,11 +204,11 @@ export class CommentService {
           {
             'objectRef.$id': { $in: commentsIds },
             'objectRef.$ref': 'comment',
-            'payload.author._id': { $in: commentsAuthorIds }
+            'payload.author._id': { $in: commentsAuthorIds },
           },
           { 'objectRef.$id': true }
         )
-        .exec()
+        .exec(),
     ]);
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
@@ -244,7 +244,7 @@ export class CommentService {
           'targetRef.$id': { $in: commentsIds },
           'targetRef.$ref': 'comment',
           type: CommentType.Reply,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
         .exec(),
       this.revisionModel
@@ -252,25 +252,25 @@ export class CommentService {
           {
             'objectRef.$id': { $in: commentsIds },
             'objectRef.$ref': 'comment',
-            'payload.author._id': { $in: commentsAuthorIds }
+            'payload.author._id': { $in: commentsAuthorIds },
           },
           { 'objectRef.$id': true }
         )
-        .exec()
+        .exec(),
     ]);
 
     const authorIds = [
       ...commentsAuthorIds,
-      ...replies.map((reply) => reply.author._id)
+      ...replies.map((reply) => reply.author._id),
     ];
 
     const relationships = hasRelationshipExpansion
       ? await this.relationshipModel.find({
           $or: [
             { user: viewer._id, followedUser: { $in: authorIds } },
-            { user: { $in: authorIds }, followedUser: viewer._id }
+            { user: { $in: authorIds }, followedUser: viewer._id },
           ],
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
       : [];
 
@@ -301,7 +301,7 @@ export class CommentService {
   ) => {
     const query: FilterQuery<CommentDocument> = {
       targetRef: { $id: contentId, $ref: 'content' },
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     };
 
     const comments = await this.commentModel
@@ -317,7 +317,7 @@ export class CommentService {
     );
     return {
       payload,
-      meta: createCastcleMeta(comments)
+      meta: createCastcleMeta(comments),
     };
   };
 
@@ -332,12 +332,12 @@ export class CommentService {
     contentId: string,
     options: CastcleQueryOptions & ExpansionQuery = {
       ...DEFAULT_QUERY_OPTIONS,
-      hasRelationshipExpansion: false
+      hasRelationshipExpansion: false,
     }
   ): Promise<CommentsResponse> => {
     const query: FilterQuery<CommentDocument> = {
       targetRef: { $id: contentId, $ref: 'content' },
-      visibility: EntityVisibility.Publish
+      visibility: EntityVisibility.Publish,
     };
 
     const comments = await this.commentModel
@@ -351,8 +351,8 @@ export class CommentService {
 
     const engagements = await this.engagementModel.find({
       targetRef: {
-        $in: comments.map((comment) => ({ $ref: 'comment', $id: comment._id }))
-      }
+        $in: comments.map((comment) => ({ $ref: 'comment', $id: comment._id })),
+      },
     });
 
     const payload = await this.convertCommentsToCommentResponse(
@@ -364,7 +364,7 @@ export class CommentService {
 
     return {
       payload,
-      meta: createCastcleMeta(comments)
+      meta: createCastcleMeta(comments),
     };
   };
 }

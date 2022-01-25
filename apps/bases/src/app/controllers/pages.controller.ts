@@ -32,12 +32,12 @@ import {
   Put,
   Req,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   AuthenticationService,
   UserService,
-  ContentService
+  ContentService,
 } from '@castcle-api/database';
 import {
   ContentResponse,
@@ -48,21 +48,21 @@ import {
   UpdatePageDto,
   PageResponseDto,
   DEFAULT_QUERY_OPTIONS,
-  GetContentsDto
+  GetContentsDto,
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   SortByPipe,
   PagePipe,
   LimitPipe,
-  SortByEnum
+  SortByEnum,
 } from '@castcle-api/utils/pipes';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
   Image,
-  ImageUploadOptions
+  ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { UserType } from '@castcle-api/database/schemas';
@@ -71,7 +71,7 @@ import {
   CastcleAuth,
   CastcleController,
   CastcleBasicAuth,
-  CastcleClearCacheAuth
+  CastcleClearCacheAuth,
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import { DeletePageDto } from '../dtos/delete.page.dto';
@@ -127,11 +127,11 @@ export class PagesController {
   };
 
   @ApiBody({
-    type: PageDto
+    type: PageDto,
   })
   @ApiResponse({
     status: 201,
-    type: PageDto
+    type: PageDto,
   })
   @CastcleBasicAuth()
   @Post('pages')
@@ -156,11 +156,11 @@ export class PagesController {
   }
 
   @ApiBody({
-    type: UpdatePageDto
+    type: UpdatePageDto,
   })
   @ApiResponse({
     status: 201,
-    type: PageDto
+    type: PageDto,
   })
   @HttpCode(201)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
@@ -183,7 +183,7 @@ export class PagesController {
         await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
           sizes: AVATAR_SIZE_CONFIGS,
-          subpath: `page_${page.displayId}`
+          subpath: `page_${page.displayId}`,
         })
       ).image;
     if (body.images && body.images.cover)
@@ -191,7 +191,7 @@ export class PagesController {
         await this._uploadImage(body.images.cover, {
           filename: `page-cover-${id}`,
           sizes: COMMON_SIZE_CONFIGS,
-          subpath: `page_${page.displayId}`
+          subpath: `page_${page.displayId}`,
         })
       ).image;
     if (body.displayName) page.displayName = body.displayName;
@@ -204,7 +204,7 @@ export class PagesController {
       if (body.links.youtube) page.profile.socials.youtube = body.links.youtube;
       if (body.links.website)
         page.profile.websites = [
-          { website: body.links.website, detail: body.links.website }
+          { website: body.links.website, detail: body.links.website },
         ];
     }
     console.debug('preUpdatePage', page);
@@ -256,7 +256,7 @@ export class PagesController {
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @HttpCode(204)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
@@ -308,7 +308,7 @@ export class PagesController {
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @Get('pages/:id/contents')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))

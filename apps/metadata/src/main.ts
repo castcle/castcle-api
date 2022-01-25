@@ -37,7 +37,7 @@ import { VersioningType } from '@nestjs/common';
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(MetadataModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
   const port = process.env.PORT || 3333;
   const prefix = 'metadata';
@@ -48,7 +48,7 @@ async function bootstrap() {
   // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
   // For documentations

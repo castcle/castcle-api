@@ -25,7 +25,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
-  TopTrendsQueryOptions
+  TopTrendsQueryOptions,
 } from '../dtos/search.dto';
 import { CredentialDocument, UserDocument } from '../schemas';
 import { HashtagDocument } from '../schemas/hashtag.schema';
@@ -43,8 +43,8 @@ export class SearchService {
       filter = {
         $or: [
           { name: { $regex: new RegExp(`^${keyword}`, 'i') } },
-          { type: { $regex: new RegExp(`^${keyword}`, 'i') } }
-        ]
+          { type: { $regex: new RegExp(`^${keyword}`, 'i') } },
+        ],
       };
     }
     return this._hashtagModel
@@ -60,7 +60,7 @@ export class SearchService {
       const filterFollow: {
         displayId: any;
       } = {
-        displayId: { $regex: new RegExp(`^${keyword}`, 'i') }
+        displayId: { $regex: new RegExp(`^${keyword}`, 'i') },
       };
       filter = filterFollow;
     }
@@ -78,7 +78,7 @@ export class SearchService {
       const filterKeyword: {
         text: any;
       } = {
-        text: { $regex: new RegExp(`^${keyword}`, 'i') }
+        text: { $regex: new RegExp(`^${keyword}`, 'i') },
       };
       filter = filterKeyword;
     }
@@ -87,44 +87,44 @@ export class SearchService {
     const mockKeyword = [
       {
         text: 'castcle',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'coronavirus',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'election results',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'kobe bryant',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'zoom',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'IPL',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'India vs New Zealand',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Coronavirus update',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Joe Biden',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Google Classroom',
-        isTrending: true
-      }
+        isTrending: true,
+      },
     ];
 
     return mockKeyword.filter((x) => x.text.match(filter.text.$regex));
@@ -154,7 +154,7 @@ export class SearchService {
       hashtags: hashtag,
       follows: follow,
       // TODO !!! need implement topics
-      topics: []
+      topics: [],
     };
   }
 
@@ -193,7 +193,7 @@ export class SearchService {
     return {
       keywords: KeywordResult,
       hashtags: hashtag,
-      follows: follow
+      follows: follow,
     };
   }
 }

@@ -28,7 +28,7 @@ import {
   CredentialDocument,
   OtpDocument,
   OtpObjective,
-  UserDocument
+  UserDocument,
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -46,13 +46,8 @@ import {
   RequestOtpDto,
   SocialConnectDto,
   TokenResponse,
-  verificationOtpDto
+  verificationOtpDto,
 } from './dtos/dto';
-
-const getIPUrl = (ip: string) =>
-  env.IP_API_KEY
-    ? `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode&key=${env.IP_API_KEY}`
-    : `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode`;
 
 /*
  * TODO: !!!
@@ -63,8 +58,8 @@ const transporter = nodemailer.createTransport({
   secure: true, // true for 465, false for other ports
   auth: {
     user: env.SMTP_USERNAME ? env.SMTP_USERNAME : 'username', // generated ethereal user
-    pass: env.SMTP_PASSWORD ? env.SMTP_PASSWORD : 'password' // generated ethereal password
-  }
+    pass: env.SMTP_PASSWORD ? env.SMTP_PASSWORD : 'password', // generated ethereal password
+  },
 });
 
 @Injectable()
@@ -95,7 +90,7 @@ export class AppService {
         development: 'castcle-dev://?verify=true',
         test: 'castcle-test://?verify=true',
         staging: 'castcle-stg://?verify=true',
-        production: 'castcle://?verify=true'
+        production: 'castcle://?verify=true',
       };
       return links[env.NODE_ENV]
         ? links[env.NODE_ENV]
@@ -114,7 +109,7 @@ export class AppService {
         toEmail,
         `${verifyLink}?code=${code}`,
         env && env.SMTP_ADMIN_EMAIL ? env.SMTP_ADMIN_EMAIL : 'admin@castcle.com'
-      )
+      ),
     });
     console.log(`Email is send `, info.messageId, info);
   }
@@ -160,7 +155,7 @@ export class AppService {
       const tokenResult: TokenResponse = await credential.renewTokens(
         accessTokenPayload,
         {
-          id: account.id as any
+          id: account.id as any,
         }
       );
       return { token: tokenResult, users: users, account: account };
@@ -187,7 +182,7 @@ export class AppService {
 
         this.logger.log('upload avatar to s3');
         avatar = await this._uploadImage(img, {
-          filename: `avatar-${credential.account._id}`
+          filename: `avatar-${credential.account._id}`,
         });
       }
 
@@ -202,7 +197,7 @@ export class AppService {
         provider: body.provider,
         avatar: avatar ? avatar.image.original : null,
         socialToken: body.authToken,
-        socialSecretToken: null
+        socialSecretToken: null,
       });
       this.logger.log('get All User');
       const users = await this.getUserProfile(credential);
@@ -213,7 +208,7 @@ export class AppService {
       const tokenResult: TokenResponse = await credential.renewTokens(
         accessTokenPayload,
         {
-          id: currentAccount.id as any
+          id: currentAccount.id as any,
         }
       );
       return { token: tokenResult, users: users, account: currentAccount };
@@ -230,13 +225,13 @@ export class AppService {
       ? await this.userService.getUserPages(user, {
           limit: 1000,
           page: DEFAULT_QUERY_OPTIONS.page,
-          sortBy: DEFAULT_QUERY_OPTIONS.sortBy
+          sortBy: DEFAULT_QUERY_OPTIONS.sortBy,
         })
       : null;
 
     return {
       profile: user,
-      pages: pages
+      pages: pages,
     };
   }
 
@@ -477,7 +472,7 @@ export class AppService {
         twilio_message_body:
           'We received a request to reset your  Castcle password. Enter the following password reset code',
         twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: 'If you didn’t request a new password'
+        twilio_message_footer_2: 'If you didn’t request a new password',
       };
     } else {
       this.logger.log('build template other objective');
@@ -486,7 +481,7 @@ export class AppService {
         twilio_message_body:
           'We received a request for One Time Password (OTP).',
         twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: ''
+        twilio_message_footer_2: '',
       };
     }
   }
@@ -657,11 +652,7 @@ export class AppService {
       this.logger.log('Get Account');
       const account = await this.authService.getAccountFromId(otp.account._id);
       this.logger.log('Change password');
-      const result = await this.authService.changePassword(
-        account,
-        otp,
-        data.newPassword
-      );
+      await this.authService.changePassword(account, otp, data.newPassword);
       return '';
     } else {
       this.logger.error(`Invalid Ref Code`);

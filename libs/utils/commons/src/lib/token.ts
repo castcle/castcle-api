@@ -27,8 +27,8 @@ const generateToken = (payload: any, secret: string, expireIn: number) =>
     expiresIn: expireIn,
     header: {
       alg: 'HS256',
-      typ: 'JWT'
-    }
+      typ: 'JWT',
+    },
   });
 
 const isTokenValid = (token: string, secret: string) => {
@@ -43,7 +43,7 @@ const isTokenValid = (token: string, secret: string) => {
 
 const isTokenExpire = (token: string, secret: string) => {
   return new Promise<boolean>((resolve) => {
-    jwt.verify(token, secret, (error, decoded) => {
+    jwt.verify(token, secret, (error) => {
       if (error && error.name === 'TokenExpiredError') {
         resolve(true);
       } else resolve(false);

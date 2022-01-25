@@ -43,12 +43,12 @@ export const preCommentSave = async (doc: CommentDocument) => {
     doc.engagements = {
       like: {
         count: 0,
-        refs: []
+        refs: [],
       },
       comment: {
         count: 0,
-        refs: []
-      }
+        refs: [],
+      },
     };
   }
   console.debug('preDoc', doc);
@@ -63,14 +63,13 @@ export const postCommentSave = async (
 
   session.withTransaction(async () => {
     //update revision
-    const newRevison = new models.revisionModel({
+    await new models.revisionModel({
       objectRef: {
         $ref: 'comment',
-        $id: mongoose.Types.ObjectId(doc._id)
+        $id: mongoose.Types.ObjectId(doc._id),
       },
-      payload: doc as Comment
-    });
-    const result = await newRevison.save();
+      payload: doc as Comment,
+    }).save();
     //f content not publish go remove all content
     if (doc.visibility != EntityVisibility.Publish) {
       //if this is quote cast

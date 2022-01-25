@@ -32,7 +32,7 @@ import { DocumentConfig } from './docs/document.config';
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(EngagementModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
   const port = process.env.PORT || 3340;
   const prefix = 'engagements';
@@ -42,7 +42,7 @@ async function bootstrap() {
   // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
   // For Global
   app.setGlobalPrefix(prefix);

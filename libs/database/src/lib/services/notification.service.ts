@@ -23,7 +23,7 @@
 import { CastLogger } from '@castcle-api/logger';
 import {
   NotificationMessage,
-  NotificationProducer
+  NotificationProducer,
 } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -35,12 +35,12 @@ import {
   NotificationQueryOptions,
   NotificationSource,
   NotificationType,
-  RegisterTokenDto
+  RegisterTokenDto,
 } from '../dtos/notification.dto';
 import { AccountDocument } from '../schemas';
 import {
   CredentialDocument,
-  CredentialModel
+  CredentialModel,
 } from '../schemas/credential.schema';
 import { UserModel } from '../schemas/user.schema';
 import { createCastcleMeta } from '../utils/common';
@@ -72,7 +72,7 @@ export class NotificationService {
   ) => {
     this.logger.log('prepare filter');
     const filter: FilterQuery<NotificationDocument> = {
-      account: credential.account._id
+      account: credential.account._id,
     };
 
     if (options.source) filter.source = options.source;
@@ -81,14 +81,14 @@ export class NotificationService {
         .findById(options.sinceId)
         .exec();
       filter.createdAt = {
-        $gt: new Date(notificationSince.createdAt)
+        $gt: new Date(notificationSince.createdAt),
       };
     } else if (options.untilId) {
       const notificationUntil = await this._notificationModel
         .findById(options.untilId)
         .exec();
       filter.createdAt = {
-        $lt: new Date(notificationUntil.createdAt)
+        $lt: new Date(notificationUntil.createdAt),
       };
     }
 
@@ -102,7 +102,7 @@ export class NotificationService {
 
     return {
       items: documents,
-      meta: createCastcleMeta(documents)
+      meta: createCastcleMeta(documents),
     };
   };
 
@@ -134,8 +134,8 @@ export class NotificationService {
           { _id: notification.account._id },
           {
             $inc: {
-              notificationBadgeCount: -1
-            }
+              notificationBadgeCount: -1,
+            },
           }
         )
         .exec();
@@ -156,7 +156,7 @@ export class NotificationService {
         ownerAccount:
           credential.account && credential.account._id
             ? credential.account._id
-            : null
+            : null,
       })
       .exec();
 
@@ -164,7 +164,7 @@ export class NotificationService {
       const findFilter: {
         sourceUserId: any;
       } = {
-        sourceUserId: user._id
+        sourceUserId: user._id,
       };
       console.log(findFilter);
 
@@ -202,8 +202,8 @@ export class NotificationService {
         $ref:
           notificationData.type !== NotificationType.System
             ? notificationData.type
-            : null
-      }
+            : null,
+      },
     };
 
     const createResult = await new this._notificationModel(
@@ -215,8 +215,8 @@ export class NotificationService {
         { _id: notificationData.account._id },
         {
           $inc: {
-            notificationBadgeCount: 1
-          }
+            notificationBadgeCount: 1,
+          },
         }
       )
       .exec();
@@ -224,7 +224,7 @@ export class NotificationService {
 
     const credentials = await this._credentialModel
       .find({
-        'account._id': mongoose.Types.ObjectId(notificationData.account._id)
+        'account._id': mongoose.Types.ObjectId(notificationData.account._id),
       })
       .exec();
     if (createResult && notificationData.account) {
@@ -236,7 +236,7 @@ export class NotificationService {
           'mutable-content': 1,
           badge: 1,
           category: 'CONTENTS',
-          sound: 'default'
+          sound: 'default',
         },
         payload: {
           notifyId: createResult._id,
@@ -248,11 +248,11 @@ export class NotificationService {
           content:
             NotificationType[createResult.type] === NotificationType.Content
               ? notificationData.targetRef._id
-              : undefined
+              : undefined,
         },
         firebaseTokens: credentials
           .filter((c) => c.firebaseNotificationToken)
-          .map((c) => c.firebaseNotificationToken as string)
+          .map((c) => c.firebaseNotificationToken as string),
       };
       console.log('add to queue');
       this.notificationProducer.sendMessage(message);
@@ -272,7 +272,7 @@ export class NotificationService {
         .updateOne(
           { deviceUUID: registerTokenDto.deviceUUID },
           {
-            firebaseNotificationToken: registerTokenDto.firebaseToken
+            firebaseNotificationToken: registerTokenDto.firebaseToken,
           }
         )
         .exec();
@@ -289,14 +289,14 @@ export class NotificationService {
   getBadges = async (credential: CredentialDocument) => {
     const user = await this._userModel
       .findOne({
-        ownerAccount: credential.account._id
+        ownerAccount: credential.account._id,
       })
       .exec();
 
     if (user) {
       const totalNotification = await this._notificationModel.countDocuments({
         sourceUserId: user._id,
-        read: false
+        read: false,
       });
 
       console.log(`total badges : ${totalNotification}`);

@@ -23,7 +23,7 @@
 import {
   CountryService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '@castcle-api/database';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
@@ -40,9 +40,9 @@ const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
       const mongoUri = mongodMock.getUri();
       return {
         uri: mongoUri,
-        ...options
+        ...options,
       };
-    }
+    },
   });
 
 const closeInMongodConnection = async () => {
@@ -61,11 +61,11 @@ describe('CountryController', () => {
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
-        })
+          ttl: 1000,
+        }),
       ],
       controllers: [CountryController],
-      providers: [CountryService]
+      providers: [CountryService],
     }).compile();
 
     appController = app.get<CountryController>(CountryController);
@@ -75,19 +75,19 @@ describe('CountryController', () => {
       code: 'TH',
       dialCode: '+66',
       name: 'Thailand',
-      flag: 'url'
+      flag: 'url',
     });
     await countryService.create({
       code: 'US',
       dialCode: '+1',
       name: 'U.S.A.',
-      flag: 'url'
+      flag: 'url',
     });
     await countryService.create({
       code: 'CN',
       dialCode: '+86',
       name: 'China',
-      flag: 'url'
+      flag: 'url',
     });
   });
 
@@ -104,21 +104,21 @@ describe('CountryController', () => {
             code: 'CN',
             dialCode: '+86',
             flag: 'url',
-            name: 'China'
+            name: 'China',
           },
           {
             code: 'TH',
             dialCode: '+66',
             flag: 'url',
-            name: 'Thailand'
+            name: 'Thailand',
           },
           {
             code: 'US',
             dialCode: '+1',
             flag: 'url',
-            name: 'U.S.A.'
-          }
-        ]
+            name: 'U.S.A.',
+          },
+        ],
       };
       console.log(result);
 

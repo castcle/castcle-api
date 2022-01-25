@@ -24,7 +24,7 @@ describe('ContentService', () => {
 
   const fakeBull = BullModule.registerQueue({
     name: TopicName.Users,
-    redis: { host: '0.0.0.0', port: 6380 }
+    redis: { host: '0.0.0.0', port: 6380 },
   });
 
   beforeAll(async () => {
@@ -35,11 +35,11 @@ describe('ContentService', () => {
             mongod = await MongoMemoryServer.create();
 
             return { uri: mongod.getUri() };
-          }
+          },
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
+        fakeBull,
       ],
       providers: [
         AuthenticationService,
@@ -47,8 +47,8 @@ describe('ContentService', () => {
         ContentService,
         HashtagService,
         UserProducer,
-        UserService
-      ]
+        UserService,
+      ],
     }).compile();
 
     authService = module.get(AuthenticationService);
@@ -60,25 +60,25 @@ describe('ContentService', () => {
       deviceUUID: 'test-uuid',
       languagesPreferences: ['th', 'th'],
       header: { platform: 'ios' },
-      device: 'test'
+      device: 'test',
     });
 
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
 
     user = await userService.getUserFromCredential(result.credentialDocument);
     content = await contentService.createContentFromUser(user, {
       payload: { message: 'hi' },
       type: ContentType.Short,
-      castcleId: user.displayId
+      castcleId: user.displayId,
     });
 
     comment = await contentService.createCommentForContent(user, content, {
-      message: 'Hello #hello'
+      message: 'Hello #hello',
     });
   });
 

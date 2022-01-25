@@ -52,6 +52,6 @@ CountrySchema.methods.toCountryPayload = function () {
     code: (this as CountryDocument).code,
     dialCode: (this as CountryDocument).dialCode,
     name: (this as CountryDocument).name,
-    flag: (this as CountryDocument).flag
+    flag: (this as CountryDocument).flag,
   } as CountryPayloadDto;
 };

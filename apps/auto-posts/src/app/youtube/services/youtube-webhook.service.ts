@@ -27,7 +27,7 @@ import {
   ContentType,
   LinkType,
   SaveContentDto,
-  ShortPayload
+  ShortPayload,
 } from '@castcle-api/database/dtos';
 import { SocialProvider } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
@@ -83,11 +83,11 @@ export class YoutubeWebhookService {
 
     const [author, shortContent] = await Promise.all([
       this.contentService.getAuthorFromId(syncAccount.author.id),
-      await this.convertFeedToShortContent(feed, syncAccount.author.id)
+      await this.convertFeedToShortContent(feed, syncAccount.author.id),
     ]);
 
     await this.contentService.createContentsFromAuthor(new Author(author), [
-      shortContent
+      shortContent,
     ]);
 
     syncAccount.author = author;
@@ -111,12 +111,12 @@ export class YoutubeWebhookService {
     const linkPreview = {
       image: thumbnailUrl,
       type: LinkType.Youtube,
-      url: feed.entry.link
+      url: feed.entry.link,
     };
 
     const payload = {
       message: feed.entry.title,
-      link: [linkPreview]
+      link: [linkPreview],
     } as ShortPayload;
 
     return { payload, type: ContentType.Short } as SaveContentDto;
@@ -128,7 +128,7 @@ export class YoutubeWebhookService {
     const uploadedImage = await Image.upload(image, {
       filename: `youtube-${videoId}`,
       sizes: COMMON_SIZE_CONFIGS,
-      subpath: `contents/${authorId}`
+      subpath: `contents/${authorId}`,
     });
 
     return uploadedImage.toSignUrl();

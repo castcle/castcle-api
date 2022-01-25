@@ -36,7 +36,7 @@ export class HashtagItem extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Hashtag'
+    ref: 'Hashtag',
   })
   hashtag: Hashtag;
 

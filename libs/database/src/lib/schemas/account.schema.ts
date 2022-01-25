@@ -29,7 +29,7 @@ export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
   Member = 'member',
-  Guest = 'guest'
+  Guest = 'guest',
 }
 
 interface ICredential {
@@ -40,7 +40,7 @@ interface ICredential {
 @Schema({ timestamps: true })
 export class Account extends CastcleBase {
   @Prop({
-    index: true
+    index: true,
   })
   email: string;
 

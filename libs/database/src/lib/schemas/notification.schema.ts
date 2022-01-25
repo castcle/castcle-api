@@ -25,7 +25,7 @@ import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import {
   NotificationPayloadDto,
-  NotificationType
+  NotificationType,
 } from '../dtos/notification.dto';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
@@ -47,7 +47,7 @@ export class Notification extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true
+    index: true,
   })
   sourceUserId: User;
 
@@ -64,7 +64,7 @@ export class Notification extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   account: Account;
 }
@@ -87,16 +87,16 @@ NotificationSchema.methods.toNotificationPayload = function () {
         (this as NotificationDocument).type === NotificationType.Content ||
         (this as NotificationDocument).type === NotificationType.Like
           ? (this as NotificationDocument).targetRef.oid
-          : null
+          : null,
     },
     comment: {
       id:
         (this as NotificationDocument).type === NotificationType.Comment
           ? (this as NotificationDocument).targetRef.oid
-          : null
+          : null,
     },
     system: {
-      id: null
-    }
+      id: null,
+    },
   } as NotificationPayloadDto;
 };

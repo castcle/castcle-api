@@ -59,7 +59,7 @@ export enum CastcleStatus {
   PAYLOAD_TYPE_MISMATCH = '5002',
   RECAST_IS_EXIST = '5004',
   NOTIFICATION_NOT_FOUND = '6001',
-  SOMETHING_WRONG = '7001'
+  SOMETHING_WRONG = '7001',
 }
 
 interface ErrorStatus {

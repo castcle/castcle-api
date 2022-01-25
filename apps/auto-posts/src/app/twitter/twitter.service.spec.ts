@@ -27,7 +27,7 @@ import { TwitterService } from './twitter.service';
 import {
   ReferencedTweetV2,
   TweetUserTimelineV2Paginator,
-  TwitterApiv2
+  TwitterApiv2,
 } from 'twitter-api-v2';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastLogger } from '@castcle-api/logger';
@@ -51,49 +51,49 @@ describe('Twitter Service', () => {
     id: '1234567890',
     type: 'page',
     castcleId: 'castcleId',
-    displayName: 'Castcle'
+    displayName: 'Castcle',
   };
 
   const syncAccount = {
     active: true,
     author,
     socialId: '1234567890',
-    save: jest.fn()
+    save: jest.fn(),
   } as any;
 
   const media = {
     media_key: '3_1461216794228957186',
     type: 'photo',
-    url: 'https://example-image.jpg'
+    url: 'https://example-image.jpg',
   };
 
   const tweet = {
     attachments: {
-      media_keys: ['3_1461216794228957186']
+      media_keys: ['3_1461216794228957186'],
     },
     id: '1461307091956551690',
-    text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt'
+    text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt',
   };
 
   const referenceTweet = {
     referenced_tweets: [
-      { id: '1461307091956551690', type: 'quoted' }
+      { id: '1461307091956551690', type: 'quoted' },
     ] as ReferencedTweetV2[],
     id: '1461307091956551690',
-    text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt'
+    text: 'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt',
   };
 
   const meta = {
     result_count: 1,
     newest_id: 'string',
     oldest_id: 'string',
-    next_token: 'string'
+    next_token: 'string',
   };
 
   const timeline = {
     data: [referenceTweet, tweet],
     includes: { media: [media] },
-    meta
+    meta,
   };
 
   beforeAll(async () => {
@@ -104,18 +104,18 @@ describe('Twitter Service', () => {
           provide: ContentService,
           useValue: {
             createContentsFromAuthor: jest.fn(),
-            getAuthorFromId: jest.fn()
-          }
+            getAuthorFromId: jest.fn(),
+          },
         },
         {
           provide: Downloader,
-          useValue: { getImageFromUrl: jest.fn() }
+          useValue: { getImageFromUrl: jest.fn() },
         },
         {
           provide: SocialSyncService,
-          useValue: { getAutoSyncAccounts: jest.fn() }
-        }
-      ]
+          useValue: { getAutoSyncAccounts: jest.fn() },
+        },
+      ],
     }).compile();
 
     contentService = module.get(ContentService);
@@ -145,7 +145,7 @@ describe('Twitter Service', () => {
   describe('#getTweetsByAccount', () => {
     it('should abort job if there is no tweet', async () => {
       jest.spyOn(twitterService, 'getTimelineByUserId').mockResolvedValueOnce({
-        meta: { result_count: 0 }
+        meta: { result_count: 0 },
       } as TweetUserTimelineV2Paginator);
 
       jest
@@ -160,7 +160,7 @@ describe('Twitter Service', () => {
     it('should map author and tweets to contents then save all contents', async () => {
       jest.spyOn(twitterService, 'getTimelineByUserId').mockResolvedValueOnce({
         data: timeline,
-        meta: { result_count: meta.result_count }
+        meta: { result_count: meta.result_count },
       } as TweetUserTimelineV2Paginator);
 
       jest
@@ -184,7 +184,7 @@ describe('Twitter Service', () => {
   describe('#getTimelineByUserId', () => {
     it('should return user timeline', async () => {
       jest.spyOn(twitterService.client, 'userTimeline').mockResolvedValueOnce({
-        data: timeline
+        data: timeline,
       } as TweetUserTimelineV2Paginator);
 
       expect(() =>
