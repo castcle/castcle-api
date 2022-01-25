@@ -119,7 +119,12 @@ export class RankerService {
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
-    const authors = feedItems.map((feedItem) => feedItem.content.author);
+    let authors = feedItems.map((feedItem) => feedItem.content.author);
+    authors = authors.concat(
+      feedItems
+        .filter((item) => item.content.isRecast || item.content.isQuote)
+        .map((feedItem) => feedItem.content.author)
+    );
     const casts = feedItems
       .map((feedItem) => {
         if (!feedItem.content?.originalPost) return;
@@ -271,8 +276,12 @@ export class RankerService {
         resultCount: guestFeedPayloads.meta.resultCount + meta.resultCount,
       };
     }
-
-    const authors = includes.users.map((author) => new Author(author));
+    let authors = includes.users.map((author) => new Author(author));
+    authors = authors.concat(
+      newAnswer
+        .filter((item) => item.content.isRecast || item.content.isQuote)
+        .map((feedItem) => feedItem.content.author)
+    );
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
