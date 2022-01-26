@@ -22,6 +22,7 @@
  */
 import {
   AuthenticationService,
+  CampaignService,
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -117,6 +118,7 @@ describe('AppController', () => {
         UserProducer,
         HashtagService,
         SocialSyncService,
+        CampaignService,
         TransactionService,
       ],
     }).compile();

@@ -92,7 +92,7 @@ export class PagesController {
     idOrCastCleId: string,
     req: CredentialRequest
   ) => {
-    const idResult = await this.userService.getUserFromId(idOrCastCleId);
+    const idResult = await this.userService.getByIdOrCastcleId(idOrCastCleId);
     if (
       idResult &&
       idResult.type === UserType.Page &&
@@ -104,7 +104,7 @@ export class PagesController {
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
       );
-    const castcleIdResult = await this.authService.getUserFromCastcleId(
+    const castcleIdResult = await this.userService.getByIdOrCastcleId(
       idOrCastCleId
     );
     if (

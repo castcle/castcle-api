@@ -31,7 +31,7 @@ import {
   RefreshTokenPayload,
 } from '../dtos/token.dto';
 import { env } from '../environment';
-import { Account } from '../schemas/account.schema';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
 export type CredentialDocument = Credential & ICredential;

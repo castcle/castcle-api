@@ -11,4 +11,7 @@ jest.mock('nodemailer', () => ({
 
 jest.mock('./test/variables/applications.variable', () => ({}));
 
-global.console = { debug: jest.fn(), error: jest.fn(), log: jest.fn() } as any;
+global.console.debug = jest.fn();
+global.console.error = jest.fn();
+global.console.info = jest.fn();
+global.console.log = jest.fn();

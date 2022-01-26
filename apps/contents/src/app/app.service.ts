@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { AuthenticationService } from '@castcle-api/database';
+import { UserService } from '@castcle-api/database';
 import {
   BlogPayload,
   ContentType,
@@ -36,7 +36,7 @@ import { UserDocument } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {
-  constructor(private authService: AuthenticationService) {}
+  constructor(private userService: UserService) {}
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -48,10 +48,8 @@ export class AppService {
     credentialRequest: CredentialRequest,
     castcleId: string
   ) {
-    const account = await this.authService.getAccountFromCredential(
-      credentialRequest.$credential
-    );
-    const user = await this.authService.getUserFromCastcleId(castcleId);
+    const account = credentialRequest.$credential?.account;
+    const user = await this.userService.getByIdOrCastcleId(castcleId);
     if (String(user.ownerAccount) !== String(account._id)) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,

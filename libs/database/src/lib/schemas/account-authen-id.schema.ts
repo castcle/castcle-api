@@ -22,29 +22,51 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { Hashtag } from './hashtag.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
+import { Document } from 'mongoose';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
-export type HashtagItemDocument = HashtagItem & Document;
+export type AccountAuthenIdDocument = AccountAuthenId & Document;
+
+export enum AccountAuthenIdType {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram',
+  Apple = 'apple',
+}
 
 @Schema({ timestamps: true })
-export class HashtagItem extends CastcleBase {
+export class AccountAuthenId extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Hashtag',
+    ref: 'Account',
+    index: true,
   })
-  hashtag: Hashtag;
+  account: Account;
 
   @Prop({ required: true })
-  objectRef: any;
+  type: string;
 
-  @Prop({ required: true, type: Object })
-  payload: Comment | Content | any;
+  @Prop({
+    index: true,
+  })
+  socialId: string;
+
+  @Prop()
+  socialToken: string;
+
+  @Prop()
+  socialSecretToken: string;
+
+  @Prop()
+  avatar: string;
+
+  @Prop()
+  displayName: string;
 }
 
-export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);
+export const AccountAuthenIdSchema =
+  SchemaFactory.createForClass(AccountAuthenId);

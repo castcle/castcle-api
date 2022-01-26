@@ -40,6 +40,7 @@ import {
   ContentService,
   NotificationService,
   CommentService,
+  UserService,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
@@ -72,7 +73,8 @@ export class CommentController {
     private authService: AuthenticationService,
     private commentService: CommentService,
     private contentService: ContentService,
-    private notifyService: NotificationService
+    private notifyService: NotificationService,
+    private userService: UserService
   ) {}
 
   @ApiBody({
@@ -90,7 +92,7 @@ export class CommentController {
       const [authorizedUser, content, user] = await Promise.all([
         this.authService.getUserFromAccount($credential.account),
         this.contentService.getContentById(contentId),
-        this.authService.getUserFromCastcleId(commentBody.castcleId),
+        this.userService.getByIdOrCastcleId(commentBody.castcleId),
       ]);
 
       const comment = await this.contentService.createCommentForContent(
@@ -172,7 +174,7 @@ export class CommentController {
       $credential.account
     );
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.authService.getUserFromCastcleId(
+    const user = await this.userService.getByIdOrCastcleId(
       replyCommentBody.castcleId
     );
     const replyComment = await this.contentService.replyComment(user, comment, {
@@ -251,7 +253,7 @@ export class CommentController {
     @Body() likeCommentBody: LikeCommentBody
   ) {
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.authService.getUserFromCastcleId(
+    const user = await this.userService.getByIdOrCastcleId(
       likeCommentBody.castcleId
     );
     await this.contentService.likeComment(user, comment);
@@ -280,7 +282,7 @@ export class CommentController {
     @Body() likeCommentBody: LikeCommentBody
   ) {
     const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.authService.getUserFromCastcleId(
+    const user = await this.userService.getByIdOrCastcleId(
       likeCommentBody.castcleId
     );
     await this.contentService.unlikeComment(user, comment);

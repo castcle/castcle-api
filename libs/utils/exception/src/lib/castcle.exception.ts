@@ -71,10 +71,10 @@ interface ErrorStatus {
 export class CastcleException extends HttpException {
   public errorStatus: ErrorStatus;
 
-  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'en') {
-    const error: ErrorStatus = LocalErrorMessage[language]
-      ? LocalErrorMessage[language][castcleStatus]
-      : ErrorMessages[castcleStatus];
+  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'default') {
+    const error: ErrorStatus =
+      LocalErrorMessage[language]?.[castcleStatus] ??
+      ErrorMessages[castcleStatus];
     super(error, Number(error.statusCode));
     this.errorStatus = error;
   }
@@ -90,5 +90,8 @@ export class CastcleException extends HttpException {
   static INVALID_ACCESS_TOKEN = new CastcleException('1003');
   static FORBIDDEN = new CastcleException('1007');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
+  static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
+  static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
+  static REACHED_MAX_CLAIMS = new CastcleException('4004');
   static CONTENT_NOT_FOUND = new CastcleException('5003');
 }

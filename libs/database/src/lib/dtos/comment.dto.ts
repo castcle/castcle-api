@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CommentType } from '../schemas/comment.schema';
+import { CommentType } from '../schemas';
 import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
 import { IncludeUser } from './content.dto';
 

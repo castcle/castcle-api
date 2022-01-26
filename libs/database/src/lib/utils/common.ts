@@ -29,7 +29,7 @@ import {
   Pagination,
   QueryOption,
 } from '../dtos/common.dto';
-import { RelationshipDocument } from '../schemas/relationship.schema';
+import { RelationshipDocument } from '../schemas';
 
 /**
  *

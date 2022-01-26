@@ -40,10 +40,13 @@ import {
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { CommentDocument, ContentDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { UserDocument } from '../schemas/user.schema';
+import {
+  CommentDocument,
+  ContentDocument,
+  AccountDocument,
+  CredentialDocument,
+  UserDocument,
+} from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -295,9 +298,9 @@ describe('User Service', () => {
       expect(allPages.items[0].followerCount).toEqual(0);
       //test follow
       await currentUser.follow(allPages.items[0]);
-      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      const afterFollowUser = await service.getByIdOrCastcleId(currentUser._id);
       expect(afterFollowUser.followedCount).toEqual(1);
-      const page = await service.getUserFromId(allPages.items[0]._id);
+      const page = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page.followerCount).toEqual(1);
       const relationship = await service._relationshipModel
         .findOne({ user: afterFollowUser._id, followedUser: page._id })
@@ -309,13 +312,13 @@ describe('User Service', () => {
       expect(relationship.blocking).toBeFalsy();
     });
     it('should not have 2 records if you double follow', async () => {
-      const postUser = await service.getUserFromId(currentUser._id);
-      const postPage = await service.getUserFromId(allPages.items[0]._id);
+      const postUser = await service.getByIdOrCastcleId(currentUser._id);
+      const postPage = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(postUser.followedCount).toEqual(1);
       expect(postPage.followerCount).toEqual(1);
       await postUser.follow(postPage);
-      const postUser2 = await service.getUserFromId(currentUser._id);
-      const postPage2 = await service.getUserFromId(allPages.items[0]._id);
+      const postUser2 = await service.getByIdOrCastcleId(currentUser._id);
+      const postPage2 = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(postUser2.followedCount).toEqual(1);
       expect(postPage2.followerCount).toEqual(1);
     });
@@ -333,9 +336,9 @@ describe('User Service', () => {
       expect(allPages.items[0].followerCount).toEqual(1);
       //try unfollow
       await currentUser.unfollow(allPages.items[0]);
-      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      const afterFollowUser = await service.getByIdOrCastcleId(currentUser._id);
       expect(afterFollowUser.followedCount).toEqual(0);
-      const page = await service.getUserFromId(allPages.items[0]._id);
+      const page = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page.followerCount).toEqual(0);
       const relationship = await service._relationshipModel
         .findOne({ user: afterFollowUser._id, followedUser: page._id })
@@ -343,9 +346,11 @@ describe('User Service', () => {
       expect(relationship).toBeNull();
       //try double unfollow
       await currentUser.unfollow(allPages.items[0]);
-      const afterFollowUser2 = await service.getUserFromId(currentUser._id);
+      const afterFollowUser2 = await service.getByIdOrCastcleId(
+        currentUser._id
+      );
       expect(afterFollowUser.followedCount).toEqual(0);
-      const page2 = await service.getUserFromId(allPages.items[0]._id);
+      const page2 = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page2.followerCount).toEqual(0);
       const relationship2 = await service._relationshipModel
         .findOne({ user: afterFollowUser2._id, followedUser: page2._id })
@@ -439,9 +444,9 @@ describe('User Service', () => {
       beforeAll(async () => {
         await service.deactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getUserFromId(userA._id);
+        postUserA = await service.getByIdOrCastcleId(userA._id);
         postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getUserFromId(pageA._id);
+        postPageA = await service.getByIdOrCastcleId(pageA._id);
         postAccountA = await authService._accountModel.findById(accountA._id);
       });
       it('should set status user to delete', async () => {
@@ -465,9 +470,9 @@ describe('User Service', () => {
       beforeAll(async () => {
         await service.reactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getUserFromId(userA._id);
+        postUserA = await service.getByIdOrCastcleId(userA._id);
         postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getUserFromId(pageA._id);
+        postPageA = await service.getByIdOrCastcleId(pageA._id);
         postAccountA = await authService._accountModel.findById(accountA._id);
       });
       it('should set status user to publish', async () => {
@@ -795,8 +800,12 @@ describe('User Service', () => {
           page: 1,
         }
       );
-      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
-      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      const updatedUser = await service.getByIdOrCastcleId(
+        mocksUsers[0].user._id
+      );
+      const updatedUser2 = await service.getByIdOrCastcleId(
+        mocksUsers[1].user._id
+      );
       expect(mentions.users.length).toEqual(5);
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
@@ -813,8 +822,12 @@ describe('User Service', () => {
         }
       );
       expect(mentions.users.length).toEqual(2);
-      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
-      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      const updatedUser = await service.getByIdOrCastcleId(
+        mocksUsers[0].user._id
+      );
+      const updatedUser2 = await service.getByIdOrCastcleId(
+        mocksUsers[1].user._id
+      );
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
       expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
@@ -1009,7 +1022,7 @@ describe('User Service', () => {
       const conutryCode = '+66';
       const mobile = '0814567890';
       await service.updateMobile(user._id, account._id, conutryCode, mobile);
-      const userUpdate = await service.getUserFromId(user.id);
+      const userUpdate = await service.getByIdOrCastcleId(user.id);
       const accountUpdate = await authService.getAccountFromId(account.id);
 
       expect(userUpdate).not.toBeNull();

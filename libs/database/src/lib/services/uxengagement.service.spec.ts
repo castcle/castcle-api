@@ -25,12 +25,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
+import { AccountDocument, CredentialDocument } from '../schemas';
+import {
+  MongooseForFeatures,
+  MongooseAsyncFeatures,
+  UserService,
+} from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
 import { HashtagService } from './hashtag.service';
+import { UserProducer } from '@castcle-api/utils/queue';
+
+jest.mock('@castcle-api/utils/queue');
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -63,6 +69,8 @@ describe('UxEngagement Service', () => {
     AuthenticationService,
     ContentService,
     HashtagService,
+    UserService,
+    UserProducer,
   ];
 
   beforeAll(async () => {

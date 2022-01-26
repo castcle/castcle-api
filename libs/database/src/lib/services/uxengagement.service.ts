@@ -25,10 +25,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { AccountDocument } from '../schemas/account.schema';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
-import { UxEngagementDocument } from '../schemas/uxengagement.schema';
-import { DsContentReachDocument } from '../schemas/ds-content-reach.schema';
+import {
+  AccountDocument,
+  UxEngagementDocument,
+  DsContentReachDocument,
+} from '../schemas';
 
 @Injectable()
 export class UxEngagementService {
@@ -41,7 +43,7 @@ export class UxEngagementService {
   ) {}
 
   /**
-   * track data from info to UxEngagement collection by convert it to UxEnagementDto
+   * track data from info to UxEngagement collection by convert it to UxEngagementDto
    * convert timestamp to Date time
    * @param {UxEngagementBody} info
    * @returns {UxEngagementDocument} return EngagementUx Document if could save

@@ -25,6 +25,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
+import { UserService } from './user.service';
 import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
 import { EntityVisibility } from '../dtos/common.dto';
 import {
@@ -33,22 +34,22 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { AccountReferral } from '../schemas/account-referral.schema';
-import { Account, AccountDocument } from '../schemas/account.schema';
 import {
+  AccountReferral,
+  Account,
+  AccountDocument,
   AccountActivationDocument,
   AccountActivationModel,
-} from '../schemas/accountActivation.schema';
-import {
   AccountAuthenIdDocument,
   AccountAuthenIdType,
-} from '../schemas/accountAuthenId.schema';
-import {
   CredentialDocument,
   CredentialModel,
-} from '../schemas/credential.schema';
-import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
-import { UserDocument, UserType } from '../schemas/user.schema';
+  OtpDocument,
+  OtpModel,
+  OtpObjective,
+  UserDocument,
+  UserType,
+} from '../schemas';
 
 export interface AccountRequirements {
   header: {
@@ -95,7 +96,8 @@ export class AuthenticationService {
     @InjectModel('AccountAuthenId')
     public _accountAuthenId: Model<AccountAuthenIdDocument>,
     @InjectModel('AccountReferral')
-    public _accountReferral: Model<AccountReferral>
+    public _accountReferral: Model<AccountReferral>,
+    private userService: UserService
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -275,20 +277,6 @@ export class AuthenticationService {
       .exec();
   };
 
-  /**
-   * Get user
-   * @param {string} id
-   * @returns {UserDocument}
-   */
-  getUserFromCastcleId = (id: string) => {
-    return this._userModel
-      .findOne({
-        displayId: CastcleRegExp.fromString(id),
-        visibility: EntityVisibility.Publish,
-      })
-      .exec();
-  };
-
   getUserFromAccount = (account: Account) => {
     return this._userModel.findOne({ ownerAccount: account }).exec();
   };
@@ -371,7 +359,9 @@ export class AuthenticationService {
     const updateAccount = await this.createAccountActivation(account, 'email');
 
     if (requirements.referral) {
-      const refAccount = await this.getUserFromCastcleId(requirements.referral);
+      const refAccount = await this.userService.getByIdOrCastcleId(
+        requirements.referral
+      );
       const accRef = new this._accountReferral({
         referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
         referrerDisplayId: requirements.referral,
@@ -413,7 +403,9 @@ export class AuthenticationService {
    */
   async suggestCastcleId(displayName: string) {
     const name = new CastcleName(displayName);
-    const result = await this.getUserFromCastcleId(name.suggestCastcleId);
+    const result = await this.userService.getByIdOrCastcleId(
+      name.suggestCastcleId
+    );
     if (result) {
       const totalUser = await this._userModel.countDocuments().exec();
       return name.suggestCastcleId + totalUser;

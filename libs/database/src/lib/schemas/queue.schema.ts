@@ -21,6 +21,26 @@
  * or have any questions.
  */
 
-export class UserCampaigns {
-  [campaignId: string]: Date[];
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+@Schema({ timestamps: true })
+export class Queue<T = any> extends Document {
+  /** The time the job was started */
+  @Prop()
+  startedAt?: Date;
+
+  /** The time the job ended */
+  @Prop()
+  endedAt?: Date;
+
+  /** A numeric priority where a higher value is higher priority */
+  @Prop({ default: 1 })
+  priority: number;
+
+  /** An embedded document that is the work payload */
+  @Prop({ type: Object })
+  payload: T;
 }
+
+export const QueueSchema = SchemaFactory.createForClass(Queue);

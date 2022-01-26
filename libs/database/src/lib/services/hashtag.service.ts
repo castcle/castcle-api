@@ -28,7 +28,7 @@ import { BlogPayload } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload, ShortPayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { HashtagDocument } from '../schemas/hashtag.schema';
+import { HashtagDocument } from '../schemas';
 
 @Injectable()
 export class HashtagService {
