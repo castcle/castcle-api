@@ -1,5 +1,5 @@
 import { AuthenticationsRequest } from '../../requests';
-import { userAlpha, userBeta } from '../../variables';
+import { userAlpha, userBeta, userModel } from '../../variables';
 
 export const initializeUsers = async () => {
   await AuthenticationsRequest.guestLogin()
@@ -34,6 +34,8 @@ export const initializeUsers = async () => {
       userAlpha.accessToken = body.accessToken;
       userAlpha.id = body.profile.id;
     });
+
+  await userModel.findByIdAndUpdate(userAlpha.id, { 'verified.mobile': true });
 
   await AuthenticationsRequest.register()
     .auth(userBeta.guestToken, { type: 'bearer' })

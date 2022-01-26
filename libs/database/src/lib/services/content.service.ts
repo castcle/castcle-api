@@ -62,25 +62,19 @@ import {
   User,
   UserDocument,
   UserType,
-} from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { CommentType } from '../schemas/comment.schema';
-import {
+  AccountDocument,
+  CommentType,
   Content,
   ContentDocument,
   toSignedContentPayloadItem,
-} from '../schemas/content.schema';
-import {
   EngagementDocument,
   EngagementType,
-} from '../schemas/engagement.schema';
-import { FeedItemDocument } from '../schemas/feedItem.schema';
-import {
+  FeedItemDocument,
   GuestFeedItemDocument,
   GuestFeedItemType,
-} from '../schemas/guestFeedItems.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { RevisionDocument } from '../schemas/revision.schema';
+  RelationshipDocument,
+  RevisionDocument,
+} from '../schemas';
 import {
   createCastcleFilter,
   createCastcleMeta,
@@ -233,6 +227,18 @@ export class ContentService {
     return this._contentModel
       .findOne({ _id: id, visibility: EntityVisibility.Publish })
       .exec();
+  };
+
+  /**
+   * @param {string} id content ID
+   * @throws {CastcleException} with CastcleStatus.REQUEST_URL_NOT_FOUND
+   */
+  findContent = async (id: string) => {
+    const content = await this.getContentFromId(id);
+
+    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    return content;
   };
 
   /**

@@ -26,7 +26,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { CreateHashtag } from '../dtos/hashtag.dto';
 import { env } from '../environment';
-import { UserType } from '../schemas/user.schema';
+import { UserType } from '../schemas';
 import { DEFAULT_TOP_TREND_QUERY_OPTIONS } from './../dtos/search.dto';
 import { HashtagService } from './hashtag.service';
 import { SearchService } from './search.service';

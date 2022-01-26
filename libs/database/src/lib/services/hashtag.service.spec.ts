@@ -31,7 +31,7 @@ import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
 import { env } from '../environment';
-import { CommentType } from '../schemas/comment.schema';
+import { CommentType } from '../schemas';
 import { HashtagService } from './hashtag.service';
 
 let mongod: MongoMemoryServer;

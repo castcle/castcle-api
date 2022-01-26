@@ -1,7 +1,8 @@
 import { getMongoOptions } from 'libs/database/src/lib/environment';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { connect, disconnect } from 'mongoose';
 import { initializeUsers } from './modules/authentications';
-import { testUsersReporting } from './modules/users';
+import { testUsersClaimAirdrop, testUsersReporting } from './modules/users';
 import {
   closeAuthenticationsModule,
   closeUsersModule,
@@ -17,8 +18,8 @@ describe('Castcle E2E Tests', () => {
     (getMongoOptions as jest.Mock).mockReturnValue({
       uri: mongoMemoryReplSet.getUri(),
     });
-    // (getMongoOptions as any) = () => ({ uri: mongoMemoryReplSet.getUri() });
 
+    await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();
     await initializeUsers();
     closeAuthenticationsModule();
@@ -26,6 +27,7 @@ describe('Castcle E2E Tests', () => {
 
   afterAll(async () => {
     await mongoMemoryReplSet.stop();
+    await disconnect();
   });
 
   describe('# Users Microservice', () => {
@@ -39,6 +41,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Report User or Content', () => {
       testUsersReporting();
+    });
+
+    describe('- Claim Airdrop', () => {
+      testUsersClaimAirdrop();
     });
   });
 });

@@ -174,6 +174,21 @@ export const ErrorMessages = {
     code: '4001',
     message: 'ไม่พบบุคคลหรือเพจ กรุณาลองใหม่อีกครั้ง',
   },
+  '4002': {
+    statusCode: '404',
+    code: '4002',
+    message: 'This campaign has not started',
+  },
+  '4003': {
+    statusCode: '400',
+    code: '4003',
+    message: 'Not eligible for this campaign',
+  },
+  '4004': {
+    statusCode: '400',
+    code: '4004',
+    message: 'Reached the maximum limit of claims',
+  },
   '5001': {
     statusCode: '400',
     code: '5001',

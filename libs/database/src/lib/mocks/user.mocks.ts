@@ -120,7 +120,7 @@ export const generateMockUsers = async (
     const verifyAcc = await model.accountService.verifyAccount(
       accountActivation
     );
-    const user = await model.accountService.getUserFromCastcleId(
+    const user = await model.userService.getByIdOrCastcleId(
       info.signupRequirement.displayId
     );
 

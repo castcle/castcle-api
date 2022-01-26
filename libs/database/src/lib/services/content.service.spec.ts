@@ -36,10 +36,13 @@ import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { UserVerified } from '../models';
-import { CommentDocument, UserDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
+import {
+  CommentDocument,
+  UserDocument,
+  AccountDocument,
+  ContentDocument,
+  CredentialDocument,
+} from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';

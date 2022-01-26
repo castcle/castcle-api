@@ -24,11 +24,14 @@
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
-import { ContentDocument, UserDocument } from '../schemas';
-import { RevisionDocument } from '../schemas/revision.schema';
-import { Content } from '../schemas/content.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedItemDocument } from '../schemas/feedItem.schema';
+import {
+  ContentDocument,
+  UserDocument,
+  RevisionDocument,
+  Content,
+  RelationshipDocument,
+  FeedItemDocument,
+} from '../schemas';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { ContentAggregator } from '../aggregator/content.aggregator';
 

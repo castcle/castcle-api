@@ -86,6 +86,7 @@ describe('PageController', () => {
   let pageController: PagesController;
   let authService: AuthenticationService;
   let contentService: ContentService;
+  let userService: UserService;
   let userCredential: CredentialDocument;
   const pageDto: PageDto = {
     displayName: 'Super Page',
@@ -118,6 +119,7 @@ describe('PageController', () => {
     }).compile();
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
+    userService = app.get(UserService);
     pageController = app.get<PagesController>(PagesController);
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -158,9 +160,7 @@ describe('PageController', () => {
       expect(newPageResponse.displayName).toEqual(pageDto.displayName);
       expect(newPageResponse.images.cover).toBeDefined();
       expect(newPageResponse.castcleId).toEqual(pageDto.castcleId);
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const pageResponse = testPage.toPageResponse();
       expect(pageResponse.images.avatar).toBeDefined();
       expect(pageResponse.displayName).toEqual(pageDto.displayName);
@@ -170,9 +170,7 @@ describe('PageController', () => {
   });
   describe('updatePage', () => {
     it('should update some properly in updatePageDto to the created page', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const result = await pageController.updatePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
@@ -200,9 +198,7 @@ describe('PageController', () => {
   });
   describe('deletePage', () => {
     it('should delete a page if user has permission', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const result = await pageController.deletePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
@@ -211,9 +207,7 @@ describe('PageController', () => {
         }
       );
       expect(result).toEqual('');
-      const postPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const postPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       expect(postPage).toBeNull();
     });
   });
@@ -223,9 +217,7 @@ describe('PageController', () => {
         { $credential: userCredential, $language: 'th' } as any,
         pageDto2
       );
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto2.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id
@@ -233,9 +225,7 @@ describe('PageController', () => {
       expect(getResult).toEqual(testPage.toPageResponse());
     });
     it('should be able to get page from CastcleId', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto2.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
         pageDto2.castcleId
@@ -245,7 +235,7 @@ describe('PageController', () => {
   });
   describe('getPageContents', () => {
     it('should return ContentsResponse that contain all contain that create by this page', async () => {
-      const page = await authService.getUserFromCastcleId(pageDto2.castcleId);
+      const page = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
           type: ContentType.Short,

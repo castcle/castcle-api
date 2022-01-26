@@ -105,7 +105,7 @@ export class ContentController {
 
     if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
 
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const user = await this.userService.getByIdOrCastcleId(body.castcleId);
     const authorizedUser = await this.userService.getUserFromCredential(
       req.$credential
     );

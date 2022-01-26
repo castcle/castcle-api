@@ -22,6 +22,7 @@
  */
 import {
   AuthenticationService,
+  CampaignService,
   ContentService,
   createCastcleMeta,
   getRelationship,
@@ -88,7 +89,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
+import {
+  BlockingDto,
+  ClaimAirdropDto,
+  ReportingDto,
+  UnblockingDto,
+} from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -110,36 +116,13 @@ export class UserController {
   private logger = new CastLogger(UserController.name);
 
   constructor(
-    private userService: UserService,
-    private contentService: ContentService,
     private authService: AuthenticationService,
+    private campaignService: CampaignService,
+    private contentService: ContentService,
     private socialSyncService: SocialSyncService,
-    private transactionService: TransactionService
+    private transactionService: TransactionService,
+    private userService: UserService
   ) {}
-
-  /**
-   *
-   * @param {string} idOrCastcleId
-   * @param {CredentialRequest} req
-   * @returns {UserDocument} from userService.getUserFromId() or authService.getUserFromCastcleId
-   * @throws {CastcleException} with CastcleStatus.REQUEST_URL_NOT_FOUND
-   */
-  _getUserFromIdOrCastcleId = async (
-    idOrCastcleId: string,
-    req: CredentialRequest
-  ) => {
-    const user = await this.userService.getUserFromId(idOrCastcleId);
-    if (user) return user;
-    const userFromCastcleId = await this.authService.getUserFromCastcleId(
-      idOrCastcleId
-    );
-    if (userFromCastcleId) return userFromCastcleId;
-    else
-      throw new CastcleException(
-        CastcleStatus.REQUEST_URL_NOT_FOUND,
-        req.$language
-      );
-  };
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -487,11 +470,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
-    const followedUser = await this._getUserFromIdOrCastcleId(
-      body.targetCastcleId,
-      req
-    );
+    const currentUser = await this.userService.findUser(id);
+    const followedUser = await this.userService.findUser(body.targetCastcleId);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -522,10 +502,7 @@ export class UserController {
     @Body() body: TargetCastcleDto
   ) {
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    const followedUser = await this._getUserFromIdOrCastcleId(
-      body.targetCastcleId,
-      req
-    );
+    const followedUser = await this.userService.findUser(body.targetCastcleId);
 
     if (!user.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
@@ -557,11 +534,8 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Body() body: TargetCastcleDto
   ) {
-    const currentUser = await this._getUserFromIdOrCastcleId(id, req);
-    const followedUser = await this._getUserFromIdOrCastcleId(
-      body.targetCastcleId,
-      req
-    );
+    const currentUser = await this.userService.findUser(id);
+    const followedUser = await this.userService.findUser(body.targetCastcleId);
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -592,10 +566,7 @@ export class UserController {
     @Param('target_castcle_id') targetCastcleId: string
   ) {
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    const followedUser = await this._getUserFromIdOrCastcleId(
-      targetCastcleId,
-      req
-    );
+    const followedUser = await this.userService.findUser(targetCastcleId);
     if (!user.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -897,7 +868,7 @@ export class UserController {
     this.logger.log('Validate guest');
     await this.validateGuestAccount(req.$credential);
 
-    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const user = await this.userService.findUser(body.castcleId);
     if (!user) {
       this.logger.error(`Can't get user data`);
       throw new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND);
@@ -957,7 +928,7 @@ export class UserController {
   ) {
     this.logger.log(`Start update sync social.`);
     this.logger.log(JSON.stringify(body));
-    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const user = await this.userService.findUser(body.castcleId);
     if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     await this.socialSyncService.update(body, user);
   }
@@ -984,7 +955,7 @@ export class UserController {
   ) {
     this.logger.log(`Start delete sync social.`);
     this.logger.log(JSON.stringify(body));
-    const user = await this._getUserFromIdOrCastcleId(body.castcleId, req);
+    const user = await this.userService.findUser(body.castcleId);
     if (user) {
       await this.socialSyncService.delete(body, user);
     } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
@@ -1250,6 +1221,21 @@ export class UserController {
     this.contentService.deleteRecastContentFromOriginalAndAuthor(
       sourceContentId,
       user.id
+    );
+  }
+
+  @Post('me/claim-airdrop')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async claimAirdrop(
+    @Auth() { account, user }: Authorizer,
+    @Body() { campaign }: ClaimAirdropDto
+  ) {
+    await this.campaignService.claimCampaignsAirdrop(
+      account._id,
+      user,
+      campaign
     );
   }
 }

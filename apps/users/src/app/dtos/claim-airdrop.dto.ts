@@ -21,10 +21,12 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
+import { CampaignType } from '@castcle-api/database';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum } from 'class-validator';
+
+export class ClaimAirdropDto {
+  @ApiProperty()
+  @IsEnum(CampaignType)
+  campaign: CampaignType;
+}

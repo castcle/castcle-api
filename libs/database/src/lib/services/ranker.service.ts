@@ -24,29 +24,31 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ContentDocument, UserDocument } from '../schemas';
-import { FeedItemDocument } from '../schemas/feedItem.schema';
 import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
 import {
   createCastcleFilter,
   createCastcleMeta,
   createPagination,
 } from '../utils/common';
-import { Account, AccountDocument } from '../schemas/account.schema';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
+  ContentDocument,
+  UserDocument,
+  FeedItemDocument,
+  Account,
+  AccountDocument,
   signedContentPayloadItem,
   toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
-} from '../schemas/content.schema';
+  GuestFeedItemDocument,
+  RelationshipDocument,
+} from '../schemas';
 import {
   GuestFeedItemPayload,
   FeedItemPayloadItem,
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
-import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
 import { PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
 

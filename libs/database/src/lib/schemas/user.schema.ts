@@ -30,8 +30,8 @@ import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
-import { PageVerified, UserCampaigns, UserVerified } from '../models';
-import { Account } from '../schemas/account.schema';
+import { PageVerified, UserVerified } from '../models';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
 
@@ -101,9 +101,6 @@ export class User extends CastcleBase {
 
   @Prop()
   followedCount: number;
-
-  @Prop({ select: false })
-  campaigns?: UserCampaigns;
 }
 
 type UserResponseOption = {

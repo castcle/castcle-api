@@ -33,7 +33,7 @@ import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
   Author,
@@ -135,21 +135,6 @@ export class UserService {
         visibility: EntityVisibility.Publish,
       })
       .exec();
-
-  getUserFromId = (id: string) => {
-    try {
-      if (Types.ObjectId(id)) {
-        return this._userModel
-          .findOne({
-            _id: id,
-            visibility: EntityVisibility.Publish,
-          })
-          .exec();
-      } else return null;
-    } catch (error) {
-      return null;
-    }
-  };
 
   private async convertUsersToUserResponses(
     viewer: UserDocument | null,
@@ -311,6 +296,19 @@ export class UserService {
     else query.displayId = CastcleRegExp.fromString(id);
 
     return this._userModel.findOne(query).exec();
+  };
+
+  /**
+   * @param {string} id user ID or Castcle ID
+   * @param {UserType} type user type: `people` or `page`
+   * @throws {CastcleException} with CastcleStatus.REQUEST_URL_NOT_FOUND
+   */
+  findUser = async (id: string, type?: UserType) => {
+    const user = await this.getByIdOrCastcleId(id, type);
+
+    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    return user;
   };
 
   updateUser = (user: UserDocument, updateUserDto: UpdateModelUserDto) => {

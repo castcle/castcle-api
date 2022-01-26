@@ -21,11 +21,9 @@
  * or have any questions.
  */
 
-import { CastcleIncludes } from '.';
-import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
-import { User } from '../schemas/user.schema';
+import { GuestFeedItemType, User } from '../schemas';
 import { CastcleMeta } from './common.dto';
-import { ContentPayloadItem } from './content.dto';
+import { CastcleIncludes, ContentPayloadItem } from './content.dto';
 
 export class GuestFeedItemDto {
   content?: any;

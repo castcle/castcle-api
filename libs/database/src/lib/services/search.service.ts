@@ -27,8 +27,7 @@ import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   TopTrendsQueryOptions,
 } from '../dtos/search.dto';
-import { CredentialDocument, UserDocument } from '../schemas';
-import { HashtagDocument } from '../schemas/hashtag.schema';
+import { CredentialDocument, HashtagDocument, UserDocument } from '../schemas';
 
 @Injectable()
 export class SearchService {
