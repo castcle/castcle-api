@@ -106,15 +106,18 @@ export class User extends CastcleBase {
   campaigns?: UserCampaigns;
 }
 
+type UserResponseOption = {
+  passwordNotSet?: boolean;
+  blocked?: boolean;
+  blocking?: boolean;
+  followed?: boolean;
+  balance?: number;
+};
+
 export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
-  toUserResponse(
-    passwordNotSet?: boolean,
-    blocked?: boolean,
-    blocking?: boolean,
-    followed?: boolean
-  ): Promise<UserResponseDto>;
+  toUserResponse(option?: UserResponseOption): Promise<UserResponseDto>;
   toPageResponse(
     blocked?: boolean,
     blocking?: boolean,
@@ -191,11 +194,15 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
-  passwordNotSet = false,
-  blocked?: boolean,
-  blocking?: boolean,
-  followed?: boolean
+  option = {
+    passwordNotSet: undefined,
+    blocked: undefined,
+    blocking: undefined,
+    followed: undefined,
+    balance: undefined,
+  } as UserResponseOption
 ) {
+  const { passwordNotSet, blocked, blocking, followed, balance } = option;
   const self = await (this as UserDocument)
     .populate('ownerAccount')
     .execPopulate();
@@ -204,6 +211,9 @@ UserSchema.methods.toUserResponse = async function (
   response.blocking = blocking;
   response.blocked = blocked;
   response.passwordNotSet = passwordNotSet;
+  response.wallet = {
+    balance: balance,
+  };
   return response;
 };
 

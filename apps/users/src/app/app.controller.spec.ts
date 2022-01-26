@@ -28,6 +28,7 @@ import {
   MongooseForFeatures,
   SocialProvider,
   SocialSyncService,
+  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -116,6 +117,7 @@ describe('AppController', () => {
         UserProducer,
         HashtagService,
         SocialSyncService,
+        TransactionService,
       ],
     }).compile();
     appController = app.get(UserController);

@@ -405,9 +405,9 @@ export class AuthenticationController {
       );
       return {
         profile: userProfile.profile
-          ? await userProfile.profile.toUserResponse(
-              account.password ? false : true
-            )
+          ? await userProfile.profile.toUserResponse({
+              passwordNotSet: account.password ? false : true,
+            })
           : null,
         pages: userProfile.pages
           ? userProfile.pages.items.map((item) => item.toPageResponse())
@@ -725,9 +725,9 @@ export class AuthenticationController {
           ...{
             payload: {
               profile: users.profile
-                ? await users.profile.toUserResponse(
-                    account.password ? false : true
-                  )
+                ? await users.profile.toUserResponse({
+                    passwordNotSet: account.password ? false : true,
+                  })
                 : null,
             },
           },
@@ -739,7 +739,9 @@ export class AuthenticationController {
     this.logger.log(`response success.`);
     return {
       profile: users.profile
-        ? await users.profile.toUserResponse(account.password ? false : true)
+        ? await users.profile.toUserResponse({
+            passwordNotSet: account.password ? false : true,
+          })
         : null,
       pages: users.pages
         ? users.pages.items.map((item) => item.toPageResponse())
