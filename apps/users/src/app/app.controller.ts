@@ -27,6 +27,7 @@ import {
   getRelationship,
   SocialProvider,
   SocialSyncService,
+  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -112,7 +113,8 @@ export class UserController {
     private userService: UserService,
     private contentService: ContentService,
     private authService: AuthenticationService,
-    private socialSyncService: SocialSyncService
+    private socialSyncService: SocialSyncService,
+    private transactionService: TransactionService
   ) {}
 
   /**
@@ -239,7 +241,12 @@ export class UserController {
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) return await user.toUserResponse();
+    if (user && req?.params?.['userFields'] === 'wallet') {
+      const balance = await this.transactionService.getUserBalance(user);
+      return await user.toUserResponse({
+        balance: balance,
+      });
+    } else if (user) return await user.toUserResponse();
     else
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
@@ -1072,12 +1079,11 @@ export class UserController {
       );
 
       this.logger.log('build response');
-      response = await userReferrer.toUserResponse(
-        undefined,
-        relationStatus.blocked,
-        relationStatus.blocking,
-        relationStatus.followed
-      );
+      response = await userReferrer.toUserResponse({
+        blocked: relationStatus.blocked,
+        blocking: relationStatus.blocking,
+        followed: relationStatus.followed,
+      });
     } else {
       this.logger.log('build response');
       response = await userReferrer.toUserResponse();
@@ -1138,12 +1144,11 @@ export class UserController {
           );
 
           this.logger.log('build response with relation');
-          return await x.toUserResponse(
-            undefined,
-            relationStatus.blocked,
-            relationStatus.blocking,
-            relationStatus.followed
-          );
+          return await x.toUserResponse({
+            blocked: relationStatus.blocked,
+            blocking: relationStatus.blocking,
+            followed: relationStatus.followed,
+          });
         })
       );
     } else {

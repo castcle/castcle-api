@@ -29,6 +29,7 @@ import {
   IsString,
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
+import { Wallet } from '../models/wallet.model';
 import { CastcleImage, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
@@ -111,6 +112,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   passwordNotSet: boolean;
+
+  @ApiProperty()
+  wallet: Wallet;
 }
 
 export class UpdateUserDto {

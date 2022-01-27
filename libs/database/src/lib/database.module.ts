@@ -61,6 +61,7 @@ import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { TransactionService } from './services/transaction.service';
 import { createCastcleMeta, getRelationship } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -147,6 +148,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
+    TransactionService,
   ],
   exports: [
     AuthenticationService,
@@ -161,6 +163,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
+    TransactionService,
   ],
 })
 export class DatabaseModule {}
@@ -180,4 +183,5 @@ export {
   SocialSyncService,
   CommentService,
   getRelationship,
+  TransactionService,
 };
