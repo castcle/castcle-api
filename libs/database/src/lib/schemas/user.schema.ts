@@ -30,8 +30,8 @@ import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
-import { PageVerified, UserCampaigns, UserVerified } from '../models';
-import { Account } from '../schemas/account.schema';
+import { PageVerified, UserVerified } from '../models';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { RelationshipDocument } from './relationship.schema';
 
@@ -101,20 +101,20 @@ export class User extends CastcleBase {
 
   @Prop()
   followedCount: number;
-
-  @Prop({ select: false })
-  campaigns?: UserCampaigns;
 }
+
+type UserResponseOption = {
+  passwordNotSet?: boolean;
+  blocked?: boolean;
+  blocking?: boolean;
+  followed?: boolean;
+  balance?: number;
+};
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
-  toUserResponse(
-    passwordNotSet?: boolean,
-    blocked?: boolean,
-    blocking?: boolean,
-    followed?: boolean
-  ): Promise<UserResponseDto>;
+  toUserResponse(option?: UserResponseOption): Promise<UserResponseDto>;
   toPageResponse(
     blocked?: boolean,
     blocking?: boolean,
@@ -191,10 +191,13 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
-  passwordNotSet = false,
-  blocked?: boolean,
-  blocking?: boolean,
-  followed?: boolean
+  {
+    passwordNotSet,
+    blocked,
+    blocking,
+    followed,
+    balance,
+  } = {} as UserResponseOption
 ) {
   const self = await (this as UserDocument)
     .populate('ownerAccount')
@@ -204,6 +207,9 @@ UserSchema.methods.toUserResponse = async function (
   response.blocking = blocking;
   response.blocked = blocked;
   response.passwordNotSet = passwordNotSet;
+  response.wallet = {
+    balance: balance,
+  };
   return response;
 };
 

@@ -27,29 +27,34 @@ import {
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { getMongoOptions } from './environment';
-import { CampaignSchema, TransactionSchema } from './schemas';
-import { AccountReferralSchema } from './schemas/account-referral.schema';
-import { AccountSchemaFactory } from './schemas/account.schema-factory';
-import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
-import { CommentSchemaFactory } from './schemas/comment.schema';
-import { ContentSchemaFactory } from './schemas/content.schema';
-import { CountrySchema } from './schemas/country.schema';
-import { CredentialSchemaFactory } from './schemas/credential.schema';
-import { DsContentReachSchema } from './schemas/ds-content-reach.schema';
-import { EngagementSchemaFactory } from './schemas/engagement.schema';
-import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
-import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
-import { HashtagSchema } from './schemas/hashtag.schema';
-import { LanguageSchema } from './schemas/language.schema';
-import { NotificationSchema } from './schemas/notification.schema';
-import { OtpSchema } from './schemas/otp.schema';
-import { RelationshipSchemaFactory } from './schemas/relationship.schema';
-import { RevisionSchemaFactory } from './schemas/revision.schema';
-import { SocialSyncSchema } from './schemas/social-sync.schema';
-import { UserSchemaFactory } from './schemas/user.schema';
-import { UxEngagementSchema } from './schemas/uxengagement.schema';
+import {
+  AccountActivationSchema,
+  AccountAuthenIdSchema,
+  AccountReferralSchema,
+  AccountSchemaFactory,
+  CampaignSchema,
+  CommentSchemaFactory,
+  ContentSchemaFactory,
+  CountrySchema,
+  CredentialSchemaFactory,
+  DsContentReachSchema,
+  EngagementSchemaFactory,
+  FeedItemSchemaFactory,
+  GuestFeedItemSchema,
+  HashtagSchema,
+  LanguageSchema,
+  NotificationSchema,
+  OtpSchema,
+  QueueSchema,
+  RelationshipSchemaFactory,
+  RevisionSchemaFactory,
+  SocialSyncSchema,
+  TransactionSchema,
+  UserSchemaFactory,
+  UxEngagementSchema,
+} from './schemas';
 import { AuthenticationService } from './services/authentication.service';
+import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
@@ -61,6 +66,7 @@ import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
+import { TransactionService } from './services/transaction.service';
 import { createCastcleMeta, getRelationship } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -75,6 +81,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Language', schema: LanguageSchema },
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
+  { name: 'Queue', schema: QueueSchema },
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Transaction', schema: TransactionSchema },
@@ -136,6 +143,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   providers: [
     AuthenticationService,
     UserService,
+    CampaignService,
     ContentService,
     UxEngagementService,
     NotificationService,
@@ -147,10 +155,12 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
+    TransactionService,
   ],
   exports: [
     AuthenticationService,
     UserService,
+    CampaignService,
     ContentService,
     UxEngagementService,
     NotificationService,
@@ -161,6 +171,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
+    TransactionService,
   ],
 })
 export class DatabaseModule {}
@@ -168,6 +179,7 @@ export class DatabaseModule {}
 export {
   AuthenticationService,
   UserService,
+  CampaignService,
   ContentService,
   UxEngagementService,
   NotificationService,
@@ -180,4 +192,5 @@ export {
   SocialSyncService,
   CommentService,
   getRelationship,
+  TransactionService,
 };

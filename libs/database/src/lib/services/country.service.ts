@@ -28,7 +28,7 @@ import {
   CountryPayloadDto,
   DEFAULT_COUNTRY_QUERY_OPTIONS,
 } from '../dtos';
-import { CountryDocument } from '../schemas/country.schema';
+import { CountryDocument } from '../schemas';
 
 @Injectable()
 export class CountryService {

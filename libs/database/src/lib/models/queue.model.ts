@@ -21,22 +21,10 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { CastcleBase } from './base.schema';
+import { QueueTopic } from './queue.enum';
 
-export type FeatureDocument = Feature & Document;
+export class ClaimAirdropPayload {
+  topic = QueueTopic.CLAIM_AIRDROP;
 
-@Schema({ timestamps: true })
-export class Feature extends CastcleBase {
-  @Prop({ required: true, type: Object })
-  objectRef: any;
-
-  @Prop({ required: true })
-  tag: string;
-
-  @Prop({ required: true })
-  value: string;
+  constructor(public accountId: string, public campaignId: string) {}
 }
-
-export const FeatureSchema = SchemaFactory.createForClass(Feature);

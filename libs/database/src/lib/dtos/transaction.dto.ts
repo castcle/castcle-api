@@ -21,10 +21,9 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
+export class TransactionDto {
+  from?: string;
+  to?: string;
+  value: number;
+  data?: string;
+}

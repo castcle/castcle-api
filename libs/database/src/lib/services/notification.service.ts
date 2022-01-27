@@ -37,14 +37,15 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '../dtos/notification.dto';
-import { AccountDocument } from '../schemas';
 import {
+  AccountDocument,
   CredentialDocument,
   CredentialModel,
-} from '../schemas/credential.schema';
-import { UserModel } from '../schemas/user.schema';
+  UserModel,
+  NotificationDocument,
+} from '../schemas';
 import { createCastcleMeta } from '../utils/common';
-import { NotificationDocument } from './../schemas/notification.schema';
+
 @Injectable()
 export class NotificationService {
   private logger = new CastLogger(NotificationService.name);

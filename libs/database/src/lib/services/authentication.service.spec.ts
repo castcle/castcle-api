@@ -20,23 +20,36 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { UserProducer } from '@castcle-api/utils/queue';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
+import {
+  ContentService,
+  HashtagService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  UserService,
+} from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
-import { AccountAuthenIdDocument, OtpDocument, OtpObjective } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { AccountActivationDocument } from '../schemas/accountActivation.schema';
-import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { UserDocument } from '../schemas/user.schema';
+import {
+  AccountAuthenIdDocument,
+  OtpDocument,
+  OtpObjective,
+  AccountDocument,
+  AccountActivationDocument,
+  AccountAuthenIdType,
+  CredentialDocument,
+  UserDocument,
+} from '../schemas';
 import {
   AuthenticationService,
   SignupRequirements,
   SignupSocialRequirements,
 } from './authentication.service';
+
+jest.mock('@castcle-api/utils/queue');
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
@@ -57,7 +70,8 @@ const closeInMongodConnection = async () => {
 
 describe('Authentication Service', () => {
   let service: AuthenticationService;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
+  let userService: UserService;
+
   const importModules = env.DB_TEST_IN_DB
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
@@ -65,14 +79,22 @@ describe('Authentication Service', () => {
         MongooseForFeatures,
       ]
     : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [AuthenticationService];
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: importModules,
-      providers: providers,
+      providers: [
+        AuthenticationService,
+        UserService,
+        ContentService,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<AuthenticationService>(AuthenticationService);
+    service = module.get(AuthenticationService);
+    userService = module.get(UserService);
   });
+
   afterAll(async () => {
     if (env.DB_TEST_IN_DB) await closeInMongodConnection();
   });
@@ -326,27 +348,6 @@ describe('Authentication Service', () => {
       });
     });
 
-    describe('#getUserFromId()', () => {
-      it('should return null if non id is exist in user', async () => {
-        const result = await service.getUserFromCastcleId('notFoundId');
-        expect(result).toBeNull();
-      });
-      it('should return an user when id is match', async () => {
-        const newUser = new service._userModel({
-          displayId: 'testNew',
-          displayName: 'testName',
-          type: 'people',
-          ownerAccount: createAccountResult.accountDocument._id,
-        });
-        await newUser.save();
-        const result = await service.getUserFromCastcleId('testNew');
-        expect(result).not.toBeNull();
-        expect(result.displayId).toEqual(newUser.displayId);
-
-        expect(result.displayName).toEqual(newUser.displayName);
-      });
-    });
-
     describe('#createAccountActivation()', () => {
       it('should create account activation with verification token', async () => {
         const accountActivation = await service.createAccountActivation(
@@ -382,7 +383,7 @@ describe('Authentication Service', () => {
         afterSaveAccount = await service._accountModel.findById(
           createAccountResult.accountDocument._id
         );
-        afterSaveUser = await service.getUserFromCastcleId('dudethisisnew');
+        afterSaveUser = await userService.getByIdOrCastcleId('dudethisisnew');
       });
       it('should update email, password of current account', () => {
         expect(afterSaveAccount.email).toBe(signupRequirements.email);
@@ -503,7 +504,7 @@ describe('Authentication Service', () => {
         expect(suggestName).toEqual('hellofriend');
       });
       it('should suggest a name + totalUser if the id is already exist', async () => {
-        const totalUser = await service._accountModel.countDocuments();
+        const totalUser = await service._userModel.countDocuments();
         const suggestName = await service.suggestCastcleId('Dude this is new');
         expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
       });

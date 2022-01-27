@@ -36,9 +36,9 @@ import { RevisionDocument } from './revision.schema';
 import { EngagementDocument, EngagementType } from './engagement.schema';
 import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
-import { UserDocument } from '.';
+import { UserDocument } from './user.schema';
 import { RelationshipDocument } from './relationship.schema';
-import { FeedItemDocument } from './feedItem.schema';
+import { FeedItemDocument } from './feed-item.schema';
 import { Image } from '@castcle-api/utils/aws';
 import { Configs } from '@castcle-api/environments';
 

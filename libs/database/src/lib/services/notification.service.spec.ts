@@ -37,9 +37,7 @@ import {
   RegisterTokenDto,
 } from '../dtos/notification.dto';
 import { env } from '../environment';
-import { UserDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
+import { UserDocument, AccountDocument, CredentialDocument } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';

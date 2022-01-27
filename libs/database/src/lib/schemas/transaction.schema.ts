@@ -22,14 +22,25 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, SchemaTypes } from 'mongoose';
+import { SchemaTypes } from 'mongoose';
+import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
-export class Transaction extends Document {
-  @Prop({ get: String, ref: 'Account', type: SchemaTypes.ObjectId })
+export class Transaction extends CastcleBase {
+  @Prop({
+    get: String,
+    ref: 'Account',
+    type: SchemaTypes.ObjectId,
+    index: true,
+  })
   from?: string;
 
-  @Prop({ get: String, ref: 'Account', type: SchemaTypes.ObjectId })
+  @Prop({
+    get: String,
+    ref: 'Account',
+    type: SchemaTypes.ObjectId,
+    index: true,
+  })
   to?: string;
 
   @Prop()

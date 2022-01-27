@@ -21,12 +21,11 @@
  * or have any questions.
  */
 import { Prop, Schema } from '@nestjs/mongoose';
-import { CastcleQueueAction, EntityVisibility } from '../dtos/common.dto';
+import { Document } from 'mongoose';
+import { CastcleQueueAction, EntityVisibility } from '../dtos';
 
 @Schema()
-export class CastcleBase {
-  _id?: any;
-
+export class CastcleBase extends Document {
   @Prop()
   createdAt?: Date;
 

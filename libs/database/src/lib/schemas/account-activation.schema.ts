@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { env } from '../environment';
 import { Document, Model } from 'mongoose';
-import { Account } from '../schemas/account.schema';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils/commons';

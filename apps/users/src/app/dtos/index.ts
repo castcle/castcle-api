@@ -22,6 +22,7 @@
  */
 
 export * from './blocking.dto';
+export * from './claim-airdrop.dto';
 export * from './dto';
 export * from './reporting.dto';
 export * from './unblocking.dto';

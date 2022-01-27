@@ -21,16 +21,13 @@
  * or have any questions.
  */
 
-import { connect, disconnect, model } from 'mongoose';
+import { connect, disconnect, Document, model } from 'mongoose';
 import { CampaignType } from '../libs/database/src/lib/models/campaign.enum';
-import {
-  Campaign,
-  CampaignSchema,
-} from '../libs/database/src/lib/schemas/campaign.schema';
+import { Campaign, CampaignSchema } from '../libs/database/src/lib/schemas';
 
 class CreateCampaigns {
   static run = async () => {
-    const campaignDocuments: Campaign[] = [
+    const campaignDocuments: Omit<Campaign, keyof Document>[] = [
       {
         name: 'Early Caster Airdrop',
         type: CampaignType.VERIFY_MOBILE,
@@ -59,8 +56,8 @@ class CreateCampaigns {
       },
     ];
 
-    const inputUrl = process.argv.join().match(/--url=(.+)/i)?.[1];
-    await connect(inputUrl ?? 'mongodb://localhost:27017/test');
+    const url = process.argv.find((arg) => arg.match(/--url=(.+)/i))?.[1];
+    await connect(url ?? 'mongodb://localhost:27017/test');
     const campaignModel = model(Campaign.name, CampaignSchema);
     const campaigns = await campaignModel.create(campaignDocuments);
     await disconnect();

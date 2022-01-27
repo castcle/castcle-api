@@ -25,12 +25,15 @@ import {
   LanguageService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  UserService,
 } from '@castcle-api/database';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { LanguagesController } from './languages.controller';
+
+jest.mock('libs/database/src/lib/services/user.service');
 
 let mongodMock: MongoMemoryServer;
 
@@ -67,7 +70,7 @@ describe('LanguagesController', () => {
         }),
       ],
       controllers: [LanguagesController],
-      providers: [LanguageService, AuthenticationService],
+      providers: [LanguageService, AuthenticationService, UserService],
     }).compile();
 
     appController = app.get<LanguagesController>(LanguagesController);

@@ -18,9 +18,9 @@ import {
   EngagementDocument,
   EngagementType,
   UserDocument,
+  RelationshipDocument,
+  RevisionDocument,
 } from '../schemas';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { RevisionDocument } from '../schemas/revision.schema';
 import { getRelationship } from '../utils/common';
 
 @Injectable()

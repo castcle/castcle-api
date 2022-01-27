@@ -31,7 +31,7 @@ import {
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { SocialProvider } from '../models';
-import { UserDocument, UserType } from './../schemas/user.schema';
+import { UserDocument, UserType } from './../schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
