@@ -863,7 +863,7 @@ describe('AppController', () => {
     it('should create new account with new user by social ', async () => {
       const result = await appController.loginWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '109364223',
+        socialId: '109364223',
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
@@ -896,7 +896,7 @@ describe('AppController', () => {
 
       await appController.loginWithSocial(newCredentialGuest, {
         provider: AccountAuthenIdType.Google,
-        uid: '109364223777',
+        socialId: '109364223777',
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
@@ -917,7 +917,7 @@ describe('AppController', () => {
       } as any;
       const result = await appController.loginWithSocial(newCredentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '109364223',
+        socialId: '109364223',
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
@@ -943,7 +943,7 @@ describe('AppController', () => {
       await expect(
         appController.loginWithSocial(newCredentialGuest, {
           provider: AccountAuthenIdType.Twitter,
-          uid: '01234567892388',
+          socialId: '01234567892388',
           displayName: 'test twitter',
           avatar: '',
           email: 'testfb@gmail.com',
@@ -975,7 +975,7 @@ describe('AppController', () => {
       );
       await appController.connectWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '10936456',
+        socialId: '10936456',
         displayName: 'test facebook',
         avatar: '',
         email: mockUsers[0].account.email,
@@ -994,7 +994,7 @@ describe('AppController', () => {
       await expect(
         appController.connectWithSocial(credentialGuest, {
           provider: AccountAuthenIdType.Facebook,
-          uid: '10936456',
+          socialId: '10936456',
           displayName: 'test facebook',
           avatar: '',
           email: mockUsers[0].account.email,

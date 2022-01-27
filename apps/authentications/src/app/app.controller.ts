@@ -766,7 +766,7 @@ export class AuthenticationController {
     this.logger.log(`connect with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
-      body.uid,
+      body.socialId,
       body.provider
     );
     if (socialAccount) {
@@ -782,7 +782,7 @@ export class AuthenticationController {
     await this.authService.createAccountAuthenId(
       currentAccount,
       body.provider,
-      body.uid,
+      body.socialId,
       body.authToken,
       undefined,
       body.avatar,

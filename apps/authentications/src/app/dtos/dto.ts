@@ -56,7 +56,7 @@ export class SocialConnectDto {
   provider: AccountAuthenIdType;
   @IsString()
   @ApiProperty()
-  uid: string;
+  socialId: string;
   @IsString()
   @IsOptional()
   @ApiProperty()

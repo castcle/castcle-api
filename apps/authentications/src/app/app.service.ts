@@ -136,7 +136,7 @@ export class AppService {
   async socialLogin(body: SocialConnectDto, credential: Credential) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
-      body.uid,
+      body.socialId,
       body.provider
     );
     if (socialAccount) {
@@ -192,8 +192,8 @@ export class AppService {
       await this.authService.signupBySocial(currentAccount, {
         displayName: body.displayName
           ? body.displayName
-          : this.getSocialProfix(body.uid, body.provider),
-        socialId: body.uid,
+          : this.getSocialProfix(body.socialId, body.provider),
+        socialId: body.socialId,
         provider: body.provider,
         avatar: avatar ? avatar.image.original : null,
         socialToken: body.authToken,
