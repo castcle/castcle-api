@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { UserProducer } from '@castcle-api/utils/queue';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
@@ -49,40 +49,20 @@ import {
   SignupSocialRequirements,
 } from './authentication.service';
 
-jest.mock('@castcle-api/utils/queue');
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('Authentication Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: AuthenticationService;
   let userService: UserService;
 
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
+  beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-
-  beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
+      ],
       providers: [
         AuthenticationService,
         UserService,
@@ -91,16 +71,20 @@ describe('Authentication Service', () => {
         HashtagService,
       ],
     }).compile();
-    service = module.get(AuthenticationService);
-    userService = module.get(UserService);
+
+    service = app.get(AuthenticationService);
+    userService = app.get(UserService);
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
   describe('Onboarding', () => {
     let createAccountResult: {
       accountDocument: Account;
@@ -108,6 +92,7 @@ describe('Authentication Service', () => {
     };
     let accountDocumentCountBefore: number;
     const newDeviceUUID = '83b696d7-320b-4402-a412-d9cee10fc6a3';
+
     beforeAll(async () => {
       accountDocumentCountBefore = await service._accountModel
         .countDocuments()
@@ -648,10 +633,11 @@ describe('Authentication Service', () => {
       const countryCodeTest = '+66';
       const numberTest = '0817896888';
       let otp: Otp = null;
+
       beforeAll(async () => {
         const newlyInsertEmail = `${Math.ceil(
           Math.random() * 1000
-        )}@testinsert.com`;
+        )}@test-insert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
           password: password,
@@ -665,9 +651,6 @@ describe('Authentication Service', () => {
           },
         });
         account = await newAccount.save();
-      });
-
-      it('should generate otp successful', async () => {
         otp = await service.generateOtp(
           account,
           OtpObjective.ForgotPassword,
@@ -675,43 +658,52 @@ describe('Authentication Service', () => {
           'email',
           false
         );
-        expect(otp.refCode).toBeDefined;
+      });
+
+      it('should generate otp successful', async () => {
+        expect(otp.refCode).toBeDefined();
         expect(otp.isValid()).toEqual(true);
       });
+
       it('should found otp document that match with account and ref code', async () => {
         const result = await service.getOtpFromAccount(account, otp.refCode);
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with request id and objective', async () => {
         const result = await service.getAllOtpFromRequestIdObjective(
           account.id,
           OtpObjective.ForgotPassword
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with request id and ref code', async () => {
         const result = await service.getOtpFromRequestIdRefCode(
           account.id,
           otp.refCode
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with ref code', async () => {
         const result = await service.getOtpFromRefCode(otp.refCode);
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should update retry otp document successful', async () => {
         await service.updateRetryOtp(otp);
         const result = await service.getOtpFromRefCode(otp.refCode);
         expect(result.retry).toEqual(1);
       });
+
       it('should update account password successful', async () => {
         const result = await service.changePassword(
           account,
           otp,
           'test1234@!gbn'
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
     });
   });

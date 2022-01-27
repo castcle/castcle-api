@@ -22,7 +22,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { Account, Credential } from '../schemas';
@@ -36,54 +36,35 @@ import { UxEngagementService } from './uxengagement.service';
 import { HashtagService } from './hashtag.service';
 import { UserProducer } from '@castcle-api/utils/queue';
 
-jest.mock('@castcle-api/utils/queue');
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('UxEngagement Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: UxEngagementService;
   let authService: AuthenticationService;
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
   };
-  const providers = [
-    UxEngagementService,
-    AuthenticationService,
-    ContentService,
-    HashtagService,
-    UserService,
-    UserProducer,
-  ];
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: providers,
+      providers: [
+        UxEngagementService,
+        AuthenticationService,
+        ContentService,
+        HashtagService,
+        UserService,
+        UserProducer,
+      ],
     }).compile();
-    service = module.get<UxEngagementService>(UxEngagementService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+    service = app.get<UxEngagementService>(UxEngagementService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -100,8 +81,10 @@ describe('UxEngagement Service', () => {
       password: 'test1234567',
     });
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#track()', () => {
@@ -132,7 +115,7 @@ describe('UxEngagement Service', () => {
       expect(uxTrackResult.screenInstance).toEqual(body.screenInstance);
       expect(uxTrackResult.target).toEqual(body.target);
       expect(uxTrackResult.targetId).toEqual(body.targetId);
-      //expect(uxTrackResult.timestamp).toEqual(now); so prebuit could pass
+      //expect(uxTrackResult.timestamp).toEqual(now); so prebuilt could pass
     });
   });
 });

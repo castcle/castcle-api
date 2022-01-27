@@ -22,7 +22,7 @@ describe('Castcle E2E Tests', () => {
     await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();
     await initializeUsers();
-    closeAuthenticationsModule();
+    await closeAuthenticationsModule();
   });
 
   afterAll(async () => {
@@ -35,8 +35,8 @@ describe('Castcle E2E Tests', () => {
       await setupUsersModule();
     });
 
-    afterAll(() => {
-      closeUsersModule();
+    afterAll(async () => {
+      await closeUsersModule();
     });
 
     describe('- Report User or Content', () => {

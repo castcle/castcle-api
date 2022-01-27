@@ -93,5 +93,6 @@ export class CastcleException extends HttpException {
   static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
   static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
   static REACHED_MAX_CLAIMS = new CastcleException('4004');
+  static REWARD_IS_NOT_ENOUGH = new CastcleException('4005');
   static CONTENT_NOT_FOUND = new CastcleException('5003');
 }

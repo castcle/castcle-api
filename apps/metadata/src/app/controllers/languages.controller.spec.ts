@@ -28,40 +28,25 @@ import {
   UserService,
 } from '@castcle-api/database';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { LanguagesController } from './languages.controller';
 
 jest.mock('libs/database/src/lib/services/user.service');
 
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
-
 describe('LanguagesController', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let appController: LanguagesController;
   let languageService: LanguageService;
   let authService: AuthenticationService;
 
   beforeAll(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
@@ -86,7 +71,8 @@ describe('LanguagesController', () => {
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getAllLanguage', () => {

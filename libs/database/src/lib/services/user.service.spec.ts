@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
@@ -38,7 +37,6 @@ import {
   Pagination,
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
-import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { Comment, Content, Account, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
@@ -47,80 +45,40 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 
-jest.mock('@castcle-api/logger');
-jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn() }),
-}));
-
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('User Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentService;
-
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull,
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull,
-      ];
-  const providers = [
-    UserService,
-    AuthenticationService,
-    ContentService,
-    CommentService,
-    UserProducer,
-    HashtagService,
-  ];
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
   };
+
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers,
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        UserService,
+        AuthenticationService,
+        ContentService,
+        CommentService,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    contentService = module.get<ContentService>(ContentService);
-    commentService = module.get(CommentService);
+
+    service = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
+    contentService = app.get<ContentService>(ContentService);
+    commentService = app.get(CommentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -137,8 +95,10 @@ describe('User Service', () => {
       password: 'test1234567',
     });
   });
+
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#getUserFromCredential()', () => {

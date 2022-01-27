@@ -35,7 +35,7 @@ export const initializeUsers = async () => {
       userAlpha.id = body.profile.id;
     });
 
-  await userModel.findByIdAndUpdate(userAlpha.id, { 'verified.mobile': true });
+  await userModel.updateOne({ _id: userAlpha.id }, { 'verified.mobile': true });
 
   await AuthenticationsRequest.register()
     .auth(userBeta.guestToken, { type: 'bearer' })

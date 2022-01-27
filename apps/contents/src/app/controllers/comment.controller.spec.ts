@@ -30,55 +30,17 @@ import {
   MongooseForFeatures,
   NotificationService,
 } from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
 import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer,
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
 
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-const fakeBull3 = BullModule.registerQueue({
-  name: TopicName.Notifications,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('CommentController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let commentController: CommentController;
   let service: UserService;
@@ -89,18 +51,18 @@ describe('CommentController', () => {
   let content: Content;
   let userCredentialRequest: any;
   let rootCommentId: any;
+
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
           store: 'memory',
           ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull,
-        fakeBull3,
       ],
       controllers: [CommentController],
       providers: [
@@ -150,8 +112,10 @@ describe('CommentController', () => {
       $language: 'th',
     } as any;
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#createComment()', () => {

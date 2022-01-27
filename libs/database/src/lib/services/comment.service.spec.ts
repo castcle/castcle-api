@@ -1,5 +1,4 @@
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -14,6 +13,7 @@ import { UserService } from './user.service';
 
 describe('ContentService', () => {
   let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: CommentService;
   let authService: AuthenticationService;
   let contentService: ContentService;
@@ -22,24 +22,13 @@ describe('ContentService', () => {
   let content: Content;
   let user: User;
 
-  const fakeBull = BullModule.registerQueue({
-    name: TopicName.Users,
-    redis: { host: '0.0.0.0', port: 6380 },
-  });
-
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        MongooseModule.forRootAsync({
-          useFactory: async () => {
-            mongod = await MongoMemoryServer.create();
-
-            return { uri: mongod.getUri() };
-          },
-        }),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull,
       ],
       providers: [
         AuthenticationService,
@@ -51,10 +40,10 @@ describe('ContentService', () => {
       ],
     }).compile();
 
-    authService = module.get(AuthenticationService);
-    contentService = module.get(ContentService);
-    service = module.get(CommentService);
-    userService = module.get(UserService);
+    authService = app.get(AuthenticationService);
+    contentService = app.get(ContentService);
+    service = app.get(CommentService);
+    userService = app.get(UserService);
 
     const result = await authService.createAccount({
       deviceUUID: 'test-uuid',
@@ -82,8 +71,9 @@ describe('ContentService', () => {
     });
   });
 
-  afterAll(() => {
-    mongod.stop();
+  afterAll(async () => {
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#convertCommentToCommentResponse', () => {

@@ -43,6 +43,7 @@ class PrivateTwitterService {
 type Union<T, R> = Pick<T, Exclude<keyof T, keyof R>> & R;
 
 describe('Twitter Service', () => {
+  let app: TestingModule;
   let contentService: ContentService;
   let socialSyncService: SocialSyncService;
   let twitterService: Union<TwitterService, PrivateTwitterService>;
@@ -97,7 +98,7 @@ describe('Twitter Service', () => {
   };
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    app = await Test.createTestingModule({
       providers: [
         TwitterService,
         {
@@ -118,11 +119,15 @@ describe('Twitter Service', () => {
       ],
     }).compile();
 
-    contentService = module.get(ContentService);
-    socialSyncService = module.get(SocialSyncService);
-    twitterService = module.get(TwitterService);
+    contentService = app.get(ContentService);
+    socialSyncService = app.get(SocialSyncService);
+    twitterService = app.get(TwitterService);
     twitterService.logger = { log: jest.fn() } as any;
     twitterService.client = { userTimeline: jest.fn() } as any;
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   beforeEach(() => {

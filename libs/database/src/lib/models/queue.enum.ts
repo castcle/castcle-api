@@ -21,6 +21,12 @@
  * or have any questions.
  */
 
+export enum QueueStatus {
+  DONE = 'done',
+  FAILED = 'failed',
+  WAITING = 'waiting',
+}
+
 export enum QueueTopic {
   CLAIM_AIRDROP = 'claim-airdrop',
 }
