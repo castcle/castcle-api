@@ -44,12 +44,12 @@ import {
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
-  AccountDocument,
-  ContentDocument,
-  CredentialDocument,
-  EngagementDocument,
+  Account,
+  Content,
+  Credential,
+  Engagement,
   OtpObjective,
-  UserDocument,
+  User,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -94,8 +94,8 @@ describe('AppController', () => {
   let service: UserService;
   let contentService: ContentService;
   let authService: AuthenticationService;
-  let userCredential: CredentialDocument;
-  let userAccount: AccountDocument;
+  let userCredential: Credential;
+  let userAccount: Account;
   let socialSyncService: SocialSyncService;
 
   beforeAll(async () => {
@@ -225,9 +225,9 @@ describe('AppController', () => {
   });
 
   describe('- Contents related', () => {
-    let user: UserDocument;
+    let user: User;
     let contentDtos: SaveContentDto[];
-    const contents: ContentDocument[] = [];
+    const contents: Content[] = [];
     let expectedResponse: ContentsResponse;
     beforeAll(async () => {
       user = await service.getUserFromCredential(userCredential);
@@ -247,7 +247,7 @@ describe('AppController', () => {
           castcleId: user.displayId,
         },
       ];
-      const engagementContents: EngagementDocument[][] = [];
+      const engagementContents: Engagement[][] = [];
       for (let i = 0; i < contentDtos.length; i++) {
         const newContent = await contentService.createContentFromUser(
           user,
@@ -363,7 +363,7 @@ describe('AppController', () => {
   });
 
   describe('updateMobile', () => {
-    let account: AccountDocument;
+    let account: Account;
     let credential;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
@@ -524,8 +524,8 @@ describe('AppController', () => {
   });
 
   describe('syncSocial', () => {
-    let user: UserDocument;
-    let page: UserDocument;
+    let user: User;
+    let page: User;
     let credential;
     let defaultRequest: SocialSyncDto;
     beforeAll(async () => {
@@ -777,7 +777,7 @@ describe('AppController', () => {
   });
 
   describe('Referrer & Referee', () => {
-    let user: UserDocument;
+    let user: User;
     let credential;
     let newAccount;
     beforeAll(async () => {
@@ -887,8 +887,8 @@ describe('AppController', () => {
   });
 
   describe('RecastContent', () => {
-    let user: UserDocument;
-    let contentA: ContentDocument;
+    let user: User;
+    let contentA: Content;
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
       mocksUsers = await generateMockUsers(2, 0, {
@@ -943,9 +943,9 @@ describe('AppController', () => {
   });
 
   describe('QuotecastContent', () => {
-    let user: UserDocument;
+    let user: User;
     let credential;
-    let contentA: ContentDocument;
+    let contentA: Content;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,

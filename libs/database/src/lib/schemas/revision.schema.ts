@@ -23,12 +23,9 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
 import { Comment } from './comment.schema';
-
-export type RevisionDocument = Revision & Document;
 
 @Schema({ timestamps: true })
 export class Revision extends CastcleBase {

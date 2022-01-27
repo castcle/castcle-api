@@ -26,27 +26,23 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
-import {
-  AccountDocument,
-  UxEngagementDocument,
-  DsContentReachDocument,
-} from '../schemas';
+import { Account, UxEngagement, DsContentReach } from '../schemas';
 
 @Injectable()
 export class UxEngagementService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('UxEngagement')
-    public _uxEngagementModel: Model<UxEngagementDocument>,
+    public _uxEngagementModel: Model<UxEngagement>,
     @InjectModel('DsContentReach')
-    public _dsContentReachModel: Model<DsContentReachDocument>
+    public _dsContentReachModel: Model<DsContentReach>
   ) {}
 
   /**
    * track data from info to UxEngagement collection by convert it to UxEngagementDto
    * convert timestamp to Date time
    * @param {UxEngagementBody} info
-   * @returns {UxEngagementDocument} return EngagementUx Document if could save
+   * @returns {UxEngagement} return EngagementUx Document if could save
    */
   async track(info: UxEngagementBody) {
     const uxDto = {
@@ -62,7 +58,7 @@ export class UxEngagementService {
    *
    * @param contentIds
    * @param userId
-   * @returns {DsContentReachDocument[]}
+   * @returns {DsContentReach[]}
    */
   async addReachToContents(contentIds: string[], userId: string) {
     console.log('contents', contentIds);
@@ -75,12 +71,12 @@ export class UxEngagementService {
    * Add reach to collection DsContentReach
    * @param contentId
    * @param userId
-   * @returns {DsContentReachDocument}
+   * @returns {DsContentReach}
    */
   async addReachToSingleContent(
     contentId: string,
     accountId: string
-  ): Promise<DsContentReachDocument> {
+  ): Promise<DsContentReach> {
     const newMappedAccount: any = {};
     newMappedAccount[accountId] = 1;
     const setOnInsert = {

@@ -21,10 +21,7 @@
  * or have any questions.
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import {
-  CredentialDocument,
-  UserDocument,
-} from '@castcle-api/database/schemas';
+import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
@@ -36,8 +33,8 @@ import { TokenRequest } from '../token/token.interceptor';
 import { getLanguageFromRequest, getTokenFromRequest } from '../util';
 
 export interface CredentialRequest extends TokenRequest {
-  $credential?: CredentialDocument;
-  $user?: Promise<UserDocument>;
+  $credential?: Credential;
+  $user?: Promise<User>;
 }
 
 @Injectable()

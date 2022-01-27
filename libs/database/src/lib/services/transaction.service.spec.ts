@@ -12,7 +12,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { env } from '../environment';
-import { UserDocument, UserType } from './../schemas/user.schema';
+import { User, UserType } from './../schemas/user.schema';
 import { TransactionService } from './transaction.service';
 
 let mongod: MongoMemoryServer;
@@ -36,7 +36,7 @@ const closeInMongodConnection = async () => {
 
 describe('Transaction Service', () => {
   let service: TransactionService;
-  let mocksUser: UserDocument;
+  let mocksUser: User;
   const importModules = env.DB_TEST_IN_DB
     ? [
         MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),

@@ -34,14 +34,14 @@ import {
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
 import {
-  AccountAuthenIdDocument,
-  OtpDocument,
+  AccountAuthenId,
+  Otp,
   OtpObjective,
-  AccountDocument,
-  AccountActivationDocument,
+  Account,
+  AccountActivation,
   AccountAuthenIdType,
-  CredentialDocument,
-  UserDocument,
+  Credential,
+  User,
 } from '../schemas';
 import {
   AuthenticationService,
@@ -103,8 +103,8 @@ describe('Authentication Service', () => {
   });
   describe('Onboarding', () => {
     let createAccountResult: {
-      accountDocument: AccountDocument;
-      credentialDocument: CredentialDocument;
+      accountDocument: Account;
+      credentialDocument: Credential;
     };
     let accountDocumentCountBefore: number;
     const newDeviceUUID = '83b696d7-320b-4402-a412-d9cee10fc6a3';
@@ -195,12 +195,10 @@ describe('Authentication Service', () => {
     describe('#createAccount()', () => {
       it('should create a new Account ', async () => {
         expect(createAccountResult.accountDocument).toBeDefined();
-        const currentAccountDocumentCount = await service._accountModel
+        const currentAccountCount = await service._accountModel
           .countDocuments()
           .exec();
-        expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(
-          1
-        );
+        expect(currentAccountCount - accountDocumentCountBefore).toBe(1);
       });
       it('should create a new Credential with account from above', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
@@ -361,9 +359,9 @@ describe('Authentication Service', () => {
     });
 
     describe('#signupByEmail()', () => {
-      let signupResult: AccountActivationDocument;
-      let afterSaveAccount: AccountDocument;
-      let afterSaveUser: UserDocument;
+      let signupResult: AccountActivation;
+      let afterSaveAccount: Account;
+      let afterSaveUser: User;
       const signupRequirements: SignupRequirements = {
         displayId: 'dudethisisnew',
         displayName: 'Dudeee',
@@ -403,10 +401,10 @@ describe('Authentication Service', () => {
     });
 
     describe('#verifyAccount()', () => {
-      let accountActivation: AccountActivationDocument;
+      let accountActivation: AccountActivation;
       let beforeVerifyAccount;
-      let afterVerifyAccount: AccountDocument;
-      let afterAccountActivation: AccountActivationDocument;
+      let afterVerifyAccount: Account;
+      let afterAccountActivation: AccountActivation;
       beforeAll(async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
@@ -511,10 +509,10 @@ describe('Authentication Service', () => {
     });
 
     describe('#signupBySocial()', () => {
-      let signupResult: AccountAuthenIdDocument;
+      let signupResult: AccountAuthenId;
       let mockAccountResult: {
-        accountDocument: AccountDocument;
-        credentialDocument: CredentialDocument;
+        accountDocument: Account;
+        credentialDocument: Credential;
       };
       const signupRequirements: SignupSocialRequirements = {
         socialId: '7457356332',
@@ -643,11 +641,11 @@ describe('Authentication Service', () => {
     });
 
     describe('#Otp Document', () => {
-      let account: AccountDocument = null;
+      let account: Account = null;
       const password = 'sompop234@Hello';
       const countryCodeTest = '+66';
       const numberTest = '0817896888';
-      let otp: OtpDocument = null;
+      let otp: Otp = null;
       beforeAll(async () => {
         const newlyInsertEmail = `${Math.ceil(
           Math.random() * 1000

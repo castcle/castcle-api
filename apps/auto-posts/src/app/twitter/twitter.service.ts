@@ -36,7 +36,7 @@ import {
 import { CastLogger } from '@castcle-api/logger';
 import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
-import { SocialSyncDocument } from '@castcle-api/database/schemas';
+import { SocialSync } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class TwitterService {
@@ -64,7 +64,7 @@ export class TwitterService {
     this.logger.log('Done, waiting for next available schedule');
   }
 
-  getTweetsByAccount = async (syncAccount: SocialSyncDocument) => {
+  getTweetsByAccount = async (syncAccount: SocialSync) => {
     const timeline = await this.getTimelineByUserId(
       syncAccount.socialId,
       syncAccount.latestSyncId

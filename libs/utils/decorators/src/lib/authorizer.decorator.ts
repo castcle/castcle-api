@@ -1,9 +1,9 @@
-import { AccountDocument, UserDocument } from '@castcle-api/database/schemas';
+import { Account, User } from '@castcle-api/database/schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export class Authorizer {
-  constructor(public account: AccountDocument, public user: UserDocument) {}
+  constructor(public account: Account, public user: User) {}
 
   /**
    * permit if `accountId` to access is same as ID of authenticated account

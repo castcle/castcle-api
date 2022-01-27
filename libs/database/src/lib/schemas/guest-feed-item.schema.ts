@@ -26,8 +26,6 @@ import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
 
-export type GuestFeedItemDocument = GuestFeedItem & mongoose.Document;
-
 export enum GuestFeedItemType {
   Content = 'content',
   Advertisement = 'ads',

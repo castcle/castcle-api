@@ -25,7 +25,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
-import { AccountDocument, CredentialDocument } from '../schemas';
+import { Account, Credential } from '../schemas';
 import {
   MongooseForFeatures,
   MongooseAsyncFeatures,
@@ -61,8 +61,8 @@ describe('UxEngagement Service', () => {
   let service: UxEngagementService;
   let authService: AuthenticationService;
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
   const providers = [
     UxEngagementService,
@@ -105,7 +105,7 @@ describe('UxEngagement Service', () => {
   });
 
   describe('#track()', () => {
-    it('should return UxEngagementDocument when track is complete', async () => {
+    it('should return UxEngagement when track is complete', async () => {
       const now = new Date();
       const body = {
         platform: 'android',

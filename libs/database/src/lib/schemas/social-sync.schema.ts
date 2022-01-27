@@ -22,14 +22,13 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { SocialSyncDto } from '../dtos/user.dto';
 import { SocialProvider } from '../models';
 import { Author, AuthorSchema } from './author.schema';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
-export class SocialSync extends CastcleBase {
+class SocialSyncDocument extends CastcleBase {
   @Prop({ required: true, type: AuthorSchema })
   author: Author;
 
@@ -58,20 +57,19 @@ export class SocialSync extends CastcleBase {
   latestSyncDate?: Date;
 }
 
-interface ISocialSync extends Document {
-  toSocialSyncPayload(): SocialSyncDto;
+export const SocialSyncSchema =
+  SchemaFactory.createForClass(SocialSyncDocument);
+
+export class SocialSync extends SocialSyncDocument {
+  toSocialSyncPayload: () => SocialSyncDto;
 }
-
-export type SocialSyncDocument = SocialSync & ISocialSync;
-
-export const SocialSyncSchema = SchemaFactory.createForClass(SocialSync);
 
 SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {
-    socialId: (this as SocialSyncDocument).socialId,
-    username: (this as SocialSyncDocument).userName,
-    displayName: (this as SocialSyncDocument).displayName,
-    avatar: (this as SocialSyncDocument).avatar,
-    active: (this as SocialSyncDocument).active,
+    socialId: this.socialId,
+    username: this.userName,
+    displayName: this.displayName,
+    avatar: this.avatar,
+    active: this.active,
   } as SocialSyncDto;
 };

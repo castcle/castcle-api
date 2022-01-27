@@ -21,13 +21,11 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { CountryPayloadDto } from '../dtos/country.dto';
 import { CastcleBase } from './base.schema';
 
-export type CountryDocument = Country & ICountry;
 @Schema({ timestamps: true })
-export class Country extends CastcleBase {
+class CountryDocument extends CastcleBase {
   @Prop()
   code: string;
 
@@ -41,17 +39,17 @@ export class Country extends CastcleBase {
   flag: string;
 }
 
-interface ICountry extends Document {
-  toCountryPayload(): CountryPayloadDto;
-}
+export const CountrySchema = SchemaFactory.createForClass(CountryDocument);
 
-export const CountrySchema = SchemaFactory.createForClass(Country);
+export class Country extends CountryDocument {
+  toCountryPayload: () => CountryPayloadDto;
+}
 
 CountrySchema.methods.toCountryPayload = function () {
   return {
-    code: (this as CountryDocument).code,
-    dialCode: (this as CountryDocument).dialCode,
-    name: (this as CountryDocument).name,
-    flag: (this as CountryDocument).flag,
+    code: this.code,
+    dialCode: this.dialCode,
+    name: this.name,
+    flag: this.flag,
   } as CountryPayloadDto;
 };

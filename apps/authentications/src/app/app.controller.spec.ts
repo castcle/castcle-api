@@ -31,7 +31,7 @@ import {
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
-  CredentialDocument,
+  Credential,
   OtpObjective,
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
@@ -389,7 +389,7 @@ describe('AppController', () => {
 
   describe('register', () => {
     let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
+    let credentialGuest: Credential;
     let tokens: LoginResponse;
     const testId = 'registerId';
     const registerEmail = 'sompop.kulapalanont@gmail.com';

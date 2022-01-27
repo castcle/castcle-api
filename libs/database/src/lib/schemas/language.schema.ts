@@ -21,13 +21,11 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { LanguagePayloadDto } from '../dtos/language.dto';
 import { CastcleBase } from './base.schema';
 
-export type LanguageDocument = Language & ILanguage;
 @Schema({ timestamps: true })
-export class Language extends CastcleBase {
+class LanguageDocument extends CastcleBase {
   @Prop()
   code: string;
 
@@ -38,16 +36,16 @@ export class Language extends CastcleBase {
   display: string;
 }
 
-interface ILanguage extends Document {
-  toLanguagePayload(): LanguagePayloadDto;
-}
+export const LanguageSchema = SchemaFactory.createForClass(LanguageDocument);
 
-export const LanguageSchema = SchemaFactory.createForClass(Language);
+export class Language extends LanguageDocument {
+  toLanguagePayload: () => LanguagePayloadDto;
+}
 
 LanguageSchema.methods.toLanguagePayload = function () {
   return {
-    code: (this as LanguageDocument).code,
-    title: (this as LanguageDocument).title,
-    display: (this as LanguageDocument).display,
+    code: this.code,
+    title: this.title,
+    display: this.display,
   } as LanguagePayloadDto;
 };

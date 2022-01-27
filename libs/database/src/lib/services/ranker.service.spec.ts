@@ -28,12 +28,7 @@ import { RankerService } from './ranker.service';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { AuthenticationService } from './authentication.service';
-import {
-  AccountDocument,
-  ContentDocument,
-  CredentialDocument,
-  UserDocument,
-} from '../schemas';
+import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
 import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
@@ -82,10 +77,10 @@ describe('Ranker Service', () => {
   let contentService: ContentService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
-  let follower: UserDocument;
-  let followerAccount: AccountDocument;
-  const contents: ContentDocument[] = [];
+  let user: User;
+  let follower: User;
+  let followerAccount: Account;
+  const contents: Content[] = [];
   console.log('test in real db = ', env.DB_TEST_IN_DB);
   const importModules = env.DB_TEST_IN_DB
     ? [
@@ -109,8 +104,8 @@ describe('Ranker Service', () => {
     HashtagService,
   ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({

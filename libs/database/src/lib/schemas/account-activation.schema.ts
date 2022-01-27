@@ -24,13 +24,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { env } from '../environment';
-import { Document, Model } from 'mongoose';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils/commons';
-
-export type AccountActivationDocument = AccountActivation & IAccountActivation;
 
 export enum AccountActivationType {
   Email = 'email',
@@ -38,7 +35,7 @@ export enum AccountActivationType {
 }
 
 @Schema({ timestamps: true })
-export class AccountActivation extends CastcleBase {
+class AccountActivationDocument extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -63,27 +60,25 @@ export class AccountActivation extends CastcleBase {
   revocationDate: Date;
 }
 
-export const AccountActivationSchema =
-  SchemaFactory.createForClass(AccountActivation);
+export const AccountActivationSchema = SchemaFactory.createForClass(
+  AccountActivationDocument
+);
 
-export interface IAccountActivation extends Document {
+export interface AccountActivation extends AccountActivationDocument {
   isVerifyTokenValid(): boolean;
 }
 
-AccountActivationSchema.methods.isVerifyTokenValid = function () {
-  return Token.isTokenValid(
-    (this as AccountActivationDocument).verifyToken,
-    env.JWT_VERIFY_SECRET
-  );
-};
-
 export interface AccountActivationModel
-  extends Model<AccountActivationDocument> {
+  extends mongoose.Model<AccountActivation> {
   generateVerifyToken(payload: EmailVerifyToken): {
     verifyToken: string;
     verifyTokenExpireDate: Date;
   };
 }
+
+AccountActivationSchema.methods.isVerifyTokenValid = function () {
+  return Token.isTokenValid(this.verifyToken, env.JWT_VERIFY_SECRET);
+};
 
 AccountActivationSchema.statics.generateVerifyToken = function (
   payload: EmailVerifyToken

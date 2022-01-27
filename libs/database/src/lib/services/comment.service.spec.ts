@@ -5,7 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType } from '../dtos';
-import { CommentDocument, ContentDocument, UserDocument } from '../schemas';
+import { Comment, Content, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -18,9 +18,9 @@ describe('ContentService', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userService: UserService;
-  let comment: CommentDocument;
-  let content: ContentDocument;
-  let user: UserDocument;
+  let comment: Comment;
+  let content: Content;
+  let user: User;
 
   const fakeBull = BullModule.registerQueue({
     name: TopicName.Users,

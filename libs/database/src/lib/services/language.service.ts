@@ -24,18 +24,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LanguagePayloadDto } from '../dtos/language.dto';
-import { LanguageDocument } from './../schemas';
+import { Language } from './../schemas';
 
 @Injectable()
 export class LanguageService {
   constructor(
-    @InjectModel('Language') public _languageModel: Model<LanguageDocument>
+    @InjectModel('Language') public _languageModel: Model<Language>
   ) {}
 
   /**
    * get all data from Language Document
    *
-   * @returns {LanguageDocument[]} return all Language Document
+   * @returns {Language[]} return all Language Document
    */
   async getAll() {
     console.log('get all language');
@@ -45,7 +45,7 @@ export class LanguageService {
   /**
    * create new language
    * @param {LanguagePayloadDto} language language payload
-   * @returns {LanguageDocument} return new language document
+   * @returns {Language} return new language document
    */
   create = async (language: LanguagePayloadDto) => {
     console.log('save language');
