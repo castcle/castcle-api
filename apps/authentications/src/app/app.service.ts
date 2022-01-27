@@ -24,11 +24,11 @@ import { AuthenticationService, UserService } from '@castcle-api/database';
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   AccountAuthenIdType,
-  AccountDocument,
-  CredentialDocument,
-  OtpDocument,
+  Account,
+  Credential,
+  Otp,
   OtpObjective,
-  UserDocument,
+  User,
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -130,10 +130,10 @@ export class AppService {
   /**
    * Create user and generate token for login social
    * @param {SocialConnect} social social response
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {TokenResponse}
    */
-  async socialLogin(body: SocialConnectDto, credential: CredentialDocument) {
+  async socialLogin(body: SocialConnectDto, credential: Credential) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.uid,
@@ -216,10 +216,10 @@ export class AppService {
   }
 
   /**User Profile and Pages
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {profile,pages} profile data
    */
-  async getUserProfile(credential: CredentialDocument) {
+  async getUserProfile(credential: Credential) {
     const user = await this.userService.getUserFromCredential(credential);
     const pages = user
       ? await this.userService.getUserPages(user, {
@@ -239,7 +239,7 @@ export class AppService {
    * get and validate account from email
    * @param {string} email
    * @param {string} lang
-   * @returns {AccountDocument} account document
+   * @returns {Account} account document
    */
   async getAccountFromEmail(email: string, lang: string) {
     this.logger.log('Get Account from eamil');
@@ -331,11 +331,11 @@ export class AppService {
    * forgot password request Otp
    * @param {RequestOtpDto} request
    * @param {CredentialRequest} credential
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async requestOtpCode(request: RequestOtpDto, credential: CredentialRequest) {
-    let account: AccountDocument = null;
-    let otp: OtpDocument = null;
+    let account: Account = null;
+    let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
 
     if (!objective || !Object.values(OtpObjective).includes(objective)) {
@@ -419,18 +419,18 @@ export class AppService {
   /**
    * generate and send Otp
    * @param {string} reciever
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {TwillioChannel} account
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
     reciever: string,
-    account: AccountDocument,
+    account: Account,
     twillioChannel: TwillioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
     otpChannel: string
-  ): Promise<OtpDocument> {
+  ): Promise<Otp> {
     let sid = '';
     this.logger.log('Send Otp');
     try {
@@ -463,7 +463,7 @@ export class AppService {
     return otp;
   }
 
-  private buildTemplateMessage(objective: OtpObjective, user: UserDocument) {
+  private buildTemplateMessage(objective: OtpObjective, user: User) {
     const userName = user && user.displayName ? user.displayName : '';
     if (objective === OtpObjective.ForgotPassword) {
       this.logger.log('build template forgot password objective');
@@ -489,14 +489,14 @@ export class AppService {
    * forgot password verify Otp
    * @param {verificationOtpDto} request
    * @param {CredentialRequest} credential
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async verificationOTP(
     request: verificationOtpDto,
     credential: CredentialRequest
   ) {
     const limitRetry = 3;
-    let account: AccountDocument = null;
+    let account: Account = null;
     let receiver = '';
 
     const objective: OtpObjective = <OtpObjective>request.objective;
@@ -663,7 +663,7 @@ export class AppService {
     }
   }
 
-  private async cancelOtp(otp: OtpDocument) {
+  private async cancelOtp(otp: Otp) {
     this.logger.log('Cancel Twillio Otp.');
     try {
       if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);

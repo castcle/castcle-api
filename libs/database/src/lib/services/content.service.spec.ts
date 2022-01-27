@@ -36,13 +36,7 @@ import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { UserVerified } from '../models';
-import {
-  CommentDocument,
-  UserDocument,
-  AccountDocument,
-  ContentDocument,
-  CredentialDocument,
-} from '../schemas';
+import { Comment, User, Account, Content, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
@@ -81,7 +75,7 @@ describe('ContentService', () => {
   let commentService: CommentService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
+  let user: User;
   let author: Author;
   /**
    * For multiple user
@@ -137,10 +131,10 @@ describe('ContentService', () => {
     },
   ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
-  let hashtagContent: ContentDocument;
+  let hashtagContent: Content;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -318,7 +312,7 @@ describe('ContentService', () => {
     });
   });
   describe('#getContentsFromUser()', () => {
-    it('should return ContentDocument[] from author', async () => {
+    it('should return Content[] from author', async () => {
       await new Promise<void>((resolve) => {
         setTimeout(() => {
           resolve();
@@ -363,7 +357,7 @@ describe('ContentService', () => {
     });
   });
   describe('#likeContent()', () => {
-    let content: ContentDocument;
+    let content: Content;
     beforeAll(async () => {
       const shortPayload2: ShortPayload = {
         message: 'Test Like 2',
@@ -432,9 +426,9 @@ describe('ContentService', () => {
     });
   });
   describe('#recastContent/#quoteContent', () => {
-    const users: UserDocument[] = [];
+    const users: User[] = [];
 
-    let contentA: ContentDocument;
+    let contentA: Content;
     beforeAll(async () => {
       //create user  create content
       for (let i = 0; i < userInfo.length; i++) {
@@ -459,8 +453,8 @@ describe('ContentService', () => {
       });
     });
     describe('#recastContentFromUser()', () => {
-      let contentB: ContentDocument;
-      let contentC: ContentDocument;
+      let contentB: Content;
+      let contentC: Content;
       beforeAll(async () => {
         //recast a content
         const resultB = await service.recastContentFromUser(contentA, users[1]);
@@ -488,8 +482,8 @@ describe('ContentService', () => {
       });
     });
     describe('#quoteContentFromUser()', () => {
-      let contentB: ContentDocument;
-      let contentC: ContentDocument;
+      let contentB: Content;
+      let contentC: Content;
       beforeAll(async () => {
         //recast a content
         const resultB = await service.recastContentFromUser(contentA, users[1]);
@@ -512,10 +506,10 @@ describe('ContentService', () => {
       });
     });
     describe('Comment Features', () => {
-      let contentA: ContentDocument;
-      let userA: UserDocument;
-      let rootComment: CommentDocument;
-      let replyComment: CommentDocument;
+      let contentA: Content;
+      let userA: User;
+      let rootComment: Comment;
+      let replyComment: Comment;
       beforeAll(async () => {
         //console.log('before comment features');
         const account = await authService.getAccountFromEmail(
@@ -743,7 +737,7 @@ describe('ContentService', () => {
 
   describe('#reportContent', () => {
     const reportingMessage = 'reporting message';
-    let content: ContentDocument;
+    let content: Content;
 
     beforeAll(async () => {
       content = await service.createContentFromUser(user, {
@@ -781,7 +775,7 @@ describe('ContentService', () => {
   });
 
   describe('#deleteContentFromOriginalAndAuthor()', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(2, 0, {
@@ -815,7 +809,7 @@ describe('ContentService', () => {
   });
 
   describe('#convertContentsToContentsResponse', () => {
-    let contents: ContentDocument[];
+    let contents: Content[];
 
     beforeAll(async () => {
       const contentDto = {
@@ -852,7 +846,7 @@ describe('ContentService', () => {
   });
 
   describe('#deleteContentFromOriginalAndAuthor', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(2, 0, {
@@ -886,7 +880,7 @@ describe('ContentService', () => {
   });
 
   describe('#getContentFromOriginalPost', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(5, 0, {

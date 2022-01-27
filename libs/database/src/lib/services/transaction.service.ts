@@ -25,16 +25,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { AccountDocument } from '../schemas/account.schema';
-import { Transaction, UserDocument } from '../schemas';
+import { Account } from '../schemas/account.schema';
+import { Transaction, User } from '../schemas';
 import { TransactionDto } from '../dtos';
 
 @Injectable()
 export class TransactionService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>,
+    public _userModel: Model<User>,
     @InjectModel('Transaction')
     public _transactionModel: Model<Transaction>
   ) {}
@@ -100,9 +100,9 @@ export class TransactionService {
 
   /**
    *
-   * @param {UserDocument}
+   * @param {User}
    * @returns {Promise<number>}
    */
-  getUserBalance = async (user: UserDocument) =>
+  getUserBalance = async (user: User) =>
     this.getBalance(String(user.ownerAccount._id));
 }

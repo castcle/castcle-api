@@ -37,18 +37,17 @@ import {
 import {
   AccountReferral,
   Account,
-  AccountDocument,
-  AccountActivationDocument,
-  AccountActivationModel,
-  AccountAuthenIdDocument,
+  AccountActivation,
+  AccountAuthenId,
   AccountAuthenIdType,
-  CredentialDocument,
-  CredentialModel,
-  OtpDocument,
-  OtpModel,
+  Credential,
+  Otp,
   OtpObjective,
-  UserDocument,
+  User,
   UserType,
+  CredentialModel,
+  AccountActivationModel,
+  OtpModel,
 } from '../schemas';
 
 export interface AccountRequirements {
@@ -84,17 +83,17 @@ export interface SignupSocialRequirements {
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
     public _accountActivationModel: AccountActivationModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>,
+    public _userModel: Model<User>,
     @InjectModel('Otp')
     public _otpModel: OtpModel,
     @InjectModel('AccountAuthenId')
-    public _accountAuthenId: Model<AccountAuthenIdDocument>,
+    public _accountAuthenId: Model<AccountAuthenId>,
     @InjectModel('AccountReferral')
     public _accountReferral: Model<AccountReferral>,
     private userService: UserService
@@ -115,7 +114,7 @@ export class AuthenticationService {
    * get account document from social id and social type
    * @param {string} socialUserId social user id
    * @param {AccountAuthenIdType} provider enum social type
-   * @returns {AccountAuthenIdDocument}
+   * @returns {AccountAuthenId}
    */
   getAccountAuthenIdFromSocialId = (
     socialUserId: string,
@@ -175,14 +174,11 @@ export class AuthenticationService {
 
   /**
    * should remove account from credential.account and set it's new account to credential.account
-   * @param {CredentialDocument} credential
-   * @param {AccountDocument} account
-   * @returns {CredentialDocument}
+   * @param {Credential} credential
+   * @param {Account} account
+   * @returns {Credential}
    */
-  async linkCredentialToAccount(
-    credential: CredentialDocument,
-    account: AccountDocument
-  ) {
+  async linkCredentialToAccount(credential: Credential, account: Account) {
     console.log('want to link');
     if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
@@ -231,10 +227,10 @@ export class AuthenticationService {
 
   /**
    * get account from credential.account._id
-   * @param {CredentialDocument} credential
-   * @returns {AccountDocument}
+   * @param {Credential} credential
+   * @returns {Account}
    */
-  getAccountFromCredential = (credential: CredentialDocument) =>
+  getAccountFromCredential = (credential: Credential) =>
     this._accountModel.findById(credential.account._id).exec();
 
   getAccountFromId = (accountId: string) =>
@@ -253,7 +249,7 @@ export class AuthenticationService {
    * get and validate account from mobile
    * @param {string} mobileNumber
    * @param {string} countryCode
-   * @returns {AccountDocument} account document
+   * @returns {Account} account document
    */
   getAccountFromMobile = (mobileNo: string, countryCode: string) => {
     const mobile = mobileNo.charAt(0) === '0' ? mobileNo.slice(1) : mobileNo;
@@ -269,7 +265,7 @@ export class AuthenticationService {
   /**
    *  For check if account is existed
    * @param {string} id
-   * @returns {UserDocument}
+   * @returns {User}
    */
   getExistedUserFromCastcleId = (id: string) => {
     return this._userModel
@@ -281,7 +277,7 @@ export class AuthenticationService {
     return this._userModel.findOne({ ownerAccount: account }).exec();
   };
 
-  getUserFromAccountId = (credential: CredentialDocument) => {
+  getUserFromAccountId = (credential: Credential) => {
     return this._userModel
       .find({ ownerAccount: credential.account._id })
       .exec();
@@ -299,7 +295,7 @@ export class AuthenticationService {
     return accountActivation?.account?.email;
   };
 
-  getAccountActivationFromCredential = (credential: CredentialDocument) =>
+  getAccountActivationFromCredential = (credential: Credential) =>
     this._accountActivationModel
       .findOne({ account: credential.account })
       .exec();
@@ -326,7 +322,7 @@ export class AuthenticationService {
     else return false;
   }
 
-  async verifyAccount(accountActivation: AccountActivationDocument) {
+  async verifyAccount(accountActivation: AccountActivation) {
     const now = new Date();
     accountActivation.activationDate = now;
     await accountActivation.save();
@@ -340,10 +336,7 @@ export class AuthenticationService {
     return savedAccount;
   }
 
-  async signupByEmail(
-    account: AccountDocument,
-    requirements: SignupRequirements
-  ) {
+  async signupByEmail(account: Account, requirements: SignupRequirements) {
     account.isGuest = false;
     //account.email = requirements.email;
     //account.password =  requirements.password;
@@ -372,7 +365,7 @@ export class AuthenticationService {
     return updateAccount;
   }
 
-  createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
+  createAccountActivation(account: Account, type: 'email' | 'phone') {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: account._id,
     });
@@ -385,7 +378,7 @@ export class AuthenticationService {
     return accountActivation.save();
   }
 
-  revokeAccountActivation(accountActivation: AccountActivationDocument) {
+  revokeAccountActivation(accountActivation: AccountActivation) {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: accountActivation.account as unknown as string,
     });
@@ -414,10 +407,10 @@ export class AuthenticationService {
 
   /**
    * Update retry count Otp Document
-   * @param {OtpDocument} otp
-   * @returns {OtpDocument}
+   * @param {Otp} otp
+   * @returns {Otp}
    */
-  async updateRetryOtp(otp: OtpDocument) {
+  async updateRetryOtp(otp: Otp) {
     const newRetry = (otp.retry ? otp.retry : 0) + 1;
     const otpResult = await this._otpModel
       .updateOne({ _id: otp.id }, { retry: newRetry })
@@ -427,15 +420,15 @@ export class AuthenticationService {
 
   /**
    * generate refCode and create Otp Document
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {OtpObjective} objective
    * @param {string} requestId
    * @param {string} channel
    * @param {boolean} verify
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async generateOtp(
-    account: AccountDocument,
+    account: Account,
     objective: OtpObjective,
     requestId: string,
     channel: string,
@@ -457,11 +450,11 @@ export class AuthenticationService {
 
   /**
    * find Otp from account and refCode
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
-  async getOtpFromAccount(account: AccountDocument, refCode: string) {
+  async getOtpFromAccount(account: Account, refCode: string) {
     return this._otpModel
       .findOne({ account: account._id, refCode: refCode })
       .exec();
@@ -471,7 +464,7 @@ export class AuthenticationService {
    * find all Otp from request id and objective
    * @param {string} requestId
    * @param {OtpObjective} objective
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getAllOtpFromRequestIdObjective(
     requestId: string,
@@ -489,7 +482,7 @@ export class AuthenticationService {
    * find Otp from request id and refCode
    * @param {string} requestId
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getOtpFromRequestIdRefCode(requestId: string, refCode: string) {
     return this._otpModel
@@ -500,7 +493,7 @@ export class AuthenticationService {
   /**
    * find otp by ref code
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getOtpFromRefCode(refCode: string) {
     return this._otpModel.findOne({ refCode: refCode }).exec();
@@ -508,17 +501,13 @@ export class AuthenticationService {
 
   /**
    * this will assume that we already check otp is valid. this function will change current account password and delete otp then return newly change password account
-   * @param {AccountDocument} account
-   * @param {OtpDocument} otp
+   * @param {Account} account
+   * @param {Otp} otp
    * @param {string} newPassword
-   * @returns {Promise<{AccountDocument}>}
+   * @returns {Promise<{Account}>}
    */
-  async changePassword(
-    account: AccountDocument,
-    otp: OtpDocument,
-    newPassword: string
-  ) {
-    let newAccount: AccountDocument;
+  async changePassword(account: Account, otp: Otp, newPassword: string) {
+    let newAccount: Account;
     const session = await this._accountModel.startSession();
     session.withTransaction(async () => {
       newAccount = await account.changePassword(newPassword);
@@ -530,10 +519,10 @@ export class AuthenticationService {
 
   /**
    * Generate AccessTokenPayload if user is guest. If user has an account will query Users/Pages to create {UserAccessTokenPayload}
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {AccessTokenPayload | UserAccessTokenPayload}
    */
-  async getAccessTokenPayloadFromCredential(credential: CredentialDocument) {
+  async getAccessTokenPayloadFromCredential(credential: Credential) {
     //get account
     //const account = this.getAccountFromCredential(credential);
     if (credential.account.isGuest) {
@@ -565,12 +554,12 @@ export class AuthenticationService {
 
   /**
    * create new account from social
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {SignupSocialRequirements} requirements
-   * @returns {AccountAuthenIdDocument}
+   * @returns {AccountAuthenId}
    */
   async signupBySocial(
-    account: AccountDocument,
+    account: Account,
     requirements: SignupSocialRequirements
   ) {
     account.isGuest = false;
@@ -606,7 +595,7 @@ export class AuthenticationService {
     );
   }
 
-  async updateSocialFlag(account: AccountDocument) {
+  async updateSocialFlag(account: Account) {
     const user = this._userModel
       .updateOne(
         {
@@ -624,17 +613,17 @@ export class AuthenticationService {
 
   /**
    * create new account from social
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {AccountAuthenIdType} provider
    * @param {string} socialUserId
    * @param {string} socialUserToken
    * @param {string} socialSecretToken
    * @param {string} avatar
    * @param {string} displayName
-   * @returns {AccountAuthenIdDocument}
+   * @returns {AccountAuthenId}
    */
   async createAccountAuthenId(
-    account: AccountDocument,
+    account: Account,
     provider: AccountAuthenIdType,
     socialUserId: string,
     socialUserToken?: string,

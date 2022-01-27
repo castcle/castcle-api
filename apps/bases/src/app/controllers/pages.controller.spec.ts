@@ -36,10 +36,7 @@ import {
 } from '@castcle-api/database';
 import { PagesController } from './pages.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import {
-  ContentDocument,
-  CredentialDocument,
-} from '@castcle-api/database/schemas';
+import { Content, Credential } from '@castcle-api/database/schemas';
 import {
   Author,
   CastcleIncludes,
@@ -87,7 +84,7 @@ describe('PageController', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userService: UserService;
-  let userCredential: CredentialDocument;
+  let userCredential: Credential;
   const pageDto: PageDto = {
     displayName: 'Super Page',
     castcleId: 'pageyo',
@@ -252,7 +249,7 @@ describe('PageController', () => {
           castcleId: page.displayId,
         },
       ];
-      const createResult: ContentDocument[] = [];
+      const createResult: Content[] = [];
       createResult[0] = await contentService.createContentFromUser(
         page,
         contentDtos[0]

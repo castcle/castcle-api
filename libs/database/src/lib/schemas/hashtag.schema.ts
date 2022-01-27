@@ -22,15 +22,12 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { HashtagPayloadDto } from '../dtos/hashtag.dto';
 import { SearchHashtagResponseDto } from '../dtos/search.dto';
 import { CastcleBase } from './base.schema';
 
-export type HashtagDocument = Hashtag & IHashtag;
-
 @Schema({ timestamps: true })
-export class Hashtag extends CastcleBase {
+class HashtagDocument extends CastcleBase {
   @Prop({ required: true, index: true })
   tag: string;
 
@@ -43,19 +40,20 @@ export class Hashtag extends CastcleBase {
   @Prop()
   name: string;
 }
-interface IHashtag extends Document {
-  toHashtagPayload(): HashtagPayloadDto;
-  toSearchTopTrendhPayload(index): SearchHashtagResponseDto;
-  toSearchPayload(): SearchHashtagResponseDto;
-}
 
-export const HashtagSchema = SchemaFactory.createForClass(Hashtag);
+export const HashtagSchema = SchemaFactory.createForClass(HashtagDocument);
+
+export class Hashtag extends HashtagDocument {
+  toHashtagPayload: () => HashtagPayloadDto;
+  toSearchTopTrendhPayload: (index: number) => SearchHashtagResponseDto;
+  toSearchPayload: () => SearchHashtagResponseDto;
+}
 
 HashtagSchema.methods.toHashtagPayload = function () {
   return {
-    id: (this as HashtagDocument)._id,
-    slug: (this as HashtagDocument).tag,
-    name: (this as HashtagDocument).name,
+    id: this._id,
+    slug: this.tag,
+    name: this.name,
     key: 'hashtag.castcle',
   } as HashtagPayloadDto;
 };
@@ -63,11 +61,11 @@ HashtagSchema.methods.toHashtagPayload = function () {
 HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
   return {
     rank: index + 1,
-    id: (this as HashtagDocument)._id,
-    slug: (this as HashtagDocument).tag,
-    name: (this as HashtagDocument).name,
+    id: this._id,
+    slug: this.tag,
+    name: this.name,
     key: 'hashtag.castcle',
-    count: (this as HashtagDocument).score,
+    count: this.score,
     // TODO !!! need implement trends
     trends: 'up',
   } as SearchHashtagResponseDto;
@@ -75,9 +73,9 @@ HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
 
 HashtagSchema.methods.toSearchPayload = function () {
   return {
-    id: (this as HashtagDocument)._id,
-    slug: (this as HashtagDocument).tag,
-    name: (this as HashtagDocument).name,
+    id: this._id,
+    slug: this.tag,
+    name: this.name,
     key: 'hashtag.castcle',
     // TODO !!! need implement isTrending
     isTrending: true,

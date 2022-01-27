@@ -23,7 +23,6 @@
 import { Password } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
 import { env } from '../environment';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
@@ -34,10 +33,8 @@ export enum OtpObjective {
   VerifyMobile = 'verify_mobile',
 }
 
-export type OtpDocument = Otp & IOtp;
-
 @Schema({ timestamps: true })
-export class Otp extends CastcleBase {
+class OtpDocument extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -74,18 +71,18 @@ export class Otp extends CastcleBase {
   reciever: string;
 }
 
-export const OtpSchema = SchemaFactory.createForClass(Otp);
+export const OtpSchema = SchemaFactory.createForClass(OtpDocument);
 
-interface IOtp extends Document {
-  isValid(): boolean;
+export class Otp extends OtpDocument {
+  isValid: () => boolean;
 }
 
-export interface OtpModel extends Model<OtpDocument> {
+export interface OtpModel extends mongoose.Model<Otp> {
   /**
    *  generate random refCode, check if it exist keep generating until found not exist one
    * @param {mongoose.Schema.Types.ObjectId} accountId
    * @param {OtpObjective} objective
-   * @returns {Promise<OtpDocument>}
+   * @returns {Promise<Otp>}
    */
   generate(
     accountId: any,
@@ -93,9 +90,9 @@ export interface OtpModel extends Model<OtpDocument> {
     requestId: string,
     channel: string,
     verify: boolean,
-    reciever?: string,
+    receiver?: string,
     sid?: string
-  ): Promise<OtpDocument>;
+  ): Promise<Otp>;
 }
 
 OtpSchema.statics.generate = async function (
@@ -104,7 +101,7 @@ OtpSchema.statics.generate = async function (
   requestId: string,
   channel: string,
   verify: boolean,
-  reciever?: string,
+  receiver?: string,
   sid?: string
 ) {
   let newRefCode: string;
@@ -128,13 +125,13 @@ OtpSchema.statics.generate = async function (
     isVerify: verify,
     sid: sid,
     expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000),
-    reciever: reciever,
+    reciever: receiver,
   });
   return otp.save();
 };
 
 OtpSchema.methods.isValid = function () {
   const now = new Date().getTime();
-  const expireDate = (this as OtpDocument).expireDate.getTime();
+  const expireDate = (this as Otp).expireDate.getTime();
   return expireDate - now >= 0;
 };

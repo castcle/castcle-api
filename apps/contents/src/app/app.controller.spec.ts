@@ -37,11 +37,7 @@ import {
   ShortPayload,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import {
-  ContentDocument,
-  CredentialDocument,
-  UserDocument,
-} from '@castcle-api/database/schemas';
+import { Content, Credential, User } from '@castcle-api/database/schemas';
 import {
   ContentProducer,
   NotificationProducer,
@@ -105,8 +101,8 @@ describe('ContentController', () => {
   let appService: AppService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userCredential: CredentialDocument;
-  let user: UserDocument;
+  let userCredential: Credential;
+  let user: User;
   let payloadId: any;
 
   beforeAll(async () => {
@@ -435,7 +431,7 @@ describe('ContentController', () => {
   });
 
   describe('#getUserRecasted', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(5, 0, {

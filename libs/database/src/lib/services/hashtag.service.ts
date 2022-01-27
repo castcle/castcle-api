@@ -28,18 +28,16 @@ import { BlogPayload } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload, ShortPayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { HashtagDocument } from '../schemas';
+import { Hashtag } from '../schemas';
 
 @Injectable()
 export class HashtagService {
-  constructor(
-    @InjectModel('Hashtag') public _hashtagModel: Model<HashtagDocument>
-  ) {}
+  constructor(@InjectModel('Hashtag') public _hashtagModel: Model<Hashtag>) {}
 
   /**
    * get all data from Hashtag Document
    *
-   * @returns {HashtagDocument[]} return all Hashtag Document
+   * @returns {Hashtag[]} return all Hashtag Document
    */
   async getAll() {
     console.log('get all hashtag');
@@ -49,7 +47,7 @@ export class HashtagService {
   /**
    * create new hashtag
    * @param {CreateHashtag} hashtag Create Hashtag payload
-   * @returns {HashtagDocument} return new hashtag document
+   * @returns {Hashtag} return new hashtag document
    */
   create = async (hashtag: CreateHashtag) => {
     console.log('save hashtag');

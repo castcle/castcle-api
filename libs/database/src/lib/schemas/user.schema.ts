@@ -25,7 +25,7 @@ import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
@@ -33,9 +33,7 @@ import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { PageVerified, UserVerified } from '../models';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
-import { RelationshipDocument } from './relationship.schema';
-
-export type UserDocument = User & IUser;
+import { Relationship } from './relationship.schema';
 
 type ProfileImage = {
   avatar?: CastcleImage;
@@ -68,7 +66,7 @@ export enum UserType {
 }
 
 @Schema({ timestamps: true })
-export class User extends CastcleBase {
+class UserDocument extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -111,34 +109,27 @@ type UserResponseOption = {
   balance?: number;
 };
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(UserDocument);
 
-export interface IUser extends Document {
-  toUserResponse(option?: UserResponseOption): Promise<UserResponseDto>;
-  toPageResponse(
+export class User extends UserDocument {
+  covertToUserResponse: (
+    user: User | User,
+    followed?: boolean
+  ) => UserResponseDto;
+  follow: (user: User) => Promise<void>;
+  unfollow: (user: User) => Promise<void>;
+  toSearchTopTrendResponse: () => SearchFollowsResponseDto;
+  toSearchResponse: () => SearchFollowsResponseDto;
+  toAuthor: (user?: User | User) => Author;
+  toUserResponse: (option?: UserResponseOption) => Promise<UserResponseDto>;
+  toPageResponse: (
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean
-  ): PageResponseDto;
-  follow(user: UserDocument): Promise<void>;
-  unfollow(user: UserDocument): Promise<void>;
-  toSearchTopTrendResponse(): SearchFollowsResponseDto;
-  toSearchResponse(): SearchFollowsResponseDto;
-  toAuthor(): Author;
+  ) => PageResponseDto;
 }
 
-export interface UserModel extends mongoose.Model<UserDocument> {
-  covertToUserResponse(
-    user: User | UserDocument,
-    followed?: boolean
-  ): UserResponseDto;
-  toAuthor(user: User | UserDocument): Author;
-}
-
-const _covertToUserResponse = (
-  self: User | UserDocument,
-  followed?: boolean
-) => {
+const _covertToUserResponse = (self: User | User, followed?: boolean) => {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
@@ -173,11 +164,11 @@ const _covertToUserResponse = (
 };
 
 UserSchema.statics.covertToUserResponse = (
-  self: User | UserDocument,
+  self: User | User,
   followed = false
 ) => _covertToUserResponse(self, followed);
 
-UserSchema.statics.toAuthor = (self: User | UserDocument) =>
+UserSchema.statics.toAuthor = (self: User | User) =>
   ({
     id: self._id,
     avatar:
@@ -199,9 +190,7 @@ UserSchema.methods.toUserResponse = async function (
     balance,
   } = {} as UserResponseOption
 ) {
-  const self = await (this as UserDocument)
-    .populate('ownerAccount')
-    .execPopulate();
+  const self = await (this as User).populate('ownerAccount').execPopulate();
   const response = _covertToUserResponse(self, followed);
   response.email = self.ownerAccount.email;
   response.blocking = blocking;
@@ -219,91 +208,90 @@ UserSchema.methods.toPageResponse = function (
   followed?: boolean
 ) {
   return {
-    id: (this as UserDocument)._id,
-    castcleId: (this as UserDocument).displayId,
-    displayName: (this as UserDocument).displayName,
+    id: (this as User)._id,
+    castcleId: (this as User).displayId,
+    displayName: (this as User).displayName,
     images: {
       avatar:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.images &&
-        (this as UserDocument).profile.images.avatar
-          ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.avatar
+          ? new Image((this as User).profile.images.avatar).toSignUrls()
           : Configs.DefaultAvatarImages,
       cover:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.images &&
-        (this as UserDocument).profile.images.cover
-          ? new Image((this as UserDocument).profile.images.cover).toSignUrls()
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.cover
+          ? new Image((this as User).profile.images.cover).toSignUrls()
           : Configs.DefaultAvatarCovers,
     },
     followers: {
-      count: (this as UserDocument).followerCount,
+      count: (this as User).followerCount,
     },
     following: {
-      count: (this as UserDocument).followedCount,
+      count: (this as User).followedCount,
     },
     overview:
-      (this as UserDocument).profile && (this as UserDocument).profile.overview
-        ? (this as UserDocument).profile.overview
+      (this as User).profile && (this as User).profile.overview
+        ? (this as User).profile.overview
         : null,
     links: {
       facebook:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.socials &&
-        (this as UserDocument).profile.socials.facebook
-          ? (this as UserDocument).profile.socials.facebook
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.facebook
+          ? (this as User).profile.socials.facebook
           : null,
       medium:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.socials &&
-        (this as UserDocument).profile.socials.medium
-          ? (this as UserDocument).profile.socials.medium
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.medium
+          ? (this as User).profile.socials.medium
           : null,
       twitter:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.socials &&
-        (this as UserDocument).profile.socials.twitter
-          ? (this as UserDocument).profile.socials.twitter
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.twitter
+          ? (this as User).profile.socials.twitter
           : null,
       youtube:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.socials &&
-        (this as UserDocument).profile.socials.youtube
-          ? (this as UserDocument).profile.socials.youtube
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.youtube
+          ? (this as User).profile.socials.youtube
           : null,
       website:
-        (this as UserDocument).profile &&
-        (this as UserDocument).profile.websites
-          ? (this as UserDocument).profile.websites[0].website
+        (this as User).profile && (this as User).profile.websites
+          ? (this as User).profile.websites[0].website
           : null,
     },
     verified: {
-      official: (this as UserDocument).verified.official,
+      official: (this as User).verified.official,
     } as PageVerified,
     blocked,
     blocking,
     followed,
-    updatedAt: (this as UserDocument).updatedAt.toISOString(),
-    createdAt: (this as UserDocument).createdAt.toISOString(),
+    updatedAt: (this as User).updatedAt.toISOString(),
+    createdAt: (this as User).createdAt.toISOString(),
   } as PageResponseDto;
 };
 
 UserSchema.methods.toSearchTopTrendResponse = function () {
   return {
-    id: (this as UserDocument)._id,
-    castcleId: (this as UserDocument).displayId,
-    displayName: (this as UserDocument).displayName,
+    id: (this as User)._id,
+    castcleId: (this as User).displayId,
+    displayName: (this as User).displayName,
     overview:
-      (this as UserDocument).profile && (this as UserDocument).profile.overview
-        ? (this as UserDocument).profile.overview
+      (this as User).profile && (this as User).profile.overview
+        ? (this as User).profile.overview
         : '',
     avatar:
-      (this as UserDocument).profile &&
-      (this as UserDocument).profile.images &&
-      (this as UserDocument).profile.images.avatar
-        ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+      (this as User).profile &&
+      (this as User).profile.images &&
+      (this as User).profile.images.avatar
+        ? new Image((this as User).profile.images.avatar).toSignUrls()
         : Configs.DefaultAvatarImages,
-    type: (this as UserDocument).type,
+    type: (this as User).type,
     // TODO !!! need implement aggregator
     aggregator: {
       type: '',
@@ -312,30 +300,30 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       message: '',
     },
     verified:
-      (this as UserDocument).verified &&
-      ((this as UserDocument).verified.email ||
-        (this as UserDocument).verified.mobile ||
-        (this as UserDocument).verified.official),
-    count: (this as UserDocument).followerCount,
+      (this as User).verified &&
+      ((this as User).verified.email ||
+        (this as User).verified.mobile ||
+        (this as User).verified.official),
+    count: (this as User).followerCount,
   } as SearchFollowsResponseDto;
 };
 
 UserSchema.methods.toSearchResponse = function () {
   return {
-    id: (this as UserDocument)._id,
-    castcleId: (this as UserDocument).displayId,
-    displayName: (this as UserDocument).displayName,
+    id: (this as User)._id,
+    castcleId: (this as User).displayId,
+    displayName: (this as User).displayName,
     overview:
-      (this as UserDocument).profile && (this as UserDocument).profile.overview
-        ? (this as UserDocument).profile.overview
+      (this as User).profile && (this as User).profile.overview
+        ? (this as User).profile.overview
         : '',
     avatar:
-      (this as UserDocument).profile &&
-      (this as UserDocument).profile.images &&
-      (this as UserDocument).profile.images.avatar
-        ? new Image((this as UserDocument).profile.images.avatar).toSignUrls()
+      (this as User).profile &&
+      (this as User).profile.images &&
+      (this as User).profile.images.avatar
+        ? new Image((this as User).profile.images.avatar).toSignUrls()
         : Configs.DefaultAvatarImages,
-    type: (this as UserDocument).type,
+    type: (this as User).type,
     // TODO !!! need implement aggregator
     aggregator: {
       type: '',
@@ -345,34 +333,32 @@ UserSchema.methods.toSearchResponse = function () {
       count: 1234,
     },
     verified:
-      (this as UserDocument).verified &&
-      ((this as UserDocument).verified.email ||
-        (this as UserDocument).verified.mobile ||
-        (this as UserDocument).verified.official),
+      (this as User).verified &&
+      ((this as User).verified.email ||
+        (this as User).verified.mobile ||
+        (this as User).verified.official),
     // TODO !!! need implement followed
     followed: true,
   } as SearchFollowsResponseDto;
 };
 
 export const UserSchemaFactory = (
-  relationshipModel: Model<RelationshipDocument>
-  /*contentModel: Model<ContentDocument>,
-  feedModel: Model<FeedItemDocument>,
-  commentModel: Model<CommentDocument>*/
+  relationshipModel: Model<Relationship>
+  /*contentModel: Model<Content>,
+  feedModel: Model<FeedItem>,
+  commentModel: Model<Comment>*/
 ): mongoose.Schema<any> => {
   /**
    * Make sure all aggregate counter is 0
    */
   UserSchema.pre('save', function (next) {
-    if (!(this as UserDocument).visibility)
-      (this as UserDocument).visibility = EntityVisibility.Publish;
-    if (!(this as UserDocument).followedCount)
-      (this as UserDocument).followedCount = 0;
-    if (!(this as UserDocument).followerCount)
-      (this as UserDocument).followerCount = 0;
+    if (!(this as User).visibility)
+      (this as User).visibility = EntityVisibility.Publish;
+    if (!(this as User).followedCount) (this as User).followedCount = 0;
+    if (!(this as User).followerCount) (this as User).followerCount = 0;
     //add activate state
-    if (!(this as UserDocument).verified)
-      (this as UserDocument).verified = {
+    if (!(this as User).verified)
+      (this as User).verified = {
         email: false,
         mobile: false,
         official: false,
@@ -382,7 +368,7 @@ export const UserSchemaFactory = (
   });
 
   UserSchema.methods.toAuthor = function () {
-    const self = this as UserDocument;
+    const self = this as User;
     return {
       id: self._id,
       avatar:
@@ -396,23 +382,23 @@ export const UserSchemaFactory = (
     } as Author;
   };
 
-  UserSchema.methods.follow = async function (followedUser: UserDocument) {
+  UserSchema.methods.follow = async function (followedUser: User) {
     const session = await relationshipModel.startSession();
     await session.withTransaction(async () => {
       ///TODO !!! Might have to change if relationship is embed
       const setObject = {
-        user: (this as UserDocument)._id,
+        user: (this as User)._id,
         followedUser: followedUser._id,
         isFollowPage: false,
         blocking: false,
         visibility: EntityVisibility.Publish,
       };
-      if ((followedUser as UserDocument).type === UserType.Page)
+      if ((followedUser as User).type === UserType.Page)
         setObject.isFollowPage = true;
       const result = await relationshipModel
         .updateOne(
           {
-            user: (this as UserDocument)._id,
+            user: (this as User)._id,
             followedUser: followedUser._id,
           },
           {
@@ -425,7 +411,7 @@ export const UserSchemaFactory = (
         )
         .exec();
       if (result.upserted) {
-        (this as UserDocument).followedCount++;
+        (this as User).followedCount++;
         followedUser.followerCount++;
         await Promise.all([this.save(), followedUser.save()]);
       }
@@ -433,13 +419,13 @@ export const UserSchemaFactory = (
     session.endSession();
   };
 
-  UserSchema.methods.unfollow = async function (followedUser: UserDocument) {
+  UserSchema.methods.unfollow = async function (followedUser: User) {
     const session = await relationshipModel.startSession();
 
     await session.withTransaction(async () => {
       const relationship = await relationshipModel
         .findOne({
-          user: (this as UserDocument)._id,
+          user: (this as User)._id,
           followedUser: followedUser._id,
           following: true,
         })
@@ -447,22 +433,19 @@ export const UserSchemaFactory = (
 
       if (!relationship) return;
 
-      (this as UserDocument).followedCount--;
+      (this as User).followedCount--;
       followedUser.followerCount--;
 
-      const toSaveDocuments: Promise<any>[] = [
-        this.save(),
-        followedUser.save(),
-      ];
+      const toSaves: Promise<any>[] = [this.save(), followedUser.save()];
 
       if (relationship.blocking) {
         relationship.following = false;
-        toSaveDocuments.push(relationship.save());
+        toSaves.push(relationship.save());
       } else {
-        toSaveDocuments.push(relationship.delete());
+        toSaves.push(relationship.delete());
       }
 
-      await Promise.all(toSaveDocuments);
+      await Promise.all(toSaves);
     });
 
     session.endSession();

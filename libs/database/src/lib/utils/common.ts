@@ -29,7 +29,7 @@ import {
   Pagination,
   QueryOption,
 } from '../dtos/common.dto';
-import { RelationshipDocument } from '../schemas';
+import { Relationship } from '../schemas';
 
 /**
  *
@@ -82,7 +82,7 @@ export const createCastcleFilter = (filter: any, queryOption: QueryOption) => {
 };
 
 export const getRelationship = (
-  relationships: RelationshipDocument[],
+  relationships: Relationship[],
   viewerId: string,
   authorId: string,
   hasRelationshipExpansion: boolean

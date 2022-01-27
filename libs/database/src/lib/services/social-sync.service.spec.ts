@@ -31,7 +31,7 @@ import {
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { SocialProvider } from '../models';
-import { UserDocument, UserType } from './../schemas';
+import { User, UserType } from './../schemas';
 
 let mongod: MongoMemoryServer;
 const rootMongooseTestModule = (
@@ -54,7 +54,7 @@ const closeInMongodConnection = async () => {
 
 describe('SocialSyncService', () => {
   let service: SocialSyncService;
-  let mocksUser: UserDocument;
+  let mocksUser: User;
   console.log('test in real db = ', env.DB_TEST_IN_DB);
   const importModules = env.DB_TEST_IN_DB
     ? [

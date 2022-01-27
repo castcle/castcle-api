@@ -57,23 +57,20 @@ import {
   UpdateCommentDto,
 } from '../dtos';
 import {
-  CommentDocument,
-  CredentialModel,
+  Comment,
   User,
-  UserDocument,
   UserType,
-  AccountDocument,
+  Account,
   CommentType,
   Content,
-  ContentDocument,
   toSignedContentPayloadItem,
-  EngagementDocument,
+  Engagement,
   EngagementType,
-  FeedItemDocument,
-  GuestFeedItemDocument,
+  FeedItem,
+  GuestFeedItem,
   GuestFeedItemType,
-  RelationshipDocument,
-  RevisionDocument,
+  Relationship,
+  Revision,
 } from '../schemas';
 import {
   createCastcleFilter,
@@ -96,26 +93,26 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('Credential')
-    public _credentialModel: CredentialModel,
+    public _credentialModel: Model<Credential>,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>,
+    public _userModel: Model<User>,
     @InjectModel('Content')
-    public _contentModel: Model<ContentDocument>,
+    public _contentModel: Model<Content>,
     @InjectModel('Revision')
-    public _revisionModel: Model<RevisionDocument>,
+    public _revisionModel: Model<Revision>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<EngagementDocument>,
+    public _engagementModel: Model<Engagement>,
     @InjectModel('Comment')
-    public _commentModel: Model<CommentDocument>,
+    public _commentModel: Model<Comment>,
     @InjectModel('FeedItem')
-    public _feedItemModel: Model<FeedItemDocument>,
+    public _feedItemModel: Model<FeedItem>,
     public hashtagService: HashtagService,
     @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItemDocument>,
+    public _guestFeedItemModel: Model<GuestFeedItem>,
     @InjectModel('Relationship')
-    private relationshipModel: Model<RelationshipDocument>
+    private relationshipModel: Model<Relationship>
   ) {}
 
   /**
@@ -133,11 +130,11 @@ export class ContentService {
 
   /**
    *
-   * @param {UserDocument} user the user that create this content if contentDto has no author this will be author by default
+   * @param {User} user the user that create this content if contentDto has no author this will be author by default
    * @param {SaveContentDto} contentDto the content Dto that required for create a content
-   * @returns {ContentDocument} content.save() result
+   * @returns {Content} content.save() result
    */
-  async createContentFromUser(user: UserDocument, contentDto: SaveContentDto) {
+  async createContentFromUser(user: User, contentDto: SaveContentDto) {
     const author = this._getAuthorFromUser(user);
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       contentDto.payload
@@ -163,12 +160,12 @@ export class ContentService {
    *
    * @param {Author} author the user that create this content
    * @param {SaveContentDto[]} contentsDtos contents to save
-   * @returns {ContentDocument[]} saved contents
+   * @returns {Content[]} saved contents
    */
   async createContentsFromAuthor(
     author: Author,
     contentsDtos: SaveContentDto[]
-  ): Promise<ContentDocument[]> {
+  ): Promise<Content[]> {
     const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
         this.hashtagService.extractHashtagFromContentPayload(payload);
@@ -244,7 +241,7 @@ export class ContentService {
   /**
    * Set content visibility to deleted
    * @param {string} id
-   * @returns {ContentDocument}
+   * @returns {Content}
    */
   deleteContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
@@ -301,7 +298,7 @@ export class ContentService {
   /**
    * update aggregator of recast/quote and get content status back to publish
    * @param {string} id of content
-   * @returns {ContentDocument | null}
+   * @returns {Content | null}
    */
   recoverContentFromId = async (id: string) => {
     const content = await this._contentModel.findById(id).exec();
@@ -337,7 +334,7 @@ export class ContentService {
    *
    * @param {string} id
    * @param {SaveContentDto} contentDto
-   * @returns {ContentDocument}
+   * @returns {Content}
    */
   updateContentFromId = async (id: string, contentDto: SaveContentDto) => {
     const content = await this._contentModel.findById(id).exec();
@@ -356,26 +353,24 @@ export class ContentService {
 
   /**
    * check content.author.id === user._id
-   * @param {UserDocument} user
-   * @param {ContentDocument} content
+   * @param {User} user
+   * @param {Content} content
    * @returns {Promise<boolean>}
    */
-  checkUserPermissionForEditContent = async (
-    user: UserDocument,
-    content: ContentDocument
-  ) => content.author.id === user._id;
+  checkUserPermissionForEditContent = async (user: User, content: Content) =>
+    content.author.id === user._id;
 
   /**
    *
-   * @param {UserDocument} user
+   * @param {User} user
    * @param {CastcleQueryOptions} options contain option for sorting page = skip + 1,
-   * @returns {Promise<{items:ContentDocument[], total:number, pagination: {Pagination}}>}
+   * @returns {Promise<{items:Content[], total:number, pagination: {Pagination}}>}
    */
   getContentsFromUser = async (
     userId: string,
     options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
   ) => {
-    let findFilter: FilterQuery<ContentDocument> = {
+    let findFilter: FilterQuery<Content> = {
       'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
       visibility: EntityVisibility.Publish,
     };
@@ -401,7 +396,7 @@ export class ContentService {
       };
   };
 
-  getContentRevisions = async (content: ContentDocument) =>
+  getContentRevisions = async (content: Content) =>
     this._revisionModel
       .find({
         objectRef: {
@@ -411,7 +406,7 @@ export class ContentService {
       })
       .exec();
 
-  likeContent = async (content: ContentDocument, user: UserDocument) => {
+  likeContent = async (content: Content, user: User) => {
     let engagement = await this._engagementModel.findOne({
       user: user._id,
       targetRef: {
@@ -435,7 +430,7 @@ export class ContentService {
     return engagement.save();
   };
 
-  unLikeContent = async (content: ContentDocument, user: UserDocument) => {
+  unLikeContent = async (content: Content, user: User) => {
     const engagement = await this._engagementModel
       .findOne({
         user: user._id,
@@ -451,9 +446,9 @@ export class ContentService {
   };
 
   getContentEngagement = async (
-    content: ContentDocument,
+    content: Content,
     engagementType: EngagementType,
-    user: UserDocument
+    user: User
   ) => {
     const engagement = await this._engagementModel
       .findOne({
@@ -470,9 +465,9 @@ export class ContentService {
   };
 
   getCommentEngagement = async (
-    comment: CommentDocument,
+    comment: Comment,
     engagementType: EngagementType,
-    user: UserDocument
+    user: User
   ) => {
     const engagement = await this._engagementModel
       .findOne({
@@ -490,14 +485,11 @@ export class ContentService {
 
   /**
    * get how many user like this content by populate user from engagement and filter it with user._id
-   * @param {ContentDocument} content current content
-   * @param {UserDocument} user current user
+   * @param {Content} content current content
+   * @param {User} user current user
    * @returns {liked:boolean, participant:string[]}
    */
-  getLikeParticipants = async (
-    content: ContentDocument,
-    user: UserDocument
-  ) => {
+  getLikeParticipants = async (content: Content, user: User) => {
     //get whether use is like
     const likeResult = await this._engagementModel
       .find({
@@ -522,10 +514,10 @@ export class ContentService {
   /**
    * transform User => Author object for create a content and use as DTO
    * @private
-   * @param {UserDocument} user
+   * @param {User} user
    * @returns {Author}
    */
-  _getAuthorFromUser = (user: UserDocument) => {
+  _getAuthorFromUser = (user: User) => {
     return new Author({
       id: user._id,
       avatar: user.profile?.images?.avatar || null,
@@ -538,14 +530,14 @@ export class ContentService {
 
   /**
    * Create a short content from other content
-   * @param {ContentDocument} content
-   * @param {UserDocument} user
+   * @param {Content} content
+   * @param {User} user
    * @param {string} message
-   * @returns {ContentDocument, EngagementDocument}
+   * @returns {Content, Engagement}
    */
   quoteContentFromUser = async (
-    content: ContentDocument,
-    user: UserDocument,
+    content: Content,
+    user: User,
     message?: string
   ) => {
     const author = this._getAuthorFromUser(user);
@@ -584,14 +576,11 @@ export class ContentService {
 
   /**
    * Recast a content
-   * @param {ContentDocument} content
-   * @param {UserDocument} user
-   * @returns {ContentDocument, EngagementDocument}
+   * @param {Content} content
+   * @param {User} user
+   * @returns {Content, Engagement}
    */
-  recastContentFromUser = async (
-    content: ContentDocument,
-    user: UserDocument
-  ) => {
+  recastContentFromUser = async (content: Content, user: User) => {
     const author = this._getAuthorFromUser(user);
     const sourceContentId =
       content.isRecast || content.isQuote
@@ -653,14 +642,14 @@ export class ContentService {
 
   /**
    * Update Comment Engagement from Content or Comment
-   * @param {CommentDocument} comment
+   * @param {Comment} comment
    */
-  _updateCommentCounter = async (comment: CommentDocument, commentBy?: any) => {
+  _updateCommentCounter = async (comment: Comment, commentBy?: any) => {
     if (![CommentType.Comment, CommentType.Reply].includes(comment.type)) {
       return true;
     }
 
-    const query: FilterQuery<EngagementDocument> = {
+    const query: FilterQuery<Engagement> = {
       type: EngagementType.Comment,
       targetRef: {
         $ref: comment.type === CommentType.Comment ? 'content' : 'comment',
@@ -685,14 +674,14 @@ export class ContentService {
 
   /**
    * Creat a comment for content
-   * @param {UserDocument} author
-   * @param {ContentDocument} content
+   * @param {User} author
+   * @param {Content} content
    * @param {UpdateCommentDto} updateCommentDto
-   * @returns {Promise<CommentDocument>}
+   * @returns {Promise<Comment>}
    */
   createCommentForContent = async (
-    author: UserDocument,
-    content: ContentDocument,
+    author: User,
+    content: Content,
     updateCommentDto: UpdateCommentDto
   ) => {
     const dto = {
@@ -721,14 +710,14 @@ export class ContentService {
 
   /**
    * Create a comment for comment(reply)
-   * @param {UserDocument} author
-   * @param {CommentDocument} rootComment
+   * @param {User} author
+   * @param {Comment} rootComment
    * @param {UpdateCommentDto} updateCommentDto
-   * @returns {Promise<CommentDocument>}
+   * @returns {Promise<Comment>}
    */
   replyComment = async (
-    author: UserDocument,
-    rootComment: CommentDocument,
+    author: User,
+    rootComment: Comment,
     updateCommentDto: UpdateCommentDto
   ) => {
     const dto = {
@@ -750,12 +739,12 @@ export class ContentService {
 
   /**
    *
-   * @param {CommentDocument} rootComment
+   * @param {Comment} rootComment
    * @param {UpdateCommentDto} updateCommentDto
-   * @returns {CommentDocument}
+   * @returns {Comment}
    */
   updateComment = async (
-    rootComment: CommentDocument,
+    rootComment: Comment,
     updateCommentDto: UpdateCommentDto
   ) => {
     const comment = await this._commentModel.findById(rootComment._id);
@@ -770,10 +759,10 @@ export class ContentService {
 
   /**
    *
-   * @param {CommentDocument} rootComment
-   * @returns {CommentDocument}
+   * @param {Comment} rootComment
+   * @returns {Comment}
    */
-  deleteComment = async (rootComment: CommentDocument) => {
+  deleteComment = async (rootComment: Comment) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.visibility = EntityVisibility.Deleted;
     const result = comment.save();
@@ -785,11 +774,11 @@ export class ContentService {
 
   /**
    * Update Engagement.like of the comment
-   * @param {UserDocument} user
-   * @param {CommentDocument} comment
-   * @returns  {EngagementDocument}
+   * @param {User} user
+   * @param {Comment} comment
+   * @returns  {Engagement}
    */
-  likeComment = async (user: UserDocument, comment: CommentDocument) => {
+  likeComment = async (user: User, comment: Comment) => {
     let engagement = await this._engagementModel.findOne({
       user: user._id,
       targetRef: {
@@ -815,11 +804,11 @@ export class ContentService {
 
   /**
    * Update Engagement.like of the comment
-   * @param {UserDocument} user
-   * @param {CommentDocument} comment
-   * @returns  {EngagementDocument}
+   * @param {User} user
+   * @param {Comment} comment
+   * @returns  {Engagement}
    */
-  unlikeComment = async (user: UserDocument, comment: CommentDocument) => {
+  unlikeComment = async (user: User, comment: Comment) => {
     const engagement = await this._engagementModel
       .findOne({
         user: user._id,
@@ -846,14 +835,11 @@ export class ContentService {
 
   /**
    * Get all engagement that this user engage to content (like, cast, recast, quote)
-   * @param {ContentDocument} content
-   * @param {UserDocument} user
-   * @returns {EngagementDocument[]}
+   * @param {Content} content
+   * @param {User} user
+   * @returns {Engagement[]}
    */
-  getAllEngagementFromContentAndUser = async (
-    content: ContentDocument,
-    user: UserDocument
-  ) =>
+  getAllEngagementFromContentAndUser = async (content: Content, user: User) =>
     this._engagementModel
       .find({
         targetRef: { $ref: 'content', $id: content._id },
@@ -863,12 +849,12 @@ export class ContentService {
 
   /**
    * Get all engagement that this user engage to contents (like, cast, recast, quote)
-   * @param {ContentDocument[]} contents
-   * @param {UserDocument} userId
-   * @returns {EngagementDocument[]}
+   * @param {Content[]} contents
+   * @param {User} userId
+   * @returns {Engagement[]}
    */
   getAllEngagementFromContentsAndUser = async (
-    contents: ContentDocument[],
+    contents: Content[],
     userId: string
   ) => {
     const contentIds = contents.map((c) => c._id);
@@ -901,14 +887,11 @@ export class ContentService {
 
   /**
    * Get all engagement that this user engage to comment (like, cast, recast, quote)
-   * @param {CommentDocument} comment
-   * @param {UserDocument} user
-   * @returns  {EngagementDocument[]}
+   * @param {Comment} comment
+   * @param {User} user
+   * @returns  {Engagement[]}
    */
-  getAllEngagementFromCommentAndUser = async (
-    comment: CommentDocument,
-    user: UserDocument
-  ) =>
+  getAllEngagementFromCommentAndUser = async (comment: Comment, user: User) =>
     this._engagementModel
       .find({
         targetRef: { $ref: 'comment', $id: comment._id },
@@ -918,14 +901,11 @@ export class ContentService {
 
   /**
    *
-   * @param {UserDocument} author
-   * @param {UserDocument} viewer
-   * @returns {Promise<FeedItemDocument[]>}
+   * @param {User} author
+   * @param {User} viewer
+   * @returns {Promise<FeedItem[]>}
    */
-  createFeedItemFromAuthorToViewer = async (
-    author: UserDocument,
-    viewer: UserDocument
-  ) => {
+  createFeedItemFromAuthorToViewer = async (author: User, viewer: User) => {
     const contents = await this._contentModel
       .find({ 'author.id': author._id, visibility: EntityVisibility.Publish })
       .exec();
@@ -946,13 +926,13 @@ export class ContentService {
 
   /**
    * Convert content => feedItem to group of viewers
-   * @param {ContentDocument} content
-   * @param {AccountDocument[]} viewers
-   * @returns {Promise<FeedItemDocument[]>}
+   * @param {Content} content
+   * @param {Account[]} viewers
+   * @returns {Promise<FeedItem[]>}
    */
   _createFeedItemFromAuthorToViewers = async (
-    content: ContentDocument,
-    viewers: AccountDocument[]
+    content: Content,
+    viewers: Account[]
   ) => {
     const promisesFeedItem = viewers.map((viewer) => {
       return new this._feedItemModel({
@@ -973,10 +953,10 @@ export class ContentService {
 
   /**
    * Create a feed item to every user in the system
-   * @param {ContentDocument} content
-   * @returns {Promise<FeedItemDocument[]>}
+   * @param {Content} content
+   * @returns {Promise<FeedItem[]>}
    */
-  createFeedItemFromAuthorToEveryone = async (content: ContentDocument) => {
+  createFeedItemFromAuthorToEveryone = async (content: Content) => {
     //TODO !!! should do pagination later on
     const viewers = await this._accountModel.find().exec();
     console.debug('publish to ', viewers);
@@ -986,7 +966,7 @@ export class ContentService {
   /**
    * Create a feed item to every user in the system
    * @param {ObjectId} contentId
-   * @returns {Promise<FeedItemDocument[]>}
+   * @returns {Promise<FeedItem[]>}
    */
   createFeedItemFromAuthorIdToEveryone = async (contentId: any) => {
     const content = await this._contentModel.findById(contentId).exec();
@@ -998,7 +978,7 @@ export class ContentService {
    *
    * @param {ObjectId} authorId
    * @param {ObjectId}  viewerId
-   * @returns {Promise<FeedItemDocument[]>}
+   * @returns {Promise<FeedItem[]>}
    */
   createFeedItemFromAuthorIdToViewerId = async (
     authorId: any,
@@ -1012,7 +992,7 @@ export class ContentService {
   /**
    *
    * @param contentId
-   * @returns {GuestFeedItemDocument}
+   * @returns {GuestFeedItem}
    */
   createGuestFeedItemFromAuthorId = async (contentId: any) => {
     const newGuestFeedItem = new this._guestFeedItemModel({
@@ -1024,11 +1004,7 @@ export class ContentService {
     return newGuestFeedItem.save();
   };
 
-  async reportContent(
-    user: UserDocument,
-    content: ContentDocument,
-    message: string
-  ) {
+  async reportContent(user: User, content: Content, message: string) {
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
     const engagementFilter = {
@@ -1061,14 +1037,14 @@ Message: ${message}`,
   }
 
   /**
-   * @param {UserDocument} viewer
-   * @param {ContentDocument} content
-   * @param {EngagementDocument[]} engagements
+   * @param {User} viewer
+   * @param {Content} content
+   * @param {Engagement[]} engagements
    */
   async convertContentToContentResponse(
-    viewer: UserDocument,
-    content: ContentDocument,
-    engagements: EngagementDocument[] = [],
+    viewer: User,
+    content: Content,
+    engagements: Engagement[] = [],
     hasRelationshipExpansion = false
   ) {
     const users: IncludeUser[] = [];
@@ -1104,14 +1080,14 @@ Message: ${message}`,
   }
 
   /**
-   * @param {UserDocument} viewer
-   * @param {ContentDocument} content
+   * @param {User} viewer
+   * @param {Content} content
    * @param {CastcleMeta} meta
    * @param hasRelationshipExpansion
    */
   async convertContentsToContentsResponse(
-    viewer: UserDocument | null,
-    contents: ContentDocument[],
+    viewer: User | null,
+    contents: Content[],
     hasRelationshipExpansion = false
   ): Promise<ContentsResponse> {
     const meta = createCastcleMeta(contents);
@@ -1165,7 +1141,7 @@ Message: ${message}`,
    * @param {number} maxResults
    * @param {string} sinceId
    * @param {string} untilId
-   * @returns {ContentDocument[], totalDocument}
+   * @returns {Content[], totalDocument}
    */
   getContentFromOriginalPost = async (
     originalPostId: string,
@@ -1173,7 +1149,7 @@ Message: ${message}`,
     sinceId?: string,
     untilId?: string
   ) => {
-    let filter: FilterQuery<ContentDocument> = {
+    let filter: FilterQuery<Content> = {
       'originalPost._id': mongoose.Types.ObjectId(originalPostId),
     };
     const totalDocument = await this._contentModel
@@ -1207,7 +1183,7 @@ Message: ${message}`,
   };
 
   private async updateUserRelationships(
-    viewer: UserDocument,
+    viewer: User,
     authorIds: any[],
     users: IncludeUser[]
   ) {
@@ -1247,7 +1223,7 @@ Message: ${message}`,
     sinceId,
     untilId,
   }: GetSearchRecentDto) {
-    const query = createFilterQuery<ContentDocument>(sinceId, untilId);
+    const query = createFilterQuery<Content>(sinceId, untilId);
 
     if (contentType) query[`payload.${contentType}`] = { $exists: true };
     if (keyword) {
@@ -1259,7 +1235,7 @@ Message: ${message}`,
     return this.getContents(query, maxResults);
   }
 
-  async getContents(query: FilterQuery<ContentDocument>, maxResults: number) {
+  async getContents(query: FilterQuery<Content>, maxResults: number) {
     const total = await this._contentModel.countDocuments(query);
     const contents = total
       ? await this._contentModel

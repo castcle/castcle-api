@@ -23,7 +23,6 @@
 import { Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
@@ -34,10 +33,8 @@ import { env } from '../environment';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
-export type CredentialDocument = Credential & ICredential;
-
 @Schema({ timestamps: true })
-export class Credential extends CastcleBase {
+class CredentialDocument extends CastcleBase {
   @Prop({
     required: true,
     type: Object,
@@ -69,13 +66,30 @@ export class Credential extends CastcleBase {
   firebaseNotificationToken?: string;
 }
 
-export const CredentialSchema = SchemaFactory.createForClass(Credential);
+export const CredentialSchema =
+  SchemaFactory.createForClass(CredentialDocument);
 
-export interface CredentialModel extends mongoose.Model<CredentialDocument> {
+export class Credential extends CredentialDocument {
+  renewTokens: (
+    accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
+    refreshTokenPayload: RefreshTokenPayload
+  ) => Promise<{ accessToken: string; refreshToken: string }>;
+
+  renewAccessToken: (
+    payload: AccessTokenPayload | MemberAccessTokenPayload
+  ) => Promise<string>;
+
+  isAccessTokenValid: () => boolean;
+
+  isRefreshTokenValid: () => boolean;
+}
+
+export interface CredentialModel extends mongoose.Model<Credential> {
   generateAccessToken(payload: AccessTokenPayload | MemberAccessTokenPayload): {
     accessToken: string;
     accessTokenExpireDate: Date;
   };
+
   generateRefreshToken(payload: RefreshTokenPayload): {
     refreshToken: string;
     refreshTokenExpireDate: Date;
@@ -100,6 +114,7 @@ CredentialSchema.statics.generateAccessToken = (
     accessTokenExpireDate,
   };
 };
+
 CredentialSchema.statics.generateRefreshToken = (
   payload: RefreshTokenPayload
 ) => {
@@ -120,36 +135,22 @@ CredentialSchema.statics.generateRefreshToken = (
   };
 };
 
-export interface ICredential extends Document {
-  renewTokens(
-    accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
-    refreshTokenPayload: RefreshTokenPayload
-  ): Promise<{ accessToken: string; refreshToken: string }>;
-  renewAccessToken(
-    payload: AccessTokenPayload | MemberAccessTokenPayload
-  ): Promise<string>;
-  isAccessTokenValid(): boolean;
-  isRefreshTokenValid(): boolean;
-}
-
 CredentialSchema.methods.renewTokens = async function (
   accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
   refreshTokenPayload: RefreshTokenPayload
 ) {
-  const credentialModel = mongoose.model(
+  const credentialModel = mongoose.model<Credential, CredentialModel>(
     'Credential',
     CredentialSchema
-  ) as unknown as CredentialModel;
+  );
   const refreshTokenResult =
     credentialModel.generateRefreshToken(refreshTokenPayload);
   const accessTokenResult =
     credentialModel.generateAccessToken(accessTokenPayload);
-  (this as CredentialDocument).accessToken = accessTokenResult.accessToken;
-  (this as CredentialDocument).accessTokenExpireDate =
-    accessTokenResult.accessTokenExpireDate;
-  (this as CredentialDocument).refreshToken = refreshTokenResult.refreshToken;
-  (this as CredentialDocument).refreshTokenExpireDate =
-    refreshTokenResult.refreshTokenExpireDate;
+  this.accessToken = accessTokenResult.accessToken;
+  this.accessTokenExpireDate = accessTokenResult.accessTokenExpireDate;
+  this.refreshToken = refreshTokenResult.refreshToken;
+  this.refreshTokenExpireDate = refreshTokenResult.refreshTokenExpireDate;
   await this.save();
   return {
     accessToken: accessTokenResult.accessToken,
@@ -160,20 +161,19 @@ CredentialSchema.methods.renewTokens = async function (
 CredentialSchema.methods.renewAccessToken = async function (
   payload: AccessTokenPayload | MemberAccessTokenPayload
 ) {
-  const credentialModel = mongoose.model(
+  const credentialModel = mongoose.model<Credential, CredentialModel>(
     'Credential',
     CredentialSchema
-  ) as unknown as CredentialModel;
+  );
   const result = credentialModel.generateAccessToken(payload);
-  (this as CredentialDocument).accessToken = result.accessToken;
-  (this as CredentialDocument).accessTokenExpireDate =
-    result.accessTokenExpireDate;
+  this.accessToken = result.accessToken;
+  this.accessTokenExpireDate = result.accessTokenExpireDate;
   await this.save();
   return result.accessToken;
 };
 
 CredentialSchema.methods.isAccessTokenValid = function () {
-  const { account, accessToken } = this as CredentialDocument;
+  const { account, accessToken } = this;
 
   if (account.visibility !== EntityVisibility.Publish) return false;
 
@@ -181,13 +181,11 @@ CredentialSchema.methods.isAccessTokenValid = function () {
 };
 
 CredentialSchema.methods.isRefreshTokenValid = function () {
-  const { account, refreshToken } = this as CredentialDocument;
+  const { account, refreshToken } = this;
 
   if (account.visibility !== EntityVisibility.Publish) return false;
 
   return Token.isTokenValid(refreshToken, env.JWT_REFRESH_SECRET);
 };
 
-export const CredentialSchemaFactory = (): mongoose.Schema<any> => {
-  return CredentialSchema;
-};
+export const CredentialSchemaFactory = () => CredentialSchema;

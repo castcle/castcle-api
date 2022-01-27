@@ -37,7 +37,7 @@ import {
   RegisterTokenDto,
 } from '../dtos/notification.dto';
 import { env } from '../environment';
-import { UserDocument, AccountDocument, CredentialDocument } from '../schemas';
+import { User, Account, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
@@ -76,7 +76,7 @@ describe('NotificationService', () => {
   let service: NotificationService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
+  let user: User;
   console.log('test in real db = ', env.DB_TEST_IN_DB);
   const importModules = env.DB_TEST_IN_DB
     ? [
@@ -108,13 +108,13 @@ describe('NotificationService', () => {
     HashtagService,
   ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
 
   let mockNewCredential: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
 
   beforeAll(async () => {
