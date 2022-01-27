@@ -241,12 +241,7 @@ export class UserController {
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (
-      user &&
-      req.params &&
-      req.params['userFields'] &&
-      req.params['userFields'] === 'wallet'
-    ) {
+    if (user && req?.params?.['userFields'] === 'wallet') {
       const balance = await this.transactionService.getUserBalance(user);
       return await user.toUserResponse({
         balance: balance,

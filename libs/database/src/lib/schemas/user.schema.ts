@@ -194,15 +194,14 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
-  option = {
-    passwordNotSet: undefined,
-    blocked: undefined,
-    blocking: undefined,
-    followed: undefined,
-    balance: undefined,
-  } as UserResponseOption
+  {
+    passwordNotSet,
+    blocked,
+    blocking,
+    followed,
+    balance,
+  } = {} as UserResponseOption
 ) {
-  const { passwordNotSet, blocked, blocking, followed, balance } = option;
   const self = await (this as UserDocument)
     .populate('ownerAccount')
     .execPopulate();
