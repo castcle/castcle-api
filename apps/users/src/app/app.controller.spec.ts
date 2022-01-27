@@ -56,39 +56,14 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { TopicName, UserProducer } from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
 
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('AppController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: UserController;
   let service: UserService;
@@ -99,16 +74,20 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
 
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
           store: 'memory',
           ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull,
+        BullModule.registerQueue(
+          { name: TopicName.Campaigns },
+          { name: TopicName.Users }
+        ),
       ],
       controllers: [UserController],
       providers: [
@@ -158,7 +137,8 @@ describe('AppController', () => {
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getMyData', () => {

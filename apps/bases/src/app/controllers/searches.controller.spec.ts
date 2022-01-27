@@ -31,30 +31,13 @@ import {
 import { CreateHashtag } from '@castcle-api/database/dtos';
 import { Credential, UserType } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common/cache';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SearchesController } from './searches.controller';
 
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
-
 describe('NotificationsController', () => {
+  let mongod: MongoMemoryServer;
   let controller: SearchesController;
   let app: TestingModule;
   let hashtagService: HashtagService;
@@ -72,10 +55,12 @@ describe('NotificationsController', () => {
     };
     await hashtagService.create(newHashtag);
   };
+
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
@@ -157,7 +142,8 @@ describe('NotificationsController', () => {
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getTopTrends', () => {

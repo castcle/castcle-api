@@ -23,7 +23,10 @@
 
 import { connect, disconnect, Document, model } from 'mongoose';
 import { CampaignType } from '../libs/database/src/lib/models/campaign.enum';
-import { Campaign, CampaignSchema } from '../libs/database/src/lib/schemas';
+import {
+  Campaign,
+  CampaignSchema,
+} from '../libs/database/src/lib/schemas/campaign.schema';
 
 class CreateCampaigns {
   static run = async () => {

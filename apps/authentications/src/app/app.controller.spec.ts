@@ -44,9 +44,9 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
@@ -61,23 +61,6 @@ import {
   TwitterClientMock,
 } from './client.mock';
 import { LoginResponse, TokenResponse } from './dtos/dto';
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -133,6 +116,7 @@ const createMockCredential = async (
 };
 
 describe('AppController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: AuthenticationController;
   let service: AuthenticationService;
@@ -169,9 +153,10 @@ describe('AppController', () => {
       useClass: GoogleClientMock,
     };
 
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         HttpModule,
@@ -191,6 +176,7 @@ describe('AppController', () => {
         UserService,
         ContentService,
         HashtagService,
+        UserProducer,
       ],
     }).compile();
 
@@ -210,8 +196,10 @@ describe('AppController', () => {
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('guestLogin', () => {

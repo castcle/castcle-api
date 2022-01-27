@@ -21,8 +21,7 @@
  * or have any questions.
  */
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { env } from '../environment';
+import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { RankerService } from './ranker.service';
 import { ContentService } from './content.service';
@@ -32,11 +31,11 @@ import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
 import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
+
 jest.mock('@castcle-api/utils/aws', () => ({
-  predictContents: jest.fn((accountIds: string, contents: string[]) => {
+  predictContents: jest.fn((_: string, contents: string[]) => {
     const map: any = {};
     contents.forEach((item, index) => {
       map[item] = index + 1;
@@ -44,35 +43,10 @@ jest.mock('@castcle-api/utils/aws', () => ({
     return map;
   }),
 }));
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 describe('Ranker Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: RankerService;
   let contentService: ContentService;
   let userService: UserService;
@@ -81,42 +55,33 @@ describe('Ranker Service', () => {
   let follower: User;
   let followerAccount: Account;
   const contents: Content[] = [];
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull,
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull,
-      ];
-  const providers = [
-    ContentService,
-    UserService,
-    AuthenticationService,
-    RankerService,
-    UserProducer,
-    HashtagService,
-  ];
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
   };
-  beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers,
-    }).compile();
-    service = module.get<RankerService>(RankerService);
 
-    contentService = module.get<ContentService>(ContentService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+  beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        ContentService,
+        UserService,
+        AuthenticationService,
+        RankerService,
+        UserProducer,
+        HashtagService,
+      ],
+    }).compile();
+
+    service = app.get<RankerService>(RankerService);
+    contentService = app.get<ContentService>(ContentService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -158,8 +123,10 @@ describe('Ranker Service', () => {
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
+
   describe('#getAndcreateFeedItemByCreateTime()', () => {
     const shortPayload: ShortPayload = {
       message: 'this is test status',

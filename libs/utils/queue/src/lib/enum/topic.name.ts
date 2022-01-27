@@ -21,7 +21,8 @@
  * or have any questions.
  */
 export const TopicName = {
+  Campaigns: 'campaigns',
+  Contents: 'contents',
   Notifications: 'notifications-message',
   Users: 'users',
-  Contents: 'contents',
 };

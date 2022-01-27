@@ -12,7 +12,7 @@
     "test:all": "nx run-many --target=test --all --parallel=0 --silent --maxWorkers=1",
     "lint": "nx workspace-lint && nx lint",
     "lint:all": "nx run-many --target=lint --all",
-    "e2e": "nx run e2e:test --testFile=/app.e2e-spec --runInBand --maxWorkers=1",
+    "e2e": "nx run e2e:test --testFile=/app.e2e-spec --runInBand --silent --maxWorkers=1",
     "affected:apps": "nx affected:apps",
     "affected:libs": "nx affected:libs",
     "affected:build": "nx affected:build",

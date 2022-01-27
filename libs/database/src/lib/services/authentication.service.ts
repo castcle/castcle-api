@@ -509,7 +509,7 @@ export class AuthenticationService {
   async changePassword(account: Account, otp: Otp, newPassword: string) {
     let newAccount: Account;
     const session = await this._accountModel.startSession();
-    session.withTransaction(async () => {
+    await session.withTransaction(async () => {
       newAccount = await account.changePassword(newPassword);
       await otp.delete();
     });

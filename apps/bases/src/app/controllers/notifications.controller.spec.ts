@@ -36,35 +36,12 @@ import {
 } from '@castcle-api/database/dtos';
 import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer,
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common/cache';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { NotificationsController } from './notifications.controller';
-
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
 
 const buildMockData = async (
   notification: NotificationService,
@@ -126,6 +103,7 @@ const creatMockData = async (
 };
 
 describe('NotificationsController', () => {
+  let mongod: MongoMemoryServer;
   let controller: NotificationsController;
   let app: TestingModule;
   let userService: UserService;
@@ -134,33 +112,17 @@ describe('NotificationsController', () => {
   let wrongUserCredential: Credential;
   let notification: NotificationService;
   let user: User;
-  const fakeProcessor = jest.fn();
 
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
           ttl: 1000,
-        }),
-        BullModule.registerQueue({
-          name: TopicName.Notifications,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380,
-          },
-          processors: [fakeProcessor],
-        }),
-        BullModule.registerQueue({
-          name: TopicName.Users,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380,
-          },
-          processors: [fakeProcessor],
         }),
       ],
       controllers: [NotificationsController],
@@ -206,7 +168,8 @@ describe('NotificationsController', () => {
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getNotification', () => {

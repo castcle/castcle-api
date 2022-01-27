@@ -28,7 +28,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import {
   UserService,
   AuthenticationService,
@@ -46,39 +46,12 @@ import {
   ShortPayload,
 } from '@castcle-api/database/dtos';
 import { Image } from '@castcle-api/utils/aws';
-
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('PageController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let pageController: PagesController;
   let authService: AuthenticationService;
@@ -94,16 +67,16 @@ describe('PageController', () => {
     castcleId: 'pageyo2',
   };
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
           store: 'memory',
           ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull,
       ],
       controllers: [PagesController],
       providers: [
@@ -143,8 +116,10 @@ describe('PageController', () => {
     });
     userCredential = result.credentialDocument;
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('createPage', () => {
