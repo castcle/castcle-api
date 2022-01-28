@@ -20,14 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from 'nestjs-firebase';
-import { DatabaseModule } from '@castcle-api/database';
+import { CampaignConsumer } from './consumers/campaign.consumer';
+import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
-import { ContentConsumer } from './consumers/content.consumer';
 
 @Module({
   imports: [
@@ -43,6 +45,11 @@ import { ContentConsumer } from './consumers/content.consumer';
       },
     }),
   ],
-  providers: [NotificationConsumer, UserConsumer, ContentConsumer],
+  providers: [
+    CampaignConsumer,
+    ContentConsumer,
+    NotificationConsumer,
+    UserConsumer,
+  ],
 })
 export class BackgroundModule {}

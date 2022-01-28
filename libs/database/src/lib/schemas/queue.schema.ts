@@ -23,6 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { QueueStatus } from '../models';
 
 @Schema({ timestamps: true })
 export class Queue<T = any> extends Document {
@@ -33,6 +34,9 @@ export class Queue<T = any> extends Document {
   /** The time the job ended */
   @Prop()
   endedAt?: Date;
+
+  @Prop({ type: String, default: QueueStatus.WAITING })
+  status: QueueStatus;
 
   /** A numeric priority where a higher value is higher priority */
   @Prop({ default: 1 })

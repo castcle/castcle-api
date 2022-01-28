@@ -37,6 +37,29 @@ export const testUsersClaimAirdrop = () => {
       .expect(HttpStatus.NOT_FOUND);
   });
 
+  it('should return REWARD_IS_NOT_ENOUGH when reward is not enough to claim', async () => {
+    const campaign = await new campaignModel({
+      name: 'Early Caster Airdrop',
+      type: CampaignType.VERIFY_MOBILE,
+      startDate: new Date('2022-01-17T00:00Z'),
+      endDate: new Date('3000-01-20T23:59Z'),
+      maxClaims: 1,
+      rewardsPerClaim: 10,
+      rewardBalance: 0,
+      totalRewards: 100_000,
+    }).save();
+
+    await UsersRequest.claimAirdrop()
+      .auth(userAlpha.accessToken, { type: 'bearer' })
+      .send({ campaign: CampaignType.VERIFY_MOBILE })
+      .expect(({ body }) => {
+        expect(body.message).toEqual('The reward is not enough');
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await campaign.deleteOne();
+  });
+
   describe('Verify Mobile Campaign', () => {
     let campaign: Campaign;
     let claimAirdropResponse: Response;

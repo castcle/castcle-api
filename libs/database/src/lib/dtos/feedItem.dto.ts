@@ -32,7 +32,6 @@ import {
 export class FeedItemDto {
   content: ContentPayloadDto;
   viewer: any;
-  seen: boolean;
   called: boolean;
   __v?: any;
 }

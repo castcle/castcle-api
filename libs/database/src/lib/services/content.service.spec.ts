@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
@@ -33,7 +32,6 @@ import {
 } from '../database.module';
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
-import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { UserVerified } from '../models';
 import { Comment, User, Account, Content, Credential } from '../schemas';
@@ -42,35 +40,9 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 
-jest.mock('@castcle-api/logger');
-jest.mock('link-preview-js', () => ({
-  getLinkPreview: jest.fn().mockReturnValue({}),
-}));
-
-jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn() }),
-}));
-
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: { host: '0.0.0.0', port: 6380 },
-});
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      return {
-        ...options,
-        uri: mongod.getUri(),
-      };
-    },
-  });
-
 describe('ContentService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: ContentService;
   let commentService: CommentService;
   let userService: UserService;
@@ -137,14 +109,12 @@ describe('ContentService', () => {
   let hashtagContent: Content;
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        env.DB_TEST_IN_DB
-          ? MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS)
-          : rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull,
       ],
       providers: [
         AuthenticationService,
@@ -155,10 +125,11 @@ describe('ContentService', () => {
         UserService,
       ],
     }).compile();
-    service = module.get<ContentService>(ContentService);
-    commentService = module.get(CommentService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+
+    service = app.get<ContentService>(ContentService);
+    commentService = app.get(CommentService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -186,7 +157,8 @@ describe('ContentService', () => {
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await mongod?.stop();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#createContentFromUser', () => {

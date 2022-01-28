@@ -189,6 +189,11 @@ export const ErrorMessages = {
     code: '4004',
     message: 'Reached the maximum limit of claims',
   },
+  '4005': {
+    statusCode: '400',
+    code: '4005',
+    message: 'The reward is not enough',
+  },
   '5001': {
     statusCode: '400',
     code: '5001',

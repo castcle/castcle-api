@@ -22,7 +22,7 @@
  */
 
 import { CastcleName } from '@castcle-api/utils/commons';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
@@ -30,51 +30,31 @@ import { BlogPayload, ShortPayload } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { env } from '../environment';
 import { CommentType } from '../schemas';
 import { HashtagService } from './hashtag.service';
 
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('HashtagService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: HashtagService;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [HashtagService];
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers,
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [HashtagService],
     }).compile();
-    service = module.get<HashtagService>(HashtagService);
+
+    service = app.get<HashtagService>(HashtagService);
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#create and get all hashtags', () => {

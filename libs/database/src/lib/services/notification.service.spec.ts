@@ -20,13 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer,
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
@@ -36,7 +31,6 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '../dtos/notification.dto';
-import { env } from '../environment';
 import { User, Account, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -44,69 +38,14 @@ import { HashtagService } from './hashtag.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380,
-  },
-  processors: [fakeProcessor],
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options,
-      };
-    },
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('NotificationService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: NotificationService;
   let userService: UserService;
   let authService: AuthenticationService;
   let user: User;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        BullModule.registerQueue({
-          name: TopicName.Notifications,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380,
-          },
-          processors: [fakeProcessor],
-        }),
-        fakeBull,
-      ];
-  const providers = [
-    ContentService,
-    UserService,
-    AuthenticationService,
-    NotificationService,
-    NotificationProducer,
-    UserProducer,
-    HashtagService,
-  ];
+
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
@@ -118,13 +57,27 @@ describe('NotificationService', () => {
   };
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers,
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        ContentService,
+        UserService,
+        AuthenticationService,
+        NotificationService,
+        NotificationProducer,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<NotificationService>(NotificationService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+
+    service = app.get<NotificationService>(NotificationService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -206,7 +159,8 @@ describe('NotificationService', () => {
     });
   });
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#getAll', () => {
