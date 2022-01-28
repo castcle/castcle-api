@@ -783,10 +783,10 @@ export class AuthenticationController {
       currentAccount,
       body.provider,
       body.socialId,
-      body.authToken,
+      body.authToken ? body.authToken : undefined,
       undefined,
-      body.avatar,
-      body.displayName
+      body.avatar ? body.avatar : undefined,
+      body.displayName ? body.displayName : undefined
     );
   }
 }

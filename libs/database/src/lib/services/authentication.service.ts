@@ -25,9 +25,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { UserService } from './user.service';
 import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
   EmailVerifyToken,
@@ -35,20 +34,21 @@ import {
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
 import {
-  AccountReferral,
   Account,
   AccountActivation,
+  AccountActivationModel,
   AccountAuthenId,
   AccountAuthenIdType,
+  AccountReferral,
   Credential,
+  CredentialModel,
   Otp,
+  OtpModel,
   OtpObjective,
   User,
   UserType,
-  CredentialModel,
-  AccountActivationModel,
-  OtpModel,
 } from '../schemas';
+import { UserService } from './user.service';
 
 export interface AccountRequirements {
   header: {
@@ -75,7 +75,7 @@ export interface SignupSocialRequirements {
   displayName: string;
   socialId: string;
   provider: AccountAuthenIdType;
-  avatar: string;
+  avatar: CastcleImage;
   socialToken: string;
   socialSecretToken: string;
 }
@@ -576,9 +576,7 @@ export class AuthenticationService {
       type: UserType.People,
       profile: {
         images: {
-          avatar: {
-            original: requirements.avatar,
-          },
+          avatar: requirements.avatar,
         },
       },
     });
@@ -590,7 +588,7 @@ export class AuthenticationService {
       requirements.socialId,
       requirements.socialToken,
       requirements.socialSecretToken,
-      requirements.avatar,
+      requirements.avatar?.original,
       requirements.displayName
     );
   }
