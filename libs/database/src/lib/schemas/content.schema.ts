@@ -47,6 +47,7 @@ const engagementNameMap = {
   comment: 'commented',
   quote: 'quoteCast',
   recast: 'recasted',
+  seen: 'seen',
 };
 
 /**

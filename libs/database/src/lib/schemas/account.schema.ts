@@ -57,9 +57,6 @@ class AccountDocument extends CastcleBase {
     languages: string[];
   };
 
-  @Prop({ type: Array })
-  seenContents: any[];
-
   @Prop({ type: Object })
   mobile: {
     countryCode: string;
@@ -77,6 +74,12 @@ class AccountDocument extends CastcleBase {
 
   @Prop({ select: false })
   campaigns?: AccountCampaigns;
+
+  /**
+   * TO DO !!! this is a hot fix for guests
+   */
+  @Prop({ Type: Array })
+  seenContents?: string[];
 }
 
 export const AccountSchema = SchemaFactory.createForClass(AccountDocument);

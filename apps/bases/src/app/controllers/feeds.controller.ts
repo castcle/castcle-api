@@ -21,7 +21,15 @@
  * or have any questions.
  */
 
-import { Get, Query, Req, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { RankerService, UxEngagementService } from '@castcle-api/database';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
@@ -44,6 +52,7 @@ import {
   Auth,
   Authorizer,
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleController,
 } from '@castcle-api/utils/decorators';
 import { ContentService, UserService } from '@castcle-api/database';
@@ -58,6 +67,33 @@ export class FeedsController {
     private userService: UserService,
     private uxEngagementService: UxEngagementService
   ) {}
+
+  @CastcleBasicAuth()
+  @Post('feeds/:id/seen')
+  async seenFeed(
+    @Auth() { account }: Authorizer,
+    @Param('id') feedItemId: string
+  ) {
+    if (account.isGuest) {
+      await this.rankerService.seenFeedItemForGuest(account, feedItemId);
+    } else {
+      await this.rankerService.seenFeedItem(account, feedItemId);
+    }
+
+    return '';
+  }
+
+  @CastcleBasicAuth()
+  @Post('feeds/:id/off-view')
+  async offScreenFeed(
+    @Auth() { account }: Authorizer,
+    @Param('id') feedItemId: string
+  ) {
+    console.log('off-view', account);
+    if (!account.isGuest)
+      await this.rankerService.offScreenFeedItem(account, feedItemId);
+    return '';
+  }
 
   @ApiOkResponse({
     type: FeedsResponse,
@@ -165,7 +201,9 @@ export class FeedsController {
     @Req() { $credential }: CredentialRequest,
     @Query() paginationQuery: PaginationQuery
   ) {
-    const account = $credential.account;
+    const account = await this.rankerService._accountModel.findById(
+      $credential.account._id
+    ); // TODO !!! this is hot fix for guest $credential.account;
     const feedItems = await this.rankerService.getGuestFeedItems(
       paginationQuery,
       account
@@ -186,14 +224,14 @@ export class FeedsController {
     @Query() paginationQuery: PaginationQuery
   ) {
     const account = $credential.account;
-    /*const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
+    const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
       account,
-      feedQuery
-    );*/
-    const feedItems = await this.rankerService.getGuestFeedItems(
+      paginationQuery
+    );
+    /*const feedItems = await this.rankerService.getGuestFeedItems(
       paginationQuery,
       account
-    );
+    );*/
 
     this.uxEngagementService.addReachToContents(
       feedItems.payload.map((feed) => feed.payload.id),

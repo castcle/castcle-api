@@ -46,9 +46,13 @@ class FeedItemDocument extends CastcleBase {
   })
   viewer: Account;
   @Prop({ required: true })
-  seen: boolean;
-  @Prop({ required: true })
   called: boolean;
+
+  @Prop()
+  seenAt?: Date;
+
+  @Prop()
+  offScreenAt?: Date;
 
   @Prop({
     required: true,
