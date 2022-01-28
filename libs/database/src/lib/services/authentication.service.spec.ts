@@ -34,13 +34,13 @@ import {
 import { EntityVisibility } from '../dtos/common.dto';
 import { env } from '../environment';
 import {
-  AccountAuthenId,
-  Otp,
-  OtpObjective,
   Account,
   AccountActivation,
+  AccountAuthenId,
   AccountAuthenIdType,
   Credential,
+  Otp,
+  OtpObjective,
   User,
 } from '../schemas';
 import {
@@ -518,7 +518,9 @@ describe('Authentication Service', () => {
         socialId: '7457356332',
         displayName: 'Dudeee Mock',
         provider: AccountAuthenIdType.Facebook,
-        avatar: '/image/test.jpg',
+        avatar: {
+          original: 'http://placehold.it/200x200',
+        },
         socialToken: 'testtoken',
         socialSecretToken: '',
       };
@@ -552,9 +554,9 @@ describe('Authentication Service', () => {
         expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
-        expect({
-          original: signupRequirements.avatar,
-        }).toEqual(afterSaveUser[0].profile.images.avatar);
+        expect(signupRequirements.avatar.original).toEqual(
+          afterSaveUser[0].profile.images.avatar.original
+        );
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
