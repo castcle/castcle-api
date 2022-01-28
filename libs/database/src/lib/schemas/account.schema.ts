@@ -22,11 +22,9 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Password } from '@castcle-api/utils/commons';
 import { AccountCampaigns } from '../models';
-export type AccountDocument = Account & IAccount;
 
 export enum AccountRole {
   Member = 'member',
@@ -39,7 +37,7 @@ interface ICredential {
 }
 
 @Schema({ timestamps: true })
-export class Account extends CastcleBase {
+class AccountDocument extends CastcleBase {
   @Prop({
     index: true,
   })
@@ -80,14 +78,12 @@ export class Account extends CastcleBase {
   @Prop({ select: false })
   campaigns?: AccountCampaigns;
 }
-export const AccountSchema = SchemaFactory.createForClass(Account);
 
-export interface IAccount extends Document {
-  changePassword(
-    pasword: string,
-    email?: string
-  ): Promise<AccountDocument | null>;
-  verifyPassword(password: string): Promise<boolean>;
+export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
+
+export class Account extends AccountDocument {
+  changePassword: (password: string, email?: string) => Promise<Account | null>;
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
 AccountSchema.methods.changePassword = async function (
@@ -96,12 +92,12 @@ AccountSchema.methods.changePassword = async function (
 ) {
   const encryptPassword = await Password.create(password);
   if (encryptPassword) {
-    (this as AccountDocument).password = encryptPassword;
-    if (email) (this as AccountDocument).email = email;
+    this.password = encryptPassword;
+    if (email) this.email = email;
     return this.save();
   } else return null;
 };
 
 AccountSchema.methods.verifyPassword = function (password: string) {
-  return Password.verify(password, (this as AccountDocument).password);
+  return Password.verify(password, this.password);
 };

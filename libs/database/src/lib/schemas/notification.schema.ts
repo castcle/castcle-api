@@ -22,7 +22,6 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import {
   NotificationPayloadDto,
   NotificationType,
@@ -31,9 +30,8 @@ import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
 
-export type NotificationDocument = Notification & INotification;
 @Schema({ timestamps: true })
-export class Notification extends CastcleBase {
+class NotificationDocument extends CastcleBase {
   @Prop()
   avatar: string;
 
@@ -69,31 +67,30 @@ export class Notification extends CastcleBase {
   account: Account;
 }
 
-interface INotification extends Document {
-  toNotificationPayload(): NotificationPayloadDto;
+export const NotificationSchema =
+  SchemaFactory.createForClass(NotificationDocument);
+
+export class Notification extends NotificationDocument {
+  toNotificationPayload: () => NotificationPayloadDto;
 }
 
-export const NotificationSchema = SchemaFactory.createForClass(Notification);
 NotificationSchema.methods.toNotificationPayload = function () {
   return {
-    id: (this as NotificationDocument)._id,
-    avatar: (this as NotificationDocument).avatar,
-    message: (this as NotificationDocument).message,
-    source: (this as NotificationDocument).source,
-    type: (this as NotificationDocument).type,
-    read: (this as NotificationDocument).read,
+    id: this._id,
+    avatar: this.avatar,
+    message: this.message,
+    source: this.source,
+    type: this.type,
+    read: this.read,
     content: {
       id:
-        (this as NotificationDocument).type === NotificationType.Content ||
-        (this as NotificationDocument).type === NotificationType.Like
-          ? (this as NotificationDocument).targetRef.oid
+        this.type === NotificationType.Content ||
+        this.type === NotificationType.Like
+          ? this.targetRef.oid
           : null,
     },
     comment: {
-      id:
-        (this as NotificationDocument).type === NotificationType.Comment
-          ? (this as NotificationDocument).targetRef.oid
-          : null,
+      id: this.type === NotificationType.Comment ? this.targetRef.oid : null,
     },
     system: {
       id: null,

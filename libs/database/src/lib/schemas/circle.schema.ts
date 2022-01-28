@@ -22,15 +22,12 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
 
 export enum CircleType {
   Default = 'default',
   Topic = 'Topic',
 }
-
-export type CircleDocument = Circle & Document;
 
 @Schema({ timestamps: true })
 export class Circle extends CastcleBase {

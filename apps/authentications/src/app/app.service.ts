@@ -23,16 +23,21 @@
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
+  Account,
   AccountAuthenIdType,
-  AccountDocument,
-  CredentialDocument,
-  OtpDocument,
+  Credential,
+  Otp,
   OtpObjective,
-  UserDocument,
+  User,
 } from '@castcle-api/database/schemas';
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { Downloader, Image, UploadOptions } from '@castcle-api/utils/aws';
+import {
+  AVATAR_SIZE_CONFIGS,
+  Downloader,
+  Image,
+  ImageUploadOptions,
+} from '@castcle-api/utils/aws';
 import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
 import { Password } from '@castcle-api/utils/commons';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -73,7 +78,7 @@ export class AppService {
 
   private logger = new CastLogger(AppService.name);
 
-  _uploadImage = (base64: string, options?: UploadOptions) =>
+  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
   getData(): { message: string } {
@@ -130,13 +135,13 @@ export class AppService {
   /**
    * Create user and generate token for login social
    * @param {SocialConnect} social social response
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {TokenResponse}
    */
-  async socialLogin(body: SocialConnectDto, credential: CredentialDocument) {
+  async socialLogin(body: SocialConnectDto, credential: Credential) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
-      body.uid,
+      body.socialId,
       body.provider
     );
     if (socialAccount) {
@@ -175,7 +180,7 @@ export class AppService {
       const currentAccount = await this.authService.getAccountFromCredential(
         credential
       );
-      let avatar;
+      let avatar: Image;
       if (body.avatar) {
         this.logger.log(`download avatar from ${body.provider}`);
         const img = await this.download.getImageFromUrl(body.avatar);
@@ -183,6 +188,9 @@ export class AppService {
         this.logger.log('upload avatar to s3');
         avatar = await this._uploadImage(img, {
           filename: `avatar-${credential.account._id}`,
+          addTime: true,
+          sizes: AVATAR_SIZE_CONFIGS,
+          subpath: `account_${credential.account._id}`,
         });
       }
 
@@ -192,17 +200,18 @@ export class AppService {
       await this.authService.signupBySocial(currentAccount, {
         displayName: body.displayName
           ? body.displayName
-          : this.getSocialProfix(body.uid, body.provider),
-        socialId: body.uid,
+          : this.getSocialProfix(body.socialId, body.provider),
+        socialId: body.socialId,
         provider: body.provider,
-        avatar: avatar ? avatar.image.original : null,
-        socialToken: body.authToken,
-        socialSecretToken: null,
+        avatar: avatar ? avatar.image : undefined,
+        socialToken: body.authToken ? body.authToken : undefined,
+        socialSecretToken: undefined,
       });
       this.logger.log('get All User');
       const users = await this.getUserProfile(credential);
 
       this.logger.log('renew Tokens');
+      credential.account.isGuest = false;
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(credential);
       const tokenResult: TokenResponse = await credential.renewTokens(
@@ -216,10 +225,10 @@ export class AppService {
   }
 
   /**User Profile and Pages
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {profile,pages} profile data
    */
-  async getUserProfile(credential: CredentialDocument) {
+  async getUserProfile(credential: Credential) {
     const user = await this.userService.getUserFromCredential(credential);
     const pages = user
       ? await this.userService.getUserPages(user, {
@@ -239,7 +248,7 @@ export class AppService {
    * get and validate account from email
    * @param {string} email
    * @param {string} lang
-   * @returns {AccountDocument} account document
+   * @returns {Account} account document
    */
   async getAccountFromEmail(email: string, lang: string) {
     this.logger.log('Get Account from eamil');
@@ -331,11 +340,11 @@ export class AppService {
    * forgot password request Otp
    * @param {RequestOtpDto} request
    * @param {CredentialRequest} credential
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async requestOtpCode(request: RequestOtpDto, credential: CredentialRequest) {
-    let account: AccountDocument = null;
-    let otp: OtpDocument = null;
+    let account: Account = null;
+    let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
 
     if (!objective || !Object.values(OtpObjective).includes(objective)) {
@@ -419,18 +428,18 @@ export class AppService {
   /**
    * generate and send Otp
    * @param {string} reciever
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {TwillioChannel} account
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
     reciever: string,
-    account: AccountDocument,
+    account: Account,
     twillioChannel: TwillioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
     otpChannel: string
-  ): Promise<OtpDocument> {
+  ): Promise<Otp> {
     let sid = '';
     this.logger.log('Send Otp');
     try {
@@ -463,7 +472,7 @@ export class AppService {
     return otp;
   }
 
-  private buildTemplateMessage(objective: OtpObjective, user: UserDocument) {
+  private buildTemplateMessage(objective: OtpObjective, user: User) {
     const userName = user && user.displayName ? user.displayName : '';
     if (objective === OtpObjective.ForgotPassword) {
       this.logger.log('build template forgot password objective');
@@ -489,14 +498,14 @@ export class AppService {
    * forgot password verify Otp
    * @param {verificationOtpDto} request
    * @param {CredentialRequest} credential
-   * @returns {OtpDocument} Opt data
+   * @returns {Otp} Opt data
    */
   async verificationOTP(
     request: verificationOtpDto,
     credential: CredentialRequest
   ) {
     const limitRetry = 3;
-    let account: AccountDocument = null;
+    let account: Account = null;
     let receiver = '';
 
     const objective: OtpObjective = <OtpObjective>request.objective;
@@ -663,7 +672,7 @@ export class AppService {
     }
   }
 
-  private async cancelOtp(otp: OtpDocument) {
+  private async cancelOtp(otp: Otp) {
     this.logger.log('Cancel Twillio Otp.');
     try {
       if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);

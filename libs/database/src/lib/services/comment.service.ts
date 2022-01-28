@@ -13,13 +13,13 @@ import {
   ExpansionQuery,
 } from '../dtos';
 import {
-  CommentDocument,
+  Comment,
   CommentType,
-  EngagementDocument,
+  Engagement,
   EngagementType,
-  UserDocument,
-  RelationshipDocument,
-  RevisionDocument,
+  User,
+  Relationship,
+  Revision,
 } from '../schemas';
 import { getRelationship } from '../utils/common';
 
@@ -27,19 +27,19 @@ import { getRelationship } from '../utils/common';
 export class CommentService {
   constructor(
     @InjectModel('Comment')
-    private commentModel: Model<CommentDocument>,
+    private commentModel: Model<Comment>,
     @InjectModel('Engagement')
-    private engagementModel: Model<EngagementDocument>,
+    private engagementModel: Model<Engagement>,
     @InjectModel('Relationship')
-    private relationshipModel: Model<RelationshipDocument>,
+    private relationshipModel: Model<Relationship>,
     @InjectModel('Revision')
-    private revisionModel: Model<RevisionDocument>
+    private revisionModel: Model<Revision>
   ) {}
 
   async convertCommentToCommentResponse(
-    viewer: UserDocument,
-    comment: CommentDocument,
-    engagements: EngagementDocument[],
+    viewer: User,
+    comment: Comment,
+    engagements: Engagement[],
     { hasRelationshipExpansion }: ExpansionQuery
   ) {
     const [replies, revisionCount] = await Promise.all([
@@ -84,20 +84,20 @@ export class CommentService {
     );
   }
 
-  private getLike(engagements: EngagementDocument[], id: string) {
+  private getLike(engagements: Engagement[], id: string) {
     return engagements.some(({ targetRef, type }) => {
       return type === EngagementType.Like && String(targetRef.$id) === id;
     });
   }
 
   private mapContentToContentResponse(
-    comment: CommentDocument,
-    engagements: EngagementDocument[],
+    comment: Comment,
+    engagements: Engagement[],
     relationships: any,
     hasRelationshipExpansion: boolean,
     revisionCount: number,
-    replies: CommentDocument[],
-    viewer?: UserDocument
+    replies: Comment[],
+    viewer?: User
   ) {
     const author = viewer
       ? {
@@ -187,7 +187,7 @@ export class CommentService {
     } as CommentPayload;
   }
 
-  async convertCommentsToCommentResponseForGuest(comments: CommentDocument[]) {
+  async convertCommentsToCommentResponseForGuest(comments: Comment[]) {
     const commentsIds = comments.map(({ _id }) => _id);
     const commentsAuthorIds = comments.map(({ author }) => author._id);
     const [replies, revisions] = await Promise.all([
@@ -231,9 +231,9 @@ export class CommentService {
   }
 
   async convertCommentsToCommentResponse(
-    viewer: UserDocument,
-    comments: CommentDocument[],
-    engagements: EngagementDocument[],
+    viewer: User,
+    comments: Comment[],
+    engagements: Engagement[],
     { hasRelationshipExpansion }: ExpansionQuery
   ) {
     const commentsIds = comments.map(({ _id }) => _id);
@@ -299,7 +299,7 @@ export class CommentService {
     contentId: string,
     options: CastcleQueryOptions
   ) => {
-    const query: FilterQuery<CommentDocument> = {
+    const query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
       visibility: EntityVisibility.Publish,
     };
@@ -323,19 +323,19 @@ export class CommentService {
 
   /**
    * Get Total Comment from content
-   * @param {ContentDocument} content
+   * @param {Content} content
    * @param {CastcleQueryOptions} options
    * @returns {total:number, items:CommentPayload[], pagination:Pagination}
    */
   getCommentsByContentId = async (
-    viewer: UserDocument,
+    viewer: User,
     contentId: string,
     options: CastcleQueryOptions & ExpansionQuery = {
       ...DEFAULT_QUERY_OPTIONS,
       hasRelationshipExpansion: false,
     }
   ): Promise<CommentsResponse> => {
-    const query: FilterQuery<CommentDocument> = {
+    const query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
       visibility: EntityVisibility.Publish,
     };

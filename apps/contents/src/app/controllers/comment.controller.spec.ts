@@ -34,11 +34,7 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
 import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import {
-  ContentDocument,
-  CredentialDocument,
-  UserDocument,
-} from '@castcle-api/database/schemas';
+import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import {
   NotificationProducer,
@@ -88,9 +84,9 @@ describe('CommentController', () => {
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userCredential: CredentialDocument;
-  let user: UserDocument;
-  let content: ContentDocument;
+  let userCredential: Credential;
+  let user: User;
+  let content: Content;
   let userCredentialRequest: any;
   let rootCommentId: any;
   beforeAll(async () => {

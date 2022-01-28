@@ -22,7 +22,7 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import {
   ContentPayloadDto,
   ShortPayload,
@@ -32,25 +32,15 @@ import {
   ContentPayloadItem,
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
-import { RevisionDocument } from './revision.schema';
-import { EngagementDocument, EngagementType } from './engagement.schema';
+import { Revision } from './revision.schema';
+import { Engagement, EngagementType } from './engagement.schema';
 import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
-import { UserDocument } from './user.schema';
-import { RelationshipDocument } from './relationship.schema';
-import { FeedItemDocument } from './feed-item.schema';
+import { User } from './user.schema';
+import { Relationship } from './relationship.schema';
+import { FeedItem } from './feed-item.schema';
 import { Image } from '@castcle-api/utils/aws';
 import { Configs } from '@castcle-api/environments';
-
-//TODO: !!!  need to revise this
-export interface RecastPayload {
-  source: Content;
-}
-
-export interface QuotePayload {
-  source: Content;
-  content: string;
-}
 
 const engagementNameMap = {
   like: 'liked',
@@ -60,7 +50,7 @@ const engagementNameMap = {
 };
 
 /**
- * return engagement object such is liked, comment quoteCast recast so we ahve the exact amount of time they do
+ * return engagement object such is liked, comment quoteCast recast so we have the exact amount of time they do
  * @param doc
  * @param engagementType
  * @param userId
@@ -71,7 +61,7 @@ const getEngagementObject = (
   engagementType: EngagementType,
   isEngage: boolean
 ) => {
-  //get owner relate enagement
+  //get owner relate engagement
   const engagementObject: ContentEngagement = {
     count: doc.engagements[engagementType]
       ? doc.engagements[engagementType].count
@@ -82,10 +72,8 @@ const getEngagementObject = (
   return engagementObject;
 };
 
-export type ContentDocument = Content & IContent;
-
 @Schema({ timestamps: true })
-export class Content extends CastcleBase {
+class ContentDocument extends CastcleBase {
   @Prop({ required: true, type: Object })
   author: Author;
 
@@ -116,24 +104,22 @@ export class Content extends CastcleBase {
   isQuote?: boolean;
 
   @Prop({ type: Object })
-  originalPost?: Content;
+  originalPost?: ContentDocument;
 }
 
-interface IContent extends Document {
+export class Content extends ContentDocument {
   /**
    * @returns {ContentPayloadDto} return payload that need to use in controller (not yet implement with engagement)
    */
-  toContentPayload(engagements?: EngagementDocument[]): ContentPayloadDto;
-  toContentPayloadItem(engagements?: EngagementDocument[]): ContentPayloadItem;
-  toUnsignedContentPayload(
-    engagements?: EngagementDocument[]
-  ): ContentPayloadDto;
-  toContent(): Content;
+  toContentPayload: (engagements?: Engagement[]) => ContentPayloadDto;
+  toContentPayloadItem: (engagements?: Engagement[]) => ContentPayloadItem;
+  toUnsignedContentPayload: (engagements?: Engagement[]) => ContentPayloadDto;
+  toContent: () => Content;
 }
 
 export const signContentPayload = (
   payload: ContentPayloadDto,
-  engagements: EngagementDocument[] = []
+  engagements: Engagement[] = []
 ) => {
   console.debug('----SIGN CONTENT---');
   console.debug(payload);
@@ -149,11 +135,7 @@ export const signContentPayload = (
       ? payload[engagementNameMap[key]][engagementNameMap[key]]
       : false;
   }
-  if (
-    payload.payload &&
-    payload.payload.photo &&
-    payload.payload.photo.contents
-  ) {
+  if (payload.payload?.photo?.contents) {
     payload.payload.photo.contents = (
       payload.payload.photo.contents as CastcleImage[]
     ).map((url: CastcleImage) => {
@@ -199,7 +181,7 @@ export const signContentPayload = (
 
 export const transformContentPayloadToV2 = (
   content: ContentPayloadDto,
-  engagements: EngagementDocument[]
+  engagements: Engagement[]
 ) => {
   const contentPayloadItem = {
     id: content.id,
@@ -243,8 +225,8 @@ export const transformContentPayloadToV2 = (
 };
 
 export const toUnsignedContentPayloadItem = (
-  content: ContentDocument | Content,
-  engagements: EngagementDocument[] = []
+  content: Content | ContentDocument,
+  engagements: Engagement[] = []
 ) => {
   const result = {
     id: String(content._id),
@@ -302,12 +284,13 @@ export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
 };
 
 export const toSignedContentPayloadItem = (
-  content: ContentDocument | Content,
-  engagements: EngagementDocument[] = []
+  content: Content | ContentDocument,
+  engagements: Engagement[] = []
 ) =>
   signedContentPayloadItem(toUnsignedContentPayloadItem(content, engagements));
 
-export const ContentSchema = SchemaFactory.createForClass(Content);
+export const ContentSchema = SchemaFactory.createForClass(ContentDocument);
+
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =
   | {
@@ -323,103 +306,99 @@ type ContentEngagement =
     };
 
 export const ContentSchemaFactory = (
-  revisionModel: Model<RevisionDocument>,
-  feedItemModel: Model<FeedItemDocument>,
-  userModel: Model<UserDocument>,
-  relationshipModel: Model<RelationshipDocument>
+  revisionModel: Model<Revision>,
+  feedItemModel: Model<FeedItem>,
+  userModel: Model<User>,
+  relationshipModel: Model<Relationship>
 ): mongoose.Schema<any> => {
   ContentSchema.methods.toContent = function () {
-    const t = new Content();
-    t.author = (this as ContentDocument).author;
-    return t;
+    return new ContentDocument({ author: this.author });
   };
 
   ContentSchema.methods.toUnsignedContentPayload = function (
-    engagements: EngagementDocument[] = []
+    engagements: Engagement[] = []
   ) {
     const payload = {
-      id: (this as ContentDocument)._id,
-      author: { ...(this as ContentDocument).author },
-      payload: { ...(this as ContentDocument).payload },
-      createdAt: (this as ContentDocument).createdAt.toISOString(),
-      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
-      type: (this as ContentDocument).type,
+      id: this._id,
+      author: { ...this.author },
+      payload: { ...this.payload },
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+      type: this.type,
       feature: {
         slug: 'feed',
         key: 'feature.feed',
         name: 'Feed',
       },
     } as ContentPayloadDto;
-    //get owner relate enagement
+    //get owner relate engagement
     for (const key in engagementNameMap) {
       const findEngagement = engagements
         ? engagements.find((engagement) => engagement.type === key)
         : null;
       payload[engagementNameMap[key]] = getEngagementObject(
-        this as ContentDocument,
+        this,
         key as EngagementType,
         findEngagement ? true : false
       );
     }
     //if it's recast or quotecast
-    if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
-      payload.originalPost = (this as ContentDocument).originalPost;
+    if (this.isRecast || this.isQuote) payload.originalPost = this.originalPost;
     return payload;
   };
 
   ContentSchema.methods.toContentPayloadItem = function (
-    engagements: EngagementDocument[] = []
+    engagements: Engagement[] = []
   ) {
     return signedContentPayloadItem(
-      toUnsignedContentPayloadItem(this as ContentDocument, engagements)
+      toUnsignedContentPayloadItem(this, engagements)
     );
   };
 
   ContentSchema.methods.toContentPayload = function (
-    engagements: EngagementDocument[] = []
+    engagements: Engagement[] = []
   ) {
     //Todo Need to implement recast quote cast later on
     const payload = {
-      id: (this as ContentDocument)._id,
-      author: { ...(this as ContentDocument).author },
-      payload: { ...(this as ContentDocument).payload },
-      createdAt: (this as ContentDocument).createdAt.toISOString(),
-      updatedAt: (this as ContentDocument).updatedAt.toISOString(),
-      type: (this as ContentDocument).type,
+      id: this._id,
+      author: { ...this.author },
+      payload: { ...this.payload },
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+      type: this.type,
       feature: {
         slug: 'feed',
         key: 'feature.feed',
         name: 'Feed',
       },
-      isQuote: (this as ContentDocument).isQuote,
-      isRecast: (this as ContentDocument).isRecast,
+      isQuote: this.isQuote,
+      isRecast: this.isRecast,
     } as ContentPayloadDto;
-    //get owner relate enagement
+    //get owner relate engagement
     for (const key in engagementNameMap) {
       const findEngagement = engagements
         ? engagements.find((engagement) => engagement.type === key)
         : null;
       payload[engagementNameMap[key]] = getEngagementObject(
-        this as ContentDocument,
+        this,
         key as EngagementType,
         findEngagement ? true : false
       );
     }
     //if it's recast or quotecast
-    if ((this as ContentDocument).isRecast || (this as ContentDocument).isQuote)
-      payload.originalPost = (this as ContentDocument).originalPost;
+    if (this.isRecast || this.isQuote) payload.originalPost = this.originalPost;
     console.debug('--signContent', payload);
     return signContentPayload(payload);
   };
 
   ContentSchema.pre('save', async function (next) {
-    //defualt is publish
-    await preContentSave(this as ContentDocument);
+    //default is publish
+    await preContentSave(this as Content);
 
     next();
   });
   ContentSchema.post('save', async function (doc, next) {
-    await postContentSave(doc as ContentDocument, {
+    await postContentSave(doc as Content, {
       revisionModel,
       feedItemModel,
       userModel,

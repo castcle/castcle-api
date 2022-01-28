@@ -27,13 +27,13 @@ import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   TopTrendsQueryOptions,
 } from '../dtos/search.dto';
-import { CredentialDocument, HashtagDocument, UserDocument } from '../schemas';
+import { Credential, Hashtag, User } from '../schemas';
 
 @Injectable()
 export class SearchService {
   constructor(
-    @InjectModel('Hashtag') public _hashtagModel: Model<HashtagDocument>,
-    @InjectModel('User') public _userModel: Model<UserDocument>
+    @InjectModel('Hashtag') public _hashtagModel: Model<Hashtag>,
+    @InjectModel('User') public _userModel: Model<User>
   ) {}
 
   private getHashtag(limitFilter, keyword?) {
@@ -138,8 +138,8 @@ export class SearchService {
   async getTopTrends(
     options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS
   ) {
-    let hashtag: HashtagDocument[] = [];
-    let follow: UserDocument[] = [];
+    let hashtag: Hashtag[] = [];
+    let follow: User[] = [];
     const skipHashtag = options.exclude && options.exclude.includes('hashtags');
     if (!skipHashtag) {
       hashtag = await this.getHashtag(options.limit);
@@ -160,13 +160,13 @@ export class SearchService {
   /**
    * get search data from keyword
    *
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @param {string} keyword search keyword
    * @param {number} limitFollow limit follows data,
    * @returns {keyword,hashtags,follows} return search data keyword,hashtags,follows Document
    */
   async getSearch(
-    credential: CredentialDocument,
+    credential: Credential,
     keyword: string,
     limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
   ) {
@@ -174,8 +174,8 @@ export class SearchService {
     const limitHashtag = 2;
     const limitKeyword = 3;
 
-    let follow: UserDocument[] = [];
-    let hashtag: HashtagDocument[] = [];
+    let follow: User[] = [];
+    let hashtag: Hashtag[] = [];
     let KeywordResult: { text: string; isTrending: boolean }[] = [];
     if (keyword) {
       const sign = keyword.charAt(0);

@@ -32,7 +32,7 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { UserDocument } from '@castcle-api/database/schemas';
+import { User } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {
@@ -42,7 +42,7 @@ export class AppService {
    * return user document that has same castcleId but check if this request should have access to that user
    * @param {CredentialRequest} credentialRequest
    * @param {string} castcleId
-   * @returns {UserDocument}
+   * @returns {User}
    */
   async getUserFromBody(
     credentialRequest: CredentialRequest,
@@ -64,7 +64,7 @@ export class AppService {
    * @param {SaveContentDto} body
    * @returns {SaveContentDto} body
    */
-  async uploadContentToS3(body: SaveContentDto, uploader: UserDocument) {
+  async uploadContentToS3(body: SaveContentDto, uploader: User) {
     if (body.payload.photo && body.payload.photo.contents) {
       const newContents = await Promise.all(
         (body.payload.photo.contents as Url[]).map(async (item) => {

@@ -23,23 +23,18 @@
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { EntityVisibility } from '../dtos';
-import {
-  CommentDocument,
-  Comment,
-  ContentDocument,
-  RevisionDocument,
-} from '../schemas';
+import { Comment, Content, Revision } from '../schemas';
 
 type HookModels = {
-  revisionModel: Model<RevisionDocument>;
-  contentModel: Model<ContentDocument>;
+  revisionModel: Model<Revision>;
+  contentModel: Model<Content>;
 };
 /**
  * before save a Comment Document set document visibility default to publish and default engagement of like,recast,comment,quote to 0
  * @param doc
  * @returns
  */
-export const preCommentSave = async (doc: CommentDocument) => {
+export const preCommentSave = async (doc: Comment) => {
   doc.wasNew = doc.isNew;
   doc.visibility = doc.visibility ? doc.visibility : EntityVisibility.Publish;
   doc.revisionCount = doc.revisionCount ? doc.revisionCount + 1 : 1;
@@ -59,10 +54,7 @@ export const preCommentSave = async (doc: CommentDocument) => {
   return doc;
 };
 
-export const postCommentSave = async (
-  doc: CommentDocument,
-  models: HookModels
-) => {
+export const postCommentSave = async (doc: Comment, models: HookModels) => {
   const session = await models.revisionModel.startSession();
 
   session.withTransaction(async () => {

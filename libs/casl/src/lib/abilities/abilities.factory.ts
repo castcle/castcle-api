@@ -21,13 +21,11 @@
  * or have any questions.
  */
 import {
-  UserDocument,
-  ContentDocument,
-  User,
-  Content,
   Account,
   Comment,
+  Content,
   Credential,
+  User,
 } from '@castcle-api/database/schemas';
 import {
   InferSubjects,
@@ -65,7 +63,7 @@ export type AppAbility = Ability<[Action, Subjects]>;
 
 @Injectable()
 export class CaslAbilityFactory {
-  getUserManageContentAbility(users: UserDocument[], content: ContentDocument) {
+  getUserManageContentAbility(users: User[], content: Content) {
     const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
       Ability as AbilityClass<AppAbility>
     );

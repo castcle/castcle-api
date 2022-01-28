@@ -40,7 +40,7 @@ import {
   ResponseDto,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
+import { Content, User } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -176,10 +176,7 @@ export class ContentController {
     }
   }
 
-  async _checkPermissionForUpdate(
-    content: ContentDocument,
-    req: CredentialRequest
-  ) {
+  async _checkPermissionForUpdate(content: Content, req: CredentialRequest) {
     if (
       req.$credential.account.isGuest ||
       !req.$credential.account.activateDate

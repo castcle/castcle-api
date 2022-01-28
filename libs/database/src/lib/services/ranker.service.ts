@@ -32,16 +32,15 @@ import {
 } from '../utils/common';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
-  ContentDocument,
-  UserDocument,
-  FeedItemDocument,
+  Content,
+  User,
+  FeedItem,
   Account,
-  AccountDocument,
   signedContentPayloadItem,
   toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
-  GuestFeedItemDocument,
-  RelationshipDocument,
+  GuestFeedItem,
+  Relationship,
 } from '../schemas';
 import {
   GuestFeedItemPayload,
@@ -56,15 +55,15 @@ import { UserService } from './user.service';
 export class RankerService {
   constructor(
     @InjectModel('FeedItem')
-    public _feedItemModel: Model<FeedItemDocument>,
+    public _feedItemModel: Model<FeedItem>,
     @InjectModel('Content')
-    public _contentModel: Model<ContentDocument>,
+    public _contentModel: Model<Content>,
     @InjectModel('GuestFeedItem')
-    public _guestFeedItemModel: Model<GuestFeedItemDocument>,
+    public _guestFeedItemModel: Model<GuestFeedItem>,
     @InjectModel('Relationship')
-    public relationshipModel: Model<RelationshipDocument>,
-    @InjectModel('User') public userModel: Model<UserDocument>,
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    public relationshipModel: Model<Relationship>,
+    @InjectModel('User') public userModel: Model<User>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     private userService: UserService
   ) {}
 
@@ -106,7 +105,7 @@ export class RankerService {
    * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
    * @param {QueryOption} query
    * @param {Account} viewer
-   * @returns {GuestFeedItemDocument[]}
+   * @returns {GuestFeedItem[]}
    */
   getGuestFeedItems = async (query: PaginationQuery, viewer: Account) => {
     const filter = createCastcleFilter(
@@ -306,7 +305,7 @@ export class RankerService {
     } as GuestFeedItemPayload;
   };
 
-  async sortContentsByScore(accountId: string, contents: ContentDocument[]) {
+  async sortContentsByScore(accountId: string, contents: Content[]) {
     const contentIds = contents.map((content) => content.id);
     const score = await predictContents(accountId, contentIds);
 

@@ -34,10 +34,7 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '@castcle-api/database/dtos';
-import {
-  CredentialDocument,
-  UserDocument,
-} from '@castcle-api/database/schemas';
+import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   NotificationProducer,
@@ -71,8 +68,8 @@ const closeInMongodConnection = async () => {
 
 const buildMockData = async (
   notification: NotificationService,
-  user: UserDocument,
-  userCredential: CredentialDocument
+  user: User,
+  userCredential: Credential
 ) => {
   await creatMockData(
     notification,
@@ -104,11 +101,11 @@ const buildMockData = async (
 
 const creatMockData = async (
   notification: NotificationService,
-  user: UserDocument,
+  user: User,
   sourceType: NotificationSource,
   typeNoti: NotificationType,
   docRefId: string,
-  userCredential: CredentialDocument
+  userCredential: Credential
 ) => {
   const newNotification = new notification._notificationModel({
     avatar: '',
@@ -133,10 +130,10 @@ describe('NotificationsController', () => {
   let app: TestingModule;
   let userService: UserService;
   let authService: AuthenticationService;
-  let userCredential: CredentialDocument;
-  let wrongUserCredential: CredentialDocument;
+  let userCredential: Credential;
+  let wrongUserCredential: Credential;
   let notification: NotificationService;
-  let user: UserDocument;
+  let user: User;
   const fakeProcessor = jest.fn();
 
   beforeAll(async () => {

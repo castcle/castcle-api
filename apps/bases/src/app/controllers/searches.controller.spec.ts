@@ -29,7 +29,7 @@ import {
   UserService,
 } from '@castcle-api/database';
 import { CreateHashtag } from '@castcle-api/database/dtos';
-import { CredentialDocument, UserType } from '@castcle-api/database/schemas';
+import { Credential, UserType } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -59,7 +59,7 @@ describe('NotificationsController', () => {
   let app: TestingModule;
   let hashtagService: HashtagService;
   let search: SearchService;
-  let userCredential: CredentialDocument;
+  let userCredential: Credential;
   let authService: AuthenticationService;
   const mockHashtag = async (slug, hName, hScore) => {
     const newHashtag: CreateHashtag = {

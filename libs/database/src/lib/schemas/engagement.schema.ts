@@ -22,15 +22,13 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Model } from 'mongoose';
+import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { User } from './user.schema';
-import { CommentDocument } from './comment.schema';
-import { ContentDocument } from './content.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
-
-export type EngagementDocument = Engagement & Document;
 
 export enum EngagementType {
   Like = 'like',
@@ -58,10 +56,10 @@ export class Engagement extends CastcleBase {
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
-  contentModel: Model<ContentDocument>,
-  commentModel: Model<CommentDocument>
+  contentModel: Model<Content>,
+  commentModel: Model<Comment>
 ): mongoose.Schema<any> => {
-  EngagementSchema.post('save', async function (doc: EngagementDocument, next) {
+  EngagementSchema.post('save', async function (doc: Engagement, next) {
     const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;
     const contentInc = { $inc: { [`engagements.${doc.type}.count`]: count } };
 
@@ -88,7 +86,7 @@ export const EngagementSchemaFactory = (
     next();
   });
 
-  EngagementSchema.post('remove', async (doc: EngagementDocument, next) => {
+  EngagementSchema.post('remove', async (doc: Engagement, next) => {
     const contentInc = { $inc: { [`engagements.${doc.type}.count`]: -1 } };
 
     if (doc.targetRef.namespace === 'content') {

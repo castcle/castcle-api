@@ -40,13 +40,7 @@ import {
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import {
-  CommentDocument,
-  ContentDocument,
-  AccountDocument,
-  CredentialDocument,
-  UserDocument,
-} from '../schemas';
+import { Comment, Content, Account, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -115,8 +109,8 @@ describe('User Service', () => {
     HashtagService,
   ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -282,9 +276,9 @@ describe('User Service', () => {
     });
   });
   describe('#follow()', () => {
-    let currentUser: UserDocument;
+    let currentUser: User;
     let allPages: {
-      items: UserDocument[];
+      items: User[];
       pagination: Pagination;
     };
     beforeAll(async () => {
@@ -325,11 +319,11 @@ describe('User Service', () => {
   });
   describe('#unfollow()', () => {
     it('should work the same as follow', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages: {
-        items: UserDocument[];
+        items: User[];
         pagination: Pagination;
       } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(currentUser.followedCount).toEqual(1); //from above
@@ -360,11 +354,11 @@ describe('User Service', () => {
   });
   describe('#getFollower()', () => {
     it('should get user detail from followers', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages: {
-        items: UserDocument[];
+        items: User[];
         pagination: Pagination;
       } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       await currentUser.follow(allPages.items[0]);
@@ -383,7 +377,7 @@ describe('User Service', () => {
   //TODO !!! Need better testing and mock data
   describe('#getFollowing()', () => {
     it('should get total of following correctly', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
@@ -422,9 +416,9 @@ describe('User Service', () => {
       ],
     };
 
-    let userA: UserDocument;
-    let pageA: UserDocument;
-    let accountA: AccountDocument;
+    let userA: User;
+    let pageA: User;
+    let accountA: Account;
     beforeAll(async () => {
       //create new user
       const result = await authService.createAccount(
@@ -436,11 +430,11 @@ describe('User Service', () => {
       pageA = await service.createPageFromUser(userA, userInfo.pages[0]);
     });
     describe('#deactive()', () => {
-      let postUserAFromModel: UserDocument;
-      let postUserA: UserDocument;
-      let postPageAFromModel: UserDocument;
-      let postPageA: UserDocument;
-      let postAccountA: AccountDocument;
+      let postUserAFromModel: User;
+      let postUserA: User;
+      let postPageAFromModel: User;
+      let postPageA: User;
+      let postAccountA: Account;
       beforeAll(async () => {
         await service.deactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
@@ -462,11 +456,11 @@ describe('User Service', () => {
       });
     });
     describe('#reactive()', () => {
-      let postUserAFromModel: UserDocument;
-      let postUserA: UserDocument;
-      let postPageAFromModel: UserDocument;
-      let postPageA: UserDocument;
-      let postAccountA: AccountDocument;
+      let postUserAFromModel: User;
+      let postUserA: User;
+      let postPageAFromModel: User;
+      let postPageA: User;
+      let postAccountA: Account;
       beforeAll(async () => {
         await service.reactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
@@ -489,13 +483,13 @@ describe('User Service', () => {
     });
   });
   describe('Deactivated', () => {
-    let userA: UserDocument;
-    let userB: UserDocument;
-    let accountB: AccountDocument;
-    let userNotDelete: UserDocument;
-    const contents: ContentDocument[] = [];
-    const contentsB: ContentDocument[] = [];
-    const fixContents: ContentDocument[] = [];
+    let userA: User;
+    let userB: User;
+    let accountB: Account;
+    let userNotDelete: User;
+    const contents: Content[] = [];
+    const contentsB: Content[] = [];
+    const fixContents: Content[] = [];
     const userInfo = {
       accountRequirement: {
         device: 'iphone',
@@ -568,7 +562,7 @@ describe('User Service', () => {
         } as PageDto,
       ],
     };
-    let testLikeComment: CommentDocument;
+    let testLikeComment: Comment;
 
     beforeAll(async () => {
       const result = await authService.createAccount(
@@ -836,8 +830,8 @@ describe('User Service', () => {
   });
 
   describe('#blockUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
@@ -885,8 +879,8 @@ describe('User Service', () => {
   });
 
   describe('#unblockUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
@@ -932,8 +926,8 @@ describe('User Service', () => {
   });
 
   describe('#reportUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
@@ -967,7 +961,7 @@ describe('User Service', () => {
   });
 
   describe('#getByIdOrCastcleId', () => {
-    let user: UserDocument;
+    let user: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
@@ -1002,8 +996,8 @@ describe('User Service', () => {
   });
 
   describe('#updateMobile', () => {
-    let user: UserDocument;
-    let account: AccountDocument;
+    let user: User;
+    let account: Account;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
@@ -1033,7 +1027,7 @@ describe('User Service', () => {
   });
 
   describe('#userSettings', () => {
-    let account: AccountDocument;
+    let account: Account;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,

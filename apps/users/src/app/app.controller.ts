@@ -50,10 +50,10 @@ import {
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
-  CredentialDocument,
+  Credential,
   OtpObjective,
-  SocialSyncDocument,
-  UserDocument,
+  SocialSync,
+  User,
   UserType,
 } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
@@ -127,12 +127,12 @@ export class UserController {
   /**
    * return user document that has same castcleId but check if this request should have access to that user
    * @param {CredentialRequest} credentialRequest
-   * @param {UserDocument} user
-   * @returns {UserDocument}
+   * @param {User} user
+   * @returns {User}
    */
   _validateOwnerAccount = async (
     credentialRequest: CredentialRequest,
-    user: UserDocument
+    user: User
   ) => {
     const account = await this.authService.getAccountFromCredential(
       credentialRequest.$credential
@@ -143,7 +143,7 @@ export class UserController {
     return user;
   };
 
-  _getUserAndViewer = async (id: string, credential: CredentialDocument) => {
+  _getUserAndViewer = async (id: string, credential: Credential) => {
     if (id.toLocaleLowerCase() === 'me') {
       this.logger.log('Get Me User from credential.');
       const me = await this.userService.getUserFromCredential(credential);
@@ -248,7 +248,7 @@ export class UserController {
     );
 
     this.logger.log(`Get social from user.`);
-    const social: SocialSyncDocument[] = [];
+    const social: SocialSync[] = [];
     await Promise.all(
       pages.map(async (x) => {
         const syncData = await this.socialSyncService.getSocialSyncByUser(x);
@@ -961,7 +961,7 @@ export class UserController {
     } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
   }
 
-  private async validateGuestAccount(credential: CredentialDocument) {
+  private async validateGuestAccount(credential: Credential) {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
       this.logger.error(`Forbidden guest account.`);
