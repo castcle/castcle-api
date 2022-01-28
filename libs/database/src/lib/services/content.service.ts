@@ -931,7 +931,6 @@ export class ContentService {
       .exec();
     const promisesFeedItem = contents.map((content) =>
       new this._feedItemModel({
-        seen: false,
         called: false,
         viewer: viewer,
         content: content._id,
@@ -956,7 +955,6 @@ export class ContentService {
   ) => {
     const promisesFeedItem = viewers.map((viewer) => {
       return new this._feedItemModel({
-        seen: false,
         called: false,
         viewer: viewer,
         content: content._id,

@@ -38,6 +38,7 @@ export enum EngagementType {
   Quote = 'quote',
   Comment = 'comment',
   Report = 'report',
+  Seen = 'seen',
 }
 
 @Schema({ timestamps: true })

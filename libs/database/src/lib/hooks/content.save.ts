@@ -88,7 +88,6 @@ const createRelatedContentItem = async (
         viewer: accountId,
         content: doc._id,
         called: false,
-        seen: false,
         aggregator: {
           createTime: new Date(),
           following: true,

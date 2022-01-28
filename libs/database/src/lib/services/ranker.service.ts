@@ -24,7 +24,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CastcleFeedQueryOptions, FeedItemMode } from '../dtos/feedItem.dto';
+import { CastcleFeedQueryOptions } from '../dtos/feedItem.dto';
 import {
   createCastcleFilter,
   createCastcleMeta,
@@ -85,7 +85,6 @@ export class RankerService {
   ) {
     const filter = {
       viewer: viewer._id,
-      seen: options.mode === FeedItemMode.Current ? false : true,
     };
     const feedItemResult = await this._feedItemModel
       .find(filter)
@@ -110,10 +109,12 @@ export class RankerService {
    */
   getGuestFeedItems = async (query: PaginationQuery, viewer: Account) => {
     const filter = createCastcleFilter(
-      { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
+      {
+        countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
+        content: { $nin: viewer.seenContents },
+      },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
-
     const feedItems = await this._guestFeedItemModel
       .find(filter)
       .populate('content')
@@ -179,7 +180,7 @@ export class RankerService {
     const startNow = new Date();
     console.debug('start service');
     const filter = createCastcleFilter(
-      { viewer: viewer._id },
+      { viewer: viewer._id, seenAt: { $exists: false } },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
     //if have sinceId or untilId but can't find filter.createAt => this is guestFeed
@@ -189,17 +190,17 @@ export class RankerService {
         .exec();
       if (!refFilter) return this.getGuestFeedItems(query, viewer);
       //reset
-      viewer.seenContents = [];
+      //viewer.seenContents = [];
     }
     const timeAfterFilter = new Date();
     console.debug(
       '- after filter : ',
       timeAfterFilter.getTime() - startNow.getTime()
     );
-    if (viewer.seenContents)
+    /*if (viewer.seenContents)
       filter['content.id'] = {
         $nin: viewer.seenContents,
-      };
+      };*/
     console.debug('filter', filter);
     const documents = await this._feedItemModel
       .find(filter)
@@ -288,7 +289,7 @@ export class RankerService {
       ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
 
-    const newSeenContents = viewer.seenContents.concat(
+    /*const newSeenContents = viewer.seenContents.concat(
       feedPayload.map((item) => item.payload.id)
     );
     this._accountModel
@@ -298,7 +299,7 @@ export class RankerService {
           seenContents: newSeenContents,
         }
       )
-      .exec();
+      .exec();*/
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),
@@ -312,4 +313,71 @@ export class RankerService {
 
     return contents.sort((a, b) => score[a.id] - score[b.id]);
   }
+
+  /**
+   *
+   * @param account
+   * @param feedItemId
+   * @returns
+   */
+  seenFeedItemForGuest = async (embedAccount: Account, feedItemId: string) => {
+    const account = await this._accountModel.findById(embedAccount._id);
+    const guestFeed = await this._guestFeedItemModel
+      .findById(feedItemId)
+      .exec();
+    if (!account.seenContents) account.seenContents = [guestFeed.content.id];
+    else if (
+      account.seenContents.findIndex((cId) => cId === guestFeed.content.id) ===
+      -1
+    ) {
+      account.seenContents.push(guestFeed.content as any as string);
+    }
+    account.markModified('seenContents');
+    return account.save();
+  };
+
+  /**
+   *
+   * @param account
+   * @param feedItemId
+   * @returns
+   */
+  seenFeedItem = async (account: Account, feedItemId: string) => {
+    this._feedItemModel
+      .updateOne(
+        {
+          viewer: account._id,
+          _id: feedItemId,
+          seenAt: {
+            $exists: false,
+          },
+        },
+        {
+          seenAt: new Date(),
+        }
+      )
+      .exec();
+  };
+
+  /**
+   *
+   * @param account
+   * @param feedItemId
+   * @returns
+   */
+  offScreenFeedItem = async (account: Account, feedItemId: string) =>
+    this._feedItemModel
+      .updateOne(
+        {
+          viewer: account._id,
+          _id: feedItemId,
+          offScreenAt: {
+            $exists: false,
+          },
+        },
+        {
+          offScreenAt: new Date(),
+        }
+      )
+      .exec();
 }
