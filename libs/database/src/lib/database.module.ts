@@ -64,10 +64,14 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
+import { TransactionService } from './services/transaction.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { TransactionService } from './services/transaction.service';
-import { createCastcleMeta, getRelationship } from './utils/common';
+import {
+  createCastcleMeta,
+  getRelationship,
+  getSocialProfix,
+} from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
@@ -193,4 +197,5 @@ export {
   CommentService,
   getRelationship,
   TransactionService,
+  getSocialProfix,
 };

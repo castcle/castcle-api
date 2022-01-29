@@ -107,3 +107,23 @@ export const getRelationship = (
     followed: Boolean(getterRelationship?.following),
   };
 };
+
+export const getSocialProfix = (socialId: string, provider: string) => {
+  switch (provider) {
+    case 'facebook': {
+      return `FB${socialId}`;
+    }
+    case 'twitter': {
+      return `TW${socialId}`;
+    }
+    case 'google': {
+      return `GG${socialId}`;
+    }
+    case 'apple': {
+      return `AP${socialId}`;
+    }
+    default: {
+      return socialId;
+    }
+  }
+};
