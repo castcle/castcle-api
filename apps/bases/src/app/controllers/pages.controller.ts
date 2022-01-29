@@ -20,7 +20,51 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import {
+  AuthenticationService,
+  ContentService,
+  getSocialProfix,
+  SocialProvider,
+  SocialSyncService,
+  UserService,
+} from '@castcle-api/database';
+import {
+  ContentResponse,
+  ContentsResponse,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  DEFAULT_QUERY_OPTIONS,
+  GetContentsDto,
+  PageDto,
+  PageResponseDto,
+  PagesResponse,
+  SocialPageDto,
+  SocialSyncPageRequestDto,
+  SortDirection,
+  UpdatePageDto,
+} from '@castcle-api/database/dtos';
+import { Credential, UserType } from '@castcle-api/database/schemas';
+import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Image,
+  ImageUploadOptions,
+} from '@castcle-api/utils/aws';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleClearCacheAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import {
+  LimitPipe,
+  PagePipe,
+  SortByEnum,
+  SortByPipe,
+} from '@castcle-api/utils/pipes';
 import {
   Body,
   Controller,
@@ -30,59 +74,24 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import {
-  AuthenticationService,
-  UserService,
-  ContentService,
-} from '@castcle-api/database';
-import {
-  ContentResponse,
-  ContentsResponse,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  PageDto,
-  PagesResponse,
-  UpdatePageDto,
-  PageResponseDto,
-  DEFAULT_QUERY_OPTIONS,
-  GetContentsDto,
-} from '@castcle-api/database/dtos';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import {
-  SortByPipe,
-  PagePipe,
-  LimitPipe,
-  SortByEnum,
-} from '@castcle-api/utils/pipes';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  AVATAR_SIZE_CONFIGS,
-  COMMON_SIZE_CONFIGS,
-  Image,
-  ImageUploadOptions,
-} from '@castcle-api/utils/aws';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { UserType } from '@castcle-api/database/schemas';
-import { Query } from '@nestjs/common';
-import {
-  CastcleAuth,
-  CastcleController,
-  CastcleBasicAuth,
-  CastcleClearCacheAuth,
-} from '@castcle-api/utils/decorators';
-import { CacheKeyName } from '@castcle-api/utils/cache';
-import { DeletePageDto } from '../dtos';
+import { DeletePageDto } from '../dtos/delete.page.dto';
 
 @CastcleController('1.0')
 @Controller()
 export class PagesController {
+  private logger = new CastLogger(PagesController.name);
+
   constructor(
     private authService: AuthenticationService,
     private userService: UserService,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private socialSyncService: SocialSyncService
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -334,5 +343,156 @@ export class PagesController {
       contents,
       getContentsDto.hasRelationshipExpansion
     );
+  }
+
+  /**
+   * Create new page with sync social data
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {PageResponseDto[]}
+   */
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @ApiBody({
+    type: SocialSyncPageRequestDto,
+  })
+  @CastcleBasicAuth()
+  @Post('page/social')
+  async createPageSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: SocialSyncPageRequestDto
+  ) {
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(body));
+
+    this.logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential);
+
+    this.logger.log('Validate dupplicate social');
+    await Promise.all(
+      body.payload.map(async (socialSync) => {
+        const dupSocialSync =
+          await this.socialSyncService.getAllSocialSyncBySocial(
+            socialSync.provider,
+            socialSync.socialId
+          );
+
+        if (dupSocialSync?.length) {
+          this.logger.error(
+            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
+          );
+          throw new CastcleException(
+            CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
+            req.$language
+          );
+        }
+      })
+    );
+
+    const social: string[] = [];
+    await Promise.all(
+      body.payload.map(async (syncBody) => {
+        let castcleId = '';
+        const socialPage = new SocialPageDto();
+        if (syncBody.userName && syncBody.displayName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.displayName;
+        } else if (syncBody.userName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.userName;
+        } else if (syncBody.displayName) {
+          castcleId = syncBody.displayName;
+          socialPage.displayName = syncBody.displayName;
+        } else {
+          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          castcleId = genId;
+          socialPage.displayName = genId;
+        }
+
+        this.logger.log('Suggest CastcleId');
+        const sugguestDisplayId = await this.authService.suggestCastcleId(
+          castcleId
+        );
+        socialPage.castcleId = sugguestDisplayId;
+
+        if (syncBody.avatar) {
+          const avatar = await Image.upload(syncBody.avatar as string, {
+            filename: `avatar-${req.$credential.account._id}`,
+            addTime: true,
+            sizes: AVATAR_SIZE_CONFIGS,
+            subpath: `account_${req.$credential.account._id}`,
+          });
+          socialPage.avatar = avatar.image;
+          this.logger.log('Upload avatar');
+        }
+
+        if (syncBody.cover) {
+          const cover = await Image.upload(syncBody.cover as string, {
+            filename: `cover-${req.$credential.account._id}`,
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `account_${req.$credential.account._id}`,
+          });
+          socialPage.cover = cover.image;
+          this.logger.log('Suggest Cover');
+        }
+
+        socialPage.overview = syncBody.overview;
+        if (syncBody.link) {
+          switch (syncBody.provider) {
+            case SocialProvider.Facebook:
+              socialPage.links = {
+                facebook: syncBody.link,
+              };
+              break;
+            case SocialProvider.Twitter:
+              socialPage.links = { twitter: syncBody.link };
+              break;
+            case SocialProvider.Medium:
+              socialPage.links = { medium: syncBody.link };
+              break;
+            case SocialProvider.Youtube:
+              socialPage.links = { youtube: syncBody.link };
+              break;
+          }
+        }
+        socialPage.socialSyncs = true;
+        this.logger.log('Create new page');
+        const page = await this.userService.createPageFromSocial(
+          req.$credential.account._id,
+          socialPage
+        );
+        social.push(page.id);
+        this.logger.log('Create sync socail');
+        this.socialSyncService.create(page, syncBody);
+      })
+    );
+
+    this.logger.log(`get page data.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const { users: pages } = await this.userService.getByCriteria(
+      user,
+      { ownerAccount: req.$credential.account._id, type: UserType.Page },
+      {
+        page: 1,
+        sortBy: {
+          field: 'createdAt',
+          type: SortDirection.DESC,
+        },
+      }
+    );
+
+    this.logger.log(`filter only new pages.`);
+    const result = pages.filter((item) => social.includes(item.id.toString()));
+    return { payload: result as PageResponseDto[] };
+  }
+
+  private async validateGuestAccount(credential: Credential) {
+    const account = await this.authService.getAccountFromCredential(credential);
+    if (!account || account.isGuest) {
+      this.logger.error(`Forbidden guest account.`);
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    } else {
+      return account;
+    }
   }
 }

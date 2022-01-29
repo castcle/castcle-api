@@ -58,6 +58,7 @@ export interface UserProfile {
   };
   details?: string;
   images?: ProfileImage;
+  socialSyncs?: boolean;
 }
 
 export enum UserType {
@@ -271,6 +272,10 @@ UserSchema.methods.toPageResponse = function (
     blocked,
     blocking,
     followed,
+    socialSyncs:
+      (this as User).profile && (this as User).profile.socialSyncs
+        ? (this as User).profile.socialSyncs
+        : null,
     updatedAt: (this as User).updatedAt.toISOString(),
     createdAt: (this as User).createdAt.toISOString(),
   } as PageResponseDto;
