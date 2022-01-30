@@ -1040,7 +1040,7 @@ Message: ${message}`,
    * @returns {User}
    */
   createPageFromSocial = (account: Account, socialPageDto: SocialPageDto) => {
-    const newPage = new this._userModel({
+    return new this._userModel({
       ownerAccount: account._id,
       type: UserType.Page,
       displayId: socialPageDto.castcleId,
@@ -1059,7 +1059,6 @@ Message: ${message}`,
         },
         socialSyncs: socialPageDto.socialSyncs,
       },
-    });
-    return newPage.save();
+    }).save();
   };
 }

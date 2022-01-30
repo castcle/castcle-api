@@ -311,6 +311,8 @@ describe('PageController', () => {
       expect(newPageResponse.payload[1].links.twitter).toBeDefined();
       expect(syncSocial1.length).toEqual(1);
       expect(syncSocial2.length).toEqual(1);
+      expect(syncSocial1[0].author.id).toEqual(page1.id);
+      expect(syncSocial2[0].author.id).toEqual(page2.id);
     });
 
     it('should return Exception when use duplicate social id', async () => {

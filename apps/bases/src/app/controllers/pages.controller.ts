@@ -351,7 +351,7 @@ export class PagesController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {PageResponseDto[]}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({
     type: SocialSyncPageRequestDto,
   })
@@ -382,7 +382,6 @@ export class PagesController {
           );
           throw new CastcleException(
             CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-            req.$language
           );
         }
       })
@@ -438,22 +437,7 @@ export class PagesController {
 
         socialPage.overview = syncBody.overview;
         if (syncBody.link) {
-          switch (syncBody.provider) {
-            case SocialProvider.Facebook:
-              socialPage.links = {
-                facebook: syncBody.link,
-              };
-              break;
-            case SocialProvider.Twitter:
-              socialPage.links = { twitter: syncBody.link };
-              break;
-            case SocialProvider.Medium:
-              socialPage.links = { medium: syncBody.link };
-              break;
-            case SocialProvider.Youtube:
-              socialPage.links = { youtube: syncBody.link };
-              break;
-          }
+          socialPage.links = { [syncBody.provider]: syncBody.link }
         }
         socialPage.socialSyncs = true;
         this.logger.log('Create new page');
