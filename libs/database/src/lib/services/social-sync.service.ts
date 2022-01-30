@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -30,10 +30,8 @@ import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {
-  private readonly logger = new CastLogger(
-    SocialSyncService.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(SocialSyncService.name);
+
   constructor(
     @InjectModel('SocialSync')
     private socialSyncModel: Model<SocialSyncDocument>,
@@ -98,7 +96,7 @@ export class SocialSyncService {
     const newSocialSync = new this.socialSyncModel({
       author: { id: user.id },
       provider: socialSync.provider,
-      socialId: socialSync.uid,
+      socialId: socialSync.socialId,
       userName: socialSync.userName,
       displayName: socialSync.displayName,
       avatar: socialSync.avatar,
@@ -137,7 +135,8 @@ export class SocialSyncService {
       if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
       if (updateSocialSync.provider)
         socialSync.provider = updateSocialSync.provider;
-      if (updateSocialSync.uid) socialSync.socialId = updateSocialSync.uid;
+      if (updateSocialSync.socialId)
+        socialSync.socialId = updateSocialSync.socialId;
       if (updateSocialSync.userName)
         socialSync.userName = updateSocialSync.userName;
       if (updateSocialSync.displayName)
@@ -166,7 +165,7 @@ export class SocialSyncService {
     const deleteSocialSync = socialSyncDoc.find(
       (x) =>
         x.provider === socialSyncDeleteDto.provider &&
-        x.socialId === socialSyncDeleteDto.uid
+        x.socialId === socialSyncDeleteDto.socialId
     );
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');

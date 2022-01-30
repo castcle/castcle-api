@@ -25,11 +25,12 @@ import { DatabaseModule } from '@castcle-api/database';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { Module } from '@nestjs/common';
 import { YoutubeController } from './youtube.controller';
-import { YoutubeService } from './youtube.service';
+import { YoutubeSubscriptionsService, YoutubeWebhookService } from './services';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [DatabaseModule, UtilsAwsModule],
+  imports: [DatabaseModule, HttpModule, UtilsAwsModule],
   controllers: [YoutubeController],
-  providers: [YoutubeService]
+  providers: [YoutubeSubscriptionsService, YoutubeWebhookService]
 })
 export class YoutubeModule {}

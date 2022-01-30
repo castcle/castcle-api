@@ -20,27 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { FilterQuery, Model, Types } from 'mongoose';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AccountDocument } from '../schemas/account.schema';
-import { CommentDocument, CredentialModel } from '../schemas';
-import { User, UserDocument, UserType } from '../schemas/user.schema';
-import {
-  ContentDocument,
-  Content,
-  toSignedContentPayloadItem
-} from '../schemas/content.schema';
-import {
-  EngagementDocument,
-  EngagementType
-} from '../schemas/engagement.schema';
-import {
-  createCastcleFilter,
-  createCastcleMeta,
-  createPagination
-} from '../utils/common';
+import { getLinkPreview } from 'link-preview-js';
+import * as mongoose from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { createTransport } from 'nodemailer';
+import { ContentAggregator } from '../aggregator/content.aggregator';
 import {
   Author,
   CastcleContentQueryOptions,
@@ -50,33 +40,53 @@ import {
   ContentResponse,
   ContentsResponse,
   ContentType,
+  createFilterQuery,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
   FeedItemDto,
   GetLinkPreview,
+  GetSearchRecentDto,
   GuestFeedItemDto,
   IncludeUser,
   Link,
   LinkType,
+  Meta,
   SaveContentDto,
   ShortPayload,
+  SortDirection,
   UpdateCommentDto
 } from '../dtos';
-import { RevisionDocument } from '../schemas/revision.schema';
+import {
+  CommentDocument,
+  CredentialModel,
+  User,
+  UserDocument,
+  UserType
+} from '../schemas';
+import { AccountDocument } from '../schemas/account.schema';
 import { CommentType } from '../schemas/comment.schema';
+import {
+  Content,
+  ContentDocument,
+  toSignedContentPayloadItem
+} from '../schemas/content.schema';
+import {
+  EngagementDocument,
+  EngagementType
+} from '../schemas/engagement.schema';
 import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { ContentAggregator } from '../aggregator/content.aggregator';
-import { HashtagService } from './hashtag.service';
 import {
   GuestFeedItemDocument,
   GuestFeedItemType
 } from '../schemas/guestFeedItems.schema';
-import { Environment } from '@castcle-api/environments';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { CastLogger } from '@castcle-api/logger';
-import { createTransport } from 'nodemailer';
-import { getLinkPreview } from 'link-preview-js';
 import { RelationshipDocument } from '../schemas/relationship.schema';
+import { RevisionDocument } from '../schemas/revision.schema';
+import {
+  createCastcleFilter,
+  createCastcleMeta,
+  createPagination
+} from '../utils/common';
+import { HashtagService } from './hashtag.service';
 
 @Injectable()
 export class ContentService {
@@ -187,6 +197,12 @@ export class ContentService {
     return this._contentModel.create(contents);
   }
 
+  async getAuthorFromId(authorId: string) {
+    const user = await this._userModel.findById(authorId);
+
+    return this._getAuthorFromUser(user);
+  }
+
   updatePayloadMessage = async (shortPayload: ShortPayload) => {
     const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
     const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
@@ -241,6 +257,41 @@ export class ContentService {
     return content.save();
   };
 
+  getRecastContent = (originalPostId: string, authorId: string) => {
+    return this._contentModel
+      .findOne({
+        'author.id': mongoose.Types.ObjectId(authorId),
+        'originalPost._id': mongoose.Types.ObjectId(originalPostId),
+        isRecast: true
+      })
+      .exec();
+  };
+
+  /**
+   * Delete Recast Content from orginal post and author
+   * @param {string} originalPostId
+   * @param {string} authorId
+   * @returns {null}
+   */
+  deleteRecastContentFromOriginalAndAuthor = async (
+    originalPostId: string,
+    authorId: string
+  ) => {
+    this.logger.log('get content for delete.');
+    const content = await this.getRecastContent(originalPostId, authorId);
+
+    if (!content) return;
+
+    this.logger.log('delete engagement.');
+    await this._engagementModel
+      .findOneAndRemove({ itemId: content._id })
+      .exec();
+    if (content.hashtags) {
+      this.hashtagService.removeFromTags(content.hashtags);
+    }
+    this.logger.log('delete content.');
+    await content.remove();
+  };
   /**
    * update aggregator of recast/quote and get content status back to publish
    * @param {string} id of content
@@ -323,7 +374,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(findFilter, options);
+    findFilter = createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const totalDocument = await this._contentModel
       .countDocuments(findFilter)
@@ -579,7 +630,7 @@ export class ContentService {
       visibility: EntityVisibility.Publish
     };
     if (options.type) findFilter.type = options.type;
-    findFilter = await createCastcleFilter(findFilter, options);
+    findFilter = createCastcleFilter(findFilter, options);
     const query = this._contentModel.find(findFilter).limit(options.maxResults);
     const items =
       options.sortBy.type === 'desc'
@@ -878,7 +929,7 @@ export class ContentService {
         seen: false,
         called: false,
         viewer: viewer,
-        content: content.toContentPayload(),
+        content: content._id,
         aggregator: {
           createTime: new Date(),
           following: true
@@ -903,7 +954,7 @@ export class ContentService {
         seen: false,
         called: false,
         viewer: viewer,
-        content: content.toUnsignedContentPayload(),
+        content: content._id,
         aggregator: {
           createTime: new Date(),
           following: true
@@ -964,6 +1015,7 @@ export class ContentService {
       type: GuestFeedItemType.Content,
       content: contentId
     } as GuestFeedItemDto);
+    newGuestFeedItem.__v = 2;
     return newGuestFeedItem.save();
   };
 
@@ -1011,44 +1063,32 @@ Message: ${message}`
   async convertContentToContentResponse(
     viewer: UserDocument,
     content: ContentDocument,
-    engagements: EngagementDocument[] = []
+    engagements: EngagementDocument[] = [],
+    hasRelationshipExpansion = false
   ) {
+    const users: IncludeUser[] = [];
+    const authorIds = [];
     const casts = content.originalPost
       ? [toSignedContentPayloadItem(content.originalPost)]
       : [];
 
-    const author = new Author(content.author);
-    const authorId = author.id as any;
-    const relationships = await this.relationshipModel.find({
-      $or: [
-        { user: viewer._id, followedUser: authorId },
-        { user: authorId, followedUser: viewer._id }
-      ],
-      visibility: EntityVisibility.Publish
-    });
+    if (content.author) {
+      users.push(new Author(content.author));
+      authorIds.push(content.author.id);
+    }
 
-    const authorRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(user) === String(author.id) &&
-        String(followedUser) === String(viewer.id)
-    );
+    if (content.originalPost?.author) {
+      users.push(new Author(content.originalPost.author));
+      authorIds.push(content.originalPost.author.id);
+    }
 
-    const getterRelationship = relationships.find(
-      ({ followedUser, user }) =>
-        String(followedUser) === String(author.id) &&
-        String(user) === String(viewer.id)
-    );
-
-    const blocked = Boolean(getterRelationship?.blocking);
-    const blocking = Boolean(authorRelationship?.blocking);
-    const followed = Boolean(getterRelationship?.following);
+    if (hasRelationshipExpansion) {
+      await this.updateUserRelationships(viewer, authorIds, users);
+    }
 
     return {
       payload: content.toContentPayloadItem(engagements),
-      includes: new CastcleIncludes({
-        users: [author.toIncludeUser({ blocked, blocking, followed })],
-        casts
-      })
+      includes: new CastcleIncludes({ casts, users })
     } as ContentResponse;
   }
 
@@ -1058,8 +1098,8 @@ Message: ${message}`
    * @param {CastcleMeta} meta
    * @param hasRelationshipExpansion
    */
-  async convertContentsToContentResponse(
-    viewer: UserDocument,
+  async convertContentsToContentsResponse(
+    viewer: UserDocument | null,
     contents: ContentDocument[],
     hasRelationshipExpansion = false
   ): Promise<ContentsResponse> {
@@ -1086,6 +1126,11 @@ Message: ${message}`
         casts.push(toSignedContentPayloadItem(content.originalPost));
       }
 
+      if (content.originalPost?.author) {
+        users.push(new Author(content.originalPost.author).toIncludeUser());
+        authorIds.push(content.originalPost.author.id);
+      }
+
       if (content.author) {
         users.push(new Author(content.author).toIncludeUser());
         authorIds.push(content.author.id);
@@ -1093,31 +1138,7 @@ Message: ${message}`
     });
 
     if (hasRelationshipExpansion) {
-      const relationships = await this.relationshipModel.find({
-        $or: [
-          { user: viewer._id, followedUser: { $in: authorIds } },
-          { user: { $in: authorIds }, followedUser: viewer._id }
-        ],
-        visibility: EntityVisibility.Publish
-      });
-
-      users.forEach((author) => {
-        const authorRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(user) === String(author.id) &&
-            String(followedUser) === String(viewer.id)
-        );
-
-        const getterRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(followedUser) === String(author.id) &&
-            String(user) === String(viewer.id)
-        );
-
-        author.blocked = Boolean(getterRelationship?.blocking);
-        author.blocking = Boolean(authorRelationship?.blocking);
-        author.followed = Boolean(getterRelationship?.following);
-      });
+      await this.updateUserRelationships(viewer, authorIds, users);
     }
 
     return {
@@ -1125,5 +1146,117 @@ Message: ${message}`
       includes: new CastcleIncludes({ users, casts }),
       meta
     };
+  }
+
+  /**
+   * Get Content from orginal post
+   * @param {string} originalPostId
+   * @param {number} maxResults
+   * @param {string} sinceId
+   * @param {string} untilId
+   * @returns {ContentDocument[], totalDocument}
+   */
+  getContentFromOriginalPost = async (
+    originalPostId: string,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<ContentDocument> = {
+      'originalPost._id': mongoose.Types.ObjectId(originalPostId)
+    };
+    const totalDocument = await this._contentModel
+      .countDocuments(filter)
+      .exec();
+    if (sinceId) {
+      filter = {
+        ...filter,
+        'author.id': {
+          $gt: mongoose.Types.ObjectId(sinceId)
+        }
+      };
+    } else if (untilId) {
+      filter = {
+        ...filter,
+        'author.id': {
+          $lt: mongoose.Types.ObjectId(untilId)
+        }
+      };
+    }
+    const result = await this._contentModel
+      .find(filter)
+      .limit(maxResults)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      total: totalDocument,
+      items: result
+    };
+  };
+
+  private async updateUserRelationships(
+    viewer: UserDocument,
+    authorIds: any[],
+    users: IncludeUser[]
+  ) {
+    const relationships = viewer
+      ? await this.relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    users.forEach((author) => {
+      const authorRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(user) === String(author.id) &&
+          String(followedUser) === String(viewer?.id)
+      );
+
+      const getterRelationship = relationships.find(
+        ({ followedUser, user }) =>
+          String(followedUser) === String(author.id) &&
+          String(user) === String(viewer?.id)
+      );
+
+      author.blocked = Boolean(getterRelationship?.blocking);
+      author.blocking = Boolean(authorRelationship?.blocking);
+      author.followed = Boolean(getterRelationship?.following);
+    });
+  }
+
+  getSearchRecent({
+    contentType,
+    keyword,
+    maxResults,
+    sinceId,
+    untilId
+  }: GetSearchRecentDto) {
+    const query = createFilterQuery<ContentDocument>(sinceId, untilId);
+
+    if (contentType) query[`payload.${contentType}`] = { $exists: true };
+    if (keyword) {
+      const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
+
+      query.$or = [{ 'payload.message': pattern }, { hashtags: pattern }];
+    }
+
+    return this.getContents(query, maxResults);
+  }
+
+  async getContents(query: FilterQuery<ContentDocument>, maxResults: number) {
+    const total = await this._contentModel.countDocuments(query);
+    const contents = total
+      ? await this._contentModel
+          .find(query)
+          .limit(maxResults)
+          .sort({ createdAt: SortDirection.DESC })
+      : [];
+
+    return { contents, meta: Meta.fromDocuments(contents, total) };
   }
 }

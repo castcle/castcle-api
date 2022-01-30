@@ -329,7 +329,7 @@ describe('Authentication Service', () => {
           password: 'sompop2@Hello',
           isGuest: true,
           preferences: {
-            langagues: ['en', 'en']
+            languages: ['en', 'en']
           }
         });
         const newAccountResult = await newAccount.save();
@@ -562,7 +562,7 @@ describe('Authentication Service', () => {
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
-        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
+        expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
         expect({
@@ -571,7 +571,6 @@ describe('Authentication Service', () => {
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
-        expect(signupRequirements.socialId).toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.socialToken).toEqual('testtoken');
       });
     });
@@ -645,7 +644,7 @@ describe('Authentication Service', () => {
           },
           isGuest: true,
           preferences: {
-            langagues: ['en', 'en']
+            languages: ['en', 'en']
           }
         });
         const newAccountResult = await newAccount.save();
@@ -673,7 +672,7 @@ describe('Authentication Service', () => {
           },
           isGuest: false,
           preferences: {
-            langagues: ['en', 'en']
+            languages: ['en', 'en']
           }
         });
         account = await newAccount.save();

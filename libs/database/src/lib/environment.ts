@@ -22,6 +22,12 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { MongooseModuleOptions } from '@nestjs/mongoose';
+
+export const getMongoOptions = (): MongooseModuleOptions => ({
+  ...env.DB_OPTIONS,
+  uri: env.DB_URI
+});
 
 export const env = {
   DB_TEST_IN_DB: Environment?.DB_TEST_IN_DB || false,

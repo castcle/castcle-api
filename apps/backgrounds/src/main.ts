@@ -22,16 +22,12 @@
  */
 
 import { Environment as env } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { NestFactory } from '@nestjs/core';
 import { BackgroundModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(BackgroundModule, {
     logger: CastLoggerLevel
   });

@@ -20,7 +20,41 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { Action, CaslAbilityFactory } from '@castcle-api/casl';
+import {
+  AuthenticationService,
+  ContentService,
+  NotificationService,
+  UserService
+} from '@castcle-api/database';
+import {
+  CastcleQueueAction,
+  ContentResponse,
+  ContentsResponse,
+  DEFAULT_CONTENT_QUERY_OPTIONS,
+  ExpansionQuery,
+  GetContentsDto,
+  NotificationSource,
+  NotificationType,
+  PaginationQuery,
+  ResponseDto,
+  SaveContentDto
+} from '@castcle-api/database/dtos';
+import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
+import { CastLogger } from '@castcle-api/logger';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  Auth,
+  Authorizer,
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleClearCacheAuth,
+  CastcleController
+} from '@castcle-api/utils/decorators';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { SortByPipe } from '@castcle-api/utils/pipes';
+import { ContentProducer } from '@castcle-api/utils/queue';
 import {
   Body,
   Controller,
@@ -36,46 +70,17 @@ import {
   UsePipes,
   ValidationPipe
 } from '@nestjs/common';
-import { AppService } from './app.service';
-import {
-  AuthenticationService,
-  UserService,
-  ContentService,
-  NotificationService
-} from '@castcle-api/database';
-import {
-  CastcleQueueAction,
-  ContentResponse,
-  ContentsResponse,
-  DEFAULT_CONTENT_QUERY_OPTIONS,
-  ExpansionQuery,
-  GetContentsDto,
-  NotificationSource,
-  NotificationType,
-  SaveContentDto
-} from '@castcle-api/database/dtos';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
-import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
-import { SortByPipe } from '@castcle-api/utils/pipes';
-import { CaslAbilityFactory, Action } from '@castcle-api/casl';
-import {
-  CastcleAuth,
-  CastcleController,
-  CastcleBasicAuth,
-  CastleClearCacheAuth
-} from '@castcle-api/utils/decorators';
-import { CacheKeyName } from '@castcle-api/utils/cache';
-import { ContentProducer } from '@castcle-api/utils/queue';
 import { ContentLikeBody } from '../dtos/content.dto';
+import { AppService } from './app.service';
+import { UserRecastedResponse } from './dtos';
 import { SaveContentPipe } from './pipes/save-content.pipe';
-import { ReportContentDto } from './dtos';
 
 @CastcleController('1.0')
 @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 @Controller()
 export class ContentController {
+  private logger = new CastLogger(ContentController.name);
   constructor(
     private readonly appService: AppService,
     private authService: AuthenticationService,
@@ -93,7 +98,7 @@ export class ContentController {
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async createFeedContent(
     @Body(new SaveContentPipe()) body: SaveContentDto,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const ability = this.caslAbility.createForCredential(req.$credential);
@@ -120,12 +125,12 @@ export class ContentController {
       id: content._id
     });
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          authorizedUser,
-          content
-        )
-      : this.appService.convertContentToContentResponse(content);
+    return this.contentService.convertContentToContentResponse(
+      authorizedUser,
+      content,
+      [],
+      hasRelationshipExpansion
+    );
   }
 
   @ApiOkResponse({ type: ContentResponse })
@@ -134,7 +139,7 @@ export class ContentController {
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getContentFromId(
     @Param('id') id: string,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
@@ -145,13 +150,12 @@ export class ContentController {
         user
       );
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          user,
-          content,
-          engagements
-        )
-      : this.appService.convertContentToContentResponse(content, engagements);
+    return this.contentService.convertContentToContentResponse(
+      user,
+      content,
+      engagements,
+      hasRelationshipExpansion
+    );
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
@@ -208,13 +212,13 @@ export class ContentController {
 
   @ApiBody({ type: SaveContentDto })
   @ApiOkResponse({ type: ContentResponse })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async updateContentFromId(
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Param('id') id: string,
-    @Query() expansionQuery: ExpansionQuery,
+    @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
     const content = await this._getContentIfExist(id, req);
@@ -229,16 +233,16 @@ export class ContentController {
       newBody
     );
 
-    return expansionQuery.hasRelationshipExpansion
-      ? this.contentService.convertContentToContentResponse(
-          user,
-          updatedContent
-        )
-      : this.appService.convertContentToContentResponse(updatedContent);
+    return this.contentService.convertContentToContentResponse(
+      user,
+      updatedContent,
+      [],
+      hasRelationshipExpansion
+    );
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async deleteContentFromId(
@@ -267,7 +271,7 @@ export class ContentController {
       sortBy: sortByOption
     });
 
-    return this.contentService.convertContentsToContentResponse(
+    return this.contentService.convertContentsToContentsResponse(
       user,
       contents,
       hasRelationshipExpansion
@@ -280,7 +284,7 @@ export class ContentController {
   @ApiBody({
     type: ContentLikeBody
   })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
   @HttpCode(204)
   async likeContent(
@@ -311,7 +315,7 @@ export class ContentController {
   @ApiResponse({
     status: 204
   })
-  @CastleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/unliked')
   @HttpCode(204)
   async unLikeContent(
@@ -326,6 +330,9 @@ export class ContentController {
     return '';
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] users/:id/recast
+   */
   @CastcleBasicAuth()
   @ApiResponse({
     status: 201,
@@ -349,6 +356,9 @@ export class ContentController {
     } as ContentResponse;
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] /users/:id/quotecast
+   */
   @ApiResponse({
     status: 201,
     type: ContentResponse
@@ -375,19 +385,35 @@ export class ContentController {
     } as ContentResponse;
   }
 
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @Post(':id/reporting')
+  @ApiOkResponse({ type: UserRecastedResponse })
   @CastcleBasicAuth()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async reportContent(
-    @Body() { message }: ReportContentDto,
-    @Param('id') reportingContentId: string,
-    @Req() req: CredentialRequest
+  @Get(':id/recasted')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getUserRecasted(
+    @Auth() { user }: Authorizer,
+    @Param('id') contentId: string,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
   ) {
-    const content = await this._getContentIfExist(reportingContentId, req);
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    this.logger.log(`Get OriginalPost from content : ${contentId}`);
+    const contents = await this.contentService.getContentFromOriginalPost(
+      contentId,
+      maxResults,
+      sinceId,
+      untilId
+    );
 
-    await this.contentService.reportContent(user, content, message);
+    if (!contents?.total) return { payload: [], meta: null };
+
+    const authorIds = contents.items.map((x) => x.author.id);
+    const query = { _id: { $in: authorIds } };
+    const { users, meta } = await this.userService.getByCriteria(
+      user,
+      query,
+      {},
+      hasRelationshipExpansion
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 }

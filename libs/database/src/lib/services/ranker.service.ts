@@ -37,8 +37,7 @@ import { CastcleMeta } from '../dtos/common.dto';
 import {
   signedContentPayloadItem,
   toSignedContentPayloadItem,
-  toUnsignedContentPayloadItem,
-  transformContentPayloadToV2
+  toUnsignedContentPayloadItem
 } from '../schemas/content.schema';
 import {
   GuestFeedItemPayload,
@@ -48,7 +47,7 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { GuestFeedItemDocument } from '../schemas/guestFeedItems.schema';
 import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedQuery } from '../dtos';
+import { PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -89,6 +88,7 @@ export class RankerService {
     const feedItemResult = await this._feedItemModel
       .find(filter)
       .skip(options.page - 1)
+      .populate('content')
       .limit(options.limit)
       .sort('-aggregator.createTime')
       .exec();
@@ -106,8 +106,8 @@ export class RankerService {
    * @param {Account} viewer
    * @returns {GuestFeedItemDocument[]}
    */
-  getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
-    const filter = await createCastcleFilter(
+  getGuestFeedItems = async (query: PaginationQuery, viewer: Account) => {
+    const filter = createCastcleFilter(
       { countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en' },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
@@ -119,10 +119,7 @@ export class RankerService {
       .sort({ score: -1, createdAt: -1 })
       .exec();
 
-    const authors = feedItems.map(
-      (feedItem) => new Author(feedItem.content.author)
-    );
-
+    const authors = feedItems.map((feedItem) => feedItem.content.author);
     const casts = feedItems
       .map((feedItem) => {
         if (!feedItem.content?.originalPost) return;
@@ -131,11 +128,11 @@ export class RankerService {
       })
       .filter(Boolean);
 
-    const users = query.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(viewer, authors)
-      : authors.map((author) => author.toIncludeUser());
+    const includes = new CastcleIncludes({ casts, users: authors });
 
-    const includes = new CastcleIncludes({ casts, users });
+    includes.users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, includes.users)
+      : includes.users.map((author) => new Author(author).toIncludeUser());
 
     return {
       payload: feedItems.map(
@@ -168,10 +165,13 @@ export class RankerService {
    * @param query
    * @returns {GuestFeedItemPayload}
    */
-  getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
+  getMemberFeedItemsFromViewer = async (
+    viewer: Account,
+    query: PaginationQuery
+  ) => {
     const startNow = new Date();
     console.debug('start service');
-    const filter = await createCastcleFilter(
+    const filter = createCastcleFilter(
       { viewer: viewer._id },
       { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
@@ -197,6 +197,7 @@ export class RankerService {
     const documents = await this._feedItemModel
       .find(filter)
       .limit(query.maxResults)
+      .populate('content')
       .sort('-aggregator.createTime')
       .exec();
     const timeAfterFind = new Date();
@@ -204,7 +205,7 @@ export class RankerService {
       '- after find document : ',
       timeAfterFind.getTime() - timeAfterFilter.getTime()
     );
-    const contentIds = documents.map((item) => item.content.id);
+    const contentIds = documents.map((item) => String(item.content.id));
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
     let feedPayload: FeedItemPayloadItem[] = [];
@@ -212,7 +213,7 @@ export class RankerService {
     if (answer) {
       newAnswer = Object.keys(answer)
         .map((id) => {
-          const feedItem = documents.find((k) => k.content.id == id);
+          const feedItem = documents.find((k) => String(k.content.id) == id);
           return {
             feedItem,
             score: answer[id] as number
@@ -236,7 +237,7 @@ export class RankerService {
               slug: 'forYou'
             },
             payload: signedContentPayloadItem(
-              transformContentPayloadToV2(item.content, [])
+              toUnsignedContentPayloadItem(item.content, [])
             ),
             type: 'content'
           } as FeedItemPayloadItem)
@@ -293,4 +294,11 @@ export class RankerService {
       meta: meta
     } as GuestFeedItemPayload;
   };
+
+  async sortContentsByScore(accountId: string, contents: ContentDocument[]) {
+    const contentIds = contents.map((content) => content.id);
+    const score = await predictContents(accountId, contentIds);
+
+    return contents.sort((a, b) => score[a.id] - score[b.id]);
+  }
 }

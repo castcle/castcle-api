@@ -43,7 +43,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { NotificationMessage, TopicName } from '@castcle-api/utils/queue';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -57,10 +57,7 @@ export class NotificationConsumer {
     @InjectFirebaseAdmin() private readonly firebase: FirebaseAdmin
   ) {}
 
-  private readonly logger = new CastLogger(
-    NotificationConsumer.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(NotificationConsumer.name);
 
   /**
    * consume notofication message from queue

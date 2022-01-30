@@ -107,6 +107,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 export interface IUser extends Document {
   toUserResponse(
+    passwordNotSet?: boolean,
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean
@@ -131,7 +132,10 @@ export interface UserModel extends mongoose.Model<UserDocument> {
   toAuthor(user: User | UserDocument): Author;
 }
 
-const _covertToUserResponse = (self: User | UserDocument, followed = false) => {
+const _covertToUserResponse = (
+  self: User | UserDocument,
+  followed?: boolean
+) => {
   const selfSocial: any =
     self.profile && self.profile.socials ? { ...self.profile.socials } : {};
   if (self.profile && self.profile.websites && self.profile.websites.length > 0)
@@ -184,9 +188,10 @@ UserSchema.statics.toAuthor = (self: User | UserDocument) =>
   } as Author);
 
 UserSchema.methods.toUserResponse = async function (
-  blocked = false,
-  blocking = false,
-  followed = false
+  passwordNotSet = false,
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean
 ) {
   const self = await (this as UserDocument)
     .populate('ownerAccount')
@@ -195,14 +200,14 @@ UserSchema.methods.toUserResponse = async function (
   response.email = self.ownerAccount.email;
   response.blocking = blocking;
   response.blocked = blocked;
-
+  response.passwordNotSet = passwordNotSet;
   return response;
 };
 
 UserSchema.methods.toPageResponse = function (
-  blocked = false,
-  blocking = false,
-  followed = false
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean
 ) {
   return {
     id: (this as UserDocument)._id,

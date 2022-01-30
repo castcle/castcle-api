@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+export * from './account-referral.schema';
 export * from './account.schema';
 export * from './accountAuthenId.schema';
 export * from './comment.schema';
@@ -32,5 +33,6 @@ export * from './hashtag.schema';
 export * from './language.schema';
 export * from './notification.schema';
 export * from './otp.schema';
+export * from './relationship.schema';
 export * from './social-sync.schema';
 export * from './user.schema';

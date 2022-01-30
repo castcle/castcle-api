@@ -33,6 +33,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload
 } from '../dtos/token.dto';
+import { AccountReferral } from '../schemas/account-referral.schema';
 import { Account, AccountDocument } from '../schemas/account.schema';
 import {
   AccountActivationDocument,
@@ -67,6 +68,7 @@ export interface SignupRequirements {
   password: string;
   displayName: string;
   displayId: string;
+  referral?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -91,7 +93,9 @@ export class AuthenticationService {
     @InjectModel('Otp')
     public _otpModel: OtpModel,
     @InjectModel('AccountAuthenId')
-    public _accountAuthenId: Model<AccountAuthenIdDocument>
+    public _accountAuthenId: Model<AccountAuthenIdDocument>,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -364,7 +368,18 @@ export class AuthenticationService {
       type: UserType.People
     });
     await user.save();
-    return this.createAccountActivation(account, 'email');
+    const updateAccount = await this.createAccountActivation(account, 'email');
+
+    if (requirements.referral) {
+      const refAccount = await this.getUserFromCastcleId(requirements.referral);
+      const accRef = new this._accountReferral({
+        referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
+        referrerDisplayId: requirements.referral,
+        referringAccount: account._id
+      });
+      await accRef.save();
+    }
+    return updateAccount;
   }
 
   createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
@@ -532,7 +547,7 @@ export class AuthenticationService {
     if (credential.account.isGuest) {
       return {
         id: credential.account._id,
-        preferredLanguage: credential.account.preferences.langagues,
+        preferredLanguage: credential.account.preferences.languages,
         role: credential.account.isGuest ? 'guest' : 'member',
         showAds: true //TODO !!! need to change this later
       } as AccessTokenPayload;
@@ -569,9 +584,13 @@ export class AuthenticationService {
     account.isGuest = false;
     await account.save();
 
+    const sugguestDisplayId = await this.suggestCastcleId(
+      requirements.displayName
+    );
+
     const user = new this._userModel({
       ownerAccount: account._id,
-      displayId: requirements.socialId,
+      displayId: sugguestDisplayId,
       displayName: requirements.displayName,
       type: UserType.People,
       profile: {
@@ -605,14 +624,16 @@ export class AuthenticationService {
     provider: AccountAuthenIdType,
     socialUserId: string,
     socialUserToken: string,
-    socialSecretToken: string
+    socialSecretToken: string,
+    avatar?: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
       type: provider,
       socialId: socialUserId,
       socialToken: socialUserToken,
-      socialSecretToken: socialSecretToken
+      socialSecretToken: socialSecretToken,
+      avatar: avatar
     });
     return accountActivation.save();
   }

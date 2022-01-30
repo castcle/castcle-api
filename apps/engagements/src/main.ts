@@ -22,11 +22,7 @@
  */
 
 import { Configs, Environment as env } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
@@ -34,7 +30,7 @@ import { EngagementModule } from './app/app.module';
 import { DocumentConfig } from './docs/document.config';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(EngagementModule, {
     logger: CastLoggerLevel
   });

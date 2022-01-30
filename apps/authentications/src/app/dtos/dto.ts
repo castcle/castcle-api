@@ -22,8 +22,8 @@
  */
 import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -51,59 +51,28 @@ export class LoginDto {
   password: string;
 }
 
-export class SocialUser {
-  @IsString()
-  @ApiProperty()
-  id?: string;
-  @IsString()
-  @ApiProperty()
-  first_name?: string;
-  @IsString()
-  @ApiProperty()
-  last_name?: string;
-  @IsString()
-  @ApiProperty()
-  username?: string;
-  @IsString()
-  @ApiProperty()
-  photo_url?: string;
-  @IsString()
-  @ApiProperty()
-  auth_date?: string;
-  @IsEmail()
-  @IsString()
-  @ApiProperty()
-  email?: string;
-}
-export class SocialConnectInfo {
-  @IsString()
-  @ApiProperty()
-  authToken?: string;
-  @IsString()
-  @ApiProperty()
-  authTokenSecret?: string;
-  @IsString()
-  @ApiProperty()
-  authVerifierToken?: string;
-  @IsString()
-  @ApiProperty()
-  hash?: string;
-  @IsString()
-  @ApiProperty()
-  code?: string;
-  @IsString()
-  @ApiProperty()
-  redirectUrl?: string;
-  @IsString()
-  @ApiProperty({ type: SocialUser, isArray: false })
-  socialUser?: SocialUser;
-}
-
 export class SocialConnectDto {
   @ApiProperty({ enum: AccountAuthenIdType })
   provider: AccountAuthenIdType;
-  @ApiProperty({ type: SocialConnectInfo, isArray: false })
-  payload: SocialConnectInfo;
+  @IsString()
+  @ApiProperty()
+  uid: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  displayName?: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  avatar?: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  email?: string;
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  authToken?: string;
 }
 
 class RegisterPayload {
@@ -122,6 +91,10 @@ export class RegisterByEmailDto {
   @IsNotEmpty()
   @ApiProperty()
   channel: 'email';
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  referral?: string;
   @IsNotEmpty()
   @ApiProperty()
   payload: RegisterPayload;
@@ -198,6 +171,7 @@ export interface SocialConnect {
   profileImage: string;
   socialToken: string;
   socialSecretToken: string;
+  avatar?: string;
 }
 
 export class OauthTokenResponse {

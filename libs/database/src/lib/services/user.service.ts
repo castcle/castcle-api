@@ -22,6 +22,11 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Image
+} from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
@@ -30,20 +35,36 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { Author, CastcleQueryOptions } from '../dtos';
 import {
+  Author,
+  CastcleQueryOptions,
   CastcleQueueAction,
+  createFilterQuery,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  SortDirection
-} from '../dtos/common.dto';
-import { PageModelDto, UpdateModelUserDto } from '../dtos/user.dto';
-import { CredentialDocument, CredentialModel } from '../schemas';
-import { Account, AccountDocument } from '../schemas/account.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { UserDocument, UserModel, UserType } from '../schemas/user.schema';
-import { createPagination } from '../utils/common';
+  GetSearchUsersDto,
+  Meta,
+  PageDto,
+  PaginationQuery,
+  SortDirection,
+  UpdateModelUserDto,
+  UpdateUserDto,
+  UserModelImage
+} from '../dtos';
+import {
+  Account,
+  AccountDocument,
+  AccountReferral,
+  AccountReferralDocument,
+  ContentDocument,
+  CredentialDocument,
+  CredentialModel,
+  RelationshipDocument,
+  UserDocument,
+  UserModel,
+  UserType
+} from '../schemas';
+import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -68,7 +89,9 @@ export class UserService {
     @InjectModel('Relationship')
     public _relationshipModel: Model<RelationshipDocument>,
     private contentService: ContentService,
-    private userProducer: UserProducer
+    private userProducer: UserProducer,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>
   ) {}
 
   getUserFromCredential = (credential: CredentialDocument) =>
@@ -80,15 +103,35 @@ export class UserService {
       })
       .exec();
 
+  getPagesFromCredential = (credential: CredentialDocument) =>
+    this._userModel
+      .find({
+        ownerAccount: credential.account._id,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
+
+  getUserFromAccountId = (accountId: string) =>
+    this._userModel
+      .findOne({
+        ownerAccount: accountId as any,
+        type: UserType.People,
+        visibility: EntityVisibility.Publish
+      })
+      .exec();
   /**
    * Get all user and page that this credentials is own
    * @param credential
    * @returns {UserDocument[]}
    */
   getUserAndPagesFromCredential = (credential: CredentialDocument) =>
+    this.getUserAndPagesFromAccountId(credential.account._id);
+
+  getUserAndPagesFromAccountId = (accountId: string) =>
     this._userModel
       .find({
-        ownerAccount: credential.account._id,
+        ownerAccount: accountId as any,
         visibility: EntityVisibility.Publish
       })
       .exec();
@@ -108,79 +151,154 @@ export class UserService {
     }
   };
 
-  getById = async (user: UserDocument, id: string, type: UserType) => {
+  private async convertUsersToUserResponses(
+    viewer: UserDocument | null,
+    users: UserDocument[],
+    hasRelationshipExpansion = false
+  ) {
+    if (!hasRelationshipExpansion) {
+      return Promise.all(
+        users.map(async (user) => {
+          return user.type === UserType.Page
+            ? user.toPageResponse()
+            : await user.toUserResponse();
+        })
+      );
+    }
+
+    const userIds: any[] = users.map((user) => user.id);
+    const relationships = viewer
+      ? await this._relationshipModel.find({
+          $or: [
+            { user: viewer._id, followedUser: { $in: userIds } },
+            { user: { $in: userIds }, followedUser: viewer._id }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+
+    return Promise.all(
+      users.map(async (user) => {
+        const userResponse =
+          user.type === UserType.Page
+            ? user.toPageResponse()
+            : await user.toUserResponse();
+
+        const targetRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(user) === String(user.id) &&
+            String(followedUser) === String(viewer?.id)
+        );
+
+        const getterRelationship = relationships.find(
+          ({ followedUser, user }) =>
+            String(followedUser) === String(user.id) &&
+            String(user) === String(viewer?.id)
+        );
+
+        userResponse.blocked = Boolean(getterRelationship?.blocking);
+        userResponse.blocking = Boolean(targetRelationship?.blocking);
+        userResponse.followed = Boolean(getterRelationship?.following);
+
+        return userResponse;
+      })
+    );
+  }
+
+  getById = async (
+    user: UserDocument,
+    id: string,
+    type: UserType,
+    hasRelationshipExpansion = false
+  ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const [userRelationship, targetRelationship] = await Promise.all([
-      this._relationshipModel.findOne({
-        user: user?._id,
-        followedUser: targetUser._id,
-        visibility: EntityVisibility.Publish
-      }),
-      this._relationshipModel.findOne({
-        user: targetUser._id,
-        followedUser: user?._id,
-        visibility: EntityVisibility.Publish
-      })
-    ]);
+    const [userResponse] = await this.convertUsersToUserResponses(
+      user,
+      [targetUser],
+      hasRelationshipExpansion
+    );
 
-    const blocked = Boolean(userRelationship?.blocking);
-    const blocking = Boolean(targetRelationship?.blocking);
-    const followed = Boolean(userRelationship?.following);
-
-    return targetUser.type === UserType.Page
-      ? targetUser.toPageResponse(blocked, blocking, followed)
-      : await targetUser.toUserResponse(blocked, blocking, followed);
+    return userResponse;
   };
+
+  getSearchUsers(
+    user: UserDocument,
+    {
+      hasRelationshipExpansion,
+      keyword,
+      maxResults,
+      sinceId,
+      untilId
+    }: GetSearchUsersDto
+  ) {
+    const queryOptions = { ...DEFAULT_QUERY_OPTIONS, limit: maxResults };
+    const query = createFilterQuery<UserDocument>(sinceId, untilId);
+    const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
+
+    query.$or = [{ displayId: pattern }, { displayName: pattern }];
+
+    return this.getByCriteria(
+      user,
+      query,
+      queryOptions,
+      hasRelationshipExpansion
+    );
+  }
+
+  async getBlockedUsers(
+    user: UserDocument,
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ) {
+    const query: FilterQuery<RelationshipDocument> = {};
+
+    if (sinceId || untilId) {
+      query.followedUser = {};
+
+      if (sinceId) query.followedUser.$gt = sinceId as any;
+      if (untilId) query.followedUser.$lt = untilId as any;
+    }
+
+    query.user = user._id;
+    query.blocking = true;
+
+    const relationships = await this._relationshipModel
+      .find(query)
+      .sort({ followedUser: SortDirection.DESC })
+      .limit(maxResults)
+      .exec();
+
+    const userIds = relationships.map(({ followedUser }) => followedUser);
+
+    return this.getByCriteria(
+      user,
+      { _id: userIds },
+      {},
+      hasRelationshipExpansion
+    );
+  }
 
   getByCriteria = async (
     user: UserDocument,
     query: FilterQuery<UserDocument>,
-    queryOptions: CastcleQueryOptions
+    queryOptions: CastcleQueryOptions,
+    hasRelationshipExpansion = false
   ) => {
-    const { items: targetUsers, pagination } = await this.getAllByCriteria(
-      query,
-      queryOptions
+    const {
+      items: targetUsers,
+      pagination,
+      meta
+    } = await this.getAllByCriteria(query, queryOptions);
+
+    const users = await this.convertUsersToUserResponses(
+      user,
+      targetUsers,
+      hasRelationshipExpansion
     );
 
-    const targetUserIds = targetUsers.map(({ _id }) => _id);
-    const [userRelationships, pageRelationships] = await Promise.all([
-      this._relationshipModel.find({
-        user: user?._id,
-        followedUser: { $in: targetUserIds },
-        visibility: EntityVisibility.Publish
-      }),
-      this._relationshipModel.find({
-        user: { $in: targetUserIds },
-        followedUser: user?._id,
-        visibility: EntityVisibility.Publish
-      })
-    ]);
-
-    return {
-      pagination,
-      users: await Promise.all(
-        targetUsers.map(async (targetUser) => {
-          const pageRelationship = pageRelationships.find(
-            ({ user }) => String(user) === targetUser.id
-          );
-
-          const userRelationship = userRelationships.find(
-            ({ followedUser }) => String(followedUser) === targetUser.id
-          );
-
-          const blocked = Boolean(userRelationship?.blocking);
-          const blocking = Boolean(pageRelationship?.blocking);
-          const followed = Boolean(userRelationship?.following);
-
-          return targetUser.type === UserType.Page
-            ? targetUser.toPageResponse(blocked, blocking, followed)
-            : await targetUser.toUserResponse(blocked, blocking, followed);
-        })
-      )
-    };
+    return { pagination, users, meta };
   };
 
   getByIdOrCastcleId = (id: string, type?: UserType) => {
@@ -242,11 +360,6 @@ export class UserService {
     await this.contentService._commentModel
       .updateMany({ 'author._id': user._id }, { author: user })
       .exec();
-    console.debug('updating feedItem of user');
-    await this.contentService._feedItemModel.updateMany(
-      { 'content.author.id': user._id },
-      { 'content.author': user.toAuthor() }
-    );
   };
 
   updateUserInEmbedContentBackground = async (userId: any) => {
@@ -262,13 +375,13 @@ export class UserService {
 
   createPageFromCredential = async (
     credential: CredentialDocument,
-    pageDto: PageModelDto
+    pageDto: PageDto
   ) => {
     const user = await this.getUserFromCredential(credential);
     return this.createPageFromUser(user, pageDto);
   };
 
-  createPageFromUser = (user: UserDocument, pageDto: PageModelDto) => {
+  createPageFromUser = (user: UserDocument, pageDto: PageDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
       type: UserType.Page,
@@ -279,27 +392,34 @@ export class UserService {
   };
 
   /**
-   * get all pages
+   * get all users/pages by criteria
    * @param {CastcleQueryOptions} queryOptions
    * @returns {Promise<{items:UserDocument[], pagination:Pagination}>}
    */
   getAllByCriteria = async (
     query: FilterQuery<UserDocument>,
-    queryOptions: CastcleQueryOptions
+    queryOptions?: CastcleQueryOptions
   ) => {
-    const pagination = createPagination(
-      queryOptions,
-      await this._userModel.countDocuments(query)
-    );
-    const itemsQuery = this._userModel
-      .find({ ...query, visibility: EntityVisibility.Publish })
-      .skip(queryOptions.page - 1)
-      .limit(queryOptions.limit);
-    let items: UserDocument[];
-    if (queryOptions.sortBy.type === 'desc')
-      items = await itemsQuery.sort(`-${queryOptions.sortBy.field}`).exec();
-    else items = await itemsQuery.sort(`${queryOptions.sortBy.field}`).exec();
-    return { items, pagination };
+    const filterQuery = { ...query, visibility: EntityVisibility.Publish };
+    const total = await this._userModel.countDocuments(filterQuery);
+    let usersQuery = this._userModel.find(filterQuery);
+
+    if (queryOptions.limit) usersQuery = usersQuery.limit(queryOptions.limit);
+    if (queryOptions.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
+    if (queryOptions.sortBy) {
+      const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
+      const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
+
+      usersQuery = usersQuery.sort(sortOrder);
+    }
+
+    const users = await usersQuery.exec();
+
+    return {
+      items: users,
+      pagination: createPagination(queryOptions, total),
+      meta: Meta.fromDocuments(users, total)
+    };
   };
 
   getAllPages = (queryOptions: CastcleQueryOptions) => {
@@ -678,7 +798,7 @@ export class UserService {
 
     queryOption.sortBy = {
       field: 'followerCount',
-      type: SortDirection.Desc
+      type: SortDirection.DESC
     };
 
     return this.getByCriteria(user, query, queryOption);
@@ -774,7 +894,7 @@ Message: ${message}`
         { _id: accountId },
         {
           preferences: {
-            langagues: languageCode
+            languages: languageCode
           }
         }
       )
@@ -812,7 +932,127 @@ Message: ${message}`
       const blocking = Boolean(authorRelationship?.blocking);
       const followed = Boolean(getterRelationship?.following);
 
-      return author.toIncludeUser({ blocked, blocking, followed });
+      return new Author(author).toIncludeUser({ blocked, blocking, followed });
     });
   };
+
+  getRelationshipData = async (
+    hasRelationshipExpansion: boolean,
+    relationUserId: any[],
+    viewerId: string
+  ) => {
+    return hasRelationshipExpansion
+      ? await this._relationshipModel.find({
+          $or: [
+            {
+              user: viewerId as any,
+              followedUser: { $in: relationUserId }
+            },
+            {
+              user: { $in: relationUserId },
+              followedUser: viewerId as any
+            }
+          ],
+          visibility: EntityVisibility.Publish
+        })
+      : [];
+  };
+
+  getReferrer = async (accountId: Account) => {
+    const accountRef = await this._accountReferral
+      .findOne({
+        referringAccount: accountId
+      })
+      .exec();
+
+    if (accountRef) {
+      const userRef = this.getByIdOrCastcleId(
+        accountRef.referrerDisplayId,
+        UserType.People
+      );
+      this.logger.log('Success get referrer.');
+      return userRef;
+    } else {
+      this.logger.warn('Referrer not found!');
+      return null;
+    }
+  };
+
+  getReferee = async (
+    accountId: Account,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<AccountReferralDocument> = {
+      referrerAccount: accountId
+    };
+    filter = await createCastcleFilter(filter, {
+      sinceId: sinceId,
+      untilId: untilId
+    });
+    this.logger.log('Get referee.');
+    const accountReferee = await this._accountReferral
+      .find(filter)
+      .limit(maxResults)
+      .exec();
+    const totalDocument = await this._accountReferral
+      .countDocuments(filter)
+      .exec();
+
+    const result: UserDocument[] = [];
+    this.logger.log('Get user.');
+    await Promise.all(
+      accountReferee?.map(async (x) =>
+        result.push(await this.getUserFromAccountId(x.referringAccount._id))
+      )
+    );
+    this.logger.log('Success get referee.');
+
+    return {
+      total: totalDocument,
+      items: result
+    };
+  };
+
+  /**
+   * Upload any image in s3 and transform UpdateUserDto to UpdateModelUserDto
+   * @param {UpdateUserDto} body
+   * @param {CredentialRequest} req
+   * @returns {UpdateModelUserDto}
+   */
+  async uploadUserInfo(
+    body: UpdateUserDto,
+    accountId: string
+  ): Promise<UpdateModelUserDto> {
+    this.logger.debug(`uploading info avatar-${accountId}`);
+    this.logger.debug(body);
+
+    const images: UserModelImage = {};
+
+    if (body.images?.avatar) {
+      const avatar = await Image.upload(body.images.avatar as string, {
+        filename: `avatar-${accountId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `account_${accountId}`
+      });
+
+      images.avatar = avatar.image;
+      this.logger.debug('after update', images);
+    }
+
+    if (body.images?.cover) {
+      const cover = await Image.upload(body.images.cover as string, {
+        filename: `cover-${accountId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `account_${accountId}`
+      });
+
+      images.cover = cover.image;
+    }
+
+    return { ...body, images };
+  }
 }

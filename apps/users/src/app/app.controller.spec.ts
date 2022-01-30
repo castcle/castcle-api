@@ -58,7 +58,6 @@ import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
-import { AppService } from './app.service';
 import { UserSettingsDto } from './dtos';
 
 const fakeProcessor = jest.fn();
@@ -91,7 +90,6 @@ describe('AppController', () => {
   let app: TestingModule;
   let appController: UserController;
   let service: UserService;
-  let appService: AppService;
   let contentService: ContentService;
   let authService: AuthenticationService;
   let userCredential: CredentialDocument;
@@ -112,7 +110,6 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
-        AppService,
         UserService,
         AuthenticationService,
         ContentService,
@@ -121,8 +118,8 @@ describe('AppController', () => {
         SocialSyncService
       ]
     }).compile();
+    appController = app.get(UserController);
     service = app.get<UserService>(UserService);
-    appService = app.get<AppService>(AppService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
@@ -144,7 +141,7 @@ describe('AppController', () => {
     userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
     jest
-      .spyOn(appService, 'uploadUserInfo')
+      .spyOn(service, 'uploadUserInfo')
       .mockImplementation(async (body: UpdateUserDto, req: any) => {
         return {
           ...body,
@@ -158,12 +155,6 @@ describe('AppController', () => {
 
   afterAll(async () => {
     await closeInMongodConnection();
-  });
-  describe('getData', () => {
-    it('should return "Welcome to users!"', () => {
-      appController = app.get<UserController>(UserController);
-      expect(appController.getData()).toEqual({ message: 'Welcome to users!' });
-    });
   });
 
   describe('getMyData', () => {
@@ -324,7 +315,7 @@ describe('AppController', () => {
         userService: service
       });
 
-      const result = await appController.follow(
+      const result = await appController.following(
         mocks[0].user.displayId,
         {
           $credential: mocks[0].credential,
@@ -532,10 +523,11 @@ describe('AppController', () => {
 
   describe('syncSocial', () => {
     let user: UserDocument;
+    let page: UserDocument;
     let credential;
     let defaultRequest: SocialSyncDto;
     beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(1, 0, {
+      const mocksUsers = await generateMockUsers(1, 1, {
         userService: service,
         accountService: authService
       });
@@ -546,10 +538,12 @@ describe('AppController', () => {
         $language: 'th'
       } as any;
 
+      page = mocksUsers[0].pages[0];
+
       defaultRequest = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Twitter,
-        uid: 't12345678',
+        socialId: 't12345678',
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
@@ -563,7 +557,7 @@ describe('AppController', () => {
 
     it('should create sync social successful', async () => {
       await appController.syncSocial(credential, defaultRequest);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
 
       expect(userSync.length).toEqual(1);
       expect(userSync[0].provider).toEqual(SocialProvider.Twitter);
@@ -600,27 +594,24 @@ describe('AppController', () => {
       await expect(
         appController.syncSocial(credential, defaultRequest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-          credential.$language
-        )
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
 
-      const mocksNewUsers = await generateMockUsers(1, 0, {
+      const mocksNewUsers = await generateMockUsers(1, 1, {
         userService: service,
         accountService: authService
       });
 
-      const newUser = mocksNewUsers[0].user;
+      const newPage = mocksNewUsers[0].pages[0];
       const newCredential = {
         $credential: mocksNewUsers[0].credential,
         $language: 'th'
       } as any;
 
       const newRequest: SocialSyncDto = {
-        castcleId: newUser.displayId,
+        castcleId: newPage.displayId,
         provider: SocialProvider.Twitter,
-        uid: 't12345678',
+        socialId: 't12345678',
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
@@ -629,18 +620,30 @@ describe('AppController', () => {
       await expect(
         appController.syncSocial(newCredential, newRequest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-          credential.$language
-        )
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
+    });
+
+    it('should return exception when socail sync with user people', async () => {
+      const userRequest: SocialSyncDto = {
+        castcleId: user.displayId,
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true
+      };
+      await expect(
+        appController.syncSocial(credential, userRequest)
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
     });
 
     it('should get all sync social from user', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
-        uid: 'f89766',
+        socialId: 'f89766',
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
@@ -650,14 +653,14 @@ describe('AppController', () => {
       const result = await appController.getSyncSocial(credential);
       const expectResult = {
         twitter: {
-          uid: 't12345678',
+          socialId: 't12345678',
           username: 'mocktw',
           displayName: 'mock tw',
           avatar: 'www.twitter.com/mocktw',
           active: true
         },
         facebook: {
-          uid: 'f89766',
+          socialId: 'f89766',
           username: 'mockfb',
           displayName: 'mock fb',
           avatar: 'www.facebook.com/mockfb',
@@ -672,18 +675,18 @@ describe('AppController', () => {
 
     it('should update sync social successful', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
-        uid: '56738393',
+        socialId: '56738393',
         userName: 'mockfb2',
         displayName: 'mock fb2',
         avatar: 'www.facebook.com/mockfb2',
         active: true
       };
       await appController.updateSyncSocial(credential, request);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result.socialId).toEqual(request.uid);
+      expect(result.socialId).toEqual(request.socialId);
       expect(result.userName).toEqual(request.userName);
       expect(result.displayName).toEqual(request.displayName);
       expect(result.avatar).toEqual(request.avatar);
@@ -691,12 +694,12 @@ describe('AppController', () => {
 
     it('should delete sync social successful', async () => {
       const request = {
-        castcleId: user.displayId,
+        castcleId: page.displayId,
         provider: SocialProvider.Facebook,
-        uid: '56738393'
+        socialId: '56738393'
       };
       await appController.deleteSyncSocial(credential, request);
-      const userSync = await socialSyncService.getSocialSyncByUser(user);
+      const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result).toBeUndefined();
     });
@@ -716,7 +719,7 @@ describe('AppController', () => {
       const account = await authService.getAccountFromCredential(
         userCredential
       );
-      expect(account.preferences.langagues).toEqual(['th', 'en']);
+      expect(account.preferences.languages).toEqual(['th', 'en']);
     });
 
     it('should return Exception when empty language', async () => {
@@ -768,6 +771,224 @@ describe('AppController', () => {
           credentialGuest.$language
         )
       );
+    });
+  });
+
+  describe('Referrer & Referee', () => {
+    let user: UserDocument;
+    let credential;
+    let defaultRequest: SocialSyncDto;
+    let newAccount;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      newAccount = await authService.createAccount({
+        deviceUUID: 'refTest12354',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+      //sign up to create actual account
+      await authService.signupByEmail(newAccount.accountDocument, {
+        displayId: 'ref1',
+        displayName: 'ref01',
+        email: 'ref1@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get referrer from Account Referrer schema', async () => {
+      const result = await appController.getReferrer('ref1', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get referrer from Account Referrer schema By ME', async () => {
+      const meCredential = {
+        $credential: newAccount.credentialDocument,
+        $language: 'th'
+      } as any;
+      const result = await appController.getReferrer('me', meCredential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.castcleId).toEqual(user.displayId);
+    });
+
+    it('should get empty data when use wrong referrer', async () => {
+      const result = await appController.getReferrer(
+        user.displayId,
+        credential,
+        {
+          hasRelationshipExpansion: true
+        }
+      );
+      expect(result.payload).toBeNull();
+    });
+
+    it('should get Referee from Account Referrer schema', async () => {
+      const newAccount2 = await authService.createAccount({
+        deviceUUID: 'refTest789',
+        languagesPreferences: ['th', 'en'],
+        header: {
+          platform: 'ios'
+        },
+        device: 'iPhone'
+      });
+
+      await authService.signupByEmail(newAccount2.accountDocument, {
+        displayId: 'ref2',
+        displayName: 'ref02',
+        email: 'ref2@gmail.com',
+        password: 'test1234567',
+        referral: user.displayId
+      });
+
+      const result = await appController.getReferee(
+        user.displayId,
+        credential,
+        {
+          hasRelationshipExpansion: true
+        }
+      );
+      expect(result.payload.length).toEqual(2);
+    });
+
+    it('should get Referee from Account Referrer schema By ME', async () => {
+      const result = await appController.getReferee('me', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.length).toEqual(2);
+    });
+
+    it('should get empty data when use wrong Referee', async () => {
+      const result = await appController.getReferee('ref2', credential, {
+        hasRelationshipExpansion: true
+      });
+      expect(result.payload.length).toEqual(0);
+    });
+  });
+
+  describe('RecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+
+      contentA = await contentService.createContentFromUser(user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
+
+      const result = await appController.recastContent(
+        mocksUsers[1].user.displayId,
+        contentA._id,
+        newCredential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
+    });
+
+    it('should exception when recast content same content', async () => {
+      const newCredential = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th'
+      } as any;
+
+      await expect(
+        appController.recastContent(
+          mocksUsers[1].user.displayId,
+          contentA._id,
+          newCredential
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.RECAST_IS_EXIST));
+    });
+  });
+
+  describe('QuotecastContent', () => {
+    let user: UserDocument;
+    let credential;
+    let contentA: ContentDocument;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      user = mocksUsers[0].user;
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th'
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should recast content successful', async () => {
+      const newUser = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService
+      });
+
+      contentA = await contentService.createContentFromUser(newUser[0].user, {
+        payload: {
+          message: 'hello world'
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: newUser[0].user.displayId
+      });
+
+      const result = await appController.quoteContent(
+        user.displayId,
+        contentA._id,
+        'this is good content',
+        credential
+      );
+      expect(result.payload.referencedCasts.id).toEqual(contentA._id);
+      expect(result.includes).toBeDefined;
     });
   });
 });

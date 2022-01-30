@@ -24,11 +24,11 @@ import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { CacheModule, Module } from '@nestjs/common';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
-import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.intercapter';
+import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor
-} from './cache/http.cache.shared.intercapter';
+} from './cache/http.cache.shared.interceptor';
 import {
   CredentialInterceptor,
   CredentialRequest
@@ -38,7 +38,7 @@ import {
   HeadersRequest
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
-import { ExceptionalInterceptor } from './exception/exception.interceptor';
+import { ExceptionFilter } from './exception/exception.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 
 @Module({
@@ -60,6 +60,6 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionalInterceptor,
+  ExceptionFilter,
   IpTrackerInterceptor
 };

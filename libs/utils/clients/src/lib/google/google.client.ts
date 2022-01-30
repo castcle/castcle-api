@@ -21,16 +21,13 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { Auth, google } from 'googleapis';
 @Injectable()
 export class GoogleClient {
   private oauthClient: Auth.OAuth2Client;
-  private readonly logger = new CastLogger(
-    GoogleClient.name,
-    CastLoggerOptions
-  );
+  private logger = new CastLogger(GoogleClient.name);
 
   constructor() {
     this.oauthClient = new google.auth.OAuth2(

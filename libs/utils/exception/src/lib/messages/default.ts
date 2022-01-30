@@ -163,6 +163,11 @@ export const ErrorMessages = {
     code: '3020',
     message: 'Max attempts reached'
   },
+  '3021': {
+    statusCode: '400',
+    code: '3021',
+    message: 'Already have this email and want to merge?'
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
@@ -182,6 +187,11 @@ export const ErrorMessages = {
     statusCode: '404',
     code: '5003',
     message: 'ไม่พบโพสต์หรือหัวข้อ กรุณาลองใหม่อีกครั้ง'
+  },
+  '5004': {
+    statusCode: '404',
+    code: '5004',
+    message: 'You already recast this cast'
   },
   '6001': {
     statusCode: '400',

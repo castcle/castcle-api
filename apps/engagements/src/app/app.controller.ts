@@ -24,7 +24,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   Post,
   Req,
@@ -37,14 +36,13 @@ import {
   CredentialRequest
 } from '@castcle-api/utils/interceptors';
 import { UxEngagementService } from '@castcle-api/database';
-import { AppService } from './app.service';
 import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { Configs } from '@castcle-api/environments';
 
 @ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguague.name,
-  description: Configs.RequiredHeaders.AcceptLanguague.description,
-  example: Configs.RequiredHeaders.AcceptLanguague.example,
+  name: Configs.RequiredHeaders.AcceptLanguage.name,
+  description: Configs.RequiredHeaders.AcceptLanguage.description,
+  example: Configs.RequiredHeaders.AcceptLanguage.example,
   required: true
 })
 @ApiHeader({
@@ -55,15 +53,7 @@ import { Configs } from '@castcle-api/environments';
 })
 @Controller()
 export class EngagementController {
-  constructor(
-    private readonly appService: AppService,
-    private uxEngagemenetService: UxEngagementService
-  ) {}
-
-  @Get()
-  getData() {
-    return this.appService.getData();
-  }
+  constructor(private uxEngagementService: UxEngagementService) {}
 
   @ApiBody({
     type: UxEngagementBody
@@ -79,7 +69,7 @@ export class EngagementController {
     const accountId = String(body.accountId);
     if (accountId !== String(req.$credential.account._id))
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
-    const result = this.uxEngagemenetService.track(body);
+    const result = this.uxEngagementService.track(body);
     if (result) return '';
     else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
   }

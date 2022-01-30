@@ -38,7 +38,7 @@ export interface HeadersRequest extends Request {
 export class HeadersInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    request.$language = util.getLangagueFromRequest(request);
+    request.$language = util.getLanguageFromRequest(request);
     if (request.$language) {
       return next.handle();
     } else {

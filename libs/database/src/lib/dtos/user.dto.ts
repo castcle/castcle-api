@@ -21,9 +21,16 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { SocialProvider, PageVerified, UserVerified } from '../models';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString
+} from 'class-validator';
+import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { CastcleImage, Pagination } from './common.dto';
+import { PaginationQuery } from './pagination.dto';
 
 class UserImage {
   @ApiProperty()
@@ -32,7 +39,7 @@ class UserImage {
   cover: string | CastcleImage;
 }
 
-class UserModelImage {
+export class UserModelImage {
   avatar?: CastcleImage;
   cover?: CastcleImage;
 }
@@ -101,6 +108,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   blocking: boolean;
+
+  @ApiProperty()
+  passwordNotSet: boolean;
 }
 
 export class UpdateUserDto {
@@ -133,11 +143,6 @@ export class PageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  displayName: string;
-}
-
-export class PageModelDto {
-  castcleId: string;
   displayName: string;
 }
 
@@ -253,18 +258,21 @@ export class SocialSyncDto {
 
   @ApiProperty()
   @IsString()
-  uid: string;
+  socialId: string;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   userName?: string;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   displayName?: string;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   avatar?: string;
 
   @ApiProperty()
@@ -283,5 +291,11 @@ export class SocialSyncDeleteDto {
 
   @ApiProperty()
   @IsString()
-  uid: string;
+  socialId: string;
+}
+
+export class GetSearchUsersDto extends PaginationQuery {
+  @IsString()
+  @IsNotEmpty()
+  keyword: string;
 }

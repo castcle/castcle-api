@@ -21,65 +21,17 @@
  * or have any questions.
  */
 
-import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsEnum,
-  IsMongoId,
-  IsNumber,
-  IsOptional,
-  Max
-} from 'class-validator';
-import { DEFAULT_QUERY_OPTIONS } from './common.dto';
+import { TransformStringToEnum } from '@castcle-api/utils/commons';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { SearchType } from '../models';
+import { PaginationQuery } from './pagination.dto';
 
-export enum UserField {
-  Relationships = 'relationships'
-}
-
-export class ExpansionQuery {
-  @ApiProperty({
-    enum: UserField,
-    required: false,
-    isArray: true
-  })
-  @TransformStringToArrayOfStrings()
+export class GetSearchRecentDto extends PaginationQuery {
   @IsOptional()
-  @IsArray()
-  @IsEnum(UserField, { each: true })
-  userFields?: UserField[];
+  @TransformStringToEnum(SearchType)
+  contentType: SearchType;
 
-  hasRelationshipExpansion = (() => {
-    return Boolean(this.userFields?.includes(UserField.Relationships));
-  }) as unknown as boolean;
-}
-
-export class FeedQuery extends ExpansionQuery {
-  @ApiProperty({
-    type: Number,
-    maximum: 1000,
-    required: false
-  })
-  @Type(() => Number)
-  @IsOptional()
-  @IsNumber()
-  @Max(1000)
-  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
-
-  @ApiProperty({
-    type: String,
-    required: false
-  })
-  @IsOptional()
-  @IsMongoId()
-  sinceId?: string;
-
-  @ApiProperty({
-    type: String,
-    required: false
-  })
-  @IsOptional()
-  @IsMongoId()
-  untilId?: string;
+  @IsString()
+  @IsNotEmpty()
+  keyword: string;
 }

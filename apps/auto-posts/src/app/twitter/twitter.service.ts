@@ -33,7 +33,7 @@ import {
   SocialProvider,
   SocialSyncService
 } from '@castcle-api/database';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { SocialSyncDocument } from '@castcle-api/database/schemas';
@@ -41,15 +41,12 @@ import { SocialSyncDocument } from '@castcle-api/database/schemas';
 @Injectable()
 export class TwitterService {
   private readonly client: TwitterApiv2;
-  private readonly logger = new CastLogger(
-    TwitterService.name,
-    CastLoggerOptions
-  );
+  private readonly logger = new CastLogger(TwitterService.name);
 
   constructor(
-    private readonly socialSyncService: SocialSyncService,
     private readonly contentService: ContentService,
-    private readonly downloader: Downloader
+    private readonly downloader: Downloader,
+    private readonly socialSyncService: SocialSyncService
   ) {
     this.client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
   }
@@ -79,16 +76,17 @@ export class TwitterService {
 
     if (!timeline.meta.result_count) return;
 
-    const contents = await this.convertTimelineToContents(
-      syncAccount.author.id,
-      timeline.data
-    );
+    const [author, contents] = await Promise.all([
+      this.contentService.getAuthorFromId(syncAccount.author.id),
+      this.convertTimelineToContents(syncAccount.author.id, timeline.data)
+    ]);
 
     await this.contentService.createContentsFromAuthor(
-      new Author(syncAccount.author),
+      new Author(author),
       contents
     );
 
+    syncAccount.author = author;
     syncAccount.displayName = timeline.includes?.users?.[0]?.name;
     syncAccount.latestSyncId = timeline.data.data[0].id;
     syncAccount.latestSyncDate = new Date();

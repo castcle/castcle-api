@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { CastLogger, CastLoggerOptions } from '@castcle-api/logger';
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import {
   AccessTokenResponse,
@@ -33,7 +33,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AppleClient {
-  private readonly logger = new CastLogger(AppleClient.name, CastLoggerOptions);
+  private logger = new CastLogger(AppleClient.name);
 
   private readonly appleSignIn = new AppleSignIn({
     clientId: Environment.APPLE_CLIENT_ID

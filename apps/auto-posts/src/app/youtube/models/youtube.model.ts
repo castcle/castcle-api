@@ -28,6 +28,10 @@ export enum YoutubeThumbnailQuality {
 }
 
 export class Youtube {
+  static feedUrlFromId(id: string) {
+    return `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${id}`;
+  }
+
   static thumbnailUrlFromId(id: string, quality = YoutubeThumbnailQuality.HQ) {
     return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
   }

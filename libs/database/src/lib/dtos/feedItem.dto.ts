@@ -34,6 +34,7 @@ export class FeedItemDto {
   viewer: any;
   seen: boolean;
   called: boolean;
+  __v?: any;
 }
 
 export enum FeedItemMode {
@@ -50,7 +51,7 @@ export const DEFAULT_FEED_QUERY_OPTIONS = {
   mode: FeedItemMode.Current,
   sortBy: {
     field: 'updatedAt',
-    type: SortDirection.Desc
+    type: SortDirection.DESC
   },
   page: 1,
   limit: 25

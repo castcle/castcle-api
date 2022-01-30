@@ -22,15 +22,22 @@
  */
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
-import { HealthyController } from './controllers/healthy/healthy.controller';
+
 @Module({
-  imports: [DatabaseModule, CaslModule, UtilsClientsModule, UtilsAwsModule],
-  controllers: [AuthenticationController, HealthyController],
+  imports: [
+    DatabaseModule,
+    CaslModule,
+    HealthyModule,
+    UtilsClientsModule,
+    UtilsAwsModule
+  ],
+  controllers: [AuthenticationController],
   providers: [AppService]
 })
 export class AuthenticationModule {}

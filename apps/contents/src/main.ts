@@ -22,21 +22,17 @@
  */
 
 import { Configs, Environment as env } from '@castcle-api/environments';
-import {
-  CastLogger,
-  CastLoggerLevel,
-  CastLoggerOptions
-} from '@castcle-api/logger';
+import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
 import { ContentModule } from './app/app.module';
-import express = require('express');
+import { json, urlencoded } from 'express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { ExceptionalInterceptor } from '@castcle-api/utils/interceptors';
+import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap', CastLoggerOptions);
+  const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(ContentModule, {
     logger: CastLoggerLevel
   });
@@ -56,9 +52,9 @@ async function bootstrap() {
     header: Configs.RequiredHeaders.AcceptVersion.name
   });
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
-  app.useGlobalFilters(new ExceptionalInterceptor());
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.useGlobalFilters(new ExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({}));
   app.enableCors();
   await app.listen(port, () => {
