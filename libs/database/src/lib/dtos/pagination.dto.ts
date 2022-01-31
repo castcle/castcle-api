@@ -38,6 +38,12 @@ export enum UserField {
   Relationships = 'relationships',
 }
 
+export enum ExcludeFeedField {
+  Suggestion = 'suggestion',
+  Ads = 'ads',
+  Reminder = 'reminder',
+}
+
 export class ExpansionQuery {
   @ApiProperty({
     enum: UserField,
@@ -82,4 +88,15 @@ export class PaginationQuery extends ExpansionQuery {
   @IsOptional()
   @IsMongoId()
   untilId?: string;
+}
+
+export class FeedQuery extends PaginationQuery {
+  @IsOptional()
+  mode?: 'current' | 'history';
+  @IsOptional()
+  hashtag?: string;
+  @IsOptional()
+  @TransformStringToArrayOfStrings()
+  @IsEnum(ExcludeFeedField, { each: true })
+  exclude: ExcludeFeedField[];
 }

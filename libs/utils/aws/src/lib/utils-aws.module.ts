@@ -5,7 +5,7 @@ import { Downloader } from './downloader';
 import { Image, ImageUploadOptions } from './image';
 import { Uploader, UploadOptions } from './uploader';
 import { AVATAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
-import { predictContents } from './functions/predict-content';
+import { predictContents, predictSuggestion } from './functions';
 
 @Module({
   imports: [
@@ -28,4 +28,5 @@ export {
   COMMON_SIZE_CONFIGS,
   ImageUploadOptions,
   predictContents,
+  predictSuggestion,
 };
