@@ -554,10 +554,7 @@ export class AppService {
 
     if (!otp) {
       this.logger.error(`Invalid ref code: ${request.refCode}`);
-      throw new CastcleException(
-        CastcleStatus.INVLAID_REFCODE,
-        credential.$language
-      );
+      throw CastcleException.INVALID_REF_CODE;
     } else if (otp.action !== objective) {
       this.logger.error(`Invalid objective.`);
       throw new CastcleException(
@@ -665,10 +662,7 @@ export class AppService {
       return '';
     } else {
       this.logger.error(`Invalid Ref Code`);
-      throw new CastcleException(
-        CastcleStatus.INVLAID_REFCODE,
-        credential.$language
-      );
+      throw CastcleException.INVALID_REF_CODE;
     }
   }
 

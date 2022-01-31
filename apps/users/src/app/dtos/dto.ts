@@ -31,7 +31,7 @@ export class TargetCastcleDto {
 
 export class UpdateMobileDto {
   @ApiProperty()
-  @IsEnum(OtpObjective)
+  @IsEnum([OtpObjective.VerifyMobile])
   objective: OtpObjective;
 
   @ApiProperty()
