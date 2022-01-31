@@ -249,7 +249,7 @@ export class AuthenticationService {
    * get and validate account from mobile
    * @param {string} mobileNumber
    * @param {string} countryCode
-   * @returns {Account} account document
+   * @returns account document
    */
   getAccountFromMobile = (mobileNo: string, countryCode: string) => {
     const mobile = mobileNo.charAt(0) === '0' ? mobileNo.slice(1) : mobileNo;

@@ -20,6 +20,6 @@ export class UsersRequest {
   static put = (url: string) => UsersRequest.request('put', url);
 
   static checkHealth = () => UsersRequest.get('/healthy');
-  static claimAirdrop = () => UsersRequest.post('/me/claim-airdrop');
+  static updateMobile = () => UsersRequest.put('/me/mobile');
   static report = (userId: string) => UsersRequest.post(`/${userId}/reporting`);
 }

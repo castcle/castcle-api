@@ -35,7 +35,7 @@ import {
   QueueStatus,
   QueueTopic,
 } from '../models';
-import { Account, Campaign, Queue, Transaction, User } from '../schemas';
+import { Account, Campaign, Queue, Transaction } from '../schemas';
 
 @Injectable()
 export class CampaignService {
@@ -77,11 +77,7 @@ export class CampaignService {
     });
   }
 
-  async claimCampaignsAirdrop(
-    accountId: string,
-    user: User,
-    campaignType: CampaignType
-  ) {
+  async claimCampaignsAirdrop(accountId: string, campaignType: CampaignType) {
     const campaign = await this.getActiveCampaign(campaignType);
 
     if (!campaign) throw CastcleException.CAMPAIGN_HAS_NOT_STARTED;
@@ -90,24 +86,9 @@ export class CampaignService {
       throw CastcleException.REWARD_IS_NOT_ENOUGH;
     }
 
-    switch (campaign.type) {
-      case CampaignType.VERIFY_MOBILE: {
-        if (!user.verified.mobile) {
-          throw CastcleException.NOT_ELIGIBLE_FOR_CAMPAIGN;
-        }
-      }
-    }
-
-    const account = await this.accountModel
-      .findById(accountId)
-      .select('+campaigns');
-
-    const claimAirdropPayload = new ClaimAirdropPayload(
-      account.id,
-      campaign.id
-    );
-
+    const claimAirdropPayload = new ClaimAirdropPayload(accountId, campaign.id);
     const queues = await this.queueModel.find({
+      status: { $ne: QueueStatus.FAILED },
       'payload.accountId': claimAirdropPayload.accountId,
       'payload.campaignId': claimAirdropPayload.campaignId,
       'payload.topic': claimAirdropPayload.topic,
@@ -119,7 +100,7 @@ export class CampaignService {
     this.logger.log(
       `#claimCampaignsAirdrop:init
 Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${account.id}
+For account: ${accountId}
 Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]`
     );
 
@@ -134,7 +115,7 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
     this.logger.log(
       `#claimCampaignsAirdrop:submit:queueId-${queue.id}
 Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${account.id}`
+For account: ${accountId}`
     );
   }
 

@@ -1,5 +1,5 @@
 import { AuthenticationsRequest } from '../../requests';
-import { userAlpha, userBeta, userModel } from '../../variables';
+import { guest, userAlpha, userBeta, userModel } from '../../variables';
 
 export const initializeUsers = async () => {
   await AuthenticationsRequest.guestLogin()
@@ -20,10 +20,19 @@ export const initializeUsers = async () => {
       userBeta.guestToken = body.accessToken;
     });
 
+  await AuthenticationsRequest.guestLogin()
+    .send({ deviceUUID: guest.deviceUUID })
+    .expect(({ body }) => {
+      expect(body.accessToken).toBeDefined();
+      expect(body.refreshToken).toBeDefined();
+
+      guest.guestToken = body.accessToken;
+    });
+
   await AuthenticationsRequest.register()
     .auth(userAlpha.guestToken, { type: 'bearer' })
     .send(userAlpha.toRegisterPayload())
-    .expect(({ body }) => {
+    .expect(async ({ body }) => {
       expect(body.message).toBeUndefined();
       expect(body.accessToken).toBeDefined();
       expect(body.profile.id).toBeDefined();
@@ -31,11 +40,14 @@ export const initializeUsers = async () => {
       expect(body.profile.displayName).toEqual(userAlpha.displayName);
       expect(body.profile.email).toEqual(userAlpha.email);
 
+      const user = await userModel.findByIdAndUpdate(body.profile.id, {
+        'verified.mobile': true,
+      });
+
+      userAlpha.accountId = user.ownerAccount as unknown as string;
       userAlpha.accessToken = body.accessToken;
       userAlpha.id = body.profile.id;
     });
-
-  await userModel.updateOne({ _id: userAlpha.id }, { 'verified.mobile': true });
 
   await AuthenticationsRequest.register()
     .auth(userBeta.guestToken, { type: 'bearer' })

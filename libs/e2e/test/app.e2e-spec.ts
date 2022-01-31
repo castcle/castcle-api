@@ -2,7 +2,7 @@ import { getMongoOptions } from 'libs/database/src/lib/environment';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { connect, disconnect } from 'mongoose';
 import { initializeUsers } from './modules/authentications';
-import { testUsersClaimAirdrop, testUsersReporting } from './modules/users';
+import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
 import {
   closeAuthenticationsModule,
   closeUsersModule,
@@ -22,10 +22,10 @@ describe('Castcle E2E Tests', () => {
     await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();
     await initializeUsers();
-    await closeAuthenticationsModule();
   });
 
   afterAll(async () => {
+    await closeAuthenticationsModule();
     await mongoMemoryReplSet.stop();
     await disconnect();
   });
@@ -43,8 +43,8 @@ describe('Castcle E2E Tests', () => {
       testUsersReporting();
     });
 
-    describe('- Claim Airdrop', () => {
-      testUsersClaimAirdrop();
+    describe('- Update Mobile', () => {
+      testUsersUpdateMobile();
     });
   });
 });

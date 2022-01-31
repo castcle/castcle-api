@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -77,17 +78,18 @@ export class UserService {
   });
 
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>,
     @InjectModel('Credential')
     public _credentialModel: Model<Credential>,
-    @InjectModel('User')
-    public _userModel: Model<User>,
     @InjectModel('Relationship')
     public _relationshipModel: Model<Relationship>,
+    @InjectModel('User')
+    public _userModel: Model<User>,
     private contentService: ContentService,
-    private userProducer: UserProducer,
-    @InjectModel('AccountReferral')
-    public _accountReferral: Model<AccountReferral>
+    private userProducer: UserProducer
   ) {}
 
   getUserFromCredential = (credential: Credential) =>
@@ -845,32 +847,21 @@ Message: ${message}`,
   }
 
   updateMobile = async (
-    userId: string,
+    user: User,
     accountId: string,
     countryCode: string,
     mobileNumber: string
   ) => {
-    await this._accountModel
-      .updateOne(
-        { _id: accountId },
-        {
-          'mobile.countryCode': countryCode,
-          'mobile.number': mobileNumber,
-        }
-      )
-      .exec();
-    this.logger.log('Success update mobile to account');
+    const account = await this._accountModel.findById(accountId);
 
-    const user = this._userModel
-      .updateOne(
-        { _id: userId },
-        {
-          'verified.mobile': true,
-        }
-      )
-      .exec();
-    this.logger.log('Success update verify mobile to user');
-    return user;
+    user.set({ 'verified.mobile': true });
+    account.set({
+      'mobile.countryCode': countryCode,
+      'mobile.number': mobileNumber,
+    });
+
+    await Promise.all([account.save(), user.save()]);
+    this.logger.log('Update user mobile successfully');
   };
 
   userSettings = async (accountId: string, languageCode: string[]) => {

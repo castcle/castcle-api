@@ -71,11 +71,14 @@ class OtpDocument extends CastcleBase {
   reciever: string;
 }
 
-export const OtpSchema = SchemaFactory.createForClass(OtpDocument);
-
 export class Otp extends OtpDocument {
   isValid: () => boolean;
+  isValidVerifyMobileOtp: () => boolean;
 }
+
+export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
+  OtpDocument
+);
 
 export interface OtpModel extends mongoose.Model<Otp> {
   /**
@@ -134,4 +137,10 @@ OtpSchema.methods.isValid = function () {
   const now = new Date().getTime();
   const expireDate = (this as Otp).expireDate.getTime();
   return expireDate - now >= 0;
+};
+
+OtpSchema.methods.isValidVerifyMobileOtp = function () {
+  return (
+    this.action === OtpObjective.VerifyMobile && this.isValid() && this.isVerify
+  );
 };

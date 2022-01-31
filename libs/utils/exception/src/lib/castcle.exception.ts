@@ -44,7 +44,6 @@ export enum CastcleStatus {
   EXPIRED_OTP = '3009',
   LOCKED_OTP = '3010',
   INVALID_PASSWORD = '3011',
-  INVLAID_REFCODE = '3012',
   INVALID_ROLE = '3013',
   EMAIL_OR_PHONE_IS_EXIST = '3014',
   PAGE_IS_EXIST = '3015',
@@ -89,6 +88,8 @@ export class CastcleException extends HttpException {
   static MISSING_AUTHORIZATION_HEADERS = new CastcleException('1002');
   static INVALID_ACCESS_TOKEN = new CastcleException('1003');
   static FORBIDDEN = new CastcleException('1007');
+  static INVALID_REF_CODE = new CastcleException('3012');
+  static MOBILE_NUMBER_ALREADY_EXISTS = new CastcleException('3018');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
   static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
   static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
