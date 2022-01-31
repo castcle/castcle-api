@@ -20,19 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { Environment } from '@castcle-api/environments';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { TopicName } from './enum/topic.name';
-import { NotificationMessage } from './messages/notification.message';
+import { ContentProducer } from './producers/content.producer';
 import { NotificationProducer } from './producers/notification.producer';
 import { UserProducer } from './producers/user.producer';
-import { UserMessage } from './messages/user.message';
-import { ContentProducer } from './producers/content.producer';
-import { ContentMessage } from './messages/content.message';
 
 @Module({
   imports: [
-    BullModule.forRoot({}),
+    BullModule.forRoot({
+      redis: {
+        host: Environment.REDIS_HOST,
+        port: Environment.REDIS_PORT,
+      },
+    }),
     BullModule.registerQueue(
       { name: TopicName.Campaigns },
       { name: TopicName.Contents },
@@ -46,12 +50,4 @@ import { ContentMessage } from './messages/content.message';
 })
 export class UtilsQueueModule {}
 
-export {
-  TopicName,
-  NotificationProducer,
-  NotificationMessage,
-  UserProducer,
-  UserMessage,
-  ContentProducer,
-  ContentMessage,
-};
+export { TopicName, NotificationProducer, UserProducer, ContentProducer };
