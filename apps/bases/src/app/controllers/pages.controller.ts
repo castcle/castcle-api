@@ -74,7 +74,7 @@ import {
   CastcleClearCacheAuth,
 } from '@castcle-api/utils/decorators';
 import { CacheKeyName } from '@castcle-api/utils/cache';
-import { DeletePageDto } from '../dtos/delete.page.dto';
+import { DeletePageDto } from '../dtos';
 
 @CastcleController('1.0')
 @Controller()
