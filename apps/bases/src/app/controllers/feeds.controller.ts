@@ -23,6 +23,8 @@
 
 import {
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
@@ -57,42 +59,39 @@ import {
 } from '@castcle-api/utils/decorators';
 import { ContentService, UserService } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { FeedParam } from '../dtos';
 
 @CastcleController('1.0')
 @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
 export class FeedsController {
   constructor(
-    private rankerService: RankerService,
     private contentService: ContentService,
+    private rankerService: RankerService,
     private userService: UserService,
     private uxEngagementService: UxEngagementService
   ) {}
 
   @CastcleBasicAuth()
   @Post('feeds/:id/seen')
-  async seenFeed(
-    @Auth() { account }: Authorizer,
-    @Param('id') feedItemId: string
-  ) {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async seenFeed(@Auth() { account }: Authorizer, @Param() { id }: FeedParam) {
     if (account.isGuest) {
-      await this.rankerService.seenFeedItemForGuest(account, feedItemId);
+      await this.rankerService.seenFeedItemForGuest(account, id);
     } else {
-      await this.rankerService.seenFeedItem(account, feedItemId);
+      await this.rankerService.seenFeedItem(account, id);
     }
-
-    return '';
   }
 
   @CastcleBasicAuth()
   @Post('feeds/:id/off-view')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async offScreenFeed(
     @Auth() { account }: Authorizer,
-    @Param('id') feedItemId: string
+    @Param() { id }: FeedParam
   ) {
-    console.log('off-view', account);
-    if (!account.isGuest)
-      await this.rankerService.offScreenFeedItem(account, feedItemId);
-    return '';
+    if (account.isGuest) return;
+
+    await this.rankerService.offScreenFeedItem(account, id);
   }
 
   @ApiOkResponse({

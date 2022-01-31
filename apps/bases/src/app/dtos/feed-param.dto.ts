@@ -21,33 +21,9 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { BullModule } from '@nestjs/bull';
-import { Module } from '@nestjs/common';
-import { TopicName } from './enum/topic.name';
-import { ContentProducer } from './producers/content.producer';
-import { NotificationProducer } from './producers/notification.producer';
-import { UserProducer } from './producers/user.producer';
+import { IsMongoId } from 'class-validator';
 
-@Module({
-  imports: [
-    BullModule.forRoot({
-      redis: {
-        host: Environment.REDIS_HOST,
-        port: Environment.REDIS_PORT,
-      },
-    }),
-    BullModule.registerQueue(
-      { name: TopicName.Campaigns },
-      { name: TopicName.Contents },
-      { name: TopicName.Notifications },
-      { name: TopicName.Users }
-    ),
-  ],
-  controllers: [],
-  providers: [NotificationProducer, UserProducer, ContentProducer],
-  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer],
-})
-export class UtilsQueueModule {}
-
-export { TopicName, NotificationProducer, UserProducer, ContentProducer };
+export class FeedParam {
+  @IsMongoId()
+  id: string;
+}
