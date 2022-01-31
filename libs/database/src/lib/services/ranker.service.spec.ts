@@ -30,7 +30,6 @@ import { AuthenticationService } from './authentication.service';
 import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
-import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
 
