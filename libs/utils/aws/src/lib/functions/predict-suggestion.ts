@@ -21,24 +21,31 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { UserController } from './app.controller';
-import { SuggestionService } from './services/suggestion.service';
+import * as AWS from 'aws-sdk';
+import { Configs } from '@castcle-api/environments';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    HealthyModule,
-    UtilsCacheModule,
-    UtilsInterceptorsModule,
-    UtilsAwsModule,
-  ],
-  controllers: [UserController],
-  providers: [SuggestionService],
-})
-export class UserModule {}
+type SuggestionType = {
+  statusCode: number;
+  predicted_at: string;
+  result: { result: { userId: string; engagements: number; index: number }[] };
+};
+
+export const predictSuggestion = (accountId: string) => {
+  const lambda = new AWS.Lambda({ region: 'us-east-1' });
+
+  return new Promise<SuggestionType>((resolve, reject) => {
+    console.time('Spend time on AWS lambda');
+
+    lambda.invoke(
+      {
+        FunctionName: Configs.PredictSuggestionFunctionName,
+        InvocationType: 'RequestResponse',
+        Payload: JSON.stringify({ userId: accountId }),
+      },
+      (err, data) => {
+        console.timeEnd('Spend time on AWS lambda');
+        err ? reject(err) : resolve(JSON.parse(data.Payload as string));
+      }
+    );
+  });
+};

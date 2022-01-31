@@ -61,6 +61,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
+import { SuggestionService } from './services/suggestion.service';
 
 describe('AppController', () => {
   let mongod: MongoMemoryServer;
@@ -99,6 +100,7 @@ describe('AppController', () => {
         SocialSyncService,
         CampaignService,
         TransactionService,
+        SuggestionService,
       ],
     }).compile();
     appController = app.get(UserController);

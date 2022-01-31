@@ -62,4 +62,10 @@ export const Configs = {
       'https://castcle-public.s3.amazonaws.com/assets/no-image-placeholder.png',
   },
   PredictFunctionName: 'dev-ds-predict-per-ct-predictor',
+  PredictSuggestionFunctionName: 'dev-ds-predict-friend-to-follow',
+  Suggestion: {
+    MinContent: 6,
+    MinDiffTime: 15000,
+    SuggestAmount: 2,
+  },
 };

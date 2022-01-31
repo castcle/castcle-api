@@ -103,6 +103,7 @@ import {
   UserSettingsDto,
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
+import { SuggestionService } from './services/suggestion.service';
 
 class DeleteUserBody {
   channel: string;
@@ -121,7 +122,8 @@ export class UserController {
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
     private transactionService: TransactionService,
-    private userService: UserService
+    private userService: UserService,
+    private suggestionService: SuggestionService
   ) {}
 
   /**
@@ -415,6 +417,12 @@ export class UserController {
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(@Req() { $credential }: CredentialRequest) {
+    return this.suggestionService.suggest($credential.account.id);
   }
 
   @ApiOkResponse({ type: ContentsResponse })
