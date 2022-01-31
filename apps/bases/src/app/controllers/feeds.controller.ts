@@ -32,7 +32,11 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { RankerService, UxEngagementService } from '@castcle-api/database';
+import {
+  RankerService,
+  UserService,
+  UxEngagementService,
+} from '@castcle-api/database';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   GetSearchRecentDto,
@@ -60,7 +64,7 @@ export class FeedsController {
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
     private userService: UserService,
-    private uxEngagementService: UxEngagementService,
+    private uxEngagementService: UxEngagementService
   ) {}
 
   @CastcleBasicAuth()
