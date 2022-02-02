@@ -96,7 +96,7 @@ export class SuggestionService {
     ) {
       console.log('do predict');
       const result = await predictSuggestion(accountId);
-      const userIds = result.result.result.map((item) => item.userId);
+      const userIds = result.result.map((item) => item.userId);
       const users = await Promise.all(
         userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
       );
