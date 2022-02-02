@@ -24,4 +24,5 @@
 export class ContentAggregator {
   createTime?: Date;
   following?: boolean;
+  fromGlobal?: boolean;
 }
