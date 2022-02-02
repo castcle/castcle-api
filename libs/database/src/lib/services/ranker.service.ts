@@ -24,12 +24,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CastcleFeedQueryOptions, FeedItemDto } from '../dtos/feedItem.dto';
-import {
-  createCastcleFilter,
-  createCastcleMeta,
-  createPagination,
-} from '../utils/common';
+import { FeedItemDto } from '../dtos/feedItem.dto';
+import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
   Content,
