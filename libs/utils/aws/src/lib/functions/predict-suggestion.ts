@@ -27,7 +27,7 @@ import { Configs } from '@castcle-api/environments';
 type SuggestionType = {
   statusCode: number;
   predicted_at: string;
-  result: { result: { userId: string; engagements: number; index: number }[] };
+  result: { userId: string; engagements: number; index: number }[];
 };
 
 export const predictSuggestion = (accountId: string) => {

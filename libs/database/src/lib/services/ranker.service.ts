@@ -43,7 +43,11 @@ import {
   FeedItemPayloadItem,
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
-import { Author, CastcleIncludes } from '../dtos/content.dto';
+import {
+  Author,
+  CastcleIncludes,
+  ContentPayloadItem,
+} from '../dtos/content.dto';
 import { FeedQuery, PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
 import { ContentAggregator } from '../aggregator/content.aggregator';
@@ -231,7 +235,7 @@ export class RankerService {
       feeds.map((f) => f.content._id)
     );
     const newContentids = guestFeedPayloads.payload.map(
-      (item) => item.payload.id
+      (item) => (item.payload as ContentPayloadItem).id
     );
     const feedItemDtos = newContentids.map(
       (contentId) =>
