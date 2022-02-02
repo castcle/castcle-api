@@ -71,11 +71,7 @@ export class FeedsController {
   @Post('feeds/:id/seen')
   @HttpCode(HttpStatus.NO_CONTENT)
   async seenFeed(@Auth() { account }: Authorizer, @Param() { id }: FeedParam) {
-    if (account.isGuest) {
-      await this.rankerService.seenFeedItemForGuest(account, id);
-    } else {
-      await this.rankerService.seenFeedItem(account, id);
-    }
+    await this.rankerService.seenFeedItem(account, id);
     this.suggestionService.seen(account.id);
   }
 

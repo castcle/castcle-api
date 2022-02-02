@@ -79,6 +79,7 @@ export class RankerService {
     viewer: Account,
     excludeContents?: any[]
   ) => {
+    console.log('exclude', excludeContents);
     const filter = createCastcleFilter(
       {
         countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
@@ -237,6 +238,7 @@ export class RankerService {
     const newContentids = guestFeedPayloads.payload.map(
       (item) => (item.payload as ContentPayloadItem).id
     );
+    console.log('insertGuesttFeedIds', newContentids);
     const feedItemDtos = newContentids.map(
       (contentId) =>
         ({
@@ -297,17 +299,25 @@ export class RankerService {
         query,
         documents
       );
-      contentIds = contentIds.concat(
-        newAddFeeds.map((item) => item.content as unknown as string)
+      const newContentIds = newAddFeeds.map((item) =>
+        String(item.content as unknown as string)
       );
+      contentIds = contentIds.concat(newContentIds);
+
+      console.log('newContentIds', newContentIds);
       embedContents = await this._contentModel.find({
-        _id: { $in: contentIds },
+        _id: { $in: newContentIds },
       });
+      console.log('embedContents', embedContents);
       for (let i = 0; i < newAddFeeds.length; i++)
         newAddFeeds[i].content = embedContents.find(
-          (c) => c.id === newAddFeeds[i].content
+          (c) => String(c._id) === String(newAddFeeds[i].content)
         );
+      console.log('merge with guest feeds');
+      console.log('new add feeds');
+      console.log(newAddFeeds);
       documents = documents.concat(newAddFeeds);
+      //console.log(documents)
     }
     console.log('contentIds', contentIds);
     const contentScore = await predictContents(String(viewer._id), contentIds);
@@ -357,29 +367,6 @@ export class RankerService {
 
     return contents.sort((a, b) => score[a.id] - score[b.id]);
   }
-
-  /**
-   *
-   * @param account
-   * @param feedItemId
-   * @returns
-   */
-  seenFeedItemForGuest = async (embedAccount: Account, feedItemId: string) => {
-    const account = await this._accountModel.findById(embedAccount._id);
-    const guestFeed = await this._guestFeedItemModel
-      .findById(feedItemId)
-      .exec();
-    if (!account.seenContents) account.seenContents = [guestFeed.content.id];
-    else if (
-      account.seenContents.findIndex((cId) => cId === guestFeed.content.id) ===
-      -1
-    ) {
-      account.seenContents.push(guestFeed.content as any as string);
-    }
-    account.markModified('seenContents');
-    return account.save();
-  };
-
   /**
    *
    * @param account
@@ -401,6 +388,7 @@ export class RankerService {
         }
       )
       .exec();
+    //check if feedItem is global
   };
 
   /**
