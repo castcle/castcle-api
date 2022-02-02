@@ -303,6 +303,10 @@ export class SocialSyncDto {
   @ApiProperty()
   @IsBoolean()
   active?: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  autoPost?: boolean;
 }
 
 export class SocialSyncDeleteDto {

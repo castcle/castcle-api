@@ -24,7 +24,6 @@ import {
   AuthenticationService,
   ContentService,
   getSocialProfix,
-  SocialProvider,
   SocialSyncService,
   UserService,
 } from '@castcle-api/database';
@@ -380,9 +379,7 @@ export class PagesController {
           this.logger.error(
             `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
           );
-          throw new CastcleException(
-            CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-          );
+          throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
         }
       })
     );
@@ -437,7 +434,7 @@ export class PagesController {
 
         socialPage.overview = syncBody.overview;
         if (syncBody.link) {
-          socialPage.links = { [syncBody.provider]: syncBody.link }
+          socialPage.links = { [syncBody.provider]: syncBody.link };
         }
         socialPage.socialSyncs = true;
         this.logger.log('Create new page');
