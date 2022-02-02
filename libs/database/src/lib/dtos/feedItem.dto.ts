@@ -30,7 +30,7 @@ import {
 } from '.';
 
 export class FeedItemDto {
-  content: ContentPayloadDto;
+  content: any;
   viewer: any;
   called: boolean;
   __v?: any;
