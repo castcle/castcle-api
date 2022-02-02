@@ -57,6 +57,11 @@ export class GuestFeedItem extends CastcleBase {
     required: true,
   })
   score: number;
+
+  @Prop({
+    type: mongoose.Schema.Types.Array,
+  })
+  seenBy?: string[];
 }
 
 export const GuestFeedItemSchema = SchemaFactory.createForClass(GuestFeedItem);
