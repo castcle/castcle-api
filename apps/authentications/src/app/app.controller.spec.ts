@@ -1231,10 +1231,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), credentialGuest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
-          credentialGuest.$language
-        )
+        new CastcleException(CastcleStatus.MOBILE_NUMBER_IS_EXIST)
       );
     });
 
@@ -1565,15 +1562,10 @@ describe('AppController', () => {
           },
           credentialGuest
         )
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_REFCODE,
-          credentialGuest.$language
-        )
-      );
+      ).rejects.toEqual(CastcleException.INVALID_REF_CODE);
     });
 
-    it('should return Exception when imvalid otp and return lock otp when over 3 times', async () => {
+    it('should return Exception when invalid otp and return lock otp when over 3 times', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
         OtpObjective.ForgotPassword

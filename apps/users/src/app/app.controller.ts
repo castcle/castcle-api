@@ -23,6 +23,7 @@
 import {
   AuthenticationService,
   CampaignService,
+  CampaignType,
   ContentService,
   createCastcleMeta,
   getRelationship,
@@ -51,7 +52,6 @@ import {
 } from '@castcle-api/database/dtos';
 import {
   Credential,
-  OtpObjective,
   SocialSync,
   User,
   UserType,
@@ -89,12 +89,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import {
-  BlockingDto,
-  ClaimAirdropDto,
-  ReportingDto,
-  UnblockingDto,
-} from './dtos';
+import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -103,6 +98,7 @@ import {
   UserSettingsDto,
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
+import { SuggestionService } from './services/suggestion.service';
 
 class DeleteUserBody {
   channel: string;
@@ -121,7 +117,8 @@ export class UserController {
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
     private transactionService: TransactionService,
-    private userService: UserService
+    private userService: UserService,
+    private suggestionService: SuggestionService
   ) {}
 
   /**
@@ -415,6 +412,12 @@ export class UserController {
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(@Req() { $credential }: CredentialRequest) {
+    return this.suggestionService.suggest($credential.account.id);
   }
 
   @ApiOkResponse({ type: ContentsResponse })
@@ -772,77 +775,65 @@ export class UserController {
     }
   }
 
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  @ApiBody({
-    type: UpdateMobileDto,
-  })
-  @ApiOkResponse({
-    type: UserResponseDto,
-  })
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @ApiBody({ type: UpdateMobileDto })
+  @ApiOkResponse({ type: UserResponseDto })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Put('me/mobile')
   async updateMobile(
-    @Req() req: CredentialRequest,
-    @Body() body: UpdateMobileDto
+    @Auth() { account, user }: Authorizer,
+    @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto
   ) {
-    if (body.objective !== OtpObjective.VerifyMobile) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        req.$language
-      );
-    }
+    if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
-    const dupAccount = await this.authService.getAccountFromMobile(
-      body.mobileNumber,
-      body.countryCode
+    const isMobileNumberDuplicate = await this.authService.getAccountFromMobile(
+      mobileNumber,
+      countryCode
     );
 
-    if (dupAccount) {
-      this.logger.error(
-        'Dupplicate mobile : ' + body.countryCode + body.mobileNumber
-      );
-      throw new CastcleException(
-        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
-        req.$language
-      );
+    if (isMobileNumberDuplicate) {
+      throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
     }
 
-    this.logger.log('Get otp document');
     const otp = await this.authService.getOtpFromRequestIdRefCode(
-      req.$credential.account._id,
-      body.refCode
+      account._id,
+      refCode
     );
 
-    if (
-      !otp ||
-      !otp.isValid() ||
-      otp.action !== OtpObjective.VerifyMobile ||
-      !otp.isVerify
-    ) {
-      this.logger.error(`Invalid Ref Code`);
-      throw new CastcleException(CastcleStatus.INVLAID_REFCODE);
-    }
-    this.logger.log('Get account document and validate guest');
-    const account = await this.validateGuestAccount(req.$credential);
-    this.logger.log('Get user document');
+    if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
 
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (account && user) {
-      this.logger.log('Update mobile number');
-      await this.userService.updateMobile(
-        user.id,
-        account._id,
-        body.countryCode,
-        body.mobileNumber
-      );
-      this.logger.log('Get update user document');
-      const afterUpdateUser = await this.userService.getUserFromCredential(
-        req.$credential
-      );
-      const response = await afterUpdateUser.toUserResponse();
-      return response;
-    } else throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    const isFirstTimeVerification = !user.verified.mobile;
+
+    await this.userService.updateMobile(
+      user,
+      account._id,
+      countryCode,
+      mobileNumber
+    );
+
+    if (isFirstTimeVerification) {
+      try {
+        await this.campaignService.claimCampaignsAirdrop(
+          account._id,
+          CampaignType.VERIFY_MOBILE
+        );
+
+        const referral = await this.userService.getReferrer(account.id);
+
+        await this.campaignService.claimCampaignsAirdrop(
+          referral.ownerAccount as unknown as string,
+          CampaignType.FRIEND_REFERRAL
+        );
+      } catch (error: unknown) {
+        this.logger.log(
+          `#updateMobile:claimAirdrop:error\n${
+            error instanceof Error ? error.stack : JSON.stringify(error)
+          }`
+        );
+      }
+    }
+
+    return user.toUserResponse();
   }
 
   /**
@@ -1221,21 +1212,6 @@ export class UserController {
     this.contentService.deleteRecastContentFromOriginalAndAuthor(
       sourceContentId,
       user.id
-    );
-  }
-
-  @Post('me/claim-airdrop')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @CastcleBasicAuth()
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  async claimAirdrop(
-    @Auth() { account, user }: Authorizer,
-    @Body() { campaign }: ClaimAirdropDto
-  ) {
-    await this.campaignService.claimCampaignsAirdrop(
-      account._id,
-      user,
-      campaign
     );
   }
 }

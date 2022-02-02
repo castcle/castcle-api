@@ -1,4 +1,4 @@
-jest.setTimeout(10_000);
+jest.setTimeout(20_000);
 
 jest.mock('bull');
 jest.mock('cache-manager-redis-store', () => 'memory');

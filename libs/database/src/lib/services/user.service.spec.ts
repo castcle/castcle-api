@@ -973,15 +973,15 @@ describe('User Service', () => {
     });
 
     it('should update mobile and verify user and account', async () => {
-      const conutryCode = '+66';
+      const countryCode = '+66';
       const mobile = '0814567890';
-      await service.updateMobile(user._id, account._id, conutryCode, mobile);
+      await service.updateMobile(user, account._id, countryCode, mobile);
       const userUpdate = await service.getByIdOrCastcleId(user.id);
       const accountUpdate = await authService.getAccountFromId(account.id);
 
       expect(userUpdate).not.toBeNull();
       expect(userUpdate.verified.mobile).toBeTruthy();
-      expect(accountUpdate.mobile.countryCode).toEqual(conutryCode);
+      expect(accountUpdate.mobile.countryCode).toEqual(countryCode);
       expect(accountUpdate.mobile.number).toEqual(mobile);
     });
   });
@@ -1001,7 +1001,7 @@ describe('User Service', () => {
       await service._userModel.deleteMany({});
     });
 
-    it('should update mobile and verify user and account', async () => {
+    it('should update settings and verify user and account', async () => {
       const expectResult = ['th', 'en'];
       await service.userSettings(account.id, expectResult);
       const accountUpdate = await authService.getAccountFromId(account.id);

@@ -30,7 +30,6 @@ import { AuthenticationService } from './authentication.service';
 import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
-import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
 
@@ -120,6 +119,7 @@ describe('Ranker Service', () => {
     followerAccount = await authService.getAccountFromEmail(
       'sompop2.kulapalanont@gmail.com'
     );
+    console.debug(followerAccount);
   });
 
   afterAll(async () => {
@@ -175,17 +175,6 @@ describe('Ranker Service', () => {
       expect(totalFeedItem).toEqual(contents.length);
       const feedItems = await service._feedItemModel.find().exec();
       expect(feedItems.length).toEqual(contents.length);
-    });
-    it('should get documents from ContentItems that seen = false', async () => {
-      const feedItems = await service.getFeedItemsFromViewer(followerAccount, {
-        ...DEFAULT_FEED_QUERY_OPTIONS,
-        limit: 2,
-      });
-      expect(feedItems.total).toEqual(contents.length);
-      expect(feedItems.pagination.limit).toEqual(2);
-      expect(feedItems.items[0].content.payload).toEqual(shortPayload5);
-      expect(feedItems.items[1].content.payload).toEqual(shortPayload4);
-      expect(feedItems.items[2]).toBeUndefined();
     });
   });
   //TODO !!! Have to add test later on

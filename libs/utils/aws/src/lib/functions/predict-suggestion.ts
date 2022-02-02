@@ -21,12 +21,31 @@
  * or have any questions.
  */
 
-import { CampaignType } from '@castcle-api/database';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import * as AWS from 'aws-sdk';
+import { Configs } from '@castcle-api/environments';
 
-export class ClaimAirdropDto {
-  @ApiProperty()
-  @IsEnum(CampaignType)
-  campaign: CampaignType;
-}
+type SuggestionType = {
+  statusCode: number;
+  predicted_at: string;
+  result: { result: { userId: string; engagements: number; index: number }[] };
+};
+
+export const predictSuggestion = (accountId: string) => {
+  const lambda = new AWS.Lambda({ region: 'us-east-1' });
+
+  return new Promise<SuggestionType>((resolve, reject) => {
+    console.time('Spend time on AWS lambda');
+
+    lambda.invoke(
+      {
+        FunctionName: Configs.PredictSuggestionFunctionName,
+        InvocationType: 'RequestResponse',
+        Payload: JSON.stringify({ userId: accountId }),
+      },
+      (err, data) => {
+        console.timeEnd('Spend time on AWS lambda');
+        err ? reject(err) : resolve(JSON.parse(data.Payload as string));
+      }
+    );
+  });
+};

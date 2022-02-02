@@ -30,7 +30,7 @@ import {
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { Wallet } from '../models/wallet.model';
-import { CastcleImage, Pagination } from './common.dto';
+import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
 class UserImage {
@@ -302,4 +302,9 @@ export class GetSearchUsersDto extends PaginationQuery {
   @IsString()
   @IsNotEmpty()
   keyword: string;
+}
+
+export class SuggestToFollowResponseDto {
+  payload: (UserResponseDto | PageResponseDto)[];
+  meta: CastcleMeta;
 }

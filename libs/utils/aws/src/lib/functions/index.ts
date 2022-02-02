@@ -20,21 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleException, CastcleStatus } from './castcle.exception';
-import { ErrorMessages } from './messages/default';
 
-describe('CastcleException', () => {
-  Object.keys(CastcleStatus).forEach((key) => {
-    it(`should throw ${key} and code ${CastcleStatus[key]} with message '${
-      ErrorMessages[CastcleStatus[key]].message
-    }' when called`, () => {
-      const throwResult = () => {
-        throw new CastcleException(CastcleStatus[key]);
-      };
-      expect(throwResult).toThrow(CastcleException);
-      expect(throwResult).toThrowError(
-        ErrorMessages[CastcleStatus[key]].message
-      );
-    });
-  });
-});
+export * from './predict-content';
+export * from './predict-suggestion';

@@ -24,12 +24,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CastcleFeedQueryOptions } from '../dtos/feedItem.dto';
-import {
-  createCastcleFilter,
-  createCastcleMeta,
-  createPagination,
-} from '../utils/common';
+import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
   Content,
@@ -43,12 +38,12 @@ import {
   Relationship,
 } from '../schemas';
 import {
-  GuestFeedItemPayload,
+  FeedItemResponse,
   FeedItemPayloadItem,
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
-import { PaginationQuery } from '../dtos';
+import { FeedQuery, PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -68,45 +63,12 @@ export class RankerService {
   ) {}
 
   /**
-   *
-   * @param viewer
-   * @param options
-   * @returns
-   */
-  getFeedItemsFromViewer = (
-    viewer: Account,
-    options: CastcleFeedQueryOptions
-  ) => this.getFeedItemsByFollowedFromViewer(viewer, options);
-
-  async getFeedItemsByFollowedFromViewer(
-    viewer: Account,
-    options: CastcleFeedQueryOptions
-  ) {
-    const filter = {
-      viewer: viewer._id,
-    };
-    const feedItemResult = await this._feedItemModel
-      .find(filter)
-      .skip(options.page - 1)
-      .populate('content')
-      .limit(options.limit)
-      .sort('-aggregator.createTime')
-      .exec();
-    const totalFeedItems = await this._feedItemModel.countDocuments(filter);
-    return {
-      total: totalFeedItems,
-      items: feedItemResult,
-      pagination: createPagination(options, totalFeedItems),
-    };
-  }
-
-  /**
    * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
    * @param {QueryOption} query
    * @param {Account} viewer
    * @returns {GuestFeedItem[]}
    */
-  getGuestFeedItems = async (query: PaginationQuery, viewer: Account) => {
+  getGuestFeedItems = async (query: FeedQuery, viewer: Account) => {
     const filter = createCastcleFilter(
       {
         countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
@@ -163,19 +125,95 @@ export class RankerService {
       ),
       includes,
       meta: createCastcleMeta(feedItems),
-    } as GuestFeedItemPayload;
+    } as FeedItemResponse;
+  };
+
+  _feedItemsToPayloadItems = (feedDocuments: FeedItem[]) =>
+    feedDocuments.map(
+      (item) =>
+        ({
+          id: item.id,
+          feature: {
+            slug: 'feed',
+            key: 'feature.feed',
+            name: 'Feed',
+          },
+          circle: {
+            id: 'for-you',
+            key: 'circle.forYou',
+            name: 'For You',
+            slug: 'forYou',
+          },
+          payload: signedContentPayloadItem(
+            toUnsignedContentPayloadItem(item.content, [])
+          ),
+          type: 'content',
+        } as FeedItemPayloadItem)
+    );
+
+  _getCastcleInclude = async (
+    feedDocuments: FeedItem[],
+    viewer: Account,
+    query: PaginationQuery
+  ) => {
+    const includes = {
+      users: feedDocuments.map((item) => item.content.author),
+      casts: feedDocuments
+        .filter((doc) => doc.content.originalPost)
+        .map((c) => c.content.originalPost)
+        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c))),
+    };
+    const meta: CastcleMeta = createCastcleMeta(feedDocuments);
+    let authors = includes.users.map((author) => new Author(author));
+    authors = authors.concat(
+      feedDocuments
+        .filter((feedItem) => feedItem.content.originalPost)
+        .map((feedItem) => new Author(feedItem.content.originalPost.author))
+    );
+    includes.users = query.hasRelationshipExpansion
+      ? await this.userService.getIncludesUsers(viewer, authors)
+      : authors.map((author) => author.toIncludeUser());
+    return { includes, meta };
+  };
+
+  _getMemberFeedHistoryItemsFromViewer = async (
+    viewer: Account,
+    query: FeedQuery
+  ) => {
+    console.debug('start service');
+    const filter = createCastcleFilter(
+      { viewer: viewer._id, seenAt: { $exists: true } },
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
+    );
+    const documents = await this._feedItemModel
+      .find(filter)
+      .limit(query.maxResults)
+      .populate('content')
+      .sort('-seenAt')
+      .exec();
+
+    const payload = this._feedItemsToPayloadItems(documents);
+    const { includes, meta } = await this._getCastcleInclude(
+      documents,
+      viewer,
+      query
+    );
+    return {
+      payload: payload,
+      includes: new CastcleIncludes(includes),
+      meta: meta,
+    } as FeedItemResponse;
   };
 
   /**
    * add member feed item that use data from DS
    * @param viewer
    * @param query
-   * @returns {GuestFeedItemPayload}
+   * @returns {FeedItemResponse}
    */
-  getMemberFeedItemsFromViewer = async (
-    viewer: Account,
-    query: PaginationQuery
-  ) => {
+  getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
+    if (query.mode && query.mode === 'history')
+      return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
     const startNow = new Date();
     console.debug('start service');
     const filter = createCastcleFilter(
@@ -216,7 +254,7 @@ export class RankerService {
     console.log('contentIds', contentIds);
     const answer = await predictContents(String(viewer._id), contentIds);
     let feedPayload: FeedItemPayloadItem[] = [];
-    let newAnswer: any[] = [];
+    let newAnswer: FeedItem[] = [];
     if (answer) {
       newAnswer = Object.keys(answer)
         .map((id) => {
@@ -228,27 +266,7 @@ export class RankerService {
         })
         .sort((a, b) => (a.score > b.score ? -1 : 1))
         .map((t) => t.feedItem);
-      feedPayload = newAnswer.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed',
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou',
-            },
-            payload: signedContentPayloadItem(
-              toUnsignedContentPayloadItem(item.content, [])
-            ),
-            type: 'content',
-          } as FeedItemPayloadItem)
-      );
+      feedPayload = this._feedItemsToPayloadItems(newAnswer);
     }
 
     const includes = {
@@ -282,28 +300,16 @@ export class RankerService {
     authors = authors.concat(
       newAnswer
         .filter((feedItem) => feedItem.content.originalPost)
-        .map((feedItem) => feedItem.content.originalPost.author)
+        .map((feedItem) => new Author(feedItem.content.originalPost.author))
     );
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
-
-    /*const newSeenContents = viewer.seenContents.concat(
-      feedPayload.map((item) => item.payload.id)
-    );
-    this._accountModel
-      .updateOne(
-        { _id: viewer._id },
-        {
-          seenContents: newSeenContents,
-        }
-      )
-      .exec();*/
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),
       meta: meta,
-    } as GuestFeedItemPayload;
+    } as FeedItemResponse;
   };
 
   async sortContentsByScore(accountId: string, contents: Content[]) {

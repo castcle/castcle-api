@@ -48,7 +48,6 @@ import {
   Content,
   Credential,
   Engagement,
-  OtpObjective,
   User,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
@@ -61,6 +60,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
+import { SuggestionService } from './services/suggestion.service';
 
 describe('AppController', () => {
   let mongod: MongoMemoryServer;
@@ -99,6 +99,7 @@ describe('AppController', () => {
         SocialSyncService,
         CampaignService,
         TransactionService,
+        SuggestionService,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -342,167 +343,6 @@ describe('AppController', () => {
     });
   });
 
-  describe('updateMobile', () => {
-    let account: Account;
-    let credential;
-    beforeAll(async () => {
-      const mocksUsers = await generateMockUsers(1, 0, {
-        userService: service,
-        accountService: authService,
-      });
-
-      account = mocksUsers[0].account;
-      credential = {
-        $credential: mocksUsers[0].credential,
-        $language: 'th',
-      } as any;
-    });
-
-    afterAll(async () => {
-      await service._userModel.deleteMany({});
-    });
-
-    it('should update mobile successful', async () => {
-      const countryCode = '+66';
-      const mobile = '0815678900';
-      const newOtp = await authService.generateOtp(
-        account,
-        OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
-        'mobile',
-        true
-      );
-
-      const request = {
-        objective: OtpObjective.VerifyMobile,
-        refCode: newOtp.refCode,
-        countryCode: countryCode,
-        mobileNumber: mobile,
-      };
-
-      const result = await appController.updateMobile(credential, request);
-
-      expect(result).toBeDefined;
-      expect(result.verified.mobile).toEqual(true);
-    });
-
-    it('should return Exception when get dupplicate mobile number', async () => {
-      const countryCode = '+66';
-      const mobile = '0815678900';
-      const newOtp = await authService.generateOtp(
-        account,
-        OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
-        'mobile',
-        false
-      );
-
-      const request = {
-        objective: OtpObjective.VerifyMobile,
-        refCode: newOtp.refCode,
-        countryCode: countryCode,
-        mobileNumber: mobile,
-      };
-
-      await expect(
-        appController.updateMobile(credential, request)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
-          credential.$language
-        )
-      );
-    });
-
-    it('should return Exception when get invalid ref code', async () => {
-      const countryCode = '+66';
-      const mobile = '0815678901';
-      const newOtp = await authService.generateOtp(
-        account,
-        OtpObjective.VerifyMobile,
-        credential.$credential.account._id,
-        'mobile',
-        false
-      );
-
-      const request = {
-        objective: OtpObjective.VerifyMobile,
-        refCode: newOtp.refCode,
-        countryCode: countryCode,
-        mobileNumber: mobile,
-      };
-
-      await expect(
-        appController.updateMobile(credential, request)
-      ).rejects.toEqual(new CastcleException(CastcleStatus.INVLAID_REFCODE));
-    });
-
-    it('should return Exception when get guest account', async () => {
-      const countryCode = '+66';
-      const mobile = '0815678901';
-      const guest = await authService.createAccount({
-        device: 'iPhone8+',
-        deviceUUID: 'ios8abc',
-        header: { platform: 'ios' },
-        languagesPreferences: ['th'],
-        geolocation: {
-          countryCode: '+66',
-          continentCode: '+66',
-        },
-      });
-
-      const newOtp = await authService.generateOtp(
-        guest.accountDocument,
-        OtpObjective.VerifyMobile,
-        guest.accountDocument._id,
-        'mobile',
-        true
-      );
-
-      const request = {
-        objective: OtpObjective.VerifyMobile,
-        refCode: newOtp.refCode,
-        countryCode: countryCode,
-        mobileNumber: mobile,
-      };
-
-      const credentialGuest = {
-        $credential: guest.credentialDocument,
-        $language: 'th',
-      } as any;
-
-      await expect(
-        appController.updateMobile(credentialGuest, request)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credential.$language
-        )
-      );
-    });
-
-    it('should return exception when wrong objective', async () => {
-      const countryCode = '+66';
-      const mobile = '0815678900';
-
-      const request = {
-        objective: OtpObjective.ForgotPassword,
-        refCode: '12345678',
-        countryCode: countryCode,
-        mobileNumber: mobile,
-      };
-
-      await expect(
-        appController.updateMobile(credential, request)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credential.$language
-        )
-      );
-    });
-  });
-
   describe('syncSocial', () => {
     let user: User;
     let page: User;
@@ -564,15 +404,10 @@ describe('AppController', () => {
 
       await expect(
         appController.syncSocial(credentialGuest, defaultRequest)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credential.$language
-        )
-      );
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
     });
 
-    it('should return exception when get duplicate socail sync', async () => {
+    it('should return exception when get duplicate social sync', async () => {
       await expect(
         appController.syncSocial(credential, defaultRequest)
       ).rejects.toEqual(
