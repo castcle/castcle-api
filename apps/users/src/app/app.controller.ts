@@ -144,16 +144,13 @@ export class UserController {
     if (id.toLocaleLowerCase() === 'me') {
       this.logger.log('Get Me User from credential.');
       const me = await this.userService.getUserFromCredential(credential);
-      if (!me) throw CastcleException.REQUEST_URL_NOT_FOUND;
+      if (!me) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
       return { user: me, viewer: me };
     } else {
       this.logger.log('Get User from param.');
-      const user = await this.userService.getByIdOrCastcleId(
-        id,
-        UserType.People
-      );
-      if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
+      const user = await this.userService.getByIdOrCastcleId(id);
+      if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
       this.logger.log('Get User from credential.');
       const viewer = await this.userService.getUserFromCredential(credential);
@@ -1137,6 +1134,7 @@ export class UserController {
     this.logger.log(`Start recast content id: ${contentId}, user: ${id}`);
     const content = await this._getContentIfExist(contentId);
     const { user } = await this._getUserAndViewer(id, req.$credential);
+
     const recastContent = await this.contentService.getRecastContent(
       content.id,
       user.id
@@ -1209,9 +1207,10 @@ export class UserController {
   ) {
     this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
     const { user } = await this._getUserAndViewer(id, req.$credential);
+    const userDelete = await this._validateOwnerAccount(req, user);
     this.contentService.deleteRecastContentFromOriginalAndAuthor(
       sourceContentId,
-      user.id
+      userDelete.id
     );
   }
 }
