@@ -21,7 +21,11 @@
  * or have any questions.
  */
 
-import { CampaignService, ClaimAirdropPayload } from '@castcle-api/database';
+import {
+  CampaignService,
+  ClaimAirdropPayload,
+  QueueTopic,
+} from '@castcle-api/database';
 import { Queue } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { TopicName } from '@castcle-api/utils/queue';
@@ -42,13 +46,14 @@ export class CampaignConsumer implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     await this.campaignQueue.empty();
 
-    const queues = await this.campaignService.getRemainingQueues();
-    const queueBulk = queues.map((queue) => ({ data: queue }));
+    const queues = await this.campaignService.getRemainingQueues(
+      QueueTopic.CLAIM_AIRDROP
+    );
 
-    await this.campaignQueue.addBulk(queueBulk);
+    await this.campaignQueue.addBulk(queues);
 
     this.logger.log(
-      `#onApplicationBootstrap\n${JSON.stringify(queueBulk, null, 2)}`
+      `#onApplicationBootstrap\n${JSON.stringify(queues, null, 2)}`
     );
   }
 

@@ -50,7 +50,7 @@ import {
 } from '../dtos/content.dto';
 import { FeedQuery, PaginationQuery } from '../dtos';
 import { UserService } from './user.service';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { ContentAggregator } from '../aggregations';
 
 @Injectable()
 export class RankerService {
