@@ -30,6 +30,7 @@ import {
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified } from '../models';
 import { Wallet } from '../models/wallet.model';
+import { SocialSync } from '../schemas';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
@@ -115,8 +116,30 @@ export class UserResponseDto {
 
   @ApiProperty()
   wallet: Wallet;
+
+  @ApiProperty()
+  mobile: {
+    countryCode: string;
+    number: string;
+  };
+
+  @ApiProperty()
+  linkSocial: {
+    facebook: linkSocialDetail | null;
+    twitter: linkSocialDetail | null;
+    google: linkSocialDetail | null;
+    apple: linkSocialDetail | null;
+  };
+
+  @ApiProperty()
+  syncSocial: SocialSync[];
 }
 
+export class linkSocialDetail {
+  socialId: string;
+  userName: string;
+  displayName: string;
+}
 export class UpdateUserDto {
   @ApiProperty()
   overview?: string;

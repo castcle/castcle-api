@@ -218,17 +218,43 @@ export class UserController {
   async getMyData(@Req() req: CredentialRequest) {
     //UserService
     const user = await this.userService.getUserFromCredential(req.$credential);
+    const account = await this.authService.getAccountFromId(
+      req.$credential.account._id
+    );
+    let userResponse: UserResponseDto;
+    const authenSocial = await this.authService.getAccountAuthenIdFromAccountId(
+      req.$credential.account._id
+    );
+
+    const page = await this.userService.getPagesFromCredential(req.$credential);
+    const syncPage = (
+      await Promise.all(
+        page.map(async (p) => {
+          return await this.socialSyncService.getSocialSyncByUser(p);
+        })
+      )
+    ).flat();
+
     if (user && req?.params?.['userFields'] === 'wallet') {
       const balance = await this.transactionService.getUserBalance(user);
-      return await user.toUserResponse({
+      userResponse = await user.toUserResponse({
         balance: balance,
+        passwordNotSet: account.password ? false : true,
+        mobile: account.mobile,
+        linkSocial: authenSocial,
+        syncSocial: syncPage,
       });
-    } else if (user) return await user.toUserResponse();
-    else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    } else if (user)
+      userResponse = await user.toUserResponse({
+        passwordNotSet: account.password ? false : true,
+        mobile: account.mobile,
+        linkSocial: authenSocial,
+        syncSocial: syncPage,
+      });
+    else throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    return {
+      ...userResponse,
+    };
   }
 
   @CastcleAuth(CacheKeyName.SyncSocial)
