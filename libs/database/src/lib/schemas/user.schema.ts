@@ -31,7 +31,7 @@ import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { PageVerified, UserVerified } from '../models';
-import { Account } from '../schemas';
+import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { Relationship } from './relationship.schema';
 
@@ -108,6 +108,9 @@ type UserResponseOption = {
   blocking?: boolean;
   followed?: boolean;
   balance?: number;
+  mobile?: { countryCode: string; number: string };
+  linkSocial?: AccountAuthenId[];
+  syncSocial?: SocialSync[];
 };
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
@@ -184,11 +187,14 @@ UserSchema.statics.toAuthor = (self: User | User) =>
 
 UserSchema.methods.toUserResponse = async function (
   {
-    passwordNotSet,
+    passwordNotSet = false,
     blocked,
     blocking,
     followed,
     balance,
+    mobile,
+    linkSocial,
+    syncSocial,
   } = {} as UserResponseOption
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
@@ -200,6 +206,26 @@ UserSchema.methods.toUserResponse = async function (
   response.wallet = {
     balance: balance,
   };
+  response.mobile = mobile;
+  response.linkSocial = linkSocial
+    ? Object.assign(
+        {},
+        ...linkSocial?.map((social: AccountAuthenId) => {
+          return {
+            [social.type]: {
+              socialId: social.socialId,
+              userName: social.socialId,
+              displayName: social.displayName,
+            },
+          };
+        })
+      )
+    : { facebook: null, twitter: null, google: null, apple: null };
+  response.linkSocial.facebook = response.linkSocial.facebook ?? null;
+  response.linkSocial.twitter = response.linkSocial.twitter ?? null;
+  response.linkSocial.google = response.linkSocial.google ?? null;
+  response.linkSocial.apple = response.linkSocial.apple ?? null;
+  response.syncSocial = syncSocial;
   return response;
 };
 

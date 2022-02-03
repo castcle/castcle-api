@@ -124,6 +124,14 @@ export class AuthenticationService {
       .findOne({ socialId: socialUserId, type: provider })
       .exec();
 
+  /**
+   * get account document from account id
+   * @param {string} accountId account id
+   * @returns {AccountAuthenId[]}
+   */
+  getAccountAuthenIdFromAccountId = (accountId: string) =>
+    this._accountAuthenId.find({ account: accountId as any }).exec();
+
   async createAccount(accountRequirements: AccountRequirements) {
     const newAccount = new this._accountModel({
       isGuest: true,
