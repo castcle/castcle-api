@@ -21,13 +21,5 @@
  * or have any questions.
  */
 
-export enum CampaignStatus {
-  CALCULATING = 'calculating',
-  COMPLETE = 'complete',
-}
-
-export enum CampaignType {
-  CONTENT_REACH = 'content-reach',
-  FRIEND_REFERRAL = 'friend-referral',
-  VERIFY_MOBILE = 'verify-mobile',
-}
+export * from './calculate-rewards.aggregation';
+export * from './content.aggregation';

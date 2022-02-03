@@ -26,7 +26,7 @@ import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
 import { Content, User, Revision, Relationship, FeedItem } from '../schemas';
 import { FeedItemDto } from '../dtos/feedItem.dto';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { ContentAggregator } from '../aggregations';
 
 type HookModels = {
   revisionModel: Model<Revision>;

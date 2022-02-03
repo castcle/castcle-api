@@ -22,16 +22,13 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { ContentAggregator } from '../aggregations';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { FeedItemPayload } from '../dtos/feedItem.dto';
-import { Engagement } from './engagement.schema';
-import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
 @Schema({ timestamps: true })
-class FeedItemDocument extends CastcleBase {
+export class FeedItem extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -61,17 +58,12 @@ class FeedItemDocument extends CastcleBase {
   aggregator: ContentAggregator;
 }
 
-export const FeedItemSchema = SchemaFactory.createForClass(FeedItemDocument);
+export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
 
 FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({
   viewer: 1,
 });
-
-export class FeedItem extends FeedItemDocument {
-  toFeedItemPayload: (engagements?: Engagement[]) => FeedItemPayload;
-  toFeedItemPayloadV2: (engagements?: Engagement[]) => FeedItemPayloadItem;
-}
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
   return FeedItemSchema;

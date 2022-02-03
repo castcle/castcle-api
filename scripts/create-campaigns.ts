@@ -22,7 +22,10 @@
  */
 
 import { connect, disconnect, Document, model } from 'mongoose';
-import { CampaignType } from '../libs/database/src/lib/models/campaign.enum';
+import {
+  CampaignStatus,
+  CampaignType,
+} from '../libs/database/src/lib/models/campaign.enum';
 import {
   Campaign,
   CampaignSchema,
@@ -51,6 +54,7 @@ class CreateCampaigns {
       },
       {
         name: 'Early Caster Airdrop',
+        status: CampaignStatus.CALCULATING,
         type: CampaignType.CONTENT_REACH,
         startDate: new Date('2022-01-17T00:00Z'),
         endDate: new Date('2022-01-20T23:59Z'),
