@@ -23,11 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { env } from '../environment';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils/commons';
+import { Environment } from '@castcle-api/environments';
 
 export enum AccountActivationType {
   Email = 'email',
@@ -77,7 +77,7 @@ export interface AccountActivationModel
 }
 
 AccountActivationSchema.methods.isVerifyTokenValid = function () {
-  return Token.isTokenValid(this.verifyToken, env.JWT_VERIFY_SECRET);
+  return Token.isTokenValid(this.verifyToken, Environment.JWT_VERIFY_SECRET);
 };
 
 AccountActivationSchema.statics.generateVerifyToken = function (
@@ -85,13 +85,13 @@ AccountActivationSchema.statics.generateVerifyToken = function (
 ) {
   const now = new Date();
   const verifyTokenExpireDate = new Date(
-    now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
+    now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
   );
   payload.verifyTokenExpiresTime = verifyTokenExpireDate.toISOString();
   const verifyToken = Token.generateToken(
     payload,
-    env.JWT_VERIFY_SECRET,
-    Number(env.JWT_VERIFY_EXPIRES_IN)
+    Environment.JWT_VERIFY_SECRET,
+    Environment.JWT_VERIFY_EXPIRES_IN
   );
   return {
     verifyToken,

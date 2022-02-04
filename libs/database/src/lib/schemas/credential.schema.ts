@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -29,7 +30,6 @@ import {
   MemberAccessTokenPayload,
   RefreshTokenPayload,
 } from '../dtos/token.dto';
-import { env } from '../environment';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
@@ -101,13 +101,13 @@ CredentialSchema.statics.generateAccessToken = (
 ) => {
   const now = new Date();
   const accessTokenExpireDate = new Date(
-    now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
+    now.getTime() + Environment.JWT_ACCESS_EXPIRES_IN * 1000
   );
   payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
   const accessToken = Token.generateToken(
     payload,
-    env.JWT_ACCESS_SECRET,
-    Number(env.JWT_ACCESS_EXPIRES_IN)
+    Environment.JWT_ACCESS_SECRET,
+    Environment.JWT_ACCESS_EXPIRES_IN
   );
   return {
     accessToken,
@@ -120,13 +120,13 @@ CredentialSchema.statics.generateRefreshToken = (
 ) => {
   const now = new Date();
   const refreshTokenExpireDate = new Date(
-    now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
+    now.getTime() + Environment.JWT_REFRESH_EXPIRES_IN * 1000
   );
   payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
   const refreshToken = Token.generateToken(
     payload,
-    env.JWT_REFRESH_SECRET,
-    Number(env.JWT_REFRESH_EXPIRES_IN)
+    Environment.JWT_REFRESH_SECRET,
+    Environment.JWT_REFRESH_EXPIRES_IN
   );
 
   return {
@@ -177,7 +177,7 @@ CredentialSchema.methods.isAccessTokenValid = function () {
 
   if (account.visibility !== EntityVisibility.Publish) return false;
 
-  return Token.isTokenValid(accessToken, env.JWT_ACCESS_SECRET);
+  return Token.isTokenValid(accessToken, Environment.JWT_ACCESS_SECRET);
 };
 
 CredentialSchema.methods.isRefreshTokenValid = function () {
@@ -185,7 +185,7 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
 
   if (account.visibility !== EntityVisibility.Publish) return false;
 
-  return Token.isTokenValid(refreshToken, env.JWT_REFRESH_SECRET);
+  return Token.isTokenValid(refreshToken, Environment.JWT_REFRESH_SECRET);
 };
 
 export const CredentialSchemaFactory = () => CredentialSchema;
