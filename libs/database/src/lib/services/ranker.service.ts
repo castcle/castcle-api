@@ -26,7 +26,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
-import * as mongoose from 'mongoose';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
   Content,
@@ -48,8 +47,8 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
 import { UserService } from './user.service';
-import { ContentAggregator } from '../aggregations';
-import { Configs } from '@castcle-api/environments';
+import { ContentAggregator, pipe2ContentFeedAggregator } from '../aggregations';
+import { Environment } from '@castcle-api/environments';
 
 @Injectable()
 export class RankerService {
@@ -229,257 +228,14 @@ export class RankerService {
       ownerAccount: viewer._id,
       type: UserType.People,
     });
-    console.log('User', user);
-    console.log(new Date());
-    console.log(
-      'new Date((new Date().getTime()) - 1000 * 60 * Configs.Feed.RecallEvery)',
-      new Date(new Date().getTime() - 1000 * 60 * Configs.Feed.RecallEvery)
-    );
-    const aggr = [
-      {
-        $match: {
-          _id: mongoose.Types.ObjectId(user._id),
-        },
-      },
-      {
-        $lookup: {
-          from: 'relationships',
-          localField: '_id',
-          foreignField: 'user',
-          pipeline: [
-            {
-              $sort: {
-                updatedAt: -1,
-              },
-            },
-            {
-              $limit: Configs.Feed.FollowFeedMax,
-            },
-          ],
-          as: 'following',
-        },
-      },
-      {
-        $unwind: {
-          path: '$following',
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          ownerAccount: 1,
-          displayId: 1,
-          following: '$following.followedUser',
-        },
-      },
-      {
-        $lookup: {
-          from: 'contents',
-          let: {
-            content_id: '$_id',
-            author_id: '$author.id',
-          },
-          localField: 'following',
-          foreignField: 'author.id',
-          pipeline: [
-            {
-              $sort: {
-                createdAt: -1,
-              },
-            },
-            {
-              $limit: Math.round(
-                query.maxResults / (1 - Configs.Feed.FollowFeedRatio)
-              ),
-            },
-          ],
-          as: 'contents',
-        },
-      },
-      {
-        $unwind: {
-          path: '$contents',
-        },
-      },
-      {
-        $group: {
-          _id: '$_id',
-          ownerAccount: {
-            $first: '$ownerAccount',
-          },
-          displayId: {
-            $first: '$displayId',
-          },
-          content_following: {
-            $push: '$contents._id',
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: 'guestfeeditems',
-          let: {
-            countryCode: '$countryCode',
-          },
-          pipeline: [
-            {
-              $sort: {
-                score: -1,
-              },
-            },
-            {
-              $match: {
-                $expr: {
-                  $eq: ['$countryCode', 'th'],
-                },
-              },
-            },
-            {
-              $limit: query.maxResults,
-            },
-          ],
-          as: 'contents',
-        },
-      },
-      {
-        $unwind: {
-          path: '$contents',
-        },
-      },
-      {
-        $group: {
-          _id: '$_id',
-          ownerAccount: {
-            $first: '$ownerAccount',
-          },
-          displayId: {
-            $first: '$displayId',
-          },
-          content_following: {
-            $first: '$content_following',
-          },
-          content_global: {
-            $push: '$contents._id',
-          },
-        },
-      },
-      {
-        $project: {
-          ownerAccount: 1,
-          displayId: 1,
-          contents: {
-            $concatArrays: ['$content_following', '$content_global'],
-          },
-          count: {
-            $size: {
-              $concatArrays: ['$content_following', '$content_global'],
-            },
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: 'feeditems',
-          let: {
-            content_array: '$contents',
-            viewer_id: '$ownerAccount',
-          },
-          pipeline: [
-            {
-              $match: {
-                calledAt: {
-                  $exists: true,
-                },
-                $expr: {
-                  $or: [
-                    {
-                      $and: [
-                        {
-                          $in: ['$content', '$$content_array'],
-                        },
-                        {
-                          $eq: ['$viewer', '$$viewer_id'],
-                        },
-                        {
-                          $lt: [
-                            '$calledAt',
-                            new Date(
-                              new Date().getTime() -
-                                1000 * 60 * Configs.Feed.RecallEvery
-                            ),
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      $and: [
-                        {
-                          $in: ['$content', '$$content_array'],
-                        },
-                        {
-                          $eq: ['$viewer', '$$viewer_id'],
-                        },
-                        {
-                          $gt: ['$seenAt', null],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                content: 1,
-              },
-            },
-          ],
-          as: 'duplicates_content',
-        },
-      },
-      {
-        $unwind: {
-          path: '$duplicates_content',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $group: {
-          _id: '$_id',
-          ownerAccount: {
-            $first: '$ownerAccount',
-          },
-          displayId: {
-            $first: '$displayId',
-          },
-          contents: {
-            $first: '$contents',
-          },
-          duplicates_content: {
-            $push: '$duplicates_content.content',
-          },
-        },
-      },
-      {
-        $project: {
-          ownerAccount: 1,
-          displayId: 1,
-          contents: {
-            $setDifference: ['$contents', '$duplicates_content'],
-          },
-          count: {
-            $size: {
-              $setDifference: ['$contents', '$duplicates_content'],
-            },
-          },
-        },
-      },
-    ];
-    console.log(JSON.stringify(aggr));
+    const aggr = pipe2ContentFeedAggregator({
+      FollowFeedMax: Environment.FEED_FOLLOW_MAX,
+      FollowFeedRatio: Environment.FEED_FOLLOW_RATIO,
+      FollowRecalledMinutes: Environment.FEED_REPOST_MINUTES,
+      MaxResult: query.maxResults,
+      userId: user._id,
+    });
     const rawResult = await this.userModel.aggregate(aggr);
-    console.log('rawResult');
-    console.log(rawResult);
     const result: UserFeedAggregatorDto = rawResult[0];
     const contentScore = await predictContents(
       String(viewer._id),
