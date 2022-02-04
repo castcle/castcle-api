@@ -207,25 +207,36 @@ UserSchema.methods.toUserResponse = async function (
     balance: balance,
   };
   response.mobile = mobile;
-  response.linkSocial = linkSocial
-    ? Object.assign(
-        {},
-        ...linkSocial?.map((social: AccountAuthenId) => {
-          return {
-            [social.type]: {
-              socialId: social.socialId,
-              userName: social.socialId,
-              displayName: social.displayName,
-            },
-          };
-        })
-      )
-    : { facebook: null, twitter: null, google: null, apple: null };
-  response.linkSocial.facebook = response.linkSocial.facebook ?? null;
-  response.linkSocial.twitter = response.linkSocial.twitter ?? null;
-  response.linkSocial.google = response.linkSocial.google ?? null;
-  response.linkSocial.apple = response.linkSocial.apple ?? null;
-  response.syncSocial = syncSocial;
+  if (linkSocial) {
+    response.linkSocial = Object.assign(
+      {},
+      ...linkSocial?.map((social: AccountAuthenId) => {
+        return {
+          [social.type]: {
+            socialId: social.socialId,
+            displayName: social.displayName,
+          },
+        };
+      })
+    );
+
+    response.linkSocial.facebook = response.linkSocial.facebook ?? null;
+    response.linkSocial.twitter = response.linkSocial.twitter ?? null;
+    response.linkSocial.google = response.linkSocial.google ?? null;
+    response.linkSocial.apple = response.linkSocial.apple ?? null;
+  }
+
+  response.syncSocial = syncSocial?.map((social) => {
+    return {
+      provider: social.provider,
+      socialId: social.socialId,
+      userName: social.userName,
+      displayName: social.displayName,
+      avatar: social.avatar,
+      active: social.active,
+      autoPost: social.autoPost,
+    };
+  });
   return response;
 };
 
