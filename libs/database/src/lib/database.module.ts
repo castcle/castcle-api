@@ -26,7 +26,7 @@ import {
 } from '@castcle-api/utils/queue';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { getMongoOptions } from './environment';
+import { getMongooseModuleOptions } from './database.config';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -138,7 +138,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
-    MongooseModule.forRootAsync({ useFactory: () => getMongoOptions() }),
+    MongooseModule.forRootAsync({
+      useFactory: () => getMongooseModuleOptions(),
+    }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsQueueModule,

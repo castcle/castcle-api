@@ -66,13 +66,12 @@ export const Environment = {
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: Number(process.env.SMTP_PORT) || 465,
   // JWT
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
-  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN as unknown as number,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-  JWT_REFRESH_EXPIRES_IN: process.env
-    .JWT_REFRESH_EXPIRES_IN as unknown as number,
-  JWT_VERIFY_SECRET: process.env.JWT_VERIFY_SECRET,
-  JWT_VERIFY_EXPIRES_IN: process.env.JWT_VERIFY_EXPIRES_IN as unknown as number,
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'access-secret',
+  JWT_ACCESS_EXPIRES_IN: Number(process.env.JWT_ACCESS_EXPIRES_IN) || 6001,
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+  JWT_REFRESH_EXPIRES_IN: Number(process.env.JWT_REFRESH_EXPIRES_IN) || 18000,
+  JWT_VERIFY_SECRET: process.env.JWT_VERIFY_SECRET || 'verify-secret',
+  JWT_VERIFY_EXPIRES_IN: Number(process.env.JWT_VERIFY_EXPIRES_IN) || 6002,
   JWT_SIGNATURE_SECRET: process.env.JWT_SIGNATURE_SECRET,
   JWT_SIGNATURE_EXPIRES_IN: process.env
     .JWT_SIGNATURE_EXPIRES_IN as unknown as number,
@@ -90,9 +89,19 @@ export const Environment = {
   TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,
   TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
   TWITTER_HOST: process.env.TWITTER_HOST,
+
   // Otp
-  OTP_DIGITS: process.env.OTP_DIGITS as unknown as number, // display otp digit default is 8
-  OPT_EXPIRES_IN: process.env.OTP_EXPIRES_IN as unknown as number, //second for otp to expire
+  /**
+   * Display otp digits
+   * @default 8
+   */
+  OTP_DIGITS: Number(process.env.OTP_DIGITS) || 8,
+  /**
+   * second for otp to expire
+   * @default 60 seconds
+   */
+  OPT_EXPIRES_IN: Number(process.env.OTP_EXPIRES_IN) || 60,
+
   // Firebase
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
