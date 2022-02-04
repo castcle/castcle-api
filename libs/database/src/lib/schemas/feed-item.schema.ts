@@ -22,7 +22,7 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { ContentAggregator } from '../aggregations';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
