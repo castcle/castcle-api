@@ -20,11 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AuthenticationService, UserService } from '@castcle-api/database';
+import {
+  AuthenticationService,
+  getSocialProfix,
+  UserService,
+} from '@castcle-api/database';
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
 import {
   Account,
-  AccountAuthenIdType,
   Credential,
   Otp,
   OtpObjective,
@@ -200,7 +203,7 @@ export class AppService {
       await this.authService.signupBySocial(currentAccount, {
         displayName: body.displayName
           ? body.displayName
-          : this.getSocialProfix(body.socialId, body.provider),
+          : getSocialProfix(body.socialId, body.provider),
         socialId: body.socialId,
         provider: body.provider,
         avatar: avatar ? avatar.image : undefined,
@@ -672,26 +675,6 @@ export class AppService {
       if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
-    }
-  }
-
-  getSocialProfix(socialId: string, provider: AccountAuthenIdType) {
-    switch (provider) {
-      case AccountAuthenIdType.Facebook: {
-        return `FB${socialId}`;
-      }
-      case AccountAuthenIdType.Twitter: {
-        return `TW${socialId}`;
-      }
-      case AccountAuthenIdType.Google: {
-        return `GG${socialId}`;
-      }
-      case AccountAuthenIdType.Apple: {
-        return `AP${socialId}`;
-      }
-      default: {
-        return socialId;
-      }
     }
   }
 }

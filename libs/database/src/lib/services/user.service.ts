@@ -47,6 +47,7 @@ import {
   Meta,
   PageDto,
   PaginationQuery,
+  SocialPageDto,
   SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
@@ -1031,4 +1032,33 @@ Message: ${message}`,
 
     return { ...body, images };
   }
+
+  /**
+   * Create new page with sync social
+   * @param {Account} account
+   * @param {SocialPageDto} socialPageDto
+   * @returns {User}
+   */
+  createPageFromSocial = (account: Account, socialPageDto: SocialPageDto) => {
+    return new this._userModel({
+      ownerAccount: account._id,
+      type: UserType.Page,
+      displayId: socialPageDto.castcleId,
+      displayName: socialPageDto.displayName,
+      profile: {
+        overview: socialPageDto.overview,
+        images: {
+          avatar: socialPageDto.avatar,
+          cover: socialPageDto.cover,
+        },
+        socials: {
+          facebook: socialPageDto.links?.facebook,
+          twitter: socialPageDto.links?.twitter,
+          youtube: socialPageDto.links?.youtube,
+          medium: socialPageDto.links?.medium,
+        },
+        socialSyncs: socialPageDto.socialSyncs,
+      },
+    }).save();
+  };
 }

@@ -25,15 +25,18 @@ import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { FirebaseModule } from 'nestjs-firebase';
 import { CampaignConsumer } from './consumers/campaign.consumer';
 import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
+import { CampaignScheduler } from './schedulers/campaign.scheduler';
 
 @Module({
   imports: [
     DatabaseModule,
+    ScheduleModule.forRoot(),
     UtilsQueueModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
@@ -47,6 +50,7 @@ import { UserConsumer } from './consumers/user.consumer';
   ],
   providers: [
     CampaignConsumer,
+    CampaignScheduler,
     ContentConsumer,
     NotificationConsumer,
     UserConsumer,

@@ -55,6 +55,9 @@ class SocialSyncDocument extends CastcleBase {
 
   @Prop()
   latestSyncDate?: Date;
+
+  @Prop({ default: false })
+  autoPost: boolean;
 }
 
 export const SocialSyncSchema =

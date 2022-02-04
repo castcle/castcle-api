@@ -26,5 +26,9 @@ import { QueueTopic } from './queue.enum';
 export class ClaimAirdropPayload {
   topic = QueueTopic.CLAIM_AIRDROP;
 
-  constructor(public accountId: string, public campaignId: string) {}
+  constructor(
+    public accountId: string,
+    public campaignId: string,
+    public amount?: number
+  ) {}
 }

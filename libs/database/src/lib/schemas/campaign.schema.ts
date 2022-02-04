@@ -22,13 +22,16 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CampaignType } from '../models';
+import { CampaignStatus, CampaignType } from '../models';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
 export class Campaign extends CastcleBase {
   @Prop()
   name: string;
+
+  @Prop({ type: String })
+  status?: CampaignStatus;
 
   @Prop({ type: String })
   type: CampaignType;

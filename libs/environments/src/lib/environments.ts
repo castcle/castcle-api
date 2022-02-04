@@ -22,6 +22,7 @@
  */
 
 import { MongooseModuleOptions } from '@nestjs/mongoose';
+import { CronExpression } from '@nestjs/schedule';
 import * as dotenv from 'dotenv';
 
 const env = dotenv.config();
@@ -121,8 +122,15 @@ export const Environment = {
   IP_API_KEY: process.env.IP_API_KEY || null,
   // Google
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-  GOOGLE_SECRET: process.env.GOOGLE_SECRE,
+  GOOGLE_SECRET: process.env.GOOGLE_SECRET,
   // Feed Setting
   AUTO_CREATE_GUEST_FEED:
     process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false,
+
+  /**
+   * Run campaign rewards calculation within a specified interval.
+   * @default "0 *\/30 * * * *" Every 30 minutes
+   */
+  CAMPAIGNS_CRON_EXPRESSION:
+    process.env.CAMPAIGNS_CRON_EXPRESSION || CronExpression.EVERY_30_MINUTES,
 };

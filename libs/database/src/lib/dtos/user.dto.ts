@@ -201,6 +201,9 @@ export class PageResponseDto {
   blocking: boolean;
 
   @ApiProperty()
+  socialSyncs: boolean;
+
+  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -251,6 +254,9 @@ export class FollowResponse {
   pagination: Pagination;
 }
 
+export class SocialSyncPageRequestDto {
+  payload: SocialSyncDto[];
+}
 export class SocialSyncDto {
   @ApiProperty()
   @IsString()
@@ -277,11 +283,30 @@ export class SocialSyncDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
+  overview?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   avatar?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  cover?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  link?: string;
 
   @ApiProperty()
   @IsBoolean()
   active?: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  autoPost?: boolean;
 }
 
 export class SocialSyncDeleteDto {
@@ -307,4 +332,19 @@ export class GetSearchUsersDto extends PaginationQuery {
 export class SuggestToFollowResponseDto {
   payload: (UserResponseDto | PageResponseDto)[];
   meta: CastcleMeta;
+}
+export class SocialPageDto {
+  castcleId: string;
+  displayName: string;
+  overview?: string;
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
+  links?: {
+    facebook?: string | null;
+    twitter?: string | null;
+    youtube?: string | null;
+    medium?: string | null;
+    website?: string | null;
+  };
+  socialSyncs?: boolean;
 }

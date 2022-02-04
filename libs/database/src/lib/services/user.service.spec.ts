@@ -38,7 +38,7 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { Comment, Content, Account, Credential, User } from '../schemas';
+import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -1008,6 +1008,31 @@ describe('User Service', () => {
 
       expect(accountUpdate).not.toBeNull();
       expect(accountUpdate.preferences.languages).toEqual(expectResult);
+    });
+  });
+
+  describe('#createPageFromSocialSync()', () => {
+    it('should create a new user that type page from SocialPageDto', async () => {
+      const page = await service.createPageFromSocial(
+        result.credentialDocument.account,
+        {
+          castcleId: 'synctest',
+          displayName: 'new Sync Page',
+          overview: 'sync facebook',
+          avatar: {
+            original: 'http://placehold.it/200x200',
+          },
+          cover: {
+            original: 'http://placehold.it/200x200',
+          },
+          links: {
+            facebook: 'https://facebook.com/test',
+          },
+          socialSyncs: true,
+        }
+      );
+      expect(page.type).toEqual('page');
+      expect(page.displayId).toEqual('synctest');
     });
   });
 });

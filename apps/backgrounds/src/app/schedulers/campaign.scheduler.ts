@@ -21,13 +21,17 @@
  * or have any questions.
  */
 
-export enum CampaignStatus {
-  CALCULATING = 'calculating',
-  COMPLETE = 'complete',
-}
+import { CampaignService } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 
-export enum CampaignType {
-  CONTENT_REACH = 'content-reach',
-  FRIEND_REFERRAL = 'friend-referral',
-  VERIFY_MOBILE = 'verify-mobile',
+@Injectable()
+export class CampaignScheduler {
+  constructor(private campaignService: CampaignService) {}
+
+  @Cron(Environment.CAMPAIGNS_CRON_EXPRESSION)
+  async claimContentReachRewards() {
+    await this.campaignService.claimContentReachAirdrops();
+  }
 }
