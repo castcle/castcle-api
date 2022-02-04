@@ -142,6 +142,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     id: self._id,
     castcleId: self.displayId,
     displayName: self.displayName,
+    type: self.type,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
       count: self.followerCount,
@@ -249,6 +250,7 @@ UserSchema.methods.toPageResponse = function (
     id: (this as User)._id,
     castcleId: (this as User).displayId,
     displayName: (this as User).displayName,
+    type: (this as User).type,
     images: {
       avatar:
         (this as User).profile &&
