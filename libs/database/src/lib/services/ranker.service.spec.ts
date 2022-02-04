@@ -172,9 +172,9 @@ describe('Ranker Service', () => {
     });
     it('should create feedItem after create a content', async () => {
       const totalFeedItem = await service._feedItemModel.countDocuments();
-      expect(totalFeedItem).toEqual(contents.length);
+      expect(totalFeedItem).toEqual(0);
       const feedItems = await service._feedItemModel.find().exec();
-      expect(feedItems.length).toEqual(contents.length);
+      expect(feedItems.length).toEqual(0);
     });
   });
   //TODO !!! Have to add test later on

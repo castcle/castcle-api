@@ -23,6 +23,7 @@
 
 import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import * as mongoose from 'mongoose';
 import { SearchType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 
@@ -34,4 +35,11 @@ export class GetSearchRecentDto extends PaginationQuery {
   @IsString()
   @IsNotEmpty()
   keyword: string;
+}
+
+export class UserFeedAggregatorDto {
+  _id: mongoose.Types.ObjectId;
+  ownerAccount: mongoose.Types.ObjectId;
+  displayId: string;
+  contents: mongoose.Types.ObjectId[];
 }

@@ -26,6 +26,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { FeedItemDto } from '../dtos/feedItem.dto';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
+import * as mongoose from 'mongoose';
 import { CastcleMeta } from '../dtos/common.dto';
 import {
   Content,
@@ -37,20 +38,18 @@ import {
   toUnsignedContentPayloadItem,
   GuestFeedItem,
   Relationship,
+  UserType,
 } from '../schemas';
 import {
   FeedItemResponse,
   FeedItemPayloadItem,
 } from '../dtos/guest-feed-item.dto';
 import { predictContents } from '@castcle-api/utils/aws';
-import {
-  Author,
-  CastcleIncludes,
-  ContentPayloadItem,
-} from '../dtos/content.dto';
-import { FeedQuery, PaginationQuery } from '../dtos';
+import { Author, CastcleIncludes } from '../dtos/content.dto';
+import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
 import { UserService } from './user.service';
-import { ContentAggregator } from '../aggregations';
+import { ContentAggregator } from '../aggregator/content.aggregator';
+import { Configs } from '@castcle-api/environments';
 
 @Injectable()
 export class RankerService {
@@ -217,45 +216,6 @@ export class RankerService {
   };
 
   /**
-   * Insert Guest(Global) Feed into user personal feed
-   * @param viewer
-   * @param query
-   * @param feeds
-   * @returns
-   */
-  _insertUserFeedFromGuestFeeds = async (
-    viewer: Account,
-    query: PaginationQuery,
-    feeds: FeedItem[]
-  ): Promise<FeedItem[]> => {
-    const guestItemCount = query.maxResults - feeds.length;
-
-    const guestFeedPayloads = await this.getGuestFeedItems(
-      { ...query, maxResults: guestItemCount },
-      viewer,
-      feeds.map((f) => f.content._id)
-    );
-    const newContentids = guestFeedPayloads.payload.map(
-      (item) => (item.payload as ContentPayloadItem).id
-    );
-    console.log('insertGuesttFeedIds', newContentids);
-    const feedItemDtos = newContentids.map(
-      (contentId) =>
-        ({
-          content: contentId,
-          viewer: viewer,
-          called: false,
-          aggregator: {
-            createTime: new Date(),
-            fromGlobal: true,
-          } as ContentAggregator,
-          __v: 2,
-        } as FeedItemDto)
-    );
-    return this._feedItemModel.insertMany(feedItemDtos);
-  };
-
-  /**
    * add member feed item that use data from DS
    * @param viewer
    * @param query
@@ -264,96 +224,314 @@ export class RankerService {
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
     if (query.mode && query.mode === 'history')
       return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
-    const startNow = new Date();
-    console.debug('start service');
-    const filter = createCastcleFilter(
-      { viewer: viewer._id, seenAt: { $exists: false } },
-      { ...query, sinceId: query.untilId, untilId: query.sinceId }
+    console.log(viewer);
+    const user = await this.userModel.findOne({
+      ownerAccount: viewer._id,
+      type: UserType.People,
+    });
+    console.log('User', user);
+    console.log(new Date());
+    console.log(
+      'new Date((new Date().getTime()) - 1000 * 60 * Configs.Feed.RecallEvery)',
+      new Date(new Date().getTime() - 1000 * 60 * Configs.Feed.RecallEvery)
     );
-    const timeAfterFilter = new Date();
-    console.debug(
-      '- after filter : ',
-      timeAfterFilter.getTime() - startNow.getTime()
+    const aggr = [
+      {
+        $match: {
+          _id: mongoose.Types.ObjectId(user._id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'relationships',
+          localField: '_id',
+          foreignField: 'user',
+          pipeline: [
+            {
+              $sort: {
+                updatedAt: -1,
+              },
+            },
+            {
+              $limit: Configs.Feed.FollowFeedMax,
+            },
+          ],
+          as: 'following',
+        },
+      },
+      {
+        $unwind: {
+          path: '$following',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          ownerAccount: 1,
+          displayId: 1,
+          following: '$following.followedUser',
+        },
+      },
+      {
+        $lookup: {
+          from: 'contents',
+          let: {
+            content_id: '$_id',
+            author_id: '$author.id',
+          },
+          localField: 'following',
+          foreignField: 'author.id',
+          pipeline: [
+            {
+              $sort: {
+                createdAt: -1,
+              },
+            },
+            {
+              $limit: Math.round(
+                query.maxResults / (1 - Configs.Feed.FollowFeedRatio)
+              ),
+            },
+          ],
+          as: 'contents',
+        },
+      },
+      {
+        $unwind: {
+          path: '$contents',
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          ownerAccount: {
+            $first: '$ownerAccount',
+          },
+          displayId: {
+            $first: '$displayId',
+          },
+          content_following: {
+            $push: '$contents._id',
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'guestfeeditems',
+          let: {
+            countryCode: '$countryCode',
+          },
+          pipeline: [
+            {
+              $sort: {
+                score: -1,
+              },
+            },
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$countryCode', 'th'],
+                },
+              },
+            },
+            {
+              $limit: query.maxResults,
+            },
+          ],
+          as: 'contents',
+        },
+      },
+      {
+        $unwind: {
+          path: '$contents',
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          ownerAccount: {
+            $first: '$ownerAccount',
+          },
+          displayId: {
+            $first: '$displayId',
+          },
+          content_following: {
+            $first: '$content_following',
+          },
+          content_global: {
+            $push: '$contents._id',
+          },
+        },
+      },
+      {
+        $project: {
+          ownerAccount: 1,
+          displayId: 1,
+          contents: {
+            $concatArrays: ['$content_following', '$content_global'],
+          },
+          count: {
+            $size: {
+              $concatArrays: ['$content_following', '$content_global'],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'feeditems',
+          let: {
+            content_array: '$contents',
+            viewer_id: '$ownerAccount',
+          },
+          pipeline: [
+            {
+              $match: {
+                calledAt: {
+                  $exists: true,
+                },
+                $expr: {
+                  $or: [
+                    {
+                      $and: [
+                        {
+                          $in: ['$content', '$$content_array'],
+                        },
+                        {
+                          $eq: ['$viewer', '$$viewer_id'],
+                        },
+                        {
+                          $lt: [
+                            '$calledAt',
+                            new Date(
+                              new Date().getTime() -
+                                1000 * 60 * Configs.Feed.RecallEvery
+                            ),
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      $and: [
+                        {
+                          $in: ['$content', '$$content_array'],
+                        },
+                        {
+                          $eq: ['$viewer', '$$viewer_id'],
+                        },
+                        {
+                          $gt: ['$seenAt', null],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                content: 1,
+              },
+            },
+          ],
+          as: 'duplicates_content',
+        },
+      },
+      {
+        $unwind: {
+          path: '$duplicates_content',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          ownerAccount: {
+            $first: '$ownerAccount',
+          },
+          displayId: {
+            $first: '$displayId',
+          },
+          contents: {
+            $first: '$contents',
+          },
+          duplicates_content: {
+            $push: '$duplicates_content.content',
+          },
+        },
+      },
+      {
+        $project: {
+          ownerAccount: 1,
+          displayId: 1,
+          contents: {
+            $setDifference: ['$contents', '$duplicates_content'],
+          },
+          count: {
+            $size: {
+              $setDifference: ['$contents', '$duplicates_content'],
+            },
+          },
+        },
+      },
+    ];
+    console.log(JSON.stringify(aggr));
+    const rawResult = await this.userModel.aggregate(aggr);
+    console.log('rawResult');
+    console.log(rawResult);
+    const result: UserFeedAggregatorDto = rawResult[0];
+    const contentScore = await predictContents(
+      String(viewer._id),
+      result.contents.map((c) => String(c))
     );
-    console.debug('filter', filter);
-    let documents = await this._feedItemModel
-      .find(filter)
-      .limit(query.maxResults)
-      .populate('content')
-      .sort('-aggregator.createTime')
-      .exec();
-    const timeAfterFind = new Date();
-    console.debug(
-      '- after find document : ',
-      timeAfterFind.getTime() - timeAfterFilter.getTime()
+    const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
+      contentScore[a] > contentScore[b] ? -1 : 1
     );
-    //check if payload is enough
-    let contentIds = documents.map((item) => String(item.content.id));
+    console.log(sortedContentIds);
+    let feeds: FeedItem[] = [];
     let feedPayload: FeedItemPayloadItem[] = [];
-    let newAnswer: any[] = [];
-    let embedContents: Content[] = [];
-
-    if (query.maxResults && documents.length < query.maxResults) {
-      const newAddFeeds = await this._insertUserFeedFromGuestFeeds(
-        viewer,
-        query,
-        documents
-      );
-      const newContentIds = newAddFeeds.map((item) =>
-        String(item.content as unknown as string)
-      );
-      contentIds = contentIds.concat(newContentIds);
-
-      console.log('newContentIds', newContentIds);
-      embedContents = await this._contentModel.find({
-        _id: { $in: newContentIds },
-      });
-      console.log('embedContents', embedContents);
-      for (let i = 0; i < newAddFeeds.length; i++)
-        newAddFeeds[i].content = embedContents.find(
-          (c) => String(c._id) === String(newAddFeeds[i].content)
-        );
-      console.log('merge with guest feeds');
-      console.log('new add feeds');
-      console.log(newAddFeeds);
-      documents = documents.concat(newAddFeeds);
-      //console.log(documents)
-    }
-    console.log('contentIds', contentIds);
-    const contentScore = await predictContents(String(viewer._id), contentIds);
     if (contentScore) {
-      newAnswer = Object.keys(contentScore)
-        .map((id) => {
-          const feedItem = documents.find((k) => String(k.content.id) == id);
-          return {
-            feedItem,
-            score: contentScore[id] as number,
-          };
-        })
-        .sort((a, b) => (a.score > b.score ? -1 : 1))
-        .map((t) => t.feedItem);
-      feedPayload = this._feedItemsToPayloadItems(newAnswer);
+      const feedItemDtos = sortedContentIds.map(
+        (contentId) =>
+          ({
+            content: contentId,
+            viewer: viewer,
+            calledAt: new Date(),
+            aggregator: {
+              createTime: new Date(),
+            } as ContentAggregator,
+            __v: 3,
+          } as FeedItemDto)
+      );
+      feeds = await this._feedItemModel.insertMany(feedItemDtos);
+      const embedContents = await this._contentModel.find({
+        _id: { $in: sortedContentIds },
+      });
+      for (let i = 0; i < feeds.length; i++)
+        feeds[i].content = embedContents.find(
+          (c) => String(c._id) === String(feeds[i].content)
+        );
+      feedPayload = this._feedItemsToPayloadItems(feeds);
     }
 
     const includes = {
-      users: newAnswer.map((item) => item.content.author),
-      casts: newAnswer
+      users: feeds.map((item) => item.content.author),
+      casts: feeds
         .filter((doc) => doc.content.originalPost)
         .map((c) => c.content.originalPost)
         .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c))),
     };
-    const meta: CastcleMeta = createCastcleMeta(newAnswer);
-
+    const meta: CastcleMeta = createCastcleMeta(feeds);
     let authors = includes.users.map((author) => new Author(author));
     authors = authors.concat(
-      newAnswer
+      feeds
         .filter((feedItem) => feedItem.content.originalPost)
         .map((feedItem) => new Author(feedItem.content.originalPost.author))
     );
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, authors)
       : authors.map((author) => author.toIncludeUser());
-
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),
@@ -374,6 +552,7 @@ export class RankerService {
    * @returns
    */
   seenFeedItem = async (account: Account, feedItemId: string) => {
+    console.log(account, feedItemId);
     this._feedItemModel
       .updateOne(
         {
@@ -388,7 +567,6 @@ export class RankerService {
         }
       )
       .exec();
-    //check if feedItem is global
   };
 
   /**

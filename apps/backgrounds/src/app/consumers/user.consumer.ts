@@ -55,10 +55,10 @@ export class UserConsumer {
           this.logger.log(`Updating profile of user ${job.data.user.id}`);
           break;
         case CastcleQueueAction.CreateFollowFeedItem:
-          this.contentService.createFeedItemFromAuthorToViewer(
+          /*this.contentService.createFeedItemFromAuthorToViewer(
             job.data.user.options.followedId,
             job.data.user.id
-          );
+          );*/
           this.logger.log(
             `Creating feed item for user ${job.data.user.id} from author ${job.data.user.options.followedId}`
           );
