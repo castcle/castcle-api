@@ -37,7 +37,7 @@ import {
   PageResponseDto,
   PagesResponse,
   SocialPageDto,
-  SocialSyncPageRequestDto,
+  SocialSyncDto,
   SortDirection,
   UpdatePageDto,
 } from '@castcle-api/database/dtos';
@@ -352,13 +352,13 @@ export class PagesController {
    */
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({
-    type: SocialSyncPageRequestDto,
+    type: SocialSyncDto,
   })
   @CastcleBasicAuth()
-  @Post('page/social')
+  @Post('pages/social')
   async createPageSocial(
     @Req() req: CredentialRequest,
-    @Body() body: SocialSyncPageRequestDto
+    @Body() body: { payload: SocialSyncDto[] }
   ) {
     this.logger.log(`Start create sync social.`);
     this.logger.log(JSON.stringify(body));
