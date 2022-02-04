@@ -23,6 +23,7 @@
 
 import { MongooseModuleOptions } from '@nestjs/mongoose';
 import { CronExpression } from '@nestjs/schedule';
+import { Configs } from './configs';
 import * as dotenv from 'dotenv';
 
 const env = dotenv.config();
@@ -136,6 +137,15 @@ export const Environment = {
   AUTO_CREATE_GUEST_FEED:
     process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false,
 
+  FEED_FOLLOW_MAX: process.env.FEED_FOLLOW_MAX
+    ? !Number(process.env.FEED_FOLLOW_MAX)
+    : Configs.Feed.FollowFeedMax,
+  FEED_FOLLOW_RATIO: process.env.FEED_FOLLOW_RATIO
+    ? Number(process.env.FEED_FOLLOW_RATIO)
+    : Configs.Feed.FollowFeedRatio,
+  FEED_REPOST_MINUTES: process.env.FEED_REPOST_MINUTES
+    ? Number(process.env.FEED_REPOST_MINUTES)
+    : Configs.Feed.RecallEvery,
   /**
    * Run campaign rewards calculation within a specified interval.
    * @default "0 *\/30 * * * *" Every 30 minutes
