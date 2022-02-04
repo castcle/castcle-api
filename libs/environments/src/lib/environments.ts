@@ -129,7 +129,7 @@ export const Environment = {
     process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false,
 
   FEED_FOLLOW_MAX: process.env.FEED_FOLLOW_MAX
-    ? !Number(process.env.FEED_FOLLOW_MAX)
+    ? Number(process.env.FEED_FOLLOW_MAX)
     : Configs.Feed.FollowFeedMax,
   FEED_FOLLOW_RATIO: process.env.FEED_FOLLOW_RATIO
     ? Number(process.env.FEED_FOLLOW_RATIO)
