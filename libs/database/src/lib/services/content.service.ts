@@ -905,7 +905,8 @@ export class ContentService {
    * @param {User} viewer
    * @returns {Promise<FeedItem[]>}
    */
-  createFeedItemFromAuthorToViewer = async (author: User, viewer: User) => {
+  //[deprecate]
+  /*createFeedItemFromAuthorToViewer = async (author: User, viewer: User) => {
     const contents = await this._contentModel
       .find({ 'author.id': author._id, visibility: EntityVisibility.Publish })
       .exec();
@@ -921,7 +922,7 @@ export class ContentService {
       } as FeedItemDto).save()
     );
     return await Promise.all(promisesFeedItem);
-  };
+  };*/
 
   /**
    * Convert content => feedItem to group of viewers
@@ -929,13 +930,14 @@ export class ContentService {
    * @param {Account[]} viewers
    * @returns {Promise<FeedItem[]>}
    */
+  //[deprecate]
   _createFeedItemFromAuthorToViewers = async (
     content: Content,
     viewers: Account[]
   ) => {
     const promisesFeedItem = viewers.map((viewer) => {
       return new this._feedItemModel({
-        called: false,
+        calledAt: new Date(),
         viewer: viewer,
         content: content._id,
         aggregator: {
@@ -954,6 +956,7 @@ export class ContentService {
    * @param {Content} content
    * @returns {Promise<FeedItem[]>}
    */
+  //[deprecate]
   createFeedItemFromAuthorToEveryone = async (content: Content) => {
     //TODO !!! should do pagination later on
     const viewers = await this._accountModel.find().exec();
@@ -966,18 +969,21 @@ export class ContentService {
    * @param {ObjectId} contentId
    * @returns {Promise<FeedItem[]>}
    */
+  //[deprecate]
+  /*
   createFeedItemFromAuthorIdToEveryone = async (contentId: any) => {
     const content = await this._contentModel.findById(contentId).exec();
     console.debug('create feed with content', content);
     return this.createFeedItemFromAuthorToEveryone(content);
-  };
+  };*/
 
   /**
    *
    * @param {ObjectId} authorId
    * @param {ObjectId}  viewerId
    * @returns {Promise<FeedItem[]>}
-   */
+   */ //[deprecate]
+  /*
   createFeedItemFromAuthorIdToViewerId = async (
     authorId: any,
     viewerId: any
@@ -985,7 +991,7 @@ export class ContentService {
     const author = await this._userModel.findById(authorId).exec();
     const viewer = await this._userModel.findById(viewerId).exec();
     return this.createFeedItemFromAuthorToViewer(author, viewer);
-  };
+  };*/
 
   /**
    *

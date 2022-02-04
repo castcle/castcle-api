@@ -20,10 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { Password } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { env } from '../environment';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 
@@ -110,7 +110,7 @@ OtpSchema.statics.generate = async function (
   let newRefCode: string;
   let otpFindingResult;
   do {
-    newRefCode = Password.generateRandomDigits(env.OTP_DIGITS);
+    newRefCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
     otpFindingResult = await this.findOne({
       account: accountId,
       action: objective,
@@ -127,7 +127,7 @@ OtpSchema.statics.generate = async function (
     channel: channel,
     isVerify: verify,
     sid: sid,
-    expireDate: new Date(now.getTime() + env.OPT_EXPIRES_IN * 1000),
+    expireDate: new Date(now.getTime() + Environment.OPT_EXPIRES_IN * 1000),
     reciever: receiver,
   });
   return otp.save();

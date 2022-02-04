@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -32,7 +33,6 @@ import {
   UserService,
 } from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
-import { env } from '../environment';
 import {
   Account,
   AccountActivation,
@@ -118,7 +118,7 @@ describe('Authentication Service', () => {
         expect(typeof result.accessToken).toBe('string');
         expect(result.accessTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
+      it(`expire date should be in the next ${Environment.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
@@ -138,7 +138,7 @@ describe('Authentication Service', () => {
         expect(typeof result.refreshToken).toBe('string');
         expect(result.refreshTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
+      it(`expire date should be in the next ${Environment.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
         const result = service._generateRefreshToken({
           id: 'randomid',
         });
@@ -156,10 +156,10 @@ describe('Authentication Service', () => {
         expect(typeof result.verifyToken).toBe('string');
         expect(result.verifyTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
+      it(`expire date should be in the next ${Environment.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
+          now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
         );
 
         const result = service._generateEmailVerifyToken({

@@ -25,8 +25,6 @@ import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
 import { Content, User, Revision, Relationship, FeedItem } from '../schemas';
-import { FeedItemDto } from '../dtos/feedItem.dto';
-import { ContentAggregator } from '../aggregations';
 
 type HookModels = {
   revisionModel: Model<Revision>;
@@ -40,7 +38,8 @@ type HookModels = {
  * @param {HookModels} models
  * @returns {mongoose.Schema.Types.ObjectId[]} accountIds
  */
-const convertUserIdsToAccountIds = async (
+//[depecrate]
+/*const convertUserIdsToAccountIds = async (
   userIds: mongoose.Schema.Types.ObjectId[],
   models: HookModels
 ) => {
@@ -54,7 +53,7 @@ const convertUserIdsToAccountIds = async (
   return users.map(
     (user) => user.ownerAccount as unknown as mongoose.Schema.Types.ObjectId
   );
-};
+};*/
 
 /**
  * get all follower of author to createContentItem with aggregator.createTime to now
@@ -62,7 +61,7 @@ const convertUserIdsToAccountIds = async (
  * @param {HookModels}  models
  * @returns {ContentItem[]}
  */
-const createRelatedContentItem = async (doc: Content, models: HookModels) => {
+/*const createRelatedContentItem = async (doc: Content, models: HookModels) => {
   //get all author follower
   const relationships = await models.relationshipModel
     .find({ followedUser: doc.author.id as any })
@@ -86,7 +85,7 @@ const createRelatedContentItem = async (doc: Content, models: HookModels) => {
       } as FeedItemDto)
   );
   return models.feedItemModel.insertMany(feedItemDtos);
-};
+};*/
 
 /**
  * Main logic of content.post('save) this will create revision document and create contentItems
@@ -118,7 +117,7 @@ export const postContentSave = async (doc: Content, models: HookModels) => {
   //if is new and
   if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
     console.debug('saving doc -->', JSON.stringify(doc));
-    await createRelatedContentItem(doc, models);
+    // await createRelatedContentItem(doc, models);
   }
 
   return true;

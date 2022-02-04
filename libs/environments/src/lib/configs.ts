@@ -68,4 +68,9 @@ export const Configs = {
     MinDiffTime: 15000,
     SuggestAmount: 2,
   },
+  Feed: {
+    FollowFeedMax: 100,
+    FollowFeedRatio: 0.7,
+    RecallEvery: 2,
+  },
 };

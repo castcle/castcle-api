@@ -26,9 +26,12 @@ import { ContentAggregator } from '../aggregations';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
+import { FeedItemPayload } from '../dtos/feedItem.dto';
+import { Engagement } from './engagement.schema';
+import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
 @Schema({ timestamps: true })
-export class FeedItem extends CastcleBase {
+class FeedItemDocument extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -42,8 +45,8 @@ export class FeedItem extends CastcleBase {
     ref: 'Account',
   })
   viewer: Account;
-  @Prop({ required: true })
-  called: boolean;
+  @Prop({ type: Object })
+  calledAt?: Date;
 
   @Prop()
   seenAt?: Date;
@@ -58,12 +61,17 @@ export class FeedItem extends CastcleBase {
   aggregator: ContentAggregator;
 }
 
-export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
+export const FeedItemSchema = SchemaFactory.createForClass(FeedItemDocument);
 
 FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({
   viewer: 1,
 });
+
+export class FeedItem extends FeedItemDocument {
+  toFeedItemPayload: (engagements?: Engagement[]) => FeedItemPayload;
+  toFeedItemPayloadV2: (engagements?: Engagement[]) => FeedItemPayloadItem;
+}
 
 export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
   return FeedItemSchema;
