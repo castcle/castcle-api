@@ -32,7 +32,7 @@ import {
 export class FeedItemDto {
   content: any;
   viewer: any;
-  called: boolean;
+  calledAt: Date;
   __v?: any;
 }
 
