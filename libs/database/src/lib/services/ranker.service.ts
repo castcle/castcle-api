@@ -48,7 +48,7 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
 import { UserService } from './user.service';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { ContentAggregator } from '../aggregations';
 import { Configs } from '@castcle-api/environments';
 
 @Injectable()
