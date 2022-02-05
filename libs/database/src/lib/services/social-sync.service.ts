@@ -167,7 +167,8 @@ export class SocialSyncService {
     );
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');
-      return deleteSocialSync.delete();
+      deleteSocialSync.active = false;
+      return deleteSocialSync.save();
     } else {
       this.logger.warn('Cnn not found social sync');
       return null;
