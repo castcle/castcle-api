@@ -541,7 +541,7 @@ describe('AppController', () => {
       await appController.deleteSyncSocial(credential, request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result).toBeUndefined();
+      expect(result.active).toEqual(false);
     });
   });
 

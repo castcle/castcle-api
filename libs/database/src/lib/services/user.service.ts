@@ -192,7 +192,7 @@ export class UserService {
   getById = async (
     user: User,
     id: string,
-    type: UserType,
+    type?: UserType,
     hasRelationshipExpansion = false
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
