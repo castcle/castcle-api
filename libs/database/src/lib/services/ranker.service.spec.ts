@@ -159,7 +159,7 @@ describe('Ranker Service', () => {
         payload: shortPayload3,
         castcleId: user.displayId,
       });
-      contents[2] = await contentService.createContentFromUser(user, {
+      contents[3] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload4,
         castcleId: user.displayId,
@@ -169,12 +169,37 @@ describe('Ranker Service', () => {
         payload: shortPayload5,
         castcleId: user.displayId,
       });
+      const contentIds = contents.map((item) => item.id);
+      console.log('contentIds', contentIds);
+      await service._defaultContentModel.insertMany(
+        contentIds.map((id, index) => ({
+          content: id,
+          index: index,
+        }))
+      );
     });
     it('should create feedItem after create a content', async () => {
       const totalFeedItem = await service._feedItemModel.countDocuments();
       expect(totalFeedItem).toEqual(0);
       const feedItems = await service._feedItemModel.find().exec();
       expect(feedItems.length).toEqual(0);
+    });
+  });
+
+  describe('getGuestFeedItems', () => {
+    it('should return prefix from defaultContents collections', async () => {
+      const guestFeeds = await service.getGuestFeedItems(
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        },
+        result.accountDocument
+      );
+      expect(guestFeeds.payload[0].id).toEqual('default');
+      expect(guestFeeds.payload[1].id).toEqual('default');
+      expect(guestFeeds.payload[2].id).toEqual('default');
+      expect(guestFeeds.payload[3].id).toEqual('default');
+      expect(guestFeeds.payload[4].id).toEqual('default');
     });
   });
   //TODO !!! Have to add test later on

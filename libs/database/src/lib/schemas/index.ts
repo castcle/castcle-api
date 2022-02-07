@@ -52,3 +52,4 @@ export * from './social-sync.schema';
 export * from './transaction.schema';
 export * from './user.schema';
 export * from './ux-engagement.schema';
+export * from './default-content.schema';
