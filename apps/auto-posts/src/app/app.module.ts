@@ -24,7 +24,6 @@
 import { HealthyModule } from '@castcle-api/healthy';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { CampaignScheduler } from './schedulers/campaign.scheduler';
 import { TwitterModule } from './twitter/twitter.module';
 import { YoutubeModule } from './youtube/youtube.module';
 
@@ -35,6 +34,5 @@ import { YoutubeModule } from './youtube/youtube.module';
     TwitterModule,
     YoutubeModule,
   ],
-  providers: [CampaignScheduler],
 })
 export class AppModule {}
