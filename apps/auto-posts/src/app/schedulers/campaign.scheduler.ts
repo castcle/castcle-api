@@ -21,20 +21,17 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { CampaignScheduler } from './schedulers/campaign.scheduler';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+import { CampaignService } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    TwitterModule,
-    YoutubeModule,
-  ],
-  providers: [CampaignScheduler],
-})
-export class AppModule {}
+@Injectable()
+export class CampaignScheduler {
+  constructor(private campaignService: CampaignService) {}
+
+  @Cron(Environment.CAMPAIGNS_CRON_EXPRESSION)
+  async claimContentReachRewards() {
+    await this.campaignService.claimContentReachAirdrops();
+  }
+}
