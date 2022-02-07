@@ -82,14 +82,14 @@ export class RankerService {
   ) => {
     console.log('exclude', excludeContents);
     let prefix_feeds_payload: FeedItemPayloadItem[] = [];
+    let prefix_feeds: DefaultContent[];
+    //if no pagination = add default
     if (!(query.untilId || query.sinceId)) {
-      console.log('****** GUEST NO UTIL');
-      const defaultFeeds = await this._defaultContentModel
+      prefix_feeds = await this._defaultContentModel
         .find({ index: { $gte: 0 } })
         .populate('content')
         .sort({ index: 1 });
-      console.log(defaultFeeds);
-      prefix_feeds_payload = defaultFeeds.map(
+      prefix_feeds_payload = prefix_feeds.map(
         (item) =>
           ({
             id: 'default',
@@ -109,7 +109,6 @@ export class RankerService {
           } as FeedItemPayloadItem)
       );
     }
-    //const guestFeedMax = query.untilId || query.sinceId?query.maxResults:
     const filter = createCastcleFilter(
       {
         countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
@@ -130,6 +129,15 @@ export class RankerService {
         .filter((feedItem) => feedItem.content.originalPost)
         .map((feedItem) => feedItem.content.originalPost.author)
     );
+    //add authors fro default
+    if (prefix_feeds_payload.length > 0) {
+      authors = authors.concat(prefix_feeds.map((p) => p.content.author));
+      authors = authors.concat(
+        prefix_feeds
+          .filter((f) => f.content.originalPost)
+          .map((f) => f.content.originalPost.author)
+      );
+    }
     const casts = feedItems
       .map((feedItem) => {
         if (!feedItem.content?.originalPost) return;
