@@ -21,30 +21,26 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { CastcleBase } from './base.schema';
+import { Wallet, WalletSchema } from './wallet.schema';
 
 @Schema({ timestamps: true })
 export class Transaction extends CastcleBase {
-  @Prop({
-    get: String,
-    ref: 'Account',
-    type: SchemaTypes.ObjectId,
-    index: true,
-  })
-  from?: string;
+  @Prop({ type: WalletSchema, index: true })
+  from?: Wallet;
+
+  @Prop({ type: WalletSchema, index: true })
+  to?: Wallet;
 
   @Prop({
-    get: String,
-    ref: 'Account',
-    type: SchemaTypes.ObjectId,
-    index: true,
+    type: SchemaTypes.Decimal128,
+    get: (n: number) => n / Environment.DECIMALS,
+    set: (n: number) => (n * Environment.DECIMALS).toFixed(0),
   })
-  to?: string;
-
-  @Prop()
-  value: number;
+  value: Types.Decimal128;
 
   @Prop()
   data?: string;

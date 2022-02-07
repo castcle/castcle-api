@@ -21,29 +21,33 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
-import { Transaction, User } from '../schemas';
+import { Environment } from '@castcle-api/environments';
+import { Types } from 'mongoose';
 
-@Injectable()
-export class TransactionService {
-  constructor(
-    @InjectModel('Transaction')
-    private transactionModel: Model<Transaction>
-  ) {}
-
-  /**
-   * Get user's balance
-   * @param {User}
-   */
-  getUserBalance = async (user: User) => {
-    const getBalanceResponses =
-      await this.transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(String(user.ownerAccount))
-      );
-
-    return Number(getBalanceResponses[0].total.toString());
-  };
+export class GetBalanceResponse {
+  total: Types.Decimal128;
 }
+
+export const pipelineOfGetBalance = (userId: string) => [
+  {
+    $facet: {
+      inflows: [{ $match: { 'to.account': Types.ObjectId(userId) } }],
+      outflows: [{ $match: { 'from.account': Types.ObjectId(userId) } }],
+    },
+  },
+  {
+    $project: {
+      total: {
+        $divide: [
+          {
+            $subtract: [
+              { $sum: '$inflows.value' },
+              { $sum: '$outflows.value' },
+            ],
+          },
+          Environment.DECIMALS,
+        ],
+      },
+    },
+  },
+];
