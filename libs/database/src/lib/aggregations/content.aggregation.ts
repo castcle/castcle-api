@@ -33,7 +33,7 @@ export type ContentAggregatorParams = {
   MaxResult: number;
   FollowFeedMax: number;
   FollowFeedRatio: number;
-  FollowRecalledMinutes: number;
+  DecayDays: number;
 };
 
 export const pipe2ContentFeedAggregator = (params: ContentAggregatorParams) => {
@@ -108,7 +108,9 @@ export const pipe2ContentFeedAggregator = (params: ContentAggregatorParams) => {
         foreignField: 'viewer',
         let: {
           date_now: new Date(),
-          date_diff: new Date(new Date().getTime() - 7 * 1000 * 86400), //new Date(ISODate().getTime() - 7 * 1000 * 86400),
+          date_diff: new Date(
+            new Date().getTime() - params.DecayDays * 1000 * 86400
+          ), //new Date(ISODate().getTime() - 7 * 1000 * 86400),
         },
         pipeline: [
           {
@@ -250,6 +252,10 @@ export const pipe2ContentFeedAggregator = (params: ContentAggregatorParams) => {
         let: {
           following: '$following',
           duplicate_contents: '$duplicate_contents',
+          date_now: new Date(),
+          date_diff: new Date(
+            new Date().getTime() - params.DecayDays * 1000 * 86400
+          ),
         },
         pipeline: [
           {
@@ -265,6 +271,16 @@ export const pipe2ContentFeedAggregator = (params: ContentAggregatorParams) => {
                     $in: ['$author.id', '$$following'],
                   },
                   {
+                    $and: [
+                      {
+                        $lte: ['$updatedAt', '$$date_now'],
+                      },
+                      {
+                        $gte: ['$updatedAt', '$$date_diff'],
+                      },
+                    ],
+                  },
+                  {
                     $not: {
                       $in: ['$_id', '$$duplicate_contents'],
                     },
@@ -274,7 +290,7 @@ export const pipe2ContentFeedAggregator = (params: ContentAggregatorParams) => {
             },
           },
           {
-            $limit: params.MaxResult,
+            $limit: 25,
           },
         ],
         as: 'contents',

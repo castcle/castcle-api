@@ -71,6 +71,6 @@ export const Configs = {
   Feed: {
     FollowFeedMax: 100,
     FollowFeedRatio: 0.7,
-    RecallEvery: 2,
+    DecayDays: 7,
   },
 };
