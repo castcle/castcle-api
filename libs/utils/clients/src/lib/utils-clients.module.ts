@@ -28,7 +28,7 @@ import { FacebookClient } from './facebook/facebook.client';
 import {
   FacebookAccessToken,
   FacebookTokenData,
-  FacebookUserInfo
+  FacebookUserInfo,
 } from './facebook/facebook.message';
 import { GoogleClient } from './google/google.client';
 import { TelegramClient } from './telegram/telegram.client';
@@ -41,8 +41,8 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: Environment.HTTP_TIME_OUT
-    })
+      timeout: Environment.HTTP_TIME_OUT,
+    }),
   ],
   controllers: [],
   providers: [
@@ -51,7 +51,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     TwitterClient,
     TwillioClient,
     AppleClient,
-    GoogleClient
+    GoogleClient,
   ],
   exports: [
     HttpModule,
@@ -60,8 +60,8 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     TwitterClient,
     AppleClient,
     TwillioClient,
-    GoogleClient
-  ]
+    GoogleClient,
+  ],
 })
 export class UtilsClientsModule {}
 
@@ -78,5 +78,5 @@ export {
   AppleClient,
   TwillioClient,
   TwillioChannel,
-  GoogleClient
+  GoogleClient,
 };

@@ -23,8 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { UserDocument } from '.';
+import { User } from '.';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
@@ -33,17 +32,17 @@ export class Relationship extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true
+    index: true,
   })
-  user: UserDocument;
+  user: User;
 
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true
+    index: true,
   })
-  followedUser: UserDocument;
+  followedUser: User;
 
   //TODO !!! might need to change to embed followedUser and user instead
   @Prop()
@@ -58,8 +57,8 @@ export class Relationship extends CastcleBase {
   blocking: boolean;
 }
 
-export type RelationshipDocument = Relationship & Document;
 export const RelationshipSchema = SchemaFactory.createForClass(Relationship);
+
 export const RelationshipSchemaFactory = (): mongoose.Schema<any> => {
   return RelationshipSchema;
 };

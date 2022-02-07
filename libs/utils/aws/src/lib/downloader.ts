@@ -37,7 +37,7 @@ export class Downloader {
     return lastValueFrom(
       this.httpService
         .get(url, {
-          responseType: 'arraybuffer'
+          responseType: 'arraybuffer',
         })
         .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
     );

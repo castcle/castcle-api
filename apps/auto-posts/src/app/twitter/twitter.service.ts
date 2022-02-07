@@ -24,19 +24,19 @@
 import { Injectable } from '@nestjs/common';
 import TwitterApi, {
   Tweetv2TimelineResult,
-  TwitterApiv2
+  TwitterApiv2,
 } from 'twitter-api-v2';
 import { Environment } from '@castcle-api/environments';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   ContentService,
   SocialProvider,
-  SocialSyncService
+  SocialSyncService,
 } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { Author, SaveContentDto } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
-import { SocialSyncDocument } from '@castcle-api/database/schemas';
+import { SocialSync } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class TwitterService {
@@ -64,7 +64,7 @@ export class TwitterService {
     this.logger.log('Done, waiting for next available schedule');
   }
 
-  getTweetsByAccount = async (syncAccount: SocialSyncDocument) => {
+  getTweetsByAccount = async (syncAccount: SocialSync) => {
     const timeline = await this.getTimelineByUserId(
       syncAccount.socialId,
       syncAccount.latestSyncId
@@ -78,7 +78,7 @@ export class TwitterService {
 
     const [author, contents] = await Promise.all([
       this.contentService.getAuthorFromId(syncAccount.author.id),
-      this.convertTimelineToContents(syncAccount.author.id, timeline.data)
+      this.convertTimelineToContents(syncAccount.author.id, timeline.data),
     ]);
 
     await this.contentService.createContentsFromAuthor(
@@ -103,7 +103,7 @@ export class TwitterService {
       expansions: ['attachments.media_keys', 'author_id'],
       'media.fields': ['media_key', 'preview_image_url', 'type', 'url'],
       since_id: latestPostId,
-      'tweet.fields': ['referenced_tweets']
+      'tweet.fields': ['referenced_tweets'],
     });
   };
 
@@ -120,7 +120,7 @@ export class TwitterService {
       const uploadedImage = await Image.upload(image, {
         filename: `twitter-${medium.media_key}`,
         sizes: COMMON_SIZE_CONFIGS,
-        subpath: `contents/${userId}`
+        subpath: `contents/${userId}`,
       });
 
       medium.url = uploadedImage.toSignUrl();
@@ -144,9 +144,9 @@ export class TwitterService {
         return {
           payload: {
             message: text,
-            photo: images ? { contents: images } : undefined
+            photo: images ? { contents: images } : undefined,
           },
-          type: 'short'
+          type: 'short',
         } as SaveContentDto;
       });
   }

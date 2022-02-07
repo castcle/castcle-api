@@ -37,7 +37,7 @@ export class Url {
 
 export enum LinkType {
   Other = 'other',
-  Youtube = 'youtube'
+  Youtube = 'youtube',
 }
 
 export class Link {
@@ -180,12 +180,12 @@ export class Author {
   toIncludeUser = ({
     blocked,
     blocking,
-    followed
+    followed,
   }: Partial<IncludeUser> = {}): IncludeUser => ({
     ...this,
     blocked,
     blocking,
-    followed
+    followed,
   });
 }
 
@@ -287,7 +287,7 @@ export class SaveContentDto {
 export enum ContentType {
   Short = 'short',
   Blog = 'blog',
-  Image = 'image'
+  Image = 'image',
 }
 
 export class CastcleContentQueryOptions extends QueryOption {
@@ -298,9 +298,9 @@ export class CastcleContentQueryOptions extends QueryOption {
 export const DEFAULT_CONTENT_QUERY_OPTIONS = {
   sortBy: {
     field: 'createdAt',
-    type: 'desc'
+    type: 'desc',
   },
-  maxResults: 25
+  maxResults: 25,
 } as CastcleContentQueryOptions;
 
 export class CastcleIncludes {
@@ -354,7 +354,7 @@ export class ContentsResponse {
 export class GetContentsDto extends PaginationQuery {
   @ApiProperty({
     enum: ContentType,
-    required: false
+    required: false,
   })
   @TransformStringToEnum(ContentType)
   @IsOptional()

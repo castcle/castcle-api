@@ -28,5 +28,5 @@ import { ErrorMessages } from './default';
 export const LocalErrorMessage = {
   default: ErrorMessages,
   th: ThErrorMessages,
-  dev: DevErrorMessages
+  dev: DevErrorMessages,
 };

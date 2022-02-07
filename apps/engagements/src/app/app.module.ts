@@ -29,6 +29,6 @@ import { HealthyModule } from '@castcle-api/healthy';
 
 @Module({
   imports: [DatabaseModule, HealthyModule, UtilsInterceptorsModule],
-  controllers: [EngagementController]
+  controllers: [EngagementController],
 })
 export class EngagementModule {}

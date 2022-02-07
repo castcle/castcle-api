@@ -23,7 +23,7 @@
 import {
   CastcleMeta,
   PageResponseDto,
-  UserResponseDto
+  UserResponseDto,
 } from '@castcle-api/database/dtos';
 import { ApiProperty } from '@nestjs/swagger';
 export class CreateCommentBody {

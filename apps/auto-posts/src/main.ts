@@ -33,7 +33,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3342;
   const prefix = 'auto-posts';
   const app = await NestFactory.create(AppModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
 
   app.setGlobalPrefix(prefix);

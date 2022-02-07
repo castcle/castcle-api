@@ -21,37 +21,35 @@
  * or have any questions.
  */
 
-import { AuthenticationService } from '@castcle-api/database';
+import { UserService } from '@castcle-api/database';
 import {
   BlogPayload,
   ContentType,
   SaveContentDto,
-  Url
+  Url,
 } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { UserDocument } from '@castcle-api/database/schemas';
+import { User } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {
-  constructor(private authService: AuthenticationService) {}
+  constructor(private userService: UserService) {}
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
    * @param {CredentialRequest} credentialRequest
    * @param {string} castcleId
-   * @returns {UserDocument}
+   * @returns {User}
    */
   async getUserFromBody(
     credentialRequest: CredentialRequest,
     castcleId: string
   ) {
-    const account = await this.authService.getAccountFromCredential(
-      credentialRequest.$credential
-    );
-    const user = await this.authService.getUserFromCastcleId(castcleId);
+    const account = credentialRequest.$credential?.account;
+    const user = await this.userService.getByIdOrCastcleId(castcleId);
     if (String(user.ownerAccount) !== String(account._id)) {
       throw new CastcleException(
         CastcleStatus.FORBIDDEN_REQUEST,
@@ -66,7 +64,7 @@ export class AppService {
    * @param {SaveContentDto} body
    * @returns {SaveContentDto} body
    */
-  async uploadContentToS3(body: SaveContentDto, uploader: UserDocument) {
+  async uploadContentToS3(body: SaveContentDto, uploader: User) {
     if (body.payload.photo && body.payload.photo.contents) {
       const newContents = await Promise.all(
         (body.payload.photo.contents as Url[]).map(async (item) => {
@@ -75,7 +73,7 @@ export class AppService {
           return Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`
+            subpath: `contents/${uploader._id}`,
           }).then((r) => r.image);
         })
       );
@@ -92,7 +90,7 @@ export class AppService {
           {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`
+            subpath: `contents/${uploader._id}`,
           }
         )
       ).image;

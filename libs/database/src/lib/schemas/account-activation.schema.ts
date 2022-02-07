@@ -23,27 +23,24 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { env } from '../environment';
-import { Document, Model } from 'mongoose';
-import { Account } from '../schemas/account.schema';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { EmailVerifyToken } from '../dtos/token.dto';
 import { Token } from '@castcle-api/utils/commons';
-
-export type AccountActivationDocument = AccountActivation & IAccountActivation;
+import { Environment } from '@castcle-api/environments';
 
 export enum AccountActivationType {
   Email = 'email',
-  Mobile = 'mobile'
+  Mobile = 'mobile',
 }
 
 @Schema({ timestamps: true })
-export class AccountActivation extends CastcleBase {
+class AccountActivationDocument extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   account: Account;
 
@@ -63,43 +60,41 @@ export class AccountActivation extends CastcleBase {
   revocationDate: Date;
 }
 
-export const AccountActivationSchema =
-  SchemaFactory.createForClass(AccountActivation);
+export const AccountActivationSchema = SchemaFactory.createForClass(
+  AccountActivationDocument
+);
 
-export interface IAccountActivation extends Document {
+export interface AccountActivation extends AccountActivationDocument {
   isVerifyTokenValid(): boolean;
 }
 
-AccountActivationSchema.methods.isVerifyTokenValid = function () {
-  return Token.isTokenValid(
-    (this as AccountActivationDocument).verifyToken,
-    env.JWT_VERIFY_SECRET
-  );
-};
-
 export interface AccountActivationModel
-  extends Model<AccountActivationDocument> {
+  extends mongoose.Model<AccountActivation> {
   generateVerifyToken(payload: EmailVerifyToken): {
     verifyToken: string;
     verifyTokenExpireDate: Date;
   };
 }
 
+AccountActivationSchema.methods.isVerifyTokenValid = function () {
+  return Token.isTokenValid(this.verifyToken, Environment.JWT_VERIFY_SECRET);
+};
+
 AccountActivationSchema.statics.generateVerifyToken = function (
   payload: EmailVerifyToken
 ) {
   const now = new Date();
   const verifyTokenExpireDate = new Date(
-    now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
+    now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
   );
   payload.verifyTokenExpiresTime = verifyTokenExpireDate.toISOString();
   const verifyToken = Token.generateToken(
     payload,
-    env.JWT_VERIFY_SECRET,
-    Number(env.JWT_VERIFY_EXPIRES_IN)
+    Environment.JWT_VERIFY_SECRET,
+    Environment.JWT_VERIFY_EXPIRES_IN
   );
   return {
     verifyToken,
-    verifyTokenExpireDate
+    verifyTokenExpireDate,
   };
 };

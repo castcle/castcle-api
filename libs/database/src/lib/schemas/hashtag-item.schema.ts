@@ -21,7 +21,27 @@
  * or have any questions.
  */
 
-export class ContentAggregator {
-  createTime?: Date;
-  following?: boolean;
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
+import { Hashtag } from './hashtag.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
+import { CastcleBase } from './base.schema';
+
+@Schema({ timestamps: true })
+export class HashtagItem extends CastcleBase {
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Hashtag',
+  })
+  hashtag: Hashtag;
+
+  @Prop({ required: true, type: Object })
+  objectRef: any;
+
+  @Prop({ required: true, type: Object })
+  payload: Comment | Content | any;
 }
+
+export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);

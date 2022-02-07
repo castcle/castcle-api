@@ -25,7 +25,7 @@ import {
   AuthenticationService,
   ContentService,
   NotificationService,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import {
   CastcleQueueAction,
@@ -38,9 +38,9 @@ import {
   NotificationType,
   PaginationQuery,
   ResponseDto,
-  SaveContentDto
+  SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, ContentDocument, User } from '@castcle-api/database/schemas';
+import { Content, User } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -49,7 +49,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
-  CastcleController
+  CastcleController,
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -68,7 +68,7 @@ import {
   Query,
   Req,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { ContentLikeBody } from '../dtos/content.dto';
@@ -105,7 +105,7 @@ export class ContentController {
 
     if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
 
-    const user = await this.authService.getUserFromCastcleId(body.castcleId);
+    const user = await this.userService.getByIdOrCastcleId(body.castcleId);
     const authorizedUser = await this.userService.getUserFromCredential(
       req.$credential
     );
@@ -122,7 +122,7 @@ export class ContentController {
 
     this.contentProducer.sendMessage({
       action: CastcleQueueAction.CreateFeedItemToEveryOne,
-      id: content._id
+      id: content._id,
     });
 
     return this.contentService.convertContentToContentResponse(
@@ -176,10 +176,7 @@ export class ContentController {
     }
   }
 
-  async _checkPermissionForUpdate(
-    content: ContentDocument,
-    req: CredentialRequest
-  ) {
+  async _checkPermissionForUpdate(content: Content, req: CredentialRequest) {
     if (
       req.$credential.account.isGuest ||
       !req.$credential.account.activateDate
@@ -268,7 +265,7 @@ export class ContentController {
     const user = await this.userService.getUserFromCredential($credential);
     const { items: contents } = await this.contentService.getContentsForAdmin({
       ...getContentsDto,
-      sortBy: sortByOption
+      sortBy: sortByOption,
     });
 
     return this.contentService.convertContentsToContentsResponse(
@@ -279,10 +276,10 @@ export class ContentController {
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @ApiBody({
-    type: ContentLikeBody
+    type: ContentLikeBody,
   })
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/liked')
@@ -306,14 +303,14 @@ export class ContentController {
       source: NotificationSource.Profile,
       sourceUserId: user._id,
       targetRef: {
-        _id: content._id
+        _id: content._id,
       },
-      account: { _id: content.author.id }
+      account: { _id: content.author.id },
     });
   }
 
   @ApiResponse({
-    status: 204
+    status: 204,
   })
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id/unliked')
@@ -336,7 +333,7 @@ export class ContentController {
   @CastcleBasicAuth()
   @ApiResponse({
     status: 201,
-    type: ContentResponse
+    type: ContentResponse,
   })
   @Post(':id/recasted')
   async recastContent(
@@ -352,7 +349,7 @@ export class ContentController {
       user
     );
     return {
-      payload: result.recastContent.toContentPayloadItem()
+      payload: result.recastContent.toContentPayloadItem(),
     } as ContentResponse;
   }
 
@@ -361,7 +358,7 @@ export class ContentController {
    */
   @ApiResponse({
     status: 201,
-    type: ContentResponse
+    type: ContentResponse,
   })
   @CastcleBasicAuth()
   @Post(':id/quotecast')
@@ -381,7 +378,7 @@ export class ContentController {
       message
     );
     return {
-      payload: result.quoteContent.toContentPayloadItem()
+      payload: result.quoteContent.toContentPayloadItem(),
     } as ContentResponse;
   }
 

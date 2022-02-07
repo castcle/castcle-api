@@ -68,7 +68,7 @@ describe('Token', () => {
         timeoutSecond
       );
       expect(Token.isTokenValid(token, secret)).toBe(true);
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve) => {
         setTimeout(() => {
           resolve(true);
         }, timeoutSecond * 1000);
@@ -86,7 +86,7 @@ describe('Token', () => {
         timeoutSecond
       );
       expect(Token.isTokenValid(token, secret)).toBe(true);
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve) => {
         setTimeout(() => {
           resolve(true);
         }, timeoutSecond * 1000);

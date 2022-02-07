@@ -24,13 +24,13 @@ import {
   CredentialInterceptor,
   HttpCacheClearInterceptor,
   HttpCacheIndividualInterceptor,
-  IpTrackerInterceptor
+  IpTrackerInterceptor,
 } from '@castcle-api/utils/interceptors';
 import {
   applyDecorators,
   CacheKey,
   CacheTTL,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 
@@ -69,7 +69,7 @@ export function CastcleTrack() {
       name: 'api-metadata',
       description: 'ip=127.0.0.1,src=iOS,dest=castcle-authentications',
       example: 'android',
-      required: true
+      required: true,
     }),
     UseInterceptors(IpTrackerInterceptor)
   );

@@ -21,51 +21,29 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from './account.schema';
-import { CastcleBase } from './base.schema';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
+import { Transaction, User } from '../schemas';
 
-export type UxEngagementDocument = UxEngagement & Document;
+@Injectable()
+export class TransactionService {
+  constructor(
+    @InjectModel('Transaction')
+    private transactionModel: Model<Transaction>
+  ) {}
 
-@Schema({ timestamps: true })
-export class UxEngagement extends CastcleBase {
-  @Prop()
-  platform: string;
+  /**
+   * Get user's balance
+   * @param {User}
+   */
+  getUserBalance = async (user: User) => {
+    const getBalanceResponses =
+      await this.transactionModel.aggregate<GetBalanceResponse>(
+        pipelineOfGetBalance(String(user.ownerAccount))
+      );
 
-  @Prop()
-  client: string;
-
-  @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  account: Account;
-
-  @Prop()
-  screenId: string;
-
-  @Prop({ type: Object })
-  screenInstance: any;
-
-  @Prop()
-  feedItemId: string;
-
-  @Prop()
-  target: string;
-
-  @Prop()
-  targetId: string;
-
-  @Prop()
-  eventType: string;
-
-  @Prop({ type: Object })
-  eventData: any;
-
-  @Prop()
-  timestamp: Date;
+    return Number(getBalanceResponses[0].total.toString());
+  };
 }
-
-export const UxEngagementSchema = SchemaFactory.createForClass(UxEngagement);

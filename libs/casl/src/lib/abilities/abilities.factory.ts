@@ -21,20 +21,18 @@
  * or have any questions.
  */
 import {
-  UserDocument,
-  ContentDocument,
-  User,
-  Content,
   Account,
   Comment,
-  Credential
+  Content,
+  Credential,
+  User,
 } from '@castcle-api/database/schemas';
 import {
   InferSubjects,
   Ability,
   AbilityBuilder,
   AbilityClass,
-  ExtractSubjectType
+  ExtractSubjectType,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
 
@@ -58,17 +56,17 @@ export enum Action {
   Reply = 'reply',
   Report = 'report',
   Follow = 'follow',
-  Comment = 'comment'
+  Comment = 'comment',
 }
 
 export type AppAbility = Ability<[Action, Subjects]>;
 
 @Injectable()
 export class CaslAbilityFactory {
-  getUserManageContentAbility(users: UserDocument[], content: ContentDocument) {
-    const { can, cannot, build } = new AbilityBuilder<
-      Ability<[Action, Subjects]>
-    >(Ability as AbilityClass<AppAbility>);
+  getUserManageContentAbility(users: User[], content: Content) {
+    const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
+      Ability as AbilityClass<AppAbility>
+    );
     const findUser = users.findIndex(
       (u) => String(u._id) === String(content.author.id)
     );
@@ -81,14 +79,14 @@ export class CaslAbilityFactory {
       detectSubjectType: (item) => {
         console.log(item);
         return item.constructor as ExtractSubjectType<Subjects>;
-      }
+      },
     });
   }
 
   createForCredential(credential: Credential) {
-    const { can, cannot, build } = new AbilityBuilder<
-      Ability<[Action, Subjects]>
-    >(Ability as AbilityClass<AppAbility>);
+    const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
+      Ability as AbilityClass<AppAbility>
+    );
     /**
      * Credential Interaction
      */
@@ -122,14 +120,14 @@ export class CaslAbilityFactory {
     }
     return build({
       detectSubjectType: (item) =>
-        item.constructor as ExtractSubjectType<Subjects>
+        item.constructor as ExtractSubjectType<Subjects>,
     });
   }
 
   createForUser(user: User) {
-    const { can, cannot, build } = new AbilityBuilder<
-      Ability<[Action, Subjects]>
-    >(Ability as AbilityClass<AppAbility>);
+    const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
+      Ability as AbilityClass<AppAbility>
+    );
     /**
      * Content Interaction
      */
@@ -163,7 +161,7 @@ export class CaslAbilityFactory {
 
     return build({
       detectSubjectType: (item) =>
-        item.constructor as ExtractSubjectType<Subjects>
+        item.constructor as ExtractSubjectType<Subjects>,
     });
   }
 }

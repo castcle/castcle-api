@@ -20,13 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
@@ -34,115 +29,69 @@ import {
   CreateNotification,
   NotificationSource,
   NotificationType,
-  RegisterTokenDto
+  RegisterTokenDto,
 } from '../dtos/notification.dto';
-import { env } from '../environment';
-import { UserDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
+import { User, Account, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380
-  },
-  processors: [fakeProcessor]
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('NotificationService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: NotificationService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
-  let producer: NotificationProducer;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        BullModule.registerQueue({
-          name: TopicName.Notifications,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380
-          },
-          processors: [fakeProcessor]
-        }),
-        fakeBull
-      ];
-  const providers = [
-    ContentService,
-    UserService,
-    AuthenticationService,
-    NotificationService,
-    NotificationProducer,
-    UserProducer,
-    HashtagService
-  ];
+  let user: User;
+
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
 
   let mockNewCredential: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        ContentService,
+        UserService,
+        AuthenticationService,
+        NotificationService,
+        NotificationProducer,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<NotificationService>(NotificationService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    producer = module.get<NotificationProducer>(NotificationProducer);
+
+    service = app.get<NotificationService>(NotificationService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
 
@@ -151,16 +100,16 @@ describe('NotificationService', () => {
       message: 'sample profile1',
       source: NotificationSource.Profile,
       sourceUserId: {
-        _id: user._id
+        _id: user._id,
       },
       type: NotificationType.Comment,
       targetRef: {
-        _id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72',
       },
       read: false,
       account: {
-        _id: result.accountDocument.id
-      }
+        _id: result.accountDocument.id,
+      },
     });
     await newNoti.save();
 
@@ -169,16 +118,16 @@ describe('NotificationService', () => {
       message: 'sample page2',
       source: NotificationSource.Page,
       sourceUserId: {
-        _id: user._id
+        _id: user._id,
       },
       type: NotificationType.Comment,
       targetRef: {
-        _id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72',
       },
       read: false,
       account: {
-        _id: result.accountDocument.id
-      }
+        _id: result.accountDocument.id,
+      },
     });
     await newNoti2.save();
 
@@ -187,16 +136,16 @@ describe('NotificationService', () => {
       message: 'sample page3',
       source: NotificationSource.Profile,
       sourceUserId: {
-        _id: user._id
+        _id: user._id,
       },
       type: NotificationType.System,
       targetRef: {
-        _id: '6138afa4f616a467b5c4eb72'
+        _id: '6138afa4f616a467b5c4eb72',
       },
       read: false,
       account: {
-        _id: result.accountDocument.id
-      }
+        _id: result.accountDocument.id,
+      },
     });
     await newNoti3.save();
 
@@ -204,13 +153,14 @@ describe('NotificationService', () => {
       deviceUUID: 'test123545',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'iPhone'
+      device: 'iPhone',
     });
   });
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#getAll', () => {
@@ -221,7 +171,7 @@ describe('NotificationService', () => {
 
     it('should get all notification in db with source as page', async () => {
       const notification = await service.getAll(result.credentialDocument, {
-        source: NotificationSource.Page
+        source: NotificationSource.Page,
       });
       expect(notification.items.length).toEqual(1);
       expect(notification.items[0].source).toEqual(NotificationSource.Page);
@@ -231,7 +181,7 @@ describe('NotificationService', () => {
       const notification = await service.getAll(result.credentialDocument);
       const filterId = notification.items[1].id;
       const notiResult = await service.getAll(result.credentialDocument, {
-        sinceId: filterId
+        sinceId: filterId,
       });
       expect(notiResult.items.length).toEqual(1);
       expect(notiResult.items[0].message).toEqual('sample page3');
@@ -241,7 +191,7 @@ describe('NotificationService', () => {
       const notification = await service.getAll(result.credentialDocument);
       const filterId = notification.items[1].id;
       const notiResult = await service.getAll(result.credentialDocument, {
-        untilId: filterId
+        untilId: filterId,
       });
       expect(notiResult.items.length).toEqual(1);
       expect(notiResult.items[0].message).toEqual('sample profile1');
@@ -318,20 +268,20 @@ describe('NotificationService', () => {
         message: 'sample page',
         source: NotificationSource.Profile,
         sourceUserId: {
-          _id: user._id
+          _id: user._id,
         },
         type: NotificationType.Comment,
         targetRef: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
         read: false,
         account: {
-          _id: result.accountDocument.id
-        }
+          _id: result.accountDocument.id,
+        },
       };
 
       const resultData = await service.notifyToUser(newNoti);
-      const totalNoti = await service.getAll(result.credentialDocument);
+      await service.getAll(result.credentialDocument);
 
       expect(resultData).toBeDefined();
       expect(resultData.message).toEqual(newNoti.message);
@@ -349,20 +299,20 @@ describe('NotificationService', () => {
         message: 'sample page',
         source: NotificationSource.Profile,
         sourceUserId: {
-          _id: user._id
+          _id: user._id,
         },
         type: NotificationType.System,
         targetRef: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
         read: false,
         account: {
-          _id: result.accountDocument.id
-        }
+          _id: result.accountDocument.id,
+        },
       };
 
       const resultData = await service.notifyToUser(newNoti);
-      const totalNoti = await service.getAll(result.credentialDocument);
+      await service.getAll(result.credentialDocument);
 
       expect(resultData).toBeDefined();
       expect(resultData.message).toEqual(newNoti.message);
@@ -380,13 +330,13 @@ describe('NotificationService', () => {
       const deviceID = '9999999999';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
-      const credentialData = await authService.createAccount({
+      await authService.createAccount({
         deviceUUID: deviceID,
         languagesPreferences: ['th', 'th'],
         header: {
-          platform: 'ios'
+          platform: 'ios',
         },
-        device: 'iPhone13'
+        device: 'iPhone13',
       });
 
       const registerData = new RegisterTokenDto();
@@ -419,9 +369,9 @@ describe('NotificationService', () => {
         deviceUUID: '456775345',
         languagesPreferences: ['th', 'th'],
         header: {
-          platform: 'ios'
+          platform: 'ios',
         },
-        device: 'iPhone13'
+        device: 'iPhone13',
       });
       const badges = await service.getBadges(credentialData.credentialDocument);
       expect(badges).toBeNull;
@@ -434,16 +384,16 @@ describe('NotificationService', () => {
           message: 'sample profile' + i,
           source: NotificationSource.Profile,
           sourceUserId: {
-            _id: user._id
+            _id: user._id,
           },
           type: NotificationType.Comment,
           targetRef: {
-            id: '6138afa4f616a467b5c4eb72'
+            id: '6138afa4f616a467b5c4eb72',
           },
           read: false,
           account: {
-            _id: result.accountDocument.id
-          }
+            _id: result.accountDocument.id,
+          },
         });
         await newNoti.save();
       }

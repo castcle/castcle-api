@@ -23,7 +23,7 @@
 import { CountryService } from '@castcle-api/database';
 import {
   CountryResponse,
-  DEFAULT_COUNTRY_QUERY_OPTIONS
+  DEFAULT_COUNTRY_QUERY_OPTIONS,
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -36,7 +36,7 @@ import {
   Controller,
   Get,
   Query,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiHeader, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
 
@@ -44,16 +44,16 @@ import { ApiHeader, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
   example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true
+  required: true,
 })
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptVersion.name,
   description: Configs.RequiredHeaders.AcceptVersion.description,
   example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
+  required: true,
 })
 @Controller({
-  version: '1.0'
+  version: '1.0',
 })
 @Controller()
 export class CountryController {
@@ -62,7 +62,7 @@ export class CountryController {
   private logger = new CastLogger(CountryController.name);
 
   @ApiOkResponse({
-    type: CountryResponse
+    type: CountryResponse,
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
   @CacheKey(CacheKeyName.Country.Name)
@@ -70,7 +70,7 @@ export class CountryController {
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false
+    required: false,
   })
   @Get('country')
   async getAllCountry(
@@ -79,11 +79,11 @@ export class CountryController {
   ): Promise<CountryResponse> {
     this.logger.log('Start get all country');
     const result = await this.countryService.getAll({
-      sortBy: sortByOption
+      sortBy: sortByOption,
     });
     this.logger.log('Success get all country');
     return {
-      payload: result.map((country) => country.toCountryPayload())
+      payload: result.map((country) => country.toCountryPayload()),
     };
   }
 }

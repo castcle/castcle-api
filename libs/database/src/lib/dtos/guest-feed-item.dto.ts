@@ -21,11 +21,10 @@
  * or have any questions.
  */
 
-import { CastcleIncludes } from '.';
-import { GuestFeedItemType } from '../schemas/guestFeedItems.schema';
-import { User } from '../schemas/user.schema';
+import { GuestFeedItemType, User } from '../schemas';
 import { CastcleMeta } from './common.dto';
-import { ContentPayloadItem } from './content.dto';
+import { CastcleIncludes, ContentPayloadItem } from './content.dto';
+import { PageResponseDto, UserResponseDto } from './user.dto';
 
 export class GuestFeedItemDto {
   content?: any;
@@ -48,11 +47,11 @@ export class FeedItemPayloadItem {
     name: 'For You';
     slug: 'forYou';
   };
-  type: 'content' | 'suggestion' | 'ads'; // content or suggestion or reminder or ads
-  payload: ContentPayloadItem;
+  type: 'content' | 'suggestion-follow' | 'ads'; // content or suggestion or reminder or ads
+  payload: ContentPayloadItem | (UserResponseDto | PageResponseDto)[];
 }
 
-export class GuestFeedItemPayload {
+export class FeedItemResponse {
   payload: FeedItemPayloadItem[];
   includes: CastcleIncludes;
   meta: CastcleMeta;

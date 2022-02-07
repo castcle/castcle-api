@@ -31,16 +31,16 @@ export function CastcleController(defaultVersion: string) {
       name: Configs.RequiredHeaders.AcceptVersion.name,
       description: Configs.RequiredHeaders.AcceptVersion.description,
       example: Configs.RequiredHeaders.AcceptVersion.example,
-      required: true
+      required: true,
     }),
     ApiHeader({
       name: Configs.RequiredHeaders.AcceptLanguage.name,
       description: Configs.RequiredHeaders.AcceptLanguage.description,
       example: Configs.RequiredHeaders.AcceptLanguage.example,
-      required: true
+      required: true,
     }),
     Controller({
-      version: defaultVersion
+      version: defaultVersion,
     })
   );
 }

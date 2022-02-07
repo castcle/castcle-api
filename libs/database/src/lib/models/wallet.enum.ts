@@ -20,54 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
-import { User } from './user.schema';
 
-export type GuestFeedItemDocument = GuestFeedItem & mongoose.Document;
-
-export enum GuestFeedItemType {
-  Content = 'content',
-  Advertisement = 'ads',
-  SuggestFollow = 'suggest_follow'
+export enum WalletType {
+  ADS = 'ads',
+  LOCKING = 'locking',
+  PERSONAL = 'personal',
 }
-
-@Schema({ timestamps: true })
-export class GuestFeedItem extends CastcleBase {
-  @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Content',
-    index: true
-  })
-  content?: Content;
-
-  @Prop({
-    required: true
-  })
-  type: string;
-
-  @Prop({
-    type: Object
-  })
-  user?: User;
-
-  countryCode?: string;
-
-  @Prop({
-    required: true
-  })
-  score: number;
-}
-
-export const GuestFeedItemSchema = SchemaFactory.createForClass(GuestFeedItem);
-
-GuestFeedItemSchema.index({ score: -1, createdAt: -1 });
-GuestFeedItemSchema.index({
-  score: 1,
-  countryCode: 1,
-  'content.id': 1,
-  'content.author.id': 1,
-  'content.author.castcleId': 1
-});

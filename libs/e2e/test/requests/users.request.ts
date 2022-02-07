@@ -7,7 +7,7 @@ export class UsersRequest {
     'Accept-Version': '1.0',
     'API-Metadata': 'ip=127.0.0.1,src=CastcleOS,dest=castcle',
     Device: 'CastclePhone',
-    Platform: 'CastcleOS'
+    Platform: 'CastcleOS',
   };
 
   static request = (method: string, url: string): request.Test =>
@@ -20,5 +20,6 @@ export class UsersRequest {
   static put = (url: string) => UsersRequest.request('put', url);
 
   static checkHealth = () => UsersRequest.get('/healthy');
+  static updateMobile = () => UsersRequest.put('/me/mobile');
   static report = (userId: string) => UsersRequest.post(`/${userId}/reporting`);
 }

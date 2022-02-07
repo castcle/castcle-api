@@ -24,19 +24,13 @@
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
-import { ContentDocument, UserDocument } from '../schemas';
-import { RevisionDocument } from '../schemas/revision.schema';
-import { Content } from '../schemas/content.schema';
-import { RelationshipDocument } from '../schemas/relationship.schema';
-import { FeedItemDocument } from '../schemas/feedItem.schema';
-import { FeedItemDto } from '../dtos/feedItem.dto';
-import { ContentAggregator } from '../aggregator/content.aggregator';
+import { Content, User, Revision, Relationship, FeedItem } from '../schemas';
 
 type HookModels = {
-  revisionModel: Model<RevisionDocument>;
-  feedItemModel: Model<FeedItemDocument>;
-  relationshipModel: Model<RelationshipDocument>;
-  userModel: Model<UserDocument>;
+  revisionModel: Model<Revision>;
+  feedItemModel: Model<FeedItem>;
+  relationshipModel: Model<Relationship>;
+  userModel: Model<User>;
 };
 /**
  * transform userId[] to accountId[] by find users and return user.ownerAccount
@@ -44,32 +38,30 @@ type HookModels = {
  * @param {HookModels} models
  * @returns {mongoose.Schema.Types.ObjectId[]} accountIds
  */
-const convertUserIdsToAccountIds = async (
+//[depecrate]
+/*const convertUserIdsToAccountIds = async (
   userIds: mongoose.Schema.Types.ObjectId[],
   models: HookModels
 ) => {
   const users = await models.userModel
     .find({
       _id: {
-        $in: userIds
-      }
+        $in: userIds,
+      },
     })
     .exec();
   return users.map(
     (user) => user.ownerAccount as unknown as mongoose.Schema.Types.ObjectId
   );
-};
+};*/
 
 /**
  * get all follower of author to createContentItem with aggregator.createTime to now
- * @param {ContentDocument} doc
+ * @param {Content} doc
  * @param {HookModels}  models
- * @returns {ContentItemDocument[]}
+ * @returns {ContentItem[]}
  */
-const createRelatedContentItem = async (
-  doc: ContentDocument,
-  models: HookModels
-) => {
+/*const createRelatedContentItem = async (doc: Content, models: HookModels) => {
   //get all author follower
   const relationships = await models.relationshipModel
     .find({ followedUser: doc.author.id as any })
@@ -85,16 +77,15 @@ const createRelatedContentItem = async (
         viewer: accountId,
         content: doc._id,
         called: false,
-        seen: false,
         aggregator: {
           createTime: new Date(),
-          following: true
+          following: true,
         } as ContentAggregator,
-        __v: 2 //add version
+        __v: 2,
       } as FeedItemDto)
   );
   return models.feedItemModel.insertMany(feedItemDtos);
-};
+};*/
 
 /**
  * Main logic of content.post('save) this will create revision document and create contentItems
@@ -102,10 +93,7 @@ const createRelatedContentItem = async (
  * @param models
  * @returns
  */
-export const postContentSave = async (
-  doc: ContentDocument,
-  models: HookModels
-) => {
+export const postContentSave = async (doc: Content, models: HookModels) => {
   const session = await models.revisionModel.startSession();
 
   session.withTransaction(async () => {
@@ -113,14 +101,14 @@ export const postContentSave = async (
     const newRevison = new models.revisionModel({
       objectRef: {
         $ref: 'content',
-        $id: mongoose.Types.ObjectId((doc as ContentDocument)._id)
+        $id: mongoose.Types.ObjectId((doc as Content)._id),
       },
-      payload: doc as Content
+      payload: doc as Content,
     });
-    const result = await newRevison.save();
+    await newRevison.save();
     //change all embed content from recast/quotecast
 
-    if ((doc as ContentDocument).visibility != EntityVisibility.Publish) {
+    if ((doc as Content).visibility != EntityVisibility.Publish) {
       //if this is quote cast
     }
   });
@@ -129,7 +117,7 @@ export const postContentSave = async (
   //if is new and
   if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
     console.debug('saving doc -->', JSON.stringify(doc));
-    await createRelatedContentItem(doc, models);
+    // await createRelatedContentItem(doc, models);
   }
 
   return true;
@@ -140,7 +128,7 @@ export const postContentSave = async (
  * @param doc
  * @returns
  */
-export const preContentSave = async (doc: ContentDocument) => {
+export const preContentSave = async (doc: Content) => {
   console.debug('preSaveDoc', doc);
   doc.wasNew = doc.isNew;
   doc.visibility = doc.visibility ? doc.visibility : EntityVisibility.Publish;
@@ -149,20 +137,20 @@ export const preContentSave = async (doc: ContentDocument) => {
     doc.engagements = {
       like: {
         count: 0,
-        refs: []
+        refs: [],
       },
       comment: {
         count: 0,
-        refs: []
+        refs: [],
       },
       recast: {
         count: 0,
-        refs: []
+        refs: [],
       },
       quote: {
         count: 0,
-        refs: []
-      }
+        refs: [],
+      },
     };
   }
   return doc;

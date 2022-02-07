@@ -23,5 +23,5 @@
 import { Request } from 'express';
 export const Host = {
   getHostname: (req: Request, port?: number) =>
-    port ? `https://${req.hostname}:${port}` : `https://${req.hostname}`
+    port ? `https://${req.hostname}:${port}` : `https://${req.hostname}`,
 };

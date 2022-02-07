@@ -47,6 +47,6 @@ export class CountryResponse {
 export const DEFAULT_COUNTRY_QUERY_OPTIONS = {
   sortBy: {
     field: 'name',
-    type: SortDirection.ASC
-  }
+    type: SortDirection.ASC,
+  },
 } as CastcleQueryOptions;

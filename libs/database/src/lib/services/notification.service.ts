@@ -23,56 +23,50 @@
 import { CastLogger } from '@castcle-api/logger';
 import {
   NotificationMessage,
-  NotificationProducer
+  NotificationProducer,
 } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions,
   NotificationSource,
   NotificationType,
-  RegisterTokenDto
+  RegisterTokenDto,
 } from '../dtos/notification.dto';
-import { AccountDocument } from '../schemas';
-import {
-  CredentialDocument,
-  CredentialModel
-} from '../schemas/credential.schema';
-import { UserModel } from '../schemas/user.schema';
+import { Account, Credential, Notification, User } from '../schemas';
 import { createCastcleMeta } from '../utils/common';
-import { NotificationDocument } from './../schemas/notification.schema';
+
 @Injectable()
 export class NotificationService {
   private logger = new CastLogger(NotificationService.name);
 
   constructor(
     @InjectModel('Notification')
-    public _notificationModel: Model<NotificationDocument>,
+    public _notificationModel: Model<Notification>,
     @InjectModel('User')
-    public _userModel: UserModel,
+    public _userModel: Model<User>,
     private readonly notificationProducer: NotificationProducer,
     @InjectModel('Credential')
-    public _credentialModel: CredentialModel,
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>
+    public _credentialModel: Model<Credential>,
+    @InjectModel('Account') public _accountModel: Model<Account>
   ) {}
 
   /**
    * get all notifications
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @param {NotificationQueryOptions} options contain option for sorting page = skip + 1,
-   * @returns {Promise<{items:NotificationDocument[], total:number, pagination: {Pagination}}>}
+   * @returns {Promise<{items:Notification[], total:number, pagination: {Pagination}}>}
    */
   getAll = async (
-    credential: CredentialDocument,
+    credential: Credential,
     options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
   ) => {
     this.logger.log('prepare filter');
-    const filter: FilterQuery<NotificationDocument> = {
-      account: credential.account._id
+    const filter: FilterQuery<Notification> = {
+      account: credential.account._id,
     };
 
     if (options.source) filter.source = options.source;
@@ -81,14 +75,14 @@ export class NotificationService {
         .findById(options.sinceId)
         .exec();
       filter.createdAt = {
-        $gt: new Date(notificationSince.createdAt)
+        $gt: new Date(notificationSince.createdAt),
       };
     } else if (options.untilId) {
       const notificationUntil = await this._notificationModel
         .findById(options.untilId)
         .exec();
       filter.createdAt = {
-        $lt: new Date(notificationUntil.createdAt)
+        $lt: new Date(notificationUntil.createdAt),
       };
     }
 
@@ -102,14 +96,14 @@ export class NotificationService {
 
     return {
       items: documents,
-      meta: createCastcleMeta(documents)
+      meta: createCastcleMeta(documents),
     };
   };
 
   /**
    * get notification from notification's id
    * @param {string} id notification's id
-   * @returns {NotificationDocument}
+   * @returns {Notification}
    */
   getFromId = async (id: string) => {
     const notification = await this._notificationModel
@@ -121,10 +115,10 @@ export class NotificationService {
 
   /**
    * update read flag from notofication
-   * @param {NotificationDocument} notification notofication document
-   * @returns {NotificationDocument}
+   * @param {Notification} notification notofication document
+   * @returns {Notification}
    */
-  flagRead = async (notification: NotificationDocument) => {
+  flagRead = async (notification: Notification) => {
     if (notification) {
       notification.read = true;
       const result = notification.save();
@@ -134,8 +128,8 @@ export class NotificationService {
           { _id: notification.account._id },
           {
             $inc: {
-              notificationBadgeCount: -1
-            }
+              notificationBadgeCount: -1,
+            },
           }
         )
         .exec();
@@ -147,16 +141,16 @@ export class NotificationService {
 
   /**
    * update read flag all notofication
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {UpdateWriteOpResult} update result status
    */
-  flagReadAll = async (credential: CredentialDocument) => {
+  flagReadAll = async (credential: Credential) => {
     const user = await this._userModel
       .findOne({
         ownerAccount:
           credential.account && credential.account._id
             ? credential.account._id
-            : null
+            : null,
       })
       .exec();
 
@@ -164,7 +158,7 @@ export class NotificationService {
       const findFilter: {
         sourceUserId: any;
       } = {
-        sourceUserId: user._id
+        sourceUserId: user._id,
       };
       console.log(findFilter);
 
@@ -191,7 +185,7 @@ export class NotificationService {
   /**
    * create notofication and push to queue
    * @param {CreateNotification} notificationData notofication document
-   * @returns {NotificationDocument}
+   * @returns {Notification}
    */
   notifyToUser = async (notificationData: CreateNotification) => {
     console.log('save notification');
@@ -202,8 +196,8 @@ export class NotificationService {
         $ref:
           notificationData.type !== NotificationType.System
             ? notificationData.type
-            : null
-      }
+            : null,
+      },
     };
 
     const createResult = await new this._notificationModel(
@@ -215,8 +209,8 @@ export class NotificationService {
         { _id: notificationData.account._id },
         {
           $inc: {
-            notificationBadgeCount: 1
-          }
+            notificationBadgeCount: 1,
+          },
         }
       )
       .exec();
@@ -224,7 +218,7 @@ export class NotificationService {
 
     const credentials = await this._credentialModel
       .find({
-        'account._id': mongoose.Types.ObjectId(notificationData.account._id)
+        'account._id': Types.ObjectId(notificationData.account._id),
       })
       .exec();
     if (createResult && notificationData.account) {
@@ -236,7 +230,7 @@ export class NotificationService {
           'mutable-content': 1,
           badge: 1,
           category: 'CONTENTS',
-          sound: 'default'
+          sound: 'default',
         },
         payload: {
           notifyId: createResult._id,
@@ -248,11 +242,11 @@ export class NotificationService {
           content:
             NotificationType[createResult.type] === NotificationType.Content
               ? notificationData.targetRef._id
-              : undefined
+              : undefined,
         },
         firebaseTokens: credentials
           .filter((c) => c.firebaseNotificationToken)
-          .map((c) => c.firebaseNotificationToken as string)
+          .map((c) => c.firebaseNotificationToken as string),
       };
       console.log('add to queue');
       this.notificationProducer.sendMessage(message);
@@ -272,7 +266,7 @@ export class NotificationService {
         .updateOne(
           { deviceUUID: registerTokenDto.deviceUUID },
           {
-            firebaseNotificationToken: registerTokenDto.firebaseToken
+            firebaseNotificationToken: registerTokenDto.firebaseToken,
           }
         )
         .exec();
@@ -283,20 +277,20 @@ export class NotificationService {
 
   /**
    * get total badges from user
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {string} total number notification
    */
-  getBadges = async (credential: CredentialDocument) => {
+  getBadges = async (credential: Credential) => {
     const user = await this._userModel
       .findOne({
-        ownerAccount: credential.account._id
+        ownerAccount: credential.account._id,
       })
       .exec();
 
     if (user) {
       const totalNotification = await this._notificationModel.countDocuments({
         sourceUserId: user._id,
-        read: false
+        read: false,
       });
 
       console.log(`total badges : ${totalNotification}`);

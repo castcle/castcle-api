@@ -39,7 +39,7 @@ export class ContentProducer {
    */
   async sendMessage(message: ContentMessage) {
     await this.queue.add({
-      content: message
+      content: message,
     });
     this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }

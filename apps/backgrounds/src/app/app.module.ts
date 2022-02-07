@@ -20,18 +20,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { FirebaseModule } from 'nestjs-firebase';
-import { DatabaseModule } from '@castcle-api/database';
+import { CampaignConsumer } from './consumers/campaign.consumer';
+import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
-import { ContentConsumer } from './consumers/content.consumer';
 
 @Module({
   imports: [
     DatabaseModule,
+    ScheduleModule.forRoot(),
     UtilsQueueModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
@@ -39,10 +43,15 @@ import { ContentConsumer } from './consumers/content.consumer';
         clientEmail: Environment.FIREBASE_CLIENT_EMAIL,
         privateKey: Buffer.from(Environment.FIREBASE_PRIVATE_KEY, 'base64')
           .toString('ascii')
-          .replace(/\\n/g, '\n')
-      }
-    })
+          .replace(/\\n/g, '\n'),
+      },
+    }),
   ],
-  providers: [NotificationConsumer, UserConsumer, ContentConsumer]
+  providers: [
+    CampaignConsumer,
+    ContentConsumer,
+    NotificationConsumer,
+    UserConsumer,
+  ],
 })
 export class BackgroundModule {}

@@ -22,14 +22,13 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Password } from '@castcle-api/utils/commons';
-export type AccountDocument = Account & IAccount;
+import { AccountCampaigns } from '../models';
 
 export enum AccountRole {
   Member = 'member',
-  Guest = 'guest'
+  Guest = 'guest',
 }
 
 interface ICredential {
@@ -38,9 +37,9 @@ interface ICredential {
 }
 
 @Schema({ timestamps: true })
-export class Account extends CastcleBase {
+class AccountDocument extends CastcleBase {
   @Prop({
-    index: true
+    index: true,
   })
   email: string;
 
@@ -58,9 +57,6 @@ export class Account extends CastcleBase {
     languages: string[];
   };
 
-  @Prop({ type: Array })
-  seenContents: any[];
-
   @Prop({ type: Object })
   mobile: {
     countryCode: string;
@@ -75,15 +71,22 @@ export class Account extends CastcleBase {
 
   @Prop({ type: Array })
   credentials: ICredential[];
-}
-export const AccountSchema = SchemaFactory.createForClass(Account);
 
-export interface IAccount extends Document {
-  changePassword(
-    pasword: string,
-    email?: string
-  ): Promise<AccountDocument | null>;
-  verifyPassword(password: string): Promise<boolean>;
+  @Prop({ select: false })
+  campaigns?: AccountCampaigns;
+
+  /**
+   * TO DO !!! this is a hot fix for guests
+   */
+  @Prop({ Type: Array })
+  seenContents?: string[];
+}
+
+export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
+
+export class Account extends AccountDocument {
+  changePassword: (password: string, email?: string) => Promise<Account | null>;
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
 AccountSchema.methods.changePassword = async function (
@@ -92,12 +95,12 @@ AccountSchema.methods.changePassword = async function (
 ) {
   const encryptPassword = await Password.create(password);
   if (encryptPassword) {
-    (this as AccountDocument).password = encryptPassword;
-    if (email) (this as AccountDocument).email = email;
+    this.password = encryptPassword;
+    if (email) this.email = email;
     return this.save();
   } else return null;
 };
 
 AccountSchema.methods.verifyPassword = function (password: string) {
-  return Password.verify(password, (this as AccountDocument).password);
+  return Password.verify(password, this.password);
 };

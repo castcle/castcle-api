@@ -23,7 +23,6 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 
@@ -32,7 +31,7 @@ export class AccountReferral extends CastcleBase {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   referrerAccount: Account;
 
@@ -42,11 +41,10 @@ export class AccountReferral extends CastcleBase {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    index: true
+    index: true,
   })
   referringAccount: Account;
 }
 
-export type AccountReferralDocument = AccountReferral & Document;
 export const AccountReferralSchema =
   SchemaFactory.createForClass(AccountReferral);

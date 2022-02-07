@@ -39,7 +39,7 @@ import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(AuthenticationModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
   const port = process.env.PORT || 3334;
   const prefix = 'authentications';
@@ -50,7 +50,7 @@ async function bootstrap() {
   // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
   // For documentations

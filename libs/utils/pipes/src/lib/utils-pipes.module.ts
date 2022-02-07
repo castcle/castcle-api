@@ -26,13 +26,13 @@ import {
   NotificationSourcePipe,
   PagePipe,
   SortByEnum,
-  SortByPipe
+  SortByPipe,
 } from './query/query.pipe';
 
 @Module({
   controllers: [],
   providers: [SortByPipe, PagePipe, LimitPipe],
-  exports: [SortByPipe, PagePipe, LimitPipe]
+  exports: [SortByPipe, PagePipe, LimitPipe],
 })
 export class UtilsPipesModule {}
 

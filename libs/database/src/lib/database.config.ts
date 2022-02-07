@@ -21,30 +21,10 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import * as mongoose from 'mongoose';
-import { Hashtag } from './hashtag.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
+import { Environment } from '@castcle-api/environments';
+import { MongooseModuleOptions } from '@nestjs/mongoose';
 
-export type HashtagItemDocument = HashtagItem & Document;
-
-@Schema({ timestamps: true })
-export class HashtagItem extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Hashtag'
-  })
-  hashtag: Hashtag;
-
-  @Prop({ required: true })
-  objectRef: any;
-
-  @Prop({ required: true, type: Object })
-  payload: Comment | Content | any;
-}
-
-export const HashtagItemSchema = SchemaFactory.createForClass(HashtagItem);
+export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
+  ...Environment.DB_OPTIONS,
+  uri: Environment.DB_URI,
+});

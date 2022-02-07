@@ -23,7 +23,6 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Content } from 'aws-sdk/clients/codecommit';
-import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { CastcleBase } from './base.schema';
 
@@ -33,7 +32,7 @@ export class DsContentReach extends CastcleBase {
     required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Content',
-    index: true
+    index: true,
   })
   content: Content;
 
@@ -44,6 +43,5 @@ export class DsContentReach extends CastcleBase {
   reachCount: number;
 }
 
-export type DsContentReachDocument = DsContentReach & Document;
 export const DsContentReachSchema =
   SchemaFactory.createForClass(DsContentReach);

@@ -1,12 +1,13 @@
-import { getMongoOptions } from 'libs/database/src/lib/environment';
+import { getMongooseModuleOptions } from 'libs/database/src/lib/database.config';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { connect, disconnect } from 'mongoose';
 import { initializeUsers } from './modules/authentications';
-import { testUsersReporting } from './modules/users';
+import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
 import {
   closeAuthenticationsModule,
   closeUsersModule,
   setupAuthenticationsModule,
-  setupUsersModule
+  setupUsersModule,
 } from './setups';
 
 describe('Castcle E2E Tests', () => {
@@ -14,15 +15,19 @@ describe('Castcle E2E Tests', () => {
 
   beforeAll(async () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
-    (getMongoOptions as any) = () => ({ uri: mongoMemoryReplSet.getUri() });
+    (getMongooseModuleOptions as jest.Mock).mockReturnValue({
+      uri: mongoMemoryReplSet.getUri(),
+    });
 
+    await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();
     await initializeUsers();
-    closeAuthenticationsModule();
   });
 
   afterAll(async () => {
+    await closeAuthenticationsModule();
     await mongoMemoryReplSet.stop();
+    await disconnect();
   });
 
   describe('# Users Microservice', () => {
@@ -30,12 +35,16 @@ describe('Castcle E2E Tests', () => {
       await setupUsersModule();
     });
 
-    afterAll(() => {
-      closeUsersModule();
+    afterAll(async () => {
+      await closeUsersModule();
     });
 
     describe('- Report User or Content', () => {
       testUsersReporting();
+    });
+
+    describe('- Update Mobile', () => {
+      testUsersUpdateMobile();
     });
   });
 });

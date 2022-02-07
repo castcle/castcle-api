@@ -26,29 +26,29 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
-import { EntityVisibility } from '../dtos/common.dto';
+import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
   EmailVerifyToken,
   RefreshTokenPayload,
-  UserAccessTokenPayload
+  UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { AccountReferral } from '../schemas/account-referral.schema';
-import { Account, AccountDocument } from '../schemas/account.schema';
 import {
-  AccountActivationDocument,
-  AccountActivationModel
-} from '../schemas/accountActivation.schema';
-import {
-  AccountAuthenIdDocument,
-  AccountAuthenIdType
-} from '../schemas/accountAuthenId.schema';
-import {
-  CredentialDocument,
-  CredentialModel
-} from '../schemas/credential.schema';
-import { OtpDocument, OtpModel, OtpObjective } from '../schemas/otp.schema';
-import { UserDocument, UserType } from '../schemas/user.schema';
+  Account,
+  AccountActivation,
+  AccountActivationModel,
+  AccountAuthenId,
+  AccountAuthenIdType,
+  AccountReferral,
+  Credential,
+  CredentialModel,
+  Otp,
+  OtpModel,
+  OtpObjective,
+  User,
+  UserType,
+} from '../schemas';
+import { UserService } from './user.service';
 
 export interface AccountRequirements {
   header: {
@@ -75,7 +75,7 @@ export interface SignupSocialRequirements {
   displayName: string;
   socialId: string;
   provider: AccountAuthenIdType;
-  avatar: string;
+  avatar: CastcleImage;
   socialToken: string;
   socialSecretToken: string;
 }
@@ -83,19 +83,20 @@ export interface SignupSocialRequirements {
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
     public _accountActivationModel: AccountActivationModel,
     @InjectModel('User')
-    public _userModel: Model<UserDocument>,
+    public _userModel: Model<User>,
     @InjectModel('Otp')
     public _otpModel: OtpModel,
     @InjectModel('AccountAuthenId')
-    public _accountAuthenId: Model<AccountAuthenIdDocument>,
+    public _accountAuthenId: Model<AccountAuthenId>,
     @InjectModel('AccountReferral')
-    public _accountReferral: Model<AccountReferral>
+    public _accountReferral: Model<AccountReferral>,
+    private userService: UserService
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -113,7 +114,7 @@ export class AuthenticationService {
    * get account document from social id and social type
    * @param {string} socialUserId social user id
    * @param {AccountAuthenIdType} provider enum social type
-   * @returns {AccountAuthenIdDocument}
+   * @returns {AccountAuthenId}
    */
   getAccountAuthenIdFromSocialId = (
     socialUserId: string,
@@ -123,34 +124,42 @@ export class AuthenticationService {
       .findOne({ socialId: socialUserId, type: provider })
       .exec();
 
+  /**
+   * get account document from account id
+   * @param {string} accountId account id
+   * @returns {AccountAuthenId[]}
+   */
+  getAccountAuthenIdFromAccountId = (accountId: string) =>
+    this._accountAuthenId.find({ account: accountId as any }).exec();
+
   async createAccount(accountRequirements: AccountRequirements) {
     const newAccount = new this._accountModel({
       isGuest: true,
       preferences: {
-        languages: accountRequirements.languagesPreferences
+        languages: accountRequirements.languagesPreferences,
       },
       geolocation: accountRequirements.geolocation
         ? accountRequirements.geolocation
-        : null
+        : null,
     } as CreateAccountDto);
     newAccount.visibility = EntityVisibility.Publish;
     const accountDocument = await newAccount.save();
     const accessTokenResult = this._generateAccessToken({
       id: accountDocument._id as string,
       role: 'guest',
-      showAds: true
+      showAds: true,
     });
     const refreshTokenResult = this._generateRefreshToken({
-      id: accountDocument._id as string
+      id: accountDocument._id as string,
     });
     const credential = new this._credentialModel({
       account: {
         _id: mongoose.Types.ObjectId(accountDocument._id),
         isGuest: true,
         preferences: {
-          languages: accountRequirements.languagesPreferences
+          languages: accountRequirements.languagesPreferences,
         },
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       },
       accessToken: accessTokenResult.accessToken,
       accessTokenExpireDate: accessTokenResult.accessTokenExpireDate,
@@ -158,14 +167,14 @@ export class AuthenticationService {
       refreshTokenExpireDate: refreshTokenResult.refreshTokenExpireDate,
       device: accountRequirements.device,
       platform: accountRequirements.header.platform,
-      deviceUUID: accountRequirements.deviceUUID
+      deviceUUID: accountRequirements.deviceUUID,
     } as CreateCredentialDto);
     const credentialDocument = await credential.save();
     //TODO !!! : how to reduct this
     if (!newAccount.credentials) newAccount.credentials = [];
     newAccount.credentials.push({
       _id: mongoose.Types.ObjectId(credentialDocument._id),
-      deviceUUID: credentialDocument.deviceUUID
+      deviceUUID: credentialDocument.deviceUUID,
     });
     await newAccount.save();
     return { accountDocument, credentialDocument };
@@ -173,14 +182,11 @@ export class AuthenticationService {
 
   /**
    * should remove account from credential.account and set it's new account to credential.account
-   * @param {CredentialDocument} credential
-   * @param {AccountDocument} account
-   * @returns {CredentialDocument}
+   * @param {Credential} credential
+   * @param {Account} account
+   * @returns {Credential}
    */
-  async linkCredentialToAccount(
-    credential: CredentialDocument,
-    account: AccountDocument
-  ) {
+  async linkCredentialToAccount(credential: Credential, account: Account) {
     console.log('want to link');
     if (String(account._id) === String(credential.account._id)) {
       return credential; // already link
@@ -198,7 +204,7 @@ export class AuthenticationService {
       isGuest: account.isGuest,
       preferences: account.preferences,
       activateDate: account.activateDate, //this to add activateDate to primary account
-      geolocation: account.geolocation
+      geolocation: account.geolocation,
     };
     const credentialAccount = await this._accountModel.findById(account._id);
     if (credentialAccount) {
@@ -215,9 +221,9 @@ export class AuthenticationService {
             $push: {
               credentials: {
                 _id: mongoose.Types.ObjectId(credential._id),
-                deviceUUID: credential.deviceUUID
-              }
-            }
+                deviceUUID: credential.deviceUUID,
+              },
+            },
           }
         )
         .exec();
@@ -229,10 +235,10 @@ export class AuthenticationService {
 
   /**
    * get account from credential.account._id
-   * @param {CredentialDocument} credential
-   * @returns {AccountDocument}
+   * @param {Credential} credential
+   * @returns {Account}
    */
-  getAccountFromCredential = (credential: CredentialDocument) =>
+  getAccountFromCredential = (credential: Credential) =>
     this._accountModel.findById(credential.account._id).exec();
 
   getAccountFromId = (accountId: string) =>
@@ -242,7 +248,7 @@ export class AuthenticationService {
     return this._accountModel
       .findOne({
         email: CastcleRegExp.fromString(email),
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -251,7 +257,7 @@ export class AuthenticationService {
    * get and validate account from mobile
    * @param {string} mobileNumber
    * @param {string} countryCode
-   * @returns {AccountDocument} account document
+   * @returns account document
    */
   getAccountFromMobile = (mobileNo: string, countryCode: string) => {
     const mobile = mobileNo.charAt(0) === '0' ? mobileNo.slice(1) : mobileNo;
@@ -259,7 +265,7 @@ export class AuthenticationService {
       .findOne({
         'mobile.countryCode': countryCode,
         'mobile.number': new RegExp(`${mobile}`),
-        visibility: EntityVisibility.Publish
+        visibility: EntityVisibility.Publish,
       })
       .exec();
   };
@@ -267,7 +273,7 @@ export class AuthenticationService {
   /**
    *  For check if account is existed
    * @param {string} id
-   * @returns {UserDocument}
+   * @returns {User}
    */
   getExistedUserFromCastcleId = (id: string) => {
     return this._userModel
@@ -275,25 +281,11 @@ export class AuthenticationService {
       .exec();
   };
 
-  /**
-   * Get user
-   * @param {string} id
-   * @returns {UserDocument}
-   */
-  getUserFromCastcleId = (id: string) => {
-    return this._userModel
-      .findOne({
-        displayId: CastcleRegExp.fromString(id),
-        visibility: EntityVisibility.Publish
-      })
-      .exec();
-  };
-
   getUserFromAccount = (account: Account) => {
     return this._userModel.findOne({ ownerAccount: account }).exec();
   };
 
-  getUserFromAccountId = (credential: CredentialDocument) => {
+  getUserFromAccountId = (credential: Credential) => {
     return this._userModel
       .find({ ownerAccount: credential.account._id })
       .exec();
@@ -311,7 +303,7 @@ export class AuthenticationService {
     return accountActivation?.account?.email;
   };
 
-  getAccountActivationFromCredential = (credential: CredentialDocument) =>
+  getAccountActivationFromCredential = (credential: Credential) =>
     this._accountActivationModel
       .findOne({ account: credential.account })
       .exec();
@@ -338,7 +330,7 @@ export class AuthenticationService {
     else return false;
   }
 
-  async verifyAccount(accountActivation: AccountActivationDocument) {
+  async verifyAccount(accountActivation: AccountActivation) {
     const now = new Date();
     accountActivation.activationDate = now;
     await accountActivation.save();
@@ -352,10 +344,7 @@ export class AuthenticationService {
     return savedAccount;
   }
 
-  async signupByEmail(
-    account: AccountDocument,
-    requirements: SignupRequirements
-  ) {
+  async signupByEmail(account: Account, requirements: SignupRequirements) {
     account.isGuest = false;
     //account.email = requirements.email;
     //account.password =  requirements.password;
@@ -365,39 +354,41 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayName: requirements.displayName,
       displayId: requirements.displayId, //make sure all id is lower case
-      type: UserType.People
+      type: UserType.People,
     });
     await user.save();
     const updateAccount = await this.createAccountActivation(account, 'email');
 
     if (requirements.referral) {
-      const refAccount = await this.getUserFromCastcleId(requirements.referral);
+      const refAccount = await this.userService.getByIdOrCastcleId(
+        requirements.referral
+      );
       const accRef = new this._accountReferral({
         referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
         referrerDisplayId: requirements.referral,
-        referringAccount: account._id
+        referringAccount: account._id,
       });
       await accRef.save();
     }
     return updateAccount;
   }
 
-  createAccountActivation(account: AccountDocument, type: 'email' | 'phone') {
+  createAccountActivation(account: Account, type: 'email' | 'phone') {
     const emailTokenResult = this._generateEmailVerifyToken({
-      id: account._id
+      id: account._id,
     });
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
       verifyToken: emailTokenResult.verifyToken,
-      verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate
+      verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate,
     });
     return accountActivation.save();
   }
 
-  revokeAccountActivation(accountActivation: AccountActivationDocument) {
+  revokeAccountActivation(accountActivation: AccountActivation) {
     const emailTokenResult = this._generateEmailVerifyToken({
-      id: accountActivation.account as unknown as string
+      id: accountActivation.account as unknown as string,
     });
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = emailTokenResult.verifyToken;
@@ -413,7 +404,9 @@ export class AuthenticationService {
    */
   async suggestCastcleId(displayName: string) {
     const name = new CastcleName(displayName);
-    const result = await this.getUserFromCastcleId(name.suggestCastcleId);
+    const result = await this.userService.getByIdOrCastcleId(
+      name.suggestCastcleId
+    );
     if (result) {
       const totalUser = await this._userModel.countDocuments().exec();
       return name.suggestCastcleId + totalUser;
@@ -422,10 +415,10 @@ export class AuthenticationService {
 
   /**
    * Update retry count Otp Document
-   * @param {OtpDocument} otp
-   * @returns {OtpDocument}
+   * @param {Otp} otp
+   * @returns {Otp}
    */
-  async updateRetryOtp(otp: OtpDocument) {
+  async updateRetryOtp(otp: Otp) {
     const newRetry = (otp.retry ? otp.retry : 0) + 1;
     const otpResult = await this._otpModel
       .updateOne({ _id: otp.id }, { retry: newRetry })
@@ -435,15 +428,15 @@ export class AuthenticationService {
 
   /**
    * generate refCode and create Otp Document
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {OtpObjective} objective
    * @param {string} requestId
    * @param {string} channel
    * @param {boolean} verify
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async generateOtp(
-    account: AccountDocument,
+    account: Account,
     objective: OtpObjective,
     requestId: string,
     channel: string,
@@ -465,11 +458,11 @@ export class AuthenticationService {
 
   /**
    * find Otp from account and refCode
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
-  async getOtpFromAccount(account: AccountDocument, refCode: string) {
+  async getOtpFromAccount(account: Account, refCode: string) {
     return this._otpModel
       .findOne({ account: account._id, refCode: refCode })
       .exec();
@@ -479,7 +472,7 @@ export class AuthenticationService {
    * find all Otp from request id and objective
    * @param {string} requestId
    * @param {OtpObjective} objective
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getAllOtpFromRequestIdObjective(
     requestId: string,
@@ -497,7 +490,7 @@ export class AuthenticationService {
    * find Otp from request id and refCode
    * @param {string} requestId
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getOtpFromRequestIdRefCode(requestId: string, refCode: string) {
     return this._otpModel
@@ -508,7 +501,7 @@ export class AuthenticationService {
   /**
    * find otp by ref code
    * @param {string} refCode
-   * @returns {OtpDocument}
+   * @returns {Otp}
    */
   async getOtpFromRefCode(refCode: string) {
     return this._otpModel.findOne({ refCode: refCode }).exec();
@@ -516,19 +509,15 @@ export class AuthenticationService {
 
   /**
    * this will assume that we already check otp is valid. this function will change current account password and delete otp then return newly change password account
-   * @param {AccountDocument} account
-   * @param {OtpDocument} otp
+   * @param {Account} account
+   * @param {Otp} otp
    * @param {string} newPassword
-   * @returns {Promise<{AccountDocument}>}
+   * @returns {Promise<{Account}>}
    */
-  async changePassword(
-    account: AccountDocument,
-    otp: OtpDocument,
-    newPassword: string
-  ) {
-    let newAccount: AccountDocument;
+  async changePassword(account: Account, otp: Otp, newPassword: string) {
+    let newAccount: Account;
     const session = await this._accountModel.startSession();
-    session.withTransaction(async () => {
+    await session.withTransaction(async () => {
       newAccount = await account.changePassword(newPassword);
       await otp.delete();
     });
@@ -538,10 +527,10 @@ export class AuthenticationService {
 
   /**
    * Generate AccessTokenPayload if user is guest. If user has an account will query Users/Pages to create {UserAccessTokenPayload}
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @returns {AccessTokenPayload | UserAccessTokenPayload}
    */
-  async getAccessTokenPayloadFromCredential(credential: CredentialDocument) {
+  async getAccessTokenPayloadFromCredential(credential: Credential) {
     //get account
     //const account = this.getAccountFromCredential(credential);
     if (credential.account.isGuest) {
@@ -549,14 +538,14 @@ export class AuthenticationService {
         id: credential.account._id,
         preferredLanguage: credential.account.preferences.languages,
         role: credential.account.isGuest ? 'guest' : 'member',
-        showAds: true //TODO !!! need to change this later
+        showAds: true, //TODO !!! need to change this later
       } as AccessTokenPayload;
     } else {
       const user = await this._userModel
         .findOne({
           ownerAccount: credential.account._id,
           type: UserType.People,
-          visibility: EntityVisibility.Publish
+          visibility: EntityVisibility.Publish,
         })
         .exec();
       console.debug('mainUser', user);
@@ -564,7 +553,7 @@ export class AuthenticationService {
         id: credential.account._id,
         role: 'member',
         showAds: true,
-        verified: user.verified
+        verified: user.verified,
       } as UserAccessTokenPayload;
       console.debug('payload', payload);
       return payload;
@@ -573,12 +562,12 @@ export class AuthenticationService {
 
   /**
    * create new account from social
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {SignupSocialRequirements} requirements
-   * @returns {AccountAuthenIdDocument}
+   * @returns {AccountAuthenId}
    */
   async signupBySocial(
-    account: AccountDocument,
+    account: Account,
     requirements: SignupSocialRequirements
   ) {
     account.isGuest = false;
@@ -595,37 +584,58 @@ export class AuthenticationService {
       type: UserType.People,
       profile: {
         images: {
-          avatar: {
-            original: requirements.avatar
-          }
-        }
-      }
+          avatar: requirements.avatar,
+        },
+      },
     });
     await user.save();
-    return this.createAccountAuthenId(
+
+    return await this.createAccountAuthenId(
       account,
       requirements.provider,
       requirements.socialId,
       requirements.socialToken,
-      requirements.socialSecretToken
+      requirements.socialSecretToken,
+      requirements.avatar?.original,
+      requirements.displayName
     );
+  }
+
+  async updateSocialFlag(account: Account) {
+    const user = this._userModel
+      .updateOne(
+        {
+          ownerAccount: account._id,
+          type: UserType.People,
+          visibility: EntityVisibility.Publish,
+        },
+        {
+          'verified.social': true,
+        }
+      )
+      .exec();
+    return user;
   }
 
   /**
    * create new account from social
-   * @param {AccountDocument} account
+   * @param {Account} account
    * @param {AccountAuthenIdType} provider
    * @param {string} socialUserId
    * @param {string} socialUserToken
-   * @returns {AccountAuthenIdDocument}
+   * @param {string} socialSecretToken
+   * @param {string} avatar
+   * @param {string} displayName
+   * @returns {AccountAuthenId}
    */
-  createAccountAuthenId(
-    account: AccountDocument,
+  async createAccountAuthenId(
+    account: Account,
     provider: AccountAuthenIdType,
     socialUserId: string,
-    socialUserToken: string,
-    socialSecretToken: string,
-    avatar?: string
+    socialUserToken?: string,
+    socialSecretToken?: string,
+    avatar?: string,
+    displayName?: string
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
@@ -633,8 +643,11 @@ export class AuthenticationService {
       socialId: socialUserId,
       socialToken: socialUserToken,
       socialSecretToken: socialSecretToken,
-      avatar: avatar
+      avatar: avatar,
+      displayName: displayName,
     });
-    return accountActivation.save();
+    const result = await accountActivation.save();
+    await this.updateSocialFlag(account);
+    return result;
   }
 }

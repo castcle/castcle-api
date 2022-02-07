@@ -26,13 +26,13 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
-  CredentialDocument,
-  OtpObjective
+  Credential,
+  OtpObjective,
 } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
@@ -41,12 +41,12 @@ import {
   GoogleClient,
   TelegramClient,
   TwillioClient,
-  TwitterClient
+  TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
@@ -58,32 +58,15 @@ import {
   GoogleClientMock,
   TelegramClientMock,
   TwillioClientMock,
-  TwitterClientMock
+  TwitterClientMock,
 } from './client.mock';
 import { LoginResponse, TokenResponse } from './dtos/dto';
 
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 const mockResponse: any = {
   json: jest.fn(),
-  status: (num: number) => ({
-    send: jest.fn()
-  })
+  status: () => ({
+    send: jest.fn(),
+  }),
 };
 
 const createMockCredential = async (
@@ -109,7 +92,7 @@ const createMockCredential = async (
       {
         $credential: guestAccount,
         $token: guestResult.accessToken,
-        $language: 'th'
+        $language: 'th',
       } as any,
       {
         channel: 'email',
@@ -117,8 +100,8 @@ const createMockCredential = async (
           castcleId: castcleId,
           displayName: displayName,
           email: email,
-          password: password
-        }
+          password: password,
+        },
       }
     );
   }
@@ -126,13 +109,14 @@ const createMockCredential = async (
   const credentialGuest = {
     $credential: guestAccount,
     $token: guestResult.accessToken,
-    $language: 'th'
+    $language: 'th',
   } as any;
 
   return credentialGuest;
 };
 
 describe('AppController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: AuthenticationController;
   let service: AuthenticationService;
@@ -142,40 +126,41 @@ describe('AppController', () => {
   beforeAll(async () => {
     const FacebookClientProvider = {
       provide: FacebookClient,
-      useClass: FacebookClientMock
+      useClass: FacebookClientMock,
     };
     const DownloaderProvider = {
       provide: Downloader,
-      useClass: DownloaderMock
+      useClass: DownloaderMock,
     };
     const TelegramClientProvider = {
       provide: TelegramClient,
-      useClass: TelegramClientMock
+      useClass: TelegramClientMock,
     };
     const TwitterClientProvider = {
       provide: TwitterClient,
-      useClass: TwitterClientMock
+      useClass: TwitterClientMock,
     };
     const TwillioClientProvider = {
       provide: TwillioClient,
-      useClass: TwillioClientMock
+      useClass: TwillioClientMock,
     };
     const AppleClientProvider = {
       provide: AppleClient,
-      useClass: AppleClientMock
+      useClass: AppleClientMock,
     };
     const GoogleClientProvider = {
       provide: GoogleClient,
-      useClass: GoogleClientMock
+      useClass: GoogleClientMock,
     };
 
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         HttpModule,
-        UtilsQueueModule
+        UtilsQueueModule,
       ],
       controllers: [AuthenticationController],
       providers: [
@@ -190,8 +175,9 @@ describe('AppController', () => {
         GoogleClientProvider,
         UserService,
         ContentService,
-        HashtagService
-      ]
+        HashtagService,
+        UserProducer,
+      ],
     }).compile();
 
     service = app.get<AuthenticationService>(AuthenticationService);
@@ -202,7 +188,7 @@ describe('AppController', () => {
     jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image({
-        original: 'test'
+        original: 'test',
       });
       return mockImage;
     });
@@ -210,8 +196,10 @@ describe('AppController', () => {
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('guestLogin', () => {
@@ -265,7 +253,7 @@ describe('AppController', () => {
         displayId: 'test',
         displayName: 'testpass',
         email: 'sp@sp.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       });
       //result.isGuest = false;
       //await result.save();
@@ -294,7 +282,7 @@ describe('AppController', () => {
       );
       const refreshTokenResponse = await appController.refreshToken({
         $token: response.refreshToken,
-        $language: language
+        $language: language,
       } as any);
       expect(refreshTokenResponse).toBeDefined();
       expect(refreshTokenResponse.accessToken).toBeDefined();
@@ -316,7 +304,7 @@ describe('AppController', () => {
       await expect(
         appController.refreshToken({
           $token: '123',
-          $language: language
+          $language: language,
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.INVALID_REFRESH_TOKEN, language)
@@ -330,7 +318,7 @@ describe('AppController', () => {
       let response = await appController.checkEmailExists(
         { $language: 'th' } as any,
         {
-          email: testEmail
+          email: testEmail,
         }
       );
       expect(response.payload.exist).toBe(false);
@@ -338,14 +326,14 @@ describe('AppController', () => {
         device: 'ios',
         header: { platform: 'ios' },
         languagesPreferences: ['th', 'th'],
-        deviceUUID: 'test'
+        deviceUUID: 'test',
       });
       result.accountDocument.email = testEmail;
       await result.accountDocument.save();
       response = await appController.checkEmailExists(
         { $language: 'th' } as any,
         {
-          email: testEmail
+          email: testEmail,
         }
       );
       expect(response.payload.exist).toBe(true);
@@ -364,14 +352,14 @@ describe('AppController', () => {
         await service.getGuestCredentialFromDeviceUUID(deviceUUID)
       );
       let result = await appController.checkCastcleIdExists({
-        castcleId: testId
+        castcleId: testId,
       });
       expect(result.payload.exist).toBe(false);
       const newUserResult = await new service._userModel({
         ownerAccount: randomAccount._id,
         displayName: 'random',
         displayId: testId.toLowerCase(),
-        type: 'people'
+        type: 'people',
       }).save();
       expect(newUserResult).not.toBeNull();
       console.log(newUserResult);
@@ -381,7 +369,7 @@ describe('AppController', () => {
     it('should detect case sensitive of castcleId', async () => {
       const testId = 'ranDomId'; //D is a case sensitive
       const result = await appController.checkCastcleIdExists({
-        castcleId: testId
+        castcleId: testId,
       });
       expect(result.payload.exist).toBe(true);
     });
@@ -389,14 +377,14 @@ describe('AppController', () => {
 
   describe('register', () => {
     let guestResult: TokenResponse;
-    let credentialGuest: CredentialDocument;
+    let credentialGuest: Credential;
     let tokens: LoginResponse;
     const testId = 'registerId';
     const registerEmail = 'sompop.kulapalanont@gmail.com';
     const deviceUUID = 'sompo007';
     it('should create new account with email and new user with id ', async () => {
       let result = await appController.checkCastcleIdExists({
-        castcleId: testId
+        castcleId: testId,
       });
       expect(result.payload.exist).toBe(false);
       let response = await appController.checkEmailExists(
@@ -408,7 +396,7 @@ describe('AppController', () => {
         {
           $device: 'iphone',
           $language: 'th',
-          $platform: 'iOs'
+          $platform: 'iOs',
         } as any,
         { deviceUUID: deviceUUID }
       );
@@ -420,7 +408,7 @@ describe('AppController', () => {
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'testLang'
+          $language: 'testLang',
         } as any,
         {
           channel: 'email',
@@ -428,8 +416,8 @@ describe('AppController', () => {
             castcleId: testId,
             displayName: 'abc',
             email: registerEmail,
-            password: '2@HelloWorld'
-          }
+            password: '2@HelloWorld',
+          },
         }
       );
 
@@ -481,11 +469,11 @@ describe('AppController', () => {
       const credentialGuest = await service.getCredentialFromAccessToken(
         guestResult.accessToken
       );
-      const tokens = await appController.register(
+      await appController.register(
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'testLang'
+          $language: 'testLang',
         } as any,
         {
           channel: 'email',
@@ -493,27 +481,27 @@ describe('AppController', () => {
             castcleId: testId,
             displayName: 'abc',
             email: registerEmail,
-            password: password
-          }
+            password: password,
+          },
         }
       );
       const currentUser = await userService.getUserFromCredential(
         credentialGuest
       );
-      const page = await userService.createPageFromUser(currentUser, {
+      await userService.createPageFromUser(currentUser, {
         displayName: 'new Page',
-        castcleId: 'npop2'
+        castcleId: 'npop2',
       });
       // TODO !!! find a way to create a test to detect exception in controller
       const result = await appController.login(
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'th'
+          $language: 'th',
         } as any,
         {
           password: password,
-          username: registerEmail
+          username: registerEmail,
         }
       );
 
@@ -536,11 +524,11 @@ describe('AppController', () => {
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'th'
+          $language: 'th',
         } as any,
         {
           password: password,
-          username: registerEmail
+          username: registerEmail,
         }
       );
 
@@ -553,11 +541,11 @@ describe('AppController', () => {
         {
           $credential: loginCredential,
           $token: result.accessToken,
-          $language: 'th'
+          $language: 'th',
         } as any,
         {
           password: password,
-          username: registerEmail
+          username: registerEmail,
         }
       );
 
@@ -569,7 +557,7 @@ describe('AppController', () => {
       //that token could be use for refreshToken;
       const refreshTokenResult = await appController.refreshToken({
         $token: postResult.refreshToken,
-        $language: 'th'
+        $language: 'th',
       } as any);
       expect(refreshTokenResult).toBeDefined();
       expect(refreshTokenResult.accessToken).toBeDefined();
@@ -578,9 +566,9 @@ describe('AppController', () => {
     });
 
     it('should get Exception when wrong email', async () => {
-      const language = 'th';
+      const language = 'en';
       const guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { $device: 'iphone', $language: 'en', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
@@ -591,11 +579,11 @@ describe('AppController', () => {
           {
             $credential: credentialGuest,
             $token: guestResult.accessToken,
-            $language: language
+            $language: language,
           } as any,
           {
             password: password,
-            username: 'error'
+            username: 'error',
           }
         )
       ).rejects.toEqual(
@@ -604,9 +592,9 @@ describe('AppController', () => {
     });
 
     it('should get Exception when wrong password', async () => {
-      const language = 'th';
+      const language = 'en';
       const guestResult = await appController.guestLogin(
-        { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
+        { $device: 'iphone', $language: 'en', $platform: 'iOs' } as any,
         { deviceUUID: deviceUUID }
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
@@ -617,11 +605,11 @@ describe('AppController', () => {
           {
             $credential: credentialGuest,
             $token: guestResult.accessToken,
-            $language: language
+            $language: language,
           } as any,
           {
             password: '1234',
-            username: registerEmail
+            username: registerEmail,
           }
         )
       ).rejects.toEqual(
@@ -633,7 +621,7 @@ describe('AppController', () => {
       const mockpassword = '2@HelloWorld';
       const mocks = await generateMockUsers(1, 50, {
         accountService: service,
-        userService: userService
+        userService: userService,
       });
 
       const guestResult = await appController.guestLogin(
@@ -647,11 +635,11 @@ describe('AppController', () => {
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'th'
+          $language: 'th',
         } as any,
         {
           password: mockpassword,
-          username: mocks[0].account.email
+          username: mocks[0].account.email,
         }
       );
 
@@ -681,7 +669,7 @@ describe('AppController', () => {
         {
           $credential: credentialGuest,
           $token: guestResult.accessToken,
-          $language: 'testLang'
+          $language: 'testLang',
         } as any,
         {
           channel: 'email',
@@ -689,8 +677,8 @@ describe('AppController', () => {
             castcleId: testId,
             displayName: 'abc',
             email: registerEmail,
-            password: password
-          }
+            password: password,
+          },
         }
       );
       const preAccountActivation =
@@ -698,7 +686,7 @@ describe('AppController', () => {
       expect(preAccountActivation.activationDate).not.toBeDefined();
       const result = await appController.verificationEmail({
         $token: preAccountActivation.verifyToken,
-        $language: 'th'
+        $language: 'th',
       } as any);
       expect(result).toEqual('');
       const postAccountActivation =
@@ -730,7 +718,7 @@ describe('AppController', () => {
           {
             $credential: credentialGuest,
             $token: guestResult.accessToken,
-            $language: 'testLang'
+            $language: 'testLang',
           } as any,
           {
             channel: 'email',
@@ -738,8 +726,8 @@ describe('AppController', () => {
               castcleId: testId,
               displayName: 'abc',
               email: registerEmail,
-              password: password
-            }
+              password: password,
+            },
           }
         );
         const preAccountActivationToken =
@@ -750,7 +738,7 @@ describe('AppController', () => {
           {
             $credential: credentialGuest,
             $language: 'th',
-            $token: credentialGuest.accessToken
+            $token: credentialGuest.accessToken,
           } as any,
           mockResponse
         );
@@ -769,11 +757,11 @@ describe('AppController', () => {
         const response = await appController.verificationPassword(
           {
             objective: OtpObjective.ChangePassword,
-            password: '2@HelloWorld'
+            password: '2@HelloWorld',
           },
           {
             $credential: credential,
-            $language: 'th'
+            $language: 'th',
           } as any
         );
 
@@ -790,11 +778,11 @@ describe('AppController', () => {
           appController.verificationPassword(
             {
               objective: OtpObjective.ForgotPassword,
-              password: '2@HelloWorld'
+              password: '2@HelloWorld',
             },
             {
               $credential: credential,
-              $language: 'th'
+              $language: 'th',
             } as any
           )
         ).rejects.toEqual(
@@ -812,11 +800,11 @@ describe('AppController', () => {
           {
             objective: OtpObjective.ChangePassword,
             newPassword: '2@BlaBlaBla',
-            refCode: genRefCode
+            refCode: genRefCode,
           },
           {
             $credential: credential,
-            $language: 'th'
+            $language: 'th',
           } as any
         );
         expect(response).toEqual('');
@@ -831,11 +819,11 @@ describe('AppController', () => {
             {
               objective: OtpObjective.VerifyMobile,
               newPassword: '2@BlaBlaBla',
-              refCode: genRefCode
+              refCode: genRefCode,
             },
             {
               $credential: credential,
-              $language: 'th'
+              $language: 'th',
             } as any
           )
         ).rejects.toEqual(
@@ -851,23 +839,23 @@ describe('AppController', () => {
     beforeAll(async () => {
       mockUsers = await generateMockUsers(3, 0, {
         userService: userService,
-        accountService: service
+        accountService: service,
       });
 
       credentialGuest = {
         $credential: mockUsers[0].credential,
-        $language: 'th'
+        $language: 'th',
       } as any;
     });
 
     it('should create new account with new user by social ', async () => {
       const result = await appController.loginWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '109364223',
+        socialId: '109364223',
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
-        authToken: ''
+        authToken: '',
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -891,12 +879,12 @@ describe('AppController', () => {
       const newCredentialGuest = {
         $credential: guestAccount,
         $token: guestResult.accessToken,
-        $language: 'th'
+        $language: 'th',
       } as any;
 
-      const result = await appController.loginWithSocial(newCredentialGuest, {
+      await appController.loginWithSocial(newCredentialGuest, {
         provider: AccountAuthenIdType.Google,
-        uid: '109364223777'
+        socialId: '109364223777',
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
@@ -913,15 +901,15 @@ describe('AppController', () => {
     it('should get existing user and return', async () => {
       const newCredentialGuest = {
         $credential: mockUsers[1].credential,
-        $language: 'th'
+        $language: 'th',
       } as any;
       const result = await appController.loginWithSocial(newCredentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '109364223',
+        socialId: '109364223',
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
-        authToken: ''
+        authToken: '',
       });
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
@@ -937,17 +925,17 @@ describe('AppController', () => {
     it('should return Exception when invalid use duplicate email', async () => {
       const newCredentialGuest = {
         $credential: mockUsers[2].credential,
-        $language: 'th'
+        $language: 'th',
       } as any;
 
       await expect(
         appController.loginWithSocial(newCredentialGuest, {
           provider: AccountAuthenIdType.Twitter,
-          uid: '01234567892388',
+          socialId: '01234567892388',
           displayName: 'test twitter',
           avatar: '',
           email: 'testfb@gmail.com',
-          authToken: ''
+          authToken: '',
         })
       ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
     });
@@ -959,12 +947,12 @@ describe('AppController', () => {
     beforeAll(async () => {
       mockUsers = await generateMockUsers(1, 0, {
         userService: userService,
-        accountService: service
+        accountService: service,
       });
 
       credentialGuest = {
         $credential: mockUsers[0].credential,
-        $language: 'th'
+        $language: 'th',
       } as any;
     });
 
@@ -975,11 +963,11 @@ describe('AppController', () => {
       );
       await appController.connectWithSocial(credentialGuest, {
         provider: AccountAuthenIdType.Facebook,
-        uid: '10936456',
+        socialId: '10936456',
         displayName: 'test facebook',
         avatar: '',
         email: mockUsers[0].account.email,
-        authToken: ''
+        authToken: '',
       });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
@@ -994,11 +982,11 @@ describe('AppController', () => {
       await expect(
         appController.connectWithSocial(credentialGuest, {
           provider: AccountAuthenIdType.Facebook,
-          uid: '10936456',
+          socialId: '10936456',
           displayName: 'test facebook',
           avatar: '',
           email: mockUsers[0].account.email,
-          authToken: ''
+          authToken: '',
         })
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
@@ -1044,8 +1032,8 @@ describe('AppController', () => {
         payload: {
           email: '',
           countryCode: countryCodeTest,
-          mobileNumber: numberTest
-        }
+          mobileNumber: numberTest,
+        },
       };
       const result = await appController.requestOTP(request, credentialGuest);
 
@@ -1071,8 +1059,8 @@ describe('AppController', () => {
         payload: {
           email: '',
           countryCode: countryCodeTest,
-          mobileNumber: mobileNumber
-        }
+          mobileNumber: mobileNumber,
+        },
       };
       const result = await appController.requestOTP(request, credentialGuest);
 
@@ -1086,8 +1074,8 @@ describe('AppController', () => {
         payload: {
           email: '',
           countryCode: countryCodeTest,
-          mobileNumber: newMobileNumber
-        }
+          mobileNumber: newMobileNumber,
+        },
       };
 
       const resultAgain = await appController.requestOTP(
@@ -1107,8 +1095,8 @@ describe('AppController', () => {
         payload: {
           email: emailTest,
           countryCode: '',
-          mobileNumber: ''
-        }
+          mobileNumber: '',
+        },
       };
       const result = await appController.requestOTP(request, credentialGuest);
 
@@ -1135,8 +1123,8 @@ describe('AppController', () => {
             payload: {
               email: emailTest,
               countryCode: '',
-              mobileNumber: ''
-            }
+              mobileNumber: '',
+            },
           },
           credentialGuest
         )
@@ -1165,8 +1153,8 @@ describe('AppController', () => {
             payload: {
               email: emailTest,
               countryCode: '',
-              mobileNumber: ''
-            }
+              mobileNumber: '',
+            },
           },
           credentialGuest
         )
@@ -1185,8 +1173,8 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: '',
-              mobileNumber: ''
-            }
+              mobileNumber: '',
+            },
           },
           credentialGuest
         )
@@ -1214,8 +1202,8 @@ describe('AppController', () => {
           payload: {
             email: emailTest,
             countryCode: '',
-            mobileNumber: ''
-          }
+            mobileNumber: '',
+          },
         };
       };
       await expect(
@@ -1236,17 +1224,14 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
+            mobileNumber: numberTest,
+          },
         };
       };
       await expect(
         appController.requestOTP(request(), credentialGuest)
       ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.MOBILE_NUMBER_IS_EXIST,
-          credentialGuest.$language
-        )
+        new CastcleException(CastcleStatus.MOBILE_NUMBER_IS_EXIST)
       );
     });
 
@@ -1272,8 +1257,8 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: '815678989'
-          }
+            mobileNumber: '815678989',
+          },
         };
       };
       await expect(appController.requestOTP(request(), guest)).rejects.toEqual(
@@ -1321,8 +1306,8 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
+            mobileNumber: numberTest,
+          },
         },
         credentialGuest
       );
@@ -1334,10 +1319,10 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
+            mobileNumber: numberTest,
           },
           refCode: otpCode.refCode,
-          otp: '123456'
+          otp: '123456',
         },
         credentialGuest
       );
@@ -1355,8 +1340,8 @@ describe('AppController', () => {
           payload: {
             email: emailTest,
             countryCode: '',
-            mobileNumber: ''
-          }
+            mobileNumber: '',
+          },
         },
         credentialGuest
       );
@@ -1368,10 +1353,10 @@ describe('AppController', () => {
           payload: {
             email: emailTest,
             countryCode: '',
-            mobileNumber: ''
+            mobileNumber: '',
           },
           refCode: otpCode.refCode,
-          otp: '123456'
+          otp: '123456',
         },
         credentialGuest
       );
@@ -1390,10 +1375,10 @@ describe('AppController', () => {
             payload: {
               email: emailTest,
               countryCode: '',
-              mobileNumber: ''
+              mobileNumber: '',
             },
             refCode: '67845676',
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1414,10 +1399,10 @@ describe('AppController', () => {
             payload: {
               email: emailTest,
               countryCode: '',
-              mobileNumber: ''
+              mobileNumber: '',
             },
             refCode: '67845676',
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1436,10 +1421,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: '',
-              mobileNumber: ''
+              mobileNumber: '',
             },
             refCode: '67845676',
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1467,8 +1452,8 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
+            mobileNumber: numberTest,
+          },
         },
         credentialGuest
       );
@@ -1481,10 +1466,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: '123456',
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1503,10 +1488,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: otpCode.refCode,
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1525,10 +1510,10 @@ describe('AppController', () => {
             payload: {
               email: emailTest,
               countryCode: '',
-              mobileNumber: ''
+              mobileNumber: '',
             },
             refCode: otpCode.refCode,
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
@@ -1549,15 +1534,15 @@ describe('AppController', () => {
         await exOtp.delete();
       }
 
-      const otpCode = await appController.requestOTP(
+      await appController.requestOTP(
         {
           objective: 'forgot_password',
           channel: 'mobile',
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
+            mobileNumber: numberTest,
+          },
         },
         credentialGuest
       );
@@ -1570,22 +1555,17 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: '123456',
-            otp: '123456'
+            otp: '123456',
           },
           credentialGuest
         )
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.INVLAID_REFCODE,
-          credentialGuest.$language
-        )
-      );
+      ).rejects.toEqual(CastcleException.INVALID_REF_CODE);
     });
 
-    it('should return Exception when imvalid otp and return lock otp when over 3 times', async () => {
+    it('should return Exception when invalid otp and return lock otp when over 3 times', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
         OtpObjective.ForgotPassword
@@ -1601,8 +1581,8 @@ describe('AppController', () => {
           payload: {
             email: '',
             countryCode: countryCodeTest,
-            mobileNumber: numberTest
-          }
+            mobileNumber: numberTest,
+          },
         },
         credentialGuest
       );
@@ -1615,10 +1595,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: otpCode.refCode,
-            otp: '000000'
+            otp: '000000',
           },
           credentialGuest
         )
@@ -1637,10 +1617,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: otpCode.refCode,
-            otp: '000000'
+            otp: '000000',
           },
           credentialGuest
         )
@@ -1659,10 +1639,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: otpCode.refCode,
-            otp: '000000'
+            otp: '000000',
           },
           credentialGuest
         )
@@ -1681,10 +1661,10 @@ describe('AppController', () => {
             payload: {
               email: '',
               countryCode: countryCodeTest,
-              mobileNumber: numberTest
+              mobileNumber: numberTest,
             },
             refCode: otpCode.refCode,
-            otp: '000000'
+            otp: '000000',
           },
           credentialGuest
         )

@@ -27,15 +27,15 @@ import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter'
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
   HttpCacheSharedInterceptor,
-  HttpCacheSharedWithQueryInterceptor
+  HttpCacheSharedWithQueryInterceptor,
 } from './cache/http.cache.shared.interceptor';
 import {
   CredentialInterceptor,
-  CredentialRequest
+  CredentialRequest,
 } from './credential/credential.interceptor';
 import {
   HeadersInterceptor,
-  HeadersRequest
+  HeadersRequest,
 } from './headers/headers.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import { ExceptionFilter } from './exception/exception.interceptor';
@@ -45,7 +45,7 @@ import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
   imports: [DatabaseModule, CaslModule, CacheModule.register()],
   controllers: [],
   providers: [],
-  exports: []
+  exports: [],
 })
 export class UtilsInterceptorsModule {}
 
@@ -61,5 +61,5 @@ export {
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
   ExceptionFilter,
-  IpTrackerInterceptor
+  IpTrackerInterceptor,
 };

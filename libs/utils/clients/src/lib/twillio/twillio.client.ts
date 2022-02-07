@@ -37,7 +37,7 @@ export class TwillioClient {
       : 'secrect',
     twilioOtpSid: Environment.TWILIO_OTP_SID
       ? Environment.TWILIO_OTP_SID
-      : 'VA356353'
+      : 'VA356353',
   };
 
   private logger = new CastLogger(TwillioClient.name);
@@ -53,10 +53,10 @@ export class TwillioClient {
       .services(this.env.twilioOtpSid)
       .verifications.create({
         channelConfiguration: {
-          substitutions: config
+          substitutions: config,
         },
         to: receiver,
-        channel: channel
+        channel: channel,
       })
       .then((verification) => {
         return verification;

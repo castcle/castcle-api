@@ -24,7 +24,7 @@ import { SearchService } from '@castcle-api/database';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   SearchResponse,
-  TopTrendsResponse
+  TopTrendsResponse,
 } from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -33,7 +33,7 @@ import {
   CredentialInterceptor,
   CredentialRequest,
   HttpCacheIndividualInterceptor,
-  HttpCacheSharedWithQueryInterceptor
+  HttpCacheSharedWithQueryInterceptor,
 } from '@castcle-api/utils/interceptors';
 import { LimitPipe } from '@castcle-api/utils/pipes';
 import {
@@ -43,29 +43,29 @@ import {
   Get,
   Query,
   Req,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiHeader,
   ApiOkResponse,
-  ApiQuery
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
   description: Configs.RequiredHeaders.AcceptLanguage.description,
   example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true
+  required: true,
 })
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptVersion.name,
   description: Configs.RequiredHeaders.AcceptVersion.description,
   example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true
+  required: true,
 })
 @Controller({
-  version: '1.0'
+  version: '1.0',
 })
 @Controller()
 export class SearchesController {
@@ -75,7 +75,7 @@ export class SearchesController {
 
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: TopTrendsResponse
+    type: TopTrendsResponse,
   })
   @UseInterceptors(HttpCacheSharedWithQueryInterceptor)
   @CacheKey(CacheKeyName.TopTrends.Name)
@@ -84,12 +84,12 @@ export class SearchesController {
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'exclude',
     type: String,
-    required: false
+    required: false,
   })
   @Get('searches/topTrends')
   async getTopTrends(
@@ -102,7 +102,7 @@ export class SearchesController {
     this.logger.log('Start get top trends');
     const result = await this.searchService.getTopTrends({
       limit: limitOption,
-      exclude: excludeOption
+      exclude: excludeOption,
     });
     this.logger.log('Success get top trends');
 
@@ -111,13 +111,13 @@ export class SearchesController {
         hashtag.toSearchTopTrendhPayload(index)
       ),
       follows: result.follows.map((user) => user.toSearchTopTrendResponse()),
-      topics: []
+      topics: [],
     };
   }
 
   @ApiBearerAuth()
   @ApiOkResponse({
-    type: SearchResponse
+    type: SearchResponse,
   })
   @UseInterceptors(HttpCacheIndividualInterceptor)
   @CacheKey(CacheKeyName.Searches.Name)
@@ -126,12 +126,12 @@ export class SearchesController {
   @ApiQuery({
     name: 'limit',
     type: Number,
-    required: false
+    required: false,
   })
   @ApiQuery({
     name: 'keyword',
     type: String,
-    required: false
+    required: false,
   })
   @Get('searches')
   async getSearches(
@@ -151,7 +151,7 @@ export class SearchesController {
     return {
       keyword: result.keywords,
       hashtags: result.hashtags.map((hashtag) => hashtag.toSearchPayload()),
-      follows: result.follows.map((user) => user.toSearchResponse())
+      follows: result.follows.map((user) => user.toSearchResponse()),
     };
   }
 }

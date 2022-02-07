@@ -25,16 +25,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
-  TopTrendsQueryOptions
+  TopTrendsQueryOptions,
 } from '../dtos/search.dto';
-import { CredentialDocument, UserDocument } from '../schemas';
-import { HashtagDocument } from '../schemas/hashtag.schema';
+import { Credential, Hashtag, User } from '../schemas';
 
 @Injectable()
 export class SearchService {
   constructor(
-    @InjectModel('Hashtag') public _hashtagModel: Model<HashtagDocument>,
-    @InjectModel('User') public _userModel: Model<UserDocument>
+    @InjectModel('Hashtag') public _hashtagModel: Model<Hashtag>,
+    @InjectModel('User') public _userModel: Model<User>
   ) {}
 
   private getHashtag(limitFilter, keyword?) {
@@ -43,8 +42,8 @@ export class SearchService {
       filter = {
         $or: [
           { name: { $regex: new RegExp(`^${keyword}`, 'i') } },
-          { type: { $regex: new RegExp(`^${keyword}`, 'i') } }
-        ]
+          { type: { $regex: new RegExp(`^${keyword}`, 'i') } },
+        ],
       };
     }
     return this._hashtagModel
@@ -60,7 +59,7 @@ export class SearchService {
       const filterFollow: {
         displayId: any;
       } = {
-        displayId: { $regex: new RegExp(`^${keyword}`, 'i') }
+        displayId: { $regex: new RegExp(`^${keyword}`, 'i') },
       };
       filter = filterFollow;
     }
@@ -78,7 +77,7 @@ export class SearchService {
       const filterKeyword: {
         text: any;
       } = {
-        text: { $regex: new RegExp(`^${keyword}`, 'i') }
+        text: { $regex: new RegExp(`^${keyword}`, 'i') },
       };
       filter = filterKeyword;
     }
@@ -87,44 +86,44 @@ export class SearchService {
     const mockKeyword = [
       {
         text: 'castcle',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'coronavirus',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'election results',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'kobe bryant',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'zoom',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'IPL',
-        isTrending: false
+        isTrending: false,
       },
       {
         text: 'India vs New Zealand',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Coronavirus update',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Joe Biden',
-        isTrending: true
+        isTrending: true,
       },
       {
         text: 'Google Classroom',
-        isTrending: true
-      }
+        isTrending: true,
+      },
     ];
 
     return mockKeyword.filter((x) => x.text.match(filter.text.$regex));
@@ -139,8 +138,8 @@ export class SearchService {
   async getTopTrends(
     options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS
   ) {
-    let hashtag: HashtagDocument[] = [];
-    let follow: UserDocument[] = [];
+    let hashtag: Hashtag[] = [];
+    let follow: User[] = [];
     const skipHashtag = options.exclude && options.exclude.includes('hashtags');
     if (!skipHashtag) {
       hashtag = await this.getHashtag(options.limit);
@@ -154,20 +153,20 @@ export class SearchService {
       hashtags: hashtag,
       follows: follow,
       // TODO !!! need implement topics
-      topics: []
+      topics: [],
     };
   }
 
   /**
    * get search data from keyword
    *
-   * @param {CredentialDocument} credential
+   * @param {Credential} credential
    * @param {string} keyword search keyword
    * @param {number} limitFollow limit follows data,
    * @returns {keyword,hashtags,follows} return search data keyword,hashtags,follows Document
    */
   async getSearch(
-    credential: CredentialDocument,
+    credential: Credential,
     keyword: string,
     limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
   ) {
@@ -175,8 +174,8 @@ export class SearchService {
     const limitHashtag = 2;
     const limitKeyword = 3;
 
-    let follow: UserDocument[] = [];
-    let hashtag: HashtagDocument[] = [];
+    let follow: User[] = [];
+    let hashtag: Hashtag[] = [];
     let KeywordResult: { text: string; isTrending: boolean }[] = [];
     if (keyword) {
       const sign = keyword.charAt(0);
@@ -193,7 +192,7 @@ export class SearchService {
     return {
       keywords: KeywordResult,
       hashtags: hashtag,
-      follows: follow
+      follows: follow,
     };
   }
 }

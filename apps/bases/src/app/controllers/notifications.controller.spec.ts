@@ -27,52 +27,26 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
-  UserService
+  UserService,
 } from '@castcle-api/database';
 import {
   NotificationSource,
   NotificationType,
-  RegisterTokenDto
+  RegisterTokenDto,
 } from '@castcle-api/database/dtos';
-import {
-  CredentialDocument,
-  UserDocument
-} from '@castcle-api/database/schemas';
+import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common/cache';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { NotificationsController } from './notifications.controller';
 
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
-
 const buildMockData = async (
   notification: NotificationService,
-  user: UserDocument,
-  userCredential: CredentialDocument
+  user: User,
+  userCredential: Credential
 ) => {
   await creatMockData(
     notification,
@@ -104,11 +78,11 @@ const buildMockData = async (
 
 const creatMockData = async (
   notification: NotificationService,
-  user: UserDocument,
+  user: User,
   sourceType: NotificationSource,
   typeNoti: NotificationType,
   docRefId: string,
-  userCredential: CredentialDocument
+  userCredential: Credential
 ) => {
   const newNotification = new notification._notificationModel({
     avatar: '',
@@ -118,54 +92,38 @@ const creatMockData = async (
     type: typeNoti,
     targetRef: {
       $ref: typeNoti !== NotificationType.System ? typeNoti : null,
-      $id: docRefId
+      $id: docRefId,
     },
     read: false,
     account: {
-      _id: userCredential.account._id
-    }
+      _id: userCredential.account._id,
+    },
   });
   await newNotification.save();
 };
 
 describe('NotificationsController', () => {
+  let mongod: MongoMemoryServer;
   let controller: NotificationsController;
   let app: TestingModule;
   let userService: UserService;
   let authService: AuthenticationService;
-  let userCredential: CredentialDocument;
-  let wrongUserCredential: CredentialDocument;
+  let userCredential: Credential;
+  let wrongUserCredential: Credential;
   let notification: NotificationService;
-  let user: UserDocument;
-  let producer: NotificationProducer;
-  const fakeProcessor = jest.fn();
+  let user: User;
 
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
+          ttl: 1000,
         }),
-        BullModule.registerQueue({
-          name: TopicName.Notifications,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380
-          },
-          processors: [fakeProcessor]
-        }),
-        BullModule.registerQueue({
-          name: TopicName.Users,
-          redis: {
-            host: '0.0.0.0',
-            port: 6380
-          },
-          processors: [fakeProcessor]
-        })
       ],
       controllers: [NotificationsController],
       providers: [
@@ -175,35 +133,31 @@ describe('NotificationsController', () => {
         NotificationService,
         NotificationProducer,
         UserProducer,
-        HashtagService
-      ]
+        HashtagService,
+      ],
     }).compile();
     userService = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     controller = app.get<NotificationsController>(NotificationsController);
     notification = app.get<NotificationService>(NotificationService);
-    producer = app.get<NotificationProducer>(NotificationProducer);
     const resultAccount = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
     const resultWrongAccount = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345789',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
-    const accountActivation = await authService.signupByEmail(
-      resultAccount.accountDocument,
-      {
-        email: 'test@gmail.com',
-        displayId: 'test1234',
-        displayName: 'test',
-        password: '1234AbcD'
-      }
-    );
+    await authService.signupByEmail(resultAccount.accountDocument, {
+      email: 'test@gmail.com',
+      displayId: 'test1234',
+      displayName: 'test',
+      password: '1234AbcD',
+    });
     userCredential = resultAccount.credentialDocument;
     wrongUserCredential = resultWrongAccount.credentialDocument;
     user = await userService.getUserFromCredential(
@@ -214,13 +168,14 @@ describe('NotificationsController', () => {
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getNotification', () => {
     it('should return NotificationReponse that contain all notification default option all', async () => {
       const responseResult = await controller.getAll({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       const expectResult = {
@@ -232,15 +187,15 @@ describe('NotificationsController', () => {
             source: 'PROFILE',
             read: false,
             content: {
-              id: null
+              id: null,
             },
             comment: {
-              id: null
+              id: null,
             },
             system: {
-              id: null
+              id: null,
             },
-            type: 'system'
+            type: 'system',
           },
           {
             id: '',
@@ -249,15 +204,15 @@ describe('NotificationsController', () => {
             source: 'PAGE',
             read: false,
             content: {
-              id: null
+              id: null,
             },
             comment: {
-              id: '6138afa4f616a467b5c4eb72'
+              id: '6138afa4f616a467b5c4eb72',
             },
             system: {
-              id: null
+              id: null,
             },
-            type: 'comment'
+            type: 'comment',
           },
           {
             id: '',
@@ -266,17 +221,17 @@ describe('NotificationsController', () => {
             source: 'PROFILE',
             read: false,
             content: {
-              id: null
+              id: null,
             },
             comment: {
-              id: '6138afa4f616a467b5c4eb72'
+              id: '6138afa4f616a467b5c4eb72',
             },
             system: {
-              id: null
+              id: null,
             },
-            type: 'comment'
-          }
-        ]
+            type: 'comment',
+          },
+        ],
       };
 
       responseResult.payload.forEach((x) => (x.id = ''));
@@ -298,7 +253,7 @@ describe('NotificationsController', () => {
     it('should return NotificationReponse that contain all notification source page', async () => {
       const responseResult = await controller.getAll(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         null,
         null,
@@ -314,17 +269,17 @@ describe('NotificationsController', () => {
             source: 'PAGE',
             read: false,
             content: {
-              id: null
+              id: null,
             },
             comment: {
-              id: '6138afa4f616a467b5c4eb72'
+              id: '6138afa4f616a467b5c4eb72',
             },
             system: {
-              id: null
+              id: null,
             },
-            type: 'comment'
-          }
-        ]
+            type: 'comment',
+          },
+        ],
       };
 
       responseResult.payload.forEach((x) => (x.id = ''));
@@ -342,16 +297,16 @@ describe('NotificationsController', () => {
   describe('notifications read', () => {
     it('should success update read status', async () => {
       const allNotification = await controller.getAll({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       const readNoti = allNotification.payload[0];
       await controller.notificationRead(readNoti.id, {
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       const result = await controller.getAll({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       expect(
@@ -361,13 +316,13 @@ describe('NotificationsController', () => {
     });
 
     it('should return Exception as expect', async () => {
-      const allNotification = await controller.getAll({
-        $credential: userCredential
+      await controller.getAll({
+        $credential: userCredential,
       } as any);
 
       await expect(
         controller.notificationRead('', {
-          $credential: userCredential
+          $credential: userCredential,
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
@@ -376,7 +331,7 @@ describe('NotificationsController', () => {
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.notificationRead('', {
-          $credential: wrongUserCredential
+          $credential: wrongUserCredential,
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
@@ -388,11 +343,11 @@ describe('NotificationsController', () => {
     it('should success update all read status', async () => {
       console.log(userCredential.account._id);
       await controller.notificationReadAll({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       const result = await controller.getAll({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
 
       expect(result.payload.filter((x) => x.read).length).toEqual(
@@ -401,14 +356,14 @@ describe('NotificationsController', () => {
     });
 
     it('should return Exception as expect', async () => {
-      const allNotification = await controller.getAll({
-        $credential: userCredential
+      await controller.getAll({
+        $credential: userCredential,
       } as any);
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.notificationReadAll({
-          $credential: wrongUserCredential
+          $credential: wrongUserCredential,
         } as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
@@ -424,11 +379,11 @@ describe('NotificationsController', () => {
 
       await controller.registerToken(
         {
-          $credential: userCredential
+          $credential: userCredential,
         } as any,
         {
           deviceUUID: deviceID,
-          firebaseToken: firebaseToken
+          firebaseToken: firebaseToken,
         } as RegisterTokenDto
       );
 
@@ -443,19 +398,19 @@ describe('NotificationsController', () => {
       const deviceID = 'iphone12345';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
-      const allNotification = await controller.getAll({
-        $credential: userCredential
+      await controller.getAll({
+        $credential: userCredential,
       } as any);
 
       wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.registerToken(
           {
-            $credential: wrongUserCredential
+            $credential: wrongUserCredential,
           } as any,
           {
             deviceUUID: deviceID,
-            firebaseToken: firebaseToken
+            firebaseToken: firebaseToken,
           } as RegisterTokenDto
         )
       ).rejects.toEqual(
@@ -468,7 +423,7 @@ describe('NotificationsController', () => {
     it('should return empty badges', async () => {
       const expectResult = { payload: { badges: '' } };
       const result = await controller.badges({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
       expect(result).toEqual(expectResult);
     });
@@ -484,7 +439,7 @@ describe('NotificationsController', () => {
       );
       const expectResult = { payload: { badges: '1' } };
       const result = await controller.badges({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
       expect(result).toEqual(expectResult);
     });
@@ -502,7 +457,7 @@ describe('NotificationsController', () => {
       }
       const expectResult = { payload: { badges: '+99' } };
       const result = await controller.badges({
-        $credential: userCredential
+        $credential: userCredential,
       } as any);
       expect(result).toEqual(expectResult);
     });

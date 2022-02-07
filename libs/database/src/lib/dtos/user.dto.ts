@@ -26,10 +26,10 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
-  IsString
+  IsString,
 } from 'class-validator';
-import { PageVerified, SocialProvider, UserVerified } from '../models';
-import { CastcleImage, Pagination } from './common.dto';
+import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
+import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
 class UserImage {
@@ -74,6 +74,9 @@ export class UserResponseDto {
   castcleId: string;
 
   @ApiProperty()
+  type: string;
+
+  @ApiProperty()
   displayName: string;
 
   @ApiProperty()
@@ -111,8 +114,42 @@ export class UserResponseDto {
 
   @ApiProperty()
   passwordNotSet: boolean;
+
+  @ApiProperty()
+  wallet: Wallet;
+
+  @ApiProperty()
+  mobile: {
+    countryCode: string;
+    number: string;
+  };
+
+  @ApiProperty()
+  linkSocial: {
+    facebook: linkSocialDetail | null;
+    twitter: linkSocialDetail | null;
+    google: linkSocialDetail | null;
+    apple: linkSocialDetail | null;
+  };
+
+  @ApiProperty()
+  syncSocial: syncSocialDetail[];
 }
 
+export class linkSocialDetail {
+  socialId: string;
+  displayName: string;
+}
+
+export class syncSocialDetail {
+  provider: string;
+  socialId: string;
+  userName: string;
+  displayName: string;
+  avatar: string;
+  active: boolean;
+  autoPost: boolean;
+}
 export class UpdateUserDto {
   @ApiProperty()
   overview?: string;
@@ -197,6 +234,9 @@ export class PageResponseDto {
   blocking: boolean;
 
   @ApiProperty()
+  socialSyncs: boolean;
+
+  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -273,11 +313,30 @@ export class SocialSyncDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
+  overview?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   avatar?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  cover?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  link?: string;
 
   @ApiProperty()
   @IsBoolean()
   active?: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  autoPost?: boolean;
 }
 
 export class SocialSyncDeleteDto {
@@ -298,4 +357,24 @@ export class GetSearchUsersDto extends PaginationQuery {
   @IsString()
   @IsNotEmpty()
   keyword: string;
+}
+
+export class SuggestToFollowResponseDto {
+  payload: (UserResponseDto | PageResponseDto)[];
+  meta: CastcleMeta;
+}
+export class SocialPageDto {
+  castcleId: string;
+  displayName: string;
+  overview?: string;
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
+  links?: {
+    facebook?: string | null;
+    twitter?: string | null;
+    youtube?: string | null;
+    medium?: string | null;
+    website?: string | null;
+  };
+  socialSyncs?: boolean;
 }

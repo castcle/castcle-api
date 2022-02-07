@@ -22,33 +22,40 @@
  */
 import {
   NotificationProducer,
-  UtilsQueueModule
+  UtilsQueueModule,
 } from '@castcle-api/utils/queue';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { getMongoOptions } from './environment';
-import { AccountReferralSchema } from './schemas/account-referral.schema';
-import { AccountSchemaFactory } from './schemas/account.schema-factory';
-import { AccountActivationSchema } from './schemas/accountActivation.schema';
-import { AccountAuthenIdSchema } from './schemas/accountAuthenId.schema';
-import { CommentSchemaFactory } from './schemas/comment.schema';
-import { ContentSchemaFactory } from './schemas/content.schema';
-import { CountrySchema } from './schemas/country.schema';
-import { CredentialSchemaFactory } from './schemas/credential.schema';
-import { DsContentReachSchema } from './schemas/ds-content-reach.schema';
-import { EngagementSchemaFactory } from './schemas/engagement.schema';
-import { FeedItemSchemaFactory } from './schemas/feedItem.schema';
-import { GuestFeedItemSchema } from './schemas/guestFeedItems.schema';
-import { HashtagSchema } from './schemas/hashtag.schema';
-import { LanguageSchema } from './schemas/language.schema';
-import { NotificationSchema } from './schemas/notification.schema';
-import { OtpSchema } from './schemas/otp.schema';
-import { RelationshipSchemaFactory } from './schemas/relationship.schema';
-import { RevisionSchemaFactory } from './schemas/revision.schema';
-import { SocialSyncSchema } from './schemas/social-sync.schema';
-import { UserSchemaFactory } from './schemas/user.schema';
-import { UxEngagementSchema } from './schemas/uxengagement.schema';
+import { getMongooseModuleOptions } from './database.config';
+import {
+  AccountActivationSchema,
+  AccountAuthenIdSchema,
+  AccountReferralSchema,
+  AccountSchemaFactory,
+  CampaignSchema,
+  CommentSchemaFactory,
+  ContentSchemaFactory,
+  CountrySchema,
+  CredentialSchemaFactory,
+  DsContentReachSchema,
+  EngagementSchemaFactory,
+  FeedItemSchemaFactory,
+  GuestFeedItemSchema,
+  HashtagSchema,
+  LanguageSchema,
+  NotificationSchema,
+  OtpSchema,
+  QueueSchema,
+  RelationshipSchemaFactory,
+  RevisionSchemaFactory,
+  SocialSyncSchema,
+  TransactionSchema,
+  UserSchemaFactory,
+  UxEngagementSchema,
+} from './schemas';
+import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AuthenticationService } from './services/authentication.service';
+import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
@@ -58,23 +65,32 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
+import { TransactionService } from './services/transaction.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
-import { createCastcleMeta, getRelationship } from './utils/common';
+import {
+  createCastcleMeta,
+  getRelationship,
+  getSocialProfix,
+} from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
-  { name: 'Otp', schema: OtpSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'Notification', schema: NotificationSchema },
-  { name: 'Language', schema: LanguageSchema },
-  { name: 'Hashtag', schema: HashtagSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
+  { name: 'AccountReferral', schema: AccountReferralSchema },
+  { name: 'Campaign', schema: CampaignSchema },
   { name: 'Country', schema: CountrySchema },
-  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
-  { name: 'AccountReferral', schema: AccountReferralSchema }
+  { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
+  { name: 'Hashtag', schema: HashtagSchema },
+  { name: 'Language', schema: LanguageSchema },
+  { name: 'Notification', schema: NotificationSchema },
+  { name: 'Otp', schema: OtpSchema },
+  { name: 'Queue', schema: QueueSchema },
+  { name: 'SocialSync', schema: SocialSyncSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'Transaction', schema: TransactionSchema },
+  { name: 'DefaultContent', schema: DefaultContentSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -84,11 +100,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
-    inject: [getModelToken('Revision'), getModelToken('Content')]
+    inject: [getModelToken('Revision'), getModelToken('Content')],
   },
   {
     name: 'FeedItem',
-    useFactory: FeedItemSchemaFactory
+    useFactory: FeedItemSchemaFactory,
   },
   {
     name: 'Content',
@@ -97,18 +113,18 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       getModelToken('Revision'),
       getModelToken('FeedItem'),
       getModelToken('User'),
-      getModelToken('Relationship')
-    ]
+      getModelToken('Relationship'),
+    ],
   },
   {
     name: 'Account',
     useFactory: AccountSchemaFactory,
-    inject: [getModelToken('Credential'), getModelToken('User')]
+    inject: [getModelToken('Credential'), getModelToken('User')],
   },
   {
     name: 'User',
     useFactory: UserSchemaFactory,
-    inject: [getModelToken('Relationship')]
+    inject: [getModelToken('Relationship')],
   },
   {
     name: 'Engagement',
@@ -116,23 +132,26 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     inject: [
       getModelToken('Content'),
       getModelToken('Comment'),
-      getModelToken('FeedItem')
-    ]
-  }
+      getModelToken('FeedItem'),
+    ],
+  },
 ]);
 
 @Global()
 @Module({
   imports: [
-    MongooseModule.forRootAsync({ useFactory: () => getMongoOptions() }),
+    MongooseModule.forRootAsync({
+      useFactory: () => getMongooseModuleOptions(),
+    }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
-    UtilsQueueModule
+    UtilsQueueModule,
   ],
   controllers: [],
   providers: [
     AuthenticationService,
     UserService,
+    CampaignService,
     ContentService,
     UxEngagementService,
     NotificationService,
@@ -143,11 +162,13 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SearchService,
     CountryService,
     SocialSyncService,
-    CommentService
+    CommentService,
+    TransactionService,
   ],
   exports: [
     AuthenticationService,
     UserService,
+    CampaignService,
     ContentService,
     UxEngagementService,
     NotificationService,
@@ -157,14 +178,16 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SearchService,
     CountryService,
     SocialSyncService,
-    CommentService
-  ]
+    CommentService,
+    TransactionService,
+  ],
 })
 export class DatabaseModule {}
 
 export {
   AuthenticationService,
   UserService,
+  CampaignService,
   ContentService,
   UxEngagementService,
   NotificationService,
@@ -176,5 +199,7 @@ export {
   createCastcleMeta,
   SocialSyncService,
   CommentService,
-  getRelationship
+  getRelationship,
+  TransactionService,
+  getSocialProfix,
 };

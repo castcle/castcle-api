@@ -28,13 +28,13 @@ export enum NotificationType {
   Comment = 'comment',
   Content = 'content',
   Like = 'like',
-  System = 'system'
+  System = 'system',
 }
 
 export enum NotificationSource {
   Profile = 'PROFILE',
   Page = 'PAGE',
-  System = 'SYSTEM'
+  System = 'SYSTEM',
 }
 
 class ObjectRef {
@@ -87,7 +87,7 @@ export class NotificationQueryOptions {
 }
 
 export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
-  maxResults: 25
+  maxResults: 25,
 } as NotificationQueryOptions;
 
 export interface CreateNotification {

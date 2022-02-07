@@ -16,7 +16,7 @@ export const testUsersReporting = () => {
             'targetCastcleId should not be empty',
             'targetCastcleId must be a string',
             'targetContentId should not be empty',
-            'targetContentId must be a string'
+            'targetContentId must be a string',
           ].sort()
         );
       })

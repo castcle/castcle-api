@@ -45,10 +45,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { CastcleBase } from './base.schema';
-
-export type FeatureDocument = Feature & Document;
 
 @Schema({ timestamps: true })
 export class Feature extends CastcleBase {

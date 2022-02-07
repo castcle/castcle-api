@@ -7,7 +7,7 @@ export class AuthenticationsRequest {
     'Accept-Version': '1.0',
     'API-Metadata': 'ip=127.0.0.1,src=CastcleOS,dest=castcle',
     Device: 'CastclePhone',
-    Platform: 'CastcleOS'
+    Platform: 'CastcleOS',
   };
 
   static request = (method: string, url: string): request.Test =>

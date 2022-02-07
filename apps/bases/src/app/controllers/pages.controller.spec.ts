@@ -20,95 +20,64 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Test, TestingModule } from '@nestjs/testing';
 import {
+  AuthenticationService,
+  ContentService,
   createCastcleMeta,
   HashtagService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
-} from '@castcle-api/database';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import {
+  MongooseForFeatures,
+  SocialProvider,
+  SocialSyncService,
   UserService,
-  AuthenticationService,
-  ContentService
 } from '@castcle-api/database';
-import { PagesController } from './pages.controller';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import {
-  AccountDocument,
-  ContentDocument,
-  CredentialDocument
-} from '@castcle-api/database/schemas';
 import {
   Author,
   CastcleIncludes,
   ContentType,
   PageDto,
   SaveContentDto,
-  ShortPayload
+  ShortPayload,
 } from '@castcle-api/database/dtos';
+import { Content, Credential } from '@castcle-api/database/schemas';
 import { Image } from '@castcle-api/utils/aws';
-
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { CacheModule } from '@nestjs/common';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380
-  },
-  processors: [fakeProcessor]
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
+import { UserProducer } from '@castcle-api/utils/queue';
+import { CacheModule } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { PagesController } from './pages.controller';
 
 describe('PageController', () => {
+  let mongod: MongoMemoryServer;
   let app: TestingModule;
   let pageController: PagesController;
-  let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let userAccount: AccountDocument;
-  let userCredential: CredentialDocument;
+  let userService: UserService;
+  let userCredential: Credential;
+  let socialSyncService: SocialSyncService;
   const pageDto: PageDto = {
     displayName: 'Super Page',
-    castcleId: 'pageyo'
+    castcleId: 'pageyo',
   };
   const pageDto2: PageDto = {
     displayName: 'Super Page2',
-    castcleId: 'pageyo2'
+    castcleId: 'pageyo2',
   };
   beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
+          ttl: 1000,
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
       ],
       controllers: [PagesController],
       providers: [
@@ -116,18 +85,20 @@ describe('PageController', () => {
         AuthenticationService,
         ContentService,
         UserProducer,
-        HashtagService
-      ]
+        HashtagService,
+        SocialSyncService,
+      ],
     }).compile();
-    service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
+    userService = app.get(UserService);
+    socialSyncService = app.get(SocialSyncService);
     pageController = app.get<PagesController>(PagesController);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
     const accountActivation = await authService.signupByEmail(
       result.accountDocument,
@@ -135,21 +106,23 @@ describe('PageController', () => {
         email: 'test@gmail.com',
         displayId: 'test1234',
         displayName: 'test',
-        password: '1234AbcD'
+        password: '1234AbcD',
       }
     );
-    userAccount = await authService.verifyAccount(accountActivation);
+    await authService.verifyAccount(accountActivation);
     jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image({
-        original: 'mockUri'
+        original: 'mockUri',
       });
       return mockImage;
     });
     userCredential = result.credentialDocument;
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('createPage', () => {
@@ -162,9 +135,7 @@ describe('PageController', () => {
       expect(newPageResponse.displayName).toEqual(pageDto.displayName);
       expect(newPageResponse.images.cover).toBeDefined();
       expect(newPageResponse.castcleId).toEqual(pageDto.castcleId);
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const pageResponse = testPage.toPageResponse();
       expect(pageResponse.images.avatar).toBeDefined();
       expect(pageResponse.displayName).toEqual(pageDto.displayName);
@@ -174,9 +145,7 @@ describe('PageController', () => {
   });
   describe('updatePage', () => {
     it('should update some properly in updatePageDto to the created page', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const result = await pageController.updatePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
@@ -188,8 +157,8 @@ describe('PageController', () => {
             facebook: 'https://facebook.com',
             twitter: 'https://twitter.com',
             youtube: 'https://youtube.com',
-            medium: 'https://medium.com'
-          }
+            medium: 'https://medium.com',
+          },
         }
       );
       //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
@@ -204,32 +173,26 @@ describe('PageController', () => {
   });
   describe('deletePage', () => {
     it('should delete a page if user has permission', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       const result = await pageController.deletePage(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id,
         {
-          password: '1234AbcD'
+          password: '1234AbcD',
         }
       );
       expect(result).toEqual('');
-      const postPage = await authService.getUserFromCastcleId(
-        pageDto.castcleId
-      );
+      const postPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
       expect(postPage).toBeNull();
     });
   });
   describe('getPageFromId', () => {
     it('should be able to get page from user ID', async () => {
-      const newPageResponse = await pageController.createPage(
+      await pageController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
         pageDto2
       );
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto2.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
         testPage._id
@@ -237,9 +200,7 @@ describe('PageController', () => {
       expect(getResult).toEqual(testPage.toPageResponse());
     });
     it('should be able to get page from CastcleId', async () => {
-      const testPage = await authService.getUserFromCastcleId(
-        pageDto2.castcleId
-      );
+      const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
         pageDto2.castcleId
@@ -249,24 +210,24 @@ describe('PageController', () => {
   });
   describe('getPageContents', () => {
     it('should return ContentsResponse that contain all contain that create by this page', async () => {
-      const page = await authService.getUserFromCastcleId(pageDto2.castcleId);
+      const page = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const contentDtos: SaveContentDto[] = [
         {
           type: ContentType.Short,
           payload: {
-            message: 'hello'
+            message: 'hello',
           } as ShortPayload,
-          castcleId: page.displayId
+          castcleId: page.displayId,
         },
         {
           type: ContentType.Short,
           payload: {
-            message: 'hi'
+            message: 'hi',
           } as ShortPayload,
-          castcleId: page.displayId
-        }
+          castcleId: page.displayId,
+        },
       ];
-      const createResult: ContentDocument[] = [];
+      const createResult: Content[] = [];
       createResult[0] = await contentService.createContentFromUser(
         page,
         contentDtos[0]
@@ -288,9 +249,9 @@ describe('PageController', () => {
         payload: items,
         includes: new CastcleIncludes({
           users: createResult.map(({ author }) => new Author(author)),
-          casts: []
+          casts: [],
         }),
-        meta: createCastcleMeta(createResult)
+        meta: createCastcleMeta(createResult),
       };
 
       expect(JSON.stringify(response)).toEqual(JSON.stringify(expectedObject));
@@ -299,12 +260,118 @@ describe('PageController', () => {
   describe('getAllPages', () => {
     it('should display all pages that has been created', async () => {
       const result = await pageController.getAllPages({
-        $credential: userCredential
+        $credential: userCredential,
       } as CredentialRequest);
       console.log(result);
       expect(result.payload.length).toEqual(1);
       expect(result.pagination.self).toEqual(1);
       expect(result.pagination.limit).toEqual(25);
+    });
+  });
+
+  describe('createPage with social', () => {
+    it('should create new user that has the info from SocialPageDto', async () => {
+      const newPageResponse = await pageController.createPageSocial(
+        { $credential: userCredential, $language: 'th' } as any,
+        {
+          payload: [
+            {
+              provider: SocialProvider.Facebook,
+              socialId: 'fb001',
+              userName: 'fb_test1',
+              displayName: 'test1',
+              overview: 'facebook sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.facebook.com/test1',
+            },
+            {
+              provider: SocialProvider.Twitter,
+              socialId: 'tw001',
+              userName: 'tw_test1',
+              displayName: 'test2',
+              overview: 'twitter sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.twitter.com/test2',
+            },
+          ],
+        }
+      );
+      const page1 = await userService.getByIdOrCastcleId(
+        newPageResponse.payload[0].castcleId
+      );
+      const page2 = await userService.getByIdOrCastcleId(
+        newPageResponse.payload[1].castcleId
+      );
+      const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
+      const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
+      expect(newPageResponse.payload.length).toEqual(2);
+      expect(newPageResponse.payload[0].links.facebook).toBeDefined();
+      expect(newPageResponse.payload[1].links.twitter).toBeDefined();
+      expect(syncSocial1.length).toEqual(1);
+      expect(syncSocial2.length).toEqual(1);
+      expect(syncSocial1[0].author.id).toEqual(page1.id);
+      expect(syncSocial2[0].author.id).toEqual(page2.id);
+    });
+
+    it('should return Exception when use duplicate social id', async () => {
+      await expect(
+        pageController.createPageSocial(
+          { $credential: userCredential, $language: 'th' } as any,
+          {
+            payload: [
+              {
+                provider: SocialProvider.Facebook,
+                socialId: 'fb001',
+                userName: 'fb_test1',
+                displayName: 'test1',
+                overview: 'facebook sync 1',
+                avatar: '',
+                cover: '',
+                link: 'http://www.facebook.com/test1',
+              },
+            ],
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
+      );
+    });
+
+    it('should return Exception when use guest account', async () => {
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66',
+        },
+      });
+
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'th',
+      } as any;
+
+      await expect(
+        pageController.createPageSocial(credentialGuest, {
+          payload: [
+            {
+              provider: SocialProvider.Facebook,
+              socialId: 'fb001',
+              userName: 'fb_test1',
+              displayName: 'test1',
+              overview: 'facebook sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.facebook.com/test1',
+            },
+          ],
+        })
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
     });
   });
 });

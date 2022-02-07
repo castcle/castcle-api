@@ -20,69 +20,49 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  SocialSyncService
+  SocialSyncService,
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
-import { env } from '../environment';
 import { SocialProvider } from '../models';
-import { UserDocument, UserType } from './../schemas/user.schema';
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
+import { User, UserType } from '../schemas';
 
 describe('SocialSyncService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: SocialSyncService;
-  let mocksUser: UserDocument;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [SocialSyncService];
+  let mocksUser: User;
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [SocialSyncService],
     }).compile();
-    service = module.get<SocialSyncService>(SocialSyncService);
+
+    service = app.get<SocialSyncService>(SocialSyncService);
 
     mocksUser = new service.userModel({
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
-      type: UserType.People
+      type: UserType.People,
     });
     await mocksUser.save();
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#create social sync', () => {
@@ -94,7 +74,7 @@ describe('SocialSyncService', () => {
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
-        active: true
+        active: true,
       };
       const resultData = await service.create(mocksUser, socialSyncDto);
 
@@ -114,7 +94,7 @@ describe('SocialSyncService', () => {
         userName: 'mocktw',
         displayName: 'mock tw',
         avatar: 'www.twitter.com/mocktw',
-        active: true
+        active: true,
       };
       await service.create(mocksUser, socialSyncDto);
 
@@ -147,7 +127,7 @@ describe('SocialSyncService', () => {
         userName: 'mockfb',
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
-        active: false
+        active: false,
       };
       await service.update(updateSocialSyncDto, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
@@ -166,7 +146,7 @@ describe('SocialSyncService', () => {
       const deleteSocial: SocialSyncDeleteDto = {
         castcleId: 'mockcast',
         provider: SocialProvider.Facebook,
-        socialId: '7891234'
+        socialId: '7891234',
       };
       await service.delete(deleteSocial, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);

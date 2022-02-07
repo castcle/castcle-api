@@ -24,69 +24,55 @@ import {
   AuthenticationService,
   LanguageService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
+  UserService,
 } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { LanguagesController } from './languages.controller';
 
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
+jest.mock('libs/database/src/lib/services/user.service');
 
 describe('LanguagesController', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let appController: LanguagesController;
   let languageService: LanguageService;
-  let userCredential: CredentialDocument;
   let authService: AuthenticationService;
 
   beforeAll(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
-        })
+          ttl: 1000,
+        }),
       ],
       controllers: [LanguagesController],
-      providers: [LanguageService, AuthenticationService]
+      providers: [LanguageService, AuthenticationService, UserService],
     }).compile();
 
     appController = app.get<LanguagesController>(LanguagesController);
     languageService = app.get<LanguageService>(LanguageService);
     authService = app.get<AuthenticationService>(AuthenticationService);
 
-    const resultAccount = await authService.createAccount({
+    await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
-    userCredential = resultAccount.credentialDocument;
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getAllLanguage', () => {
@@ -94,7 +80,7 @@ describe('LanguagesController', () => {
       await languageService.create({
         code: 'th',
         title: 'Thai',
-        display: 'ภาษาไทย'
+        display: 'ภาษาไทย',
       });
       const result = await appController.getAllLanguage();
       const expectResult = {
@@ -102,9 +88,9 @@ describe('LanguagesController', () => {
           {
             code: 'th',
             title: 'Thai',
-            display: 'ภาษาไทย'
-          }
-        ]
+            display: 'ภาษาไทย',
+          },
+        ],
       };
       console.log(result);
 

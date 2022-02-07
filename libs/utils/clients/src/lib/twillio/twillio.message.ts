@@ -23,5 +23,5 @@
 
 export enum TwillioChannel {
   Email = 'email',
-  Mobile = 'sms'
+  Mobile = 'sms',
 }

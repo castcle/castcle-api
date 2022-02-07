@@ -23,25 +23,27 @@
 
 import { Model, Schema } from 'mongoose';
 import { postAccountSave, preAccountSave } from '../hooks/account.save';
-import { AccountDocument, AccountSchema } from './account.schema';
-import { CredentialDocument } from './credential.schema';
-import { UserDocument } from './user.schema';
+import { Account, AccountSchema } from './account.schema';
+import { Credential } from './credential.schema';
+import { User } from './user.schema';
 
 export const AccountSchemaFactory = (
-  credentialModel: Model<CredentialDocument>,
-  userModel: Model<UserDocument>
+  credentialModel: Model<Credential>,
+  userModel: Model<User>
 ): Schema<any> => {
   AccountSchema.pre('save', function (next) {
-    preAccountSave(this as AccountDocument);
+    preAccountSave(this as Account);
     next();
   });
+
   AccountSchema.post('save', async function (doc, next) {
     //add activate process
     await postAccountSave(doc, {
       credentialModel,
-      userModel
+      userModel,
     });
     next();
   });
+
   return AccountSchema;
 };

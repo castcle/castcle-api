@@ -34,8 +34,8 @@ import { LanguagesController } from './controllers/languages.controller';
     DatabaseModule,
     HealthyModule,
     UtilsInterceptorsModule,
-    UtilsCacheModule
+    UtilsCacheModule,
   ],
-  controllers: [LanguagesController, HashtagsController, CountryController]
+  controllers: [LanguagesController, HashtagsController, CountryController],
 })
 export class MetadataModule {}

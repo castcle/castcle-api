@@ -21,66 +21,33 @@
  * or have any questions.
  */
 
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   CommentService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '../database.module';
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
-import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { UserVerified } from '../models';
-import { CommentDocument, UserDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { ContentDocument } from '../schemas/content.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { EngagementDocument } from '../schemas/engagement.schema';
-import { FeedItemDocument } from '../schemas/feedItem.schema';
+import { Comment, User, Account, Content, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 
-jest.mock('@castcle-api/logger');
-jest.mock('link-preview-js', () => ({
-  getLinkPreview: jest.fn().mockReturnValue({})
-}));
-
-jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn() })
-}));
-
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: { host: '0.0.0.0', port: 6380 }
-});
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      return {
-        ...options,
-        uri: mongod.getUri()
-      };
-    }
-  });
-
 describe('ContentService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: ContentService;
   let commentService: CommentService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
+  let user: User;
   let author: Author;
   /**
    * For multiple user
@@ -91,65 +58,63 @@ describe('ContentService', () => {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop',
         displayName: 'npop',
         email: 'sompop.k@gmail.com',
-        password: '2@HelloWorld'
-      }
+        password: '2@HelloWorld',
+      },
     },
     {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone5678',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'sompop',
         displayName: 'sompop',
         email: 'sompop.ku@gmail.com',
-        password: '2@HelloWorld'
-      }
+        password: '2@HelloWorld',
+      },
     },
     {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'kuku',
         displayName: 'kuku',
         email: 'sompop.kuku@gmail.com',
-        password: '2@HelloWorld'
-      }
-    }
+        password: '2@HelloWorld',
+      },
+    },
   ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
-  let hashtagContent: ContentDocument;
+  let hashtagContent: Content;
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        env.DB_TEST_IN_DB
-          ? MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS)
-          : rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        fakeBull
       ],
       providers: [
         AuthenticationService,
@@ -157,27 +122,28 @@ describe('ContentService', () => {
         CommentService,
         HashtagService,
         UserProducer,
-        UserService
-      ]
+        UserService,
+      ],
     }).compile();
-    service = module.get<ContentService>(ContentService);
-    commentService = module.get(CommentService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+
+    service = app.get<ContentService>(ContentService);
+    commentService = app.get(CommentService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
     author = new Author({
@@ -186,23 +152,24 @@ describe('ContentService', () => {
       castcleId: 'castcleId',
       displayName: 'Castcle',
       verified: { email: true, mobile: true, official: true, social: true },
-      avatar: null
+      avatar: null,
     });
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await mongod?.stop();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#createContentFromUser', () => {
     it('should create short content instance in db with author as user', async () => {
       const shortPayload: ShortPayload = {
-        message: 'this is test status'
+        message: 'this is test status',
       };
       const content = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       expect((content.payload as ShortPayload).message).toEqual(
         shortPayload.message
@@ -214,17 +181,17 @@ describe('ContentService', () => {
         email: false,
         mobile: false,
         official: false,
-        social: false
+        social: false,
       } as UserVerified);
     });
     it('should create a hashtag stat', async () => {
       const shortPayload: ShortPayload = {
-        message: 'this is test status #cool #yo'
+        message: 'this is test status #cool #yo',
       };
       hashtagContent = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       const hashtags = await service.hashtagService.getAll();
       expect(hashtags.length).toEqual(2);
@@ -237,14 +204,13 @@ describe('ContentService', () => {
   describe('#updateContentFromId()', () => {
     it('should update from saveDTO with content id', async () => {
       const shortPayload: ShortPayload = {
-        message: 'this is test status'
+        message: 'this is test status',
       };
       const content = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
-      const revisionCount = content.revisionCount;
       expect(content.revisionCount).toEqual(1);
       const updatePayload: ShortPayload = {
         message: 'this is test status2',
@@ -252,14 +218,14 @@ describe('ContentService', () => {
           {
             type: 'youtube',
             url: 'https://www.youtube.com/watch?v=yuPjoC3jmPA',
-            image: 'base64Test'
-          }
-        ]
+            image: 'base64Test',
+          },
+        ],
       };
       const result = await service.updateContentFromId(content._id, {
         type: ContentType.Short,
         payload: updatePayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       expect((result.payload as ShortPayload).message).toEqual(
         updatePayload.message
@@ -278,12 +244,12 @@ describe('ContentService', () => {
     });
     it('should update the content hashtag', async () => {
       const shortPayload: ShortPayload = {
-        message: 'this is test status #sompop #yo'
+        message: 'this is test status #sompop #yo',
       };
       await service.updateContentFromId(hashtagContent._id, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       const hashtags = await service.hashtagService.getAll();
       const sompopTag = hashtags.find((ht) => ht.tag === 'sompop');
@@ -298,12 +264,12 @@ describe('ContentService', () => {
   describe('#deleteContentFromId()', () => {
     it('should set delete content flag to Delete', async () => {
       const shortPayload: ShortPayload = {
-        message: 'this is test status #cool #yo'
+        message: 'this is test status #cool #yo',
       };
       const toDeleteContent = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       await service.deleteContentFromId(toDeleteContent.id);
       const postDelete = await service.getContentFromId(toDeleteContent.id);
@@ -318,19 +284,19 @@ describe('ContentService', () => {
     });
   });
   describe('#getContentsFromUser()', () => {
-    it('should return ContentDocument[] from author', async () => {
+    it('should return Content[] from author', async () => {
       await new Promise<void>((resolve) => {
         setTimeout(() => {
           resolve();
         }, 100);
       });
       const shortPayload1: ShortPayload = {
-        message: 'Order 1'
+        message: 'Order 1',
       };
-      const content = await service.createContentFromUser(user, {
+      await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload1,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       await new Promise<void>((resolve) => {
         setTimeout(() => {
@@ -338,12 +304,12 @@ describe('ContentService', () => {
         }, 100);
       });
       const shortPayload2: ShortPayload = {
-        message: 'Order 2'
+        message: 'Order 2',
       };
-      const content2 = await service.createContentFromUser(user, {
+      await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload2,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       const contents = await service.getContentsFromUser(user.id);
       expect(contents.items[0].payload).toEqual(shortPayload2);
@@ -351,8 +317,8 @@ describe('ContentService', () => {
       const contentsInverse = await service.getContentsFromUser(user.id, {
         sortBy: {
           field: 'updatedAt',
-          type: SortDirection.ASC
-        }
+          type: SortDirection.ASC,
+        },
       });
       expect(
         contentsInverse.items[contentsInverse.items.length - 2].payload
@@ -363,18 +329,17 @@ describe('ContentService', () => {
     });
   });
   describe('#likeContent()', () => {
-    let content: ContentDocument;
-    let feedItems: FeedItemDocument[];
+    let content: Content;
     beforeAll(async () => {
       const shortPayload2: ShortPayload = {
-        message: 'Test Like 2'
+        message: 'Test Like 2',
       };
       content = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload2,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
-      feedItems = await service.createFeedItemFromAuthorToEveryone(content);
+      await service.createFeedItemFromAuthorToEveryone(content);
     });
     it('should update total like Count after call', async () => {
       const likeResult = await service.likeContent(content, user);
@@ -390,7 +355,7 @@ describe('ContentService', () => {
       expect(postContent.engagements['like'].count).toEqual(1);
     });
     it('should if have double like should have the same amount of like', async () => {
-      const likeResult = await service.likeContent(content, user);
+      await service.likeContent(content, user);
       const postContent = await service.getContentFromId(content._id);
       expect(postContent.engagements['like']).toBeDefined();
       expect(postContent.engagements['like'].count).toEqual(1);
@@ -398,7 +363,7 @@ describe('ContentService', () => {
     it('should showup in feedItem', async () => {
       const feedItems = await service._feedItemModel
         .find({
-          content: content._id
+          content: content._id,
         })
         .populate('content')
         .exec();
@@ -422,7 +387,7 @@ describe('ContentService', () => {
       it('should unlike on feedItems too', async () => {
         const feedItems = await service._feedItemModel
           .find({
-            content: content._id
+            content: content._id,
           })
           .populate('content')
           .exec();
@@ -433,16 +398,16 @@ describe('ContentService', () => {
     });
   });
   describe('#recastContent/#quoteContent', () => {
-    const users: UserDocument[] = [];
+    const users: User[] = [];
 
-    let contentA: ContentDocument;
+    let contentA: Content;
     beforeAll(async () => {
       //create user  create content
       for (let i = 0; i < userInfo.length; i++) {
         const createAccResult = await authService.createAccount(
           userInfo[i].accountRequirement
         );
-        const accountActivation = await authService.signupByEmail(
+        await authService.signupByEmail(
           createAccResult.accountDocument,
           userInfo[i].signupRequirement
         );
@@ -453,25 +418,21 @@ describe('ContentService', () => {
       //userA create a content
       contentA = await service.createContentFromUser(users[0], {
         payload: {
-          message: 'hello world'
+          message: 'hello world',
         } as ShortPayload,
         type: ContentType.Short,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
     });
     describe('#recastContentFromUser()', () => {
-      let contentB: ContentDocument;
-      let engagementB: EngagementDocument;
-      let contentC: ContentDocument;
-      let engagementC: EngagementDocument;
+      let contentB: Content;
+      let contentC: Content;
       beforeAll(async () => {
         //recast a content
         const resultB = await service.recastContentFromUser(contentA, users[1]);
         contentB = resultB.recastContent;
-        engagementB = resultB.engagement;
         const resultC = await service.recastContentFromUser(contentB, users[2]);
         contentC = resultC.recastContent;
-        engagementC = resultC.engagement;
       });
       it('should create new content type as recast', () => {
         expect(contentB.isRecast).toEqual(true);
@@ -493,22 +454,18 @@ describe('ContentService', () => {
       });
     });
     describe('#quoteContentFromUser()', () => {
-      let contentB: ContentDocument;
-      let engagementB: EngagementDocument;
-      let contentC: ContentDocument;
-      let engagementC: EngagementDocument;
+      let contentB: Content;
+      let contentC: Content;
       beforeAll(async () => {
         //recast a content
         const resultB = await service.recastContentFromUser(contentA, users[1]);
         contentB = resultB.recastContent;
-        engagementB = resultB.engagement;
         const resultC = await service.quoteContentFromUser(
           contentB,
           users[2],
           'this is good content'
         );
         contentC = resultC.quoteContent;
-        engagementC = resultC.engagement;
       });
       it('should create new content type as recast', async () => {
         const postContentA = await service.getContentFromId(contentA._id);
@@ -521,10 +478,10 @@ describe('ContentService', () => {
       });
     });
     describe('Comment Features', () => {
-      let contentA: ContentDocument;
-      let userA: UserDocument;
-      let rootComment: CommentDocument;
-      let replyComment: CommentDocument;
+      let contentA: Content;
+      let userA: User;
+      let rootComment: Comment;
+      let replyComment: Comment;
       beforeAll(async () => {
         //console.log('before comment features');
         const account = await authService.getAccountFromEmail(
@@ -535,17 +492,17 @@ describe('ContentService', () => {
           .exec();
         contentA = await service.createContentFromUser(userA, {
           payload: {
-            message: 'hi'
+            message: 'hi',
           } as ShortPayload,
           type: ContentType.Short,
-          castcleId: user.displayId
+          castcleId: user.displayId,
         });
       });
       describe('#createCommentForContent()', () => {
         it('should be create a document in comment collection', async () => {
           //console.log('create Comment for content');
           rootComment = await service.createCommentForContent(user, contentA, {
-            message: 'Hello #hello'
+            message: 'Hello #hello',
           });
           expect(contentA.engagements.comment.count).toEqual(0);
           const findResult = await service._commentModel
@@ -580,7 +537,7 @@ describe('ContentService', () => {
             .exec();
           expect(postComment.engagements.comment.count).toEqual(0);
           const replyResult = await service.replyComment(user, rootComment, {
-            message: 'nice #baby'
+            message: 'nice #baby',
           });
           const findResult = await service._commentModel
             .find({ targetRef: { $id: rootComment._id, $ref: 'comment' } })
@@ -613,7 +570,7 @@ describe('ContentService', () => {
         it('should update the comment message', async () => {
           expect(rootComment.message).toEqual('Hello #hello');
           const postComment = await service.updateComment(rootComment, {
-            message: 'cool'
+            message: 'cool',
           });
           expect(postComment.message).toEqual('cool');
           const postRootComment = await service._commentModel
@@ -714,10 +671,10 @@ describe('ContentService', () => {
     it('should create a short content from timeline', async () => {
       const contentDto = {
         type: 'short',
-        payload: { message }
+        payload: { message },
       } as SaveContentDto;
       const contents = await service.createContentsFromAuthor(author, [
-        contentDto
+        contentDto,
       ]);
       const content = contents?.[0];
 
@@ -752,13 +709,13 @@ describe('ContentService', () => {
 
   describe('#reportContent', () => {
     const reportingMessage = 'reporting message';
-    let content: ContentDocument;
+    let content: Content;
 
     beforeAll(async () => {
       content = await service.createContentFromUser(user, {
         type: ContentType.Short,
         payload: { message: 'report content test' },
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
     });
 
@@ -778,7 +735,7 @@ describe('ContentService', () => {
       const reportedContent = await service.getContentFromId(content._id);
       const engagements = await service._engagementModel.find({
         user: user._id,
-        targetRef: { $ref: 'content', $id: content._id }
+        targetRef: { $ref: 'content', $id: content._id },
       });
 
       const reportedItem = reportedContent.toContentPayloadItem(engagements);
@@ -790,21 +747,21 @@ describe('ContentService', () => {
   });
 
   describe('#deleteContentFromOriginalAndAuthor()', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(2, 0, {
         userService: userService,
-        accountService: authService
+        accountService: authService,
       });
 
       //userA create a content
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
-          message: 'hello world'
+          message: 'hello world',
         } as ShortPayload,
         type: ContentType.Short,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
     });
 
@@ -824,12 +781,12 @@ describe('ContentService', () => {
   });
 
   describe('#convertContentsToContentsResponse', () => {
-    let contents: ContentDocument[];
+    let contents: Content[];
 
     beforeAll(async () => {
       const contentDto = {
         type: 'short',
-        payload: { message: 'message' }
+        payload: { message: 'message' },
       } as SaveContentDto;
 
       contents = await service.createContentsFromAuthor(author, [contentDto]);
@@ -861,21 +818,21 @@ describe('ContentService', () => {
   });
 
   describe('#deleteContentFromOriginalAndAuthor', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(2, 0, {
         userService: userService,
-        accountService: authService
+        accountService: authService,
       });
 
       //userA create a content
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
-          message: 'hello world'
+          message: 'hello world',
         } as ShortPayload,
         type: ContentType.Short,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
     });
 
@@ -895,21 +852,21 @@ describe('ContentService', () => {
   });
 
   describe('#getContentFromOriginalPost', () => {
-    let contentA: ContentDocument;
+    let contentA: Content;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(5, 0, {
         userService: userService,
-        accountService: authService
+        accountService: authService,
       });
 
       //userA create a content
       contentA = await service.createContentFromUser(mockUsers[0].user, {
         payload: {
-          message: 'hello world'
+          message: 'hello world',
         } as ShortPayload,
         type: ContentType.Short,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
 
       await service.recastContentFromUser(contentA, mockUsers[1].user);
