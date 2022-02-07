@@ -28,8 +28,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { PageVerified, SocialProvider, UserVerified } from '../models';
-import { Wallet } from '../models/wallet.model';
+import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 

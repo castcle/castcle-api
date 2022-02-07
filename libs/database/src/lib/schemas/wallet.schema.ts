@@ -21,29 +21,17 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
-import { Transaction, User } from '../schemas';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { WalletType } from '../models';
 
-@Injectable()
-export class TransactionService {
-  constructor(
-    @InjectModel('Transaction')
-    private transactionModel: Model<Transaction>
-  ) {}
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class Wallet {
+  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
+  account: string;
 
-  /**
-   * Get user's balance
-   * @param {User}
-   */
-  getUserBalance = async (user: User) => {
-    const getBalanceResponses =
-      await this.transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(String(user.ownerAccount))
-      );
-
-    return Number(getBalanceResponses[0].total.toString());
-  };
+  @Prop({ type: String })
+  type: WalletType;
 }
+
+export const WalletSchema = SchemaFactory.createForClass(Wallet);

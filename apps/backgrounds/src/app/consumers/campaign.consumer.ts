@@ -30,20 +30,21 @@ import { Queue } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { TopicName } from '@castcle-api/utils/queue';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { OnApplicationBootstrap } from '@nestjs/common';
 import { Job, Queue as BullQueue } from 'bull';
 
 @Processor(TopicName.Campaigns)
-export class CampaignConsumer implements OnApplicationBootstrap {
+export class CampaignConsumer {
   private logger = new CastLogger(CampaignConsumer.name);
 
   constructor(
     @InjectQueue(TopicName.Campaigns)
     private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>,
     private campaignService: CampaignService
-  ) {}
+  ) {
+    this.addQueues();
+  }
 
-  async onApplicationBootstrap() {
+  async addQueues() {
     await this.campaignQueue.empty();
 
     const queues = await this.campaignService.getRemainingQueues(
@@ -52,9 +53,7 @@ export class CampaignConsumer implements OnApplicationBootstrap {
 
     await this.campaignQueue.addBulk(queues);
 
-    this.logger.log(
-      `#onApplicationBootstrap\n${JSON.stringify(queues, null, 2)}`
-    );
+    this.logger.log(`#addQueues\n${JSON.stringify(queues, null, 2)}`);
   }
 
   @Process()
