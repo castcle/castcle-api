@@ -22,7 +22,6 @@
  */
 
 import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { CronExpression } from '@nestjs/schedule';
 import { Configs } from './configs';
 import * as dotenv from 'dotenv';
 
@@ -146,12 +145,6 @@ export const Environment = {
   FEED_DECAY_DAYS: process.env.FEED_DECAY_DAYS
     ? Number(process.env.FEED_DECAY_DAYS)
     : Configs.Feed.DecayDays,
-  /**
-   * Run campaign rewards calculation within a specified interval.
-   * @default "0 *\/30 * * * *" Every 30 minutes
-   */
-  CAMPAIGNS_CRON_EXPRESSION:
-    process.env.CAMPAIGNS_CRON_EXPRESSION || CronExpression.EVERY_30_MINUTES,
 
   /**
    * Number of digits after the decimal point
