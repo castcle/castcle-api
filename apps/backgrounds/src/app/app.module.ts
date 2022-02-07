@@ -31,7 +31,6 @@ import { CampaignConsumer } from './consumers/campaign.consumer';
 import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
 import { UserConsumer } from './consumers/user.consumer';
-import { CampaignScheduler } from './schedulers/campaign.scheduler';
 
 @Module({
   imports: [
@@ -50,7 +49,6 @@ import { CampaignScheduler } from './schedulers/campaign.scheduler';
   ],
   providers: [
     CampaignConsumer,
-    CampaignScheduler,
     ContentConsumer,
     NotificationConsumer,
     UserConsumer,
