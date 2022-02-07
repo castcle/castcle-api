@@ -53,6 +53,7 @@ import {
   UserSchemaFactory,
   UxEngagementSchema,
 } from './schemas';
+import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
@@ -89,6 +90,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Transaction', schema: TransactionSchema },
+  { name: 'DefaultContent', schema: DefaultContentSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
