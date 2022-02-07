@@ -21,22 +21,4 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { CastcleBase } from './base.schema';
-
-export type FeatureDocument = Feature & Document;
-
-@Schema({ timestamps: true })
-export class Feature extends CastcleBase {
-  @Prop({ required: true, type: Object })
-  objectRef: any;
-
-  @Prop({ required: true })
-  tag: string;
-
-  @Prop({ required: true })
-  value: string;
-}
-
-export const FeatureSchema = SchemaFactory.createForClass(Feature);
+export * from './suggestion.service';

@@ -33,13 +33,12 @@ export class NotificationProducer {
   constructor(@InjectQueue(TopicName.Notifications) private queue: Queue) {}
 
   /**
-   * send notofication message to queue
-   * @param {NotificationMessage} NotificationMessage notofication message
-   * @returns {}
+   * send notification message to queue
+   * @param {NotificationMessage} NotificationMessage notification message
    */
   async sendMessage(message: NotificationMessage) {
     await this.queue.add({
-      notification: message
+      notification: message,
     });
     this.logger.log(`produce message '${JSON.stringify(message)}' `);
   }

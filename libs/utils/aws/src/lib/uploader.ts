@@ -153,7 +153,7 @@ export class Uploader {
           Bucket: this.bucket,
           Body: buffer,
           Key: `${this.destination}/${saveName}`,
-          ContentType: options.contentType
+          ContentType: options.contentType,
         })
         .promise();
     } catch (error) {

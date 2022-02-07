@@ -24,7 +24,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  NestInterceptor
+  NestInterceptor,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';

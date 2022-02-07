@@ -31,6 +31,6 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [DatabaseModule, HttpModule, UtilsAwsModule],
   controllers: [YoutubeController],
-  providers: [YoutubeSubscriptionsService, YoutubeWebhookService]
+  providers: [YoutubeSubscriptionsService, YoutubeWebhookService],
 })
 export class YoutubeModule {}

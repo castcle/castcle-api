@@ -41,9 +41,9 @@ import { HealthyModule } from '@castcle-api/healthy';
     UtilsInterceptorsModule,
     UtilsQueueModule,
     UtilsCacheModule,
-    UtilsPipesModule
+    UtilsPipesModule,
   ],
   controllers: [ContentController, CommentController],
-  providers: [AppService]
+  providers: [AppService],
 })
 export class ContentModule {}

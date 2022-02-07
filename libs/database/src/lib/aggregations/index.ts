@@ -21,26 +21,6 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { MongooseModuleOptions } from '@nestjs/mongoose';
-
-export const getMongoOptions = (): MongooseModuleOptions => ({
-  ...env.DB_OPTIONS,
-  uri: env.DB_URI
-});
-
-export const env = {
-  DB_TEST_IN_DB: Environment?.DB_TEST_IN_DB || false,
-  DB_URI: Environment?.DB_PASSWORD
-    ? Environment.DB_URI
-    : 'mongodb://localhost:27017/test',
-  DB_OPTIONS: Environment?.DB_OPTIONS || {},
-  JWT_REFRESH_EXPIRES_IN: Environment?.JWT_REFRESH_EXPIRES_IN || '18000',
-  JWT_ACCESS_EXPIRES_IN: Environment?.JWT_ACCESS_EXPIRES_IN || '6001',
-  JWT_VERIFY_EXPIRES_IN: Environment?.JWT_VERIFY_EXPIRES_IN || '6002',
-  JWT_ACCESS_SECRET: Environment?.JWT_ACCESS_SECRET || 'secretna',
-  JWT_REFRESH_SECRET: Environment?.JWT_REFRESH_SECRET || 'secretjing',
-  JWT_VERIFY_SECRET: Environment?.JWT_VERIFY_SECRET || 'secretlen',
-  OTP_DIGITS: Environment?.OTP_DIGITS || 8,
-  OPT_EXPIRES_IN: Environment?.OPT_EXPIRES_IN || 60
-};
+export * from './content.aggregation';
+export * from './get-balance.aggregation';
+export * from './get-eligible-accounts.aggregation';

@@ -24,7 +24,7 @@
 export enum YoutubeThumbnailQuality {
   HQ = 'hqdefault',
   MQ = 'mqdefault',
-  SD = 'sddefault'
+  SD = 'sddefault',
 }
 
 export class Youtube {

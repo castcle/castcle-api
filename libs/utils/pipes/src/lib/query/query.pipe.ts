@@ -22,7 +22,7 @@
  */
 import {
   DEFAULT_QUERY_OPTIONS,
-  NotificationSource
+  NotificationSource,
 } from '@castcle-api/database/dtos';
 import { Injectable, PipeTransform } from '@nestjs/common';
 
@@ -31,7 +31,7 @@ export const LIMIT_MAX = 1000;
 
 export enum SortByEnum {
   Desc = 'desc',
-  Asc = 'asc'
+  Asc = 'asc',
 }
 
 /**
@@ -52,7 +52,7 @@ export class SortByPipe implements PipeTransform {
           sortByResult[1] === SortByEnum.Desc
             ? SortByEnum.Desc
             : SortByEnum.Asc,
-        field: sortByResult[2]
+        field: sortByResult[2],
       };
     }
   }

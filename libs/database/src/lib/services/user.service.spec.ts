@@ -21,127 +21,84 @@
  * or have any questions.
  */
 
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
-  ShortPayload
+  ShortPayload,
 } from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  Pagination
+  Pagination,
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
-import { env } from '../environment';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { CommentDocument, ContentDocument } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { UserDocument } from '../schemas/user.schema';
+import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 
-jest.mock('@castcle-api/logger');
-jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn() })
-}));
-
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380
-  },
-  processors: [fakeProcessor]
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('User Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentService;
-
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ];
-  const providers = [
-    UserService,
-    AuthenticationService,
-    ContentService,
-    CommentService,
-    UserProducer,
-    HashtagService
-  ];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
+
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        UserService,
+        AuthenticationService,
+        ContentService,
+        CommentService,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
-    contentService = module.get<ContentService>(ContentService);
-    commentService = module.get(CommentService);
+
+    service = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
+    contentService = app.get<ContentService>(ContentService);
+    commentService = app.get(CommentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
   });
+
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#getUserFromCredential()', () => {
@@ -162,50 +119,50 @@ describe('User Service', () => {
         overview: 'this is short overview',
         images: {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           cover: {
-            original: 'http://placehold.it/200x200'
-          }
+            original: 'http://placehold.it/200x200',
+          },
         },
         links: {
           website: 'https://djjam.app',
           facebook: 'https://facebook.com/modernduck',
           medium: 'https://medium.com/xbcd',
           twitter: 'https://twitter.com/npop',
-          youtube: ' https://youtube.com/channel/abcd'
-        }
+          youtube: ' https://youtube.com/channel/abcd',
+        },
       } as UpdateModelUserDto;
       const FullDTO = {
         dob: '1987-01-01',
         overview: 'long overview',
         images: {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           cover: {
-            original: 'http://placehold.it/200x200'
-          }
+            original: 'http://placehold.it/200x200',
+          },
         },
         links: {
           website: 'https://ddjjam.app',
           facebook: 'https://facebook.com/modernduck1',
           medium: 'https://medium.com/xbcd2',
           twitter: 'https://twitter.com/npop3',
-          youtube: ' https://youtube.com/channel/abcd4'
-        }
+          youtube: ' https://youtube.com/channel/abcd4',
+        },
       } as UpdateModelUserDto;
       const userFromCredential = await service.getUserFromCredential(
         result.credentialDocument
       );
       expect((await userFromCredential.toUserResponse()).dob).toBeNull();
       let updatingUser = await service.updateUser(userFromCredential, {
-        dob: partialDTO.dob
+        dob: partialDTO.dob,
       });
       expect(updatingUser.profile.birthdate).toEqual(partialDTO.dob);
       expect((await updatingUser.toUserResponse()).dob).toEqual(partialDTO.dob);
       updatingUser = await service.updateUser(userFromCredential, {
-        overview: partialDTO.overview
+        overview: partialDTO.overview,
       });
       expect((await updatingUser.toUserResponse()).overview).toEqual(
         partialDTO.overview
@@ -214,8 +171,8 @@ describe('User Service', () => {
         images: partialDTO.images,
         links: {
           website: partialDTO.links.website,
-          facebook: partialDTO.links.facebook
-        }
+          facebook: partialDTO.links.facebook,
+        },
       });
       expect(updatingUser.profile.images.avatar).toEqual(
         partialDTO.images.avatar
@@ -226,7 +183,7 @@ describe('User Service', () => {
       expect((await updatingUser.toUserResponse()).images).toBeDefined();
       expect((await updatingUser.toUserResponse()).links).toEqual({
         website: partialDTO.links.website,
-        facebook: partialDTO.links.facebook
+        facebook: partialDTO.links.facebook,
       });
       updatingUser = await service.updateUser(userFromCredential, FullDTO);
       const fullResponse = await updatingUser.toUserResponse();
@@ -243,7 +200,7 @@ describe('User Service', () => {
       );
       const page = await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
-        castcleId: 'npop'
+        castcleId: 'npop',
       });
       expect(page.type).toEqual('page');
       expect(page.ownerAccount).toEqual(currentUser.ownerAccount);
@@ -257,9 +214,9 @@ describe('User Service', () => {
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
       expect(allPages.pagination.limit).toEqual(25);
-      const page = await service.createPageFromUser(currentUser, {
+      await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
-        castcleId: 'npop2'
+        castcleId: 'npop2',
       });
       const allPages2 = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages2.items.length).toEqual(2);
@@ -279,9 +236,9 @@ describe('User Service', () => {
     });
   });
   describe('#follow()', () => {
-    let currentUser: UserDocument;
+    let currentUser: User;
     let allPages: {
-      items: UserDocument[];
+      items: User[];
       pagination: Pagination;
     };
     beforeAll(async () => {
@@ -295,9 +252,9 @@ describe('User Service', () => {
       expect(allPages.items[0].followerCount).toEqual(0);
       //test follow
       await currentUser.follow(allPages.items[0]);
-      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      const afterFollowUser = await service.getByIdOrCastcleId(currentUser._id);
       expect(afterFollowUser.followedCount).toEqual(1);
-      const page = await service.getUserFromId(allPages.items[0]._id);
+      const page = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page.followerCount).toEqual(1);
       const relationship = await service._relationshipModel
         .findOne({ user: afterFollowUser._id, followedUser: page._id })
@@ -309,33 +266,33 @@ describe('User Service', () => {
       expect(relationship.blocking).toBeFalsy();
     });
     it('should not have 2 records if you double follow', async () => {
-      const postUser = await service.getUserFromId(currentUser._id);
-      const postPage = await service.getUserFromId(allPages.items[0]._id);
+      const postUser = await service.getByIdOrCastcleId(currentUser._id);
+      const postPage = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(postUser.followedCount).toEqual(1);
       expect(postPage.followerCount).toEqual(1);
       await postUser.follow(postPage);
-      const postUser2 = await service.getUserFromId(currentUser._id);
-      const postPage2 = await service.getUserFromId(allPages.items[0]._id);
+      const postUser2 = await service.getByIdOrCastcleId(currentUser._id);
+      const postPage2 = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(postUser2.followedCount).toEqual(1);
       expect(postPage2.followerCount).toEqual(1);
     });
   });
   describe('#unfollow()', () => {
     it('should work the same as follow', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages: {
-        items: UserDocument[];
+        items: User[];
         pagination: Pagination;
       } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(currentUser.followedCount).toEqual(1); //from above
       expect(allPages.items[0].followerCount).toEqual(1);
       //try unfollow
       await currentUser.unfollow(allPages.items[0]);
-      const afterFollowUser = await service.getUserFromId(currentUser._id);
+      const afterFollowUser = await service.getByIdOrCastcleId(currentUser._id);
       expect(afterFollowUser.followedCount).toEqual(0);
-      const page = await service.getUserFromId(allPages.items[0]._id);
+      const page = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page.followerCount).toEqual(0);
       const relationship = await service._relationshipModel
         .findOne({ user: afterFollowUser._id, followedUser: page._id })
@@ -343,9 +300,11 @@ describe('User Service', () => {
       expect(relationship).toBeNull();
       //try double unfollow
       await currentUser.unfollow(allPages.items[0]);
-      const afterFollowUser2 = await service.getUserFromId(currentUser._id);
+      const afterFollowUser2 = await service.getByIdOrCastcleId(
+        currentUser._id
+      );
       expect(afterFollowUser.followedCount).toEqual(0);
-      const page2 = await service.getUserFromId(allPages.items[0]._id);
+      const page2 = await service.getByIdOrCastcleId(allPages.items[0]._id);
       expect(page2.followerCount).toEqual(0);
       const relationship2 = await service._relationshipModel
         .findOne({ user: afterFollowUser2._id, followedUser: page2._id })
@@ -355,11 +314,11 @@ describe('User Service', () => {
   });
   describe('#getFollower()', () => {
     it('should get user detail from followers', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages: {
-        items: UserDocument[];
+        items: User[];
         pagination: Pagination;
       } = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       await currentUser.follow(allPages.items[0]);
@@ -378,7 +337,7 @@ describe('User Service', () => {
   //TODO !!! Need better testing and mock data
   describe('#getFollowing()', () => {
     it('should get total of following correctly', async () => {
-      const currentUser: UserDocument = await service.getUserFromCredential(
+      const currentUser: User = await service.getUserFromCredential(
         result.credentialDocument
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
@@ -393,33 +352,33 @@ describe('User Service', () => {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop',
         displayName: 'npop',
         email: 'sompop.k@gmail.com',
-        password: '123456789'
+        password: '123456789',
       },
       pages: [
         {
           avatar: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
           castcleId: 'test-12345',
           cover: {
-            original: 'http://placehold.it/200x200'
+            original: 'http://placehold.it/200x200',
           },
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
 
-    let userA: UserDocument;
-    let pageA: UserDocument;
-    let accountA: AccountDocument;
+    let userA: User;
+    let pageA: User;
+    let accountA: Account;
     beforeAll(async () => {
       //create new user
       const result = await authService.createAccount(
@@ -431,17 +390,17 @@ describe('User Service', () => {
       pageA = await service.createPageFromUser(userA, userInfo.pages[0]);
     });
     describe('#deactive()', () => {
-      let postUserAFromModel: UserDocument;
-      let postUserA: UserDocument;
-      let postPageAFromModel: UserDocument;
-      let postPageA: UserDocument;
-      let postAccountA: AccountDocument;
+      let postUserAFromModel: User;
+      let postUserA: User;
+      let postPageAFromModel: User;
+      let postPageA: User;
+      let postAccountA: Account;
       beforeAll(async () => {
         await service.deactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getUserFromId(userA._id);
+        postUserA = await service.getByIdOrCastcleId(userA._id);
         postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getUserFromId(pageA._id);
+        postPageA = await service.getByIdOrCastcleId(pageA._id);
         postAccountA = await authService._accountModel.findById(accountA._id);
       });
       it('should set status user to delete', async () => {
@@ -457,17 +416,17 @@ describe('User Service', () => {
       });
     });
     describe('#reactive()', () => {
-      let postUserAFromModel: UserDocument;
-      let postUserA: UserDocument;
-      let postPageAFromModel: UserDocument;
-      let postPageA: UserDocument;
-      let postAccountA: AccountDocument;
+      let postUserAFromModel: User;
+      let postUserA: User;
+      let postPageAFromModel: User;
+      let postPageA: User;
+      let postAccountA: Account;
       beforeAll(async () => {
         await service.reactive(userA);
         postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getUserFromId(userA._id);
+        postUserA = await service.getByIdOrCastcleId(userA._id);
         postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getUserFromId(pageA._id);
+        postPageA = await service.getByIdOrCastcleId(pageA._id);
         postAccountA = await authService._accountModel.findById(accountA._id);
       });
       it('should set status user to publish', async () => {
@@ -484,86 +443,86 @@ describe('User Service', () => {
     });
   });
   describe('Deactivated', () => {
-    let userA: UserDocument;
-    let userB: UserDocument;
-    let accountB: AccountDocument;
-    let userNotDelete: UserDocument;
-    const contents: ContentDocument[] = [];
-    const contentsB: ContentDocument[] = [];
-    const fixContents: ContentDocument[] = [];
+    let userA: User;
+    let userB: User;
+    let accountB: Account;
+    let userNotDelete: User;
+    const contents: Content[] = [];
+    const contentsB: Content[] = [];
+    const fixContents: Content[] = [];
     const userInfo = {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop2',
         displayName: 'npop2',
         email: 'sompop.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testC2345',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
     const userOverAllInfo = {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop7',
         displayName: 'npop7',
         email: 'sompop7.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testC2347',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12347'
-        } as PageDto
-      ]
+          displayName: 'hello12347',
+        } as PageDto,
+      ],
     };
     const userNotDeleteInfo = {
       accountRequirement: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
         header: {
-          platform: 'iOs'
+          platform: 'iOs',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: 'npop3',
         displayName: 'npop3',
         email: 'sompop3.kulapalanont@gmail.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
       pages: [
         {
           avatar: 'http:/placehold.it/200x200',
           castcleId: 'testYoC2345',
           cover: 'http:/placehold.it/200x200',
-          displayName: 'hello12345'
-        } as PageDto
-      ]
+          displayName: 'hello12345',
+        } as PageDto,
+      ],
     };
-    let testLikeComment: CommentDocument;
+    let testLikeComment: Comment;
 
     beforeAll(async () => {
       const result = await authService.createAccount(
@@ -605,31 +564,31 @@ describe('User Service', () => {
       contents[0] = await contentService.createContentFromUser(userA, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short1'
+          message: 'this is short1',
         } as ShortPayload,
-        castcleId: userA.displayId
+        castcleId: userA.displayId,
       });
       contents[1] = await contentService.createContentFromUser(userA, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short2'
+          message: 'this is short2',
         } as ShortPayload,
-        castcleId: userA.displayId
+        castcleId: userA.displayId,
       });
       //b
       contentsB[0] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short1'
+          message: 'this is short1',
         } as ShortPayload,
-        castcleId: userB.displayId
+        castcleId: userB.displayId,
       });
       contentsB[1] = await contentService.createContentFromUser(userB, {
         type: ContentType.Short,
         payload: {
-          message: 'this is short2'
+          message: 'this is short2',
         } as ShortPayload,
-        castcleId: userB.displayId
+        castcleId: userB.displayId,
       });
 
       fixContents[0] = await contentService.createContentFromUser(
@@ -637,9 +596,9 @@ describe('User Service', () => {
         {
           type: ContentType.Short,
           payload: {
-            message: 'this is short1'
+            message: 'this is short1',
           } as ShortPayload,
-          castcleId: userNotDelete.displayId
+          castcleId: userNotDelete.displayId,
         }
       );
 
@@ -648,9 +607,9 @@ describe('User Service', () => {
         {
           type: ContentType.Short,
           payload: {
-            message: 'this is short2'
+            message: 'this is short2',
           } as ShortPayload,
-          castcleId: userNotDelete.displayId
+          castcleId: userNotDelete.displayId,
         }
       );
 
@@ -660,10 +619,10 @@ describe('User Service', () => {
         { message: 'testLikeComment' }
       );
       await contentService.createCommentForContent(userA, fixContents[0], {
-        message: 'test Comment'
+        message: 'test Comment',
       });
       await contentService.createCommentForContent(userB, fixContents[0], {
-        message: 'test Comment'
+        message: 'test Comment',
       });
 
       await contentService.likeContent(fixContents[0], userA);
@@ -776,7 +735,7 @@ describe('User Service', () => {
     beforeAll(async () => {
       mocksUsers = await generateMockUsers(5, 2, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
       await service.follow(mocksUsers[1].user, mocksUsers[0].user);
       await service.follow(mocksUsers[2].user, mocksUsers[0].user);
@@ -792,11 +751,15 @@ describe('User Service', () => {
         'mock',
         {
           limit: 5,
-          page: 1
+          page: 1,
         }
       );
-      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
-      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      const updatedUser = await service.getByIdOrCastcleId(
+        mocksUsers[0].user._id
+      );
+      const updatedUser2 = await service.getByIdOrCastcleId(
+        mocksUsers[1].user._id
+      );
       expect(mentions.users.length).toEqual(5);
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
@@ -809,12 +772,16 @@ describe('User Service', () => {
         '',
         {
           limit: 2,
-          page: 1
+          page: 1,
         }
       );
       expect(mentions.users.length).toEqual(2);
-      const updatedUser = await service.getUserFromId(mocksUsers[0].user._id);
-      const updatedUser2 = await service.getUserFromId(mocksUsers[1].user._id);
+      const updatedUser = await service.getByIdOrCastcleId(
+        mocksUsers[0].user._id
+      );
+      const updatedUser2 = await service.getByIdOrCastcleId(
+        mocksUsers[1].user._id
+      );
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
       expect(mentions.users[1]).toEqual(await updatedUser2.toUserResponse());
@@ -823,13 +790,13 @@ describe('User Service', () => {
   });
 
   describe('#blockUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -843,7 +810,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' }
+        response: { code: '4001' },
       });
     });
 
@@ -872,13 +839,13 @@ describe('User Service', () => {
   });
 
   describe('#unblockUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -892,7 +859,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to unblock is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' }
+        response: { code: '4001' },
       });
     });
 
@@ -919,13 +886,13 @@ describe('User Service', () => {
   });
 
   describe('#reportUser', () => {
-    let user1: UserDocument;
-    let user2: UserDocument;
+    let user1: User;
+    let user2: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(2, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user1 = mocksUsers[0].user;
@@ -954,12 +921,12 @@ describe('User Service', () => {
   });
 
   describe('#getByIdOrCastcleId', () => {
-    let user: UserDocument;
+    let user: User;
 
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user = mocksUsers[0].user;
@@ -989,12 +956,12 @@ describe('User Service', () => {
   });
 
   describe('#updateMobile', () => {
-    let user: UserDocument;
-    let account: AccountDocument;
+    let user: User;
+    let account: Account;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
       user = mocksUsers[0].user;
@@ -1006,29 +973,27 @@ describe('User Service', () => {
     });
 
     it('should update mobile and verify user and account', async () => {
-      const conutryCode = '+66';
+      const countryCode = '+66';
       const mobile = '0814567890';
-      await service.updateMobile(user._id, account._id, conutryCode, mobile);
-      const userUpdate = await service.getUserFromId(user.id);
+      await service.updateMobile(user, account._id, countryCode, mobile);
+      const userUpdate = await service.getByIdOrCastcleId(user.id);
       const accountUpdate = await authService.getAccountFromId(account.id);
 
       expect(userUpdate).not.toBeNull();
       expect(userUpdate.verified.mobile).toBeTruthy();
-      expect(accountUpdate.mobile.countryCode).toEqual(conutryCode);
+      expect(accountUpdate.mobile.countryCode).toEqual(countryCode);
       expect(accountUpdate.mobile.number).toEqual(mobile);
     });
   });
 
   describe('#userSettings', () => {
-    let user: UserDocument;
-    let account: AccountDocument;
+    let account: Account;
     beforeAll(async () => {
       const mocksUsers = await generateMockUsers(1, 0, {
         userService: service,
-        accountService: authService
+        accountService: authService,
       });
 
-      user = mocksUsers[0].user;
       account = mocksUsers[0].account;
     });
 
@@ -1036,13 +1001,38 @@ describe('User Service', () => {
       await service._userModel.deleteMany({});
     });
 
-    it('should update mobile and verify user and account', async () => {
+    it('should update settings and verify user and account', async () => {
       const expectResult = ['th', 'en'];
       await service.userSettings(account.id, expectResult);
       const accountUpdate = await authService.getAccountFromId(account.id);
 
       expect(accountUpdate).not.toBeNull();
       expect(accountUpdate.preferences.languages).toEqual(expectResult);
+    });
+  });
+
+  describe('#createPageFromSocialSync()', () => {
+    it('should create a new user that type page from SocialPageDto', async () => {
+      const page = await service.createPageFromSocial(
+        result.credentialDocument.account,
+        {
+          castcleId: 'synctest',
+          displayName: 'new Sync Page',
+          overview: 'sync facebook',
+          avatar: {
+            original: 'http://placehold.it/200x200',
+          },
+          cover: {
+            original: 'http://placehold.it/200x200',
+          },
+          links: {
+            facebook: 'https://facebook.com/test',
+          },
+          socialSyncs: true,
+        }
+      );
+      expect(page.type).toEqual('page');
+      expect(page.displayId).toEqual('synctest');
     });
   });
 });

@@ -20,57 +20,50 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { ContentAggregator } from '../aggregator/content.aggregator';
-import { Account } from './account.schema';
+import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
-import { ContentDocument } from './content.schema';
-import { FeedItemPayload } from '../dtos/feedItem.dto';
-import { EngagementDocument } from './engagement.schema';
-import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
 
-export type FeedItemDocument = FeedItem & IFeedItem;
+export enum AccountAuthenIdType {
+  Twitter = 'twitter',
+  Facebook = 'facebook',
+  Google = 'google',
+  Telegram = 'telegram',
+  Apple = 'apple',
+}
 
 @Schema({ timestamps: true })
-export class FeedItem extends CastcleBase {
+export class AccountAuthenId extends CastcleBase {
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Content',
-    index: true
+    ref: 'Account',
+    index: true,
   })
-  content: ContentDocument;
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  })
-  viewer: Account;
+  account: Account;
+
   @Prop({ required: true })
-  seen: boolean;
-  @Prop({ required: true })
-  called: boolean;
+  type: string;
 
   @Prop({
-    required: true,
-    type: Object
+    index: true,
   })
-  aggregator: ContentAggregator;
+  socialId: string;
+
+  @Prop()
+  socialToken: string;
+
+  @Prop()
+  socialSecretToken: string;
+
+  @Prop()
+  avatar: string;
+
+  @Prop()
+  displayName: string;
 }
 
-export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
-
-FeedItemSchema.index({ 'content.id': 1 });
-FeedItemSchema.index({
-  viewer: 1
-});
-
-export interface IFeedItem extends mongoose.Document {
-  toFeedItemPayload(engagements?: EngagementDocument[]): FeedItemPayload;
-  toFeedItemPayloadV2(engagements?: EngagementDocument[]): FeedItemPayloadItem;
-}
-
-export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
-  return FeedItemSchema;
-};
+export const AccountAuthenIdSchema =
+  SchemaFactory.createForClass(AccountAuthenId);

@@ -25,7 +25,7 @@ import {
   CacheInterceptor,
   CACHE_KEY_METADATA,
   ExecutionContext,
-  Injectable
+  Injectable,
 } from '@nestjs/common';
 
 @Injectable()

@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CommentType } from '../schemas/comment.schema';
+import { CommentType } from '../schemas';
 import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
 import { IncludeUser } from './content.dto';
 
@@ -38,17 +38,6 @@ export class CommentDto {
 
 export class UpdateCommentDto {
   message: string;
-}
-
-class Like {
-  count: number;
-  liked: boolean;
-  participant: {
-    type: 'people' | 'page'; // people or page
-    id: string; //userId
-    castcleId: string; // @castcle
-    displayName: string;
-  }[];
 }
 
 export class CommentPayload {

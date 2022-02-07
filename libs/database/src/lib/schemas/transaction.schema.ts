@@ -21,49 +21,29 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
-import { Account } from '../schemas/account.schema';
+import { SchemaTypes, Types } from 'mongoose';
 import { CastcleBase } from './base.schema';
-
-export type AccountAuthenIdDocument = AccountAuthenId & Document;
-
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple'
-}
+import { Wallet, WalletSchema } from './wallet.schema';
 
 @Schema({ timestamps: true })
-export class AccountAuthenId extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-    index: true
-  })
-  account: Account;
+export class Transaction extends CastcleBase {
+  @Prop({ type: WalletSchema, index: true })
+  from?: Wallet;
 
-  @Prop({ required: true })
-  type: string;
+  @Prop({ type: WalletSchema, index: true })
+  to?: Wallet;
 
   @Prop({
-    index: true
+    type: SchemaTypes.Decimal128,
+    get: (n: number) => n / Environment.DECIMALS,
+    set: (n: number) => (n * Environment.DECIMALS).toFixed(0),
   })
-  socialId: string;
+  value: Types.Decimal128;
 
   @Prop()
-  socialToken: string;
-
-  @Prop()
-  socialSecretToken: string;
-
-  @Prop()
-  avatar: string;
+  data?: string;
 }
 
-export const AccountAuthenIdSchema =
-  SchemaFactory.createForClass(AccountAuthenId);
+export const TransactionSchema = SchemaFactory.createForClass(Transaction);

@@ -7,7 +7,7 @@ import { usersApp } from '../variables';
 
 export const setupUsersModule = async () => {
   const moduleFixture = await Test.createTestingModule({
-    imports: [UserModule]
+    imports: [UserModule],
   }).compile();
 
   (usersApp as any) = moduleFixture.createNestApplication();
@@ -16,7 +16,7 @@ export const setupUsersModule = async () => {
   usersApp.useGlobalFilters(new ExceptionFilter());
   usersApp.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
   await usersApp.init();

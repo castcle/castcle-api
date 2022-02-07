@@ -20,58 +20,37 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   CountryService,
   MongooseAsyncFeatures,
-  MongooseForFeatures
+  MongooseForFeatures,
 } from '../database.module';
 import { CountryPayloadDto, SortDirection } from '../dtos';
-import { env } from '../environment';
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 describe('CountryService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: CountryService;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [CountryService];
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [CountryService],
     }).compile();
-    service = module.get<CountryService>(CountryService);
+    service = app.get<CountryService>(CountryService);
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#create and get all language', () => {
@@ -80,19 +59,19 @@ describe('CountryService', () => {
         code: 'TH',
         dialCode: '+66',
         name: 'Thailand',
-        flag: 'url'
+        flag: 'url',
       };
       const newCountry2: CountryPayloadDto = {
         code: 'US',
         dialCode: '+1',
         name: 'U.S.A.',
-        flag: 'url'
+        flag: 'url',
       };
       const newCountry3: CountryPayloadDto = {
         code: 'CN',
         dialCode: '+86',
         name: 'China',
-        flag: 'url'
+        flag: 'url',
       };
       const resultData = await service.create(newCountry);
       const resultData2 = await service.create(newCountry2);
@@ -116,8 +95,8 @@ describe('CountryService', () => {
       const result = await service.getAll({
         sortBy: {
           field: 'dialCode',
-          type: SortDirection.ASC
-        }
+          type: SortDirection.ASC,
+        },
       });
       expect(result).toBeDefined();
       expect(result[0].dialCode).toEqual('+1');

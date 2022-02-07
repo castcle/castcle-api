@@ -1,18 +1,28 @@
-import { AccountDocument, UserDocument } from '@castcle-api/database/schemas';
+import { Account, User } from '@castcle-api/database/schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export class Authorizer {
-  constructor(public account: AccountDocument, public user: UserDocument) {}
+  constructor(public account: Account, public user: User) {}
 
   /**
-   * permit if target user ID is `me` (case-insensitive) or same as user ID
-   * @param {string} targetUserId Target user ID to access
+   * permit if `accountId` to access is same as ID of authenticated account
+   * @param {string | ObjectId} accountId account ID to access
    */
-  requestAccessForUser(targetUserId: string) {
-    const isMe = targetUserId.toLowerCase() === 'me';
-    const isSameId = this.user.id === targetUserId;
-    const isSameCastcleId = this.user.displayId === targetUserId;
+  requestAccessForAccount(accountId: any) {
+    if (this.account.id === String(accountId)) return;
+
+    throw CastcleException.FORBIDDEN;
+  }
+
+  /**
+   * permit if `userId` to access is `me` (case-insensitive) or same as ID of authenticated user
+   * @param {string} userId user ID to access
+   */
+  requestAccessForUser(userId: string) {
+    const isMe = userId.toLowerCase() === 'me';
+    const isSameId = this.user.id === userId;
+    const isSameCastcleId = this.user.displayId === userId;
 
     if (isMe || isSameId || isSameCastcleId) return;
 

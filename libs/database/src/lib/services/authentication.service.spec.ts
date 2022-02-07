@@ -20,78 +20,81 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { Environment } from '@castcle-api/environments';
+import { UserProducer } from '@castcle-api/utils/queue';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
+import {
+  ContentService,
+  HashtagService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  UserService,
+} from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
-import { env } from '../environment';
-import { AccountAuthenIdDocument, OtpDocument, OtpObjective } from '../schemas';
-import { AccountDocument } from '../schemas/account.schema';
-import { AccountActivationDocument } from '../schemas/accountActivation.schema';
-import { AccountAuthenIdType } from '../schemas/accountAuthenId.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { UserDocument } from '../schemas/user.schema';
+import {
+  Account,
+  AccountActivation,
+  AccountAuthenId,
+  AccountAuthenIdType,
+  Credential,
+  Otp,
+  OtpObjective,
+  User,
+} from '../schemas';
 import {
   AuthenticationService,
   SignupRequirements,
-  SignupSocialRequirements
+  SignupSocialRequirements,
 } from './authentication.service';
 
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('Authentication Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: AuthenticationService;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [AuthenticationService];
+  let userService: UserService;
+
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        AuthenticationService,
+        UserService,
+        ContentService,
+        UserProducer,
+        HashtagService,
+      ],
     }).compile();
-    service = module.get<AuthenticationService>(AuthenticationService);
+
+    service = app.get(AuthenticationService);
+    userService = app.get(UserService);
   });
+
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
   describe('Onboarding', () => {
     let createAccountResult: {
-      accountDocument: AccountDocument;
-      credentialDocument: CredentialDocument;
+      accountDocument: Account;
+      credentialDocument: Credential;
     };
     let accountDocumentCountBefore: number;
-    let credentialDocumentCountBefore: number;
     const newDeviceUUID = '83b696d7-320b-4402-a412-d9cee10fc6a3';
+
     beforeAll(async () => {
       accountDocumentCountBefore = await service._accountModel
-        .countDocuments()
-        .exec();
-      credentialDocumentCountBefore = await service._credentialModel
         .countDocuments()
         .exec();
       createAccountResult = await service.createAccount({
@@ -99,8 +102,8 @@ describe('Authentication Service', () => {
         deviceUUID: newDeviceUUID,
         languagesPreferences: ['en', 'en'],
         header: {
-          platform: 'iOs'
-        }
+          platform: 'iOs',
+        },
       });
     });
 
@@ -109,21 +112,17 @@ describe('Authentication Service', () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          showAds: true
+          showAds: true,
         });
         expect(result.accessToken).toBeDefined();
         expect(typeof result.accessToken).toBe('string');
         expect(result.accessTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
-        const now = new Date();
-        const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_ACCESS_EXPIRES_IN) * 1000
-        );
+      it(`expire date should be in the next ${Environment.JWT_ACCESS_EXPIRES_IN} seconds`, () => {
         const result = service._generateAccessToken({
           id: 'randomid',
           role: 'guest',
-          showAds: true
+          showAds: true,
         });
         expect(result.accessTokenExpireDate).toBeDefined();
         //expect(result.accessTokenExpireDate).toEqual(expectedExpireDate);
@@ -133,19 +132,15 @@ describe('Authentication Service', () => {
     describe('#_generateRefreshToken()', () => {
       it('should return  refreshToken and refreshTokenExpireDate', () => {
         const result = service._generateRefreshToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.refreshToken).toBeDefined();
         expect(typeof result.refreshToken).toBe('string');
         expect(result.refreshTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
-        const now = new Date();
-        const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_REFRESH_EXPIRES_IN) * 1000
-        );
+      it(`expire date should be in the next ${Environment.JWT_REFRESH_EXPIRES_IN} seconds`, () => {
         const result = service._generateRefreshToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.refreshTokenExpireDate).toBeDefined();
         //expect(result.refreshTokenExpireDate).toEqual(expectedExpireDate);
@@ -155,20 +150,20 @@ describe('Authentication Service', () => {
     describe('#_generateEmailVerifyToken()', () => {
       it('should return  emailVerifyToken and emailVerifyTokenExpireDate', () => {
         const result = service._generateEmailVerifyToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.verifyToken).toBeDefined();
         expect(typeof result.verifyToken).toBe('string');
         expect(result.verifyTokenExpireDate).toBeDefined();
       });
-      it(`expire date should be in the next ${env.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
+      it(`expire date should be in the next ${Environment.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Number(env.JWT_VERIFY_EXPIRES_IN) * 1000
+          now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
         );
 
         const result = service._generateEmailVerifyToken({
-          id: 'randomid'
+          id: 'randomid',
         });
         expect(result.verifyTokenExpireDate.getMinutes()).toEqual(
           expectedExpireDate.getMinutes()
@@ -185,12 +180,10 @@ describe('Authentication Service', () => {
     describe('#createAccount()', () => {
       it('should create a new Account ', async () => {
         expect(createAccountResult.accountDocument).toBeDefined();
-        const currentAccountDocumentCount = await service._accountModel
+        const currentAccountCount = await service._accountModel
           .countDocuments()
           .exec();
-        expect(currentAccountDocumentCount - accountDocumentCountBefore).toBe(
-          1
-        );
+        expect(currentAccountCount - accountDocumentCountBefore).toBe(1);
       });
       it('should create a new Credential with account from above', () => {
         expect(createAccountResult.credentialDocument).toBeDefined();
@@ -199,8 +192,8 @@ describe('Authentication Service', () => {
           isGuest: createAccountResult.accountDocument.isGuest,
           visibility: EntityVisibility.Publish,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         }); //not sure how to  check
       });
       it('should create documents with all required properties', () => {
@@ -250,7 +243,7 @@ describe('Authentication Service', () => {
         //find a create account credential
         const credentialFromAccessToken = await service._credentialModel
           .findOne({
-            accessToken: createAccountResult.credentialDocument.accessToken
+            accessToken: createAccountResult.credentialDocument.accessToken,
           })
           .exec();
         expect(credentialFromAccessToken).toBeDefined();
@@ -329,33 +322,12 @@ describe('Authentication Service', () => {
           password: 'sompop2@Hello',
           isGuest: true,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromEmail(newlyInsertEmail);
         expect(result._id).toEqual(newAccountResult._id);
-      });
-    });
-
-    describe('#getUserFromId()', () => {
-      it('should return null if non id is exist in user', async () => {
-        const result = await service.getUserFromCastcleId('notFoundId');
-        expect(result).toBeNull();
-      });
-      it('should return an user when id is match', async () => {
-        const newUser = new service._userModel({
-          displayId: 'testNew',
-          displayName: 'testName',
-          type: 'people',
-          ownerAccount: createAccountResult.accountDocument._id
-        });
-        await newUser.save();
-        const result = await service.getUserFromCastcleId('testNew');
-        expect(result).not.toBeNull();
-        expect(result.displayId).toEqual(newUser.displayId);
-
-        expect(result.displayName).toEqual(newUser.displayName);
       });
     });
 
@@ -372,14 +344,14 @@ describe('Authentication Service', () => {
     });
 
     describe('#signupByEmail()', () => {
-      let signupResult: AccountActivationDocument;
-      let afterSaveAccount: AccountDocument;
-      let afterSaveUser: UserDocument;
+      let signupResult: AccountActivation;
+      let afterSaveAccount: Account;
+      let afterSaveUser: User;
       const signupRequirements: SignupRequirements = {
         displayId: 'dudethisisnew',
         displayName: 'Dudeee',
         email: 'sompopdude@dudedude.com',
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       };
       beforeAll(async () => {
         signupResult = await service.signupByEmail(
@@ -388,13 +360,13 @@ describe('Authentication Service', () => {
             displayId: 'dudethisisnew',
             displayName: 'Dudeee',
             email: signupRequirements.email,
-            password: signupRequirements.password
+            password: signupRequirements.password,
           }
         );
         afterSaveAccount = await service._accountModel.findById(
           createAccountResult.accountDocument._id
         );
-        afterSaveUser = await service.getUserFromCastcleId('dudethisisnew');
+        afterSaveUser = await userService.getByIdOrCastcleId('dudethisisnew');
       });
       it('should update email, password of current account', () => {
         expect(afterSaveAccount.email).toBe(signupRequirements.email);
@@ -414,21 +386,21 @@ describe('Authentication Service', () => {
     });
 
     describe('#verifyAccount()', () => {
-      let accountActivation: AccountActivationDocument;
+      let accountActivation: AccountActivation;
       let beforeVerifyAccount;
-      let afterVerifyAccount: AccountDocument;
-      let afterAccountActivation: AccountActivationDocument;
+      let afterVerifyAccount: Account;
+      let afterAccountActivation: AccountActivation;
       beforeAll(async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
-            id: 'randomId'
+            id: 'randomId',
           }
         );
         accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
           type: 'email',
           verifyToken: tokenResult.verifyToken,
-          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate,
         }).save();
         beforeVerifyAccount = { ...accountActivation };
         afterVerifyAccount = await service.verifyAccount(accountActivation);
@@ -459,14 +431,14 @@ describe('Authentication Service', () => {
       it('should update revocation date and verifyToken after called()', async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
-            id: 'randomId'
+            id: 'randomId',
           }
         );
         const accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
           type: 'email',
           verifyToken: tokenResult.verifyToken,
-          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate
+          verifyTokenExpireDate: tokenResult.verifyTokenExpireDate,
         }).save();
         expect(accountActivation.revocationDate).not.toBeDefined();
         const newActivation = await service.revokeAccountActivation(
@@ -484,9 +456,9 @@ describe('Authentication Service', () => {
           device: 'abc',
           deviceUUID: 'uuid1234',
           header: {
-            platform: 'ios'
+            platform: 'ios',
           },
-          languagesPreferences: ['en', 'en']
+          languagesPreferences: ['en', 'en'],
         });
         expect(randomAcc.accountDocument._id).not.toEqual(
           createAccountResult.accountDocument._id
@@ -501,10 +473,10 @@ describe('Authentication Service', () => {
           isGuest: false,
           visibility: EntityVisibility.Publish,
           preferences: {
-            languages: ['en', 'en']
+            languages: ['en', 'en'],
           },
           activateDate: undefined,
-          geolocation: null
+          geolocation: null,
         });
       });
     });
@@ -515,25 +487,27 @@ describe('Authentication Service', () => {
         expect(suggestName).toEqual('hellofriend');
       });
       it('should suggest a name + totalUser if the id is already exist', async () => {
-        const totalUser = await service._accountModel.countDocuments();
+        const totalUser = await service._userModel.countDocuments();
         const suggestName = await service.suggestCastcleId('Dude this is new');
         expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
       });
     });
 
     describe('#signupBySocial()', () => {
-      let signupResult: AccountAuthenIdDocument;
+      let signupResult: AccountAuthenId;
       let mockAccountResult: {
-        accountDocument: AccountDocument;
-        credentialDocument: CredentialDocument;
+        accountDocument: Account;
+        credentialDocument: Credential;
       };
       const signupRequirements: SignupSocialRequirements = {
         socialId: '7457356332',
         displayName: 'Dudeee Mock',
         provider: AccountAuthenIdType.Facebook,
-        avatar: '/image/test.jpg',
+        avatar: {
+          original: 'http://placehold.it/200x200',
+        },
         socialToken: 'testtoken',
-        socialSecretToken: ''
+        socialSecretToken: '',
       };
       beforeAll(async () => {
         mockAccountResult = await service.createAccount({
@@ -541,8 +515,8 @@ describe('Authentication Service', () => {
           deviceUUID: newDeviceUUID,
           languagesPreferences: ['en', 'en'],
           header: {
-            platform: 'iOs'
-          }
+            platform: 'iOs',
+          },
         });
         signupResult = await service.signupBySocial(
           mockAccountResult.accountDocument,
@@ -565,9 +539,9 @@ describe('Authentication Service', () => {
         expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
-        expect({
-          original: signupRequirements.avatar
-        }).toEqual(afterSaveUser[0].profile.images.avatar);
+        expect(signupRequirements.avatar.original).toEqual(
+          afterSaveUser[0].profile.images.avatar.original
+        );
         expect(signupRequirements.displayName).toEqual(
           afterSaveUser[0].displayName
         );
@@ -601,7 +575,7 @@ describe('Authentication Service', () => {
       it('should get social account from provider and social id', async () => {
         const twsocialId = '453455242';
         const fbsocialId = '453457890';
-        const result = await service.createAccountAuthenId(
+        await service.createAccountAuthenId(
           createAccountResult.accountDocument,
           AccountAuthenIdType.Facebook,
           fbsocialId,
@@ -640,12 +614,12 @@ describe('Authentication Service', () => {
           password: 'sompop234@Hello',
           mobile: {
             countryCode: '+66',
-            number: '0817896767'
+            number: '0817896767',
           },
           isGuest: true,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromMobile('817896767', '+66');
@@ -654,31 +628,29 @@ describe('Authentication Service', () => {
     });
 
     describe('#Otp Document', () => {
-      let account: AccountDocument = null;
+      let account: Account = null;
       const password = 'sompop234@Hello';
       const countryCodeTest = '+66';
       const numberTest = '0817896888';
-      let otp: OtpDocument = null;
+      let otp: Otp = null;
+
       beforeAll(async () => {
         const newlyInsertEmail = `${Math.ceil(
           Math.random() * 1000
-        )}@testinsert.com`;
+        )}@test-insert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
           password: password,
           mobile: {
             countryCode: countryCodeTest,
-            number: numberTest
+            number: numberTest,
           },
           isGuest: false,
           preferences: {
-            languages: ['en', 'en']
-          }
+            languages: ['en', 'en'],
+          },
         });
         account = await newAccount.save();
-      });
-
-      it('should generate otp successful', async () => {
         otp = await service.generateOtp(
           account,
           OtpObjective.ForgotPassword,
@@ -686,43 +658,52 @@ describe('Authentication Service', () => {
           'email',
           false
         );
-        expect(otp.refCode).toBeDefined;
+      });
+
+      it('should generate otp successful', async () => {
+        expect(otp.refCode).toBeDefined();
         expect(otp.isValid()).toEqual(true);
       });
+
       it('should found otp document that match with account and ref code', async () => {
         const result = await service.getOtpFromAccount(account, otp.refCode);
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with request id and objective', async () => {
         const result = await service.getAllOtpFromRequestIdObjective(
           account.id,
           OtpObjective.ForgotPassword
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with request id and ref code', async () => {
         const result = await service.getOtpFromRequestIdRefCode(
           account.id,
           otp.refCode
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should found otp document that match with ref code', async () => {
         const result = await service.getOtpFromRefCode(otp.refCode);
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
+
       it('should update retry otp document successful', async () => {
         await service.updateRetryOtp(otp);
         const result = await service.getOtpFromRefCode(otp.refCode);
         expect(result.retry).toEqual(1);
       });
+
       it('should update account password successful', async () => {
         const result = await service.changePassword(
           account,
           otp,
           'test1234@!gbn'
         );
-        expect(result).toBeDefined;
+        expect(result).toBeDefined();
       });
     });
   });

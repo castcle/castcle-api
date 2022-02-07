@@ -74,5 +74,5 @@ export const CastLoggerLevel: LogLevel[] = env.PRODUCTION
   : ['log', 'error', 'warn', 'debug', 'verbose'];
 export const CastLoggerOptions: ConsoleLoggerOptions = {
   logLevels: CastLoggerLevel,
-  timestamp: true
+  timestamp: true,
 };

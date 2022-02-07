@@ -20,56 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { env } from '../environment';
-import { UserType } from '../schemas/user.schema';
+import { UserType } from '../schemas';
 import { DEFAULT_TOP_TREND_QUERY_OPTIONS } from './../dtos/search.dto';
 import { HashtagService } from './hashtag.service';
 import { SearchService } from './search.service';
 
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
-
 describe('SearchService', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let hashtagService: HashtagService;
   let service: SearchService;
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures
-      ]
-    : [rootMongooseTestModule(), MongooseAsyncFeatures, MongooseForFeatures];
-  const providers = [HashtagService, SearchService];
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [HashtagService, SearchService],
     }).compile();
-    hashtagService = module.get<HashtagService>(HashtagService);
-    service = module.get<SearchService>(SearchService);
+
+    hashtagService = app.get<HashtagService>(HashtagService);
+    service = app.get<SearchService>(SearchService);
 
     const mockUser = async (name, type, follow) => {
       const user = new service._userModel({
@@ -77,7 +56,7 @@ describe('SearchService', () => {
         displayId: name,
         displayName: name,
         type: type,
-        followerCount: follow
+        followerCount: follow,
       });
       await user.save();
     };
@@ -87,9 +66,9 @@ describe('SearchService', () => {
         tag: slug,
         score: hScore,
         aggregator: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
-        name: hName
+        name: hName,
       };
       await hashtagService.create(newHashtag);
     };
@@ -132,7 +111,8 @@ describe('SearchService', () => {
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#getTopTrends', () => {
@@ -146,7 +126,7 @@ describe('SearchService', () => {
     it('should get top trend exclude hashtags', async () => {
       const result = await service.getTopTrends({
         limit: DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
-        exclude: 'hashtags'
+        exclude: 'hashtags',
       });
 
       expect(result.hashtags.length).toEqual(0);
@@ -156,7 +136,7 @@ describe('SearchService', () => {
     it('should get top trend exclude follows', async () => {
       const result = await service.getTopTrends({
         limit: DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
-        exclude: 'follows'
+        exclude: 'follows',
       });
       expect(result.hashtags.length).toEqual(10);
       expect(result.follows.length).toEqual(0);
@@ -164,7 +144,7 @@ describe('SearchService', () => {
 
     it('should get top trend with limit 20', async () => {
       const result = await service.getTopTrends({
-        limit: 20
+        limit: 20,
       });
       expect(result.hashtags.length).toEqual(20);
       expect(result.follows.length).toEqual(20);
@@ -172,7 +152,7 @@ describe('SearchService', () => {
 
     it('should get empty top trend with exclude all', async () => {
       const result = await service.getTopTrends({
-        exclude: 'follows,hashtags'
+        exclude: 'follows,hashtags',
       });
       expect(result.hashtags.length).toEqual(0);
       expect(result.follows.length).toEqual(0);

@@ -21,24 +21,31 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { Hashtag } from './hashtag.schema';
-import { CastcleBase } from './base.schema';
+import * as AWS from 'aws-sdk';
+import { Configs } from '@castcle-api/environments';
 
-export type ArchiveHashtagDocument = ArchiveHashtag & Document;
+type SuggestionType = {
+  statusCode: number;
+  predicted_at: string;
+  result: { userId: string; engagements: number; index: number }[];
+};
 
-@Schema({ timestamps: true })
-export class ArchiveHashtag extends CastcleBase {
-  @Prop({ required: true, type: Array })
-  hashtags: Hashtag[];
+export const predictSuggestion = (accountId: string) => {
+  const lambda = new AWS.Lambda({ region: 'us-east-1' });
 
-  @Prop({ required: true })
-  fromDate: Date;
+  return new Promise<SuggestionType>((resolve, reject) => {
+    console.time('Spend time on AWS lambda');
 
-  @Prop({ required: true })
-  toDate: Date;
-}
-
-export const ArchiveHashtagSchema =
-  SchemaFactory.createForClass(ArchiveHashtag);
+    lambda.invoke(
+      {
+        FunctionName: Configs.PredictSuggestionFunctionName,
+        InvocationType: 'RequestResponse',
+        Payload: JSON.stringify({ userId: accountId }),
+      },
+      (err, data) => {
+        console.timeEnd('Spend time on AWS lambda');
+        err ? reject(err) : resolve(JSON.parse(data.Payload as string));
+      }
+    );
+  });
+};

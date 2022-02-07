@@ -29,7 +29,7 @@ describe('CastLogger', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [CastLogger]
+      controllers: [CastLogger],
     }).compile();
 
     controller = module.get<CastLogger>(CastLogger);

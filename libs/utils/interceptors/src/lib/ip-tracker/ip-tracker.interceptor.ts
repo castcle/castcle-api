@@ -28,12 +28,12 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  NestInterceptor
+  NestInterceptor,
 } from '@nestjs/common';
 import { CredentialRequest } from '../..';
 import * as util from '../util';
 import { lastValueFrom, map } from 'rxjs';
-import { CredentialDocument } from '@castcle-api/database/schemas';
+import { Credential } from '@castcle-api/database/schemas';
 
 type CheckIp = {
   countryCode: string;
@@ -53,7 +53,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
   ) {}
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    let credential: CredentialDocument;
+    let credential: Credential;
     if (request.$credential)
       credential = (request as CredentialRequest).$credential;
     else if (request.body && request.body.deviceUUID) {
@@ -73,7 +73,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
             ({ data }) =>
               ({
                 continentCode: data.continentCode.toLowerCase(),
-                countryCode: data.countryCode.toLowerCase()
+                countryCode: data.countryCode.toLowerCase(),
               } as CheckIp)
           )
         )

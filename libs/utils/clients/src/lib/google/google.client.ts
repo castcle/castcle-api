@@ -53,11 +53,11 @@ export class GoogleClient {
   async getGoogleUserInfo(token: string) {
     const userInfoClient = google.oauth2('v2').userinfo;
     this.oauthClient.setCredentials({
-      access_token: token
+      access_token: token,
     });
 
     const userInfoResponse = await userInfoClient.get({
-      auth: this.oauthClient
+      auth: this.oauthClient,
     });
     return userInfoResponse.data;
   }

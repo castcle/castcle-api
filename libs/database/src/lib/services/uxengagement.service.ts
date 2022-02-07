@@ -25,32 +25,30 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { AccountDocument } from '../schemas/account.schema';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
-import { UxEngagementDocument } from '../schemas/uxengagement.schema';
-import { DsContentReachDocument } from '../schemas/ds-content-reach.schema';
+import { Account, UxEngagement, DsContentReach } from '../schemas';
 
 @Injectable()
 export class UxEngagementService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<AccountDocument>,
+    @InjectModel('Account') public _accountModel: Model<Account>,
     @InjectModel('UxEngagement')
-    public _uxEngagementModel: Model<UxEngagementDocument>,
+    public _uxEngagementModel: Model<UxEngagement>,
     @InjectModel('DsContentReach')
-    public _dsContentReachModel: Model<DsContentReachDocument>
+    public _dsContentReachModel: Model<DsContentReach>
   ) {}
 
   /**
-   * track data from info to UxEngagement collection by convert it to UxEnagementDto
+   * track data from info to UxEngagement collection by convert it to UxEngagementDto
    * convert timestamp to Date time
    * @param {UxEngagementBody} info
-   * @returns {UxEngagementDocument} return EngagementUx Document if could save
+   * @returns {UxEngagement} return EngagementUx Document if could save
    */
   async track(info: UxEngagementBody) {
     const uxDto = {
       ...info,
       account: mongoose.Types.ObjectId(info.accountId),
-      timestamp: new Date(Number(info.timestamp))
+      timestamp: new Date(Number(info.timestamp)),
     } as UxEngagementDto;
     const createResult = await new this._uxEngagementModel(uxDto).save();
     return createResult;
@@ -60,7 +58,7 @@ export class UxEngagementService {
    *
    * @param contentIds
    * @param userId
-   * @returns {DsContentReachDocument[]}
+   * @returns {DsContentReach[]}
    */
   async addReachToContents(contentIds: string[], userId: string) {
     console.log('contents', contentIds);
@@ -73,18 +71,18 @@ export class UxEngagementService {
    * Add reach to collection DsContentReach
    * @param contentId
    * @param userId
-   * @returns {DsContentReachDocument}
+   * @returns {DsContentReach}
    */
   async addReachToSingleContent(
     contentId: string,
     accountId: string
-  ): Promise<DsContentReachDocument> {
+  ): Promise<DsContentReach> {
     const newMappedAccount: any = {};
     newMappedAccount[accountId] = 1;
     const setOnInsert = {
       content: contentId,
       mappedAccount: newMappedAccount,
-      reachCount: 1
+      reachCount: 1,
     };
     console.log('setOnInsert', setOnInsert);
     const dsReach = await this._dsContentReachModel

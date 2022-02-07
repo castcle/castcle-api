@@ -44,7 +44,6 @@ export enum CastcleStatus {
   EXPIRED_OTP = '3009',
   LOCKED_OTP = '3010',
   INVALID_PASSWORD = '3011',
-  INVLAID_REFCODE = '3012',
   INVALID_ROLE = '3013',
   EMAIL_OR_PHONE_IS_EXIST = '3014',
   PAGE_IS_EXIST = '3015',
@@ -59,7 +58,7 @@ export enum CastcleStatus {
   PAYLOAD_TYPE_MISMATCH = '5002',
   RECAST_IS_EXIST = '5004',
   NOTIFICATION_NOT_FOUND = '6001',
-  SOMETHING_WRONG = '7001'
+  SOMETHING_WRONG = '7001',
 }
 
 interface ErrorStatus {
@@ -71,10 +70,10 @@ interface ErrorStatus {
 export class CastcleException extends HttpException {
   public errorStatus: ErrorStatus;
 
-  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'en') {
-    const error: ErrorStatus = LocalErrorMessage[language]
-      ? LocalErrorMessage[language][castcleStatus]
-      : ErrorMessages[castcleStatus];
+  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'default') {
+    const error: ErrorStatus =
+      LocalErrorMessage[language]?.[castcleStatus] ??
+      ErrorMessages[castcleStatus];
     super(error, Number(error.statusCode));
     this.errorStatus = error;
   }
@@ -89,6 +88,12 @@ export class CastcleException extends HttpException {
   static MISSING_AUTHORIZATION_HEADERS = new CastcleException('1002');
   static INVALID_ACCESS_TOKEN = new CastcleException('1003');
   static FORBIDDEN = new CastcleException('1007');
+  static INVALID_REF_CODE = new CastcleException('3012');
+  static MOBILE_NUMBER_ALREADY_EXISTS = new CastcleException('3018');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
+  static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
+  static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
+  static REACHED_MAX_CLAIMS = new CastcleException('4004');
+  static REWARD_IS_NOT_ENOUGH = new CastcleException('4005');
   static CONTENT_NOT_FOUND = new CastcleException('5003');
 }

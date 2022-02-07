@@ -52,8 +52,8 @@ export class YoutubeSubscriptionsService {
             'hub.mode': 'subscribe',
             'hub.topic': encodeURI(Youtube.feedUrlFromId(socialId)),
             'hub.verify_token': encodeURI(Environment.YOUTUBE_VERIFY_TOKEN),
-            'hub.callback': encodeURI(Environment.YOUTUBE_WEBHOOK_CALLBACK)
-          }
+            'hub.callback': encodeURI(Environment.YOUTUBE_WEBHOOK_CALLBACK),
+          },
         })
       );
 

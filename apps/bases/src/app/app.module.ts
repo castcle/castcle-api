@@ -23,6 +23,7 @@
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
@@ -32,6 +33,7 @@ import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { SuggestionService } from './services';
 
 @Module({
   imports: [
@@ -41,13 +43,15 @@ import { SearchesController } from './controllers/searches.controller';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsCacheModule,
-    UtilsQueueModule
+    UtilsQueueModule,
+    UtilsAwsModule,
   ],
   controllers: [
     PagesController,
     NotificationsController,
     FeedsController,
-    SearchesController
-  ]
+    SearchesController,
+  ],
+  providers: [SuggestionService],
 })
 export class BaseModule {}

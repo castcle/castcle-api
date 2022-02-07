@@ -32,7 +32,7 @@ import { YoutubeModule } from './youtube/youtube.module';
     HealthyModule,
     ScheduleModule.forRoot(),
     TwitterModule,
-    YoutubeModule
-  ]
+    YoutubeModule,
+  ],
 })
 export class AppModule {}

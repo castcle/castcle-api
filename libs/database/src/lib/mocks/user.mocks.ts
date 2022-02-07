@@ -23,7 +23,7 @@
 
 import { UserService } from '../services/user.service';
 import { AuthenticationService } from '../services/authentication.service';
-import { AccountDocument, CredentialDocument, UserDocument } from '../schemas';
+import { Account, Credential, User } from '../schemas';
 import { PageDto } from '../dtos/user.dto';
 
 type Models = {
@@ -50,10 +50,10 @@ type UserInfo = {
 };
 
 export type MockUserDetail = {
-  account: AccountDocument;
-  user: UserDocument;
-  pages: UserDocument[];
-  credential: CredentialDocument;
+  account: Account;
+  user: User;
+  pages: User[];
+  credential: Credential;
 };
 
 const _generatePageDto = (pagePerAccountAmount: number) => {
@@ -61,7 +61,7 @@ const _generatePageDto = (pagePerAccountAmount: number) => {
   for (let i = 0; i < pagePerAccountAmount; i++) {
     pageDtos[i] = {
       castcleId: `page-${i}-${new Date().getTime()}`,
-      displayName: `Page-${i}`
+      displayName: `Page-${i}`,
     };
   }
   return pageDtos;
@@ -84,17 +84,17 @@ const _generateUserInfos = (
         device: 'mock',
         deviceUUID: `mock-${Math.ceil(Math.random() * 10000)}-${i}`,
         header: {
-          platform: 'mock-os'
+          platform: 'mock-os',
         },
-        languagesPreferences: ['th', 'th']
+        languagesPreferences: ['th', 'th'],
       },
       signupRequirement: {
         displayId: `mock-${i}-${new Date().getTime()}`,
         displayName: `Mock-${i}`,
         email: `mock-${i}-${new Date().getTime()}@mockna.com`,
-        password: '2@HelloWorld'
+        password: '2@HelloWorld',
       },
-      pages: _generatePageDto(pagePerAccountAmount)
+      pages: _generatePageDto(pagePerAccountAmount),
     };
   }
   return userInfos;
@@ -120,11 +120,11 @@ export const generateMockUsers = async (
     const verifyAcc = await model.accountService.verifyAccount(
       accountActivation
     );
-    const user = await model.accountService.getUserFromCastcleId(
+    const user = await model.userService.getByIdOrCastcleId(
       info.signupRequirement.displayId
     );
 
-    const pages: UserDocument[] = [];
+    const pages: User[] = [];
     for (let i = 0; i < info.pages.length; i++) {
       pages.push(
         await model.userService.createPageFromUser(user, info.pages[i])
@@ -134,7 +134,7 @@ export const generateMockUsers = async (
       account: verifyAcc,
       user: user,
       pages: pages,
-      credential: result.credentialDocument
+      credential: result.credentialDocument,
     });
   }
   return mockUsers;

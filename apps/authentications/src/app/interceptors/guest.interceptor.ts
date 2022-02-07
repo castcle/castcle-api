@@ -24,7 +24,7 @@ import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   HeadersInterceptor,
-  HeadersRequest
+  HeadersRequest,
 } from '@castcle-api/utils/interceptors';
 
 type Geolocation = {

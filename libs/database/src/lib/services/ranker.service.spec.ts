@@ -21,136 +21,95 @@
  * or have any questions.
  */
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
-import { env } from '../environment';
+import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { RankerService } from './ranker.service';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 import { AuthenticationService } from './authentication.service';
-import {
-  AccountDocument,
-  ContentDocument,
-  CredentialDocument,
-  UserDocument
-} from '../schemas';
+import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
-import { DEFAULT_FEED_QUERY_OPTIONS } from '../dtos/feedItem.dto';
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
+
 jest.mock('@castcle-api/utils/aws', () => ({
-  predictContents: jest.fn((accountIds: string, contents: string[]) => {
+  predictContents: jest.fn((_: string, contents: string[]) => {
     const map: any = {};
     contents.forEach((item, index) => {
       map[item] = index + 1;
     });
     return map;
-  })
+  }),
 }));
-const fakeProcessor = jest.fn();
-const fakeBull = BullModule.registerQueue({
-  name: TopicName.Users,
-  redis: {
-    host: '0.0.0.0',
-    port: 6380
-  },
-  processors: [fakeProcessor]
-});
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
 
 describe('Ranker Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: RankerService;
   let contentService: ContentService;
   let userService: UserService;
   let authService: AuthenticationService;
-  let user: UserDocument;
-  let follower: UserDocument;
-  let followerAccount: AccountDocument;
-  const contents: ContentDocument[] = [];
-  console.log('test in real db = ', env.DB_TEST_IN_DB);
-  const importModules = env.DB_TEST_IN_DB
-    ? [
-        MongooseModule.forRoot(env.DB_URI, env.DB_OPTIONS),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ]
-    : [
-        rootMongooseTestModule(),
-        MongooseAsyncFeatures,
-        MongooseForFeatures,
-        fakeBull
-      ];
-  const providers = [
-    ContentService,
-    UserService,
-    AuthenticationService,
-    RankerService,
-    UserProducer,
-    HashtagService
-  ];
+  let user: User;
+  let follower: User;
+  let followerAccount: Account;
+  const contents: Content[] = [];
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
-  beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: importModules,
-      providers: providers
-    }).compile();
-    service = module.get<RankerService>(RankerService);
 
-    contentService = module.get<ContentService>(ContentService);
-    userService = module.get<UserService>(UserService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+  beforeAll(async () => {
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot(mongod.getUri()),
+        MongooseAsyncFeatures,
+        MongooseForFeatures,
+      ],
+      providers: [
+        ContentService,
+        UserService,
+        AuthenticationService,
+        RankerService,
+        UserProducer,
+        HashtagService,
+      ],
+    }).compile();
+
+    service = app.get<RankerService>(RankerService);
+    contentService = app.get<ContentService>(ContentService);
+    userService = app.get<UserService>(UserService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
     const followerResult = await authService.createAccount({
       deviceUUID: 'followerAbcde',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     await authService.signupByEmail(followerResult.accountDocument, {
       displayId: 'followerNa',
       displayName: 'followerNa002',
       email: 'sompop2.kulapalanont@gmail.com',
-      password: '2@Test12345678'
+      password: '2@Test12345678',
     });
     //let follower follow user
     follower = await userService.getUserFromCredential(
@@ -160,70 +119,87 @@ describe('Ranker Service', () => {
     followerAccount = await authService.getAccountFromEmail(
       'sompop2.kulapalanont@gmail.com'
     );
+    console.debug(followerAccount);
   });
 
   afterAll(async () => {
-    if (env.DB_TEST_IN_DB) await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
+
   describe('#getAndcreateFeedItemByCreateTime()', () => {
     const shortPayload: ShortPayload = {
-      message: 'this is test status'
+      message: 'this is test status',
     };
     const shortPayload2: ShortPayload = {
-      message: 'this is test status2'
+      message: 'this is test status2',
     };
     const shortPayload3: ShortPayload = {
-      message: 'this is test status3'
+      message: 'this is test status3',
     };
     const shortPayload4: ShortPayload = {
-      message: 'this is test status4'
+      message: 'this is test status4',
     };
     const shortPayload5: ShortPayload = {
-      message: 'this is test status5'
+      message: 'this is test status5',
     };
     beforeAll(async () => {
       contents[0] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[1] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload2,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[2] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload3,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
-      contents[2] = await contentService.createContentFromUser(user, {
+      contents[3] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload4,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
       contents[4] = await contentService.createContentFromUser(user, {
         type: ContentType.Short,
         payload: shortPayload5,
-        castcleId: user.displayId
+        castcleId: user.displayId,
       });
+      const contentIds = contents.map((item) => item.id);
+      console.log('contentIds', contentIds);
+      await service._defaultContentModel.insertMany(
+        contentIds.map((id, index) => ({
+          content: id,
+          index: index,
+        }))
+      );
     });
     it('should create feedItem after create a content', async () => {
       const totalFeedItem = await service._feedItemModel.countDocuments();
-      expect(totalFeedItem).toEqual(contents.length);
+      expect(totalFeedItem).toEqual(0);
       const feedItems = await service._feedItemModel.find().exec();
-      expect(feedItems.length).toEqual(contents.length);
+      expect(feedItems.length).toEqual(0);
     });
-    it('should get documents from ContentItems that seen = false', async () => {
-      const feedItems = await service.getFeedItemsFromViewer(followerAccount, {
-        ...DEFAULT_FEED_QUERY_OPTIONS,
-        limit: 2
-      });
-      expect(feedItems.total).toEqual(contents.length);
-      expect(feedItems.pagination.limit).toEqual(2);
-      expect(feedItems.items[0].content.payload).toEqual(shortPayload5);
-      expect(feedItems.items[1].content.payload).toEqual(shortPayload4);
-      expect(feedItems.items[2]).toBeUndefined();
+  });
+
+  describe('getGuestFeedItems', () => {
+    it('should return prefix from defaultContents collections', async () => {
+      const guestFeeds = await service.getGuestFeedItems(
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        },
+        result.accountDocument
+      );
+      expect(guestFeeds.payload[0].id).toEqual('default');
+      expect(guestFeeds.payload[1].id).toEqual('default');
+      expect(guestFeeds.payload[2].id).toEqual('default');
+      expect(guestFeeds.payload[3].id).toEqual('default');
+      expect(guestFeeds.payload[4].id).toEqual('default');
     });
   });
   //TODO !!! Have to add test later on

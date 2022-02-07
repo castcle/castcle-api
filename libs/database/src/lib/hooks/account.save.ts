@@ -23,24 +23,19 @@
 
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
-import {
-  AccountDocument,
-  CredentialDocument,
-  UserDocument,
-  UserType
-} from '../schemas';
+import { Account, Credential, User, UserType } from '../schemas';
 
 type HookModels = {
-  credentialModel: Model<CredentialDocument>;
-  userModel: Model<UserDocument>;
+  credentialModel: Model<Credential>;
+  userModel: Model<User>;
 };
 
 /**
  * If Account has not set the visibility set publish as default
- * @param {AccountDocument} doc
- * @returns {AccountDocument}
+ * @param {Account} doc
+ * @returns {Account}
  */
-export const preAccountSave = (doc: AccountDocument) => {
+export const preAccountSave = (doc: Account) => {
   if (!doc.visibility) doc.visibility = EntityVisibility.Publish;
   return doc;
 };
@@ -50,10 +45,7 @@ export const preAccountSave = (doc: AccountDocument) => {
  * @param models
  * @returns {Promise<boolean>}
  */
-export const postAccountSave = async (
-  doc: AccountDocument,
-  models: HookModels
-) => {
+export const postAccountSave = async (doc: Account, models: HookModels) => {
   try {
     if (doc.activateDate)
       await models.userModel
@@ -71,7 +63,7 @@ export const postAccountSave = async (
           'account.visibility': doc.visibility,
           'account.preferences': doc.preferences,
           'account.email': doc.email,
-          'account.geolocation': doc.geolocation ? doc.geolocation : null
+          'account.geolocation': doc.geolocation ? doc.geolocation : null,
         }
       )
       .exec();

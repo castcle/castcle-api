@@ -32,7 +32,7 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 export class CredentialStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthenticationService) {
     super({
-      passReqToCallback: true
+      passReqToCallback: true,
     });
   }
 
@@ -51,7 +51,7 @@ export class CredentialStrategy extends PassportStrategy(Strategy) {
     if (credential) {
       return {
         $credential: credential,
-        $language: req.headers['accept-language']
+        $language: req.headers['accept-language'],
       };
     } else
       throw new CastcleException(

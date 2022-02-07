@@ -35,7 +35,7 @@ export class Pagination {
 
 export enum SortDirection {
   ASC = 'asc',
-  DESC = 'desc'
+  DESC = 'desc',
 }
 
 export class SortBy {
@@ -53,16 +53,16 @@ export class CastcleQueryOptions {
 export const DEFAULT_QUERY_OPTIONS = {
   sortBy: {
     field: 'updatedAt',
-    type: SortDirection.DESC
+    type: SortDirection.DESC,
   },
   page: 1,
-  limit: 25
+  limit: 25,
 } as CastcleQueryOptions;
 
 export enum EntityVisibility {
   Hidden = 'hidden',
   Publish = 'publish',
-  Deleted = 'deleted'
+  Deleted = 'deleted',
 }
 
 export enum CastcleQueueAction {
@@ -72,7 +72,7 @@ export enum CastcleQueueAction {
   UpdateProfile = 'updateProfile',
   CreateFollowFeedItem = 'craeteFollowFeedItem',
   CreateFeedItemToEveryOne = 'createFeedItemToEveryone',
-  CreateFeedItemToGuests = 'createFeedItemToGuests'
+  CreateFeedItemToGuests = 'createFeedItemToGuests',
 }
 
 export class CastcleImage {

@@ -26,20 +26,18 @@ import { Model } from 'mongoose';
 import {
   CastcleQueryOptions,
   CountryPayloadDto,
-  DEFAULT_COUNTRY_QUERY_OPTIONS
+  DEFAULT_COUNTRY_QUERY_OPTIONS,
 } from '../dtos';
-import { CountryDocument } from '../schemas/country.schema';
+import { Country } from '../schemas';
 
 @Injectable()
 export class CountryService {
-  constructor(
-    @InjectModel('Country') public _countryModel: Model<CountryDocument>
-  ) {}
+  constructor(@InjectModel('Country') public _countryModel: Model<Country>) {}
 
   /**
    * get all data from country Document
    *
-   * @returns {CountryDocument[]} return all country Document
+   * @returns {Country[]} return all country Document
    */
   async getAll(options: CastcleQueryOptions = DEFAULT_COUNTRY_QUERY_OPTIONS) {
     console.log(options);
@@ -55,12 +53,12 @@ export class CountryService {
   /**
    * get country by dialCode
    * @param {string} dialCode country dialCode
-   * @returns {CountryDocument} return country document result
+   * @returns {Country} return country document result
    */
   async getByDialCode(dialCode: string) {
     return this._countryModel
       .findOne({
-        dialCode: dialCode
+        dialCode: dialCode,
       })
       .exec();
   }
@@ -68,7 +66,7 @@ export class CountryService {
   /**
    * create new country
    * @param {CountryPayloadDto} country country payload
-   * @returns {CountryDocument} return new country document
+   * @returns {Country} return new country document
    */
   async create(country: CountryPayloadDto) {
     const createResult = await new this._countryModel(country).save();

@@ -39,7 +39,7 @@ export class Meta {
       oldestId: documents[documents.length - 1]?.id,
       newestId: documents[0]?.id,
       resultCount: documents.length,
-      resultTotal
+      resultTotal,
     };
   };
 }

@@ -33,14 +33,14 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 async function bootstrap() {
   const logger = new CastLogger('Bootstrap');
   const app = await NestFactory.create(BaseModule, {
-    logger: CastLoggerLevel
+    logger: CastLoggerLevel,
   });
   const port = process.env.PORT || 3332;
 
   // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name
+    header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
   // For documentations
@@ -49,7 +49,7 @@ async function bootstrap() {
 
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));
-  app.useGlobalPipes(new ValidationPipe({}));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors();
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);

@@ -22,82 +22,73 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
-import { AccountDocument } from '../schemas/account.schema';
-import { CredentialDocument } from '../schemas/credential.schema';
-import { MongooseForFeatures, MongooseAsyncFeatures } from '../database.module';
+import { Account, Credential } from '../schemas';
+import {
+  MongooseForFeatures,
+  MongooseAsyncFeatures,
+  UserService,
+} from '../database.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
 import { HashtagService } from './hashtag.service';
-
-let mongod: MongoMemoryServer;
-const rootMongooseTestModule = (
-  options: MongooseModuleOptions = { useFindAndModify: false }
-) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongod = await MongoMemoryServer.create();
-      const mongoUri = mongod.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongod) await mongod.stop();
-};
+import { UserProducer } from '@castcle-api/utils/queue';
 
 describe('UxEngagement Service', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let service: UxEngagementService;
   let authService: AuthenticationService;
   let result: {
-    accountDocument: AccountDocument;
-    credentialDocument: CredentialDocument;
+    accountDocument: Account;
+    credentialDocument: Credential;
   };
-  const providers = [
-    UxEngagementService,
-    AuthenticationService,
-    ContentService,
-    HashtagService
-  ];
 
   beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
-        MongooseForFeatures
+        MongooseForFeatures,
       ],
-      providers: providers
+      providers: [
+        UxEngagementService,
+        AuthenticationService,
+        ContentService,
+        HashtagService,
+        UserService,
+        UserProducer,
+      ],
     }).compile();
-    service = module.get<UxEngagementService>(UxEngagementService);
-    authService = module.get<AuthenticationService>(AuthenticationService);
+    service = app.get<UxEngagementService>(UxEngagementService);
+    authService = app.get<AuthenticationService>(AuthenticationService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
       header: {
-        platform: 'ios'
+        platform: 'ios',
       },
-      device: 'ifong'
+      device: 'ifong',
     });
     //sign up to create actual account
     await authService.signupByEmail(result.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
       email: 'sompop.kulapalanont@gmail.com',
-      password: 'test1234567'
+      password: 'test1234567',
     });
   });
+
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('#track()', () => {
-    it('should return UxEngagementDocument when track is complete', async () => {
+    it('should return UxEngagement when track is complete', async () => {
       const now = new Date();
       const body = {
         platform: 'android',
@@ -111,7 +102,7 @@ describe('UxEngagement Service', () => {
         target: 'testTarget',
         targetId: 'testTargetId',
         timestamp: now.getTime() + '',
-        uxSessionId: 'ux-track-01'
+        uxSessionId: 'ux-track-01',
       };
       const uxTrackResult = await service.track(body);
       expect(uxTrackResult).toBeDefined();
@@ -124,7 +115,7 @@ describe('UxEngagement Service', () => {
       expect(uxTrackResult.screenInstance).toEqual(body.screenInstance);
       expect(uxTrackResult.target).toEqual(body.target);
       expect(uxTrackResult.targetId).toEqual(body.targetId);
-      //expect(uxTrackResult.timestamp).toEqual(now); so prebuit could pass
+      //expect(uxTrackResult.timestamp).toEqual(now); so prebuilt could pass
     });
   });
 });

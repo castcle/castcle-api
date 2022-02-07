@@ -25,7 +25,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SocialProvider } from '../models';
-import { SocialSyncDocument, UserDocument } from '../schemas';
+import { SocialSync, User } from '../schemas';
 import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
@@ -34,19 +34,19 @@ export class SocialSyncService {
 
   constructor(
     @InjectModel('SocialSync')
-    private socialSyncModel: Model<SocialSyncDocument>,
+    private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public userModel: Model<UserDocument>
+    public userModel: Model<User>
   ) {}
 
   /**
    * get auto-sync accounts by social provider
    * @param {SocialProvider} socialProvider
-   * @returns {Promise<SocialSyncDocument[]>}
+   * @returns {Promise<SocialSync[]>}
    */
   getAutoSyncAccounts = (
     socialProvider: SocialProvider
-  ): Promise<SocialSyncDocument[]> => {
+  ): Promise<SocialSync[]> => {
     return this.socialSyncModel
       .find({ active: true, provider: socialProvider })
       .exec();
@@ -56,12 +56,12 @@ export class SocialSyncService {
    * get auto-sync account by social ID
    * @param {SocialProvider} socialProvider e.g. facebook, google, twitter
    * @param {string} socialId
-   * @returns {Promise<SocialSyncDocument>}
+   * @returns {Promise<SocialSync>}
    */
   getAutoSyncAccountBySocialId = (
     socialProvider: SocialProvider,
     socialId: string
-  ): Promise<SocialSyncDocument> => {
+  ): Promise<SocialSync> => {
     return this.socialSyncModel
       .findOne({ active: true, provider: socialProvider, socialId })
       .exec();
@@ -71,12 +71,12 @@ export class SocialSyncService {
    * get all account by social ID
    * @param {SocialProvider} socialProvider e.g. facebook, google, twitter
    * @param {string} socialId
-   * @returns {Promise<SocialSyncDocument[]>}
+   * @returns {Promise<SocialSync[]>}
    */
   getAllSocialSyncBySocial = (
     socialProvider: SocialProvider,
     socialId: string
-  ): Promise<SocialSyncDocument[]> => {
+  ): Promise<SocialSync[]> => {
     return this.socialSyncModel
       .find({ provider: socialProvider, socialId })
       .exec();
@@ -84,14 +84,11 @@ export class SocialSyncService {
 
   /**
    * create new language
-   * @param {UserDocument} user
+   * @param {User} user
    * @param {SocialSyncDto} socialSync payload
-   * @returns {SocialSyncDocument} return new social sync document
+   * @returns {SocialSync} return new social sync document
    * */
-  create = (
-    user: UserDocument,
-    socialSync: SocialSyncDto
-  ): Promise<SocialSyncDocument> => {
+  create = (user: User, socialSync: SocialSyncDto): Promise<SocialSync> => {
     this.logger.log('save social sync.');
     const newSocialSync = new this.socialSyncModel({
       author: { id: user.id },
@@ -100,7 +97,8 @@ export class SocialSyncService {
       userName: socialSync.userName,
       displayName: socialSync.displayName,
       avatar: socialSync.avatar,
-      active: socialSync.active ? socialSync.active : true
+      active: (socialSync.active ??= true),
+      autoPost: (socialSync.autoPost ??= true),
     });
     return newSocialSync.save();
   };
@@ -108,23 +106,23 @@ export class SocialSyncService {
   /**
    * get social sync from User Document
    *
-   * @param {UserDocument} user
-   * @returns {SocialSyncDocument[]} return all social sync Document
+   * @param {User} user
+   * @returns {SocialSync[]} return all social sync Document
    * */
-  getSocialSyncByUser = (user: UserDocument): Promise<SocialSyncDocument[]> => {
+  getSocialSyncByUser = (user: User): Promise<SocialSync[]> => {
     return this.socialSyncModel.find({ 'author.id': user.id }).exec();
   };
 
   /**
    * update social sync
    * @param {SocialSyncDto} updateSocialSync payload
-   * @param {UserDocument} user
-   * @returns {SocialSyncDocument} return update social sync document
+   * @param {User} user
+   * @returns {SocialSync} return update social sync document
    * */
   update = async (
     updateSocialSync: SocialSyncDto,
-    user: UserDocument
-  ): Promise<SocialSyncDocument> => {
+    user: User
+  ): Promise<SocialSync> => {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
     const socialSync = socialSyncDoc.find(
@@ -153,13 +151,13 @@ export class SocialSyncService {
   /**
    * delete social sync
    * @param {SocialSyncDeleteDto} socialSyncDeleteDto payload
-   * @param {UserDocument} user
-   * @returns {SocialSyncDocument} return update social sync document
+   * @param {User} user
+   * @returns {SocialSync} return update social sync document
    * */
   delete = async (
     socialSyncDeleteDto: SocialSyncDeleteDto,
-    user: UserDocument
-  ): Promise<SocialSyncDocument> => {
+    user: User
+  ): Promise<SocialSync> => {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
     const deleteSocialSync = socialSyncDoc.find(

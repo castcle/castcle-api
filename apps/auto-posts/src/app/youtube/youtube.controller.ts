@@ -36,7 +36,7 @@ export class YoutubeController {
     @Query()
     {
       'hub.challenge': challenge,
-      'hub.verify_token': verifyToken
+      'hub.verify_token': verifyToken,
     }: ValidateWebhookQuery
   ) {
     if (verifyToken !== Environment.YOUTUBE_VERIFY_TOKEN) return;

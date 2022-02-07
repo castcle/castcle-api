@@ -25,56 +25,42 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserService
+  UserService,
 } from '@castcle-api/database';
-import { CredentialDocument } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { HashtagsController } from './hashtags.controller';
 
-let mongodMock: MongoMemoryServer;
-
-const rootMongooseTestModule = (options: MongooseModuleOptions = {}) =>
-  MongooseModule.forRootAsync({
-    useFactory: async () => {
-      mongodMock = await MongoMemoryServer.create();
-      const mongoUri = mongodMock.getUri();
-      return {
-        uri: mongoUri,
-        ...options
-      };
-    }
-  });
-
-const closeInMongodConnection = async () => {
-  if (mongodMock) await mongodMock.stop();
-};
-
 describe('HashtagsController', () => {
+  let mongod: MongoMemoryServer;
+  let app: TestingModule;
   let appController: HashtagsController;
   let hashtagService: HashtagService;
-  let userCredential: CredentialDocument;
   let authService: AuthenticationService;
 
   beforeAll(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    mongod = await MongoMemoryServer.create();
+    app = await Test.createTestingModule({
       imports: [
-        rootMongooseTestModule(),
+        MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
         CacheModule.register({
           store: 'memory',
-          ttl: 1000
-        })
+          ttl: 1000,
+        }),
       ],
       controllers: [HashtagsController],
       providers: [
         HashtagService,
         AuthenticationService,
-        { provide: UserService, useValue: { getUserFromCredential: jest.fn() } }
-      ]
+        {
+          provide: UserService,
+          useValue: { getUserFromCredential: jest.fn() },
+        },
+      ],
     }).compile();
 
     appController = app.get<HashtagsController>(HashtagsController);
@@ -85,13 +71,14 @@ describe('HashtagsController', () => {
       device: 'iPhone',
       deviceUUID: 'iphone12345',
       header: { platform: 'iphone' },
-      languagesPreferences: ['th', 'th']
+      languagesPreferences: ['th', 'th'],
     });
-    userCredential = resultAccount.credentialDocument;
+    resultAccount.credentialDocument;
   });
 
   afterAll(async () => {
-    await closeInMongodConnection();
+    await app.close();
+    await mongod.stop();
   });
 
   describe('getAllHashtags', () => {
@@ -100,13 +87,11 @@ describe('HashtagsController', () => {
         tag: 'castcle',
         score: 90,
         aggregator: {
-          _id: '6138afa4f616a467b5c4eb72'
+          _id: '6138afa4f616a467b5c4eb72',
         },
-        name: 'Castcle'
+        name: 'Castcle',
       });
-      const result = await appController.getAllHashtags({
-        $credential: userCredential
-      } as any);
+      const result = await appController.getAllHashtags();
       const expectResult = {
         message: 'success',
         payload: [
@@ -114,9 +99,9 @@ describe('HashtagsController', () => {
             id: '',
             slug: 'castcle',
             name: 'Castcle',
-            key: 'hashtag.castcle'
-          }
-        ]
+            key: 'hashtag.castcle',
+          },
+        ],
       };
       console.log(result);
       result.payload[0].id = '';
