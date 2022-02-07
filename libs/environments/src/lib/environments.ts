@@ -143,9 +143,9 @@ export const Environment = {
   FEED_FOLLOW_RATIO: process.env.FEED_FOLLOW_RATIO
     ? Number(process.env.FEED_FOLLOW_RATIO)
     : Configs.Feed.FollowFeedRatio,
-  FEED_REPOST_MINUTES: process.env.FEED_REPOST_MINUTES
-    ? Number(process.env.FEED_REPOST_MINUTES)
-    : Configs.Feed.RecallEvery,
+  FEED_DECAY_DAYS: process.env.FEED_DECAY_DAYS
+    ? Number(process.env.FEED_DECAY_DAYS)
+    : Configs.Feed.DecayDays,
   /**
    * Run campaign rewards calculation within a specified interval.
    * @default "0 *\/30 * * * *" Every 30 minutes

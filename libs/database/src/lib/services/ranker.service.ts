@@ -231,7 +231,7 @@ export class RankerService {
     const aggr = pipe2ContentFeedAggregator({
       FollowFeedMax: Environment.FEED_FOLLOW_MAX,
       FollowFeedRatio: Environment.FEED_FOLLOW_RATIO,
-      FollowRecalledMinutes: Environment.FEED_REPOST_MINUTES,
+      DecayDays: Environment.FEED_DECAY_DAYS,
       MaxResult: query.maxResults,
       userId: user._id,
     });
