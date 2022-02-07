@@ -38,6 +38,7 @@ import {
   GuestFeedItem,
   Relationship,
   UserType,
+  DefaultContent,
 } from '../schemas';
 import {
   FeedItemResponse,
@@ -63,7 +64,9 @@ export class RankerService {
     public relationshipModel: Model<Relationship>,
     @InjectModel('User') public userModel: Model<User>,
     @InjectModel('Account') public _accountModel: Model<Account>,
-    private userService: UserService
+    private userService: UserService,
+    @InjectModel('DefaultContent')
+    public _defaultContentModel: Model<DefaultContent>
   ) {}
 
   /**
@@ -78,6 +81,35 @@ export class RankerService {
     excludeContents?: any[]
   ) => {
     console.log('exclude', excludeContents);
+    let prefix_feeds_payload: FeedItemPayloadItem[] = [];
+    if (!(query.untilId || query.sinceId)) {
+      console.log('****** GUEST NO UTIL');
+      const defaultFeeds = await this._defaultContentModel
+        .find({ index: { $gte: 0 } })
+        .populate('content')
+        .sort({ index: 1 });
+      console.log(defaultFeeds);
+      prefix_feeds_payload = defaultFeeds.map(
+        (item) =>
+          ({
+            id: 'default',
+            feature: {
+              slug: 'feed',
+              key: 'feature.feed',
+              name: 'Feed',
+            },
+            circle: {
+              id: 'for-you',
+              key: 'circle.forYou',
+              name: 'For You',
+              slug: 'forYou',
+            },
+            payload: toSignedContentPayloadItem(item.content),
+            type: 'content',
+          } as FeedItemPayloadItem)
+      );
+    }
+    //const guestFeedMax = query.untilId || query.sinceId?query.maxResults:
     const filter = createCastcleFilter(
       {
         countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
@@ -111,26 +143,28 @@ export class RankerService {
     includes.users = query.hasRelationshipExpansion
       ? await this.userService.getIncludesUsers(viewer, includes.users)
       : includes.users.map((author) => new Author(author).toIncludeUser());
-
+    console.log('PREFIX', prefix_feeds_payload);
     return {
-      payload: feedItems.map(
-        (item) =>
-          ({
-            id: item.id,
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed',
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou',
-            },
-            payload: toSignedContentPayloadItem(item.content),
-            type: 'content',
-          } as FeedItemPayloadItem)
+      payload: prefix_feeds_payload.concat(
+        feedItems.map(
+          (item) =>
+            ({
+              id: item.id,
+              feature: {
+                slug: 'feed',
+                key: 'feature.feed',
+                name: 'Feed',
+              },
+              circle: {
+                id: 'for-you',
+                key: 'circle.forYou',
+                name: 'For You',
+                slug: 'forYou',
+              },
+              payload: toSignedContentPayloadItem(item.content),
+              type: 'content',
+            } as FeedItemPayloadItem)
+        )
       ),
       includes,
       meta: createCastcleMeta(feedItems),
