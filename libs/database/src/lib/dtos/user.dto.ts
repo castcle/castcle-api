@@ -75,6 +75,9 @@ export class UserResponseDto {
   castcleId: string;
 
   @ApiProperty()
+  type: string;
+
+  @ApiProperty()
   displayName: string;
 
   @ApiProperty()
@@ -115,8 +118,39 @@ export class UserResponseDto {
 
   @ApiProperty()
   wallet: Wallet;
+
+  @ApiProperty()
+  mobile: {
+    countryCode: string;
+    number: string;
+  };
+
+  @ApiProperty()
+  linkSocial: {
+    facebook: linkSocialDetail | null;
+    twitter: linkSocialDetail | null;
+    google: linkSocialDetail | null;
+    apple: linkSocialDetail | null;
+  };
+
+  @ApiProperty()
+  syncSocial: syncSocialDetail[];
 }
 
+export class linkSocialDetail {
+  socialId: string;
+  displayName: string;
+}
+
+export class syncSocialDetail {
+  provider: string;
+  socialId: string;
+  userName: string;
+  displayName: string;
+  avatar: string;
+  active: boolean;
+  autoPost: boolean;
+}
 export class UpdateUserDto {
   @ApiProperty()
   overview?: string;
@@ -254,9 +288,6 @@ export class FollowResponse {
   pagination: Pagination;
 }
 
-export class SocialSyncPageRequestDto {
-  payload: SocialSyncDto[];
-}
 export class SocialSyncDto {
   @ApiProperty()
   @IsString()

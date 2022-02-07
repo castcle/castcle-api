@@ -31,7 +31,7 @@ import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
 import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { PageVerified, UserVerified } from '../models';
-import { Account } from '../schemas';
+import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { Relationship } from './relationship.schema';
 
@@ -108,6 +108,9 @@ type UserResponseOption = {
   blocking?: boolean;
   followed?: boolean;
   balance?: number;
+  mobile?: { countryCode: string; number: string };
+  linkSocial?: AccountAuthenId[];
+  syncSocial?: SocialSync[];
 };
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
@@ -139,6 +142,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     id: self._id,
     castcleId: self.displayId,
     displayName: self.displayName,
+    type: self.type,
     dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
     followers: {
       count: self.followerCount,
@@ -184,11 +188,14 @@ UserSchema.statics.toAuthor = (self: User | User) =>
 
 UserSchema.methods.toUserResponse = async function (
   {
-    passwordNotSet,
+    passwordNotSet = false,
     blocked,
     blocking,
     followed,
     balance,
+    mobile,
+    linkSocial,
+    syncSocial,
   } = {} as UserResponseOption
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
@@ -200,6 +207,37 @@ UserSchema.methods.toUserResponse = async function (
   response.wallet = {
     balance: balance,
   };
+  response.mobile = mobile;
+  if (linkSocial) {
+    response.linkSocial = Object.assign(
+      {},
+      ...linkSocial?.map((social: AccountAuthenId) => {
+        return {
+          [social.type]: {
+            socialId: social.socialId,
+            displayName: social.displayName,
+          },
+        };
+      })
+    );
+
+    response.linkSocial.facebook = response.linkSocial.facebook ?? null;
+    response.linkSocial.twitter = response.linkSocial.twitter ?? null;
+    response.linkSocial.google = response.linkSocial.google ?? null;
+    response.linkSocial.apple = response.linkSocial.apple ?? null;
+  }
+
+  response.syncSocial = syncSocial?.map((social) => {
+    return {
+      provider: social.provider,
+      socialId: social.socialId,
+      userName: social.userName,
+      displayName: social.displayName,
+      avatar: social.avatar,
+      active: social.active,
+      autoPost: social.autoPost,
+    };
+  });
   return response;
 };
 
@@ -212,6 +250,7 @@ UserSchema.methods.toPageResponse = function (
     id: (this as User)._id,
     castcleId: (this as User).displayId,
     displayName: (this as User).displayName,
+    type: (this as User).type,
     images: {
       avatar:
         (this as User).profile &&
