@@ -235,6 +235,7 @@ export class RankerService {
       MaxResult: query.maxResults,
       userId: user._id,
     });
+    console.log(JSON.stringify(aggr));
     const rawResult = await this.userModel.aggregate(aggr);
     const result: UserFeedAggregatorDto = rawResult[0];
     const contentScore = await predictContents(
@@ -268,7 +269,9 @@ export class RankerService {
         feeds[i].content = embedContents.find(
           (c) => String(c._id) === String(feeds[i].content)
         );
-      feedPayload = this._feedItemsToPayloadItems(feeds);
+      feedPayload = this._feedItemsToPayloadItems(
+        feeds.filter((f) => f.content)
+      );
     }
 
     const includes = {
