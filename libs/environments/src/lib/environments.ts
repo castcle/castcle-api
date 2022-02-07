@@ -152,4 +152,10 @@ export const Environment = {
    */
   CAMPAIGNS_CRON_EXPRESSION:
     process.env.CAMPAIGNS_CRON_EXPRESSION || CronExpression.EVERY_30_MINUTES,
+
+  /**
+   * Number of digits after the decimal point
+   * @default 1E+18
+   */
+  DECIMALS: Number(process.env.DECIMALS || 1e18),
 };

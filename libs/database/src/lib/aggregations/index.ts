@@ -21,5 +21,6 @@
  * or have any questions.
  */
 
-export * from './calculate-rewards.aggregation';
 export * from './content.aggregation';
+export * from './get-balance.aggregation';
+export * from './get-eligible-accounts.aggregation';

@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
-export class TransactionDto {
-  from?: string;
-  to?: string;
-  value: number;
-  data?: string;
+export enum WalletType {
+  ADS = 'ads',
+  LOCKING = 'locking',
+  PERSONAL = 'personal',
 }

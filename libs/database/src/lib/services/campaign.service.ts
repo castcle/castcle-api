@@ -40,6 +40,7 @@ import {
   QueueStatus,
   QueueTopic,
 } from '../models';
+import { WalletType } from '../models/wallet.enum';
 import { Account, Campaign, Queue, Transaction } from '../schemas';
 
 @Injectable()
@@ -79,36 +80,39 @@ export class CampaignService {
       type: CampaignType.CONTENT_REACH,
       status: CampaignStatus.CALCULATING,
       endDate: { $lte: new Date() },
-      rewardBalance: { $gt: 0 },
     };
 
-    const eligibleAccounts =
-      await this.campaignModel.aggregate<EligibleAccount>(
-        pipelineOfGetEligibleAccountsFromCampaign(campaignQuery)
-      );
+    const campaign = await this.campaignModel.findOne(campaignQuery);
 
-    eligibleAccounts.forEach(async ({ id, campaignId, amount }) => {
-      const queue = await new this.queueModel({
-        payload: new ClaimAirdropPayload(id, campaignId, amount),
-      }).save();
+    if (!campaign) {
+      return this.logger.log(`#claimContentReachAirdrops:completed`);
+    }
 
-      await this.campaignQueue.add(queue);
-      this.logger.log(
-        `#claimContentReachAirdrops:submit:queueId-${queue.id}
+    if (campaign.rewardBalance > 0) {
+      const eligibleAccounts =
+        await this.campaignModel.aggregate<EligibleAccount>(
+          pipelineOfGetEligibleAccountsFromCampaign(campaignQuery)
+        );
+
+      eligibleAccounts.forEach(async ({ id, campaignId, amount }) => {
+        const queue = await new this.queueModel({
+          payload: new ClaimAirdropPayload(id, campaignId, amount),
+        }).save();
+
+        await this.campaignQueue.add(queue);
+        this.logger.log(
+          `#claimContentReachAirdrops:submit:queueId-${queue.id}
   Claim campaign's airdrop: ${campaignId}
   For account: ${id}`
-      );
-    });
+        );
+      });
+    }
 
-    const updateResult = await this.campaignModel.updateOne(campaignQuery, {
-      status: CampaignStatus.COMPLETE,
-    });
+    await campaign.set({ status: CampaignStatus.COMPLETE }).save();
 
     this.logger.log(
-      `#claimContentReachAirdrops\n${updateResult.nModified} campaign(s) updated`
+      `#claimContentReachAirdrops - campaignId: ${campaign.id} updated`
     );
-
-    if (!updateResult.nModified) return;
 
     await this.claimContentReachAirdrops();
   }
@@ -239,7 +243,7 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
 
     const amount = campaign.rewardsPerClaim ?? claimCampaignsAirdropJob.amount;
     const transaction = await new this.transactionModel({
-      to: account.id,
+      to: { account: account.id, type: WalletType.PERSONAL },
       value: amount,
       data: JSON.stringify(claimCampaignsAirdropJob),
     }).save();
