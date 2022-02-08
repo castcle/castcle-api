@@ -154,6 +154,41 @@ export class UserController {
     }
   };
 
+  _getUserByAccountId = async (accountId: string, userFields?: UserField[]) => {
+    const account = await this.authService.getAccountFromId(accountId);
+    const user = await this.userService.getUserFromAccountId(accountId);
+
+    if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const balance = userFields?.includes(UserField.Wallet)
+      ? await this.transactionService.getUserBalance(user)
+      : undefined;
+
+    const authenSocial = userFields?.includes(UserField.LinkSocial)
+      ? await this.authService.getAccountAuthenIdFromAccountId(accountId)
+      : undefined;
+
+    let syncPage = undefined;
+    if (userFields?.includes(UserField.SyncSocial)) {
+      const page = await this.userService.getPagesFromAccountId(accountId);
+      syncPage = (
+        await Promise.all(
+          page.map(async (p) => {
+            return await this.socialSyncService.getSocialSyncByUser(p);
+          })
+        )
+      ).flat();
+    }
+
+    return await user.toUserResponse({
+      balance: balance,
+      passwordNotSet: account.password ? false : true,
+      mobile: account.mobile,
+      linkSocial: authenSocial,
+      syncSocial: syncPage,
+    });
+  };
+
   _getUserAndViewer = async (id: string, credential: Credential) => {
     if (id.toLocaleLowerCase() === 'me') {
       this.logger.log('Get Me User from credential.');
