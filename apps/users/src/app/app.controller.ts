@@ -155,6 +155,41 @@ export class UserController {
     }
   };
 
+  _getUserByAccountId = async (accountId: string, userFields?: UserField[]) => {
+    const account = await this.authService.getAccountFromId(accountId);
+    const user = await this.userService.getUserFromAccountId(accountId);
+
+    if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const balance = userFields?.includes(UserField.Wallet)
+      ? await this.transactionService.getUserBalance(user)
+      : undefined;
+
+    const authenSocial = userFields?.includes(UserField.LinkSocial)
+      ? await this.authService.getAccountAuthenIdFromAccountId(accountId)
+      : undefined;
+
+    let syncPage = undefined;
+    if (userFields?.includes(UserField.SyncSocial)) {
+      const page = await this.userService.getPagesFromAccountId(accountId);
+      syncPage = (
+        await Promise.all(
+          page.map(async (p) => {
+            return await this.socialSyncService.getSocialSyncByUser(p);
+          })
+        )
+      ).flat();
+    }
+
+    return await user.toUserResponse({
+      balance: balance,
+      passwordNotSet: account.password ? false : true,
+      mobile: account.mobile,
+      linkSocial: authenSocial,
+      syncSocial: syncPage,
+    });
+  };
+
   _getUserAndViewer = async (id: string, credential: Credential) => {
     if (id.toLocaleLowerCase() === 'me') {
       this.logger.log('Get Me User from credential.');
@@ -234,46 +269,10 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Query() userQuery?: ExpansionQuery
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (!user) throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
-
-    const account = await this.authService.getAccountFromId(
-      req.$credential.account._id
+    return await this._getUserByAccountId(
+      req.$credential.account._id,
+      userQuery?.userFields
     );
-    if (!account)
-      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
-
-    let balance = undefined;
-    let authenSocial = undefined;
-    let syncPage = undefined;
-    if (userQuery?.userFields?.includes(UserField.Wallet)) {
-      balance = await this.transactionService.getUserBalance(user);
-    }
-    if (userQuery?.userFields?.includes(UserField.LinkSocial)) {
-      authenSocial = await this.authService.getAccountAuthenIdFromAccountId(
-        req.$credential.account._id
-      );
-    }
-    if (userQuery?.userFields?.includes(UserField.SyncSocial)) {
-      const page = await this.userService.getPagesFromCredential(
-        req.$credential
-      );
-      syncPage = (
-        await Promise.all(
-          page.map(async (p) => {
-            return await this.socialSyncService.getSocialSyncByUser(p);
-          })
-        )
-      ).flat();
-    }
-
-    return await user.toUserResponse({
-      balance: balance,
-      passwordNotSet: account.password ? false : true,
-      mobile: account.mobile,
-      linkSocial: authenSocial,
-      syncSocial: syncPage,
-    });
   }
 
   @CastcleAuth(CacheKeyName.SyncSocial)
