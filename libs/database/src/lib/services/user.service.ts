@@ -222,6 +222,7 @@ export class UserService {
     const query = createFilterQuery<User>(sinceId, untilId);
     const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
 
+    queryOptions.sortBy.field = 'createdAt';
     query.$or = [{ displayId: pattern }, { displayName: pattern }];
 
     return this.getByCriteria(
