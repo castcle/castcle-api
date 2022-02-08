@@ -130,15 +130,6 @@ export class UserService {
       })
       .exec();
 
-  getUserFromAccountId = (accountId: string) =>
-    this._userModel
-      .find({
-        ownerAccount: accountId as any,
-        type: UserType.Page,
-        visibility: EntityVisibility.Publish,
-      })
-      .exec();
-
   getUserBalance = async (user: User) => {
     const getBalanceResponses =
       await this._transactionModel.aggregate<GetBalanceResponse>(
