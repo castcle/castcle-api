@@ -111,6 +111,15 @@ export class UserService {
       })
       .exec();
 
+  getPagesFromAccountId = (accountId: string) =>
+    this._userModel
+      .find({
+        ownerAccount: accountId as any,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
   getUserFromAccountId = (accountId: string) =>
     this._userModel
       .findOne({
