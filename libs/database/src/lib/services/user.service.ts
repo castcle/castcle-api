@@ -36,6 +36,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
+import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
 import {
   Author,
   CastcleQueryOptions,
@@ -51,20 +52,23 @@ import {
   SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
+  UserField,
   UserModelImage,
 } from '../dtos';
 import {
   Account,
+  AccountAuthenId,
   AccountReferral,
   Content,
   Credential,
   Relationship,
+  SocialSync,
+  Transaction,
   User,
   UserType,
 } from '../schemas';
 import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
-
 @Injectable()
 export class UserService {
   private logger = new CastLogger(UserService.name);
@@ -89,6 +93,12 @@ export class UserService {
     public _relationshipModel: Model<Relationship>,
     @InjectModel('User')
     public _userModel: Model<User>,
+    @InjectModel('AccountAuthenId')
+    public _accountAuthenId: Model<AccountAuthenId>,
+    @InjectModel('SocialSync')
+    private _socialSyncModel: Model<SocialSync>,
+    @InjectModel('Transaction')
+    private _transactionModel: Model<Transaction>,
     private contentService: ContentService,
     private userProducer: UserProducer
   ) {}
@@ -120,14 +130,61 @@ export class UserService {
       })
       .exec();
 
-  getUserFromAccountId = (accountId: string) =>
-    this._userModel
+  getUserBalance = async (user: User) => {
+    const getBalanceResponses =
+      await this._transactionModel.aggregate<GetBalanceResponse>(
+        pipelineOfGetBalance(String(user.ownerAccount))
+      );
+
+    return Number(getBalanceResponses[0].total.toString());
+  };
+
+  getUserFromAccountId = async (
+    accountId: string,
+    userFields?: UserField[]
+  ) => {
+    const account = await this._accountModel.findById(accountId).exec();
+    const user = await this._userModel
       .findOne({
         ownerAccount: accountId as any,
         type: UserType.People,
         visibility: EntityVisibility.Publish,
       })
       .exec();
+
+    if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const balance = userFields?.includes(UserField.Wallet)
+      ? await this.getUserBalance(user)
+      : undefined;
+
+    const authenSocial = userFields?.includes(UserField.LinkSocial)
+      ? await this._accountAuthenId.find({ account: accountId as any }).exec()
+      : undefined;
+
+    let syncPage = undefined;
+    if (userFields?.includes(UserField.SyncSocial)) {
+      const page = await this.getPagesFromAccountId(accountId);
+      syncPage = (
+        await Promise.all(
+          page.map(async (p) => {
+            return await this._socialSyncModel
+              .find({ 'author.id': p.id })
+              .exec();
+          })
+        )
+      ).flat();
+    }
+
+    return {
+      user: user,
+      account: account,
+      balance: balance,
+      authenSocial: authenSocial,
+      syncPage: syncPage,
+    };
+  };
+
   /**
    * Get all user and page that this credentials is own
    * @param credential
@@ -991,7 +1048,11 @@ Message: ${message}`,
     this.logger.log('Get user.');
     await Promise.all(
       accountReferee?.map(async (x) =>
-        result.push(await this.getUserFromAccountId(x.referringAccount._id))
+        result.push(
+          await (
+            await this.getUserFromAccountId(x.referringAccount._id)
+          ).user
+        )
       )
     );
     this.logger.log('Success get referee.');
