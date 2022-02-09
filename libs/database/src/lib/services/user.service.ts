@@ -1128,7 +1128,6 @@ Message: ${message}`,
           youtube: socialPageDto.links?.youtube,
           medium: socialPageDto.links?.medium,
         },
-        socialSyncs: socialPageDto.socialSyncs,
       },
     }).save();
   };

@@ -1029,7 +1029,6 @@ describe('User Service', () => {
           links: {
             facebook: 'https://facebook.com/test',
           },
-          socialSyncs: true,
         }
       );
       expect(page.type).toEqual('page');
