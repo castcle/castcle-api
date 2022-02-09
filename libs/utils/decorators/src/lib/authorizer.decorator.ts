@@ -1,9 +1,13 @@
-import { Account, User } from '@castcle-api/database/schemas';
+import { Account, Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export class Authorizer {
-  constructor(public account: Account, public user: User) {}
+  constructor(
+    public account: Account,
+    public user: User,
+    public credential: Credential
+  ) {}
 
   /**
    * permit if `accountId` to access is same as ID of authenticated account
@@ -35,7 +39,7 @@ export const Auth = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const account = request.$credential.account;
     const user = await request.$user;
-
-    return new Authorizer(account, user);
+    const credential = request.$credential;
+    return new Authorizer(account, user, credential);
   }
 );
