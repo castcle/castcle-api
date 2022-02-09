@@ -292,14 +292,24 @@ export class UserController {
   }
 
   @ApiOkResponse({ type: UserResponseDto })
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
-  async getUserById(@Req() req: CredentialRequest, @Param('id') id: string) {
+  async getUserById(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest,
+    @Query() userQuery?: ExpansionQuery
+  ) {
+    this.logger.log(`User get ${id}`);
     const authorizedUser = await this.userService.getUserFromCredential(
       req.$credential
     );
-
-    return this.userService.getById(authorizedUser, id);
+    return this.userService.getById(
+      authorizedUser,
+      id,
+      undefined,
+      userQuery?.hasRelationshipExpansion
+    );
   }
 
   @ApiBody({
