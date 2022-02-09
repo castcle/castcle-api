@@ -21,13 +21,19 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { CastcleBase, Content } from '.';
+import { DataSchema, DataStatistic } from './data-statistic.schema';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class OrganicStatistic extends CastcleBase {
+  @Prop({ index: true, type: SchemaTypes.ObjectId, ref: 'Content' })
+  content: Content;
+
+  @Prop({ type: DataSchema })
+  statistic: DataStatistic;
+}
+
+export const OrganicStatisticSchema =
+  SchemaFactory.createForClass(OrganicStatistic);
