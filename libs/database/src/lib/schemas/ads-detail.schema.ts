@@ -21,13 +21,27 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
+/**
+ * Detail should not change much once it created
+ */
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class AdsDetail {
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ required: true })
+  message: string;
+
+  @Prop()
+  code: string;
+
+  @Prop({ required: true })
+  dailyBudget: number;
+
+  @Prop({ required: true })
+  duration: number;
+}
+
+export const AdsDetailSchema = SchemaFactory.createForClass(AdsDetail);
