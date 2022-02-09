@@ -234,9 +234,6 @@ export class PageResponseDto {
   blocking: boolean;
 
   @ApiProperty()
-  socialSyncs: boolean;
-
-  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -376,5 +373,4 @@ export class SocialPageDto {
     medium?: string | null;
     website?: string | null;
   };
-  socialSyncs?: boolean;
 }
