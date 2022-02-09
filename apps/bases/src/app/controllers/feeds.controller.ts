@@ -70,8 +70,11 @@ export class FeedsController {
   @CastcleBasicAuth()
   @Post('feeds/:id/seen')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async seenFeed(@Auth() { account }: Authorizer, @Param() { id }: FeedParam) {
-    await this.rankerService.seenFeedItem(account, id);
+  async seenFeed(
+    @Auth() { account, credential }: Authorizer,
+    @Param() { id }: FeedParam
+  ) {
+    await this.rankerService.seenFeedItem(account, id, credential);
     this.suggestionService.seen(account.id);
   }
 

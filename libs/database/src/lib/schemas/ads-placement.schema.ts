@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { Account, AdsCampaign, CastcleBase } from '.';
+import { Account, AdsCampaign, CastcleBase, Credential } from '.';
 import { AdsCost } from '../models/ads.model';
 
 @Schema({ timestamps: true })
@@ -45,6 +45,9 @@ export class AdsPlacement extends CastcleBase {
 
   @Prop()
   seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Credential' })
+  seenCredential?: Credential;
 }
 
 export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);
