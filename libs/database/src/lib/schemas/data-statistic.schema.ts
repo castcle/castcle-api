@@ -21,13 +21,18 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class DataStatistic {
+  @Prop({ index: true })
+  impressions: number;
+
+  @Prop({ index: true })
+  reaches: number;
+
+  @Prop({ type: Object })
+  engagements: { [key: string]: number };
+}
+
+export const DataSchema = SchemaFactory.createForClass(DataStatistic);

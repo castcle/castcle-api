@@ -32,6 +32,7 @@ import {
   AccountAuthenIdSchema,
   AccountReferralSchema,
   AccountSchemaFactory,
+  AdsCampaignSchema,
   CampaignSchema,
   CommentSchemaFactory,
   ContentSchemaFactory,
@@ -53,6 +54,7 @@ import {
   UserSchemaFactory,
   UxEngagementSchema,
 } from './schemas';
+import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
@@ -91,6 +93,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
+  { name: 'AdsCampaign', schema: AdsCampaignSchema },
+  { name: 'AdsPlacement', schema: AdsPlacementSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

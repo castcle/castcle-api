@@ -30,6 +30,7 @@ import { CastcleMeta } from '../dtos/common.dto';
 import {
   Content,
   User,
+  Credential,
   FeedItem,
   Account,
   signedContentPayloadItem,
@@ -352,7 +353,11 @@ export class RankerService {
    * @param feedItemId
    * @returns
    */
-  seenFeedItem = async (account: Account, feedItemId: string) => {
+  seenFeedItem = async (
+    account: Account,
+    feedItemId: string,
+    credential: Credential
+  ) => {
     console.log(account, feedItemId);
     this._feedItemModel
       .updateOne(
@@ -365,6 +370,7 @@ export class RankerService {
         },
         {
           seenAt: new Date(),
+          seenCredential: credential._id,
         }
       )
       .exec();
