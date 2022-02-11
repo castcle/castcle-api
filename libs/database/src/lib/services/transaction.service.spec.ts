@@ -26,6 +26,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
+import { CastcleNumber, WalletType } from '../models';
 import { Transaction, User } from '../schemas';
 import { TransactionService } from './transaction.service';
 
@@ -52,7 +53,7 @@ describe('Transaction Service', () => {
       providers: [TransactionService],
     }).compile();
 
-    service = app.get<TransactionService>(TransactionService);
+    service = app.get(TransactionService);
     transactionModel = (service as any).transactionModel;
   });
 
@@ -62,27 +63,36 @@ describe('Transaction Service', () => {
   });
 
   it('should create new transaction from transfer()', async () => {
-    const createResult = await new transactionModel({
-      to: { account: accountId },
-      value: 10,
+    const transaction = await new transactionModel({
+      to: [
+        {
+          account: accountId,
+          type: WalletType.PERSONAL,
+          value: { n: 10, f: 0 },
+        },
+      ],
     }).save();
 
-    expect(createResult.value.toString()).toEqual('10');
-    expect(createResult.createdAt).toBeDefined();
+    const value = transaction.to[0].value;
+
+    expect(new CastcleNumber(value.n, value.f).toNumber()).toEqual(10);
+    expect(transaction.createdAt).toBeDefined();
   });
 
-  it('should have 10 and 5 balance', async () => {
+  it('should return user balance', async () => {
     const transaction = await transactionModel.findOne({
       'to.account': accountId,
     });
 
-    expect(transaction.value).toEqual(10);
+    const value = transaction.to[0].value;
+
+    expect(new CastcleNumber(value.n, value.f).toNumber()).toEqual(10);
 
     await expect(service.getUserBalance(user)).resolves.toEqual(10);
 
     await new transactionModel({
-      from: { account: user.ownerAccount },
-      value: 5,
+      from: { account: user.ownerAccount, type: WalletType.PERSONAL },
+      to: [{ value: { n: 5, f: 0 } }],
     }).save();
 
     await expect(service.getUserBalance(user)).resolves.toEqual(5);

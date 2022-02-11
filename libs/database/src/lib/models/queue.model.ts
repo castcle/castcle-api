@@ -21,14 +21,11 @@
  * or have any questions.
  */
 
+import { MicroTransaction } from '../schemas/transaction.schema';
 import { QueueTopic } from './queue.enum';
 
 export class ClaimAirdropPayload {
   topic = QueueTopic.CLAIM_AIRDROP;
 
-  constructor(
-    public accountId: string,
-    public campaignId: string,
-    public amount?: number
-  ) {}
+  constructor(public campaignId: string, public to: MicroTransaction[]) {}
 }
