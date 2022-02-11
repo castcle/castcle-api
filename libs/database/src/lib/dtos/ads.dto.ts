@@ -53,10 +53,8 @@ export class AdsRequestDto {
   @IsNotEmpty()
   @ApiProperty()
   'duration': number;
-  @IsString()
   @ApiProperty()
   'contentId'?: string;
-  @IsString()
   @ApiProperty()
   'userId'?: string;
 }
