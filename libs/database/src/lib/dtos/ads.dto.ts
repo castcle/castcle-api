@@ -21,17 +21,41 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
-export * from './ads.enum';
-export * from './ads.const';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { AdsObjective } from '../models';
+import { AdsCampaign } from '../schemas';
+
+export class AdsAuctionAggregateDto {
+  campaign: AdsCampaign;
+  auctionPrice: number; // auction price in USDC
+}
+
+export class AdsRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  'campaignName': string;
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  'campaignMessage': string;
+  @IsEnum([AdsObjective.Engagement, AdsObjective.Reach])
+  @IsNotEmpty()
+  @ApiProperty()
+  'objective': AdsObjective;
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty()
+  'dailyBudget': number;
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty()
+  'duration': number;
+  @IsString()
+  @ApiProperty()
+  'contentId'?: string;
+  @IsString()
+  @ApiProperty()
+  'userId'?: string;
+}

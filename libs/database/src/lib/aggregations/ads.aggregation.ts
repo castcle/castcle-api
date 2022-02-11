@@ -21,41 +21,42 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { Account, CastcleBase } from '.';
+import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
-import { AdsDetail } from './ads-detail.schema';
-import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 
-@Schema({ timestamps: true })
-export class AdsCampaign extends CastcleBase {
-  @Prop({ required: true, type: String, index: true })
-  objective: AdsObjective;
+export const mockPipe2AdsAuctionAggregate = () => {
+  const temp: AdsAuctionAggregateDto = {
+    auctionPrice: 0.005,
+    campaign: {
+      _id: 'testId',
+      objective: AdsObjective.Engagement,
+      boostStatus: AdsBoostStatus.Running,
+      status: AdsStatus.Approved,
+      detail: {
+        code: 'ADS001',
+        dailyBudget: 1,
+        duration: 2 * 24 * 60, //2 days = 2 * 24 * 60 minutes
+        message: 'Test Please Follow me',
+        name: 'Sompop',
+      },
+      statistics: {
+        cpm: 0,
+        dailySpent: 0,
+        durationSpent: 0,
+        engagements: {},
+        impressions: 0,
+        reaches: 0,
+      },
+      owner: {
+        _id: 'mockAccountId',
+      } as any,
+      adsRef: {
+        $ref: 'users',
+        $id: 'testId',
+      },
+    } as any,
+  };
+  return temp;
+};
 
-  @Prop({ required: true, type: String, index: true })
-  boostStatus: AdsBoostStatus;
-
-  @Prop({ required: true, type: String, index: true })
-  status: AdsStatus;
-
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
-  owner: Account;
-
-  @Prop({ required: true, type: Object })
-  adsRef: any;
-
-  @Prop()
-  startAt?: Date;
-
-  @Prop()
-  statusReason?: string;
-
-  @Prop({ type: Object }) // cant use adsDetailSchema dk why
-  detail: AdsDetail;
-
-  @Prop({ type: AdsStatisticSchema })
-  statistics: AdsStatistic;
-}
-
-export const AdsCampaignSchema = SchemaFactory.createForClass(AdsCampaign);
+export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate
