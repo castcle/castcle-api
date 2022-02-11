@@ -183,12 +183,19 @@ describe('AppController', () => {
     it('should return UserResponseDto of user id ', async () => {
       const user = await service.getUserFromCredential(userCredential);
       const response = (await appController.getUserById(
-        { $credential: userCredential, $language: 'th' } as any,
-        user._id
+        user._id,
+        {
+          $credential: userCredential,
+          $language: 'th',
+        } as any,
+        { hasRelationshipExpansion: true }
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
       expect(response.email).toEqual(userAccount.email);
+      expect(response.followed).toBeDefined();
+      expect(response.blocking).toBeDefined();
+      expect(response.blocked).toBeDefined();
     });
   });
 
@@ -541,7 +548,7 @@ describe('AppController', () => {
       await appController.deleteSyncSocial(credential, request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result).toBeUndefined();
+      expect(result.active).toEqual(false);
     });
   });
 
