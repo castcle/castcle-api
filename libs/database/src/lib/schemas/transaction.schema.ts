@@ -21,29 +21,35 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes, Types } from 'mongoose';
+import { SchemaTypes } from 'mongoose';
+import { CastcleNumber, WalletType } from '../models';
 import { CastcleBase } from './base.schema';
-import { Wallet, WalletSchema } from './wallet.schema';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class MicroTransaction {
+  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
+  account?: string;
+
+  @Prop({ type: String })
+  type: WalletType;
+
+  @Prop()
+  value?: CastcleNumber;
+}
+
+const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
 
 @Schema({ timestamps: true })
 export class Transaction extends CastcleBase {
-  @Prop({ type: WalletSchema, index: true })
-  from?: Wallet;
+  @Prop({ type: MicroTransactionSchema, index: true })
+  from?: MicroTransaction;
 
-  @Prop({ type: WalletSchema, index: true })
-  to?: Wallet;
+  @Prop({ type: [MicroTransactionSchema], index: true })
+  to?: MicroTransaction[];
 
-  @Prop({
-    type: SchemaTypes.Decimal128,
-    get: (n: number) => n / Environment.DECIMALS,
-    set: (n: number) => (n * Environment.DECIMALS).toFixed(0),
-  })
-  value: Types.Decimal128;
-
-  @Prop()
-  data?: string;
+  @Prop({ type: Object })
+  data?: any;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

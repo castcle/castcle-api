@@ -55,6 +55,7 @@ import {
   UserField,
   UserModelImage,
 } from '../dtos';
+import { CastcleNumber } from '../models';
 import {
   Account,
   AccountAuthenId,
@@ -69,6 +70,7 @@ import {
 } from '../schemas';
 import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
+
 @Injectable()
 export class UserService {
   private logger = new CastLogger(UserService.name);
@@ -98,7 +100,7 @@ export class UserService {
     @InjectModel('SocialSync')
     private _socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction')
-    private _transactionModel: Model<Transaction>,
+    private transactionModel: Model<Transaction>,
     private contentService: ContentService,
     private userProducer: UserProducer
   ) {}
@@ -130,13 +132,19 @@ export class UserService {
       })
       .exec();
 
+  /**
+   * Get user's balance
+   * @param {User}
+   */
   getUserBalance = async (user: User) => {
-    const getBalanceResponses =
-      await this._transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(String(user.ownerAccount))
-      );
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(String(user.ownerAccount))
+    );
 
-    return Number(getBalanceResponses[0].total.toString());
+    const totalN = String(balance?.totalN ?? 0);
+    const totalF = String(balance?.totalF ?? 0);
+
+    return new CastcleNumber(totalN.toString(), totalF.toString()).toNumber();
   };
 
   getUserFromAccountId = async (

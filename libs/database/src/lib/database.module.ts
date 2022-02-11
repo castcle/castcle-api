@@ -56,6 +56,7 @@ import {
 } from './schemas';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
+import { AdsService } from './services/ads.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
@@ -168,6 +169,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SocialSyncService,
     CommentService,
     TransactionService,
+    AdsService,
   ],
   exports: [
     AuthenticationService,
@@ -184,6 +186,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SocialSyncService,
     CommentService,
     TransactionService,
+    AdsService,
   ],
 })
 export class DatabaseModule {}
@@ -206,4 +209,5 @@ export {
   getRelationship,
   TransactionService,
   getSocialProfix,
+  AdsService,
 };

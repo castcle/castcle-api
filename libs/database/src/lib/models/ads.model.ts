@@ -7,24 +7,6 @@
  * Copyright (c) 2022 Your Company
  */
 
-export enum AdsObjective {
-  Engagement = 'engagement',
-  Reach = 'reach',
-}
-
-export enum AdsStatus {
-  Processing = 'processing',
-  Declinded = 'declinded',
-  Approved = 'approved',
-}
-
-export enum AdsBoostStatus {
-  Unknown = 'unknown',
-  Running = 'running',
-  Pause = 'pause',
-  End = 'end',
-}
-
 export class AdsCost {
   CAST: number;
   USDC: number;

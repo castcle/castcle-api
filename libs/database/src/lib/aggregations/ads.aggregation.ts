@@ -21,17 +21,42 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
+import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
+import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class Wallet {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account: string;
+export const mockPipe2AdsAuctionAggregate = () => {
+  const temp: AdsAuctionAggregateDto = {
+    auctionPrice: 0.005,
+    campaign: {
+      _id: 'testId',
+      objective: AdsObjective.Engagement,
+      boostStatus: AdsBoostStatus.Running,
+      status: AdsStatus.Approved,
+      detail: {
+        code: 'ADS001',
+        dailyBudget: 1,
+        duration: 2 * 24 * 60, //2 days = 2 * 24 * 60 minutes
+        message: 'Test Please Follow me',
+        name: 'Sompop',
+      },
+      statistics: {
+        cpm: 0,
+        dailySpent: 0,
+        durationSpent: 0,
+        engagements: {},
+        impressions: 0,
+        reaches: 0,
+      },
+      owner: {
+        _id: 'mockAccountId',
+      } as any,
+      adsRef: {
+        $ref: 'users',
+        $id: 'testId',
+      },
+    } as any,
+  };
+  return temp;
+};
 
-  @Prop({ type: String })
-  type: WalletType;
-}
-
-export const WalletSchema = SchemaFactory.createForClass(Wallet);
+export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate

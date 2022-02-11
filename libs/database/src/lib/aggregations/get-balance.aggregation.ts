@@ -21,31 +21,33 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
 import { Types } from 'mongoose';
 
 export class GetBalanceResponse {
-  total: Types.Decimal128;
+  totalN: Types.Decimal128;
+  totalF: Types.Decimal128;
 }
 
-export const pipelineOfGetBalance = (userId: string) => [
+export const pipelineOfGetBalance = (accountId: string) => [
+  { $unwind: { path: '$to' } },
   {
     $facet: {
-      inflows: [{ $match: { 'to.account': Types.ObjectId(userId) } }],
-      outflows: [{ $match: { 'from.account': Types.ObjectId(userId) } }],
+      inflows: [{ $match: { 'to.account': Types.ObjectId(accountId) } }],
+      outflows: [{ $match: { 'from.account': Types.ObjectId(accountId) } }],
     },
   },
   {
     $project: {
-      total: {
-        $divide: [
-          {
-            $subtract: [
-              { $sum: '$inflows.value' },
-              { $sum: '$outflows.value' },
-            ],
-          },
-          Environment.DECIMALS,
+      totalN: {
+        $subtract: [
+          { $sum: '$inflows.to.value.n' },
+          { $sum: '$outflows.to.value.n' },
+        ],
+      },
+      totalF: {
+        $subtract: [
+          { $sum: '$inflows.to.value.f' },
+          { $sum: '$outflows.to.value.f' },
         ],
       },
     },

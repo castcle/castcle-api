@@ -26,7 +26,7 @@ import { BullModule } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { connect, disconnect, model } from 'mongoose';
+import { connect, disconnect, model, Types } from 'mongoose';
 import {
   CampaignService,
   MongooseAsyncFeatures,
@@ -39,7 +39,7 @@ describe('Campaign Service', () => {
   let mongo: MongoMemoryServer;
   let campaignService: CampaignService;
   const campaignModel = model('Campaign', CampaignSchema);
-  const accountId = 'account-id';
+  const accountId = Types.ObjectId().toString();
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();

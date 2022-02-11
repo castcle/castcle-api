@@ -28,14 +28,17 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job, Queue as BullQueue } from 'bull';
-import { Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   pipelineOfGetEligibleAccountsFromCampaign,
   EligibleAccount,
+  pipelineOfGetCampaignClaims,
+  GetCampaignClaimsResponse,
 } from '../aggregations';
 import {
   CampaignStatus,
   CampaignType,
+  CastcleNumber,
   ClaimAirdropPayload,
   QueueStatus,
   QueueTopic,
@@ -45,8 +48,6 @@ import { Account, Campaign, Queue, Transaction } from '../schemas';
 
 @Injectable()
 export class CampaignService {
-  private fractionDigits = 8;
-  private round = (n: number) => n.toFixed(this.fractionDigits);
   private logger = new CastLogger(CampaignService.name);
 
   constructor(
@@ -76,13 +77,11 @@ export class CampaignService {
   }
 
   async claimContentReachAirdrops() {
-    const campaignQuery = {
+    const campaign = await this.campaignModel.findOne({
       type: CampaignType.CONTENT_REACH,
       status: CampaignStatus.CALCULATING,
       endDate: { $lte: new Date() },
-    };
-
-    const campaign = await this.campaignModel.findOne(campaignQuery);
+    });
 
     if (!campaign) {
       return this.logger.log(`#claimContentReachAirdrops:completed`);
@@ -91,21 +90,27 @@ export class CampaignService {
     if (campaign.rewardBalance > 0) {
       const eligibleAccounts =
         await this.campaignModel.aggregate<EligibleAccount>(
-          pipelineOfGetEligibleAccountsFromCampaign(campaignQuery)
+          pipelineOfGetEligibleAccountsFromCampaign({ _id: campaign._id })
         );
 
-      eligibleAccounts.forEach(async ({ id, campaignId, amount }) => {
-        const queue = await new this.queueModel({
-          payload: new ClaimAirdropPayload(id, campaignId, amount),
-        }).save();
-
-        await this.campaignQueue.add(queue);
-        this.logger.log(
-          `#claimContentReachAirdrops:submit:queueId-${queue.id}
-  Claim campaign's airdrop: ${campaignId}
-  For account: ${id}`
-        );
+      const to = eligibleAccounts.map(({ id, amount }) => {
+        return {
+          account: id,
+          type: WalletType.PERSONAL,
+          value: CastcleNumber.from(amount),
+        };
       });
+
+      const queue = await new this.queueModel({
+        payload: new ClaimAirdropPayload(campaign.id, to),
+      }).save();
+
+      await this.campaignQueue.add(queue);
+      this.logger.log(
+        `#claimContentReachAirdrops:submit:queueId-${queue.id}
+  Claim campaign's airdrop: ${campaign.id}
+  For: ${JSON.stringify(queue, null, 2)}`
+      );
     }
 
     await campaign.set({ status: CampaignStatus.COMPLETE }).save();
@@ -130,14 +135,20 @@ export class CampaignService {
       throw CastcleException.REWARD_IS_NOT_ENOUGH;
     }
 
-    const queues = await this.queueModel.find({
-      status: { $ne: QueueStatus.FAILED },
-      'payload.accountId': accountId,
-      'payload.campaignId': campaign.id,
-      'payload.topic': QueueTopic.CLAIM_AIRDROP,
-    });
+    const claims = await this.queueModel.aggregate([
+      { $unwind: { path: '$payload.to' } },
+      {
+        $match: {
+          status: { $ne: QueueStatus.FAILED },
+          'payload.to.account': accountId,
+          'payload.campaignId': campaign.id,
+          'payload.topic': QueueTopic.CLAIM_AIRDROP,
+        },
+      },
+      { $count: 'count' },
+    ]);
 
-    const claimsCount = queues.length;
+    const claimsCount = claims[0]?.count;
     const hasReachedMaxClaims = claimsCount >= campaign.maxClaims;
 
     this.logger.log(
@@ -150,7 +161,9 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
 
     const queue = await new this.queueModel({
-      payload: new ClaimAirdropPayload(accountId, campaign.id),
+      payload: new ClaimAirdropPayload(campaign.id, [
+        { account: accountId, type: WalletType.PERSONAL },
+      ]),
     }).save();
 
     await this.campaignQueue.add(queue);
@@ -165,41 +178,63 @@ For account: ${accountId}`
   async processClaimAirdrop(job: Job<Queue<ClaimAirdropPayload>>) {
     this.logger.log(
       `#processClaimAirdropJob:init:jobId-${job.id}\n${JSON.stringify(
-        job.data
+        job.data,
+        null,
+        2
       )}`
     );
 
+    const session = await this.transactionModel.startSession();
     const queue = await this.queueModel.findById(job.data._id);
 
     try {
+      session.startTransaction();
       queue.startedAt = new Date();
       const payload = queue.payload;
       const campaign = await this.campaignModel.findById(payload.campaignId);
-      const account = await this.accountModel
-        .findById(payload.accountId)
-        .select('+campaigns');
 
-      switch (campaign.type) {
-        case CampaignType.FRIEND_REFERRAL:
-        case CampaignType.VERIFY_MOBILE:
-          await this.isEligibleForVerifyMobileCampaign(account, campaign);
-      }
+      payload.to.forEach(async ({ account: accountId }) => {
+        const account = await this.accountModel
+          .findById(accountId)
+          .select('+campaigns');
 
-      await this.claimAirdrop(account, campaign, payload);
+        switch (campaign.type) {
+          case CampaignType.FRIEND_REFERRAL:
+          case CampaignType.VERIFY_MOBILE:
+            await this.isEligibleForVerifyMobileCampaign(account, campaign);
+        }
+
+        if (!account.campaigns) account.campaigns = {};
+        if (!account.campaigns[campaign.id]) {
+          account.campaigns[campaign.id] = [];
+        }
+
+        account.campaigns[campaign.id].push(new Date());
+        await account.save({ session });
+      });
+
+      await this.claimAirdrop(campaign, payload, session);
+      await session.commitTransaction();
 
       queue.status = QueueStatus.DONE;
 
       this.logger.log(
         `#processClaimAirdropJob:done:jobId-${job.id}\n${JSON.stringify(
-          job.data
+          job.data,
+          null,
+          2
         )}`
       );
     } catch (error: unknown) {
+      await session.abortTransaction();
+
       this.logger.error(
         `#processClaimAirdropJob:error:jobId-${job.id}\n${JSON.stringify(
-          job.data
+          job.data,
+          null,
+          2
         )}`,
-        error instanceof Error ? error.stack : JSON.stringify(error)
+        error instanceof Error ? error.stack : JSON.stringify(error, null, 2)
       );
 
       queue.status = QueueStatus.FAILED;
@@ -212,11 +247,9 @@ For account: ${accountId}`
     account: Account,
     campaign: Campaign
   ) {
-    const isRewardEnough = this.round(
-      campaign.rewardBalance - campaign.rewardsPerClaim
-    );
-
-    if (!isRewardEnough) throw CastcleException.REWARD_IS_NOT_ENOUGH;
+    if (campaign.rewardBalance < campaign.rewardsPerClaim) {
+      throw CastcleException.REWARD_IS_NOT_ENOUGH;
+    }
 
     const claimsCount = account.campaigns?.[campaign.id]?.length ?? 0;
     const hasReachedMaxClaims = claimsCount > campaign.maxClaims;
@@ -232,41 +265,66 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
   }
 
   private async claimAirdrop(
-    account: Account,
     campaign: Campaign,
-    claimCampaignsAirdropJob: ClaimAirdropPayload
+    claimCampaignsAirdropJob: ClaimAirdropPayload,
+    session: ClientSession
   ) {
-    claimCampaignsAirdropJob.amount =
-      campaign.rewardBalance >= claimCampaignsAirdropJob.amount
-        ? claimCampaignsAirdropJob.amount
-        : campaign.rewardBalance;
+    const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
+      const valueToClaim = new CastcleNumber(value.n, value.f);
+      const remaining =
+        campaign.rewardBalance >= valueToClaim.toNumber()
+          ? valueToClaim.toString()
+          : String(campaign.rewardBalance);
 
-    const amount = campaign.rewardsPerClaim ?? claimCampaignsAirdropJob.amount;
+      const amount = CastcleNumber.from(campaign.rewardsPerClaim ?? remaining);
+
+      campaign.rewardBalance = CastcleNumber.subtract(
+        campaign.rewardBalance,
+        amount.toString()
+      ).toNumber();
+
+      return { account, type, value: amount };
+    });
+
     const transaction = await new this.transactionModel({
-      to: { account: account.id, type: WalletType.PERSONAL },
-      value: amount,
-      data: JSON.stringify(claimCampaignsAirdropJob),
-    }).save();
+      to,
+      data: { campaignId: claimCampaignsAirdropJob.campaignId },
+    }).save({ session });
 
-    if (!account.campaigns) account.campaigns = {};
-    if (!account.campaigns[campaign.id]) account.campaigns[campaign.id] = [];
-
-    account.campaigns[campaign.id].push(new Date());
-
-    await account.save();
-    await campaign
-      .set({
-        rewardBalance: this.round(campaign.rewardBalance - amount),
-      })
-      .save();
+    await campaign.save({ session });
 
     this.logger.log(
       `#claimAirdrop:transaction-created:${transaction.id}
 Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${account.id}
-Amount: ${amount}`
+${JSON.stringify(transaction, null, 2)}`
     );
 
     return transaction;
+  }
+
+  async getAirdropBalances(accountId: string, dateRange: Date) {
+    const campaignQuery: FilterQuery<Campaign> = dateRange
+      ? {
+          startDate: { $lte: dateRange },
+          endDate: { $gte: dateRange },
+        }
+      : {};
+
+    const campaigns =
+      await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
+        pipelineOfGetCampaignClaims(campaignQuery, accountId)
+      );
+
+    return campaigns.map(({ claims, ...campaign }) => {
+      return {
+        ...campaign,
+        claims: claims?.map((claim) =>
+          new CastcleNumber(
+            claim.totalN?.toString(),
+            claim.totalF?.toString()
+          ).toNumber()
+        ),
+      };
+    });
   }
 }
