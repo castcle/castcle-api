@@ -72,7 +72,7 @@ export class AdsService {
   };
 
   getCode = (account: Account) =>
-    `${(account.id as string).toUpperCase().slice(19)}${new Date().getTime()}`;
+    `${String(account._id).toUpperCase().slice(19)}${new Date().getTime()}`;
 
   /**
    * Create a ads campaign
@@ -90,6 +90,7 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
+    console.log(adsRef);
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
@@ -113,12 +114,12 @@ export class AdsService {
     let payload: ContentPayloadItem | PageResponseDto; // = {};
     if (campaign.adsRef.$ref === 'user' || campaign.adsRef.oref === 'user') {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id | campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid
       );
       payload = page.toPageResponse();
     } else {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id | campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid
       );
       payload = toSignedContentPayloadItem(content);
     }
