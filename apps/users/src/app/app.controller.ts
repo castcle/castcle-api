@@ -89,6 +89,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { AdsRequestDto } from '@castcle-api/database/dtos';
 import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
 import {
   TargetCastcleDto,
@@ -99,6 +100,7 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
+import { AdsService } from '@castcle-api/database';
 
 class DeleteUserBody {
   channel: string;
@@ -118,7 +120,8 @@ export class UserController {
     private socialSyncService: SocialSyncService,
     private transactionService: TransactionService,
     private userService: UserService,
-    private suggestionService: SuggestionService
+    private suggestionService: SuggestionService,
+    private adsService: AdsService
   ) {}
 
   /**
@@ -413,6 +416,20 @@ export class UserController {
       user,
       contents
     );
+  }
+
+  @CastcleBasicAuth()
+  @Post('me/advertise')
+  async createAds(
+    @Auth() { account }: Authorizer,
+    @Body() adsRequestDto: AdsRequestDto
+  ) {
+    //check if
+    const campaign = await this.adsService.createAds(account, adsRequestDto);
+    const response = await this.adsService.transformAdsCampaignToAdsResponse(
+      campaign
+    );
+    return response;
   }
 
   @ApiOkResponse({

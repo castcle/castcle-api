@@ -209,4 +209,5 @@ export {
   getRelationship,
   TransactionService,
   getSocialProfix,
+  AdsService,
 };
