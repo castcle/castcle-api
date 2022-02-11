@@ -28,12 +28,22 @@ export class CastcleNumber {
   public f: number;
 
   constructor(n: number | string, f: number | string) {
-    this.n = Number(n);
-    this.f = Number(f);
+    const maxFloatingPoint = Number(
+      '1'.padEnd(Environment.DECIMALS_FLOAT + 1, '0')
+    );
+    this.n = Number(n || 0);
+    this.f = Number(f || 0);
+
+    if (this.f >= maxFloatingPoint) {
+      this.n = this.n + Math.ceil(this.f / maxFloatingPoint);
+      this.f = this.f % maxFloatingPoint;
+    }
   }
 
   static from(str: number | string) {
-    const [n, f] = String(str).split('.');
+    const [n, f] = (typeof str === 'string' ? Number(str) : str)
+      .toFixed(Environment.DECIMALS_FLOAT)
+      .split('.');
 
     return new CastcleNumber(
       Number(n || ''),

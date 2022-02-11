@@ -29,7 +29,6 @@ import {
   getRelationship,
   SocialProvider,
   SocialSyncService,
-  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -90,7 +89,13 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AdsRequestDto } from '@castcle-api/database/dtos';
-import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
+import {
+  BlockingDto,
+  GetAirdropBalancesQuery,
+  GetAirdropBalancesStatus,
+  ReportingDto,
+  UnblockingDto,
+} from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -118,7 +123,6 @@ export class UserController {
     private campaignService: CampaignService,
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
-    private transactionService: TransactionService,
     private userService: UserService,
     private suggestionService: SuggestionService,
     private adsService: AdsService
@@ -1251,5 +1255,24 @@ export class UserController {
       sourceContentId,
       userDelete.id
     );
+  }
+
+  @Get('me/airdrops')
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async getMyAirdropBalances(
+    @Auth() { account }: Authorizer,
+    @Query() { status }: GetAirdropBalancesQuery
+  ) {
+    const campaigns = await this.campaignService.getAirdropBalances(
+      account._id,
+      status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
+    );
+
+    const totalBalance = await this.userService.getUserBalance({
+      ownerAccount: account._id,
+    } as unknown as User);
+
+    return ResponseDto.ok({ payload: { totalBalance, campaigns } });
   }
 }

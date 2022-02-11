@@ -48,8 +48,8 @@ export class Transaction extends CastcleBase {
   @Prop({ type: [MicroTransactionSchema], index: true })
   to?: MicroTransaction[];
 
-  @Prop()
-  data?: string;
+  @Prop({ type: Object })
+  data?: any;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
