@@ -32,3 +32,6 @@ export * from './social-sync.enum';
 export * from './user.enum';
 export * from './wallet.enum';
 export * from './wallet.model';
+export * from './ads.model';
+export * from './ads.enum';
+export * from './ads.const';

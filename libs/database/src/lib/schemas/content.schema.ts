@@ -33,7 +33,7 @@ import {
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
 import { Revision } from './revision.schema';
-import { Engagement, EngagementType } from './engagement.schema';
+import { Engagement } from './engagement.schema';
 import { CastcleImage } from '../dtos/common.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { User } from './user.schema';
@@ -41,6 +41,7 @@ import { Relationship } from './relationship.schema';
 import { FeedItem } from './feed-item.schema';
 import { Image } from '@castcle-api/utils/aws';
 import { Configs } from '@castcle-api/environments';
+import { EngagementType } from '../models/engagement.enum';
 
 const engagementNameMap = {
   like: 'liked',

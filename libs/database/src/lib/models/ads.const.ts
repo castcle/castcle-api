@@ -21,7 +21,24 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { AdsStatistic } from '../schemas/ads-statistic.schema';
+
+export const DefaultAdsStatistic = {
+  cpm: 0,
+  dailySpent: 0,
+  budgetSpent: 0,
+  durationSpent: 0,
+  impressions: 0,
+  reaches: 0,
+  engagements: {
+    likes: 0,
+    comments: 0,
+    recast: 0,
+    quotecast: 0,
+    clicks: 0,
+    followerGain: 0,
+    farm: 0,
+    saved: 0,
+    rewardDistributed: 0,
+  },
+} as AdsStatistic;

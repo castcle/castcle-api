@@ -29,7 +29,6 @@ import {
   getRelationship,
   SocialProvider,
   SocialSyncService,
-  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -89,7 +88,14 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { BlockingDto, ReportingDto, UnblockingDto } from './dtos';
+import { AdsRequestDto } from '@castcle-api/database/dtos';
+import {
+  BlockingDto,
+  GetAirdropBalancesQuery,
+  GetAirdropBalancesStatus,
+  ReportingDto,
+  UnblockingDto,
+} from './dtos';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -99,6 +105,7 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
+import { AdsService } from '@castcle-api/database';
 
 class DeleteUserBody {
   channel: string;
@@ -116,9 +123,9 @@ export class UserController {
     private campaignService: CampaignService,
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
-    private transactionService: TransactionService,
     private userService: UserService,
-    private suggestionService: SuggestionService
+    private suggestionService: SuggestionService,
+    private adsService: AdsService
   ) {}
 
   /**
@@ -413,6 +420,20 @@ export class UserController {
       user,
       contents
     );
+  }
+
+  @CastcleBasicAuth()
+  @Post('me/advertise')
+  async createAds(
+    @Auth() { account }: Authorizer,
+    @Body() adsRequestDto: AdsRequestDto
+  ) {
+    //check if
+    const campaign = await this.adsService.createAds(account, adsRequestDto);
+    const response = await this.adsService.transformAdsCampaignToAdsResponse(
+      campaign
+    );
+    return response;
   }
 
   @ApiOkResponse({
@@ -1234,5 +1255,24 @@ export class UserController {
       sourceContentId,
       userDelete.id
     );
+  }
+
+  @Get('me/airdrops')
+  @CastcleBasicAuth()
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async getMyAirdropBalances(
+    @Auth() { account }: Authorizer,
+    @Query() { status }: GetAirdropBalancesQuery
+  ) {
+    const campaigns = await this.campaignService.getAirdropBalances(
+      account._id,
+      status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
+    );
+
+    const totalBalance = await this.userService.getUserBalance({
+      ownerAccount: account._id,
+    } as unknown as User);
+
+    return ResponseDto.ok({ payload: { totalBalance, campaigns } });
   }
 }

@@ -28,10 +28,12 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job, Queue as BullQueue } from 'bull';
-import { ClientSession, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   pipelineOfGetEligibleAccountsFromCampaign,
   EligibleAccount,
+  pipelineOfGetCampaignClaims,
+  GetCampaignClaimsResponse,
 } from '../aggregations';
 import {
   CampaignStatus,
@@ -286,7 +288,7 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
 
     const transaction = await new this.transactionModel({
       to,
-      data: JSON.stringify(claimCampaignsAirdropJob),
+      data: { campaignId: claimCampaignsAirdropJob.campaignId },
     }).save({ session });
 
     await campaign.save({ session });
@@ -298,5 +300,31 @@ ${JSON.stringify(transaction, null, 2)}`
     );
 
     return transaction;
+  }
+
+  async getAirdropBalances(accountId: string, dateRange: Date) {
+    const campaignQuery: FilterQuery<Campaign> = dateRange
+      ? {
+          startDate: { $lte: dateRange },
+          endDate: { $gte: dateRange },
+        }
+      : {};
+
+    const campaigns =
+      await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
+        pipelineOfGetCampaignClaims(campaignQuery, accountId)
+      );
+
+    return campaigns.map(({ claims, ...campaign }) => {
+      return {
+        ...campaign,
+        claims: claims?.map((claim) =>
+          new CastcleNumber(
+            claim.totalN?.toString(),
+            claim.totalF?.toString()
+          ).toNumber()
+        ),
+      };
+    });
   }
 }

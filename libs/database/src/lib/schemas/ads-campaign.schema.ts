@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
 import { Account, CastcleBase } from '.';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
-import { AdsDetail, AdsDetailSchema } from './ads-detail.schema';
+import { AdsDetail } from './ads-detail.schema';
 import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 
 @Schema({ timestamps: true })
@@ -34,7 +34,7 @@ export class AdsCampaign extends CastcleBase {
   objective: AdsObjective;
 
   @Prop({ required: true, type: String, index: true })
-  boosStatus: AdsBoostStatus;
+  boostStatus: AdsBoostStatus;
 
   @Prop({ required: true, type: String, index: true })
   status: AdsStatus;
@@ -51,7 +51,7 @@ export class AdsCampaign extends CastcleBase {
   @Prop()
   statusReason?: string;
 
-  @Prop({ type: AdsDetailSchema })
+  @Prop({ type: Object }) // cant use adsDetailSchema dk why
   detail: AdsDetail;
 
   @Prop({ type: AdsStatisticSchema })
