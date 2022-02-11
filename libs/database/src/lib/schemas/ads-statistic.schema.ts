@@ -39,7 +39,7 @@ export class AdsStatistic extends DataStatistic {
   durationSpent: number;
 
   @Prop()
-  lastSeenAt: Date;
+  lastSeenAt?: Date;
 }
 
 export const AdsStatisticSchema = SchemaFactory.createForClass(AdsStatistic);

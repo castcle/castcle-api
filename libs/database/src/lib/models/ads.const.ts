@@ -21,17 +21,23 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
-export * from './ads.enum';
-export * from './ads.const';
+import { AdsStatistic } from '../schemas/ads-statistic.schema';
+
+export const DefaultAdsStatistic = {
+  cpm: 0,
+  dailySpent: 0,
+  durationSpent: 0,
+  impressions: 0,
+  reaches: 0,
+  engagements: {
+    likes: 0,
+    comments: 0,
+    recast: 0,
+    quotecast: 0,
+    clicks: 0,
+    followerGain: 0,
+    farm: 0,
+    saved: 0,
+    rewardDistributed: 0,
+  },
+} as AdsStatistic;

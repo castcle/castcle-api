@@ -56,6 +56,7 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
+import { EngagementType } from '../models/engagement.enum';
 import {
   Comment,
   User,
@@ -65,7 +66,6 @@ import {
   Content,
   toSignedContentPayloadItem,
   Engagement,
-  EngagementType,
   FeedItem,
   GuestFeedItem,
   GuestFeedItemType,

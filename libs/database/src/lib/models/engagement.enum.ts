@@ -21,17 +21,11 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
-export * from './ads.enum';
-export * from './ads.const';
+export enum EngagementType {
+  Like = 'like',
+  Recast = 'recast',
+  Quote = 'quote',
+  Comment = 'comment',
+  Report = 'report',
+  Seen = 'seen',
+}

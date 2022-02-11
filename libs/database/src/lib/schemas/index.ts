@@ -55,3 +55,4 @@ export * from './ux-engagement.schema';
 export * from './default-content.schema';
 export * from './data-statistic.schema';
 export * from './ads-campaign.schema';
+export * from './ads-placement.schema';

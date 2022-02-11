@@ -21,17 +21,30 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.model';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './ads.model';
-export * from './ads.enum';
-export * from './ads.const';
+export enum AdsObjective {
+  Engagement = 'engagement',
+  Reach = 'reach',
+}
+
+export enum AdsStatus {
+  Processing = 'processing',
+  Declinded = 'declinded',
+  Approved = 'approved',
+}
+
+export enum AdsBoostStatus {
+  Unknown = 'unknown',
+  Running = 'running',
+  Pause = 'pause',
+  End = 'end',
+}
+
+export enum AdsEngagementKey {
+  Likes = 'likes',
+  Recasts = 'recasts',
+  Quotes = 'quotecasts',
+  Comments = 'comments',
+  Saved = 'saved',
+  Farm = 'farm',
+  Reward = 'rewardDistributed',
+}
