@@ -23,5 +23,6 @@
 
 export * from './blocking.dto';
 export * from './dto';
+export * from './get-airdrop-balances.dto';
 export * from './reporting.dto';
 export * from './unblocking.dto';
