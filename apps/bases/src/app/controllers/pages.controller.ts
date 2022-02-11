@@ -173,6 +173,7 @@ export class PagesController {
     type: PageDto,
   })
   @HttpCode(201)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleClearCacheAuth(CacheKeyName.Pages)
   @Put('pages/:id')
   async updatePage(
@@ -206,6 +207,7 @@ export class PagesController {
           subpath: `page_${page.displayId}`,
         })
       ).image;
+
     if (body.displayName) page.displayName = body.displayName;
     if (body.overview) page.profile.overview = body.overview;
     if (body.links) {
@@ -272,6 +274,7 @@ export class PagesController {
   })
   @HttpCode(204)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @Delete('pages/:id')
   async deletePage(
     @Req() req: CredentialRequest,

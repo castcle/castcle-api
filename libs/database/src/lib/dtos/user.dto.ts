@@ -242,18 +242,24 @@ export class PageResponseDto {
 
 export class UpdatePageDto {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   displayName?: string;
 
   @ApiProperty()
+  @IsOptional()
   images?: {
     avatar?: string;
     cover?: string;
   };
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   overview?: string;
 
   @ApiProperty()
+  @IsOptional()
   links?: {
     facebook?: string | null;
     twitter?: string | null;
