@@ -192,6 +192,7 @@ export class PagesController {
       page.profile.images.avatar = (
         await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
+          addTime: true,
           sizes: AVATAR_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`,
         })
@@ -200,6 +201,7 @@ export class PagesController {
       page.profile.images.cover = (
         await this._uploadImage(body.images.cover, {
           filename: `page-cover-${id}`,
+          addTime: true,
           sizes: COMMON_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`,
         })
@@ -420,10 +422,10 @@ export class PagesController {
 
           this.logger.log('upload avatar to s3');
           const avatar = await this._uploadImage(imgAvatar, {
-            filename: `avatar-${req.$credential.account._id}`,
+            filename: `page-avatar-${sugguestDisplayId}`,
             addTime: true,
             sizes: AVATAR_SIZE_CONFIGS,
-            subpath: `account_${req.$credential.account._id}`,
+            subpath: `page_${sugguestDisplayId}`,
           });
 
           socialPage.avatar = avatar.image;
@@ -436,10 +438,10 @@ export class PagesController {
 
           this.logger.log('upload cover to s3');
           const cover = await this._uploadImage(imgCover, {
-            filename: `cover-${req.$credential.account._id}`,
+            filename: `page-cover-${sugguestDisplayId}`,
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `account_${req.$credential.account._id}`,
+            subpath: `page_${sugguestDisplayId}`,
           });
           socialPage.cover = cover.image;
           this.logger.log('Suggest Cover');
