@@ -25,6 +25,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
+import { CastcleNumber } from '../models';
 import { Transaction, User } from '../schemas';
 
 @Injectable()
@@ -39,11 +40,13 @@ export class TransactionService {
    * @param {User}
    */
   getUserBalance = async (user: User) => {
-    const getBalanceResponses =
-      await this.transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(String(user.ownerAccount))
-      );
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(String(user.ownerAccount))
+    );
 
-    return Number(getBalanceResponses[0].total.toString());
+    const totalN = String(balance?.totalN ?? 0);
+    const totalF = String(balance?.totalF ?? 0);
+
+    return new CastcleNumber(totalN.toString(), totalF.toString()).toNumber();
   };
 }

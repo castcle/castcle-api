@@ -147,8 +147,14 @@ export const Environment = {
     : Configs.Feed.DecayDays,
 
   /**
-   * Number of digits after the decimal point
-   * @default 1E+18
+   * Number of digits before the decimal point
+   * @default 10
    */
-  DECIMALS: Number(process.env.DECIMALS || 1e18),
+  DECIMALS_INT: Number(process.env.DECIMALS_INT || 10),
+
+  /**
+   * Number of digits after the decimal point
+   * @default 8
+   */
+  DECIMALS_FLOAT: Number(process.env.DECIMALS_FLOAT || 8),
 };
