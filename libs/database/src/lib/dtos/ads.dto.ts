@@ -23,6 +23,7 @@
 
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { ContentPayloadItem, PageResponseDto } from '.';
 import { AdsObjective } from '../models';
 import { AdsCampaign } from '../schemas';
 
@@ -58,4 +59,35 @@ export class AdsRequestDto {
   @IsString()
   @ApiProperty()
   'userId'?: string;
+}
+
+export class AdsCampaignResponseDto {
+  'campaignName': string;
+  'campaignMessage': string;
+  'campaignCode': string;
+  'objective': string;
+  'dailyBudget': number;
+  'duration': number;
+  'adStatus': string;
+  'boostStatus': string;
+  'boostType': 'page' | 'content';
+  'payload': ContentPayloadItem | PageResponseDto;
+  'statistics': AdsCampaignStatisticResponse;
+  'engagement': any;
+  'createdAt': Date;
+  'updatedAt': Date;
+}
+
+export class AdsCampaignStatisticResponse {
+  'budgetSpent': number;
+  'dailySpent': number;
+  'impression': {
+    organic: number;
+    paid: number;
+  };
+  'reach': {
+    organic: number;
+    paid: number;
+  };
+  'CPM': number;
 }

@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsService,
   AuthenticationService,
   CampaignService,
   ContentService,
@@ -101,6 +102,7 @@ describe('AppController', () => {
         CampaignService,
         TransactionService,
         SuggestionService,
+        AdsService,
       ],
     }).compile();
     appController = app.get(UserController);

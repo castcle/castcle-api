@@ -26,6 +26,7 @@ import { AdsStatistic } from '../schemas/ads-statistic.schema';
 export const DefaultAdsStatistic = {
   cpm: 0,
   dailySpent: 0,
+  budgetSpent: 0,
   durationSpent: 0,
   impressions: 0,
   reaches: 0,

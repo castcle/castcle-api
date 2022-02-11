@@ -25,11 +25,19 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { mockPipe2AdsAuctionAggregate } from '../aggregations/ads.aggregation';
-import { AdsRequestDto } from '../dtos/ads.dto';
-import { Account, AdsCampaign, AdsPlacement } from '../schemas';
+import { AdsCampaignResponseDto, AdsRequestDto } from '../dtos/ads.dto';
+import {
+  Account,
+  AdsCampaign,
+  AdsPlacement,
+  Content,
+  toSignedContentPayloadItem,
+  User,
+} from '../schemas';
 import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
+import { ContentPayloadItem, PageResponseDto } from '../dtos';
 
 const CAST_PRICE = 0.1;
 
@@ -38,7 +46,11 @@ export class AdsService {
   constructor(
     @InjectModel('AdsCampaign')
     public _adsCampaignModel: Model<AdsCampaign>,
-    @InjectModel('AdsPlacement') public _adsPlacementModel: Model<AdsPlacement>
+    @InjectModel('AdsPlacement') public _adsPlacementModel: Model<AdsPlacement>,
+    @InjectModel('Content')
+    public _contentModel: Model<Content>,
+    @InjectModel('User')
+    public _userModel: Model<User>
   ) {}
 
   getAdsPlacementFromAuction = async (
@@ -78,7 +90,6 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    console.log('adsRef', adsRef);
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
@@ -96,5 +107,51 @@ export class AdsService {
       boostStatus: AdsBoostStatus.Unknown,
     });
     return campaign.save();
+  };
+
+  transformAdsCampaignToAdsResponse = async (campaign: AdsCampaign) => {
+    let payload: ContentPayloadItem | PageResponseDto; // = {};
+    if (campaign.adsRef.$ref === 'user' || campaign.adsRef.oref === 'user') {
+      const page = await this._userModel.findById(
+        campaign.adsRef.$id | campaign.adsRef.oid
+      );
+      payload = page.toPageResponse();
+    } else {
+      const content = await this._contentModel.findById(
+        campaign.adsRef.$id | campaign.adsRef.oid
+      );
+      payload = toSignedContentPayloadItem(content);
+    }
+    return {
+      campaignName: campaign.detail.name,
+      campaignMessage: campaign.detail.message,
+      adStatus: campaign.status,
+      boostStatus: campaign.boostStatus,
+      boostType:
+        campaign.adsRef.$ref === 'user' || campaign.adsRef.oref
+          ? 'page'
+          : 'content',
+      campaignCode: campaign.detail.code,
+      dailyBudget: campaign.detail.dailyBudget,
+      duration: campaign.detail.duration,
+      objective: campaign.objective,
+      payload: payload,
+      engagement: campaign.statistics.engagements, // this could use,
+      statistics: {
+        CPM: campaign.statistics.cpm,
+        budgetSpent: campaign.statistics.budgetSpent,
+        dailySpent: campaign.statistics.dailySpent,
+        impression: {
+          organic: 0, // need to embed organic stat to content,
+          paid: 0,
+        },
+        reach: {
+          organic: 0,
+          paid: 0,
+        },
+      },
+      createdAt: campaign.createdAt,
+      updatedAt: campaign.updatedAt,
+    } as AdsCampaignResponseDto;
   };
 }

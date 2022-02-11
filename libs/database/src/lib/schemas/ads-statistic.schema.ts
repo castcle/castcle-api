@@ -36,6 +36,9 @@ export class AdsStatistic extends DataStatistic {
   dailySpent: number;
 
   @Prop()
+  budgetSpent: number;
+
+  @Prop()
   durationSpent: number;
 
   @Prop()
