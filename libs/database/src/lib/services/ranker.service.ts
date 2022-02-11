@@ -21,35 +21,37 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
+import { predictContents } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { FeedItemDto } from '../dtos/feedItem.dto';
-import { createCastcleFilter, createCastcleMeta } from '../utils/common';
+import { ContentAggregator, pipe2ContentFeedAggregator } from '../aggregations';
+import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
 import { CastcleMeta } from '../dtos/common.dto';
+import { Author, CastcleIncludes } from '../dtos/content.dto';
+import { FeedItemDto } from '../dtos/feedItem.dto';
 import {
-  Content,
-  User,
-  FeedItem,
+  FeedItemPayloadItem,
+  FeedItemResponse,
+} from '../dtos/guest-feed-item.dto';
+import {
   Account,
+  Content,
+  Credential,
+  DefaultContent,
+  Engagement,
+  FeedItem,
+  GuestFeedItem,
+  Relationship,
   signedContentPayloadItem,
   toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
-  GuestFeedItem,
-  Relationship,
+  User,
   UserType,
-  DefaultContent,
 } from '../schemas';
-import {
-  FeedItemResponse,
-  FeedItemPayloadItem,
-} from '../dtos/guest-feed-item.dto';
-import { predictContents } from '@castcle-api/utils/aws';
-import { Author, CastcleIncludes } from '../dtos/content.dto';
-import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
+import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { UserService } from './user.service';
-import { ContentAggregator, pipe2ContentFeedAggregator } from '../aggregations';
-import { Environment } from '@castcle-api/environments';
 
 @Injectable()
 export class RankerService {
@@ -66,8 +68,34 @@ export class RankerService {
     @InjectModel('Account') public _accountModel: Model<Account>,
     private userService: UserService,
     @InjectModel('DefaultContent')
-    public _defaultContentModel: Model<DefaultContent>
+    public _defaultContentModel: Model<DefaultContent>,
+    @InjectModel('Engagement')
+    public _engagementModel: Model<Engagement>
   ) {}
+
+  /**
+   *
+   * @param contentId
+   * @param {string} userId
+   * @returns
+   */
+  getAllEngagement = async (contentIds: any[], viewerAccount: Account) => {
+    const viewer = await this.userService.getUserFromAccountId(
+      viewerAccount._id
+    );
+
+    return this._engagementModel
+      .find({
+        targetRef: {
+          $in: contentIds.map((id) => ({
+            $ref: 'content',
+            $id: id,
+          })),
+        },
+        user: viewer.user.id,
+      })
+      .exec();
+  };
 
   /**
    * Get guestFeedItem according to accountCountry code  if have sinceId it will query all feed after sinceId
@@ -179,28 +207,34 @@ export class RankerService {
     } as FeedItemResponse;
   };
 
-  _feedItemsToPayloadItems = (feedDocuments: FeedItem[]) =>
-    feedDocuments.map(
-      (item) =>
-        ({
-          id: item.id,
-          feature: {
-            slug: 'feed',
-            key: 'feature.feed',
-            name: 'Feed',
-          },
-          circle: {
-            id: 'for-you',
-            key: 'circle.forYou',
-            name: 'For You',
-            slug: 'forYou',
-          },
-          payload: signedContentPayloadItem(
-            toUnsignedContentPayloadItem(item.content, [])
-          ),
-          type: 'content',
-        } as FeedItemPayloadItem)
-    );
+  _feedItemsToPayloadItems = async (
+    feedDocuments: FeedItem[],
+    viewer: Account
+  ) => {
+    const contentIds = feedDocuments.map((feed) => feed.content._id);
+    const engagements = await this.getAllEngagement(contentIds, viewer);
+
+    return feedDocuments.map((item) => {
+      return {
+        id: item.id,
+        feature: {
+          slug: 'feed',
+          key: 'feature.feed',
+          name: 'Feed',
+        },
+        circle: {
+          id: 'for-you',
+          key: 'circle.forYou',
+          name: 'For You',
+          slug: 'forYou',
+        },
+        payload: signedContentPayloadItem(
+          toUnsignedContentPayloadItem(item.content, engagements)
+        ),
+        type: 'content',
+      } as FeedItemPayloadItem;
+    });
+  };
 
   _getCastcleInclude = async (
     feedDocuments: FeedItem[],
@@ -243,7 +277,7 @@ export class RankerService {
       .sort('-seenAt')
       .exec();
 
-    const payload = this._feedItemsToPayloadItems(documents);
+    const payload = await this._feedItemsToPayloadItems(documents, viewer);
     const { includes, meta } = await this._getCastcleInclude(
       documents,
       viewer,
@@ -311,8 +345,9 @@ export class RankerService {
         feeds[i].content = embedContents.find(
           (c) => String(c._id) === String(feeds[i].content)
         );
-      feedPayload = this._feedItemsToPayloadItems(
-        feeds.filter((f) => f.content)
+      feedPayload = await this._feedItemsToPayloadItems(
+        feeds.filter((f) => f.content),
+        viewer
       );
     }
 
@@ -352,7 +387,11 @@ export class RankerService {
    * @param feedItemId
    * @returns
    */
-  seenFeedItem = async (account: Account, feedItemId: string) => {
+  seenFeedItem = async (
+    account: Account,
+    feedItemId: string,
+    credential: Credential
+  ) => {
     console.log(account, feedItemId);
     this._feedItemModel
       .updateOne(
@@ -365,6 +404,7 @@ export class RankerService {
         },
         {
           seenAt: new Date(),
+          seenCredential: credential._id,
         }
       )
       .exec();

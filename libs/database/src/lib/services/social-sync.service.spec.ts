@@ -153,9 +153,8 @@ describe('SocialSyncService', () => {
       const result = socialSyncDoc.find(
         (x) => x.provider === deleteSocial.provider
       );
-      expect(result).toBeUndefined();
+      expect(result.active).toEqual(false);
       expect(socialSyncDoc).toBeDefined();
-      expect(socialSyncDoc.length).toEqual(1);
     });
   });
 });

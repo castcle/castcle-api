@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -30,6 +30,7 @@ import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   ShortPayload,
+  UserField,
 } from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
@@ -1028,11 +1029,54 @@ describe('User Service', () => {
           links: {
             facebook: 'https://facebook.com/test',
           },
-          socialSyncs: true,
         }
       );
       expect(page.type).toEqual('page');
       expect(page.displayId).toEqual('synctest');
+    });
+  });
+
+  describe('#getUserFromAccountId()', () => {
+    let account: Account;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 2, {
+        userService: service,
+        accountService: authService,
+      });
+
+      account = mocksUsers[0].account;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get only user data', async () => {
+      const currentUser = await service.getUserFromAccountId(account.id);
+      expect(currentUser.user).toBeDefined();
+      expect(currentUser.balance).toBeUndefined();
+      expect(currentUser.authenSocial).toBeUndefined();
+      expect(currentUser.syncPage).toBeUndefined();
+    });
+
+    it('should get user and userFields option', async () => {
+      const currentUser = await service.getUserFromAccountId(account.id, [
+        UserField.Wallet,
+        UserField.LinkSocial,
+        UserField.SyncSocial,
+      ]);
+      expect(currentUser.user).toBeDefined();
+      expect(currentUser.balance).toBeDefined();
+      expect(currentUser.authenSocial).toBeDefined();
+      expect(currentUser.syncPage).toBeDefined();
+    });
+
+    it('should return exception when can not find user', async () => {
+      await expect(
+        service.getUserFromAccountId(result.accountDocument.id)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND)
+      );
     });
   });
 });

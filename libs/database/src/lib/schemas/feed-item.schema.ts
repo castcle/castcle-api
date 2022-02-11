@@ -24,6 +24,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ContentAggregator } from '../aggregations';
 import { Account } from './account.schema';
+import { Credential } from './credential.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
@@ -59,6 +60,12 @@ class FeedItemDocument extends CastcleBase {
     type: Object,
   })
   aggregator: ContentAggregator;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Credential',
+  })
+  seenCredential?: Credential;
 }
 
 export const FeedItemSchema = SchemaFactory.createForClass(FeedItemDocument);
