@@ -1269,7 +1269,7 @@ export class UserController {
       status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
     );
 
-    const totalBalance = await this.userService.getUserBalance({
+    const totalBalance = await this.userService.getBalance({
       ownerAccount: account._id,
     } as unknown as User);
 

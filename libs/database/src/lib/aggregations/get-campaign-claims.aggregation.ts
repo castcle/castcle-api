@@ -47,7 +47,7 @@ export const pipelineOfGetCampaignClaims = (
             $expr: { $eq: ['$data.campaignId', '$$campaignId'] },
           },
         },
-        { $project: { totalN: '$to.value.n', totalF: '$to.value.f' } },
+        { $project: { total: '$to.value' } },
       ],
       as: 'claims',
     },

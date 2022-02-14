@@ -24,8 +24,7 @@
 import { Types } from 'mongoose';
 
 export class GetBalanceResponse {
-  totalN: Types.Decimal128;
-  totalF: Types.Decimal128;
+  total: Types.Decimal128;
 }
 
 export const pipelineOfGetBalance = (accountId: string) => [
@@ -38,16 +37,10 @@ export const pipelineOfGetBalance = (accountId: string) => [
   },
   {
     $project: {
-      totalN: {
+      total: {
         $subtract: [
-          { $sum: '$inflows.to.value.n' },
-          { $sum: '$outflows.to.value.n' },
-        ],
-      },
-      totalF: {
-        $subtract: [
-          { $sum: '$inflows.to.value.f' },
-          { $sum: '$outflows.to.value.f' },
+          { $sum: '$inflows.to.value' },
+          { $sum: '$outflows.to.value' },
         ],
       },
     },
