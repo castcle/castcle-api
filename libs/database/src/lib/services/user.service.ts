@@ -134,17 +134,14 @@ export class UserService {
 
   /**
    * Get user's balance
-   * @param {User}
+   * @param {User} user
    */
-  getUserBalance = async (user: User) => {
+  getBalance = async (user: User) => {
     const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
       pipelineOfGetBalance(String(user.ownerAccount))
     );
 
-    const totalN = String(balance?.totalN ?? 0);
-    const totalF = String(balance?.totalF ?? 0);
-
-    return new CastcleNumber(totalN.toString(), totalF.toString()).toNumber();
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
   getUserFromAccountId = async (
@@ -163,7 +160,7 @@ export class UserService {
     if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     const balance = userFields?.includes(UserField.Wallet)
-      ? await this.getUserBalance(user)
+      ? await this.getBalance(user)
       : undefined;
 
     const authenSocial = userFields?.includes(UserField.LinkSocial)
