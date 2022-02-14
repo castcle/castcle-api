@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsService,
   AuthenticationService,
   CampaignService,
   CampaignType,
@@ -32,6 +33,7 @@ import {
   UserService,
 } from '@castcle-api/database';
 import {
+  AdsRequestDto,
   ContentResponse,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -88,7 +90,6 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { AdsRequestDto } from '@castcle-api/database/dtos';
 import {
   BlockingDto,
   GetAirdropBalancesQuery,
@@ -105,7 +106,6 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-import { AdsService } from '@castcle-api/database';
 
 class DeleteUserBody {
   channel: string;
@@ -851,6 +851,7 @@ export class UserController {
       mobileNumber
     );
 
+    await otp.delete();
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
@@ -1269,7 +1270,7 @@ export class UserController {
       status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
     );
 
-    const totalBalance = await this.userService.getUserBalance({
+    const totalBalance = await this.userService.getBalance({
       ownerAccount: account._id,
     } as unknown as User);
 

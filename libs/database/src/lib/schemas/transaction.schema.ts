@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { CastcleNumber, WalletType } from '../models';
+import { WalletType } from '../models';
 import { CastcleBase } from './base.schema';
 
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
@@ -34,8 +34,8 @@ export class MicroTransaction {
   @Prop({ type: String })
   type: WalletType;
 
-  @Prop()
-  value?: CastcleNumber;
+  @Prop({ type: SchemaTypes.Decimal128 })
+  value?: number;
 }
 
 const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
