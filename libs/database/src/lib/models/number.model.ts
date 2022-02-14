@@ -25,54 +25,17 @@ import { Environment } from '@castcle-api/environments';
 
 export class CastcleNumber {
   public n: number;
-  public f: number;
 
-  constructor(n: number | string, f: number | string) {
-    const maxFloatingPoint = Number(
-      '1'.padEnd(Environment.DECIMALS_FLOAT + 1, '0')
-    );
-    this.n = Number(n || 0);
-    this.f = Number(f || 0);
-
-    if (this.f >= maxFloatingPoint) {
-      this.n = this.n + Math.ceil(this.f / maxFloatingPoint);
-      this.f = this.f % maxFloatingPoint;
-    }
+  constructor(n: number | string) {
+    this.n = Number(Number(n ?? 0).toFixed(Environment.DECIMALS_FLOAT));
   }
 
-  static from(str: number | string) {
-    const [n, f] = (typeof str === 'string' ? Number(str) : str)
-      .toFixed(Environment.DECIMALS_FLOAT)
-      .split('.');
-
-    return new CastcleNumber(
-      Number(n || ''),
-      Number(
-        (f || '')
-          .slice(0, Environment.DECIMALS_FLOAT)
-          .padEnd(Environment.DECIMALS_FLOAT, '0')
-      )
-    );
-  }
-
-  static subtract(num1: number | string, num2: number | string) {
-    const n1 = CastcleNumber.from(num1);
-    const n2 = CastcleNumber.from(num2);
-
-    if (n1.f - n2.f >= 0) {
-      return new CastcleNumber(n1.n - n2.n, n1.f - n2.f);
-    }
-
-    const additional = Number('1'.padEnd(Environment.DECIMALS_FLOAT + 1, '0'));
-
-    return new CastcleNumber(n1.n - n2.n - 1, additional + n1.f - n2.f);
+  static from(n: number | string) {
+    return new CastcleNumber(n);
   }
 
   toString() {
-    const n = String(this.n).padStart(Environment.DECIMALS_INT, '0');
-    const f = String(this.f).padStart(Environment.DECIMALS_FLOAT, '0');
-
-    return `${n}.${f}`;
+    return this.n.toFixed(Environment.DECIMALS_FLOAT);
   }
 
   toNumber() {

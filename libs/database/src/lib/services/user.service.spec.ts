@@ -25,6 +25,7 @@ import { UserProducer } from '@castcle-api/utils/queue';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   ContentType,
@@ -39,7 +40,15 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { Account, Comment, Content, Credential, User } from '../schemas';
+import { WalletType } from '../models';
+import {
+  Account,
+  Comment,
+  Content,
+  Credential,
+  Transaction,
+  User,
+} from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -53,6 +62,7 @@ describe('User Service', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentService;
+  let transactionModel: Model<Transaction>;
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
@@ -77,6 +87,7 @@ describe('User Service', () => {
     }).compile();
 
     service = app.get<UserService>(UserService);
+    transactionModel = (service as any).transactionModel;
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     commentService = app.get(CommentService);
@@ -1077,6 +1088,37 @@ describe('User Service', () => {
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND)
       );
+    });
+  });
+
+  describe('Transaction Service', () => {
+    const accountId = Types.ObjectId();
+    const user = { ownerAccount: accountId } as unknown as User;
+
+    it('should create new transaction from transfer()', async () => {
+      const transaction = await new transactionModel({
+        to: [{ account: accountId, type: WalletType.PERSONAL, value: 10 }],
+      }).save();
+
+      expect(Number(transaction.to[0].value.toString())).toEqual(10);
+      expect(transaction.createdAt).toBeDefined();
+    });
+
+    it('should return user balance', async () => {
+      const transaction = await transactionModel.findOne({
+        'to.account': accountId,
+      });
+
+      expect(Number(transaction.to[0].value.toString())).toEqual(10);
+
+      await expect(service.getBalance(user)).resolves.toEqual(10);
+
+      await new transactionModel({
+        from: { account: user.ownerAccount, type: WalletType.PERSONAL },
+        to: [{ value: 5 }],
+      }).save();
+
+      await expect(service.getBalance(user)).resolves.toEqual(5);
     });
   });
 });

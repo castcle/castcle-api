@@ -30,7 +30,6 @@ import {
   MongooseForFeatures,
   SocialProvider,
   SocialSyncService,
-  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -100,7 +99,6 @@ describe('AppController', () => {
         HashtagService,
         SocialSyncService,
         CampaignService,
-        TransactionService,
         SuggestionService,
         AdsService,
       ],

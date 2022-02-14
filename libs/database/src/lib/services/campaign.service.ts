@@ -97,7 +97,7 @@ export class CampaignService {
         return {
           account: id,
           type: WalletType.PERSONAL,
-          value: CastcleNumber.from(amount),
+          value: CastcleNumber.from(amount).toNumber(),
         };
       });
 
@@ -270,17 +270,13 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
     session: ClientSession
   ) {
     const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
-      const valueToClaim = new CastcleNumber(value.n, value.f);
       const remaining =
-        campaign.rewardBalance >= valueToClaim.toNumber()
-          ? valueToClaim.toString()
-          : String(campaign.rewardBalance);
+        campaign.rewardBalance >= value ? value : campaign.rewardBalance;
 
-      const amount = CastcleNumber.from(campaign.rewardsPerClaim ?? remaining);
+      const amount = campaign.rewardsPerClaim ?? remaining;
 
-      campaign.rewardBalance = CastcleNumber.subtract(
-        campaign.rewardBalance,
-        amount.toString()
+      campaign.rewardBalance = CastcleNumber.from(
+        campaign.rewardBalance - amount
       ).toNumber();
 
       return { account, type, value: amount };
@@ -310,21 +306,8 @@ ${JSON.stringify(transaction, null, 2)}`
         }
       : {};
 
-    const campaigns =
-      await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
-        pipelineOfGetCampaignClaims(campaignQuery, accountId)
-      );
-
-    return campaigns.map(({ claims, ...campaign }) => {
-      return {
-        ...campaign,
-        claims: claims?.map((claim) =>
-          new CastcleNumber(
-            claim.totalN?.toString(),
-            claim.totalF?.toString()
-          ).toNumber()
-        ),
-      };
-    });
+    return this.campaignModel.aggregate<GetCampaignClaimsResponse>(
+      pipelineOfGetCampaignClaims(campaignQuery, accountId)
+    );
   }
 }
