@@ -358,6 +358,8 @@ export class UserService {
   };
 
   getByIdOrCastcleId = (id: string, type?: UserType) => {
+    if (!id) return null;
+
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
     };

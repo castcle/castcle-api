@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import {
   NotificationProducer,
   UtilsQueueModule,
@@ -149,6 +150,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
+    UtilsCacheModule,
     UtilsQueueModule,
   ],
   controllers: [],

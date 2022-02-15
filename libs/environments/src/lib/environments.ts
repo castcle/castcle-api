@@ -157,4 +157,6 @@ export const Environment = {
    * @default 8
    */
   DECIMALS_FLOAT: Number(process.env.DECIMALS_FLOAT || 8),
+
+  LINK_INVITE_FRIENDS: process.env.LINK_INVITE_FRIENDS,
 };

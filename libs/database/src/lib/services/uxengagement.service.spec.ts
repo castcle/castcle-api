@@ -35,6 +35,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
 import { HashtagService } from './hashtag.service';
 import { UserProducer } from '@castcle-api/utils/queue';
+import { CacheModule } from '@nestjs/common';
 
 describe('UxEngagement Service', () => {
   let mongod: MongoMemoryServer;
@@ -50,6 +51,7 @@ describe('UxEngagement Service', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
