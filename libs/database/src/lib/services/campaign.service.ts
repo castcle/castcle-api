@@ -306,8 +306,30 @@ ${JSON.stringify(transaction, null, 2)}`
         }
       : {};
 
-    return this.campaignModel.aggregate<GetCampaignClaimsResponse>(
-      pipelineOfGetCampaignClaims(campaignQuery, accountId)
-    );
+    const campaigns =
+      await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
+        pipelineOfGetCampaignClaims(campaignQuery, accountId)
+      );
+
+    const eligibleAccounts =
+      await this.campaignModel.aggregate<EligibleAccount>(
+        pipelineOfGetEligibleAccountsFromCampaign({
+          ...campaignQuery,
+          type: CampaignType.CONTENT_REACH,
+        })
+      );
+
+    return campaigns.map((campaign) => {
+      const eligibleAccount = eligibleAccounts.find(
+        (eligibleAccount) =>
+          String(eligibleAccount.campaignId) === String(campaign._id) &&
+          String(eligibleAccount.id) === String(accountId)
+      );
+
+      return {
+        ...campaign,
+        estimateRewards: CastcleNumber.from(eligibleAccount?.amount).toNumber(),
+      };
+    });
   }
 }
