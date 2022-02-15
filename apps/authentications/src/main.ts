@@ -32,7 +32,7 @@ import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
@@ -44,25 +44,22 @@ async function bootstrap() {
   const port = process.env.PORT || 3334;
   const prefix = 'authentications';
 
-  // For Global
-  app.setGlobalPrefix(prefix);
+  app.setGlobalPrefix(prefix, {
+    exclude: [{ path: 'invites', method: RequestMethod.GET }],
+  });
 
-  // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  //TODO !!! social login need to add class validator  to use this
-  /*app.useGlobalPipes(new ValidationPipe({
-    forbidUnknownValues:true
-  }));*/
+
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new ExceptionFilter());
   app.enableCors();
+
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.NODE_ENV}`);
