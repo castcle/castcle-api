@@ -22,6 +22,7 @@
  */
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { UserProducer } from '@castcle-api/utils/queue';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -72,6 +73,7 @@ describe('User Service', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,

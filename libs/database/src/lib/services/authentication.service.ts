@@ -21,8 +21,9 @@
  * or have any questions.
  */
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cache } from 'cache-manager';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
@@ -69,6 +70,7 @@ export interface SignupRequirements {
   displayName: string;
   displayId: string;
   referral?: string;
+  ip?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -83,7 +85,10 @@ export interface SignupSocialRequirements {
 @Injectable()
 export class AuthenticationService {
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
@@ -346,30 +351,32 @@ export class AuthenticationService {
 
   async signupByEmail(account: Account, requirements: SignupRequirements) {
     account.isGuest = false;
-    //account.email = requirements.email;
-    //account.password =  requirements.password;
+
     await account.changePassword(requirements.password, requirements.email);
-    //create user here
-    const user = new this._userModel({
+    await new this._userModel({
       ownerAccount: account._id,
       displayName: requirements.displayName,
-      displayId: requirements.displayId, //make sure all id is lower case
+      displayId: requirements.displayId,
       type: UserType.People,
-    });
-    await user.save();
+    }).save();
+
     const updateAccount = await this.createAccountActivation(account, 'email');
 
     if (requirements.referral) {
-      const refAccount = await this.userService.getByIdOrCastcleId(
+      const referrerFromBody = await this.userService.getByIdOrCastcleId(
         requirements.referral
       );
-      const accRef = new this._accountReferral({
-        referrerAccount: refAccount ? refAccount.ownerAccount._id : null,
-        referrerDisplayId: requirements.referral,
+
+      const referrer =
+        referrerFromBody ?? (await this.getReferrerByIp(requirements.ip));
+
+      await new this._accountReferral({
+        referrerAccount: referrer.ownerAccount,
+        referrerDisplayId: referrer.displayId,
         referringAccount: account._id,
-      });
-      await accRef.save();
+      }).save();
     }
+
     return updateAccount;
   }
 
@@ -649,5 +656,17 @@ export class AuthenticationService {
     const result = await accountActivation.save();
     await this.updateSocialFlag(account);
     return result;
+  }
+
+  async getReferrerByIp(ip: string) {
+    const referrerId = await this.cacheManager.get<string>(ip);
+
+    return this.userService.getByIdOrCastcleId(referrerId);
+  }
+
+  setReferrerByIp(ip: string, castcleId: string) {
+    const secondsInOnyDay = 86_400;
+
+    return this.cacheManager.set(ip, castcleId, { ttl: secondsInOnyDay });
   }
 }

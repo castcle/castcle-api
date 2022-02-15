@@ -49,6 +49,7 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UseInterceptors,
@@ -63,6 +64,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Response } from 'express';
+import { RealIp } from 'nestjs-real-ip';
 import { AppService } from './app.service';
 import { getEmailVerificationHtml } from './configs';
 import {
@@ -279,7 +281,8 @@ export class AuthenticationController {
   @Post('register')
   async register(
     @Req() req: CredentialRequest,
-    @Body() body: RegisterByEmailDto
+    @Body() body: RegisterByEmailDto,
+    @RealIp() ip?: string
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -310,11 +313,9 @@ export class AuthenticationController {
       );
       //validate password
       this.appService.validatePassword(body.payload.password, req.$language);
-      if (user)
-        throw new CastcleException(
-          CastcleStatus.USER_ID_IS_EXIST,
-          req.$language
-        );
+
+      if (user) throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
         {
@@ -323,6 +324,7 @@ export class AuthenticationController {
           email: body.payload.email,
           password: body.payload.password,
           referral: body.referral,
+          ip,
         }
       );
       //check if display id exist
@@ -783,5 +785,19 @@ export class AuthenticationController {
       body.avatar ? body.avatar : undefined,
       body.displayName ? body.displayName : undefined
     );
+  }
+
+  @Version(VERSION_NEUTRAL)
+  @Get('invites')
+  async redirectToLoginPage(
+    @RealIp() ip: string,
+    @Res() res: Response,
+    @Query('f') referredById: string
+  ) {
+    if (referredById) {
+      await this.authService.setReferrerByIp(ip, referredById);
+    }
+
+    res.redirect(Environment.LINK_INVITE_FRIENDS);
   }
 }

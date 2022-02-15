@@ -38,6 +38,7 @@ import { AdsObjective } from '../models';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
+import { CacheModule } from '@nestjs/common';
 
 describe('AdsService', () => {
   let mongod: MongoMemoryServer;
@@ -53,6 +54,7 @@ describe('AdsService', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
