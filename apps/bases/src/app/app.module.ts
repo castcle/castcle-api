@@ -29,6 +29,7 @@ import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
+import { BasesController } from './controllers/bases.controller';
 import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
@@ -37,19 +38,20 @@ import { SuggestionService } from './services';
 
 @Module({
   imports: [
-    DatabaseModule,
     CaslModule,
+    DatabaseModule,
     HealthyModule,
+    UtilsAwsModule,
+    UtilsCacheModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    UtilsCacheModule,
     UtilsQueueModule,
-    UtilsAwsModule,
   ],
   controllers: [
-    PagesController,
-    NotificationsController,
+    BasesController,
     FeedsController,
+    NotificationsController,
+    PagesController,
     SearchesController,
   ],
   providers: [SuggestionService],

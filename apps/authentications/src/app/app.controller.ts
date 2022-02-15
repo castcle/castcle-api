@@ -49,7 +49,6 @@ import {
   HttpException,
   HttpStatus,
   Post,
-  Query,
   Req,
   Res,
   UseInterceptors,
@@ -785,19 +784,5 @@ export class AuthenticationController {
       body.avatar ? body.avatar : undefined,
       body.displayName ? body.displayName : undefined
     );
-  }
-
-  @Version(VERSION_NEUTRAL)
-  @Get('invites')
-  async redirectToLoginPage(
-    @RealIp() ip: string,
-    @Res() res: Response,
-    @Query('f') referredById: string
-  ) {
-    if (referredById) {
-      await this.authService.setReferrerByIp(ip, referredById);
-    }
-
-    res.redirect(Environment.LINK_INVITE_FRIENDS);
   }
 }
