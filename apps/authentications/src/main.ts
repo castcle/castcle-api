@@ -32,7 +32,7 @@ import { Environment as env } from '@castcle-api/environments';
 import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentConfig } from './docs/document.config';
-import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 
@@ -44,10 +44,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3334;
   const prefix = 'authentications';
 
-  app.setGlobalPrefix(prefix, {
-    exclude: [{ path: 'invites', method: RequestMethod.GET }],
-  });
-
+  app.setGlobalPrefix(prefix);
   app.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
