@@ -32,6 +32,7 @@ import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
+import { CacheModule } from '@nestjs/common';
 
 jest.mock('@castcle-api/utils/aws', () => ({
   predictContents: jest.fn((_: string, contents: string[]) => {
@@ -63,6 +64,7 @@ describe('Ranker Service', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
