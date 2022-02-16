@@ -63,6 +63,7 @@ export interface UserProfile {
 export enum UserType {
   People = 'people',
   Page = 'page',
+  Topic = 'topic',
 }
 
 @Schema({ timestamps: true })

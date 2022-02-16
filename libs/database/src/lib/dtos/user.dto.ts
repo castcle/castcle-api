@@ -31,6 +31,7 @@ import {
 import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
+import { Meta } from './response.dto';
 
 class UserImage {
   @ApiProperty()
@@ -287,7 +288,7 @@ export class FollowResponse {
   payload: (UserResponseDto | PageResponseDto)[];
 
   @ApiProperty()
-  pagination: Pagination;
+  meta: Meta;
 }
 
 export class SocialSyncDto {

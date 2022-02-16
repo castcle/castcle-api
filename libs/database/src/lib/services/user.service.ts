@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -49,6 +48,7 @@ import {
   PageDto,
   PaginationQuery,
   SocialPageDto,
+  SortBy,
   SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
@@ -339,7 +339,7 @@ export class UserService {
   getByCriteria = async (
     user: User,
     query: FilterQuery<User>,
-    queryOptions: CastcleQueryOptions,
+    queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false
   ) => {
     const {
@@ -475,9 +475,9 @@ export class UserService {
     const total = await this._userModel.countDocuments(filterQuery);
     let usersQuery = this._userModel.find(filterQuery);
 
-    if (queryOptions.limit) usersQuery = usersQuery.limit(queryOptions.limit);
-    if (queryOptions.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
-    if (queryOptions.sortBy) {
+    if (queryOptions?.limit) usersQuery = usersQuery.limit(queryOptions.limit);
+    if (queryOptions?.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
+    if (queryOptions?.sortBy) {
       const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
       const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
 
@@ -549,82 +549,101 @@ export class UserService {
     user.unfollow(followedUser);
 
   getFollowers = async (
-    user: User,
-    targetUserId: string,
-    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    viewer: User,
+    targetUser: User,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
-    const targetUser = await this.getByIdOrCastcleId(targetUserId);
-
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
     const query: FilterQuery<Relationship> = {
       followedUser: targetUser.id as any,
       visibility: EntityVisibility.Publish,
       following: true,
     };
 
-    if (queryOption.type) {
-      query.isFollowPage = queryOption.type === UserType.Page;
-    }
-
-    const total = await this._relationshipModel.countDocuments(query).exec();
-    const relationships = total
-      ? await this._relationshipModel
-          .find(query)
-          .skip(queryOption.page - 1)
-          .limit(queryOption.limit)
-          .populate('user')
-          .sort(`${direction}${queryOption.sortBy.field}`)
-          .exec()
-      : [];
-
-    const followerIds = relationships.map(({ user }) => user._id);
-
-    return this.getByCriteria(user, { _id: { $in: followerIds } }, queryOption);
+    return this.searchRelation(
+      query,
+      viewer,
+      'user',
+      paginationQuery,
+      sortBy,
+      userType
+    );
   };
 
   getFollowing = async (
-    authorizedUser: User,
-    userId: string,
-    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    viewer: User,
+    targetUser: User,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
-    const targetUser = await this.getByIdOrCastcleId(userId);
-
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
     const query: FilterQuery<Relationship> = {
       user: targetUser.id as any,
       visibility: EntityVisibility.Publish,
       following: true,
     };
 
-    if (queryOption.type) {
-      query.isFollowPage = queryOption.type === UserType.Page;
+    return this.searchRelation(
+      query,
+      viewer,
+      'followedUser',
+      paginationQuery,
+      sortBy,
+      userType
+    );
+  };
+
+  private async searchRelation(
+    query: FilterQuery<Relationship>,
+    viewer: User,
+    populate: string,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
+  ) {
+    const direction = sortBy?.type === 'asc' ? '' : '-';
+    const sortField = sortBy?.field ? sortBy?.field : 'createdAt';
+
+    query = await createCastcleFilter(query, {
+      sinceId: paginationQuery?.sinceId,
+      untilId: paginationQuery?.untilId,
+    });
+
+    if (userType) {
+      query.isFollowPage = userType === UserType.Page;
     }
 
     const total = await this._relationshipModel.countDocuments(query).exec();
     const relationships = total
       ? await this._relationshipModel
           .find(query)
-          .skip(queryOption.page - 1)
-          .limit(queryOption.limit)
-          .populate('followedUser')
-          .sort(`${direction}${queryOption.sortBy.field}`)
+          .limit(paginationQuery.maxResults)
+          .populate(populate)
+          .sort(`${direction}${sortField}`)
           .exec()
       : [];
 
-    const followingIds = relationships.map(
-      ({ followedUser }) => followedUser._id
+    const followingIds =
+      populate === 'user'
+        ? relationships.map(({ user }) => user._id)
+        : relationships.map(({ followedUser }) => followedUser._id);
+
+    const hasRelationship = paginationQuery.hasRelationshipExpansion;
+    const { users } = await this.getByCriteria(
+      viewer,
+      {
+        _id: { $in: followingIds },
+      },
+      undefined,
+      hasRelationship
     );
 
-    return this.getByCriteria(
-      authorizedUser,
-      { _id: { $in: followingIds } },
-      queryOption
-    );
-  };
+    return {
+      users,
+      meta: Meta.fromDocuments(relationships, total),
+    };
+  }
 
   /**
    * TODO !!! need to find a way to put in transaction
