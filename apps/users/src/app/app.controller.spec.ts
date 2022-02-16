@@ -357,6 +357,26 @@ describe('AppController', () => {
       expect(followingResult.payload[0].castcleId).toEqual(
         mocks[1].user.displayId
       );
+      expect(followingResult.meta).toBeDefined();
+    });
+
+    it('should show all user follower from the system', async () => {
+      const followerResult = await appController.getUserFollower(
+        mocks[1].user.displayId,
+        {
+          $credential: mocks[0].credential,
+          $language: 'th',
+        } as any,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
+      );
+      expect(followerResult.payload.length).toEqual(1);
+      expect(followerResult.payload[0].castcleId).toEqual(
+        mocks[0].user.displayId
+      );
+      expect(followerResult.meta).toBeDefined();
     });
   });
   describe('deleteMyData', () => {
