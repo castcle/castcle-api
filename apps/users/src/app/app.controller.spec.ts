@@ -348,8 +348,6 @@ describe('AppController', () => {
           $credential: mocks[0].credential,
           $language: 'th',
         } as any,
-        undefined,
-        undefined,
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
