@@ -347,10 +347,15 @@ describe('AppController', () => {
         {
           $credential: mocks[0].credential,
           $language: 'th',
-        } as any
+        } as any,
+        undefined,
+        undefined,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
       );
       expect(followingResult.payload.length).toEqual(1);
-      console.log(followingResult);
       expect(followingResult.payload[0].castcleId).toEqual(
         mocks[1].user.displayId
       );
