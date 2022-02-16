@@ -555,6 +555,7 @@ export class UserService {
     sortBy?: SortBy,
     userType?: string
   ) => {
+    this.logger.log('Build followers query.');
     const query: FilterQuery<Relationship> = {
       followedUser: targetUser.id as any,
       visibility: EntityVisibility.Publish,
@@ -578,6 +579,7 @@ export class UserService {
     sortBy?: SortBy,
     userType?: string
   ) => {
+    this.logger.log('Build following query.');
     const query: FilterQuery<Relationship> = {
       user: targetUser.id as any,
       visibility: EntityVisibility.Publish,
@@ -603,13 +605,13 @@ export class UserService {
     userType?: string
   ) {
     const direction = sortBy?.type === 'asc' ? '' : '-';
-    const sortField = sortBy?.field ? sortBy?.field : 'createdAt';
-
+    this.logger.log('Filter Since & Until');
     query = await createCastcleFilter(query, {
       sinceId: paginationQuery?.sinceId,
       untilId: paginationQuery?.untilId,
     });
 
+    this.logger.log('FIlter Type');
     if (userType) {
       query.isFollowPage = userType === UserType.Page;
     }
@@ -618,16 +620,16 @@ export class UserService {
     const relationships = total
       ? await this._relationshipModel
           .find(query)
-          .limit(paginationQuery.maxResults)
+          .limit(+paginationQuery.maxResults)
           .populate(populate)
-          .sort(`${direction}${sortField}`)
+          .sort(`${direction}${sortBy?.field}`)
           .exec()
       : [];
 
     const followingIds =
       populate === 'user'
-        ? relationships.map(({ user }) => user._id)
-        : relationships.map(({ followedUser }) => followedUser._id);
+        ? relationships.map(({ user }) => user?._id)
+        : relationships.map(({ followedUser }) => followedUser?._id);
 
     const hasRelationship = paginationQuery.hasRelationshipExpansion;
     const { users } = await this.getByCriteria(

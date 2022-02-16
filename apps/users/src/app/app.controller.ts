@@ -641,13 +641,20 @@ export class UserController {
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
+    @Query()
+    query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
-    userTypeOption?: UserType,
-    @Query()
-    query?: PaginationQuery
+    userTypeOption?: UserType
   ): Promise<FollowResponse> {
+    this.logger.log(
+      `Start get followers ${id}, page query:${JSON.stringify(
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
+    );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
@@ -680,13 +687,20 @@ export class UserController {
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
+    @Query()
+    query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
-    userTypeOption?: UserType,
-    @Query()
-    query?: PaginationQuery
+    userTypeOption?: UserType
   ): Promise<FollowResponse> {
+    this.logger.log(
+      `Start get following ${id}, page query:${JSON.stringify(
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
+    );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
