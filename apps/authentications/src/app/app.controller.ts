@@ -761,6 +761,12 @@ export class AuthenticationController {
   ) {
     this.logger.log(`connect with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
+
+    const currentAccount = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (currentAccount?.isGuest) throw CastcleException.FORBIDDEN;
+
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
       body.provider
@@ -769,10 +775,6 @@ export class AuthenticationController {
       this.logger.error(`already connect social: ${body.provider}.`);
       throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
-
-    const currentAccount = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
 
     this.logger.log(`connect account with social`);
     await this.authService.createAccountAuthenId(
