@@ -864,10 +864,15 @@ describe('AppController', () => {
         AccountAuthenIdType.Facebook
       );
 
+      const activation = await service.getAccountActivationFromCredential(
+        credentialGuest.$credential
+      );
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
       expect(accountSocial.socialId).toEqual('109364223');
+      expect(activation).toBeDefined();
     });
 
     it('should create new account with generate castcle id', async () => {

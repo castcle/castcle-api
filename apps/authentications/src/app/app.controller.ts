@@ -710,7 +710,7 @@ export class AuthenticationController {
 
     const { token, users, account } = await this.appService.socialLogin(
       body,
-      req.$credential
+      req
     );
     if (!token) {
       this.logger.log(`response merge account.`);
