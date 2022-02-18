@@ -842,7 +842,7 @@ export class UserController {
           CampaignType.VERIFY_MOBILE
         );
 
-        const referral = await this.userService.getReferrer(account.id);
+        const referral = await this.userService.getReferrer(account._id);
 
         await this.campaignService.claimCampaignsAirdrop(
           referral.ownerAccount as unknown as string,
