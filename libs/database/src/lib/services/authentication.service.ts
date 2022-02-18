@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger } from '@castcle-api/logger';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -84,6 +85,8 @@ export interface SignupSocialRequirements {
 
 @Injectable()
 export class AuthenticationService {
+  private logger = new CastLogger(AuthenticationService.name);
+
   constructor(
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
@@ -361,21 +364,28 @@ export class AuthenticationService {
     }).save();
 
     const updateAccount = await this.createAccountActivation(account, 'email');
+    const referrerFromBody = await this.userService.getByIdOrCastcleId(
+      requirements.referral
+    );
 
-    if (requirements.referral) {
-      const referrerFromBody = await this.userService.getByIdOrCastcleId(
-        requirements.referral
-      );
+    const referrer =
+      referrerFromBody ?? (await this.getReferrerByIp(requirements.ip));
 
-      const referrer =
-        referrerFromBody ?? (await this.getReferrerByIp(requirements.ip));
-
+    if (referrer) {
       await new this._accountReferral({
         referrerAccount: referrer.ownerAccount,
         referrerDisplayId: referrer.displayId,
         referringAccount: account._id,
       }).save();
     }
+
+    this.logger.log(
+      `#signupByEmail\n${JSON.stringify(
+        { ...requirements, referrer: referrer?.displayId },
+        null,
+        2
+      )}`
+    );
 
     return updateAccount;
   }
