@@ -23,22 +23,27 @@
 
 import { AuthenticationService } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { RealIp } from 'nestjs-real-ip';
 
 @Controller()
 export class BasesController {
+  private logger = new CastLogger(BasesController.name);
+
   constructor(private authService: AuthenticationService) {}
 
   @Get('invites')
   async inviteFriends(
     @RealIp() ip: string,
     @Res() res: Response,
-    @Query('f') referredById?: string
+    @Query('f') referrerId?: string
   ) {
-    if (referredById) {
-      await this.authService.setReferrerByIp(ip, referredById);
+    this.logger.log(`#inviteFriends:${JSON.stringify({ ip, referrerId })}`);
+
+    if (referrerId) {
+      await this.authService.setReferrerByIp(ip, referrerId);
     }
 
     res.redirect(Environment.LINK_INVITE_FRIENDS);
