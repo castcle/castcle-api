@@ -28,7 +28,7 @@ export enum AdsObjective {
 
 export enum AdsStatus {
   Processing = 'processing',
-  Declinded = 'declinded',
+  Declined = 'declined',
   Approved = 'approved',
 }
 

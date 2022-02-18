@@ -24,37 +24,37 @@ export const ThErrorMessages = {
   '1001': {
     statusCode: '404',
     code: '1001',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'The requested URL was not found.',
   },
   '1002': {
     statusCode: '401',
     code: '1002',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Missing Authorization header.',
   },
   '1003': {
     statusCode: '401',
     code: '1003',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid access token or expire',
   },
   '1004': {
     statusCode: '401',
     code: '1004',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid refresh token or expire',
   },
   '1005': {
     statusCode: '401',
     code: '1005',
-    message: 'รูปแบบไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid format',
   },
   '1006': {
     statusCode: '401',
     code: '1006',
-    message: 'อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+    message: 'Image upload failed. Please try again.',
   },
   '1007': {
     statusCode: '403',
     code: '1007',
-    message: 'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+    message: 'Can not access the data. Please try again.',
   },
   '1008': {
     statusCode: '400',
@@ -64,100 +64,101 @@ export const ThErrorMessages = {
   '3001': {
     statusCode: '400',
     code: '3001',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid auth token.',
   },
   '3002': {
     statusCode: '400',
     code: '3002',
-    message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง',
+    message: 'Incorrect email address or password. Please try again.',
   },
   '3003': {
     statusCode: '400',
     code: '3003',
-    message: 'อีเมลไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง',
+    message: 'Incorrect email address. Please try again.',
   },
   '3004': {
     statusCode: '400',
     code: '3004',
-    message: 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง',
+    message: 'Invalid phone number. Please try again.',
   },
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Payload and Channel do not match.',
   },
   '3006': {
     statusCode: '400',
     code: '3006',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Sorry, Something went wrong. Please try again.',
   },
   '3007': {
     statusCode: '400',
     code: '3007',
-    message: 'กรุณาลองใหม่อีกครั้งใน 3 นาที',
+    message: 'Please try again in 5 minutes.',
   },
   '3008': {
     statusCode: '400',
     code: '3008',
-    message: 'รหัส OTP ไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง',
+    message: 'Invalid OTP code. Please try again.',
   },
   '3009': {
     statusCode: '400',
     code: '3009',
     message:
-      'รหัส OTP ถูกขอมาเกินระยะเวลา กรุณากดปุ่ม "รับรหัส OTP" เพื่อขอรหัสใหม่อีกครั้ง',
+      'The OTP has been requested past the time limit, please press the "Get OTP" button to request a new code again.',
   },
   '3010': {
     statusCode: '400',
     code: '3010',
     message:
-      'ระบุรหัส OTP ไม่ถูกต้องเกิน 3 ครั้ง กรุณาระบุหมายเลขโทรศัพท์ หรือ อีเมล เพื่อขอรับรหัส OTP ใหม่อีกครั้ง',
+      'Enter an incorrect OTP more than 3 times. Please enter your phone number or email to request a new OTP again.',
   },
   '3011': {
     statusCode: '400',
     code: '3011',
-    message: 'รหัสผ่านไม่ถูกต้อง กรุณาระบุใหม่อีกครั้ง',
+    message: 'Incorrect password. Please try again.',
   },
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'refCode ไม่ถูกต้อง หรือ หมดอายุ',
+    message: 'Invalid ref code. Please try again.',
   },
   '3013': {
     statusCode: '400',
     code: '3013',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid role.',
   },
   '3014': {
     statusCode: '400',
     code: '3014',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'This email already exists. Please choose another email.',
   },
   '3015': {
     statusCode: '400',
     code: '3015',
-    message: 'มีชื่อเพจนี้แล้ว โปรดเลือกชื่ออื่น',
+    message:
+      'The name of this page already exists. Please choose another name.',
   },
   '3016': {
     statusCode: '400',
     code: '3016',
-    message: 'มีชื่อผู้ใช้นี้แล้ว โปรดเลือกชื่อผู้ใช้อื่น',
+    message: 'This username already exists. Please choose another username.',
   },
   '3017': {
     statusCode: '400',
     code: '3017',
-    message: 'มีชื่อผู้ใช้ไอดีนี้แล้ว โปรดเลือกชื่อผู้ใช้อื่น',
+    message: 'This Castcle Id already exists, please choose another name.',
   },
   '3018': {
     statusCode: '400',
     code: '3018',
-    message: 'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น',
+    message: 'This phone number is already exists.',
   },
   '3019': {
     statusCode: '400',
     code: '3019',
     message:
-      'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น',
+      'There is already a connection to this social . Please change another channel.',
   },
   '3020': {
     statusCode: '400',
@@ -167,27 +168,47 @@ export const ThErrorMessages = {
   '3021': {
     statusCode: '400',
     code: '3021',
-    message: 'Already have this email and want to merge?',
+    message: 'This email is already in Castcle.',
   },
   '4001': {
     statusCode: '404',
     code: '4001',
-    message: 'ไม่พบบุคคลหรือเพจ กรุณาลองใหม่อีกครั้ง',
+    message: 'Username or the page could not be found. Please try again.',
+  },
+  '4002': {
+    statusCode: '404',
+    code: '4002',
+    message: 'This campaign has not started',
+  },
+  '4003': {
+    statusCode: '400',
+    code: '4003',
+    message: 'Not eligible for this campaign',
+  },
+  '4004': {
+    statusCode: '400',
+    code: '4004',
+    message: 'Reached the maximum limit of claims',
+  },
+  '4005': {
+    statusCode: '400',
+    code: '4005',
+    message: 'The reward is not enough',
   },
   '5001': {
     statusCode: '400',
     code: '5001',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Invalid feature.',
   },
   '5002': {
     statusCode: '400',
     code: '5002',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Payload and Type do not match.',
   },
   '5003': {
     statusCode: '404',
     code: '5003',
-    message: 'ไม่พบโพสต์หรือหัวข้อ กรุณาลองใหม่อีกครั้ง',
+    message: 'Post or topic was not found. Please try again.',
   },
   '5004': {
     statusCode: '404',
@@ -197,11 +218,11 @@ export const ThErrorMessages = {
   '6001': {
     statusCode: '400',
     code: '6001',
-    message: 'ไม่พบการแจ้งเตือน กรุณาลองใหม่อีกครั้ง',
+    message: 'Notification not found Please try again.',
   },
   '7001': {
     statusCode: '400',
     code: '7001',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Sorry, Something went wrong. Please try again.',
   },
 };

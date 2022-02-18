@@ -42,7 +42,7 @@ import {
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
-import { Password } from '@castcle-api/utils/commons';
+import { Host, Password } from '@castcle-api/utils/commons';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Injectable } from '@nestjs/common';
@@ -141,7 +141,7 @@ export class AppService {
    * @param {Credential} credential
    * @returns {TokenResponse}
    */
-  async socialLogin(body: SocialConnectDto, credential: Credential) {
+  async socialLogin(body: SocialConnectDto, req: CredentialRequest) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
@@ -154,13 +154,15 @@ export class AppService {
       );
 
       this.logger.log('get All User');
-      credential.account = account;
-      const users = await this.getUserProfile(credential);
+      req.$credential.account = account;
+      const users = await this.getUserProfile(req.$credential);
 
       this.logger.log('renew Tokens');
       const accessTokenPayload =
-        await this.authService.getAccessTokenPayloadFromCredential(credential);
-      const tokenResult: TokenResponse = await credential.renewTokens(
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
+      const tokenResult: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: account.id as any,
@@ -173,15 +175,15 @@ export class AppService {
         const account = await this.authService.getAccountFromEmail(body.email);
         if (account) {
           this.logger.log('Existing Email Account');
-          credential.account = account;
-          const users = await this.getUserProfile(credential);
+          req.$credential.account = account;
+          const users = await this.getUserProfile(req.$credential);
           return { token: null, users: users, account: account };
         }
       }
 
       this.logger.log('Reister new social account');
       const currentAccount = await this.authService.getAccountFromCredential(
-        credential
+        req.$credential
       );
       let avatar: Image;
       if (body.avatar) {
@@ -190,10 +192,10 @@ export class AppService {
 
         this.logger.log('upload avatar to s3');
         avatar = await this._uploadImage(img, {
-          filename: `avatar-${credential.account._id}`,
+          filename: `avatar-${req.$credential.account._id}`,
           addTime: true,
           sizes: AVATAR_SIZE_CONFIGS,
-          subpath: `account_${credential.account._id}`,
+          subpath: `account_${req.$credential.account._id}`,
         });
       }
 
@@ -210,14 +212,31 @@ export class AppService {
         socialToken: body.authToken ? body.authToken : undefined,
         socialSecretToken: undefined,
       });
+
+      if (body.email) {
+        const accountActivation =
+          await this.authService.createAccountActivation(
+            currentAccount,
+            'email'
+          );
+        this.logger.log(`send email with token, email : ${body.email}`);
+        await this.sendRegistrationEmail(
+          Host.getHostname(req),
+          body.email,
+          accountActivation.verifyToken
+        );
+      }
+
       this.logger.log('get All User');
-      const users = await this.getUserProfile(credential);
+      const users = await this.getUserProfile(req.$credential);
 
       this.logger.log('renew Tokens');
-      credential.account.isGuest = false;
+      req.$credential.account.isGuest = false;
       const accessTokenPayload =
-        await this.authService.getAccessTokenPayloadFromCredential(credential);
-      const tokenResult: TokenResponse = await credential.renewTokens(
+        await this.authService.getAccessTokenPayloadFromCredential(
+          req.$credential
+        );
+      const tokenResult: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: currentAccount.id as any,

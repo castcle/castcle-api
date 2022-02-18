@@ -339,9 +339,13 @@ describe('User Service', () => {
       await currentUser.follow(allPages.items[1]);
       const followers = await service.getFollowers(
         currentUser,
-        allPages.items[0].id,
-        DEFAULT_QUERY_OPTIONS
+        allPages.items[0],
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
       );
+
       expect(followers.users.length).toEqual(1);
       expect(followers.users[0].castcleId).toEqual(
         (await currentUser.toUserResponse()).castcleId
@@ -355,11 +359,15 @@ describe('User Service', () => {
         result.credentialDocument
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
-      const following = await service.getFollowing(currentUser, currentUser.id);
+      const following = await service.getFollowing(currentUser, currentUser, {
+        maxResults: 5,
+        hasRelationshipExpansion: false,
+      });
       //like in #getFollower
       expect(following.users.length).toEqual(allPages.items.length);
     });
   });
+
   describe('#deactivate, reactivate', () => {
     const userInfo = {
       accountRequirement: {
@@ -456,6 +464,7 @@ describe('User Service', () => {
       });
     });
   });
+
   describe('Deactivated', () => {
     let userA: User;
     let userB: User;
@@ -686,13 +695,21 @@ describe('User Service', () => {
       it('should flag all content from user to deleted', async () => {
         const preFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(preFollower.users.length).toEqual(2);
         await service._removeAllFollower(userA);
         const postFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(postFollower.users.length).toEqual(1);
       });
@@ -729,7 +746,11 @@ describe('User Service', () => {
         expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(postFollower.users.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
@@ -744,6 +765,7 @@ describe('User Service', () => {
       });
     });
   });
+
   describe('#getMentionsFromPublic()', () => {
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {

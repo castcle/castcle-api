@@ -44,17 +44,17 @@ export const ErrorMessages = {
   '1005': {
     statusCode: '401',
     code: '1005',
-    message: 'รูปแบบไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+    message: 'Sorry, Something went wrong. Please try again.',
   },
   '1006': {
     statusCode: '401',
     code: '1006',
-    message: 'อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+    message: 'Image upload failed. Please try again.',
   },
   '1007': {
     statusCode: '403',
     code: '1007',
-    message: 'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+    message: 'Can not access the data. Please try again.',
   },
   '1008': {
     statusCode: '400',
@@ -94,7 +94,7 @@ export const ErrorMessages = {
   '3007': {
     statusCode: '400',
     code: '3007',
-    message: 'Please try again in 3 minutes.',
+    message: 'Please try again in 5 minutes.',
   },
   '3008': {
     statusCode: '400',
@@ -136,28 +136,29 @@ export const ErrorMessages = {
   '3015': {
     statusCode: '400',
     code: '3015',
-    message: 'มีชื่อเพจนี้แล้ว โปรดเลือกชื่ออื่น',
+    message:
+      'The name of this page already exists. Please choose another name.',
   },
   '3016': {
     statusCode: '400',
     code: '3016',
-    message: 'มีชื่อผู้ใช้นี้แล้ว โปรดเลือกชื่อผู้ใช้อื่น',
+    message: 'This username already exists. Please choose another username.',
   },
   '3017': {
     statusCode: '400',
     code: '3017',
-    message: 'มีชื่อผู้ใช้ไอดีนี้แล้ว โปรดเลือกชื่อผู้ใช้อื่น',
+    message: 'This Castcle Id already exists, please choose another name.',
   },
   '3018': {
     statusCode: '400',
     code: '3018',
-    message: 'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น',
+    message: 'This phone number is already exists.',
   },
   '3019': {
     statusCode: '400',
     code: '3019',
     message:
-      'มีการเชื่อมต่อ social ช่องทางนี้เอาไว้แล้ว โปรดเปลี่ยนช่องทางอื่น',
+      'There is already a connection to this social . Please change another channel.',
   },
   '3020': {
     statusCode: '400',
@@ -167,12 +168,12 @@ export const ErrorMessages = {
   '3021': {
     statusCode: '400',
     code: '3021',
-    message: 'Already have this email and want to merge?',
+    message: 'This email is already in Castcle.',
   },
   '4001': {
     statusCode: '404',
     code: '4001',
-    message: 'ไม่พบบุคคลหรือเพจ กรุณาลองใหม่อีกครั้ง',
+    message: 'Username or the page could not be found. Please try again.',
   },
   '4002': {
     statusCode: '404',
@@ -207,7 +208,7 @@ export const ErrorMessages = {
   '5003': {
     statusCode: '404',
     code: '5003',
-    message: 'ไม่พบโพสต์หรือหัวข้อ กรุณาลองใหม่อีกครั้ง',
+    message: 'Post or topic was not found. Please try again.',
   },
   '5004': {
     statusCode: '404',
@@ -217,11 +218,11 @@ export const ErrorMessages = {
   '6001': {
     statusCode: '400',
     code: '6001',
-    message: 'ไม่พบการแจ้งเตือน กรุณาลองใหม่อีกครั้ง',
+    message: 'Notification not found Please try again.',
   },
   '7001': {
     statusCode: '400',
     code: '7001',
-    message: 'ขออภัย มีบางอย่างผิดพลาด กรุณาลองใหม่อีกครั้ง',
+    message: 'Sorry, Something went wrong. Please try again.',
   },
 };

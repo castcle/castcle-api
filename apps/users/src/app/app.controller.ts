@@ -633,16 +633,6 @@ export class UserController {
     required: false,
   })
   @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false,
-  })
-  @ApiQuery({
     name: 'type',
     enum: UserType,
     required: false,
@@ -651,30 +641,32 @@ export class UserController {
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
+    @Query()
+    query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+    this.logger.log(
+      `Start get followers ${id}, page query:${JSON.stringify(
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
     );
-    const { users, pagination } = await this.userService.getFollowers(
-      authorizedUser,
-      id,
-      {
-        limit: limitOption,
-        page: pageOption,
-        sortBy: sortByOption,
-        type: userTypeOption,
-      }
+    const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
+    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const { users, meta } = await this.userService.getFollowers(
+      viewer,
+      user,
+      query,
+      sortByOption,
+      userTypeOption
     );
 
-    return { pagination, payload: users };
+    return { payload: users, meta: meta };
   }
 
   @ApiOkResponse({
@@ -683,16 +675,6 @@ export class UserController {
   @ApiQuery({
     name: 'sortBy',
     enum: SortByEnum,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
     required: false,
   })
   @ApiQuery({
@@ -705,30 +687,31 @@ export class UserController {
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
+    @Query()
+    query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
     @Query('type')
     userTypeOption?: UserType
   ): Promise<FollowResponse> {
-    const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+    this.logger.log(
+      `Start get following ${id}, page query:${JSON.stringify(
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
     );
-    const { users, pagination } = await this.userService.getFollowing(
-      authorizedUser,
-      id,
-      {
-        limit: limitOption,
-        page: pageOption,
-        sortBy: sortByOption,
-        type: userTypeOption,
-      }
-    );
+    const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
+    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    return { payload: users, pagination: pagination };
+    const { users, meta } = await this.userService.getFollowing(
+      viewer,
+      user,
+      query,
+      sortByOption,
+      userTypeOption
+    );
+    return { payload: users, meta: meta };
   }
 
   @Get(':id/blocking')
