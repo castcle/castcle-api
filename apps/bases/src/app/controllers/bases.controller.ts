@@ -21,30 +21,31 @@
  * or have any questions.
  */
 
-export enum AdsObjective {
-  Engagement = 'engagement',
-  Reach = 'reach',
-}
+import { AuthenticationService } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { RealIp } from 'nestjs-real-ip';
 
-export enum AdsStatus {
-  Processing = 'processing',
-  Declined = 'declined',
-  Approved = 'approved',
-}
+@Controller()
+export class BasesController {
+  private logger = new CastLogger(BasesController.name);
 
-export enum AdsBoostStatus {
-  Unknown = 'unknown',
-  Running = 'running',
-  Pause = 'pause',
-  End = 'end',
-}
+  constructor(private authService: AuthenticationService) {}
 
-export enum AdsEngagementKey {
-  Likes = 'likes',
-  Recasts = 'recasts',
-  Quotes = 'quotecasts',
-  Comments = 'comments',
-  Saved = 'saved',
-  Farm = 'farm',
-  Reward = 'rewardDistributed',
+  @Get('invites')
+  async inviteFriends(
+    @RealIp() ip: string,
+    @Res() res: Response,
+    @Query('f') referrerId?: string
+  ) {
+    this.logger.log(`#inviteFriends:${JSON.stringify({ ip, referrerId })}`);
+
+    if (referrerId) {
+      await this.authService.setReferrerByIp(ip, referrerId);
+    }
+
+    res.redirect(Environment.LINK_INVITE_FRIENDS);
+  }
 }

@@ -63,6 +63,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Response } from 'express';
+import { RealIp } from 'nestjs-real-ip';
 import { AppService } from './app.service';
 import { getEmailVerificationHtml } from './configs';
 import {
@@ -279,7 +280,8 @@ export class AuthenticationController {
   @Post('register')
   async register(
     @Req() req: CredentialRequest,
-    @Body() body: RegisterByEmailDto
+    @Body() body: RegisterByEmailDto,
+    @RealIp() ip?: string
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -310,11 +312,9 @@ export class AuthenticationController {
       );
       //validate password
       this.appService.validatePassword(body.payload.password, req.$language);
-      if (user)
-        throw new CastcleException(
-          CastcleStatus.USER_ID_IS_EXIST,
-          req.$language
-        );
+
+      if (user) throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
         {
@@ -323,6 +323,7 @@ export class AuthenticationController {
           email: body.payload.email,
           password: body.payload.password,
           referral: body.referral,
+          ip,
         }
       );
       //check if display id exist
@@ -709,7 +710,7 @@ export class AuthenticationController {
 
     const { token, users, account } = await this.appService.socialLogin(
       body,
-      req.$credential
+      req
     );
     if (!token) {
       this.logger.log(`response merge account.`);
@@ -760,6 +761,12 @@ export class AuthenticationController {
   ) {
     this.logger.log(`connect with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
+
+    const currentAccount = await this.authService.getAccountFromCredential(
+      req.$credential
+    );
+    if (currentAccount?.isGuest) throw CastcleException.FORBIDDEN;
+
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
       body.provider
@@ -768,10 +775,6 @@ export class AuthenticationController {
       this.logger.error(`already connect social: ${body.provider}.`);
       throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
     }
-
-    const currentAccount = await this.authService.getAccountFromCredential(
-      req.$credential
-    );
 
     this.logger.log(`connect account with social`);
     await this.authService.createAccountAuthenId(

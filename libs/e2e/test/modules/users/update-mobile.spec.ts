@@ -117,7 +117,7 @@ export const testUsersUpdateMobile = () => {
       })
       .expect(({ body }) => {
         expect(body.message).toEqual(
-          'ไม่สามารถเข้าถึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
+          'Can not access the data. Please try again.'
         );
       })
       .expect(HttpStatus.FORBIDDEN);
@@ -133,9 +133,7 @@ export const testUsersUpdateMobile = () => {
         mobileNumber: tempUser.phone,
       })
       .expect(({ body }) => {
-        expect(body.message).toEqual(
-          'มีชื่อผู้ใช้เบอร์โทรศัพท์นี้แล้ว โปรดเปลี่ยนเบอร์โทรศัพท์อื่น'
-        );
+        expect(body.message).toEqual('This phone number is already exists.');
       })
       .expect(HttpStatus.BAD_REQUEST);
   });
