@@ -21,7 +21,11 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+export enum EngagementType {
+  Like = 'like',
+  Recast = 'recast',
+  Quote = 'quote',
+  Comment = 'comment',
+  Report = 'report',
+  Seen = 'seen',
+}

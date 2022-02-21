@@ -22,6 +22,7 @@
  */
 
 import { UserProducer } from '@castcle-api/utils/queue';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -112,6 +113,7 @@ describe('ContentService', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,

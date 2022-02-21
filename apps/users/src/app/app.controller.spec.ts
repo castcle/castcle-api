@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsService,
   AuthenticationService,
   CampaignService,
   ContentService,
@@ -29,7 +30,6 @@ import {
   MongooseForFeatures,
   SocialProvider,
   SocialSyncService,
-  TransactionService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -99,8 +99,8 @@ describe('AppController', () => {
         HashtagService,
         SocialSyncService,
         CampaignService,
-        TransactionService,
         SuggestionService,
+        AdsService,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -183,12 +183,19 @@ describe('AppController', () => {
     it('should return UserResponseDto of user id ', async () => {
       const user = await service.getUserFromCredential(userCredential);
       const response = (await appController.getUserById(
-        { $credential: userCredential, $language: 'th' } as any,
-        user._id
+        user._id,
+        {
+          $credential: userCredential,
+          $language: 'th',
+        } as any,
+        { hasRelationshipExpansion: true }
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
       expect(response.email).toEqual(userAccount.email);
+      expect(response.followed).toBeDefined();
+      expect(response.blocking).toBeDefined();
+      expect(response.blocked).toBeDefined();
     });
   });
 
@@ -340,13 +347,36 @@ describe('AppController', () => {
         {
           $credential: mocks[0].credential,
           $language: 'th',
-        } as any
+        } as any,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
       );
       expect(followingResult.payload.length).toEqual(1);
-      console.log(followingResult);
       expect(followingResult.payload[0].castcleId).toEqual(
         mocks[1].user.displayId
       );
+      expect(followingResult.meta).toBeDefined();
+    });
+
+    it('should show all user follower from the system', async () => {
+      const followerResult = await appController.getUserFollower(
+        mocks[1].user.displayId,
+        {
+          $credential: mocks[0].credential,
+          $language: 'th',
+        } as any,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
+      );
+      expect(followerResult.payload.length).toEqual(1);
+      expect(followerResult.payload[0].castcleId).toEqual(
+        mocks[0].user.displayId
+      );
+      expect(followerResult.meta).toBeDefined();
     });
   });
   describe('deleteMyData', () => {
@@ -541,7 +571,7 @@ describe('AppController', () => {
       await appController.deleteSyncSocial(credential, request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result).toBeUndefined();
+      expect(result.active).toEqual(false);
     });
   });
 

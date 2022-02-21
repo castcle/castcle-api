@@ -21,7 +21,30 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+export enum AdsObjective {
+  Engagement = 'engagement',
+  Reach = 'reach',
+}
+
+export enum AdsStatus {
+  Processing = 'processing',
+  Declined = 'declined',
+  Approved = 'approved',
+}
+
+export enum AdsBoostStatus {
+  Unknown = 'unknown',
+  Running = 'running',
+  Pause = 'pause',
+  End = 'end',
+}
+
+export enum AdsEngagementKey {
+  Likes = 'likes',
+  Recasts = 'recasts',
+  Quotes = 'quotecasts',
+  Comments = 'comments',
+  Saved = 'saved',
+  Farm = 'farm',
+  Reward = 'rewardDistributed',
+}

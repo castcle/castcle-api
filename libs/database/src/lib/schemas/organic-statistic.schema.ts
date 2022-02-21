@@ -21,7 +21,19 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { CastcleBase, Content } from '.';
+import { DataSchema, DataStatistic } from './data-statistic.schema';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class OrganicStatistic extends CastcleBase {
+  @Prop({ index: true, type: SchemaTypes.ObjectId, ref: 'Content' })
+  content: Content;
+
+  @Prop({ type: DataSchema })
+  statistic: DataStatistic;
+}
+
+export const OrganicStatisticSchema =
+  SchemaFactory.createForClass(OrganicStatistic);

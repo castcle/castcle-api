@@ -114,6 +114,15 @@ export class SocialSyncService {
   };
 
   /**
+   * get social sync from User id
+   *
+   * @param {string} id
+   * @returns {SocialSync[]} return all social sync Document
+   * */
+  getSocialSyncByPageId = (id: string): Promise<SocialSync[]> => {
+    return this.socialSyncModel.find({ 'author.id': id as any }).exec();
+  };
+  /**
    * update social sync
    * @param {SocialSyncDto} updateSocialSync payload
    * @param {User} user
@@ -167,7 +176,8 @@ export class SocialSyncService {
     );
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');
-      return deleteSocialSync.delete();
+      deleteSocialSync.active = false;
+      return deleteSocialSync.save();
     } else {
       this.logger.warn('Cnn not found social sync');
       return null;

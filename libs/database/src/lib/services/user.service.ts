@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -36,6 +35,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
+import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
 import {
   Author,
   CastcleQueryOptions,
@@ -48,17 +48,23 @@ import {
   PageDto,
   PaginationQuery,
   SocialPageDto,
+  SortBy,
   SortDirection,
   UpdateModelUserDto,
   UpdateUserDto,
+  UserField,
   UserModelImage,
 } from '../dtos';
+import { CastcleNumber } from '../models';
 import {
   Account,
+  AccountAuthenId,
   AccountReferral,
   Content,
   Credential,
   Relationship,
+  SocialSync,
+  Transaction,
   User,
   UserType,
 } from '../schemas';
@@ -89,6 +95,12 @@ export class UserService {
     public _relationshipModel: Model<Relationship>,
     @InjectModel('User')
     public _userModel: Model<User>,
+    @InjectModel('AccountAuthenId')
+    public _accountAuthenId: Model<AccountAuthenId>,
+    @InjectModel('SocialSync')
+    private _socialSyncModel: Model<SocialSync>,
+    @InjectModel('Transaction')
+    private transactionModel: Model<Transaction>,
     private contentService: ContentService,
     private userProducer: UserProducer
   ) {}
@@ -111,14 +123,73 @@ export class UserService {
       })
       .exec();
 
-  getUserFromAccountId = (accountId: string) =>
+  getPagesFromAccountId = (accountId: string) =>
     this._userModel
+      .find({
+        ownerAccount: accountId as any,
+        type: UserType.Page,
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
+  /**
+   * Get user's balance
+   * @param {User} user
+   */
+  getBalance = async (user: User) => {
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(String(user.ownerAccount))
+    );
+
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
+
+  getUserFromAccountId = async (
+    accountId: string,
+    userFields?: UserField[]
+  ) => {
+    const account = await this._accountModel.findById(accountId).exec();
+    const user = await this._userModel
       .findOne({
         ownerAccount: accountId as any,
         type: UserType.People,
         visibility: EntityVisibility.Publish,
       })
       .exec();
+
+    if (!account || !user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const balance = userFields?.includes(UserField.Wallet)
+      ? await this.getBalance(user)
+      : undefined;
+
+    const authenSocial = userFields?.includes(UserField.LinkSocial)
+      ? await this._accountAuthenId.find({ account: accountId as any }).exec()
+      : undefined;
+
+    let syncPage = undefined;
+    if (userFields?.includes(UserField.SyncSocial)) {
+      const page = await this.getPagesFromAccountId(accountId);
+      syncPage = (
+        await Promise.all(
+          page.map(async (p) => {
+            return await this._socialSyncModel
+              .find({ 'author.id': p.id })
+              .exec();
+          })
+        )
+      ).flat();
+    }
+
+    return {
+      user: user,
+      account: account,
+      balance: balance,
+      authenSocial: authenSocial,
+      syncPage: syncPage,
+    };
+  };
+
   /**
    * Get all user and page that this credentials is own
    * @param credential
@@ -192,7 +263,7 @@ export class UserService {
   getById = async (
     user: User,
     id: string,
-    type: UserType,
+    type?: UserType,
     hasRelationshipExpansion = false
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
@@ -222,6 +293,7 @@ export class UserService {
     const query = createFilterQuery<User>(sinceId, untilId);
     const pattern = CastcleRegExp.fromString(keyword, { exactMatch: false });
 
+    queryOptions.sortBy.field = 'createdAt';
     query.$or = [{ displayId: pattern }, { displayName: pattern }];
 
     return this.getByCriteria(
@@ -267,7 +339,7 @@ export class UserService {
   getByCriteria = async (
     user: User,
     query: FilterQuery<User>,
-    queryOptions: CastcleQueryOptions,
+    queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false
   ) => {
     const {
@@ -286,6 +358,8 @@ export class UserService {
   };
 
   getByIdOrCastcleId = (id: string, type?: UserType) => {
+    if (!id) return null;
+
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
     };
@@ -401,9 +475,9 @@ export class UserService {
     const total = await this._userModel.countDocuments(filterQuery);
     let usersQuery = this._userModel.find(filterQuery);
 
-    if (queryOptions.limit) usersQuery = usersQuery.limit(queryOptions.limit);
-    if (queryOptions.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
-    if (queryOptions.sortBy) {
+    if (queryOptions?.limit) usersQuery = usersQuery.limit(queryOptions.limit);
+    if (queryOptions?.page) usersQuery = usersQuery.skip(queryOptions.page - 1);
+    if (queryOptions?.sortBy) {
       const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
       const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
 
@@ -475,82 +549,103 @@ export class UserService {
     user.unfollow(followedUser);
 
   getFollowers = async (
-    user: User,
-    targetUserId: string,
-    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    viewer: User,
+    targetUser: User,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
-    const targetUser = await this.getByIdOrCastcleId(targetUserId);
-
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
+    this.logger.log('Build followers query.');
     const query: FilterQuery<Relationship> = {
       followedUser: targetUser.id as any,
       visibility: EntityVisibility.Publish,
       following: true,
     };
 
-    if (queryOption.type) {
-      query.isFollowPage = queryOption.type === UserType.Page;
-    }
-
-    const total = await this._relationshipModel.countDocuments(query).exec();
-    const relationships = total
-      ? await this._relationshipModel
-          .find(query)
-          .skip(queryOption.page - 1)
-          .limit(queryOption.limit)
-          .populate('user')
-          .sort(`${direction}${queryOption.sortBy.field}`)
-          .exec()
-      : [];
-
-    const followerIds = relationships.map(({ user }) => user._id);
-
-    return this.getByCriteria(user, { _id: { $in: followerIds } }, queryOption);
+    return this.searchRelation(
+      query,
+      viewer,
+      'user',
+      paginationQuery,
+      sortBy,
+      userType
+    );
   };
 
   getFollowing = async (
-    authorizedUser: User,
-    userId: string,
-    queryOption: CastcleQueryOptions = DEFAULT_QUERY_OPTIONS
+    viewer: User,
+    targetUser: User,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
-    const targetUser = await this.getByIdOrCastcleId(userId);
-
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const direction = queryOption.sortBy.type === 'desc' ? '-' : '';
+    this.logger.log('Build following query.');
     const query: FilterQuery<Relationship> = {
       user: targetUser.id as any,
       visibility: EntityVisibility.Publish,
       following: true,
     };
 
-    if (queryOption.type) {
-      query.isFollowPage = queryOption.type === UserType.Page;
+    return this.searchRelation(
+      query,
+      viewer,
+      'followedUser',
+      paginationQuery,
+      sortBy,
+      userType
+    );
+  };
+
+  private async searchRelation(
+    query: FilterQuery<Relationship>,
+    viewer: User,
+    populate: string,
+    paginationQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
+  ) {
+    const direction = sortBy?.type === 'asc' ? '' : '-';
+    this.logger.log('Filter Since & Until');
+    query = await createCastcleFilter(query, {
+      sinceId: paginationQuery?.sinceId,
+      untilId: paginationQuery?.untilId,
+    });
+
+    this.logger.log('FIlter Type');
+    if (userType) {
+      query.isFollowPage = userType === UserType.Page;
     }
 
     const total = await this._relationshipModel.countDocuments(query).exec();
     const relationships = total
       ? await this._relationshipModel
           .find(query)
-          .skip(queryOption.page - 1)
-          .limit(queryOption.limit)
-          .populate('followedUser')
-          .sort(`${direction}${queryOption.sortBy.field}`)
+          .limit(+paginationQuery.maxResults)
+          .populate(populate)
+          .sort(`${direction}${sortBy?.field}`)
           .exec()
       : [];
 
-    const followingIds = relationships.map(
-      ({ followedUser }) => followedUser._id
+    const followingIds =
+      populate === 'user'
+        ? relationships.map(({ user }) => user?._id)
+        : relationships.map(({ followedUser }) => followedUser?._id);
+
+    const hasRelationship = paginationQuery.hasRelationshipExpansion;
+    const { users } = await this.getByCriteria(
+      viewer,
+      {
+        _id: { $in: followingIds },
+      },
+      undefined,
+      hasRelationship
     );
 
-    return this.getByCriteria(
-      authorizedUser,
-      { _id: { $in: followingIds } },
-      queryOption
-    );
-  };
+    return {
+      users,
+      meta: Meta.fromDocuments(relationships, total),
+    };
+  }
 
   /**
    * TODO !!! need to find a way to put in transaction
@@ -981,7 +1076,11 @@ Message: ${message}`,
     this.logger.log('Get user.');
     await Promise.all(
       accountReferee?.map(async (x) =>
-        result.push(await this.getUserFromAccountId(x.referringAccount._id))
+        result.push(
+          await (
+            await this.getUserFromAccountId(x.referringAccount._id)
+          ).user
+        )
       )
     );
     this.logger.log('Success get referee.');
@@ -1057,7 +1156,6 @@ Message: ${message}`,
           youtube: socialPageDto.links?.youtube,
           medium: socialPageDto.links?.medium,
         },
-        socialSyncs: socialPageDto.socialSyncs,
       },
     }).save();
   };

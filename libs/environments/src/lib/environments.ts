@@ -21,134 +21,152 @@
  * or have any questions.
  */
 
-import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { Configs } from './configs';
 import * as dotenv from 'dotenv';
+import { MongooseOptions } from 'mongoose';
+import { Configs } from './configs';
 
 const env = dotenv.config();
-if (!env) {
-  throw new Error('Env not found!');
-}
 
-// Database
-const db_user_pass =
-  process.env.DB_USERNAME === '' && process.env.DB_PASSWORD === ''
-    ? ''
-    : `${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@`;
-const db_query =
-  process.env.DB_HOST === 'localhost' ? '' : '?retryWrites=true&w=majority';
-const DB_OPTIONS: MongooseModuleOptions =
-  process.env.DB_HOST === 'localhost' &&
-  process.env.DB_USERNAME === '' &&
-  process.env.DB_PASSWORD === ''
-    ? {}
-    : {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      };
+if (!env) throw new Error('Env not found!');
 
-export const Environment = {
-  PRODUCTION: process.env.NODE_ENV === 'production',
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
+export class Environment {
+  static PRODUCTION = process.env.NODE_ENV === 'production';
+  static NODE_ENV = process.env.NODE_ENV;
+  static PORT = process.env.PORT;
+
   // Database
-  DB_USERNAME: process.env.DB_USERNAME,
-  DB_PASSWORD: process.env.DB_PASSWORD,
-  DB_HOST: process.env.DB_HOST,
-  DB_NAME: process.env.DB_DATABASE_NAME,
-  DB_URI: `mongodb+srv://${db_user_pass}${process.env.DB_HOST}/${process.env.DB_DATABASE_NAME}${db_query}`,
-  DB_OPTIONS,
-  DB_TEST_IN_DB: process.env.DB_TEST_IN_DB === 'yes',
+  private static DB_USERNAME = process.env.DB_USERNAME;
+  private static DB_PASSWORD = process.env.DB_PASSWORD;
+  private static DB_AUTHENTICATION =
+    Environment.DB_USERNAME && Environment.DB_PASSWORD
+      ? `${Environment.DB_USERNAME}:${Environment.DB_PASSWORD}@`
+      : '';
+  private static DB_HOST = process.env.DB_HOST || 'localhost';
+  private static DB_USE_LOCAL = Environment.DB_HOST === 'localhost';
+  private static DB_FORMAT = `mongodb${Environment.DB_USE_LOCAL ? '' : '+srv'}`;
+  private static DB_DATABASE_NAME = process.env.DB_DATABASE_NAME || '';
+  static DB_URI = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME}?retryWrites=true&w=majority`;
+  static DB_OPTIONS: MongooseOptions = {
+    useCreateIndex: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  };
+
   // Mail Service
-  SMTP_ADMIN_EMAIL: process.env.SMTP_ADMIN_EMAIL,
-  SMTP_USERNAME: process.env.SMTP_USERNAME,
-  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: Number(process.env.SMTP_PORT) || 465,
+  static SMTP_ADMIN_EMAIL = process.env.SMTP_ADMIN_EMAIL;
+  static SMTP_USERNAME = process.env.SMTP_USERNAME;
+  static SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+  static SMTP_HOST = process.env.SMTP_HOST;
+  static SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+
   // JWT
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'access-secret',
-  JWT_ACCESS_EXPIRES_IN: Number(process.env.JWT_ACCESS_EXPIRES_IN) || 6001,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
-  JWT_REFRESH_EXPIRES_IN: Number(process.env.JWT_REFRESH_EXPIRES_IN) || 18000,
-  JWT_VERIFY_SECRET: process.env.JWT_VERIFY_SECRET || 'verify-secret',
-  JWT_VERIFY_EXPIRES_IN: Number(process.env.JWT_VERIFY_EXPIRES_IN) || 6002,
-  JWT_SIGNATURE_SECRET: process.env.JWT_SIGNATURE_SECRET,
-  JWT_SIGNATURE_EXPIRES_IN: process.env
-    .JWT_SIGNATURE_EXPIRES_IN as unknown as number,
+  static JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'access-secret';
+  static JWT_ACCESS_EXPIRES_IN =
+    Number(process.env.JWT_ACCESS_EXPIRES_IN) || 6001;
+  static JWT_REFRESH_SECRET =
+    process.env.JWT_REFRESH_SECRET || 'refresh-secret';
+  static JWT_REFRESH_EXPIRES_IN =
+    Number(process.env.JWT_REFRESH_EXPIRES_IN) || 18000;
+  static JWT_VERIFY_SECRET = process.env.JWT_VERIFY_SECRET || 'verify-secret';
+  static JWT_VERIFY_EXPIRES_IN =
+    Number(process.env.JWT_VERIFY_EXPIRES_IN) || 6002;
+  static JWT_SIGNATURE_SECRET = process.env.JWT_SIGNATURE_SECRET;
+  static JWT_SIGNATURE_EXPIRES_IN = Number(
+    process.env.JWT_SIGNATURE_EXPIRES_IN
+  );
+
   // Cloudfront
-  CLOUDFRONT_ACCESS_KEY_ID: process.env.CLOUDFRONT_ACCESS_KEY_ID,
-  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY,
+  static CLOUDFRONT_ACCESS_KEY_ID = process.env.CLOUDFRONT_ACCESS_KEY_ID;
+  static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY;
+
   // Redis
-  REDIS_HOST: process.env.REDIS_HOST,
-  REDIS_PORT: process.env.REDIS_PORT as unknown as number,
+  static REDIS_HOST = process.env.REDIS_HOST;
+  static REDIS_PORT = Number(process.env.REDIS_PORT);
+
   // Assets
-  ASSETS_BUCKET_NAME: process.env.ASSETS_BUCKET_NAME,
-  ASSETS_HOST: process.env.ASSETS_HOST ?? 'https://assets-dev.castcle.com',
+  static ASSETS_BUCKET_NAME = process.env.ASSETS_BUCKET_NAME;
+  static ASSETS_HOST =
+    process.env.ASSETS_HOST || 'https://assets-dev.castcle.com';
+
   // Twitter Config
-  TWITTER_KEY: process.env.TWITTER_KEY,
-  TWITTER_SECRET_KEY: process.env.TWITTER_SECRET_KEY,
-  TWITTER_BEARER_TOKEN: process.env.TWITTER_BEARER_TOKEN,
-  TWITTER_HOST: process.env.TWITTER_HOST,
+  static TWITTER_KEY = process.env.TWITTER_KEY;
+  static TWITTER_SECRET_KEY = process.env.TWITTER_SECRET_KEY;
+  static TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
+  static TWITTER_HOST = process.env.TWITTER_HOST;
 
   // Otp
   /**
    * Display otp digits
    * @default 8
    */
-  OTP_DIGITS: Number(process.env.OTP_DIGITS) || 8,
+  static OTP_DIGITS = Number(process.env.OTP_DIGITS) || 8;
   /**
    * second for otp to expire
    * @default 60 seconds
    */
-  OPT_EXPIRES_IN: Number(process.env.OTP_EXPIRES_IN) || 60,
+  static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
 
   // Firebase
-  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
-  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
-  // HTTP
-  HTTP_TIME_OUT: process.env.HTTP_TIME_OUT as unknown as number,
-  // Facebook
-  FACEBOOK_HOST: process.env.FB_HOST,
-  FACEBOOK_CLIENT_ID: process.env.FB_CLIENT_ID,
-  FACEBOOK_CLIENT_SECRET: process.env.FB_CLIENT_SECRET,
-  // Telegram
-  TELEGRAM_BOT_TOKEN: process.env.TG_BOT_TOKEN,
-  // Apple
-  APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
-  APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
-  APPLE_KEY_IDENTIFIER: process.env.APPLE_KEY_IDENTIFIER,
-  APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
-  // Twilio
-  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-  TWILIO_OTP_SID: process.env.TWILIO_OTP_SID,
-  // Youtube
-  YOUTUBE_VERIFY_TOKEN: process.env.YOUTUBE_VERIFY_TOKEN,
-  YOUTUBE_WEBHOOK_CALLBACK: process.env.YOUTUBE_WEBHOOK_CALLBACK,
-  // ip-api
-  IP_API_URL: process.env.IP_API_URL || 'https://ip-api.com/json',
-  IP_API_KEY: process.env.IP_API_KEY || null,
-  // Google
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-  GOOGLE_SECRET: process.env.GOOGLE_SECRET,
-  // Feed Setting
-  AUTO_CREATE_GUEST_FEED:
-    process.env.AUTO_CREATE_GUEST_FEED === '1' ? true : false,
+  static FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+  static FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
+  static FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY;
 
-  FEED_FOLLOW_MAX: process.env.FEED_FOLLOW_MAX
-    ? Number(process.env.FEED_FOLLOW_MAX)
-    : Configs.Feed.FollowFeedMax,
-  FEED_FOLLOW_RATIO: process.env.FEED_FOLLOW_RATIO
-    ? Number(process.env.FEED_FOLLOW_RATIO)
-    : Configs.Feed.FollowFeedRatio,
-  FEED_DECAY_DAYS: process.env.FEED_DECAY_DAYS
-    ? Number(process.env.FEED_DECAY_DAYS)
-    : Configs.Feed.DecayDays,
+  // HTTP
+  static HTTP_TIME_OUT = Number(process.env.HTTP_TIME_OUT);
+
+  // Facebook
+  static FACEBOOK_HOST = process.env.FB_HOST;
+  static FACEBOOK_CLIENT_ID = process.env.FB_CLIENT_ID;
+  static FACEBOOK_CLIENT_SECRET = process.env.FB_CLIENT_SECRET;
+
+  // Telegram
+  static TELEGRAM_BOT_TOKEN = process.env.TG_BOT_TOKEN;
+
+  // Apple
+  static APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID;
+  static APPLE_TEAM_ID = process.env.APPLE_TEAM_ID;
+  static APPLE_KEY_IDENTIFIER = process.env.APPLE_KEY_IDENTIFIER;
+  static APPLE_PRIVATE_KEY = process.env.APPLE_PRIVATE_KEY;
+
+  // Twilio
+  static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+  static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+  static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID;
+
+  // Youtube
+  static YOUTUBE_VERIFY_TOKEN = process.env.YOUTUBE_VERIFY_TOKEN;
+  static YOUTUBE_WEBHOOK_CALLBACK = process.env.YOUTUBE_WEBHOOK_CALLBACK;
+
+  // ip-api
+  static IP_API_URL = process.env.IP_API_URL || 'https://ip-api.com/json';
+  static IP_API_KEY = process.env.IP_API_KEY || null;
+
+  // Google
+  static GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+  static GOOGLE_SECRET = process.env.GOOGLE_SECRET;
+
+  // Feed Setting
+  static AUTO_CREATE_GUEST_FEED = process.env.AUTO_CREATE_GUEST_FEED === '1';
+  static FEED_FOLLOW_MAX = Number(
+    process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax
+  );
+  static FEED_FOLLOW_RATIO = Number(
+    process.env.FEED_FOLLOW_RATIO || Configs.Feed.FollowFeedRatio
+  );
+  static FEED_DECAY_DAYS = Number(
+    process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays
+  );
 
   /**
-   * Number of digits after the decimal point
-   * @default 1E+18
+   * Number of digits before the decimal point
+   * @default 10
    */
-  DECIMALS: Number(process.env.DECIMALS || 1e18),
-};
+  static DECIMALS_INT = Number(process.env.DECIMALS_INT || 10);
+  /**
+   * Number of digits after the decimal point
+   * @default 8
+   */
+  static DECIMALS_FLOAT = Number(process.env.DECIMALS_FLOAT || 8);
+
+  static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
+}

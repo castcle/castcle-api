@@ -46,6 +46,7 @@ import {
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -72,12 +73,12 @@ const mockResponse: any = {
 const createMockCredential = async (
   appController: AuthenticationController,
   service: AuthenticationService,
+  skipRegister: boolean,
   deviceUUID: string,
-  castcleId: string,
-  displayName: string,
-  email: string,
-  password: string,
-  skipRegister: boolean
+  castcleId?: string,
+  displayName?: string,
+  email?: string,
+  password?: string
 ) => {
   const guestResult = await appController.guestLogin(
     { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
@@ -156,6 +157,7 @@ describe('AppController', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -862,10 +864,15 @@ describe('AppController', () => {
         AccountAuthenIdType.Facebook
       );
 
+      const activation = await service.getAccountActivationFromCredential(
+        credentialGuest.$credential
+      );
+
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
       expect(accountSocial.socialId).toEqual('109364223');
+      expect(activation).toBeDefined();
     });
 
     it('should create new account with generate castcle id', async () => {
@@ -942,7 +949,7 @@ describe('AppController', () => {
   });
 
   describe('connectWithSocial', () => {
-    let credentialGuest = null;
+    let credential = null;
     let mockUsers: MockUserDetail[] = [];
     beforeAll(async () => {
       mockUsers = await generateMockUsers(1, 0, {
@@ -950,7 +957,7 @@ describe('AppController', () => {
         accountService: service,
       });
 
-      credentialGuest = {
+      credential = {
         $credential: mockUsers[0].credential,
         $language: 'th',
       } as any;
@@ -961,7 +968,7 @@ describe('AppController', () => {
         '10936456',
         AccountAuthenIdType.Facebook
       );
-      await appController.connectWithSocial(credentialGuest, {
+      await appController.connectWithSocial(credential, {
         provider: AccountAuthenIdType.Facebook,
         socialId: '10936456',
         displayName: 'test facebook',
@@ -980,7 +987,7 @@ describe('AppController', () => {
 
     it('should return Exception when use duplicate social id', async () => {
       await expect(
-        appController.connectWithSocial(credentialGuest, {
+        appController.connectWithSocial(credential, {
           provider: AccountAuthenIdType.Facebook,
           socialId: '10936456',
           displayName: 'test facebook',
@@ -991,6 +998,25 @@ describe('AppController', () => {
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
       );
+    });
+
+    it('should return Exception when use guest account', async () => {
+      const guest = await createMockCredential(
+        appController,
+        service,
+        true,
+        'iphone15x'
+      );
+      await expect(
+        appController.connectWithSocial(guest, {
+          provider: AccountAuthenIdType.Facebook,
+          socialId: '10936456',
+          displayName: 'test facebook',
+          avatar: '',
+          email: mockUsers[0].account.email,
+          authToken: '',
+        })
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 
@@ -1006,12 +1032,12 @@ describe('AppController', () => {
       credentialGuest = await createMockCredential(
         appController,
         service,
+        false,
         deviceUUID,
         testId,
         'abc',
         emailTest,
-        password,
-        false
+        password
       );
 
       const acc = await service.getAccountFromCredential(
@@ -1242,12 +1268,12 @@ describe('AppController', () => {
       const guest = await createMockCredential(
         appController,
         service,
+        true,
         deviceUUID,
         testId,
         'abc',
         emailTest,
-        password,
-        true
+        password
       );
 
       const request = () => {
@@ -1280,12 +1306,12 @@ describe('AppController', () => {
       credentialGuest = await createMockCredential(
         appController,
         service,
+        false,
         deviceUUID,
         testId,
         'abc',
         emailTest,
-        password,
-        false
+        password
       );
       const acc = await service.getAccountFromCredential(
         credentialGuest.$credential

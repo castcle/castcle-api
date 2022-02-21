@@ -31,6 +31,7 @@ import {
 import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
+import { Meta } from './response.dto';
 
 class UserImage {
   @ApiProperty()
@@ -234,9 +235,6 @@ export class PageResponseDto {
   blocking: boolean;
 
   @ApiProperty()
-  socialSyncs: boolean;
-
-  @ApiProperty()
   updatedAt: string;
 
   @ApiProperty()
@@ -245,18 +243,24 @@ export class PageResponseDto {
 
 export class UpdatePageDto {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   displayName?: string;
 
   @ApiProperty()
+  @IsOptional()
   images?: {
     avatar?: string;
     cover?: string;
   };
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   overview?: string;
 
   @ApiProperty()
+  @IsOptional()
   links?: {
     facebook?: string | null;
     twitter?: string | null;
@@ -284,7 +288,7 @@ export class FollowResponse {
   payload: (UserResponseDto | PageResponseDto)[];
 
   @ApiProperty()
-  pagination: Pagination;
+  meta: Meta;
 }
 
 export class SocialSyncDto {
@@ -376,5 +380,4 @@ export class SocialPageDto {
     medium?: string | null;
     website?: string | null;
   };
-  socialSyncs?: boolean;
 }

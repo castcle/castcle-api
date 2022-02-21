@@ -44,25 +44,19 @@ async function bootstrap() {
   const port = process.env.PORT || 3334;
   const prefix = 'authentications';
 
-  // For Global
   app.setGlobalPrefix(prefix);
-
-  // For versioning
   app.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  // For documentations
   const document = SwaggerModule.createDocument(app, DocumentConfig);
   SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  //TODO !!! social login need to add class validator  to use this
-  /*app.useGlobalPipes(new ValidationPipe({
-    forbidUnknownValues:true
-  }));*/
+
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new ExceptionFilter());
   app.enableCors();
+
   await app.listen(port, () => {
     logger.log('Listening at http://localhost:' + port);
     logger.log(`Environment at ${env.NODE_ENV}`);

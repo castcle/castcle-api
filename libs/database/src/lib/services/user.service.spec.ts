@@ -20,16 +20,19 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { UserProducer } from '@castcle-api/utils/queue';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   ContentType,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   ShortPayload,
+  UserField,
 } from '../dtos';
 import {
   DEFAULT_QUERY_OPTIONS,
@@ -38,7 +41,15 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { Account, Comment, Content, Credential, User } from '../schemas';
+import { WalletType } from '../models';
+import {
+  Account,
+  Comment,
+  Content,
+  Credential,
+  Transaction,
+  User,
+} from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -52,6 +63,7 @@ describe('User Service', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentService;
+  let transactionModel: Model<Transaction>;
   let result: {
     accountDocument: Account;
     credentialDocument: Credential;
@@ -61,6 +73,7 @@ describe('User Service', () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -76,6 +89,7 @@ describe('User Service', () => {
     }).compile();
 
     service = app.get<UserService>(UserService);
+    transactionModel = (service as any).transactionModel;
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     commentService = app.get(CommentService);
@@ -325,9 +339,13 @@ describe('User Service', () => {
       await currentUser.follow(allPages.items[1]);
       const followers = await service.getFollowers(
         currentUser,
-        allPages.items[0].id,
-        DEFAULT_QUERY_OPTIONS
+        allPages.items[0],
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
       );
+
       expect(followers.users.length).toEqual(1);
       expect(followers.users[0].castcleId).toEqual(
         (await currentUser.toUserResponse()).castcleId
@@ -341,11 +359,15 @@ describe('User Service', () => {
         result.credentialDocument
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
-      const following = await service.getFollowing(currentUser, currentUser.id);
+      const following = await service.getFollowing(currentUser, currentUser, {
+        maxResults: 5,
+        hasRelationshipExpansion: false,
+      });
       //like in #getFollower
       expect(following.users.length).toEqual(allPages.items.length);
     });
   });
+
   describe('#deactivate, reactivate', () => {
     const userInfo = {
       accountRequirement: {
@@ -442,6 +464,7 @@ describe('User Service', () => {
       });
     });
   });
+
   describe('Deactivated', () => {
     let userA: User;
     let userB: User;
@@ -672,13 +695,21 @@ describe('User Service', () => {
       it('should flag all content from user to deleted', async () => {
         const preFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(preFollower.users.length).toEqual(2);
         await service._removeAllFollower(userA);
         const postFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(postFollower.users.length).toEqual(1);
       });
@@ -715,7 +746,11 @@ describe('User Service', () => {
         expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollowers(
           userNotDelete,
-          userNotDelete.id
+          userNotDelete,
+          {
+            maxResults: 5,
+            hasRelationshipExpansion: false,
+          }
         );
         expect(postFollower.users.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
@@ -730,6 +765,7 @@ describe('User Service', () => {
       });
     });
   });
+
   describe('#getMentionsFromPublic()', () => {
     let mocksUsers: MockUserDetail[];
     beforeAll(async () => {
@@ -1028,11 +1064,85 @@ describe('User Service', () => {
           links: {
             facebook: 'https://facebook.com/test',
           },
-          socialSyncs: true,
         }
       );
       expect(page.type).toEqual('page');
       expect(page.displayId).toEqual('synctest');
+    });
+  });
+
+  describe('#getUserFromAccountId()', () => {
+    let account: Account;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 2, {
+        userService: service,
+        accountService: authService,
+      });
+
+      account = mocksUsers[0].account;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get only user data', async () => {
+      const currentUser = await service.getUserFromAccountId(account.id);
+      expect(currentUser.user).toBeDefined();
+      expect(currentUser.balance).toBeUndefined();
+      expect(currentUser.authenSocial).toBeUndefined();
+      expect(currentUser.syncPage).toBeUndefined();
+    });
+
+    it('should get user and userFields option', async () => {
+      const currentUser = await service.getUserFromAccountId(account.id, [
+        UserField.Wallet,
+        UserField.LinkSocial,
+        UserField.SyncSocial,
+      ]);
+      expect(currentUser.user).toBeDefined();
+      expect(currentUser.balance).toBeDefined();
+      expect(currentUser.authenSocial).toBeDefined();
+      expect(currentUser.syncPage).toBeDefined();
+    });
+
+    it('should return exception when can not find user', async () => {
+      await expect(
+        service.getUserFromAccountId(result.accountDocument.id)
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND)
+      );
+    });
+  });
+
+  describe('Transaction Service', () => {
+    const accountId = Types.ObjectId();
+    const user = { ownerAccount: accountId } as unknown as User;
+
+    it('should create new transaction from transfer()', async () => {
+      const transaction = await new transactionModel({
+        to: [{ account: accountId, type: WalletType.PERSONAL, value: 10 }],
+      }).save();
+
+      expect(Number(transaction.to[0].value.toString())).toEqual(10);
+      expect(transaction.createdAt).toBeDefined();
+    });
+
+    it('should return user balance', async () => {
+      const transaction = await transactionModel.findOne({
+        'to.account': accountId,
+      });
+
+      expect(Number(transaction.to[0].value.toString())).toEqual(10);
+
+      await expect(service.getBalance(user)).resolves.toEqual(10);
+
+      await new transactionModel({
+        from: { account: user.ownerAccount, type: WalletType.PERSONAL },
+        to: [{ value: 5 }],
+      }).save();
+
+      await expect(service.getBalance(user)).resolves.toEqual(5);
     });
   });
 });

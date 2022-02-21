@@ -21,7 +21,33 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { Account, AdsCampaign, CastcleBase, Credential } from '.';
+import { AdsCost } from '../models/ads.model';
+
+@Schema({ timestamps: true })
+export class AdsPlacement extends CastcleBase {
+  @Prop({ required: true, type: Array })
+  contents: any[]; // array ob objectId
+
+  @Prop({ required: true, type: Object })
+  cost: AdsCost;
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'AdsCampaign' })
+  campaign: AdsCampaign;
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
+  viewer: Account;
+
+  @Prop({ type: Object })
+  engagements: { [key: string]: number };
+
+  @Prop()
+  seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Credential' })
+  seenCredential?: Credential;
+}
+
+export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);

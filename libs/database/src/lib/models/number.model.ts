@@ -21,7 +21,24 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { Environment } from '@castcle-api/environments';
+
+export class CastcleNumber {
+  public n: number;
+
+  constructor(n: number | string) {
+    this.n = Number(Number(n ?? 0).toFixed(Environment.DECIMALS_FLOAT));
+  }
+
+  static from(n: number | string) {
+    return new CastcleNumber(n);
+  }
+
+  toString() {
+    return this.n.toFixed(Environment.DECIMALS_FLOAT);
+  }
+
+  toNumber() {
+    return Number(this.toString());
+  }
+}

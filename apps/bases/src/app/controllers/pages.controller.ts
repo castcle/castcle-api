@@ -46,6 +46,7 @@ import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
+  Downloader,
   Image,
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
@@ -90,7 +91,8 @@ export class PagesController {
     private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
-    private socialSyncService: SocialSyncService
+    private socialSyncService: SocialSyncService,
+    private download: Downloader
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -171,6 +173,7 @@ export class PagesController {
     type: PageDto,
   })
   @HttpCode(201)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleClearCacheAuth(CacheKeyName.Pages)
   @Put('pages/:id')
   async updatePage(
@@ -190,6 +193,7 @@ export class PagesController {
       page.profile.images.avatar = (
         await this._uploadImage(body.images.avatar, {
           filename: `page-avatar-${id}`,
+          addTime: true,
           sizes: AVATAR_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`,
         })
@@ -198,10 +202,12 @@ export class PagesController {
       page.profile.images.cover = (
         await this._uploadImage(body.images.cover, {
           filename: `page-cover-${id}`,
+          addTime: true,
           sizes: COMMON_SIZE_CONFIGS,
           subpath: `page_${page.displayId}`,
         })
       ).image;
+
     if (body.displayName) page.displayName = body.displayName;
     if (body.overview) page.profile.overview = body.overview;
     if (body.links) {
@@ -268,6 +274,7 @@ export class PagesController {
   })
   @HttpCode(204)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @Delete('pages/:id')
   async deletePage(
     @Req() req: CredentialRequest,
@@ -411,22 +418,33 @@ export class PagesController {
         socialPage.castcleId = sugguestDisplayId;
 
         if (syncBody.avatar) {
-          const avatar = await Image.upload(syncBody.avatar as string, {
-            filename: `avatar-${req.$credential.account._id}`,
+          this.logger.log(`download avatar from ${syncBody.avatar}`);
+          const imgAvatar = await this.download.getImageFromUrl(
+            syncBody.avatar
+          );
+
+          this.logger.log('upload avatar to s3');
+          const avatar = await this._uploadImage(imgAvatar, {
+            filename: `page-avatar-${sugguestDisplayId}`,
             addTime: true,
             sizes: AVATAR_SIZE_CONFIGS,
-            subpath: `account_${req.$credential.account._id}`,
+            subpath: `page_${sugguestDisplayId}`,
           });
+
           socialPage.avatar = avatar.image;
           this.logger.log('Upload avatar');
         }
 
         if (syncBody.cover) {
-          const cover = await Image.upload(syncBody.cover as string, {
-            filename: `cover-${req.$credential.account._id}`,
+          this.logger.log(`download avatar from ${syncBody.cover}`);
+          const imgCover = await this.download.getImageFromUrl(syncBody.cover);
+
+          this.logger.log('upload cover to s3');
+          const cover = await this._uploadImage(imgCover, {
+            filename: `page-cover-${sugguestDisplayId}`,
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `account_${req.$credential.account._id}`,
+            subpath: `page_${sugguestDisplayId}`,
           });
           socialPage.cover = cover.image;
           this.logger.log('Suggest Cover');
@@ -436,7 +454,7 @@ export class PagesController {
         if (syncBody.link) {
           socialPage.links = { [syncBody.provider]: syncBody.link };
         }
-        socialPage.socialSyncs = true;
+
         this.logger.log('Create new page');
         const page = await this.userService.createPageFromSocial(
           req.$credential.account._id,
@@ -455,6 +473,7 @@ export class PagesController {
       { ownerAccount: req.$credential.account._id, type: UserType.Page },
       {
         page: 1,
+        limit: 100,
         sortBy: {
           field: 'createdAt',
           type: SortDirection.DESC,
@@ -463,8 +482,22 @@ export class PagesController {
     );
 
     this.logger.log(`filter only new pages.`);
-    const result = pages.filter((item) => social.includes(item.id.toString()));
-    return { payload: result as PageResponseDto[] };
+    const pageResult = pages.filter((item) =>
+      social.includes(item.id.toString())
+    );
+
+    const response = await Promise.all(
+      pageResult.map(async (page) => {
+        const sync = await this.socialSyncService.getSocialSyncByPageId(
+          page.id
+        );
+        return {
+          ...page,
+          ...{ socialSyncs: sync.length > 0 ? sync[0] : null },
+        };
+      })
+    );
+    return { payload: response };
   }
 
   private async validateGuestAccount(credential: Credential) {

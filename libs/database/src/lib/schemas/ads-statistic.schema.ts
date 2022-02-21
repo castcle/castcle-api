@@ -21,7 +21,28 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DataStatistic } from './data-statistic.schema';
+
+/**
+ * Should be data that update frequently from aggregation or else
+ */
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class AdsStatistic extends DataStatistic {
+  @Prop()
+  cpm: number;
+
+  @Prop()
+  dailySpent: number;
+
+  @Prop()
+  budgetSpent: number;
+
+  @Prop()
+  durationSpent: number;
+
+  @Prop()
+  lastSeenAt?: Date;
+}
+
+export const AdsStatisticSchema = SchemaFactory.createForClass(AdsStatistic);

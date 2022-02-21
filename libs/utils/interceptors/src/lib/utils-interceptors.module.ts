@@ -22,7 +22,7 @@
  */
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
@@ -40,9 +40,10 @@ import {
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import { ExceptionFilter } from './exception/exception.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
 
 @Module({
-  imports: [DatabaseModule, CaslModule, CacheModule.register()],
+  imports: [DatabaseModule, CaslModule, UtilsCacheModule],
   controllers: [],
   providers: [],
   exports: [],

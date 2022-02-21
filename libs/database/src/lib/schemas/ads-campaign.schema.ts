@@ -23,33 +23,39 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class MicroTransaction {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account?: string;
-
-  @Prop({ type: String })
-  type: WalletType;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value?: number;
-}
-
-const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
+import { Account, CastcleBase } from '.';
+import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
+import { AdsDetail } from './ads-detail.schema';
+import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 
 @Schema({ timestamps: true })
-export class Transaction extends CastcleBase {
-  @Prop({ type: MicroTransactionSchema, index: true })
-  from?: MicroTransaction;
+export class AdsCampaign extends CastcleBase {
+  @Prop({ required: true, type: String, index: true })
+  objective: AdsObjective;
 
-  @Prop({ type: [MicroTransactionSchema], index: true })
-  to?: MicroTransaction[];
+  @Prop({ required: true, type: String, index: true })
+  boostStatus: AdsBoostStatus;
 
-  @Prop({ type: Object })
-  data?: any;
+  @Prop({ required: true, type: String, index: true })
+  status: AdsStatus;
+
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
+  owner: Account;
+
+  @Prop({ required: true, type: Object })
+  adsRef: any;
+
+  @Prop()
+  startAt?: Date;
+
+  @Prop()
+  statusReason?: string;
+
+  @Prop({ type: Object }) // cant use adsDetailSchema dk why
+  detail: AdsDetail;
+
+  @Prop({ type: AdsStatisticSchema })
+  statistics: AdsStatistic;
 }
 
-export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+export const AdsCampaignSchema = SchemaFactory.createForClass(AdsCampaign);

@@ -21,7 +21,18 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class DataStatistic {
+  @Prop({ index: true })
+  impressions: number;
+
+  @Prop({ index: true })
+  reaches: number;
+
+  @Prop({ type: Object })
+  engagements: { [key: string]: number };
+}
+
+export const DataSchema = SchemaFactory.createForClass(DataStatistic);

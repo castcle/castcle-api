@@ -21,7 +21,35 @@
  * or have any questions.
  */
 
-export * from './content.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
+import { FilterQuery, Types } from 'mongoose';
+import { Campaign } from '../schemas';
+import { GetBalanceResponse } from './get-balance.aggregation';
+
+export type GetCampaignClaimsResponse = Campaign & {
+  claims: GetBalanceResponse[];
+};
+
+export const pipelineOfGetCampaignClaims = (
+  campaignQuery: FilterQuery<Campaign>,
+  accountId: string
+) => [
+  { $match: campaignQuery },
+  {
+    $lookup: {
+      from: 'transactions',
+      let: { campaignId: { $toString: '$_id' } },
+      pipeline: [
+        { $unwind: '$to' },
+        {
+          $match: {
+            'to.account': Types.ObjectId(accountId),
+            'data.campaignId': { $exists: true },
+            $expr: { $eq: ['$data.campaignId', '$$campaignId'] },
+          },
+        },
+        { $project: { _id: 0, total: { $toDouble: '$to.value' } } },
+      ],
+      as: 'claims',
+    },
+  },
+];

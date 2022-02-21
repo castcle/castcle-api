@@ -127,7 +127,7 @@ OtpSchema.statics.generate = async function (
     channel: channel,
     isVerify: verify,
     sid: sid,
-    expireDate: new Date(now.getTime() + Environment.OPT_EXPIRES_IN * 1000),
+    expireDate: new Date(now.getTime() + Environment.OTP_EXPIRES_IN * 1000),
     reciever: receiver,
   });
   return otp.save();

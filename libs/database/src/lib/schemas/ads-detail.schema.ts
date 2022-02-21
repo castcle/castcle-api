@@ -22,16 +22,26 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
 
+/**
+ * Detail should not change much once it created
+ */
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class Wallet {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account: string;
+export class AdsDetail {
+  @Prop({ required: true })
+  name: string;
 
-  @Prop({ type: String })
-  type: WalletType;
+  @Prop({ required: true })
+  message: string;
+
+  @Prop()
+  code: string;
+
+  @Prop({ required: true })
+  dailyBudget: number;
+
+  @Prop({ required: true })
+  duration: number;
 }
 
-export const WalletSchema = SchemaFactory.createForClass(Wallet);
+export const AdsDetailSchema = SchemaFactory.createForClass(AdsDetail);

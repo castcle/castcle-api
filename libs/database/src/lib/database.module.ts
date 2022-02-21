@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import {
   NotificationProducer,
   UtilsQueueModule,
@@ -32,6 +33,7 @@ import {
   AccountAuthenIdSchema,
   AccountReferralSchema,
   AccountSchemaFactory,
+  AdsCampaignSchema,
   CampaignSchema,
   CommentSchemaFactory,
   ContentSchemaFactory,
@@ -53,7 +55,9 @@ import {
   UserSchemaFactory,
   UxEngagementSchema,
 } from './schemas';
+import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
+import { AdsService } from './services/ads.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
@@ -65,7 +69,6 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
-import { TransactionService } from './services/transaction.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 import {
@@ -91,6 +94,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
+  { name: 'AdsCampaign', schema: AdsCampaignSchema },
+  { name: 'AdsPlacement', schema: AdsPlacementSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -145,6 +150,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
+    UtilsCacheModule,
     UtilsQueueModule,
   ],
   controllers: [],
@@ -163,7 +169,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
-    TransactionService,
+    AdsService,
   ],
   exports: [
     AuthenticationService,
@@ -179,7 +185,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CountryService,
     SocialSyncService,
     CommentService,
-    TransactionService,
+    AdsService,
   ],
 })
 export class DatabaseModule {}
@@ -200,6 +206,6 @@ export {
   SocialSyncService,
   CommentService,
   getRelationship,
-  TransactionService,
   getSocialProfix,
+  AdsService,
 };

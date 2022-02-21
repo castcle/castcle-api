@@ -21,29 +21,42 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
-import { Transaction, User } from '../schemas';
+import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
+import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 
-@Injectable()
-export class TransactionService {
-  constructor(
-    @InjectModel('Transaction')
-    private transactionModel: Model<Transaction>
-  ) {}
-
-  /**
-   * Get user's balance
-   * @param {User}
-   */
-  getUserBalance = async (user: User) => {
-    const getBalanceResponses =
-      await this.transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalance(String(user.ownerAccount))
-      );
-
-    return Number(getBalanceResponses[0].total.toString());
+export const mockPipe2AdsAuctionAggregate = () => {
+  const temp: AdsAuctionAggregateDto = {
+    auctionPrice: 0.005,
+    campaign: {
+      _id: 'testId',
+      objective: AdsObjective.Engagement,
+      boostStatus: AdsBoostStatus.Running,
+      status: AdsStatus.Approved,
+      detail: {
+        code: 'ADS001',
+        dailyBudget: 1,
+        duration: 2 * 24 * 60, //2 days = 2 * 24 * 60 minutes
+        message: 'Test Please Follow me',
+        name: 'Sompop',
+      },
+      statistics: {
+        cpm: 0,
+        dailySpent: 0,
+        durationSpent: 0,
+        engagements: {},
+        impressions: 0,
+        reaches: 0,
+      },
+      owner: {
+        _id: 'mockAccountId',
+      } as any,
+      adsRef: {
+        $ref: 'users',
+        $id: 'testId',
+      },
+    } as any,
   };
-}
+  return temp;
+};
+
+export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate

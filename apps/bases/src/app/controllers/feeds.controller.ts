@@ -22,6 +22,27 @@
  */
 
 import {
+  ContentService,
+  RankerService,
+  UserService,
+  UxEngagementService,
+} from '@castcle-api/database';
+import {
+  ContentPayloadItem,
+  FeedQuery,
+  GetSearchRecentDto,
+  ResponseDto,
+} from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  Auth,
+  Authorizer,
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import {
   Get,
   HttpCode,
   HttpStatus,
@@ -32,27 +53,6 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import {
-  RankerService,
-  UserService,
-  UxEngagementService,
-} from '@castcle-api/database';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import {
-  GetSearchRecentDto,
-  ResponseDto,
-  FeedQuery,
-  ContentPayloadItem,
-} from '@castcle-api/database/dtos';
-import {
-  Auth,
-  Authorizer,
-  CastcleAuth,
-  CastcleBasicAuth,
-  CastcleController,
-} from '@castcle-api/utils/decorators';
-import { ContentService } from '@castcle-api/database';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import { FeedParam } from '../dtos';
 import { SuggestionService } from '../services';
 
@@ -70,8 +70,11 @@ export class FeedsController {
   @CastcleBasicAuth()
   @Post('feeds/:id/seen')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async seenFeed(@Auth() { account }: Authorizer, @Param() { id }: FeedParam) {
-    await this.rankerService.seenFeedItem(account, id);
+  async seenFeed(
+    @Auth() { account, credential }: Authorizer,
+    @Param() { id }: FeedParam
+  ) {
+    await this.rankerService.seenFeedItem(account, id, credential);
     this.suggestionService.seen(account.id);
   }
 
