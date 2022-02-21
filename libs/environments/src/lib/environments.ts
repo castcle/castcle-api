@@ -167,6 +167,4 @@ export class Environment {
    * @default 8
    */
   static DECIMALS_FLOAT = Number(process.env.DECIMALS_FLOAT || 8);
-
-  static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
 }

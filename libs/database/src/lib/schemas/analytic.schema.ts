@@ -21,18 +21,22 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { EventName } from 'aws-sdk/clients/iotevents';
+
+@Schema({ timestamps: true })
+export class Analytic {
+  @Prop({ type: String })
+  name: EventName;
+
+  @Prop()
+  src: string;
+
+  @Prop()
+  dest: string;
+
+  @Prop()
+  data: string;
+}
+
+export const AnalyticSchema = SchemaFactory.createForClass(Analytic);
