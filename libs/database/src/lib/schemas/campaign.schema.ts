@@ -22,7 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CampaignStatus, CampaignType } from '../models';
+import { CampaignStatus, CampaignType } from '../models/campaign.enum';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
