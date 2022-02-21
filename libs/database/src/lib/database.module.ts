@@ -34,6 +34,7 @@ import {
   AccountReferralSchema,
   AccountSchemaFactory,
   AdsCampaignSchema,
+  AnalyticSchema,
   CampaignSchema,
   CommentSchemaFactory,
   ContentSchemaFactory,
@@ -58,6 +59,7 @@ import {
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
+import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
@@ -81,8 +83,12 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
   { name: 'AccountReferral', schema: AccountReferralSchema },
+  { name: 'AdsCampaign', schema: AdsCampaignSchema },
+  { name: 'AdsPlacement', schema: AdsPlacementSchema },
+  { name: 'Analytic', schema: AnalyticSchema },
   { name: 'Campaign', schema: CampaignSchema },
   { name: 'Country', schema: CountrySchema },
+  { name: 'DefaultContent', schema: DefaultContentSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
   { name: 'GuestFeedItem', schema: GuestFeedItemSchema },
   { name: 'Hashtag', schema: HashtagSchema },
@@ -91,11 +97,8 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
   { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'Transaction', schema: TransactionSchema },
-  { name: 'DefaultContent', schema: DefaultContentSchema },
-  { name: 'AdsCampaign', schema: AdsCampaignSchema },
-  { name: 'AdsPlacement', schema: AdsPlacementSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -170,6 +173,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SocialSyncService,
     CommentService,
     AdsService,
+    AnalyticService,
   ],
   exports: [
     AuthenticationService,
@@ -186,6 +190,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SocialSyncService,
     CommentService,
     AdsService,
+    AnalyticService,
   ],
 })
 export class DatabaseModule {}
@@ -208,4 +213,5 @@ export {
   getRelationship,
   getSocialProfix,
   AdsService,
+  AnalyticService,
 };

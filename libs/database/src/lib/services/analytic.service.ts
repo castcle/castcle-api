@@ -21,18 +21,18 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './campaign.enum';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Analytic } from '../schemas';
+
+@Injectable()
+export class AnalyticService {
+  constructor(
+    @InjectModel('Analytic') private analyticModel: Model<Analytic>
+  ) {}
+
+  track(analytic: Analytic) {
+    return new this.analyticModel(analytic).save();
+  }
+}
