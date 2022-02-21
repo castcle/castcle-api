@@ -629,6 +629,25 @@ export class AppService {
         );
       }
 
+      if (objective === OtpObjective.MergeAccount) {
+        credential.$credential = await this.authService.linkCredentialToAccount(
+          credential.$credential,
+          account
+        );
+
+        this.logger.log('renew Tokens');
+        credential.$credential.account.isGuest = false;
+        const accessTokenPayload =
+          await this.authService.getAccessTokenPayloadFromCredential(
+            credential.$credential
+          );
+        const tokenResult: TokenResponse =
+          await credential.$credential.renewTokens(accessTokenPayload, {
+            id: account.id as any,
+          });
+        // return { token: tokenResult, users: users, account: currentAccount };
+      }
+
       this.logger.log('delete old otp');
       await otp.delete();
 
