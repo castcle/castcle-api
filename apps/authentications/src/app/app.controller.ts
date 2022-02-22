@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AuthenticationService } from '@castcle-api/database';
+import { AnalyticService, AuthenticationService } from '@castcle-api/database';
 import { OtpObjective } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -92,7 +92,8 @@ import {
 @CastcleController('1.0')
 export class AuthenticationController {
   constructor(
-    private readonly appService: AppService,
+    private analyticService: AnalyticService,
+    private appService: AppService,
     private authService: AuthenticationService
   ) {}
 
@@ -326,6 +327,7 @@ export class AuthenticationController {
           ip,
         }
       );
+      await this.analyticService.trackRegistration(ip);
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
@@ -345,9 +347,7 @@ export class AuthenticationController {
       const userProfile = await this.appService.getUserProfile(req.$credential);
       const tokenResult = await req.$credential.renewTokens(
         accessTokenPayload,
-        {
-          id: currentAccount._id as unknown as string,
-        }
+        { id: currentAccount._id as unknown as string }
       );
 
       const result = new LoginResponse();

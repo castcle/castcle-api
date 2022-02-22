@@ -22,6 +22,7 @@
  */
 import {
   AdsService,
+  AnalyticService,
   AuthenticationService,
   CampaignService,
   CampaignType,
@@ -90,6 +91,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { RealIp } from 'nestjs-real-ip';
 import {
   BlockingDto,
   GetAirdropBalancesQuery,
@@ -119,13 +121,14 @@ export class UserController {
   private logger = new CastLogger(UserController.name);
 
   constructor(
+    private adsService: AdsService,
+    private analyticService: AnalyticService,
     private authService: AuthenticationService,
     private campaignService: CampaignService,
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
-    private userService: UserService,
     private suggestionService: SuggestionService,
-    private adsService: AdsService
+    private userService: UserService
   ) {}
 
   /**
@@ -666,7 +669,7 @@ export class UserController {
       userTypeOption
     );
 
-    return { payload: users, meta: meta };
+    return { payload: users, meta };
   }
 
   @ApiOkResponse({
@@ -711,7 +714,7 @@ export class UserController {
       sortByOption,
       userTypeOption
     );
-    return { payload: users, meta: meta };
+    return { payload: users, meta };
   }
 
   @Get(':id/blocking')
@@ -805,7 +808,8 @@ export class UserController {
   @Put('me/mobile')
   async updateMobile(
     @Auth() { account, user }: Authorizer,
-    @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto
+    @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
+    @RealIp() ip?: string
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
@@ -835,6 +839,7 @@ export class UserController {
     );
 
     await otp.delete();
+    await this.analyticService.trackMobileVerification(ip);
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
