@@ -33,6 +33,16 @@ export class AnalyticService {
   ) {}
 
   track(analytic: Analytic) {
-    return new this.analyticModel(analytic).save();
+    return this.analyticModel.updateOne({ ip: analytic.ip }, analytic, {
+      upsert: true,
+    });
+  }
+
+  trackMobileVerification(ip: string) {
+    return this.analyticModel.updateOne({ ip }, { mobileVerified: true });
+  }
+
+  trackRegistration(ip: string) {
+    return this.analyticModel.updateOne({ ip }, { registered: true });
   }
 }

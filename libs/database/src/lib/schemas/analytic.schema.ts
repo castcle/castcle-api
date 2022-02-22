@@ -30,6 +30,9 @@ export class Analytic {
   name: EventName;
 
   @Prop()
+  ip: string;
+
+  @Prop()
   src: string;
 
   @Prop()
@@ -37,6 +40,12 @@ export class Analytic {
 
   @Prop()
   data: string;
+
+  @Prop()
+  registered?: boolean;
+
+  @Prop()
+  mobileVerified?: boolean;
 }
 
 export const AnalyticSchema = SchemaFactory.createForClass(Analytic);
