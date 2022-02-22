@@ -42,6 +42,7 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
+  PageDto,
   PageResponseDto,
   PagesResponse,
   PaginationQuery,
@@ -1258,5 +1259,36 @@ export class UserController {
     } as unknown as User);
 
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });
+  }
+  /**
+   * @deprecated The method should not be used. Please use POST users/me/pages
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {PageDto} body PageDto
+   * @returns {} Returning a promise that will be resolved with the page object.
+   */
+  @ApiBody({
+    type: PageDto,
+  })
+  @ApiResponse({
+    status: 201,
+    type: PageDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages')
+  async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
+    //check if page name exist
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const namingResult = await this.authService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
+    if (namingResult)
+      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
+    const page = await this.userService.createPageFromCredential(
+      req.$credential,
+      body
+    );
+    return this.userService.getById(authorizedUser, page.id, UserType.Page);
   }
 }
