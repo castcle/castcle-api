@@ -629,6 +629,7 @@ export class AppService {
         );
       }
 
+      let tokenResult: TokenResponse = null;
       if (objective === OtpObjective.MergeAccount) {
         credential.$credential = await this.authService.linkCredentialToAccount(
           credential.$credential,
@@ -641,11 +642,12 @@ export class AppService {
           await this.authService.getAccessTokenPayloadFromCredential(
             credential.$credential
           );
-        const tokenResult: TokenResponse =
-          await credential.$credential.renewTokens(accessTokenPayload, {
+        tokenResult = await credential.$credential.renewTokens(
+          accessTokenPayload,
+          {
             id: account.id as any,
-          });
-        // return { token: tokenResult, users: users, account: currentAccount };
+          }
+        );
       }
 
       this.logger.log('delete old otp');
@@ -660,7 +662,7 @@ export class AppService {
         true,
         receiver
       );
-      return newOtp;
+      return { otp: newOtp, token: tokenResult };
     } else {
       this.logger.error(`Otp expired.`);
       await this.cancelOtp(otp);
