@@ -25,4 +25,12 @@ export enum WalletType {
   ADS = 'ads',
   LOCKING = 'locking',
   PERSONAL = 'personal',
+  CASTCLE_TREASURY = 'castcle.treasury',
+  CASTCLE_SOCIAL = 'castcle.social',
+  CASTCLE_AIRDROP = 'castcle.airdrop',
+  CASTCLE_ADS_LOCKED = 'castcle.ads.locked',
+  CASTCLE_REFERAL = 'castcle.referal',
+  EXTERNAL_DEPOSIT = 'external.deposit',
+  EXTERNAL_WITHDRAW = 'external.withdraw',
+  EXTERNAL_MINT = 'external.mint',
 }
