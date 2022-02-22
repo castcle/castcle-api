@@ -1271,7 +1271,6 @@ export class UserController {
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });
   }
   /**
-   * @deprecated The method should not be used. Please use POST users/me/pages
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {PageDto} body PageDto
    * @returns {} Returning a promise that will be resolved with the page object.
