@@ -47,11 +47,9 @@ export class BasesController {
     @Query()
     { e: name, d: data, dest, src }: Record<string, string>
   ) {
-    const analytic = { name, data, dest, src };
+    const analytic = { name, ip, data, dest, src };
 
-    this.logger.log(
-      `#trackAndRedirect:${JSON.stringify({ ...analytic, ip }, null, 2)}`
-    );
+    this.logger.log(`#trackAndRedirect:${JSON.stringify(analytic, null, 2)}`);
 
     if (name === EventName.INVITE_FRIENDS && data) {
       await this.authService.setReferrerByIp(ip, data);
