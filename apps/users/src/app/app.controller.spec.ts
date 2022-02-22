@@ -37,6 +37,7 @@ import {
   CastcleIncludes,
   ContentsResponse,
   ContentType,
+  PageDto,
   SaveContentDto,
   ShortPayload,
   SocialSyncDto,
@@ -855,6 +856,52 @@ describe('AppController', () => {
       );
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
       expect(result.includes).toBeDefined;
+    });
+  });
+
+  describe('createPage', () => {
+    const pageDto: PageDto = {
+      displayName: 'test Page',
+      castcleId: 'testPage',
+    };
+    beforeAll(async () => {
+      const result = await authService.createAccount({
+        device: 'iPhone',
+        deviceUUID: 'iphone12345',
+        header: { platform: 'iphone' },
+        languagesPreferences: ['th', 'th'],
+      });
+      const accountActivation = await authService.signupByEmail(
+        result.accountDocument,
+        {
+          email: 'test@gmail.com',
+          displayId: 'test1234',
+          displayName: 'test',
+          password: '1234AbcD',
+        }
+      );
+      userAccount = await authService.verifyAccount(accountActivation);
+      userCredential = result.credentialDocument;
+    });
+    it('should create new user that has the info from pageDTO', async () => {
+      const newPageResponse = await appController.createPage(
+        { $credential: userCredential, $language: 'th' } as any,
+        pageDto
+      );
+      expect(newPageResponse.images.avatar).toBeDefined();
+      expect(newPageResponse.displayName).toEqual(pageDto.displayName);
+      expect(newPageResponse.images.cover).toBeDefined();
+      expect(newPageResponse.castcleId).toEqual(pageDto.castcleId);
+      const testPage = await service.getByIdOrCastcleId(pageDto.castcleId);
+      const pageResponse = testPage.toPageResponse();
+      expect(pageResponse.images.avatar).toBeDefined();
+      expect(pageResponse.displayName).toEqual(pageDto.displayName);
+      expect(pageResponse.images.cover).toBeDefined();
+      expect(pageResponse.castcleId).toEqual(pageDto.castcleId);
+    });
+    afterAll(() => {
+      authService._credentialModel.deleteMany({});
+      authService._userModel.deleteMany({});
     });
   });
 });
