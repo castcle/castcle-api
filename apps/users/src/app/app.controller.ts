@@ -857,7 +857,12 @@ export class UserController {
       }
     }
 
-    return user.toUserResponse();
+    return user.toUserResponse({
+      mobile: {
+        number: mobileNumber,
+        countryCode: countryCode,
+      },
+    });
   }
 
   /**
