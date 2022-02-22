@@ -160,10 +160,22 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
 
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
 
+    const account = await this.accountModel.findById(accountId);
+
+    if (campaignType === CampaignType.VERIFY_MOBILE) {
+      const claimedMobileNumber = await this.queueModel.count({
+        'payload.mobile': account?.mobile,
+      });
+
+      if (claimedMobileNumber) throw CastcleException.NOT_ELIGIBLE_FOR_CAMPAIGN;
+    }
+
     const queue = await new this.queueModel({
-      payload: new ClaimAirdropPayload(campaign.id, [
-        { account: accountId, type: WalletType.PERSONAL },
-      ]),
+      payload: new ClaimAirdropPayload(
+        campaign.id,
+        [{ account: accountId, type: WalletType.PERSONAL }],
+        account?.mobile
+      ),
     }).save();
 
     await this.campaignQueue.add(queue);
