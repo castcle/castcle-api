@@ -58,19 +58,19 @@ import {
 } from '../dtos';
 import { EngagementType } from '../models/engagement.enum';
 import {
-  Comment,
-  User,
-  UserType,
   Account,
+  Comment,
   CommentType,
   Content,
-  toSignedContentPayloadItem,
   Engagement,
   FeedItem,
   GuestFeedItem,
   GuestFeedItemType,
   Relationship,
   Revision,
+  toSignedContentPayloadItem,
+  User,
+  UserType,
 } from '../schemas';
 import {
   createCastcleFilter,
@@ -141,7 +141,11 @@ export class ContentService {
     );
 
     await this.hashtagService.createFromTags(hashtags);
-    await this.updatePayloadMessage(contentDto.payload);
+    try {
+      await this.updatePayloadMessage(contentDto.payload);
+    } catch (ex) {
+      this.logger.warn(ex);
+    }
 
     const newContent = {
       author: author,
