@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { FilterQuery } from 'mongoose';
 import { Campaign } from '../schemas';
 
 export class EligibleAccount {
@@ -31,60 +30,49 @@ export class EligibleAccount {
 }
 
 export const pipelineOfGetEligibleAccountsFromCampaign = (
-  campaignQuery: FilterQuery<Campaign>
+  campaign: Campaign
 ) => [
-  { $match: campaignQuery },
   {
-    $lookup: {
-      from: 'feeditems',
-      let: { endDate: '$endDate', startDate: '$startDate' },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $and: [
-                { $gte: ['$updatedAt', '$$startDate'] },
-                { $lte: ['$updatedAt', '$$endDate'] },
-              ],
-            },
-          },
-        },
-      ],
-      as: 'feedItems',
-    },
-  },
-  { $unwind: { path: '$feedItems' } },
-  {
-    $facet: {
-      totalViews: [{ $count: 'n' }],
-      viewers: [
-        {
-          $group: {
-            _id: {
-              viewer: '$feedItems.viewer',
-              campaignId: '$_id',
-              rewardBalance: '$rewardBalance',
-            },
-            views: { $count: {} },
-          },
-        },
-      ],
-    },
-  },
-  { $unwind: { path: '$viewers' } },
-  {
-    $addFields: {
-      id: '$viewers._id.viewer',
-      campaignId: '$viewers._id.campaignId',
-      amount: {
-        $multiply: [
-          '$viewers._id.rewardBalance',
-          {
-            $divide: ['$viewers.views', { $arrayElemAt: ['$totalViews.n', 0] }],
-          },
+    $match: {
+      $expr: {
+        $and: [
+          { $gte: ['$updatedAt', { $toDate: campaign.startDate }] },
+          { $lte: ['$updatedAt', { $toDate: campaign.endDate }] },
         ],
       },
     },
   },
-  { $project: { totalViews: 0, viewers: 0 } },
+  // {
+  //   $lookup: {
+  //     from: 'contents',
+  //     localField: 'content',
+  //     foreignField: '_id',
+  //     pipeline: [{ $project: { _id: 0, 'author.id': 1 } }],
+  //     as: 'content',
+  //   },
+  // },
+  {
+    $facet: {
+      totalViews: [{ $count: 'n' }],
+      // viewers: [
+      //   { $group: { _id: '$content.author.id', views: { $count: {} } } },
+      // ],
+    },
+  },
+  // { $unwind: { path: '$viewers' } },
+  // {
+  //   $addFields: {
+  //     id: { $arrayElemAt: ['$viewers._id', 0] },
+  //     campaignId: campaign._id,
+  //     amount: {
+  //       $multiply: [
+  //         campaign.rewardBalance,
+  //         {
+  //           $divide: ['$viewers.views', { $arrayElemAt: ['$totalViews.n', 0] }],
+  //         },
+  //       ],
+  //     },
+  //   },
+  // },
+  // { $project: { totalViews: 0, viewers: 0 } },
 ];

@@ -90,7 +90,7 @@ export class CampaignService {
     if (campaign.rewardBalance > 0) {
       const eligibleAccounts =
         await this.campaignModel.aggregate<EligibleAccount>(
-          pipelineOfGetEligibleAccountsFromCampaign({ _id: campaign._id })
+          pipelineOfGetEligibleAccountsFromCampaign(campaign)
         );
 
       const to = eligibleAccounts.map(({ id, amount }) => {
@@ -328,7 +328,19 @@ ${JSON.stringify(transaction, null, 2)}`
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
 
-    const eligibleAccounts = [] as EligibleAccount[];
+    const contentReachCampaign = campaigns.find(
+      ({ type }) => type === CampaignType.CONTENT_REACH
+    );
+
+    const a = pipelineOfGetEligibleAccountsFromCampaign(contentReachCampaign);
+    console.log(JSON.stringify(a, null, 2));
+
+    const eligibleAccounts =
+      await this.campaignModel.aggregate<EligibleAccount>(
+        pipelineOfGetEligibleAccountsFromCampaign(contentReachCampaign)
+      );
+
+    console.log(JSON.stringify(eligibleAccounts, null, 2));
 
     return campaigns.map((campaign) => {
       const eligibleAccount = eligibleAccounts.find(
