@@ -89,7 +89,6 @@ export class NotificationService {
     this.logger.log('get notification.');
     const documents = await this._notificationModel
       .find(filter)
-      .populate('content')
       .limit(+options.maxResults)
       .sort({ createdAt: -1 })
       .exec();
@@ -281,24 +280,14 @@ export class NotificationService {
    * @returns {string} total number notification
    */
   getBadges = async (credential: Credential) => {
-    const user = await this._userModel
-      .findOne({
-        ownerAccount: credential.account._id,
-      })
-      .exec();
+    const totalNotification = await this._notificationModel.countDocuments({
+      account: credential.account._id,
+      read: false,
+    });
 
-    if (user) {
-      const totalNotification = await this._notificationModel.countDocuments({
-        sourceUserId: user._id,
-        read: false,
-      });
-
-      console.log(`total badges : ${totalNotification}`);
-      if (totalNotification === 0) return '';
-      if (totalNotification > 99) return '+99';
-      if (totalNotification <= 99) return totalNotification + '';
-    } else {
-      return '';
-    }
+    this.logger.log(`total badges : ${totalNotification}`);
+    if (totalNotification === 0) return '';
+    if (totalNotification > 99) return '+99';
+    if (totalNotification <= 99) return totalNotification + '';
   };
 }

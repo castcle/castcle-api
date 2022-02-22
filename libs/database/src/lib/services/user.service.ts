@@ -233,21 +233,21 @@ export class UserService {
       : [];
 
     return Promise.all(
-      users.map(async (user) => {
+      users.map(async (u) => {
         const userResponse =
-          user.type === UserType.Page
-            ? user.toPageResponse()
-            : await user.toUserResponse();
+          u.type === UserType.Page
+            ? u.toPageResponse()
+            : await u.toUserResponse();
 
         const targetRelationship = relationships.find(
           ({ followedUser, user }) =>
-            String(user) === String(user.id) &&
+            String(user) === String(u.id) &&
             String(followedUser) === String(viewer?.id)
         );
 
         const getterRelationship = relationships.find(
           ({ followedUser, user }) =>
-            String(followedUser) === String(user.id) &&
+            String(followedUser) === String(u.id) &&
             String(user) === String(viewer?.id)
         );
 
