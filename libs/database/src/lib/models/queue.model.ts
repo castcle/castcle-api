@@ -27,5 +27,9 @@ import { QueueTopic } from './queue.enum';
 export class ClaimAirdropPayload {
   topic = QueueTopic.CLAIM_AIRDROP;
 
-  constructor(public campaignId: string, public to: MicroTransaction[]) {}
+  constructor(
+    public campaignId: string,
+    public to: MicroTransaction[],
+    public mobile?: { countryCode: string; number: string }
+  ) {}
 }

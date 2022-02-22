@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Logger } from '@nestjs/common';
 import { connect, disconnect, Document, model } from 'mongoose';
 import {
   CampaignStatus,
@@ -63,8 +64,16 @@ class CreateCampaigns {
       },
     ];
 
-    const url = process.argv.find((arg) => arg.match(/--url=(.+)/i))?.[1];
-    await connect(url ?? 'mongodb://localhost:27017/test');
+    const args = {} as Record<string, string>;
+
+    process.argv.forEach((arg) => {
+      const v = arg.match(/--(\w+)=(.+)/);
+      if (v) args[v[1]] = v[2];
+    });
+
+    const dbName = args['dbName'] || 'test';
+    const url = args['url'] || `mongodb://localhost:27017/${dbName}`;
+    await connect(url);
     const campaignModel = model(Campaign.name, CampaignSchema);
     const campaigns = await campaignModel.create(campaignDocuments);
     await disconnect();
