@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AnalyticService,
   AuthenticationService,
   ContentService,
   HashtagService,
@@ -179,6 +180,7 @@ describe('AppController', () => {
         ContentService,
         HashtagService,
         UserProducer,
+        AnalyticService,
       ],
     }).compile();
 
