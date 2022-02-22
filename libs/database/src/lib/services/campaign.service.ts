@@ -311,13 +311,7 @@ ${JSON.stringify(transaction, null, 2)}`
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
 
-    const eligibleAccounts =
-      await this.campaignModel.aggregate<EligibleAccount>(
-        pipelineOfGetEligibleAccountsFromCampaign({
-          ...campaignQuery,
-          type: CampaignType.CONTENT_REACH,
-        })
-      );
+    const eligibleAccounts = [] as EligibleAccount[];
 
     return campaigns.map((campaign) => {
       const eligibleAccount = eligibleAccounts.find(
