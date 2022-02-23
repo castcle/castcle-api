@@ -33,6 +33,7 @@ import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
@@ -43,10 +44,12 @@ import {
   createFilterQuery,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
+  FollowQuery,
   GetSearchUsersDto,
   Meta,
   PageDto,
   PaginationQuery,
+  QueryOption,
   SocialPageDto,
   SortBy,
   SortDirection,
@@ -551,9 +554,8 @@ export class UserService {
   getFollowers = async (
     viewer: User,
     targetUser: User,
-    paginationQuery: PaginationQuery,
-    sortBy?: SortBy,
-    userType?: string
+    followQuery: FollowQuery,
+    sortBy?: SortBy
   ) => {
     this.logger.log('Build followers query.');
     const query: FilterQuery<Relationship> = {
@@ -566,18 +568,17 @@ export class UserService {
       query,
       viewer,
       'user',
-      paginationQuery,
+      followQuery,
       sortBy,
-      userType
+      followQuery.type
     );
   };
 
   getFollowing = async (
     viewer: User,
     targetUser: User,
-    paginationQuery: PaginationQuery,
-    sortBy?: SortBy,
-    userType?: string
+    followQuery: FollowQuery,
+    sortBy?: SortBy
   ) => {
     this.logger.log('Build following query.');
     const query: FilterQuery<Relationship> = {
@@ -590,9 +591,9 @@ export class UserService {
       query,
       viewer,
       'followedUser',
-      paginationQuery,
+      followQuery,
       sortBy,
-      userType
+      followQuery.type
     );
   };
 
@@ -606,10 +607,6 @@ export class UserService {
   ) {
     const direction = sortBy?.type === 'asc' ? '' : '-';
     this.logger.log('Filter Since & Until');
-    query = await createCastcleFilter(query, {
-      sinceId: paginationQuery?.sinceId,
-      untilId: paginationQuery?.untilId,
-    });
 
     this.logger.log('FIlter Type');
     if (userType) {
@@ -620,7 +617,6 @@ export class UserService {
     const relationships = total
       ? await this._relationshipModel
           .find(query)
-          .limit(+paginationQuery.maxResults)
           .populate(populate)
           .sort(`${direction}${sortBy?.field}`)
           .exec()
@@ -631,21 +627,49 @@ export class UserService {
         ? relationships.map(({ user }) => user?._id)
         : relationships.map(({ followedUser }) => followedUser?._id);
 
-    const hasRelationship = paginationQuery.hasRelationshipExpansion;
-    const { users } = await this.getByCriteria(
-      viewer,
+    let queryUser: FilterQuery<User> = {
+      visibility: EntityVisibility.Publish,
+    };
+    queryUser = this.createFilterWithInclude(
+      queryUser,
       {
-        _id: { $in: followingIds },
+        sinceId: paginationQuery?.sinceId,
+        untilId: paginationQuery?.untilId,
       },
-      undefined,
-      hasRelationship
+      followingIds
     );
+    const { users, meta } = await this.getByCriteria(viewer, queryUser, {
+      limit: +paginationQuery.maxResults,
+    });
 
     return {
       users,
-      meta: Meta.fromDocuments(relationships, total),
+      meta: meta,
     };
   }
+
+  createFilterWithInclude = (
+    filter: any,
+    queryOption: QueryOption,
+    idS: any[]
+  ) => {
+    if (queryOption.sinceId) {
+      filter._id = {
+        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+        $in: idS,
+      };
+    } else if (queryOption.untilId) {
+      filter._id = {
+        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+        $in: idS,
+      };
+    } else {
+      filter._id = {
+        $in: idS,
+      };
+    }
+    return filter;
+  };
 
   /**
    * TODO !!! need to find a way to put in transaction
