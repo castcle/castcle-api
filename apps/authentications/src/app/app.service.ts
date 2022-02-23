@@ -629,26 +629,11 @@ export class AppService {
         );
       }
 
-      let tokenResult: TokenResponse = null;
-      if (objective === OtpObjective.MergeAccount) {
-        credential.$credential = await this.authService.linkCredentialToAccount(
-          credential.$credential,
-          account
-        );
-
-        this.logger.log('renew Tokens');
-        credential.$credential.account.isGuest = false;
-        const accessTokenPayload =
-          await this.authService.getAccessTokenPayloadFromCredential(
-            credential.$credential
-          );
-        tokenResult = await credential.$credential.renewTokens(
-          accessTokenPayload,
-          {
-            id: account.id as any,
-          }
-        );
-      }
+      const tokenResult = await this.getTokenMergeAccount(
+        objective,
+        credential.$credential,
+        account
+      );
 
       this.logger.log('delete old otp');
       await otp.delete();
@@ -714,6 +699,29 @@ export class AppService {
       if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
+    }
+  }
+
+  private async getTokenMergeAccount(
+    objective: OtpObjective,
+    credential: Credential,
+    account: Account
+  ) {
+    if (objective === OtpObjective.MergeAccount) {
+      credential = await this.authService.linkCredentialToAccount(
+        credential,
+        account
+      );
+
+      this.logger.log('renew Tokens for merge account.');
+      credential.account.isGuest = false;
+      const accessTokenPayload =
+        await this.authService.getAccessTokenPayloadFromCredential(credential);
+      return await credential.renewTokens(accessTokenPayload, {
+        id: account.id as any,
+      });
+    } else {
+      return undefined;
     }
   }
 }
