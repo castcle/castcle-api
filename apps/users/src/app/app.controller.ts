@@ -68,6 +68,8 @@ import {
   CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleController,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -92,7 +94,6 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { RealIp } from 'nestjs-real-ip';
 import {
   BlockingDto,
   GetAirdropBalancesQuery,
@@ -810,7 +811,7 @@ export class UserController {
   async updateMobile(
     @Auth() { account, user }: Authorizer,
     @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
-    @RealIp() ip?: string
+    @RequestMeta() { ip, userAgent }: RequestMetadata
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
@@ -840,7 +841,7 @@ export class UserController {
     );
 
     await otp.delete();
-    await this.analyticService.trackMobileVerification(ip);
+    await this.analyticService.trackMobileVerification(ip, userAgent);
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
