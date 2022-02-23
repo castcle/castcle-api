@@ -190,7 +190,7 @@ export class AuthenticationController {
         result.accessToken = tokenResult.accessToken;
         result.refreshToken = tokenResult.refreshToken;
         result.profile = userProfile.profile
-          ? await userProfile.profile.toUserResponse()
+          ? await userProfile.profile.toUserResponse({ mobile: account.mobile })
           : null;
         result.pages = userProfile.pages
           ? userProfile.pages.items.map((item) => item.toPageResponse())
@@ -405,6 +405,7 @@ export class AuthenticationController {
         profile: userProfile.profile
           ? await userProfile.profile.toUserResponse({
               passwordNotSet: account.password ? false : true,
+              mobile: account.mobile,
             })
           : null,
         pages: userProfile.pages
