@@ -40,7 +40,6 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
-  FollowQuery,
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
@@ -644,14 +643,18 @@ export class UserController {
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query() followQuery: FollowQuery,
+    @Query() query: PaginationQuery,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('type')
+    userTypeOption?: UserType
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get followers ${id}, page query:${JSON.stringify(
-        followQuery
-      )}, sort:${JSON.stringify(sortByOption)}`
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
@@ -659,8 +662,9 @@ export class UserController {
     const { users, meta } = await this.userService.getFollowers(
       viewer,
       user,
-      followQuery,
-      sortByOption
+      query,
+      sortByOption,
+      userTypeOption
     );
 
     return { payload: users, meta };
@@ -674,14 +678,18 @@ export class UserController {
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query() followQuery: FollowQuery,
+    @Query() query: PaginationQuery,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
+    @Query('type')
+    userTypeOption?: UserType
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get following ${id}, page query:${JSON.stringify(
-        followQuery
-      )}, sort:${JSON.stringify(sortByOption)}}`
+        query
+      )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
+        userTypeOption
+      )}`
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
@@ -689,8 +697,9 @@ export class UserController {
     const { users, meta } = await this.userService.getFollowing(
       viewer,
       user,
-      followQuery,
-      sortByOption
+      query,
+      sortByOption,
+      userTypeOption
     );
     return { payload: users, meta };
   }
