@@ -44,7 +44,6 @@ import {
   createFilterQuery,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  FollowQuery,
   GetSearchUsersDto,
   Meta,
   PageDto,
@@ -554,8 +553,9 @@ export class UserService {
   getFollowers = async (
     viewer: User,
     targetUser: User,
-    followQuery: FollowQuery,
-    sortBy?: SortBy
+    followQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
     this.logger.log('Build followers query.');
     const query: FilterQuery<Relationship> = {
@@ -570,15 +570,16 @@ export class UserService {
       'user',
       followQuery,
       sortBy,
-      followQuery.type
+      userType
     );
   };
 
   getFollowing = async (
     viewer: User,
     targetUser: User,
-    followQuery: FollowQuery,
-    sortBy?: SortBy
+    followQuery: PaginationQuery,
+    sortBy?: SortBy,
+    userType?: string
   ) => {
     this.logger.log('Build following query.');
     const query: FilterQuery<Relationship> = {
@@ -593,7 +594,7 @@ export class UserService {
       'followedUser',
       followQuery,
       sortBy,
-      followQuery.type
+      userType
     );
   };
 

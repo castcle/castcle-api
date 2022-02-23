@@ -21,10 +21,7 @@
  * or have any questions.
  */
 
-import {
-  TransformStringToArrayOfStrings,
-  TransformStringToEnum,
-} from '@castcle-api/utils/commons';
+import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -35,7 +32,6 @@ import {
   IsOptional,
   Max,
 } from 'class-validator';
-import { UserType } from '../schemas/user.schema';
 import { DEFAULT_QUERY_OPTIONS } from './common.dto';
 
 export enum UserField {
@@ -106,14 +102,4 @@ export class FeedQuery extends PaginationQuery {
   @TransformStringToArrayOfStrings()
   @IsEnum(ExcludeFeedField, { each: true })
   exclude: ExcludeFeedField[];
-}
-
-export class FollowQuery extends PaginationQuery {
-  @ApiProperty({
-    enum: UserType,
-    required: false,
-  })
-  @TransformStringToEnum(UserType)
-  @IsOptional()
-  type?: UserType;
 }
