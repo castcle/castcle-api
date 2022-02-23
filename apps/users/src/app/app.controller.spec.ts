@@ -29,6 +29,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  NotificationService,
   SocialProvider,
   SocialSyncService,
   UserService,
@@ -37,6 +38,8 @@ import {
   CastcleIncludes,
   ContentsResponse,
   ContentType,
+  NotificationSource,
+  NotificationType,
   PageDto,
   SaveContentDto,
   ShortPayload,
@@ -55,7 +58,11 @@ import {
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { TopicName, UserProducer } from '@castcle-api/utils/queue';
+import {
+  NotificationProducer,
+  TopicName,
+  UserProducer,
+} from '@castcle-api/utils/queue';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -75,6 +82,7 @@ describe('AppController', () => {
   let userCredential: Credential;
   let userAccount: Account;
   let socialSyncService: SocialSyncService;
+  let notifyService: NotificationService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -104,6 +112,8 @@ describe('AppController', () => {
         SuggestionService,
         AdsService,
         AnalyticService,
+        NotificationService,
+        NotificationProducer,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -111,6 +121,7 @@ describe('AppController', () => {
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
+    notifyService = app.get<NotificationService>(NotificationService);
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -902,6 +913,78 @@ describe('AppController', () => {
     afterAll(() => {
       authService._credentialModel.deleteMany({});
       authService._userModel.deleteMany({});
+    });
+  });
+
+  describe('likeContent', () => {
+    let content: Content;
+    let contentId;
+    let userMock: any;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      content = await contentService.createContentFromUser(mocksUsers[0].user, {
+        payload: {
+          message: 'hello world',
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: mocksUsers[0].user.displayId,
+      });
+      userMock = mocksUsers[1].user;
+      contentId = content.id;
+    });
+
+    it('should create like content', async () => {
+      const content = await appController._getContentIfExist(contentId);
+
+      const user = await appController._getUser(
+        userMock.id,
+        userMock.credential
+      );
+
+      await contentService.likeContent(content, user);
+
+      expect(
+        await notifyService.notifyToUser({
+          type: NotificationType.Like,
+          message: `${user.displayName} ถูกใจโพสของคุณ`,
+          read: false,
+          source: NotificationSource.Profile,
+          sourceUserId: user._id,
+          targetRef: {
+            _id: content._id,
+          },
+          account: { _id: content.author.id },
+        })
+      ).toBeTruthy();
+
+      const result = await contentService.getContentFromId(contentId);
+      expect(result.engagements.like.count).toBe(1);
+    });
+
+    it('should create unlike content', async () => {
+      const content = await appController._getContentIfExist(contentId);
+
+      const user = await appController._getUser(
+        userMock.id,
+        userMock.credential
+      );
+
+      await contentService.unLikeContent(content, user);
+
+      const result = await contentService.getContentFromId(contentId);
+      expect(result.engagements.like.count).toBe(0);
+    });
+    afterAll(() => {
+      authService._userModel.deleteMany({});
+      authService._accountModel.deleteMany({});
+      authService._credentialModel.deleteMany({});
+      contentService._contentModel.deleteMany({});
+      notifyService._notificationModel.deleteMany({});
     });
   });
 });

@@ -275,6 +275,14 @@ export class ContentController {
     );
   }
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] users/:id/liked
+   * @param {string} id id => _id by contents
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {UserSettingsDto} body setting dto payload
+   * @returns {}
+   */
+
   @ApiResponse({
     status: 204,
   })
@@ -308,6 +316,13 @@ export class ContentController {
       account: { _id: content.author.id },
     });
   }
+  /**
+   * @deprecated The method should not be used. Please use [DEL] users/:id/likes/:source_content_id
+   * @param {string} id id => _id by contents
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {UserSettingsDto} body setting dto payload
+   * @returns {}
+   */
 
   @ApiResponse({
     status: 204,
