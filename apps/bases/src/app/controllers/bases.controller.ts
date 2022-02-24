@@ -21,46 +21,28 @@
  * or have any questions.
  */
 
-import {
-  AnalyticService,
-  AuthenticationService,
-  EventName,
-} from '@castcle-api/database';
+import { AnalyticService } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
+import { RequestMeta, RequestMetadata } from '@castcle-api/utils/decorators';
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { RealIp } from 'nestjs-real-ip';
 
 @Controller()
 export class BasesController {
   private logger = new CastLogger(BasesController.name);
 
-  constructor(
-    private analyticService: AnalyticService,
-    private authService: AuthenticationService
-  ) {}
+  constructor(private analyticService: AnalyticService) {}
 
   @Get('links')
   async trackAndRedirect(
-    @RealIp() ip: string,
+    @RequestMeta() requestMetadata: RequestMetadata,
     @Res() res: Response,
     @Query()
     { e: name, d: data, dest, src }: Record<string, string>
   ) {
-    const analytic = { name, ip, data, dest, src };
+    const analytic = { ...requestMetadata, name, data, dest, src };
 
     this.logger.log(`#trackAndRedirect:${JSON.stringify(analytic, null, 2)}`);
-
-    if (name === EventName.INVITE_FRIENDS && data) {
-      await this.authService.setReferrerByIp(ip, data);
-      this.logger.log(
-        `#trackAndRedirect:inviteFriends:${JSON.stringify({
-          ip,
-          referrer: data,
-        })}`
-      );
-    }
-
     await this.analyticService.track(analytic);
     res.redirect(dest);
   }

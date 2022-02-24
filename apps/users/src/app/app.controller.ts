@@ -43,6 +43,7 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
+  PageDto,
   PageResponseDto,
   PagesResponse,
   PaginationQuery,
@@ -67,6 +68,8 @@ import {
   CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleController,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -91,7 +94,6 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { RealIp } from 'nestjs-real-ip';
 import {
   BlockingDto,
   GetAirdropBalancesQuery,
@@ -329,13 +331,20 @@ export class UserController {
     type: UserResponseDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
-  @Put('me')
+  @Put(':id')
   async updateMyData(
     @Req() req: CredentialRequest,
+    @Param('id') id: string,
     @Body() body: UpdateUserDto
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    const user = await this._getUser(id, req.$credential);
     if (user) {
+      if (String(user.ownerAccount) !== String(req.$credential.account._id))
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+
       const newBody = await this.userService.uploadUserInfo(
         body,
         req.$credential.account._id
@@ -809,7 +818,7 @@ export class UserController {
   async updateMobile(
     @Auth() { account, user }: Authorizer,
     @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
-    @RealIp() ip?: string
+    @RequestMeta() { ip, userAgent }: RequestMetadata
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
@@ -839,7 +848,7 @@ export class UserController {
     );
 
     await otp.delete();
-    await this.analyticService.trackMobileVerification(ip);
+    await this.analyticService.trackMobileVerification(ip, userAgent);
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
@@ -1268,5 +1277,35 @@ export class UserController {
     } as unknown as User);
 
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });
+  }
+  /**
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {PageDto} body PageDto
+   * @returns {} Returning a promise that will be resolved with the page object.
+   */
+  @ApiBody({
+    type: PageDto,
+  })
+  @ApiResponse({
+    status: 201,
+    type: PageDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages')
+  async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
+    //check if page name exist
+    const authorizedUser = await this.userService.getUserFromCredential(
+      req.$credential
+    );
+    const namingResult = await this.authService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
+    if (namingResult)
+      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
+    const page = await this.userService.createPageFromCredential(
+      req.$credential,
+      body
+    );
+    return this.userService.getById(authorizedUser, page.id, UserType.Page);
   }
 }

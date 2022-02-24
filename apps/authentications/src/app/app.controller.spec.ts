@@ -104,7 +104,8 @@ const createMockCredential = async (
           email: email,
           password: password,
         },
-      }
+      },
+      {}
     );
   }
 
@@ -422,7 +423,8 @@ describe('AppController', () => {
             email: registerEmail,
             password: '2@HelloWorld',
           },
-        }
+        },
+        {}
       );
 
       expect(tokens).toBeDefined();
@@ -487,7 +489,8 @@ describe('AppController', () => {
             email: registerEmail,
             password: password,
           },
-        }
+        },
+        {}
       );
       const currentUser = await userService.getUserFromCredential(
         credentialGuest
@@ -683,7 +686,8 @@ describe('AppController', () => {
             email: registerEmail,
             password: password,
           },
-        }
+        },
+        {}
       );
       const preAccountActivation =
         await service.getAccountActivationFromCredential(credentialGuest);
@@ -732,7 +736,8 @@ describe('AppController', () => {
               email: registerEmail,
               password: password,
             },
-          }
+          },
+          {}
         );
         const preAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
