@@ -22,9 +22,8 @@
  */
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Cache } from 'cache-manager';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
@@ -35,6 +34,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
+import { EventName } from '../models';
 import {
   Account,
   AccountActivation,
@@ -42,6 +42,7 @@ import {
   AccountAuthenId,
   AccountAuthenIdType,
   AccountReferral,
+  Analytic,
   Credential,
   CredentialModel,
   Otp,
@@ -72,6 +73,7 @@ export interface SignupRequirements {
   displayId: string;
   referral?: string;
   ip?: string;
+  userAgent?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -88,10 +90,10 @@ export class AuthenticationService {
   private logger = new CastLogger(AuthenticationService.name);
 
   constructor(
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
     @InjectModel('Account')
     public _accountModel: Model<Account>,
+    @InjectModel('Analytic')
+    public analyticModel: Model<Analytic>,
     @InjectModel('Credential')
     public _credentialModel: CredentialModel,
     @InjectModel('AccountActivation')
@@ -369,7 +371,11 @@ export class AuthenticationService {
     );
 
     const referrer =
-      referrerFromBody ?? (await this.getReferrerByIp(requirements.ip));
+      referrerFromBody ??
+      (await this.getReferrerByRequestMetadata(
+        requirements.ip,
+        requirements.userAgent
+      ));
 
     if (referrer) {
       await new this._accountReferral({
@@ -668,15 +674,13 @@ export class AuthenticationService {
     return result;
   }
 
-  async getReferrerByIp(ip: string) {
-    const referrerId = await this.cacheManager.get<string>(ip);
+  async getReferrerByRequestMetadata(ip: string, userAgent: string) {
+    const analytic = await this.analyticModel.findOne({
+      ip,
+      userAgent,
+      name: EventName.INVITE_FRIENDS,
+    });
 
-    return this.userService.getByIdOrCastcleId(referrerId);
-  }
-
-  setReferrerByIp(ip: string, castcleId: string) {
-    const secondsInOnyDay = 86_400;
-
-    return this.cacheManager.set(ip, castcleId, { ttl: secondsInOnyDay });
+    return this.userService.getByIdOrCastcleId(analytic?.data);
   }
 }

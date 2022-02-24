@@ -27,19 +27,22 @@ import { EventName } from 'aws-sdk/clients/iotevents';
 @Schema({ timestamps: true })
 export class Analytic {
   @Prop({ type: String })
-  name: EventName;
+  name?: EventName;
 
   @Prop()
-  ip: string;
+  ip?: string;
 
   @Prop()
-  src: string;
+  userAgent?: string;
 
   @Prop()
-  dest: string;
+  src?: string;
 
   @Prop()
-  data: string;
+  dest?: string;
+
+  @Prop()
+  data?: string;
 
   @Prop()
   registered?: boolean;

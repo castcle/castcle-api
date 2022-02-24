@@ -29,6 +29,8 @@ import {
   CastcleBasicAuth,
   CastcleController,
   CastcleTrack,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import {
   CastcleException,
@@ -63,7 +65,6 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Response } from 'express';
-import { RealIp } from 'nestjs-real-ip';
 import { AppService } from './app.service';
 import { getEmailVerificationHtml } from './configs';
 import {
@@ -189,7 +190,7 @@ export class AuthenticationController {
         result.accessToken = tokenResult.accessToken;
         result.refreshToken = tokenResult.refreshToken;
         result.profile = userProfile.profile
-          ? await userProfile.profile.toUserResponse()
+          ? await userProfile.profile.toUserResponse({ mobile: account.mobile })
           : null;
         result.pages = userProfile.pages
           ? userProfile.pages.items.map((item) => item.toPageResponse())
@@ -282,7 +283,7 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RealIp() ip?: string
+    @RequestMeta() { ip, userAgent }: RequestMetadata
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -325,9 +326,10 @@ export class AuthenticationController {
           password: body.payload.password,
           referral: body.referral,
           ip,
+          userAgent,
         }
       );
-      await this.analyticService.trackRegistration(ip);
+      await this.analyticService.trackRegistration(ip, userAgent);
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
@@ -403,6 +405,7 @@ export class AuthenticationController {
         profile: userProfile.profile
           ? await userProfile.profile.toUserResponse({
               passwordNotSet: account.password ? false : true,
+              mobile: account.mobile,
             })
           : null,
         pages: userProfile.pages
