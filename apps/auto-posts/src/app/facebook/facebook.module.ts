@@ -21,20 +21,21 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
+import {
+  ContentService,
+  HashtagService,
+  MongooseAsyncFeatures,
+  MongooseForFeatures,
+  SocialSyncService,
+} from '@castcle-api/database';
+import { Downloader } from '@castcle-api/utils/aws';
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { FacebookModule } from './facebook/facebook.module';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+import { FacebookController } from './facebook.controller';
 
 @Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    FacebookModule,
-    TwitterModule,
-    YoutubeModule,
-  ],
+  imports: [HttpModule, MongooseAsyncFeatures, MongooseForFeatures],
+  controllers: [FacebookController],
+  providers: [ContentService, Downloader, HashtagService, SocialSyncService],
 })
-export class AppModule {}
+export class FacebookModule {}

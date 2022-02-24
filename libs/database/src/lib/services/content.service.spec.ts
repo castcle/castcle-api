@@ -672,7 +672,7 @@ describe('ContentService', () => {
 
     it('should create a short content from timeline', async () => {
       const contentDto = {
-        type: 'short',
+        type: ContentType.Short,
         payload: { message },
       } as SaveContentDto;
       const contents = await service.createContentsFromAuthor(author, [
@@ -787,7 +787,7 @@ describe('ContentService', () => {
 
     beforeAll(async () => {
       const contentDto = {
-        type: 'short',
+        type: ContentType.Short,
         payload: { message: 'message' },
       } as SaveContentDto;
 

@@ -34,7 +34,11 @@ import {
   SocialSyncService,
 } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { Author, SaveContentDto } from '@castcle-api/database/dtos';
+import {
+  Author,
+  ContentType,
+  SaveContentDto,
+} from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { SocialSync } from '@castcle-api/database/schemas';
 
@@ -146,7 +150,7 @@ export class TwitterService {
             message: text,
             photo: images ? { contents: images } : undefined,
           },
-          type: 'short',
+          type: ContentType.Short,
         } as SaveContentDto;
       });
   }
