@@ -628,6 +628,9 @@ export class UserService {
         ? relationships.map(({ user }) => user?._id)
         : relationships.map(({ followedUser }) => followedUser?._id);
 
+    const hasRelationship = paginationQuery.userFields?.includes(
+      UserField.Relationships
+    );
     let queryUser: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
     };
@@ -639,9 +642,14 @@ export class UserService {
       },
       followingIds
     );
-    const { users, meta } = await this.getByCriteria(viewer, queryUser, {
-      limit: +paginationQuery.maxResults,
-    });
+    const { users, meta } = await this.getByCriteria(
+      viewer,
+      queryUser,
+      {
+        limit: +paginationQuery.maxResults,
+      },
+      hasRelationship
+    );
 
     return {
       users,
