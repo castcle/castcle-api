@@ -34,6 +34,7 @@ import {
   DEFAULT_CONTENT_QUERY_OPTIONS,
   ExpansionQuery,
   GetContentsDto,
+  Meta,
   NotificationSource,
   NotificationType,
   PaginationQuery,
@@ -74,6 +75,7 @@ import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import { ContentLikeBody } from '../dtos/content.dto';
 import { AppService } from './app.service';
 import { UserRecastedResponse } from './dtos';
+import { UserLikingResponse } from './dtos/like.dto';
 import { SaveContentPipe } from './pipes/save-content.pipe';
 
 @CastcleController('1.0')
@@ -412,5 +414,87 @@ export class ContentController {
     );
 
     return ResponseDto.ok({ payload: users, meta });
+  }
+  /**
+   * Get the list of users who liked the content
+   * @param {CredentialRequest} req - CredentialRequest
+   * @param {string} contentId - The id of the content to get the liking from.
+   * @param {PaginationQuery}  - req: CredentialRequest
+   */
+
+  @ApiOkResponse({ type: UserLikingResponse })
+  @CastcleBasicAuth()
+  @Get(':id/liking-users')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getLikingCast(
+    @Req() req: CredentialRequest,
+    @Param('id') contentId: string,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ) {
+    this.logger.log(`Get Liking from content : ${contentId}`);
+
+    let response: any = [];
+    let relationUser: any = [];
+    let relationStatus;
+
+    await this._getContentIfExist(contentId, req);
+    const engagement: any = await this.contentService.getLikingCastUser(
+      contentId,
+      maxResults,
+      sinceId,
+      untilId
+    );
+    if (!engagement.items) return { payload: null };
+
+    if (!req.$credential.account.isGuest) {
+      const user = await this.userService.getUserAndPagesFromCredential(
+        req.$credential
+      );
+      if (!user) throw CastcleException.FORBIDDEN;
+
+      if (hasRelationshipExpansion && user) {
+        this.logger.log('Get User relationship');
+        relationUser = engagement.items.map((e) => {
+          return e.user.id;
+        });
+        relationUser = await this.userService.getRelationshipData(
+          hasRelationshipExpansion,
+          relationUser,
+          user[0].id
+        );
+      }
+    }
+
+    for await (const obj of engagement.items) {
+      relationStatus = await relationUser.filter(
+        (e) => String(e.followedUser) === String(obj.user.id)
+      );
+      if (relationStatus.length) {
+        relationStatus = relationStatus[0];
+        if (!relationStatus.blocking) {
+          response = [
+            ...response,
+            await obj.user.toLikingResponse(
+              relationStatus.blocking,
+              relationStatus.blocking,
+              relationStatus.following
+            ),
+          ];
+        }
+      } else {
+        const result = await obj.user.toLikingResponse();
+        if (hasRelationshipExpansion) {
+          result.blocked = false;
+          result.blocking = false;
+          result.followed = false;
+        }
+        response = [...response, result];
+      }
+    }
+    return ResponseDto.ok({
+      payload: response,
+      meta: Meta.fromDocuments(engagement.items),
+    });
   }
 }
