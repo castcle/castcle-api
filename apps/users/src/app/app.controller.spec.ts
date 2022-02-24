@@ -224,6 +224,7 @@ describe('AppController', () => {
 
       const responseFull = await appController.updateMyData(
         { $credential: userCredential, $language: 'th' } as any,
+        'me',
         updateDto
       );
       expect(responseFull.dob).toEqual(updateDto.dob);
