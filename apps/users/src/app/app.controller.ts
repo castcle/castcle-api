@@ -339,6 +339,12 @@ export class UserController {
   ) {
     const user = await this._getUser(id, req.$credential);
     if (user) {
+      if (String(user.ownerAccount) !== String(req.$credential.account._id))
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+
       const newBody = await this.userService.uploadUserInfo(
         body,
         req.$credential.account._id
