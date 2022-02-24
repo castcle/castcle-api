@@ -24,4 +24,5 @@
 export * from './lib/authorizer.decorator';
 export * from './lib/castcle-auth.decorator';
 export * from './lib/castcle-controller.decorator';
+export * from './lib/request-meta.decorator';
 export * from './lib/validators.decorator';

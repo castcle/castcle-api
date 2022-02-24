@@ -281,12 +281,13 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
     claimCampaignsAirdropJob: ClaimAirdropPayload,
     session: ClientSession
   ) {
+    let sumAmount = 0;
     const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
       const remaining =
         campaign.rewardBalance >= value ? value : campaign.rewardBalance;
 
       const amount = campaign.rewardsPerClaim ?? remaining;
-
+      sumAmount += amount;
       campaign.rewardBalance = CastcleNumber.from(
         campaign.rewardBalance - amount
       ).toNumber();
@@ -294,7 +295,9 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
       return { account, type, value: amount };
     });
 
+    const from = { type: WalletType.CASTCLE_AIRDROP, value: sumAmount };
     const transaction = await new this.transactionModel({
+      from,
       to,
       data: { campaignId: claimCampaignsAirdropJob.campaignId },
     }).save({ session });
