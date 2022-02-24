@@ -331,12 +331,13 @@ export class UserController {
     type: UserResponseDto,
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
-  @Put('me')
+  @Put(':id')
   async updateMyData(
     @Req() req: CredentialRequest,
+    @Param('id') id: string,
     @Body() body: UpdateUserDto
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
+    const user = await this._getUser(id, req.$credential);
     if (user) {
       const newBody = await this.userService.uploadUserInfo(
         body,
