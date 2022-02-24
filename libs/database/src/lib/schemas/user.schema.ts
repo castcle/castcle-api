@@ -29,7 +29,11 @@ import { Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
-import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
+import {
+  LikingResponseDto,
+  PageResponseDto,
+  UserResponseDto,
+} from '../dtos/user.dto';
 import { PageVerified, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
@@ -131,6 +135,11 @@ export class User extends UserDocument {
     blocking?: boolean,
     followed?: boolean
   ) => PageResponseDto;
+  toLikingResponse: (
+    blocked?: boolean,
+    blocking?: boolean,
+    followed?: boolean
+  ) => LikingResponseDto;
 }
 
 const _covertToUserResponse = (self: User | User, followed?: boolean) => {
@@ -492,4 +501,79 @@ export const UserSchemaFactory = (
   };
 
   return UserSchema;
+};
+
+UserSchema.methods.toLikingResponse = function (
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean
+) {
+  return {
+    id: (this as User)._id,
+    castcleId: (this as User).displayId,
+    displayName: (this as User).displayName,
+    type: (this as User).type,
+    images: {
+      avatar:
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.avatar
+          ? new Image((this as User).profile.images.avatar).toSignUrls()
+          : Configs.DefaultAvatarImages,
+      cover:
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.cover
+          ? new Image((this as User).profile.images.cover).toSignUrls()
+          : Configs.DefaultAvatarCovers,
+    },
+    followers: {
+      count: (this as User).followerCount,
+    },
+    following: {
+      count: (this as User).followedCount,
+    },
+    overview:
+      (this as User).profile && (this as User).profile.overview
+        ? (this as User).profile.overview
+        : null,
+    links: {
+      facebook:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.facebook
+          ? (this as User).profile.socials.facebook
+          : null,
+      medium:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.medium
+          ? (this as User).profile.socials.medium
+          : null,
+      twitter:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.twitter
+          ? (this as User).profile.socials.twitter
+          : null,
+      youtube:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.youtube
+          ? (this as User).profile.socials.youtube
+          : null,
+      website:
+        (this as User).profile && (this as User).profile.websites
+          ? (this as User).profile.websites[0].website
+          : null,
+    },
+    verified: {
+      official: (this as User).verified.official,
+    } as PageVerified,
+    blocked,
+    blocking,
+    followed,
+    updatedAt: (this as User).updatedAt.toISOString(),
+    createdAt: (this as User).createdAt.toISOString(),
+  } as LikingResponseDto;
 };

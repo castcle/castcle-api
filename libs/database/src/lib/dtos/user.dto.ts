@@ -381,3 +381,60 @@ export class SocialPageDto {
     website?: string | null;
   };
 }
+
+export class LikingResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  castcleId: string;
+
+  @ApiProperty()
+  displayName: string;
+
+  @ApiProperty()
+  images: {
+    avatar: CastcleImage;
+    cover: CastcleImage;
+  };
+
+  @ApiProperty()
+  overview: string | null;
+
+  @ApiProperty()
+  links: {
+    facebook: string | null;
+    twitter: string | null;
+    youtube: string | null;
+    medium: string | null;
+    website: string | null;
+  };
+
+  @ApiProperty()
+  verified: PageVerified;
+
+  @ApiProperty()
+  followers: {
+    count: number;
+  };
+
+  @ApiProperty()
+  following: {
+    count: number;
+  };
+
+  @ApiProperty()
+  followed: boolean;
+
+  @ApiProperty()
+  blocked: boolean;
+
+  @ApiProperty()
+  blocking: boolean;
+
+  @ApiProperty()
+  updatedAt: string;
+
+  @ApiProperty()
+  createdAt: string;
+}
