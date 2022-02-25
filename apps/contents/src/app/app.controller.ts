@@ -475,15 +475,15 @@ export class ContentController {
         if (!relationStatus.blocking) {
           response = [
             ...response,
-            await obj.user.toLikingResponse(
-              relationStatus.blocking,
-              relationStatus.blocking,
-              relationStatus.following
-            ),
+            await obj.user.toUserResponse({
+              blocked: relationStatus.blocking,
+              blocking: relationStatus.blocking,
+              followed: relationStatus.following,
+            }),
           ];
         }
       } else {
-        const result = await obj.user.toLikingResponse();
+        const result = await obj.user.toUserResponse();
         if (hasRelationshipExpansion) {
           result.blocked = false;
           result.blocking = false;
