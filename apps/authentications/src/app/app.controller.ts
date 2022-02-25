@@ -534,12 +534,13 @@ export class AuthenticationController {
     this.logger.log(
       `Start verify OPT channel: ${body.channel} objective: ${body.objective} refCode: ${body.refCode}`
     );
-    const otp = await this.appService.verificationOTP(body, req);
+    const { otp, token } = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
       const response: otpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
+        accessToken: token?.accessToken,
       };
       return response;
     } else {

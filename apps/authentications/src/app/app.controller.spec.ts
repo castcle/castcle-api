@@ -1399,6 +1399,41 @@ describe('AppController', () => {
       expect(result.expiresTime).toBeDefined;
     });
 
+    it('should pass verify otp email channel with merge account', async () => {
+      const otpCode = await appController.requestOTP(
+        {
+          objective: 'merge_account',
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: '',
+          },
+        },
+        credentialGuest
+      );
+
+      const result = await appController.verificationOTP(
+        {
+          objective: 'merge_account',
+          channel: 'email',
+          payload: {
+            email: emailTest,
+            countryCode: '',
+            mobileNumber: '',
+          },
+          refCode: otpCode.refCode,
+          otp: '123456',
+        },
+        credentialGuest
+      );
+
+      expect(result).toBeDefined;
+      expect(result.refCode).toBeDefined;
+      expect(result.expiresTime).toBeDefined;
+      expect(result.accessToken).toBeDefined;
+    });
+
     it('should return Exception when get wrong channel', async () => {
       await expect(
         appController.verificationOTP(
