@@ -29,11 +29,7 @@ import { Model } from 'mongoose';
 import { SearchFollowsResponseDto } from '../dtos';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import { Author } from '../dtos/content.dto';
-import {
-  LikingResponseDto,
-  PageResponseDto,
-  UserResponseDto,
-} from '../dtos/user.dto';
+import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
 import { PageVerified, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
@@ -135,11 +131,6 @@ export class User extends UserDocument {
     blocking?: boolean,
     followed?: boolean
   ) => PageResponseDto;
-  toLikingResponse: (
-    blocked?: boolean,
-    blocking?: boolean,
-    followed?: boolean
-  ) => LikingResponseDto;
 }
 
 const _covertToUserResponse = (self: User | User, followed?: boolean) => {
