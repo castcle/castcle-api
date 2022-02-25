@@ -1006,21 +1006,39 @@ Message: ${message}`,
       .exec();
   };
 
-  getIncludesUsers = async (viewerAccount: Account, authors: Author[]) => {
+  getIncludesUsers = async (
+    viewerAccount: Account,
+    authors: Author[],
+    hasRelationshipExpansion = false
+  ) => {
     const viewer = await this._userModel.findOne({
       ownerAccount: viewerAccount._id,
     });
 
     const authorIds = authors.map(({ id }) => id as any);
-    const relationships = await this._relationshipModel.find({
-      $or: [
-        { user: viewer?._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer?._id },
-      ],
-      visibility: EntityVisibility.Publish,
-    });
+    const users = await this._userModel.find({ _id: { $in: authorIds } });
+    const relationships = hasRelationshipExpansion
+      ? await this._relationshipModel.find({
+          $or: [
+            { user: viewer?._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer?._id },
+          ],
+          visibility: EntityVisibility.Publish,
+        })
+      : [];
 
-    return authors.map((author) => {
+    return users.map((user) => {
+      const author = {
+        id: user._id,
+        avatar: user.profile?.images?.avatar || null,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type as 'people' | 'page',
+        verified: user.verified,
+      };
+
+      if (!hasRelationshipExpansion) return new Author(author).toIncludeUser();
+
       const authorRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(user) === String(author.id) &&
