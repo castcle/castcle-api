@@ -31,6 +31,7 @@ export enum OtpObjective {
   ChangePassword = 'change_password',
   ForgotPassword = 'forgot_password',
   VerifyMobile = 'verify_mobile',
+  MergeAccount = 'merge_account',
 }
 
 @Schema({ timestamps: true })

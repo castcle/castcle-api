@@ -233,4 +233,7 @@ export class otpResponse {
 
   @ApiProperty()
   expiresTime: string;
+
+  @ApiProperty()
+  accessToken?: string;
 }
