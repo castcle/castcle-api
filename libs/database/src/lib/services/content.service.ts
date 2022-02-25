@@ -1279,21 +1279,10 @@ Message: ${message}`,
     const totalDocument = await this._engagementModel
       .countDocuments(filter)
       .exec();
-    if (sinceId) {
-      filter = {
-        ...filter,
-        _id: {
-          $gt: mongoose.Types.ObjectId(sinceId),
-        },
-      };
-    } else if (untilId) {
-      filter = {
-        ...filter,
-        _id: {
-          $lt: mongoose.Types.ObjectId(untilId),
-        },
-      };
-    }
+    filter = await createCastcleFilter(filter, {
+      sinceId,
+      untilId,
+    });
     const result = await this._engagementModel
       .find(filter)
       .populate('user')

@@ -525,21 +525,22 @@ describe('ContentController', () => {
           if (!relationStatus.blocking) {
             response = [
               ...response,
-              await obj.user.toLikingResponse(
-                relationStatus.blocking,
-                relationStatus.blocking,
-                relationStatus.following
-              ),
+              await obj.user.toUserResponse({
+                blocked: relationStatus.blocking,
+                blocking: relationStatus.blocking,
+                followed: relationStatus.following,
+              }),
             ];
           }
         } else {
-          const result = await obj.user.toLikingResponse();
+          const result = await obj.user.toUserResponse();
           result.blocked = false;
           result.blocking = false;
           result.followed = false;
           response = [...response, result];
         }
       }
+
       expect(response).toHaveLength(1);
       expect(response[0].followed).toEqual(true);
       expect(response[0].blocked).toEqual(false);
