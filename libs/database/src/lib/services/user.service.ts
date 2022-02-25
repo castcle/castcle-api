@@ -33,6 +33,7 @@ import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
@@ -47,6 +48,7 @@ import {
   Meta,
   PageDto,
   PaginationQuery,
+  QueryOption,
   SocialPageDto,
   SortBy,
   SortDirection,
@@ -551,7 +553,7 @@ export class UserService {
   getFollowers = async (
     viewer: User,
     targetUser: User,
-    paginationQuery: PaginationQuery,
+    followQuery: PaginationQuery,
     sortBy?: SortBy,
     userType?: string
   ) => {
@@ -566,7 +568,7 @@ export class UserService {
       query,
       viewer,
       'user',
-      paginationQuery,
+      followQuery,
       sortBy,
       userType
     );
@@ -575,7 +577,7 @@ export class UserService {
   getFollowing = async (
     viewer: User,
     targetUser: User,
-    paginationQuery: PaginationQuery,
+    followQuery: PaginationQuery,
     sortBy?: SortBy,
     userType?: string
   ) => {
@@ -590,7 +592,7 @@ export class UserService {
       query,
       viewer,
       'followedUser',
-      paginationQuery,
+      followQuery,
       sortBy,
       userType
     );
@@ -606,10 +608,6 @@ export class UserService {
   ) {
     const direction = sortBy?.type === 'asc' ? '' : '-';
     this.logger.log('Filter Since & Until');
-    query = await createCastcleFilter(query, {
-      sinceId: paginationQuery?.sinceId,
-      untilId: paginationQuery?.untilId,
-    });
 
     this.logger.log('FIlter Type');
     if (userType) {
@@ -620,7 +618,6 @@ export class UserService {
     const relationships = total
       ? await this._relationshipModel
           .find(query)
-          .limit(+paginationQuery.maxResults)
           .populate(populate)
           .sort(`${direction}${sortBy?.field}`)
           .exec()
@@ -631,21 +628,57 @@ export class UserService {
         ? relationships.map(({ user }) => user?._id)
         : relationships.map(({ followedUser }) => followedUser?._id);
 
-    const hasRelationship = paginationQuery.hasRelationshipExpansion;
-    const { users } = await this.getByCriteria(
-      viewer,
+    const hasRelationship = paginationQuery.userFields?.includes(
+      UserField.Relationships
+    );
+    let queryUser: FilterQuery<User> = {
+      visibility: EntityVisibility.Publish,
+    };
+    queryUser = this.createFilterWithInclude(
+      queryUser,
       {
-        _id: { $in: followingIds },
+        sinceId: paginationQuery?.sinceId,
+        untilId: paginationQuery?.untilId,
       },
-      undefined,
+      followingIds
+    );
+    const { users, meta } = await this.getByCriteria(
+      viewer,
+      queryUser,
+      {
+        limit: +paginationQuery.maxResults,
+      },
       hasRelationship
     );
 
     return {
       users,
-      meta: Meta.fromDocuments(relationships, total),
+      meta: meta,
     };
   }
+
+  createFilterWithInclude = (
+    filter: any,
+    queryOption: QueryOption,
+    idS: any[]
+  ) => {
+    if (queryOption.sinceId) {
+      filter._id = {
+        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+        $in: idS,
+      };
+    } else if (queryOption.untilId) {
+      filter._id = {
+        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+        $in: idS,
+      };
+    } else {
+      filter._id = {
+        $in: idS,
+      };
+    }
+    return filter;
+  };
 
   /**
    * TODO !!! need to find a way to put in transaction
@@ -973,21 +1006,39 @@ Message: ${message}`,
       .exec();
   };
 
-  getIncludesUsers = async (viewerAccount: Account, authors: Author[]) => {
+  getIncludesUsers = async (
+    viewerAccount: Account,
+    authors: Author[],
+    hasRelationshipExpansion = false
+  ) => {
     const viewer = await this._userModel.findOne({
       ownerAccount: viewerAccount._id,
     });
 
     const authorIds = authors.map(({ id }) => id as any);
-    const relationships = await this._relationshipModel.find({
-      $or: [
-        { user: viewer?._id, followedUser: { $in: authorIds } },
-        { user: { $in: authorIds }, followedUser: viewer?._id },
-      ],
-      visibility: EntityVisibility.Publish,
-    });
+    const users = await this._userModel.find({ _id: { $in: authorIds } });
+    const relationships = hasRelationshipExpansion
+      ? await this._relationshipModel.find({
+          $or: [
+            { user: viewer?._id, followedUser: { $in: authorIds } },
+            { user: { $in: authorIds }, followedUser: viewer?._id },
+          ],
+          visibility: EntityVisibility.Publish,
+        })
+      : [];
 
-    return authors.map((author) => {
+    return users.map((user) => {
+      const author = {
+        id: user._id,
+        avatar: user.profile?.images?.avatar || null,
+        castcleId: user.displayId,
+        displayName: user.displayName,
+        type: user.type as 'people' | 'page',
+        verified: user.verified,
+      };
+
+      if (!hasRelationshipExpansion) return new Author(author).toIncludeUser();
+
       const authorRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(user) === String(author.id) &&

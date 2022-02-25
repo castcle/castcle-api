@@ -639,22 +639,11 @@ export class UserController {
     type: FollowResponse,
   })
   @CastcleAuth(CacheKeyName.Users)
-  @ApiQuery({
-    name: 'sortBy',
-    enum: SortByEnum,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'type',
-    enum: UserType,
-    required: false,
-  })
   @Get(':id/followers')
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query()
-    query: PaginationQuery,
+    @Query() query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
@@ -684,23 +673,12 @@ export class UserController {
   @ApiOkResponse({
     type: FollowResponse,
   })
-  @ApiQuery({
-    name: 'sortBy',
-    enum: SortByEnum,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'type',
-    enum: UserType,
-    required: false,
-  })
   @Get(':id/following')
   @CastcleAuth(CacheKeyName.Users)
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query()
-    query: PaginationQuery,
+    @Query() query: PaginationQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
