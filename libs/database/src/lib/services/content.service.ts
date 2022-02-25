@@ -1294,4 +1294,114 @@ Message: ${message}`,
       items: result,
     };
   };
+
+  /**
+   *
+   * @param {string} userId
+   * @param {number} maxResults
+   * @param {string} sinceId
+   * @param {string} untilId
+   * @returns
+   */
+  getEngagementFromUser = async (
+    userId: any,
+    maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
+    sinceId: string,
+    untilId: string
+  ) => {
+    let filter: FilterQuery<Engagement> = {
+      type: 'like',
+      user: userId,
+    };
+    const totalDocument = await this._engagementModel
+      .countDocuments(filter)
+      .exec();
+    if (sinceId) {
+      filter = {
+        ...filter,
+        _id: {
+          $gt: mongoose.Types.ObjectId(sinceId),
+        },
+      };
+    } else if (untilId) {
+      filter = {
+        ...filter,
+        _id: {
+          $lt: mongoose.Types.ObjectId(untilId),
+        },
+      };
+    }
+    const result = await this._engagementModel
+      .find(filter)
+      .limit(maxResults)
+      .sort({ createdAt: -1 });
+    return {
+      total: totalDocument,
+      items: result,
+    };
+  };
+
+  getContentAllFromId = async (engagement: Engagement[]) => {
+    const contentId = engagement.map((e) => (e = e.targetRef.oid));
+    const filter: FilterQuery<Content> = {
+      _id: { $in: contentId },
+    };
+    const result = await this._contentModel
+      .find(filter)
+      .sort({ createdAt: -1 });
+    return result;
+  };
+
+  /**
+   * @param {User} viewer
+   * @param {Content} content
+   * @param {CastcleMeta} meta
+   * @param hasRelationshipExpansion
+   */
+  async convertEngagementToContentsResponse(
+    viewer: User | null,
+    contents: Content[],
+    hasRelationshipExpansion = false,
+    engagements: Engagement[]
+  ): Promise<ContentsResponse> {
+    const meta = createCastcleMeta(engagements);
+    const users: IncludeUser[] = [];
+    const authorIds = [];
+    const casts: ContentPayloadItem[] = [];
+    const payload: ContentPayloadItem[] = [];
+
+    contents.forEach((content) => {
+      const contentEngagements = engagements.filter(
+        (engagement) =>
+          String(engagement.targetRef.$id) === String(content.id) ||
+          String(engagement.targetRef.oid) === String(content.id)
+      );
+
+      payload.push(content.toContentPayloadItem(contentEngagements));
+
+      if (content.originalPost) {
+        casts.push(toSignedContentPayloadItem(content.originalPost));
+      }
+
+      if (content.originalPost?.author) {
+        users.push(new Author(content.originalPost.author).toIncludeUser());
+        authorIds.push(content.originalPost.author.id);
+      }
+
+      if (content.author) {
+        users.push(new Author(content.author).toIncludeUser());
+        authorIds.push(content.author.id);
+      }
+    });
+
+    if (hasRelationshipExpansion) {
+      await this.updateUserRelationships(viewer, authorIds, users);
+    }
+
+    return {
+      payload,
+      includes: new CastcleIncludes({ users, casts }),
+      meta,
+    };
+  }
 }

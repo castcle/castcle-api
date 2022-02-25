@@ -1381,4 +1381,49 @@ export class UserController {
 
     return '';
   }
+  /**
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} id id by me, castcleId, _id user
+   * @returns {} Returning a promise that will be resolved with the object.
+   */
+
+  @CastcleBasicAuth()
+  @Get(':id/liked-casts')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getLikingCast(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ) {
+    const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
+    if (!user) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    if (req.$credential.account.isGuest) {
+      if (id === 'me')
+        throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+
+    const engagement: any = await this.contentService.getEngagementFromUser(
+      user.id,
+      maxResults,
+      sinceId,
+      untilId
+    );
+
+    if (!engagement.items.length) return { payload: null };
+
+    const content: any = await this.contentService.getContentAllFromId(
+      engagement.items
+    );
+    if (!content.length) return { payload: null };
+
+    return await this.contentService.convertEngagementToContentsResponse(
+      viewer,
+      content,
+      hasRelationshipExpansion,
+      engagement.items
+    );
+  }
 }
