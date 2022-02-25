@@ -176,9 +176,12 @@ export class RankerService {
 
     const includes = new CastcleIncludes({ casts, users: authors });
 
-    includes.users = query.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(viewer, includes.users)
-      : includes.users.map((author) => new Author(author).toIncludeUser());
+    includes.users = await this.userService.getIncludesUsers(
+      viewer,
+      includes.users,
+      query.hasRelationshipExpansion
+    );
+
     console.log('PREFIX', prefix_feeds_payload);
     return {
       payload: prefix_feeds_payload.concat(
@@ -255,9 +258,12 @@ export class RankerService {
         .filter((feedItem) => feedItem.content.originalPost)
         .map((feedItem) => new Author(feedItem.content.originalPost.author))
     );
-    includes.users = query.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(viewer, authors)
-      : authors.map((author) => author.toIncludeUser());
+    includes.users = await this.userService.getIncludesUsers(
+      viewer,
+      authors,
+      query.hasRelationshipExpansion
+    );
+
     return { includes, meta };
   };
 
@@ -365,9 +371,12 @@ export class RankerService {
         .filter((feedItem) => feedItem.content.originalPost)
         .map((feedItem) => new Author(feedItem.content.originalPost.author))
     );
-    includes.users = query.hasRelationshipExpansion
-      ? await this.userService.getIncludesUsers(viewer, authors)
-      : authors.map((author) => author.toIncludeUser());
+    includes.users = await this.userService.getIncludesUsers(
+      viewer,
+      authors,
+      query.hasRelationshipExpansion
+    );
+
     return {
       payload: feedPayload,
       includes: new CastcleIncludes(includes),
