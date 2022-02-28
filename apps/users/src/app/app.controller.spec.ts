@@ -988,4 +988,62 @@ describe('AppController', () => {
       notifyService._notificationModel.deleteMany({});
     });
   });
+
+  describe('#getEngagementFromUser', () => {
+    let content: Content | Content[];
+    let mockUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(3, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      content = await contentService.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world',
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: mockUsers[0].user.displayId,
+      });
+      await new contentService._engagementModel({
+        type: 'like',
+        user: mockUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content.id,
+        },
+        visibility: 'publish',
+      }).save();
+    });
+
+    it('should get user liked content.', async () => {
+      const response = await appController.getLikedCast(
+        {
+          $credential: mockUsers[2].credential,
+          $language: 'th',
+        } as any,
+        mockUsers[1].user.id,
+        {
+          hasRelationshipExpansion: false,
+          maxResults: 100,
+          sinceId: null,
+          untilId: null,
+        }
+      );
+
+      expect(response.payload).toHaveLength(1);
+      expect(response['includes'].users).toHaveLength(1);
+      expect(response['meta'].resultCount).toBe(1);
+      expect(String(response.payload[0].authorId)).toBe(
+        String(mockUsers[0].user._id)
+      );
+      expect(response.payload[0].message).toBe(content['payload'].message);
+    });
+
+    afterAll(() => {
+      service._userModel.deleteMany({});
+      contentService._contentModel.deleteMany({});
+      contentService._engagementModel.deleteMany({});
+    });
+  });
 });

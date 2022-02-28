@@ -1312,25 +1312,17 @@ Message: ${message}`,
     let filter: FilterQuery<Engagement> = {
       type: 'like',
       user: userId,
+      visibility: EntityVisibility.Publish,
     };
     const totalDocument = await this._engagementModel
       .countDocuments(filter)
       .exec();
-    if (sinceId) {
-      filter = {
-        ...filter,
-        _id: {
-          $gt: mongoose.Types.ObjectId(sinceId),
-        },
-      };
-    } else if (untilId) {
-      filter = {
-        ...filter,
-        _id: {
-          $lt: mongoose.Types.ObjectId(untilId),
-        },
-      };
-    }
+
+    filter = await createCastcleFilter(filter, {
+      sinceId: sinceId,
+      untilId: untilId,
+    });
+
     const result = await this._engagementModel
       .find(filter)
       .limit(maxResults)
@@ -1341,10 +1333,18 @@ Message: ${message}`,
     };
   };
 
+  /**
+   * @param {Engagement[]} engagement
+   * @param {string} untilId
+   * @returns {}
+   */
+
   getContentAllFromId = async (engagement: Engagement[]) => {
-    const contentId = engagement.map((e) => (e = e.targetRef.oid));
     const filter: FilterQuery<Content> = {
-      _id: { $in: contentId },
+      _id: {
+        $in: engagement.map((e) => (e = e.targetRef.oid || e.targetRef.$id)),
+      },
+      visibility: EntityVisibility.Publish,
     };
     const result = await this._contentModel
       .find(filter)
@@ -1355,8 +1355,9 @@ Message: ${message}`,
   /**
    * @param {User} viewer
    * @param {Content} content
-   * @param {CastcleMeta} meta
    * @param hasRelationshipExpansion
+   * @param {Engagement[]} engagements
+   * @returns {payload, includes, meta}
    */
   async convertEngagementToContentsResponse(
     viewer: User | null,
