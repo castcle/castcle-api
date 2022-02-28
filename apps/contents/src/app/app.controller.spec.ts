@@ -360,7 +360,7 @@ describe('ContentController', () => {
     it('should be able to update page content', async () => {
       const updateResult = await contentController.updateContentFromId(
         {
-          type: 'short',
+          type: ContentType.Short,
           payload: { message: 'hi bro' },
           castcleId: 'whats up',
         },
@@ -435,6 +435,123 @@ describe('ContentController', () => {
       expect(resultHasRelation).toBeDefined();
       expect(resultHasRelation.payload.length).toEqual(4);
       expect(resultHasRelation.meta.resultTotal).toEqual(4);
+    });
+  });
+
+  describe('#getLikingCast', () => {
+    let contentMock: Content;
+    let engagement: any = [];
+    let relationUser: any = [];
+    let userMock: MockUserDetail[] = [];
+    let response: any = [];
+
+    let relationStatus;
+    beforeAll(async () => {
+      userMock = await generateMockUsers(1, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      contentMock = await contentService.createContentFromUser(
+        userMock[0].user,
+        {
+          payload: {
+            message: 'hello world',
+          } as ShortPayload,
+          type: ContentType.Short,
+          castcleId: userMock[0].user.displayId,
+        }
+      );
+
+      engagement = await new contentService._engagementModel({
+        type: 'like',
+        user: user.id,
+        targetRef: {
+          $ref: 'content',
+          $id: contentMock.id,
+        },
+        visibility: 'publish',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }).save();
+      engagement.user = user;
+
+      await new service._relationshipModel({
+        followedUser: user.id,
+        user: userMock[0].user.id,
+        isFollowPage: false,
+        visibility: 'publish',
+        blocking: false,
+        following: true,
+      }).save();
+
+      jest
+        .spyOn(contentService, 'getLikingCastUser')
+        .mockResolvedValueOnce({ total: 1, items: [engagement] });
+    });
+
+    it('should create get liking', async () => {
+      await contentController._getContentIfExist(contentMock.id, {
+        $credential: userCredential,
+        $language: 'th',
+      } as any);
+
+      const engagements: any = await contentService.getLikingCastUser(
+        contentMock.id,
+        100,
+        null,
+        null
+      );
+
+      if (!userCredential.account.isGuest) {
+        relationUser = engagements.items.map((e) => {
+          return e.user.id;
+        });
+
+        relationUser = await service.getRelationshipData(
+          true,
+          relationUser,
+          userMock[0].user.id
+        );
+      }
+
+      for await (const obj of engagements.items) {
+        relationStatus = await relationUser.filter(
+          (e) => String(e.followedUser) === String(obj.user.id)
+        );
+
+        if (relationStatus.length) {
+          relationStatus = relationStatus[0];
+          if (!relationStatus.blocking) {
+            response = [
+              ...response,
+              await obj.user.toUserResponse({
+                blocked: relationStatus.blocking,
+                blocking: relationStatus.blocking,
+                followed: relationStatus.following,
+              }),
+            ];
+          }
+        } else {
+          const result = await obj.user.toUserResponse();
+          result.blocked = false;
+          result.blocking = false;
+          result.followed = false;
+          response = [...response, result];
+        }
+      }
+
+      expect(response).toHaveLength(1);
+      expect(response[0].followed).toEqual(true);
+      expect(response[0].blocked).toEqual(false);
+      expect(response[0].blocking).toEqual(false);
+      expect(String(response[0].id)).toMatch(String(user._id));
+    });
+    afterAll(() => {
+      service._relationshipModel.deleteMany({});
+      service._userModel.deleteMany({});
+      contentService._contentModel.deleteMany({});
+      contentService._engagementModel.deleteMany({});
     });
   });
 });

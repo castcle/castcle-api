@@ -118,6 +118,7 @@ export class Environment {
   static FACEBOOK_HOST = process.env.FB_HOST;
   static FACEBOOK_CLIENT_ID = process.env.FB_CLIENT_ID;
   static FACEBOOK_CLIENT_SECRET = process.env.FB_CLIENT_SECRET;
+  static FACEBOOK_VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN;
 
   // Telegram
   static TELEGRAM_BOT_TOKEN = process.env.TG_BOT_TOKEN;

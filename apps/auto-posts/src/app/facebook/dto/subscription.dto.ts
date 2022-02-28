@@ -21,20 +21,33 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { FacebookModule } from './facebook/facebook.module';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
+export class SubscriptionEntry<T> {
+  id: string;
+  time: number;
+  changes: T[];
+}
 
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    FacebookModule,
-    TwitterModule,
-    YoutubeModule,
-  ],
-})
-export class AppModule {}
+export class FeedEntryChange {
+  value: FeedEntryValue;
+}
+
+export enum FeedEntryType {
+  ADD = 'add',
+  EDITED = 'edited',
+}
+
+export enum FeedEntryItem {
+  PHOTO = 'photo',
+  STATUS = 'status',
+  VIDEO = 'video',
+}
+
+export class FeedEntryValue {
+  verb: FeedEntryType;
+  message: string;
+  item?: FeedEntryItem;
+  link?: string;
+  photos?: string[];
+  post_id: string;
+  video_id: string;
+}

@@ -36,6 +36,7 @@ export class Url {
 }
 
 export enum LinkType {
+  Facebook = 'facebook',
   Other = 'other',
   Youtube = 'youtube',
 }
@@ -200,7 +201,7 @@ export class ContentPayloadDto {
   id: string;
 
   @ApiProperty()
-  type: ContentType.Short | ContentType.Blog | ContentType.Image;
+  type: ContentType;
 
   @ApiProperty()
   payload: ShortPayload | BlogPayload | ImagePayload;
@@ -239,7 +240,7 @@ export class ContentPayloadDto {
 
 export class ContentPayloadItem {
   'id': string;
-  'type': ContentType.Short | ContentType.Blog | ContentType.Image; // short, blog, image, shortClip, clip, live
+  'type': ContentType;
   'message': string;
   'photo': {
     cover?: CastcleImage;
@@ -272,7 +273,7 @@ export class SaveContentDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  type: 'short' | 'blog' | 'image';
+  type: ContentType;
 
   @IsNotEmpty()
   @ApiProperty()
@@ -288,6 +289,8 @@ export enum ContentType {
   Short = 'short',
   Blog = 'blog',
   Image = 'image',
+  Long = 'long',
+  Video = 'video',
 }
 
 export class CastcleContentQueryOptions extends QueryOption {
