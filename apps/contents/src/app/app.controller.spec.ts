@@ -360,7 +360,7 @@ describe('ContentController', () => {
     it('should be able to update page content', async () => {
       const updateResult = await contentController.updateContentFromId(
         {
-          type: 'short',
+          type: ContentType.Short,
           payload: { message: 'hi bro' },
           castcleId: 'whats up',
         },
