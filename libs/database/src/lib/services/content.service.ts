@@ -1254,4 +1254,44 @@ Message: ${message}`,
 
     return { contents, meta: Meta.fromDocuments(contents, total) };
   }
+
+  /**
+   * Get Liking
+   * @param {string} contentId
+   * @param {number} maxResults
+   * @param {string} sinceId
+   * @param {string} untilId
+   * @returns {User[], totalDocument}
+   */
+  getLikingCastUser = async (
+    contentId: string,
+    maxResults: number,
+    sinceId?: string,
+    untilId?: string
+  ) => {
+    let filter: FilterQuery<Engagement> = {
+      type: 'like',
+      targetRef: {
+        $ref: 'content',
+        $id: mongoose.Types.ObjectId(contentId),
+      },
+    };
+    const totalDocument = await this._engagementModel
+      .countDocuments(filter)
+      .exec();
+    filter = await createCastcleFilter(filter, {
+      sinceId,
+      untilId,
+    });
+    const result = await this._engagementModel
+      .find(filter)
+      .populate('user')
+      .limit(maxResults)
+      .sort({ createdAt: -1 });
+
+    return {
+      total: totalDocument,
+      items: result,
+    };
+  };
 }

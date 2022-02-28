@@ -32,6 +32,7 @@ import {
   SocialProvider,
   SocialSyncService,
   UserService,
+  NotificationService,
 } from '@castcle-api/database';
 import {
   AdsRequestDto,
@@ -43,6 +44,8 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
+  NotificationSource,
+  NotificationType,
   PageDto,
   PageResponseDto,
   PagesResponse,
@@ -110,7 +113,7 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-
+import { ContentLikeBody } from './dtos/content.dto';
 class DeleteUserBody {
   channel: string;
   payload: {
@@ -130,7 +133,8 @@ export class UserController {
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
     private suggestionService: SuggestionService,
-    private userService: UserService
+    private userService: UserService,
+    private notifyService: NotificationService
   ) {}
 
   /**
@@ -1285,5 +1289,96 @@ export class UserController {
       body
     );
     return this.userService.getById(authorizedUser, page.id, UserType.Page);
+  }
+
+  /**
+   * @param {string} id id => _id by me, castcleId, _id of users
+   * @param {string} contentId field on body is _id of contents
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @returns {}
+   */
+
+  @ApiResponse({
+    status: 204,
+  })
+  @ApiBody({
+    type: ContentLikeBody,
+  })
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Post(':id/likes')
+  @HttpCode(204)
+  async likeContent(
+    @Param('id') id: string,
+    @Body('contentId') contentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(contentId);
+
+    const user = await this._getUser(id, req.$credential);
+
+    if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+
+    await this.contentService.likeContent(content, user);
+
+    if (id === 'me') return;
+
+    if (id === user.id) return;
+
+    if (id === content.author.castcleId) return;
+
+    // //TODO !!! has to implement message libs and i18N and message functions
+    this.notifyService.notifyToUser({
+      type: NotificationType.Like,
+      message: `${user.displayName} ถูกใจโพสของคุณ`,
+      read: false,
+      source: NotificationSource.Profile,
+      sourceUserId: user._id,
+      targetRef: {
+        _id: content._id,
+      },
+      account: { _id: content.author.id },
+    });
+  }
+
+  /**
+   * @param {string} id id => _id by me, castcleId, _id of users
+   * @param {string} contentId _id of contents
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @returns {}
+   */
+
+  @ApiResponse({
+    status: 204,
+  })
+  @ApiBody({
+    type: ContentLikeBody,
+  })
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Delete(':id/likes/:source_content_id')
+  @HttpCode(204)
+  async unLikeContent(
+    @Param('id') id: string,
+    @Param('source_content_id') contentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(contentId);
+
+    const user = await this._getUser(id, req.$credential);
+
+    if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
+      throw new CastcleException(
+        CastcleStatus.FORBIDDEN_REQUEST,
+        req.$language
+      );
+    }
+
+    await this.contentService.unLikeContent(content, user);
+
+    return '';
   }
 }
