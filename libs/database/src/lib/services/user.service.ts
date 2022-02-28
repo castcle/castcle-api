@@ -33,7 +33,6 @@ import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
-import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
@@ -48,7 +47,6 @@ import {
   Meta,
   PageDto,
   PaginationQuery,
-  QueryOption,
   SocialPageDto,
   SortBy,
   SortDirection,
@@ -608,6 +606,10 @@ export class UserService {
   ) {
     const direction = sortBy?.type === 'asc' ? '' : '-';
     this.logger.log('Filter Since & Until');
+    query = await createCastcleFilter(query, {
+      sinceId: paginationQuery?.sinceId,
+      untilId: paginationQuery?.untilId,
+    });
 
     this.logger.log('FIlter Type');
     if (userType) {
@@ -618,6 +620,7 @@ export class UserService {
     const relationships = total
       ? await this._relationshipModel
           .find(query)
+          .limit(+paginationQuery.maxResults)
           .populate(populate)
           .sort(`${direction}${sortBy?.field}`)
           .exec()
@@ -625,59 +628,46 @@ export class UserService {
 
     const followingIds =
       populate === 'user'
-        ? relationships.map(({ user }) => user?._id)
-        : relationships.map(({ followedUser }) => followedUser?._id);
+        ? relationships.map(({ user, id }) => {
+            return { userId: user?._id, id: id };
+          })
+        : relationships.map(({ followedUser, id }) => {
+            return { userId: followedUser?._id, id: id };
+          });
 
     const hasRelationship = paginationQuery.userFields?.includes(
       UserField.Relationships
     );
-    let queryUser: FilterQuery<User> = {
-      visibility: EntityVisibility.Publish,
-    };
-    queryUser = this.createFilterWithInclude(
-      queryUser,
-      {
-        sinceId: paginationQuery?.sinceId,
-        untilId: paginationQuery?.untilId,
-      },
-      followingIds
-    );
-    const { users, meta } = await this.getByCriteria(
+
+    const { users } = await this.getByCriteria(
       viewer,
-      queryUser,
       {
-        limit: +paginationQuery.maxResults,
+        _id: { $in: followingIds.map((f) => f.userId) },
       },
+      undefined,
       hasRelationship
     );
 
     return {
-      users,
-      meta: meta,
+      users: this.mergeRelationUser(followingIds, users),
+      meta: Meta.fromDocuments(relationships, total),
     };
   }
 
-  createFilterWithInclude = (
-    filter: any,
-    queryOption: QueryOption,
-    idS: any[]
-  ) => {
-    if (queryOption.sinceId) {
-      filter._id = {
-        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
-        $in: idS,
-      };
-    } else if (queryOption.untilId) {
-      filter._id = {
-        $lt: mongoose.Types.ObjectId(queryOption.untilId),
-        $in: idS,
-      };
-    } else {
-      filter._id = {
-        $in: idS,
-      };
-    }
-    return filter;
+  mergeRelationUser = (followingIds, users) => {
+    this.logger.log('merge relation and user.');
+    const relationUsers = [];
+    followingIds.map((f) => {
+      const user = users.find((u) => String(u.id) === String(f.userId));
+      if (user) {
+        delete user['id'];
+        relationUsers.push({
+          ...f,
+          ...user,
+        });
+      }
+    });
+    return relationUsers;
   };
 
   /**

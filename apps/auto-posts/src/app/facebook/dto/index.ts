@@ -21,20 +21,4 @@
  * or have any questions.
  */
 
-import { HealthyModule } from '@castcle-api/healthy';
-import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
-import { FacebookModule } from './facebook/facebook.module';
-import { TwitterModule } from './twitter/twitter.module';
-import { YoutubeModule } from './youtube/youtube.module';
-
-@Module({
-  imports: [
-    HealthyModule,
-    ScheduleModule.forRoot(),
-    FacebookModule,
-    TwitterModule,
-    YoutubeModule,
-  ],
-})
-export class AppModule {}
+export * from './subscription.dto';
