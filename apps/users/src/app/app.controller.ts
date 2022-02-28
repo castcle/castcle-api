@@ -1390,7 +1390,7 @@ export class UserController {
   @CastcleBasicAuth()
   @Get(':id/liked-casts')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  async getLikingCast(
+  async getLikedCast(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
     @Query()
@@ -1401,8 +1401,9 @@ export class UserController {
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     }
     if (req.$credential.account.isGuest) {
-      if (id === 'me')
+      if (id === 'me') {
         throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      }
     }
 
     const engagement: any = await this.contentService.getEngagementFromUser(
