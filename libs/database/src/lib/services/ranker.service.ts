@@ -174,13 +174,14 @@ export class RankerService {
       })
       .filter(Boolean);
 
-    const includes = new CastcleIncludes({ casts, users: authors });
-
-    includes.users = await this.userService.getIncludesUsers(
-      viewer,
-      includes.users,
-      query.hasRelationshipExpansion
-    );
+    const includes = {
+      casts,
+      users: await this.userService.getIncludesUsers(
+        viewer,
+        authors,
+        query.hasRelationshipExpansion
+      ),
+    };
 
     console.log('PREFIX', prefix_feeds_payload);
     return {
@@ -205,7 +206,7 @@ export class RankerService {
             } as FeedItemPayloadItem)
         )
       ),
-      includes,
+      includes: new CastcleIncludes(includes),
       meta: createCastcleMeta(feedItems),
     } as FeedItemResponse;
   };
@@ -264,7 +265,7 @@ export class RankerService {
       query.hasRelationshipExpansion
     );
 
-    return { includes, meta };
+    return { includes: new CastcleIncludes(includes), meta };
   };
 
   _getMemberFeedHistoryItemsFromViewer = async (
