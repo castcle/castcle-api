@@ -108,6 +108,9 @@ export class SuggestionService {
             u.type === UserType.People ? u.toUserResponse() : u.toPageResponse()
           )
       );
+
+      if (!userResponses.length) return feedResponse;
+
       const suggestItem: FeedItemPayloadItem = {
         id: 'for-you',
         feature: {
