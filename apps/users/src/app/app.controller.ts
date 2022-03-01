@@ -1406,21 +1406,21 @@ export class UserController {
       }
     }
 
-    const engagement: any = await this.contentService.getEngagementFromUser(
+    const engagement = await this.contentService.getEngagementFromUser(
       user.id,
-      maxResults,
       sinceId,
-      untilId
+      untilId,
+      maxResults
     );
 
     if (!engagement.items.length) return { payload: null };
 
-    const content: any = await this.contentService.getContentAllFromId(
+    const content = await this.contentService.getContentAllFromId(
       engagement.items
     );
     if (!content.length) return { payload: null };
 
-    return await this.contentService.convertEngagementToContentsResponse(
+    return await this.contentService.convertContentsToContentsResponse(
       viewer,
       content,
       hasRelationshipExpansion,
