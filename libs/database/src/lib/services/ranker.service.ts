@@ -26,8 +26,11 @@ import { predictContents } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ContentAggregator, pipe2ContentFeedAggregator } from '../aggregations';
-import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
+import {
+  pipelineOfGetFeedContents,
+  GetFeedContentsResponse,
+} from '../aggregations';
+import { FeedQuery, PaginationQuery } from '../dtos';
 import { CastcleMeta } from '../dtos/common.dto';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { FeedItemDto } from '../dtos/feedItem.dto';
@@ -35,6 +38,7 @@ import {
   FeedItemPayloadItem,
   FeedItemResponse,
 } from '../dtos/guest-feed-item.dto';
+import { ContentAggregator } from '../models';
 import {
   Account,
   Content,
@@ -304,26 +308,36 @@ export class RankerService {
    * @returns {FeedItemResponse}
    */
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
-    if (query.mode && query.mode === 'history')
+    if (query.mode && query.mode === 'history') {
       return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
+    }
+
     console.log(viewer);
+
     const user = await this.userModel.findOne({
       ownerAccount: viewer._id,
       type: UserType.People,
     });
-    const aggr = pipe2ContentFeedAggregator({
-      FollowFeedMax: Environment.FEED_FOLLOW_MAX,
-      FollowFeedRatio: Environment.FEED_FOLLOW_RATIO,
-      DecayDays: Environment.FEED_DECAY_DAYS,
-      MaxResult: query.maxResults,
+
+    const pipeline = pipelineOfGetFeedContents({
+      followFeedMax: Environment.FEED_FOLLOW_MAX,
+      followFeedRatio: Environment.FEED_FOLLOW_RATIO,
+      decayDays: Environment.FEED_DECAY_DAYS,
+      maxResult: query.maxResults,
       userId: user._id,
+      preferLanguages: viewer.preferences.languages,
     });
-    console.log(JSON.stringify(aggr));
-    const rawResult = await this.userModel.aggregate(aggr);
-    const result: UserFeedAggregatorDto = rawResult[0];
+
+    console.log(JSON.stringify(pipeline));
+
+    const userFeeds = await this.userModel.aggregate<GetFeedContentsResponse>(
+      pipeline
+    );
+
+    const contents = userFeeds[0]?.contents ?? [];
     const contentScore = await predictContents(
       String(viewer._id),
-      result.contents.map((c) => String(c))
+      contents.map((content) => String(content))
     );
     const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
       contentScore[a] > contentScore[b] ? -1 : 1

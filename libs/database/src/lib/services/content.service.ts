@@ -30,7 +30,6 @@ import { getLinkPreview } from 'link-preview-js';
 import * as mongoose from 'mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { ContentAggregator } from '../aggregations';
 import {
   Author,
   CastcleContentQueryOptions,
@@ -56,6 +55,7 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
+import { ContentAggregator } from '../models';
 import { EngagementType } from '../models/engagement.enum';
 import {
   Account,

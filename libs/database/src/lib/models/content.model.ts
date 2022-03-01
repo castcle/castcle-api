@@ -21,19 +21,8 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './campaign.enum';
-export * from './content.model';
-export * from './feed.enum';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './wallet.enum';
-export * from './wallet.model';
+export class ContentAggregator {
+  createTime?: Date;
+  following?: boolean;
+  fromGlobal?: boolean;
+}

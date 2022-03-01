@@ -55,6 +55,10 @@ export class Relationship extends CastcleBase {
   /** `true` if user block followedUser */
   @Prop({ default: false })
   blocking: boolean;
+
+  /** `true` if user blocked by followedUser */
+  @Prop({ default: false })
+  blocked: boolean;
 }
 
 export const RelationshipSchema = SchemaFactory.createForClass(Relationship);
