@@ -1096,18 +1096,19 @@ Message: ${message}`,
   async convertContentsToContentsResponse(
     viewer: User | null,
     contents: Content[],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    inputEngagements: Engagement[] = []
   ): Promise<ContentsResponse> {
-    const meta = createCastcleMeta(contents);
+    const meta = createCastcleMeta(
+      inputEngagements.length ? inputEngagements : contents
+    );
     const users: IncludeUser[] = [];
     const authorIds = [];
     const casts: ContentPayloadItem[] = [];
     const payload: ContentPayloadItem[] = [];
-    const engagements = await this.getAllEngagementFromContentsAndUser(
-      contents,
-      viewer?.id
-    );
-
+    const engagements = inputEngagements.length
+      ? inputEngagements
+      : await this.getAllEngagementFromContentsAndUser(contents, viewer?.id);
     contents.forEach((content) => {
       const contentEngagements = engagements.filter(
         (engagement) =>
@@ -1304,12 +1305,13 @@ Message: ${message}`,
    * @returns
    */
   getEngagementFromUser = async (
-    userId: any,
-    maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
+    userId: User,
     sinceId: string,
-    untilId: string
+    untilId: string,
+    maxResults = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
   ) => {
     let filter: FilterQuery<Engagement> = {
+      'targetRef.$ref': 'content',
       type: 'like',
       user: userId,
       visibility: EntityVisibility.Publish,
@@ -1318,18 +1320,18 @@ Message: ${message}`,
       .countDocuments(filter)
       .exec();
 
-    filter = await createCastcleFilter(filter, {
+    filter = createCastcleFilter(filter, {
       sinceId: sinceId,
       untilId: untilId,
     });
 
-    const result = await this._engagementModel
+    const engagements = await this._engagementModel
       .find(filter)
       .limit(maxResults)
       .sort({ createdAt: -1 });
     return {
       total: totalDocument,
-      items: result,
+      items: engagements,
     };
   };
 
@@ -1346,63 +1348,6 @@ Message: ${message}`,
       },
       visibility: EntityVisibility.Publish,
     };
-    const result = await this._contentModel
-      .find(filter)
-      .sort({ createdAt: -1 });
-    return result;
+    return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
-
-  /**
-   * @param {User} viewer
-   * @param {Content} content
-   * @param hasRelationshipExpansion
-   * @param {Engagement[]} engagements
-   * @returns {payload, includes, meta}
-   */
-  async convertEngagementToContentsResponse(
-    viewer: User | null,
-    contents: Content[],
-    hasRelationshipExpansion = false,
-    engagements: Engagement[]
-  ): Promise<ContentsResponse> {
-    const meta = createCastcleMeta(engagements);
-    const users: IncludeUser[] = [];
-    const authorIds = [];
-    const casts: ContentPayloadItem[] = [];
-    const payload: ContentPayloadItem[] = [];
-
-    contents.forEach((content) => {
-      const contentEngagements = engagements.filter(
-        (engagement) =>
-          String(engagement.targetRef.$id) === String(content.id) ||
-          String(engagement.targetRef.oid) === String(content.id)
-      );
-
-      payload.push(content.toContentPayloadItem(contentEngagements));
-
-      if (content.originalPost) {
-        casts.push(toSignedContentPayloadItem(content.originalPost));
-      }
-
-      if (content.originalPost?.author) {
-        users.push(new Author(content.originalPost.author).toIncludeUser());
-        authorIds.push(content.originalPost.author.id);
-      }
-
-      if (content.author) {
-        users.push(new Author(content.author).toIncludeUser());
-        authorIds.push(content.author.id);
-      }
-    });
-
-    if (hasRelationshipExpansion) {
-      await this.updateUserRelationships(viewer, authorIds, users);
-    }
-
-    return {
-      payload,
-      includes: new CastcleIncludes({ users, casts }),
-      meta,
-    };
-  }
 }

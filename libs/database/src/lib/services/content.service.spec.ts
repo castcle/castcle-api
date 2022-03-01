@@ -970,9 +970,9 @@ describe('ContentService', () => {
     it('should get engagement with userId', async () => {
       engagement = await service.getEngagementFromUser(
         mockUsers[1].user._id,
-        100,
         null,
-        null
+        null,
+        100
       );
 
       expect(engagement.total).toEqual(1);
@@ -989,7 +989,7 @@ describe('ContentService', () => {
     });
 
     it('should create response user liked is correct.', async () => {
-      const response = await service.convertEngagementToContentsResponse(
+      const response = await service.convertContentsToContentsResponse(
         mockUsers[1].user,
         content as Content[],
         true,
