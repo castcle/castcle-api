@@ -622,7 +622,7 @@ export class UserService {
           .find(query)
           .limit(+paginationQuery.maxResults)
           .populate(populate)
-          .sort(`${direction}${sortBy?.field}`)
+          .sort(`${direction}${sortBy?.field}, ${direction}_id`)
           .exec()
       : [];
 

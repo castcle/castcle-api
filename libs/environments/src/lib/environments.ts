@@ -158,6 +158,10 @@ export class Environment {
     process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays
   );
 
+  // Links
+  static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
+  static LINK_VERIFIED_EMAIL = process.env.LINK_VERIFIED_EMAIL;
+
   /**
    * Number of digits before the decimal point
    * @default 10
