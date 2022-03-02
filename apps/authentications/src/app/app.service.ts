@@ -93,16 +93,9 @@ export class AppService {
    * @returns {string}
    */
   getCastcleMobileLink = () => {
-    if (env && env.NODE_ENV) {
-      const links = {
-        development: 'https://castcle.page.link/verified-email',
-        staging: 'https://stgs.page.link/verified-email',
-        production: 'https://links.castcle.com/verified-email',
-      };
-      return links[env.NODE_ENV]
-        ? links[env.NODE_ENV]
-        : 'https://links.castcle.com/verified-email';
-    } else return 'https://links.castcle.com/verified-email';
+    return env && env.LINK_VERIFIED_EMAIL
+      ? env.LINK_VERIFIED_EMAIL
+      : 'https://links.castcle.com/verified-email';
   };
 
   async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
