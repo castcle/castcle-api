@@ -61,6 +61,7 @@ import {
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
@@ -83,6 +84,14 @@ export class DownloaderMock {
   }
 }
 
+export class FacebookClientMock {
+  subscribed(userToken: string, socialId: string) {
+    console.log(userToken);
+    console.log(socialId);
+    return true;
+  }
+}
+
 describe('AppController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
@@ -100,6 +109,11 @@ describe('AppController', () => {
     const DownloaderProvider = {
       provide: Downloader,
       useClass: DownloaderMock,
+    };
+
+    const FacebookClientProvider = {
+      provide: FacebookClient,
+      useClass: FacebookClientMock,
     };
 
     mongod = await MongoMemoryServer.create();
@@ -132,6 +146,7 @@ describe('AppController', () => {
         NotificationService,
         NotificationProducer,
         DownloaderProvider,
+        FacebookClientProvider,
       ],
     }).compile();
     appController = app.get(UserController);

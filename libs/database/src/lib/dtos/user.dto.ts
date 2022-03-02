@@ -341,6 +341,11 @@ export class SocialSyncDto {
   @ApiProperty()
   @IsBoolean()
   autoPost?: boolean;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  authToken?: string;
 }
 
 export class SocialSyncDeleteDto {

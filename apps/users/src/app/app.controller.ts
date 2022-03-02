@@ -74,6 +74,7 @@ import {
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import {
   Auth,
   Authorizer,
@@ -145,7 +146,8 @@ export class UserController {
     private suggestionService: SuggestionService,
     private userService: UserService,
     private notifyService: NotificationService,
-    private download: Downloader
+    private download: Downloader,
+    private facebookClient: FacebookClient
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -1588,7 +1590,18 @@ export class UserController {
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
-        this.socialSyncService.create(page, syncBody);
+        await this.socialSyncService.create(page, syncBody);
+
+        if (
+          syncBody.provider === SocialProvider.Facebook &&
+          syncBody.authToken
+        ) {
+          this.logger.log('Subscribed facebook page');
+          await this.facebookClient.subscribed(
+            syncBody.authToken,
+            syncBody.socialId
+          );
+        }
       })
     );
 

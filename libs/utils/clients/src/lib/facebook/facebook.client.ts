@@ -40,6 +40,8 @@ export class FacebookClient {
   private readonly accessTokenUrl = `${Environment.FACEBOOK_HOST}/oauth/access_token?`;
   private readonly verifyTokenUrl = `${Environment.FACEBOOK_HOST}/v12.0/debug_token?`;
   private readonly userInfoUrl = `${Environment.FACEBOOK_HOST}/v12.0/me?`;
+  private subscribedUrl = (fbId: string) =>
+    `${Environment.FACEBOOK_HOST}/v13.0/${fbId}/subscribed_apps?`;
 
   /**
    * Get Authentication token from facebook
@@ -87,6 +89,22 @@ export class FacebookClient {
 
     return lastValueFrom(
       this.httpService.get<FacebookUserInfo>(url).pipe(map(({ data }) => data))
+    );
+  }
+
+  /**
+   * Get User data from facebook
+   * @param {string} userToken authorize user token
+   * @param {string} socialId facebook id
+   * @returns {Object} facebook response
+   */
+  async subscribed(userToken: string, socialId: string) {
+    const parameter = `access_token=${userToken}&subscribed_fields=feed`;
+    const url = `${this.subscribedUrl(socialId)}${parameter}`;
+    this.logger.log('get user info');
+
+    return lastValueFrom(
+      this.httpService.post(url).pipe(map(({ data }) => data))
     );
   }
 }
