@@ -1107,4 +1107,51 @@ describe('AppController', () => {
       adsService._contentModel.deleteMany({});
     });
   });
+  describe('#lookupAds', () => {
+    let mocks: MockUserDetail[];
+    let content: Content;
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(1, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      content = await contentService.createContentFromUser(mocks[0].user, {
+        castcleId: mocks[0].pages[0].id,
+        payload: {
+          message: 'this is promote short',
+        } as ShortPayload,
+        type: ContentType.Short,
+      });
+
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    it('should be able to lookup ads detail exist.', async () => {
+      const adsResponse = await appController.lookupAds(
+        { account: mocks[0].account as Account } as Authorizer,
+        mockAds._id
+      );
+
+      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(adsResponse).toBeTruthy();
+      expect(adsResponse.campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.boostType).toBe('content');
+      expect(adsResponse.adStatus).toBe(mockAds.status);
+      expect(adsResponse.duration).toEqual(mockAds.detail.duration);
+      expect(adsResponse.dailyBudget).toEqual(mockAds.detail.dailyBudget);
+      expect(adsResponse.campaignMessage).toBe(mockAds.detail.message);
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
+    });
+  });
 });

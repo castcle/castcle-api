@@ -182,4 +182,13 @@ export class AdsService {
       .limit(maxResults)
       .sort({ createdAt: -1, _id: -1 });
   }
+
+  lookupAds({ _id }: Account, adsId: string) {
+    return this._adsCampaignModel
+      .findOne({
+        owner: _id,
+        _id: adsId,
+      })
+      .exec();
+  }
 }
