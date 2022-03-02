@@ -938,4 +938,75 @@ describe('ContentService', () => {
       expect(findMissing).toBeUndefined();
     });
   });
+
+  describe('#getEngagementFromUser', () => {
+    let content: Content | Content[];
+    let mockUsers: MockUserDetail[];
+    let engagement: any;
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(2, 0, {
+        userService: userService,
+        accountService: authService,
+      });
+
+      content = await service.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world',
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+      await new service._engagementModel({
+        type: 'like',
+        user: mockUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content.id,
+        },
+        visibility: EntityVisibility.Publish,
+      }).save();
+    });
+
+    it('should get engagement with userId', async () => {
+      engagement = await service.getEngagementFromUser(
+        mockUsers[1].user._id,
+        null,
+        null,
+        100
+      );
+
+      expect(engagement.total).toEqual(1);
+      expect(engagement.items).toHaveLength(1);
+      expect(String(engagement.items[0].user)).toBe(
+        String(mockUsers[1].user._id)
+      );
+    });
+
+    it('should get content with $in _id exists.', async () => {
+      content = await service.getContentAllFromId(engagement.items);
+      expect(String(mockUsers[0].user._id)).toBe(String(content[0].author.id));
+      expect(content).toHaveLength(1);
+    });
+
+    it('should create response user liked is correct.', async () => {
+      const response = await service.convertContentsToContentsResponse(
+        mockUsers[1].user,
+        content as Content[],
+        true,
+        engagement.items
+      );
+      expect(response.payload).toHaveLength(1);
+      expect(String(response.payload[0].authorId)).toBe(
+        String(mockUsers[0].user._id)
+      );
+      expect(String(response.payload[0].id)).toBe(String(content[0].id));
+      expect(response.payload[0].message).toBe(content[0].payload.message);
+    });
+
+    afterAll(() => {
+      service._userModel.deleteMany({});
+      service._contentModel.deleteMany({});
+      service._engagementModel.deleteMany({});
+    });
+  });
 });

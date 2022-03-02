@@ -210,6 +210,8 @@ For account: ${accountId}`
           .findById(accountId)
           .select('+campaigns');
 
+        if (!account) return;
+
         switch (campaign.type) {
           case CampaignType.FRIEND_REFERRAL:
           case CampaignType.VERIFY_MOBILE:

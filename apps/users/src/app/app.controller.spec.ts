@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsObjective,
   AdsService,
   AnalyticService,
   AuthenticationService,
@@ -41,6 +42,7 @@ import {
   NotificationSource,
   NotificationType,
   PageDto,
+  PaginationQuery,
   SaveContentDto,
   ShortPayload,
   SocialSyncDto,
@@ -51,12 +53,14 @@ import {
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   Account,
+  AdsCampaign,
   Content,
   Credential,
   Engagement,
   User,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   NotificationProducer,
@@ -83,6 +87,7 @@ describe('AppController', () => {
   let userAccount: Account;
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
+  let adsService: AdsService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -122,6 +127,8 @@ describe('AppController', () => {
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
+    adsService = app.get<AdsService>(AdsService);
+
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -986,6 +993,118 @@ describe('AppController', () => {
       authService._credentialModel.deleteMany({});
       contentService._contentModel.deleteMany({});
       notifyService._notificationModel.deleteMany({});
+    });
+  });
+
+  describe('#getEngagementFromUser', () => {
+    let content: Content | Content[];
+    let mockUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(3, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      content = await contentService.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world',
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: mockUsers[0].user.displayId,
+      });
+      await new contentService._engagementModel({
+        type: 'like',
+        user: mockUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content.id,
+        },
+        visibility: 'publish',
+      }).save();
+    });
+
+    it('should get user liked content.', async () => {
+      const response = await appController.getLikedCast(
+        {
+          $credential: mockUsers[2].credential,
+          $language: 'th',
+        } as any,
+        mockUsers[1].user.id,
+        {
+          hasRelationshipExpansion: false,
+          maxResults: 100,
+          sinceId: null,
+          untilId: null,
+        }
+      );
+
+      expect(response.payload).toHaveLength(1);
+      expect(response['includes'].users).toHaveLength(1);
+      expect(response['meta'].resultCount).toBe(1);
+      expect(String(response.payload[0].authorId)).toBe(
+        String(mockUsers[0].user._id)
+      );
+      expect(response.payload[0].message).toBe(content['payload'].message);
+    });
+
+    afterAll(() => {
+      service._userModel.deleteMany({});
+      contentService._contentModel.deleteMany({});
+      contentService._engagementModel.deleteMany({});
+    });
+  });
+
+  describe('#listAds', () => {
+    let mocks: MockUserDetail[];
+    let content: Content;
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(2, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      content = await contentService.createContentFromUser(mocks[0].user, {
+        castcleId: mocks[0].pages[0].id,
+        payload: {
+          message: 'this is promote short',
+        } as ShortPayload,
+        type: ContentType.Short,
+      });
+
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    it('should be able to get list ads exist.', async () => {
+      const adsResponse = await appController.listAds(
+        { account: mocks[0].account as Account } as Authorizer,
+        {
+          maxResults: 100,
+        } as PaginationQuery
+      );
+
+      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(adsResponse.payload?.length).toBeGreaterThan(0);
+      expect(adsResponse.payload[0].campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.payload[0].boostType).toBe('content');
+      expect(adsResponse.payload[0].adStatus).toBe(mockAds.status);
+      expect(adsResponse.payload[0].duration).toEqual(mockAds.detail.duration);
+      expect(adsResponse.payload[0].dailyBudget).toEqual(
+        mockAds.detail.dailyBudget
+      );
+      expect(adsResponse.payload[0].campaignMessage).toBe(
+        mockAds.detail.message
+      );
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
     });
   });
 });
