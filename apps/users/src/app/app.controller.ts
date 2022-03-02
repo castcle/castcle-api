@@ -1381,6 +1381,29 @@ export class UserController {
 
     return '';
   }
+
+  @CastcleBasicAuth()
+  @Get('me/advertise')
+  async listAds(
+    @Auth() { account }: Authorizer,
+    @Query() paginationQuery: PaginationQuery
+  ) {
+    const adsCampaigns = await this.adsService.getListAds(
+      account,
+      paginationQuery
+    );
+    if (!adsCampaigns) return { payload: null };
+    const adsResponses = await Promise.all(
+      adsCampaigns.map((adsCampaign) =>
+        this.adsService.transformAdsCampaignToAdsResponse(adsCampaign)
+      )
+    );
+    return ResponseDto.ok({
+      payload: adsResponses,
+      meta: createCastcleMeta(adsCampaigns),
+    });
+  }
+
   /**
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {string} id id by me, castcleId, _id user
