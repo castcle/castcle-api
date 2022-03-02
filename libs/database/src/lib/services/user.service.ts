@@ -622,7 +622,7 @@ export class UserService {
           .find(query)
           .limit(+paginationQuery.maxResults)
           .populate(populate)
-          .sort(`${direction}${sortBy?.field}`)
+          .sort(`${direction}${sortBy?.field}, ${direction}_id`)
           .exec()
       : [];
 
@@ -917,37 +917,67 @@ export class UserService {
   async blockUser(user: User, blockedUser?: User) {
     if (!blockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const relationship = {
-      user: user._id,
-      followedUser: blockedUser._id,
-      visibility: EntityVisibility.Publish,
-      following: false,
-    };
-
-    await this._relationshipModel
-      .updateOne(
-        { user: user._id, followedUser: blockedUser._id },
-        { $setOnInsert: relationship, $set: { blocking: true } },
-        { upsert: true }
-      )
-      .exec();
+    await Promise.all([
+      this._relationshipModel
+        .updateOne(
+          { user: user._id, followedUser: blockedUser._id },
+          {
+            $setOnInsert: {
+              user: user._id,
+              followedUser: blockedUser._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocked: false,
+            },
+            $set: { blocking: true },
+          },
+          { upsert: true }
+        )
+        .exec(),
+      this._relationshipModel
+        .updateOne(
+          { followedUser: user._id, user: blockedUser._id },
+          {
+            $setOnInsert: {
+              user: blockedUser._id,
+              followedUser: user._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocking: false,
+            },
+            $set: { blocked: true },
+          },
+          { upsert: true }
+        )
+        .exec(),
+    ]);
   }
 
   async unblockUser(user: User, unblockedUser: User) {
     if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const relationship = await this._relationshipModel
-      .findOne({
-        user: user._id,
-        followedUser: unblockedUser._id,
-        blocking: true,
-      })
-      .exec();
-
-    if (!relationship) return;
-
-    relationship.blocking = false;
-    await relationship.save();
+    await Promise.all([
+      this._relationshipModel
+        .updateOne(
+          {
+            user: user._id,
+            followedUser: unblockedUser._id,
+            blocking: true,
+          },
+          { $set: { blocking: false } }
+        )
+        .exec(),
+      this._relationshipModel
+        .updateOne(
+          {
+            followedUser: user._id,
+            user: unblockedUser._id,
+            blocked: true,
+          },
+          { $set: { blocked: false } }
+        )
+        .exec(),
+    ]);
   }
 
   async reportUser(user: User, reportedUser: User, message: string) {
