@@ -48,7 +48,7 @@ export class SocialSyncService {
     socialProvider: SocialProvider
   ): Promise<SocialSync[]> => {
     return this.socialSyncModel
-      .find({ active: true, provider: socialProvider })
+      .find({ active: true, autoPost: true, provider: socialProvider })
       .exec();
   };
 
@@ -63,7 +63,12 @@ export class SocialSyncService {
     socialId: string
   ): Promise<SocialSync> => {
     return this.socialSyncModel
-      .findOne({ active: true, provider: socialProvider, socialId })
+      .findOne({
+        active: true,
+        autoPost: true,
+        provider: socialProvider,
+        socialId,
+      })
       .exec();
   };
 
