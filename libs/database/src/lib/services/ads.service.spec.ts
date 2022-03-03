@@ -137,6 +137,26 @@ describe('AdsService', () => {
       expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].account._id));
     });
   });
+  describe('#lookupAds', () => {
+    it('should be able to get only one ads exist.', async () => {
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      const ads = await service.createAds(mocks[0].account, adsInput);
+      const adsCampaign = await service.lookupAds(
+        mocks[0].account._id,
+        ads._id
+      );
+
+      expect(adsCampaign).toBeTruthy();
+      expect(String(adsCampaign.owner)).toBe(String(mocks[0].account._id));
+    });
+  });
   afterAll(() => {
     service._adsCampaignModel.deleteMany({});
     userService._accountModel.deleteMany({});

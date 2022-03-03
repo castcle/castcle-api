@@ -1403,6 +1403,18 @@ export class UserController {
       meta: createCastcleMeta(adsCampaigns),
     });
   }
+  /**
+   * @param {Authorizer}  account Authorizer that has account from interceptor or passport
+   * @param {string} adsId - string
+   * @returns response object ads.
+   */
+  @CastcleBasicAuth()
+  @Get('me/advertise/:id')
+  async lookupAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) return;
+    return this.adsService.transformAdsCampaignToAdsResponse(adsCampaign);
+  }
 
   /**
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
