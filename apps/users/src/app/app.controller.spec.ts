@@ -1292,4 +1292,43 @@ describe('AppController', () => {
       ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
     });
   });
+
+  describe('#getMyPages', () => {
+    let credential;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 1, {
+        userService: service,
+        accountService: authService,
+      });
+
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th',
+      } as any;
+
+      const page = mocksUsers[0].pages[0];
+
+      const defaultRequest = {
+        castcleId: page.displayId,
+        provider: SocialProvider.Facebook,
+        socialId: 'fb999999',
+        userName: 'mockfb9999',
+        displayName: 'mock fb',
+        avatar: 'www.fb.com/mockfb',
+        active: true,
+      };
+
+      await appController.syncSocial(credential, defaultRequest);
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get page data with sync social successful', async () => {
+      const result = await appController.getMyPages(credential);
+      expect(result.payload).toBeDefined();
+      expect(result.payload[0].syncSocial).toBeDefined();
+    });
+  });
 });
