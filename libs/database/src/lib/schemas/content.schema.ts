@@ -20,28 +20,28 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Configs } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import {
-  ContentPayloadDto,
-  ShortPayload,
-  BlogPayload,
-  Author,
-  ImagePayload,
-  ContentPayloadItem,
-} from '../dtos/content.dto';
-import { CastcleBase } from './base.schema';
-import { Revision } from './revision.schema';
-import { Engagement } from './engagement.schema';
 import { CastcleImage } from '../dtos/common.dto';
+import {
+  Author,
+  BlogPayload,
+  ContentPayloadDto,
+  ContentPayloadItem,
+  ImagePayload,
+  ShortPayload,
+} from '../dtos/content.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
-import { User } from './user.schema';
-import { Relationship } from './relationship.schema';
-import { FeedItem } from './feed-item.schema';
-import { Image } from '@castcle-api/utils/aws';
-import { Configs } from '@castcle-api/environments';
 import { EngagementType } from '../models/engagement.enum';
+import { CastcleBase } from './base.schema';
+import { Engagement } from './engagement.schema';
+import { FeedItem } from './feed-item.schema';
+import { Relationship } from './relationship.schema';
+import { Revision } from './revision.schema';
+import { User } from './user.schema';
 
 const engagementNameMap = {
   like: 'liked',
@@ -230,6 +230,12 @@ export const toUnsignedContentPayloadItem = (
   content: Content | ContentDocument,
   engagements: Engagement[] = []
 ) => {
+  const engage = engagements.filter(
+    (engagement) =>
+      String(engagement.targetRef.$id) === String(content.id) ||
+      String(engagement.targetRef.oid) === String(content.id)
+  );
+
   const result = {
     id: String(content._id),
     authorId: content.author.id,
@@ -245,13 +251,11 @@ export const toUnsignedContentPayloadItem = (
       recastCount: content.engagements?.recast?.count | 0,
     },
     participate: {
-      liked: engagements.some(({ type }) => type === EngagementType.Like),
-      commented: engagements.some(
-        ({ type }) => type === EngagementType.Comment
-      ),
-      quoted: engagements.some(({ type }) => type === EngagementType.Quote),
-      recasted: engagements.some(({ type }) => type === EngagementType.Recast),
-      reported: engagements.some(({ type }) => type === EngagementType.Report),
+      liked: engage.some(({ type }) => type === EngagementType.Like),
+      commented: engage.some(({ type }) => type === EngagementType.Comment),
+      quoted: engage.some(({ type }) => type === EngagementType.Quote),
+      recasted: engage.some(({ type }) => type === EngagementType.Recast),
+      reported: engage?.some(({ type }) => type === EngagementType.Report),
     },
 
     createdAt: content.createdAt.toISOString(),
