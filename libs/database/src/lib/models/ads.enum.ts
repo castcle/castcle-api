@@ -48,3 +48,9 @@ export enum AdsEngagementKey {
   Farm = 'farm',
   Reward = 'rewardDistributed',
 }
+export enum FilterInterval {
+  All = 'all',
+  Today = 'today',
+  Week = 'week',
+  Month = 'month',
+}
