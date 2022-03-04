@@ -835,6 +835,8 @@ export class UserController {
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
+    if (otp.reciever !== countryCode + mobileNumber)
+      throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
 
     const isFirstTimeVerification = !user.verified.mobile;
 
