@@ -104,6 +104,7 @@ export class SocialSyncService {
       avatar: socialSync.avatar,
       active: (socialSync.active ??= true),
       autoPost: (socialSync.autoPost ??= true),
+      authToken: socialSync.authToken,
     });
     return newSocialSync.save();
   };
@@ -155,6 +156,8 @@ export class SocialSyncService {
         socialSync.displayName = updateSocialSync.displayName;
       if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
       socialSync.active = updateSocialSync.active;
+      if (updateSocialSync.authToken)
+        socialSync.authToken = updateSocialSync.authToken;
       return socialSync.save();
     } else {
       this.logger.warn('Can not found social sync');

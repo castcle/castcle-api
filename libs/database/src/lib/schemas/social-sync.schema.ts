@@ -58,6 +58,9 @@ class SocialSyncDocument extends CastcleBase {
 
   @Prop({ default: false })
   autoPost: boolean;
+
+  @Prop()
+  authToken?: string;
 }
 
 export const SocialSyncSchema =
