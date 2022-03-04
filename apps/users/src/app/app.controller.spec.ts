@@ -36,13 +36,13 @@ import {
   UserService,
 } from '@castcle-api/database';
 import {
+  AdsQuery,
   CastcleIncludes,
   ContentsResponse,
   ContentType,
   NotificationSource,
   NotificationType,
   PageDto,
-  PaginationQuery,
   SaveContentDto,
   ShortPayload,
   SocialSyncDto,
@@ -1086,7 +1086,9 @@ describe('AppController', () => {
         { account: mocks[0].account as Account } as Authorizer,
         {
           maxResults: 100,
-        } as PaginationQuery
+          filter: 'week',
+          timezone: '+07:00',
+        } as AdsQuery
       );
 
       expect(mockAds.adsRef).not.toBeUndefined();

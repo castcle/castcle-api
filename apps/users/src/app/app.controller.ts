@@ -55,6 +55,7 @@ import {
   SocialSyncDto,
   UpdateUserDto,
   UserResponseDto,
+  AdsQuery,
 } from '@castcle-api/database/dtos';
 import {
   Credential,
@@ -1384,14 +1385,8 @@ export class UserController {
 
   @CastcleBasicAuth()
   @Get('me/advertise')
-  async listAds(
-    @Auth() { account }: Authorizer,
-    @Query() paginationQuery: PaginationQuery
-  ) {
-    const adsCampaigns = await this.adsService.getListAds(
-      account,
-      paginationQuery
-    );
+  async listAds(@Auth() { account }: Authorizer, @Query() adsQuery: AdsQuery) {
+    const adsCampaigns = await this.adsService.getListAds(account, adsQuery);
     if (!adsCampaigns) return { payload: null };
     const adsResponses = await Promise.all(
       adsCampaigns.map((adsCampaign) =>
