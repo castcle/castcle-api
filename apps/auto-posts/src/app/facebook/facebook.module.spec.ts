@@ -75,12 +75,14 @@ describe('FacebookController', () => {
     await socialSyncModel.create([
       {
         active: true,
+        autoPost: true,
         socialId: socialId.invalidAuthorId,
         provider: SocialProvider.Facebook,
         author: { id: Types.ObjectId() },
       },
       {
         active: true,
+        autoPost: true,
         socialId: socialId.valid,
         provider: SocialProvider.Facebook,
         author: { id: user._id },

@@ -48,7 +48,7 @@ export class SocialSyncService {
     socialProvider: SocialProvider
   ): Promise<SocialSync[]> => {
     return this.socialSyncModel
-      .find({ active: true, provider: socialProvider })
+      .find({ active: true, autoPost: true, provider: socialProvider })
       .exec();
   };
 
@@ -63,7 +63,12 @@ export class SocialSyncService {
     socialId: string
   ): Promise<SocialSync> => {
     return this.socialSyncModel
-      .findOne({ active: true, provider: socialProvider, socialId })
+      .findOne({
+        active: true,
+        autoPost: true,
+        provider: socialProvider,
+        socialId,
+      })
       .exec();
   };
 
@@ -99,6 +104,7 @@ export class SocialSyncService {
       avatar: socialSync.avatar,
       active: (socialSync.active ??= true),
       autoPost: (socialSync.autoPost ??= true),
+      authToken: socialSync.authToken,
     });
     return newSocialSync.save();
   };
@@ -150,6 +156,8 @@ export class SocialSyncService {
         socialSync.displayName = updateSocialSync.displayName;
       if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
       socialSync.active = updateSocialSync.active;
+      if (updateSocialSync.authToken)
+        socialSync.authToken = updateSocialSync.authToken;
       return socialSync.save();
     } else {
       this.logger.warn('Can not found social sync');
