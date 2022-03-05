@@ -975,7 +975,7 @@ describe('AppController', () => {
         '10936456',
         AccountAuthenIdType.Facebook
       );
-      await appController.connectWithSocial(credential, {
+      const result = await appController.connectWithSocial(credential, {
         provider: AccountAuthenIdType.Facebook,
         socialId: '10936456',
         displayName: 'test facebook',
@@ -990,6 +990,11 @@ describe('AppController', () => {
 
       expect(beforeConnect).toBeNull();
       expect(afterConnect.socialId).toEqual('10936456');
+
+      expect(result.profile).toBeDefined();
+      expect(result.pages).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
     });
 
     it('should return Exception when use duplicate social id', async () => {
