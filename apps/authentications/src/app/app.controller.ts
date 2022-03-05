@@ -49,7 +49,6 @@ import {
   Get,
   HttpCode,
   HttpException,
-  HttpStatus,
   Post,
   Req,
   Res,
@@ -755,10 +754,12 @@ export class AuthenticationController {
   @ApiBody({
     type: SocialConnectDto,
   })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiOkResponse({
+    status: 200,
+    type: LoginResponse,
+  })
   @UseInterceptors(CredentialInterceptor)
   @Post('connect-with-social')
-  @HttpCode(HttpStatus.NO_CONTENT)
   async connectWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialConnectDto
