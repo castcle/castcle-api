@@ -49,7 +49,6 @@ import {
   Get,
   HttpCode,
   HttpException,
-  HttpStatus,
   Post,
   Req,
   Res,
@@ -755,10 +754,12 @@ export class AuthenticationController {
   @ApiBody({
     type: SocialConnectDto,
   })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiOkResponse({
+    status: 200,
+    type: LoginResponse,
+  })
   @UseInterceptors(CredentialInterceptor)
   @Post('connect-with-social')
-  @HttpCode(HttpStatus.NO_CONTENT)
   async connectWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialConnectDto
@@ -790,5 +791,24 @@ export class AuthenticationController {
       body.avatar ? body.avatar : undefined,
       body.displayName ? body.displayName : undefined
     );
+
+    const { token, users, account } = await this.appService.socialLogin(
+      body,
+      req
+    );
+
+    this.logger.log(`response success.`);
+    return {
+      profile: users.profile
+        ? await users.profile.toUserResponse({
+            passwordNotSet: account.password ? false : true,
+          })
+        : null,
+      pages: users.pages
+        ? users.pages.items.map((item) => item.toPageResponse())
+        : null,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+    } as LoginResponse;
   }
 }

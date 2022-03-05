@@ -20,11 +20,39 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { DateTime, DateTimeUnit } from 'luxon';
 
-export * from './lib/castcle-name';
-export * from './lib/host';
-export * from './lib/password';
-export * from './lib/regexp';
-export * from './lib/token';
-export * from './lib/transformers';
-export * from './lib/datetime';
+export class CastcleDate {
+  static inputDate = new Date();
+  /**
+   * Convert a timezone string to a UTC offset.
+   * @param {string} timeZone - The time zone to convert to.
+   * @returns
+   */
+  static convertTimezone(timeZone: string) {
+    return `UTC${timeZone}`;
+  }
+
+  /**
+   * Convert the date filter interval to a start and end date time
+   * @param {string} timeZone - The timezone of the date interval.
+   * @param {FilterInterval} dateInterval enum of filter
+   * @returns
+   */
+  static convertDateFilterInterval(timeZone: string, dateInterval: string) {
+    const interval =
+      dateInterval === 'today' ? 'day' : (dateInterval as DateTimeUnit);
+    return {
+      startDate: DateTime.fromJSDate(this.inputDate, {
+        zone: this.convertTimezone(timeZone),
+      })
+        .startOf(interval)
+        .toJSDate(),
+      endDate: DateTime.fromJSDate(this.inputDate, {
+        zone: this.convertTimezone(timeZone),
+      })
+        .endOf(interval)
+        .toJSDate(),
+    };
+  }
+}

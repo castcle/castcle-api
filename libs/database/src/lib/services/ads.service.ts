@@ -1,3 +1,4 @@
+import { FilterInterval } from './../models/ads.enum';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -25,7 +26,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { mockPipe2AdsAuctionAggregate } from '../aggregations/ads.aggregation';
-import { AdsCampaignResponseDto, AdsRequestDto } from '../dtos/ads.dto';
+import {
+  AdsCampaignResponseDto,
+  AdsQuery,
+  AdsRequestDto,
+} from '../dtos/ads.dto';
 import {
   Account,
   AdsCampaign,
@@ -37,13 +42,9 @@ import {
 import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
-import {
-  ContentPayloadItem,
-  DEFAULT_QUERY_OPTIONS,
-  PageResponseDto,
-  PaginationQuery,
-} from '../dtos';
+import { ContentPayloadItem, PageResponseDto } from '../dtos';
 import { createCastcleFilter } from '../utils/common';
+import { CastcleDate } from '@castcle-api/utils/commons';
 
 const CAST_PRICE = 0.1;
 
@@ -164,21 +165,30 @@ export class AdsService {
 
   async getListAds(
     { _id }: Account,
-    {
-      sinceId,
-      untilId,
-      maxResults = DEFAULT_QUERY_OPTIONS.limit,
-    }: PaginationQuery
+    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery
   ) {
-    const filter: FilterQuery<AdsCampaign> = createCastcleFilter(
+    const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
       { owner: _id },
       {
         sinceId,
         untilId,
       }
     );
+
+    if (filter && filter !== FilterInterval.All) {
+      const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
+        timezone,
+        filter
+      );
+
+      filters.createdAt = {
+        $gte: startDate,
+        $lt: endDate,
+      };
+    }
+
     return this._adsCampaignModel
-      .find(filter)
+      .find(filters)
       .limit(maxResults)
       .sort({ createdAt: -1, _id: -1 });
   }

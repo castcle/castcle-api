@@ -29,10 +29,11 @@ import {
   ContentService,
   createCastcleMeta,
   getRelationship,
+  getSocialProfix,
+  NotificationService,
   SocialProvider,
   SocialSyncService,
   UserService,
-  NotificationService,
 } from '@castcle-api/database';
 import {
   AdsRequestDto,
@@ -51,10 +52,13 @@ import {
   PagesResponse,
   PaginationQuery,
   ResponseDto,
+  SocialPageDto,
   SocialSyncDeleteDto,
   SocialSyncDto,
+  SortDirection,
   UpdateUserDto,
   UserResponseDto,
+  AdsQuery,
 } from '@castcle-api/database/dtos';
 import {
   Credential,
@@ -63,7 +67,15 @@ import {
   UserType,
 } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Downloader,
+  Image,
+  ImageUploadOptions,
+} from '@castcle-api/utils/aws';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import {
   Auth,
   Authorizer,
@@ -104,6 +116,7 @@ import {
   ReportingDto,
   UnblockingDto,
 } from './dtos';
+import { ContentLikeBody } from './dtos/content.dto';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -113,7 +126,6 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-import { ContentLikeBody } from './dtos/content.dto';
 class DeleteUserBody {
   channel: string;
   payload: {
@@ -134,8 +146,13 @@ export class UserController {
     private socialSyncService: SocialSyncService,
     private suggestionService: SuggestionService,
     private userService: UserService,
-    private notifyService: NotificationService
+    private notifyService: NotificationService,
+    private download: Downloader,
+    private facebookClient: FacebookClient
   ) {}
+
+  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
+    Image.upload(base64, options);
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -324,7 +341,8 @@ export class UserController {
       authorizedUser,
       id,
       undefined,
-      userQuery?.hasRelationshipExpansion
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
     );
   }
 
@@ -465,10 +483,13 @@ export class UserController {
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential($credential);
+
     const { users: pages, pagination } = await this.userService.getByCriteria(
       user,
       { ownerAccount: $credential.account._id, type: UserType.Page },
-      { page: pageOption, sortBy: sortByOption }
+      { page: pageOption, sortBy: sortByOption },
+      false,
+      true
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
@@ -819,6 +840,8 @@ export class UserController {
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
+    if (otp.reciever !== countryCode + mobileNumber)
+      throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
 
     const isFirstTimeVerification = !user.verified.mobile;
 
@@ -1384,14 +1407,8 @@ export class UserController {
 
   @CastcleBasicAuth()
   @Get('me/advertise')
-  async listAds(
-    @Auth() { account }: Authorizer,
-    @Query() paginationQuery: PaginationQuery
-  ) {
-    const adsCampaigns = await this.adsService.getListAds(
-      account,
-      paginationQuery
-    );
+  async listAds(@Auth() { account }: Authorizer, @Query() adsQuery: AdsQuery) {
+    const adsCampaigns = await this.adsService.getListAds(account, adsQuery);
     if (!adsCampaigns) return { payload: null };
     const adsResponses = await Promise.all(
       adsCampaigns.map((adsCampaign) =>
@@ -1461,5 +1478,165 @@ export class UserController {
       hasRelationshipExpansion,
       engagement.items
     );
+  }
+
+  /**
+   * Create new page with sync social data
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {PageResponseDto[]}
+   */
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @ApiBody({
+    type: SocialSyncDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social')
+  async createPageSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: { payload: SocialSyncDto[] }
+  ) {
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(body));
+
+    this.logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential);
+
+    this.logger.log('Validate dupplicate social');
+    await Promise.all(
+      body.payload.map(async (socialSync) => {
+        const dupSocialSync =
+          await this.socialSyncService.getAllSocialSyncBySocial(
+            socialSync.provider,
+            socialSync.socialId
+          );
+
+        if (dupSocialSync?.length) {
+          this.logger.error(
+            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
+          );
+          throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+        }
+      })
+    );
+
+    const social: string[] = [];
+    await Promise.all(
+      body.payload.map(async (syncBody) => {
+        let castcleId = '';
+        const socialPage = new SocialPageDto();
+        if (syncBody.userName && syncBody.displayName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.displayName;
+        } else if (syncBody.userName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.userName;
+        } else if (syncBody.displayName) {
+          castcleId = syncBody.displayName;
+          socialPage.displayName = syncBody.displayName;
+        } else {
+          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          castcleId = genId;
+          socialPage.displayName = genId;
+        }
+
+        this.logger.log('Suggest CastcleId');
+        const sugguestDisplayId = await this.authService.suggestCastcleId(
+          castcleId
+        );
+        socialPage.castcleId = sugguestDisplayId;
+
+        if (syncBody.avatar) {
+          this.logger.log(`download avatar from ${syncBody.avatar}`);
+          const imgAvatar = await this.download.getImageFromUrl(
+            syncBody.avatar
+          );
+
+          this.logger.log('upload avatar to s3');
+          const avatar = await this._uploadImage(imgAvatar, {
+            filename: `page-avatar-${sugguestDisplayId}`,
+            addTime: true,
+            sizes: AVATAR_SIZE_CONFIGS,
+            subpath: `page_${sugguestDisplayId}`,
+          });
+
+          socialPage.avatar = avatar.image;
+          this.logger.log('Upload avatar');
+        }
+
+        if (syncBody.cover) {
+          this.logger.log(`download avatar from ${syncBody.cover}`);
+          const imgCover = await this.download.getImageFromUrl(syncBody.cover);
+
+          this.logger.log('upload cover to s3');
+          const cover = await this._uploadImage(imgCover, {
+            filename: `page-cover-${sugguestDisplayId}`,
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `page_${sugguestDisplayId}`,
+          });
+          socialPage.cover = cover.image;
+          this.logger.log('Suggest Cover');
+        }
+
+        socialPage.overview = syncBody.overview;
+        if (syncBody.link) {
+          socialPage.links = { [syncBody.provider]: syncBody.link };
+        }
+
+        this.logger.log('Create new page');
+        const page = await this.userService.createPageFromSocial(
+          req.$credential.account._id,
+          socialPage
+        );
+        social.push(page.id);
+        this.logger.log('Create sync socail');
+        await this.socialSyncService.create(page, syncBody);
+
+        if (
+          syncBody.provider === SocialProvider.Facebook &&
+          syncBody.authToken
+        ) {
+          this.logger.log('Subscribed facebook page');
+          await this.facebookClient.subscribed(
+            syncBody.authToken,
+            syncBody.socialId
+          );
+        }
+      })
+    );
+
+    this.logger.log(`get page data.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const { users: pages } = await this.userService.getByCriteria(
+      user,
+      { ownerAccount: req.$credential.account._id, type: UserType.Page },
+      {
+        page: 1,
+        limit: 100,
+        sortBy: {
+          field: 'createdAt',
+          type: SortDirection.DESC,
+        },
+      }
+    );
+
+    this.logger.log(`filter only new pages.`);
+    const pageResult = pages.filter((item) =>
+      social.includes(item.id.toString())
+    );
+
+    const response = await Promise.all(
+      pageResult.map(async (page) => {
+        const sync = await this.socialSyncService.getSocialSyncByPageId(
+          page.id
+        );
+        return {
+          ...page,
+          ...{ socialSyncs: sync.length > 0 ? sync[0] : null },
+        };
+      })
+    );
+    return { payload: response };
   }
 }

@@ -22,10 +22,17 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { ContentPayloadItem, PageResponseDto } from '.';
-import { AdsObjective } from '../models';
+import { FilterInterval, AdsObjective } from '../models';
 import { AdsCampaign } from '../schemas';
+import { PaginationQuery } from './pagination.dto';
 
 export class AdsAuctionAggregateDto {
   campaign: AdsCampaign;
@@ -88,4 +95,12 @@ export class AdsCampaignStatisticResponse {
     paid: number;
   };
   'CPM': number;
+}
+export class AdsQuery extends PaginationQuery {
+  @IsOptional()
+  @IsEnum(FilterInterval)
+  filter?: FilterInterval;
+  @IsOptional()
+  @IsString()
+  timezone = '+00:00';
 }

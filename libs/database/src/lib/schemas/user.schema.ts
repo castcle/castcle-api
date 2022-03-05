@@ -129,7 +129,8 @@ export class User extends UserDocument {
   toPageResponse: (
     blocked?: boolean,
     blocking?: boolean,
-    followed?: boolean
+    followed?: boolean,
+    syncSocial?: SocialSync
   ) => PageResponseDto;
 }
 
@@ -229,6 +230,7 @@ UserSchema.methods.toUserResponse = async function (
 
   response.syncSocial = syncSocial?.map((social) => {
     return {
+      id: social.id,
       provider: social.provider,
       socialId: social.socialId,
       userName: social.userName,
@@ -244,7 +246,8 @@ UserSchema.methods.toUserResponse = async function (
 UserSchema.methods.toPageResponse = function (
   blocked?: boolean,
   blocking?: boolean,
-  followed?: boolean
+  followed?: boolean,
+  syncSocial?: SocialSync
 ) {
   return {
     id: (this as User)._id,
@@ -313,6 +316,18 @@ UserSchema.methods.toPageResponse = function (
     followed,
     updatedAt: (this as User).updatedAt.toISOString(),
     createdAt: (this as User).createdAt.toISOString(),
+    syncSocial: syncSocial
+      ? {
+          id: syncSocial.id,
+          provider: syncSocial.provider,
+          socialId: syncSocial.socialId,
+          userName: syncSocial.userName,
+          displayName: syncSocial.displayName,
+          avatar: syncSocial.avatar,
+          active: syncSocial.active,
+          autoPost: syncSocial.autoPost,
+        }
+      : undefined,
   } as PageResponseDto;
 };
 

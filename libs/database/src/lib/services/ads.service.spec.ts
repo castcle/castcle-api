@@ -36,7 +36,7 @@ import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
 import { AdsObjective } from '../models';
 import { UserProducer } from '@castcle-api/utils/queue';
-import { ContentType, PaginationQuery, ShortPayload } from '../dtos';
+import { AdsQuery, ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
 import { CacheModule } from '@nestjs/common';
 
@@ -131,7 +131,9 @@ describe('AdsService', () => {
     it('should be able to get list ads exist.', async () => {
       const adsCampaigns = await service.getListAds(mocks[0].account._id, {
         maxResults: 100,
-      } as PaginationQuery);
+        filter: 'week',
+        timezone: '+07:00',
+      } as AdsQuery);
 
       expect(adsCampaigns.length).toBeGreaterThan(0);
       expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].account._id));

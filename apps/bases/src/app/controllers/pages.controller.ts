@@ -359,6 +359,7 @@ export class PagesController {
   }
 
   /**
+   * @deprecated The method should not be used. Please use POST users/me/pages/sync-social
    * Create new page with sync social data
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {SocialSyncDto} body social sync payload
