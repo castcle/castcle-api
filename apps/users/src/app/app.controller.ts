@@ -58,6 +58,7 @@ import {
   SortDirection,
   UpdateUserDto,
   UserResponseDto,
+  AdsQuery,
 } from '@castcle-api/database/dtos';
 import {
   Credential,
@@ -340,7 +341,8 @@ export class UserController {
       authorizedUser,
       id,
       undefined,
-      userQuery?.hasRelationshipExpansion
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
     );
   }
 
@@ -481,10 +483,13 @@ export class UserController {
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential($credential);
+
     const { users: pages, pagination } = await this.userService.getByCriteria(
       user,
       { ownerAccount: $credential.account._id, type: UserType.Page },
-      { page: pageOption, sortBy: sortByOption }
+      { page: pageOption, sortBy: sortByOption },
+      false,
+      true
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
@@ -835,6 +840,8 @@ export class UserController {
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
+    if (otp.reciever !== countryCode + mobileNumber)
+      throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
 
     const isFirstTimeVerification = !user.verified.mobile;
 
@@ -1400,14 +1407,8 @@ export class UserController {
 
   @CastcleBasicAuth()
   @Get('me/advertise')
-  async listAds(
-    @Auth() { account }: Authorizer,
-    @Query() paginationQuery: PaginationQuery
-  ) {
-    const adsCampaigns = await this.adsService.getListAds(
-      account,
-      paginationQuery
-    );
+  async listAds(@Auth() { account }: Authorizer, @Query() adsQuery: AdsQuery) {
+    const adsCampaigns = await this.adsService.getListAds(account, adsQuery);
     if (!adsCampaigns) return { payload: null };
     const adsResponses = await Promise.all(
       adsCampaigns.map((adsCampaign) =>

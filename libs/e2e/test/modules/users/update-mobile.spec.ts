@@ -48,6 +48,7 @@ export const testUsersUpdateMobile = () => {
       retry: 0,
       isVerify: true,
       expireDate: new Date(new Date().getTime() + 10_000),
+      reciever: tempUser.countryCode + tempUser.phone,
     }).save();
 
     updateMobileResponse = await UsersRequest.updateMobile()

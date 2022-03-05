@@ -209,9 +209,10 @@ export class UserService {
   private async convertUsersToUserResponses(
     viewer: User | null,
     users: User[],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    hasSyncSocial = false
   ) {
-    if (!hasRelationshipExpansion) {
+    if (!hasRelationshipExpansion && !hasSyncSocial) {
       return Promise.all(
         users.map(async (user) => {
           return user.type === UserType.Page
@@ -234,22 +235,30 @@ export class UserService {
 
     return Promise.all(
       users.map(async (u) => {
+        const syncSocial = hasSyncSocial
+          ? await this._socialSyncModel.findOne({ 'author.id': u.id }).exec()
+          : undefined;
+
         const userResponse =
           u.type === UserType.Page
-            ? u.toPageResponse()
+            ? u.toPageResponse(undefined, undefined, undefined, syncSocial)
             : await u.toUserResponse();
 
-        const targetRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(user) === String(u.id) &&
-            String(followedUser) === String(viewer?.id)
-        );
+        const targetRelationship = hasRelationshipExpansion
+          ? relationships.find(
+              ({ followedUser, user }) =>
+                String(user) === String(u.id) &&
+                String(followedUser) === String(viewer?.id)
+            )
+          : undefined;
 
-        const getterRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(followedUser) === String(u.id) &&
-            String(user) === String(viewer?.id)
-        );
+        const getterRelationship = hasRelationshipExpansion
+          ? relationships.find(
+              ({ followedUser, user }) =>
+                String(followedUser) === String(u.id) &&
+                String(user) === String(viewer?.id)
+            )
+          : undefined;
 
         userResponse.blocked = Boolean(getterRelationship?.blocking);
         userResponse.blocking = Boolean(targetRelationship?.blocking);
@@ -264,7 +273,8 @@ export class UserService {
     user: User,
     id: string,
     type?: UserType,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    userFields?: UserField[]
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
@@ -273,7 +283,8 @@ export class UserService {
     const [userResponse] = await this.convertUsersToUserResponses(
       user,
       [targetUser],
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
+      userFields?.includes(UserField.SyncSocial)
     );
 
     return userResponse;
@@ -340,7 +351,8 @@ export class UserService {
     user: User,
     query: FilterQuery<User>,
     queryOptions?: CastcleQueryOptions,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    hasSyncSocial = false
   ) => {
     const {
       items: targetUsers,
@@ -351,7 +363,8 @@ export class UserService {
     const users = await this.convertUsersToUserResponses(
       user,
       targetUsers,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
+      hasSyncSocial
     );
 
     return { pagination, users, meta };

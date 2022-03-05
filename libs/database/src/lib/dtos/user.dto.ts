@@ -143,6 +143,7 @@ export class linkSocialDetail {
 }
 
 export class syncSocialDetail {
+  id: string;
   provider: string;
   socialId: string;
   userName: string;
@@ -239,6 +240,9 @@ export class PageResponseDto {
 
   @ApiProperty()
   createdAt: string;
+
+  @ApiProperty()
+  syncSocial: syncSocialDetail;
 }
 
 export class UpdatePageDto {
