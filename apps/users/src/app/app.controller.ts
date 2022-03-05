@@ -341,7 +341,8 @@ export class UserController {
       authorizedUser,
       id,
       undefined,
-      userQuery?.hasRelationshipExpansion
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
     );
   }
 
@@ -482,10 +483,13 @@ export class UserController {
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential($credential);
+
     const { users: pages, pagination } = await this.userService.getByCriteria(
       user,
       { ownerAccount: $credential.account._id, type: UserType.Page },
-      { page: pageOption, sortBy: sortByOption }
+      { page: pageOption, sortBy: sortByOption },
+      false,
+      true
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
