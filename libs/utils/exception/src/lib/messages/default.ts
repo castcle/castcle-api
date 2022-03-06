@@ -34,7 +34,7 @@ export const ErrorMessages = {
   '1003': {
     statusCode: '401',
     code: '1003',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid access token or expire',
   },
   '1004': {
     statusCode: '401',
