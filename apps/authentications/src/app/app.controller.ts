@@ -713,7 +713,7 @@ export class AuthenticationController {
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
     const { token, users, account, isNewUser } =
-      await this.appService.socialLogin(body, req);
+      await this.appService.socialLogin(body, req, { ip, userAgent });
 
     if (isNewUser) {
       await this.analyticService.trackRegistration(ip, userAgent);

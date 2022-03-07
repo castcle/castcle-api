@@ -83,6 +83,9 @@ export interface SignupSocialRequirements {
   avatar: CastcleImage;
   socialToken: string;
   socialSecretToken: string;
+  referral?: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 @Injectable()
@@ -587,7 +590,6 @@ export class AuthenticationService {
    * create new account from social
    * @param {Account} account
    * @param {SignupSocialRequirements} requirements
-   * @returns {AccountAuthenId}
    */
   async signupBySocial(
     account: Account,
@@ -600,7 +602,7 @@ export class AuthenticationService {
       requirements.displayName
     );
 
-    const user = new this._userModel({
+    await new this._userModel({
       ownerAccount: account._id,
       displayId: suggestDisplayId,
       displayName: requirements.displayName,
@@ -610,10 +612,36 @@ export class AuthenticationService {
           avatar: requirements.avatar,
         },
       },
-    });
-    await user.save();
+    }).save();
 
-    return await this.createAccountAuthenId(
+    const referrerFromBody = await this.userService.getByIdOrCastcleId(
+      requirements.referral
+    );
+
+    const referrer =
+      referrerFromBody ??
+      (await this.getReferrerByRequestMetadata(
+        requirements.ip,
+        requirements.userAgent
+      ));
+
+    if (referrer) {
+      await new this._accountReferral({
+        referrerAccount: referrer.ownerAccount,
+        referrerDisplayId: referrer.displayId,
+        referringAccount: account._id,
+      }).save();
+    }
+
+    this.logger.log(
+      `#signupBySocial\n${JSON.stringify(
+        { ...requirements, referrer: referrer?.displayId },
+        null,
+        2
+      )}`
+    );
+
+    return this.createAccountAuthenId(
       account,
       requirements.provider,
       requirements.socialId,

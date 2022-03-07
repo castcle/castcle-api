@@ -43,6 +43,7 @@ import {
 } from '@castcle-api/utils/aws';
 import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
 import { Host, Password } from '@castcle-api/utils/commons';
+import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Injectable } from '@nestjs/common';
@@ -130,7 +131,11 @@ export class AppService {
   /**
    * Create user and generate token for login social
    */
-  async socialLogin(body: SocialConnectDto, req: CredentialRequest) {
+  async socialLogin(
+    body: SocialConnectDto,
+    req: CredentialRequest,
+    { ip, userAgent }: RequestMetadata = {}
+  ) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
@@ -201,6 +206,9 @@ export class AppService {
         avatar: avatar ? avatar.image : undefined,
         socialToken: body.authToken ? body.authToken : undefined,
         socialSecretToken: undefined,
+        referral: body.referral,
+        ip,
+        userAgent,
       });
 
       if (body.email) {

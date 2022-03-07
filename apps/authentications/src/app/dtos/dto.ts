@@ -73,6 +73,10 @@ export class SocialConnectDto {
   @IsOptional()
   @ApiProperty()
   authToken?: string;
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  referral?: string;
 }
 
 class RegisterPayload {
