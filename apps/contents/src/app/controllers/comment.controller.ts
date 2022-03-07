@@ -22,6 +22,28 @@
  */
 
 import {
+  AuthenticationService,
+  CommentService,
+  ContentService,
+  NotificationService,
+  UserService,
+} from '@castcle-api/database';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  ExpansionQuery,
+  NotificationSource,
+  NotificationType,
+} from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/utils/cache';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
+import {
   Body,
   Controller,
   Delete,
@@ -35,35 +57,13 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import {
-  AuthenticationService,
-  ContentService,
-  NotificationService,
-  CommentService,
-  UserService,
-} from '@castcle-api/database';
-import {
-  DEFAULT_QUERY_OPTIONS,
-  ExpansionQuery,
-  NotificationSource,
-  NotificationType,
-} from '@castcle-api/database/dtos';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
-import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
 import {
   CreateCommentBody,
   EditCommentBody,
   LikeCommentBody,
   ReplyCommentBody,
 } from '../dtos/comment.dto';
-import { CacheKeyName } from '@castcle-api/utils/cache';
-import {
-  CastcleController,
-  CastcleAuth,
-  CastcleBasicAuth,
-} from '@castcle-api/utils/decorators';
 
 @CastcleController('1.0')
 @Controller()
@@ -77,6 +77,9 @@ export class CommentController {
     private userService: UserService
   ) {}
 
+  /**
+   * @deprecated The method should not be used. Please use POST users/:id/comments
+   */
   @ApiBody({
     type: CreateCommentBody,
   })
