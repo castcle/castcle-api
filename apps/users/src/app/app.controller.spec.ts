@@ -26,6 +26,7 @@ import {
   AnalyticService,
   AuthenticationService,
   CampaignService,
+  CommentService,
   ContentService,
   DataService,
   HashtagService,
@@ -71,6 +72,7 @@ import {
   TopicName,
   UserProducer,
 } from '@castcle-api/utils/queue';
+import { TracingModule } from '@narando/nest-xray';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -79,7 +81,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
 import { SuggestionService } from './services/suggestion.service';
-import { TracingModule } from '@narando/nest-xray';
 
 export class DownloaderMock {
   getImageFromUrl() {
@@ -154,6 +155,7 @@ describe('AppController', () => {
         NotificationProducer,
         DownloaderProvider,
         FacebookClientProvider,
+        CommentService,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -1341,6 +1343,7 @@ describe('AppController', () => {
       expect(result.payload[0].syncSocial).toBeDefined();
     });
   });
+
   describe('#updateAds', () => {
     let mocks: MockUserDetail[];
     let mockAds: AdsCampaign;
@@ -1394,6 +1397,48 @@ describe('AppController', () => {
     afterAll(() => {
       adsService._adsCampaignModel.deleteMany({});
       adsService._contentModel.deleteMany({});
+    });
+  });
+
+  describe('#createComment()', () => {
+    let credential;
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 1, {
+        userService: service,
+        accountService: authService,
+      });
+
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th',
+      } as any;
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should be able to create a comment content', async () => {
+      const user = mocksUsers[0].user;
+      const content = await contentService.createContentFromUser(user, {
+        type: ContentType.Short,
+        payload: {
+          message: 'Hi Jack',
+        } as ShortPayload,
+        castcleId: user.displayId,
+      });
+
+      const commentResult = await appController.createComment(
+        content._id,
+        {
+          message: 'hello',
+          castcleId: user.displayId,
+        },
+        credential,
+        { hasRelationshipExpansion: false }
+      );
+      expect(commentResult.payload).toBeDefined();
     });
   });
 });

@@ -77,3 +77,12 @@ export class CommentsResponse {
   payload: CommentPayload[];
   meta: CastcleMeta;
 }
+
+export class CreateCommentBody {
+  @ApiProperty()
+  'message': string;
+  @ApiProperty()
+  'feedItemId'?: string;
+  @ApiProperty()
+  'castcleId': string;
+}

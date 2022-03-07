@@ -26,6 +26,7 @@ import {
   AuthenticationService,
   CampaignService,
   CampaignType,
+  CommentService,
   ContentService,
   createCastcleMeta,
   getRelationship,
@@ -40,6 +41,7 @@ import {
   AdsRequestDto,
   ContentResponse,
   ContentsResponse,
+  CreateCommentBody,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
@@ -149,7 +151,8 @@ export class UserController {
     private userService: UserService,
     private notifyService: NotificationService,
     private download: Downloader,
-    private facebookClient: FacebookClient
+    private facebookClient: FacebookClient,
+    private commentService: CommentService
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -1679,5 +1682,54 @@ export class UserController {
       })
     );
     return { payload: response };
+  }
+
+  @ApiBody({
+    type: CreateCommentBody,
+  })
+  @CastcleBasicAuth()
+  @Post(':id/comments')
+  async createComment(
+    @Param('id') contentId: string,
+    @Body() commentBody: CreateCommentBody,
+    @Req() { $credential }: CredentialRequest,
+    @Query() expansionQuery: ExpansionQuery
+  ) {
+    try {
+      const [authorizedUser, content, user] = await Promise.all([
+        this.authService.getUserFromAccount($credential.account),
+        this.contentService.getContentById(contentId),
+        this.userService.getByIdOrCastcleId(commentBody.castcleId),
+      ]);
+
+      const comment = await this.contentService.createCommentForContent(
+        user,
+        content,
+        { message: commentBody.message }
+      );
+
+      this.notifyService.notifyToUser({
+        type: NotificationType.Comment,
+        message: `${user.displayName} ตอบกลับโพสต์ของคุณ`,
+        read: false,
+        source: NotificationSource.Profile,
+        sourceUserId: user._id,
+        targetRef: {
+          _id: comment._id,
+        },
+        account: { _id: content.author.id },
+      });
+
+      const payload = await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        comment,
+        [],
+        expansionQuery
+      );
+
+      return { payload };
+    } catch (error) {
+      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    }
   }
 }
