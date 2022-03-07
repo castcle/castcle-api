@@ -33,7 +33,7 @@ class SocialSyncDocument extends CastcleBase {
   author: Author;
 
   @Prop({ required: true, type: String })
-  provider: SocialProvider;
+  provider?: SocialProvider;
 
   @Prop({ required: true })
   socialId: string;
@@ -57,7 +57,7 @@ class SocialSyncDocument extends CastcleBase {
   latestSyncDate?: Date;
 
   @Prop({ default: false })
-  autoPost: boolean;
+  autoPost?: boolean;
 
   @Prop()
   authToken?: string;
@@ -74,8 +74,10 @@ SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {
     socialId: this.socialId,
     username: this.userName,
+    provider: this.provider,
     displayName: this.displayName,
     avatar: this.avatar,
     active: this.active,
+    autoPost: this.autoPost,
   } as SocialSyncDto;
 };

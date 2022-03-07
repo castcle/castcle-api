@@ -579,22 +579,35 @@ describe('AppController', () => {
         twitter: {
           socialId: 't12345678',
           username: 'mocktw',
+          provider: 'twitter',
           displayName: 'mock tw',
           avatar: 'www.twitter.com/mocktw',
           active: true,
+          autoPost: true,
         },
         facebook: {
           socialId: 'f89766',
           username: 'mockfb',
+          provider: 'facebook',
           displayName: 'mock fb',
           avatar: 'www.facebook.com/mockfb',
           active: true,
+          autoPost: true,
         },
         youtube: null,
         medium: null,
       };
       expect(result).toBeDefined();
       expect(result).toEqual(expectResult);
+    });
+
+    it('should get payload all sync social from user', async () => {
+      const syncSocialResponse = await appController.getSyncSocialOfArray(
+        credential
+      );
+
+      expect(syncSocialResponse.payload).toHaveLength(2);
+      expect(syncSocialResponse.payload?.length).toBeGreaterThan(0);
     });
 
     it('should update sync social successful', async () => {
