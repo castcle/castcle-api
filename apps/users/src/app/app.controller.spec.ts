@@ -37,6 +37,7 @@ import {
 } from '@castcle-api/database';
 import {
   AdsQuery,
+  AdsRequestDto,
   CastcleIncludes,
   ContentsResponse,
   ContentType,
@@ -77,6 +78,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
 import { SuggestionService } from './services/suggestion.service';
+import { TracingModule } from '@narando/nest-xray';
 
 export class DownloaderMock {
   getImageFromUrl() {
@@ -130,6 +132,9 @@ describe('AppController', () => {
           { name: TopicName.Campaigns },
           { name: TopicName.Users }
         ),
+        TracingModule.forRoot({
+          serviceName: 'users',
+        }),
       ],
       controllers: [UserController],
       providers: [
@@ -1331,6 +1336,61 @@ describe('AppController', () => {
       const result = await appController.getMyPages(credential);
       expect(result.payload).toBeDefined();
       expect(result.payload[0].syncSocial).toBeDefined();
+    });
+  });
+  describe('#updateAds', () => {
+    let mocks: MockUserDetail[];
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(2, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    describe('#updateAds', () => {
+      it('should be able update ads is correct.', async () => {
+        const adsUpdate: AdsRequestDto = {
+          campaignName: 'Ads update',
+          campaignMessage: 'This is ads',
+          dailyBudget: 10,
+          duration: 5,
+          objective: AdsObjective.Engagement,
+        };
+        await adsService.updateAdsById(mockAds.id, adsUpdate);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
+        expect(adsCampaign.detail.message).toEqual(adsUpdate.campaignMessage);
+        expect(adsCampaign.detail.dailyBudget).toEqual(adsUpdate.dailyBudget);
+        expect(adsCampaign.detail.duration).toEqual(adsUpdate.duration);
+        expect(adsCampaign.objective).toEqual(adsUpdate.objective);
+      });
+    });
+    describe('#deleteAds', () => {
+      it('should be able delete ads is correct.', async () => {
+        await adsService.deleteAdsById(mockAds.id);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeNull();
+      });
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
     });
   });
 });
