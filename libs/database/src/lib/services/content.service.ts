@@ -1106,6 +1106,16 @@ Message: ${message}`,
     const authorIds = [];
     const casts: ContentPayloadItem[] = [];
     const payload: ContentPayloadItem[] = [];
+    const engageOriginal = contents.filter(
+      (content) => content.originalPost?._id
+    );
+
+    const engagementsOriginal = engageOriginal
+      ? await this.getAllEngagementFromContentIdsAndUser(
+          engageOriginal,
+          viewer?.id
+        )
+      : [];
     const engagements = inputEngagements.length
       ? inputEngagements
       : await this.getAllEngagementFromContentsAndUser(contents, viewer?.id);
@@ -1119,7 +1129,9 @@ Message: ${message}`,
       payload.push(content.toContentPayloadItem(contentEngagements));
 
       if (content.originalPost) {
-        casts.push(toSignedContentPayloadItem(content.originalPost));
+        casts.push(
+          toSignedContentPayloadItem(content.originalPost, engagementsOriginal)
+        );
       }
 
       if (content.originalPost?.author) {
