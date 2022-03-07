@@ -464,7 +464,7 @@ export class AuthenticationService {
     requestId: string,
     channel: string,
     verify: boolean,
-    reciever?: string,
+    receiver?: string,
     sid?: string
   ) {
     const otp = await this._otpModel.generate(
@@ -473,7 +473,7 @@ export class AuthenticationService {
       requestId,
       channel,
       verify,
-      reciever,
+      receiver,
       sid
     );
     return otp;
@@ -596,13 +596,13 @@ export class AuthenticationService {
     account.isGuest = false;
     await account.save();
 
-    const sugguestDisplayId = await this.suggestCastcleId(
+    const suggestDisplayId = await this.suggestCastcleId(
       requirements.displayName
     );
 
     const user = new this._userModel({
       ownerAccount: account._id,
-      displayId: sugguestDisplayId,
+      displayId: suggestDisplayId,
       displayName: requirements.displayName,
       type: UserType.People,
       profile: {
