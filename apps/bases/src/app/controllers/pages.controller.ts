@@ -23,7 +23,7 @@
 import {
   AuthenticationService,
   ContentService,
-  getSocialProfix,
+  getSocialPrefix,
   SocialSyncService,
   UserService,
 } from '@castcle-api/database';
@@ -414,7 +414,7 @@ export class PagesController {
           castcleId = syncBody.displayName;
           socialPage.displayName = syncBody.displayName;
         } else {
-          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          const genId = getSocialPrefix(syncBody.socialId, syncBody.provider);
           castcleId = genId;
           socialPage.displayName = genId;
         }

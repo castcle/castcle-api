@@ -25,10 +25,15 @@ import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { BasesController } from './controllers/bases.controller';
 import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
@@ -46,6 +51,10 @@ import { SuggestionService } from './services';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsQueueModule,
+    TracingModule.forRoot({
+      serviceName: 'backgrounds',
+      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [
     BasesController,
@@ -54,6 +63,12 @@ import { SuggestionService } from './services';
     PagesController,
     SearchesController,
   ],
-  providers: [SuggestionService],
+  providers: [
+    SuggestionService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class BaseModule {}

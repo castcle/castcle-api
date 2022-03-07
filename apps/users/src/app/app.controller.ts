@@ -29,7 +29,7 @@ import {
   ContentService,
   createCastcleMeta,
   getRelationship,
-  getSocialProfix,
+  getSocialPrefix,
   NotificationService,
   SocialProvider,
   SocialSyncService,
@@ -1434,6 +1434,44 @@ export class UserController {
   }
 
   /**
+   * @param {Authorizer} account Authorizer that has credential from interceptor or passport
+   * @param {string} adsId id by Ads Campaign
+   * @param {AdsRequestDto} adsRequest - AdsRequestDto
+   * @returns Nothing
+   */
+
+  @CastcleBasicAuth()
+  @Put('me/advertise/:id')
+  async updateAds(
+    @Auth() { account }: Authorizer,
+    @Param('id') adsId: string,
+    @Body() adsRequest: AdsRequestDto
+  ) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    await this.adsService.updateAdsById(adsId, adsRequest);
+  }
+
+  /**
+   * @param {Authorizer} account Authorizer that has credential from interceptor or passport
+   * @param {string} adsId id by Ads Campaign
+   * @param {AdsRequestDto} adsRequest - AdsRequestDto
+   * @returns Nothing
+   */
+
+  @CastcleBasicAuth()
+  @Delete('me/advertise/:id')
+  async deleteAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    await this.adsService.deleteAdsById(adsId);
+  }
+
+  /**
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {string} id id by me, castcleId, _id user
    * @returns {} Returning a promise that will be resolved with the object.
@@ -1535,7 +1573,7 @@ export class UserController {
           castcleId = syncBody.displayName;
           socialPage.displayName = syncBody.displayName;
         } else {
-          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          const genId = getSocialPrefix(syncBody.socialId, syncBody.provider);
           castcleId = genId;
           socialPage.displayName = genId;
         }

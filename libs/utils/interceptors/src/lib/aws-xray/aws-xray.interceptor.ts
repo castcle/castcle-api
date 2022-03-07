@@ -20,34 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Module } from '@nestjs/common';
-import { EngagementController } from './app.controller';
 import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { TracingModule } from '@narando/nest-xray';
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
+import { catchError, tap } from 'rxjs';
+import { TracingService } from '@narando/nest-xray';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    HealthyModule,
-    UtilsInterceptorsModule,
-    TracingModule.forRoot({
-      serviceName: 'engagements',
-      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
-    }),
-  ],
-  controllers: [EngagementController],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
-})
-export class EngagementModule {}
+@Injectable()
+export class AwsXRayInterceptor implements NestInterceptor {
+  constructor(private awsService: TracingService) {}
+
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const methodHandler = context.getHandler().name;
+    const subSegment = this.awsService.createSubSegment(methodHandler);
+
+    return next.handle().pipe(
+      tap(() => subSegment.close()),
+      catchError((error) => {
+        subSegment.close();
+        throw error;
+      })
+    );
+  }
+}

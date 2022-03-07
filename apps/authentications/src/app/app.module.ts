@@ -25,7 +25,10 @@ import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -36,8 +39,18 @@ import { AppService } from './app.service';
     HealthyModule,
     UtilsClientsModule,
     UtilsAwsModule,
+    TracingModule.forRoot({
+      serviceName: 'authentications',
+      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [AuthenticationController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class AuthenticationModule {}

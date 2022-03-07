@@ -23,8 +23,13 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CountryController } from './controllers/country.controller';
 import { HashtagsController } from './controllers/hashtags.controller';
 import { LanguagesController } from './controllers/languages.controller';
@@ -35,7 +40,17 @@ import { LanguagesController } from './controllers/languages.controller';
     HealthyModule,
     UtilsInterceptorsModule,
     UtilsCacheModule,
+    TracingModule.forRoot({
+      serviceName: 'metadata',
+      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [LanguagesController, HashtagsController, CountryController],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class MetadataModule {}
