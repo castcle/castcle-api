@@ -154,13 +154,13 @@ export class AppService {
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
         );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+      const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: account.id as any,
         }
       );
-      return { token: tokenResult, users: users, account: account };
+      return { token, users, account, isNewUser: false };
     } else {
       if (body.email) {
         this.logger.log('get account from email.');
@@ -174,7 +174,7 @@ export class AppService {
       }
 
       this.logger.log('Reister new social account');
-      const currentAccount = await this.authService.getAccountFromCredential(
+      const account = await this.authService.getAccountFromCredential(
         req.$credential
       );
       let avatar: Image;
@@ -192,9 +192,9 @@ export class AppService {
       }
 
       this.logger.log('Update Email to Account.');
-      currentAccount.email = body.email ? body.email : currentAccount.email;
+      account.email = body.email ? body.email : account.email;
       this.logger.log('signup by Social');
-      await this.authService.signupBySocial(currentAccount, {
+      await this.authService.signupBySocial(account, {
         displayName: body.displayName
           ? body.displayName
           : getSocialProfix(body.socialId, body.provider),
@@ -207,10 +207,7 @@ export class AppService {
 
       if (body.email) {
         const accountActivation =
-          await this.authService.createAccountActivation(
-            currentAccount,
-            'email'
-          );
+          await this.authService.createAccountActivation(account, 'email');
         this.logger.log(`send email with token, email : ${body.email}`);
         await this.sendRegistrationEmail(
           Host.getHostname(req),
@@ -228,13 +225,12 @@ export class AppService {
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
         );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+      const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
-        {
-          id: currentAccount.id as any,
-        }
+        { id: account.id as any }
       );
-      return { token: tokenResult, users: users, account: currentAccount };
+
+      return { token, users, account, isNewUser: true };
     }
   }
 
