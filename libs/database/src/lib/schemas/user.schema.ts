@@ -111,6 +111,7 @@ type UserResponseOption = {
   mobile?: { countryCode: string; number: string };
   linkSocial?: AccountAuthenId[];
   syncSocial?: SocialSync[];
+  casts?: number;
 };
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);
@@ -130,7 +131,8 @@ export class User extends UserDocument {
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean,
-    syncSocial?: SocialSync
+    syncSocial?: SocialSync,
+    casts?: number
   ) => PageResponseDto;
 }
 
@@ -197,6 +199,7 @@ UserSchema.methods.toUserResponse = async function (
     mobile,
     linkSocial,
     syncSocial,
+    casts,
   } = {} as UserResponseOption
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
@@ -240,6 +243,7 @@ UserSchema.methods.toUserResponse = async function (
       autoPost: social.autoPost,
     };
   });
+  response.casts = casts;
   return response;
 };
 
@@ -247,7 +251,8 @@ UserSchema.methods.toPageResponse = function (
   blocked?: boolean,
   blocking?: boolean,
   followed?: boolean,
-  syncSocial?: SocialSync
+  syncSocial?: SocialSync,
+  casts?: number
 ) {
   return {
     id: (this as User)._id,
@@ -328,6 +333,7 @@ UserSchema.methods.toPageResponse = function (
           autoPost: syncSocial.autoPost,
         }
       : undefined,
+    casts: casts,
   } as PageResponseDto;
 };
 

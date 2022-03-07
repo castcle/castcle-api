@@ -181,12 +181,17 @@ export class UserService {
       ).flat();
     }
 
+    const content = userFields?.includes(UserField.Casts)
+      ? await this.contentService.getContentsFromUser(user.id)
+      : undefined;
+
     return {
       user: user,
       account: account,
       balance: balance,
       authenSocial: authenSocial,
       syncPage: syncPage,
+      casts: content?.total,
     };
   };
 
@@ -210,9 +215,9 @@ export class UserService {
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
-    hasSyncSocial = false
+    userFields?: UserField[]
   ) {
-    if (!hasRelationshipExpansion && !hasSyncSocial) {
+    if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
         users.map(async (user) => {
           return user.type === UserType.Page
@@ -235,14 +240,24 @@ export class UserService {
 
     return Promise.all(
       users.map(async (u) => {
-        const syncSocial = hasSyncSocial
+        const syncSocial = userFields?.includes(UserField.SyncSocial)
           ? await this._socialSyncModel.findOne({ 'author.id': u.id }).exec()
+          : undefined;
+
+        const content = userFields?.includes(UserField.Casts)
+          ? await this.contentService.getContentsFromUser(u.id)
           : undefined;
 
         const userResponse =
           u.type === UserType.Page
-            ? u.toPageResponse(undefined, undefined, undefined, syncSocial)
-            : await u.toUserResponse();
+            ? u.toPageResponse(
+                undefined,
+                undefined,
+                undefined,
+                syncSocial,
+                content?.total
+              )
+            : await u.toUserResponse({ casts: content?.total });
 
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
@@ -284,7 +299,7 @@ export class UserService {
       user,
       [targetUser],
       hasRelationshipExpansion,
-      userFields?.includes(UserField.SyncSocial)
+      userFields
     );
 
     return userResponse;
@@ -352,7 +367,7 @@ export class UserService {
     query: FilterQuery<User>,
     queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false,
-    hasSyncSocial = false
+    userFields?: UserField[]
   ) => {
     const {
       items: targetUsers,
@@ -364,7 +379,7 @@ export class UserService {
       user,
       targetUsers,
       hasRelationshipExpansion,
-      hasSyncSocial
+      userFields
     );
 
     return { pagination, users, meta };
