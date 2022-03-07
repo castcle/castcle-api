@@ -27,6 +27,7 @@ import {
   AuthenticationService,
   CampaignService,
   ContentService,
+  DataService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -138,6 +139,7 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
+        { provide: DataService, useValue: {} },
         UserService,
         AuthenticationService,
         ContentService,

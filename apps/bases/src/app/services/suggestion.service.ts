@@ -21,15 +21,15 @@
  * or have any questions.
  */
 
-import { UserService } from '@castcle-api/database';
+import { DataService, UserService } from '@castcle-api/database';
 import {
   FeedItemPayloadItem,
   FeedItemResponse,
 } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
-import { predictSuggestion } from '@castcle-api/utils/aws';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 
 type SeenState = {
   seenCount: number;
@@ -40,7 +40,8 @@ type SeenState = {
 @Injectable()
 export class SuggestionService {
   constructor(
-    @Inject(CACHE_MANAGER) private cacheManager,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private dataService: DataService,
     private userService: UserService
   ) {}
 
@@ -95,8 +96,8 @@ export class SuggestionService {
       diffSuggestionTime > Configs.Suggestion.MinDiffTime
     ) {
       console.log('do predict');
-      const result = await predictSuggestion(accountId);
-      const userIds = result.result.map((item) => item.userId);
+      const result = await this.dataService.getFollowingSuggestions(accountId);
+      const userIds = result.map((item) => item.userId);
       const users = await Promise.all(
         userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
       );
