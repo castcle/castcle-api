@@ -706,15 +706,19 @@ export class AuthenticationController {
   @Post('login-with-social')
   async loginWithSocial(
     @Req() req: CredentialRequest,
-    @Body() body: SocialConnectDto
+    @Body() body: SocialConnectDto,
+    @RequestMeta() { ip, userAgent }: RequestMetadata
   ) {
     this.logger.log(`login with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
-    const { token, users, account } = await this.appService.socialLogin(
-      body,
-      req
-    );
+    const { token, users, account, isNewUser } =
+      await this.appService.socialLogin(body, req);
+
+    if (isNewUser) {
+      await this.analyticService.trackRegistration(ip, userAgent);
+    }
+
     if (!token) {
       this.logger.log(`response merge account.`);
       const error = ErrorMessages[CastcleStatus.DUPLICATE_EMAIL];
