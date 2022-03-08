@@ -525,7 +525,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
-  @Throttle(1, 60)//limit 1 ttl 60 secs
+  @Throttle(1, 60)
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
