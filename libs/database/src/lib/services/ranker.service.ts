@@ -373,13 +373,21 @@ export class RankerService {
         viewer
       );
     }
+    const contentIds = feeds
+      .filter((doc) => doc.content.originalPost)
+      .map((content) => content.id);
+    const engagements = contentIds
+      ? await this.getAllEngagement(contentIds, viewer)
+      : [];
 
     const includes = {
       users: feeds.map((item) => item.content.author),
       casts: feeds
         .filter((doc) => doc.content.originalPost)
         .map((c) => c.content.originalPost)
-        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c))),
+        .map((c) =>
+          signedContentPayloadItem(toUnsignedContentPayloadItem(c, engagements))
+        ),
     };
     const meta: CastcleMeta = createCastcleMeta(feeds);
     let authors = includes.users.map((author) => new Author(author));
