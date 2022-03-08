@@ -29,7 +29,7 @@ import {
   ContentService,
   createCastcleMeta,
   getRelationship,
-  getSocialProfix,
+  getSocialPrefix,
   NotificationService,
   SocialProvider,
   SocialSyncService,
@@ -1535,7 +1535,7 @@ export class UserController {
           castcleId = syncBody.displayName;
           socialPage.displayName = syncBody.displayName;
         } else {
-          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          const genId = getSocialPrefix(syncBody.socialId, syncBody.provider);
           castcleId = genId;
           socialPage.displayName = genId;
         }
