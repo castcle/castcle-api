@@ -225,4 +225,9 @@ export const ErrorMessages = {
     code: '7001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
+  '1009': {
+    statusCode: '400',
+    code: '1009',
+    message: 'Sorry, We are under maintenance.',
+  },
 };

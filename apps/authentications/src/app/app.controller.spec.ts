@@ -1048,7 +1048,7 @@ describe('AppController', () => {
     });
   });
 
-  describe('requestOTP', () => {
+  /*describe('requestOTP', () => {
     let credentialGuest = null;
     const emailTest = 'test.opt@gmail.com';
     const countryCodeTest = '+66';
@@ -1764,5 +1764,5 @@ describe('AppController', () => {
         )
       );
     });
-  });
+  });*/
 });
