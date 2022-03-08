@@ -34,7 +34,9 @@ import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services';
+import { Environment } from '@castcle-api/environments';
 
 @Module({
   imports: [
@@ -46,6 +48,10 @@ import { SuggestionService } from './services';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsQueueModule,
+    ThrottlerModule.forRoot({
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
+    }),
   ],
   controllers: [
     BasesController,
