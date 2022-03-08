@@ -163,13 +163,11 @@ export class Environment {
   static LINK_VERIFIED_EMAIL = process.env.LINK_VERIFIED_EMAIL;
 
   /**
-   * Number of digits before the decimal point
-   * @default 10
-   */
-  static DECIMALS_INT = Number(process.env.DECIMALS_INT || 10);
-  /**
    * Number of digits after the decimal point
    * @default 8
    */
   static DECIMALS_FLOAT = Number(process.env.DECIMALS_FLOAT || 8);
+
+  // DS Service
+  static DS_SERVICE_BASE_URL = process.env.DS_SERVICE_BASE_URL;
 }

@@ -1,9 +1,3 @@
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -26,6 +20,13 @@ import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { DatabaseModule } from '@castcle-api/database';
+import { HealthyModule } from '@castcle-api/healthy';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { UserController } from './app.controller';
 import { SuggestionService } from './services/suggestion.service';
