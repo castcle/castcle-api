@@ -29,6 +29,7 @@ import { DatabaseModule } from '@castcle-api/database';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { CaslModule } from '@castcle-api/casl';
 import { HealthyModule } from '@castcle-api/healthy';
@@ -42,6 +43,10 @@ import { HealthyModule } from '@castcle-api/healthy';
     UtilsQueueModule,
     UtilsCacheModule,
     UtilsPipesModule,
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 10,
+    }),
   ],
   controllers: [ContentController, CommentController],
   providers: [AppService],
