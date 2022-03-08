@@ -34,6 +34,7 @@ import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services';
 
 @Module({
@@ -46,6 +47,10 @@ import { SuggestionService } from './services';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsQueueModule,
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 10,
+    }),
   ],
   controllers: [
     BasesController,

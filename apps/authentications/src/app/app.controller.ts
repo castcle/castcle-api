@@ -63,6 +63,7 @@ import {
   ApiOkResponse,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { AppService } from './app.service';
 import { getEmailVerificationHtml } from './configs';
@@ -524,6 +525,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
+  @Throttle(1, 60)//limit 1 ttl 60 secs
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
@@ -553,6 +555,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
+  @Throttle(1, 60)
   @Post('requestOTP')
   @HttpCode(200)
   async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
