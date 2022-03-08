@@ -24,5 +24,7 @@ WORKDIR /app
 COPY ./dist/apps/backgrounds .
 ENV PORT=80
 EXPOSE ${PORT}
-RUN npm install --production
+RUN npm install --ignore-scripts --prod
+RUN npm i @narando/nest-xray
+RUN npm i @nestjs/axios --save 
 CMD node ./main.js
