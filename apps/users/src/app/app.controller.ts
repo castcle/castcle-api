@@ -36,6 +36,7 @@ import {
   UserService,
 } from '@castcle-api/database';
 import {
+  AdsQuery,
   AdsRequestDto,
   ContentResponse,
   ContentsResponse,
@@ -57,8 +58,8 @@ import {
   SocialSyncDto,
   SortDirection,
   UpdateUserDto,
+  UserField,
   UserResponseDto,
-  AdsQuery,
 } from '@castcle-api/database/dtos';
 import {
   Credential,
@@ -266,17 +267,19 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Query() userQuery?: ExpansionQuery
   ) {
-    const { user, account, balance, authenSocial, syncPage } =
+    const { user, account, balance, authenSocial, syncPage, casts } =
       await this.userService.getUserFromAccountId(
         req.$credential.account._id,
         userQuery?.userFields
       );
+
     return await user.toUserResponse({
       balance: balance,
       passwordNotSet: account.password ? false : true,
       mobile: account.mobile,
       linkSocial: authenSocial,
       syncSocial: syncPage,
+      casts: casts,
     });
   }
 
@@ -489,7 +492,7 @@ export class UserController {
       { ownerAccount: $credential.account._id, type: UserType.Page },
       { page: pageOption, sortBy: sortByOption },
       false,
-      true
+      [UserField.SyncSocial]
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
