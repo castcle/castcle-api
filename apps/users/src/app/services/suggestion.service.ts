@@ -21,16 +21,17 @@
  * or have any questions.
  */
 
-import { UserService } from '@castcle-api/database';
+import { DataService, UserService } from '@castcle-api/database';
 import { SuggestToFollowResponseDto } from '@castcle-api/database/dtos';
 import { UserType } from '@castcle-api/database/schemas';
-
-import { predictSuggestion } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class SuggestionService {
-  constructor(private userService: UserService) {}
+  constructor(
+    private dataService: DataService,
+    private userService: UserService
+  ) {}
 
   /**
    * return a Suggest users from accountId
@@ -38,8 +39,8 @@ export class SuggestionService {
    * @returns
    */
   suggest = async (accountId: string): Promise<SuggestToFollowResponseDto> => {
-    const result = await predictSuggestion(accountId);
-    const userIds = result.result.map((item) => item.userId);
+    const result = await this.dataService.getFollowingSuggestions(accountId);
+    const userIds = result.map((item) => item.userId);
     const users = await Promise.all(
       userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
     );

@@ -22,7 +22,6 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { predictContents } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -55,6 +54,7 @@ import {
   UserType,
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
+import { DataService } from './data.service';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -74,7 +74,8 @@ export class RankerService {
     @InjectModel('DefaultContent')
     public _defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>
+    public _engagementModel: Model<Engagement>,
+    private dataService: DataService
   ) {}
 
   /**
@@ -335,7 +336,7 @@ export class RankerService {
     );
 
     const contents = userFeeds[0]?.contents ?? [];
-    const contentScore = await predictContents(
+    const contentScore = await this.dataService.personalizeContents(
       String(viewer._id),
       contents.map((content) => String(content))
     );
@@ -401,10 +402,14 @@ export class RankerService {
 
   async sortContentsByScore(accountId: string, contents: Content[]) {
     const contentIds = contents.map((content) => content.id);
-    const score = await predictContents(accountId, contentIds);
+    const score = await this.dataService.personalizeContents(
+      accountId,
+      contentIds
+    );
 
     return contents.sort((a, b) => score[a.id] - score[b.id]);
   }
+
   /**
    *
    * @param account

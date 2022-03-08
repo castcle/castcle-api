@@ -33,16 +33,7 @@ import { ContentType, ShortPayload } from '../dtos';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
 import { CacheModule } from '@nestjs/common';
-
-jest.mock('@castcle-api/utils/aws', () => ({
-  predictContents: jest.fn((_: string, contents: string[]) => {
-    const map: any = {};
-    contents.forEach((item, index) => {
-      map[item] = index + 1;
-    });
-    return map;
-  }),
-}));
+import { DataService } from './data.service';
 
 describe('Ranker Service', () => {
   let mongod: MongoMemoryServer;
@@ -76,6 +67,7 @@ describe('Ranker Service', () => {
         RankerService,
         UserProducer,
         HashtagService,
+        { provide: DataService, useValue: {} },
       ],
     }).compile();
 

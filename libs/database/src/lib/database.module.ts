@@ -25,6 +25,7 @@ import {
   NotificationProducer,
   UtilsQueueModule,
 } from '@castcle-api/utils/queue';
+import { HttpModule } from '@nestjs/axios';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { getMongooseModuleOptions } from './database.config';
@@ -65,6 +66,7 @@ import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
+import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
@@ -148,6 +150,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forRootAsync({
       useFactory: () => getMongooseModuleOptions(),
     }),
@@ -174,6 +177,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CommentService,
     AdsService,
     AnalyticService,
+    DataService,
   ],
   exports: [
     AuthenticationService,
@@ -191,6 +195,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CommentService,
     AdsService,
     AnalyticService,
+    DataService,
   ],
 })
 export class DatabaseModule {}
@@ -214,4 +219,5 @@ export {
   getSocialPrefix,
   AdsService,
   AnalyticService,
+  DataService,
 };
