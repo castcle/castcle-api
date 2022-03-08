@@ -33,6 +33,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { CaslModule } from '@castcle-api/casl';
 import { HealthyModule } from '@castcle-api/healthy';
+import { Environment } from '@castcle-api/environments';
 
 @Module({
   imports: [
@@ -44,8 +45,8 @@ import { HealthyModule } from '@castcle-api/healthy';
     UtilsCacheModule,
     UtilsPipesModule,
     ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 10,
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
   controllers: [ContentController, CommentController],

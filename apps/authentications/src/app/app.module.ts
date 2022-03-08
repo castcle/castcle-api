@@ -22,6 +22,7 @@
  */
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
@@ -38,8 +39,8 @@ import { AppService } from './app.service';
     UtilsClientsModule,
     UtilsAwsModule,
     ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 10,
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
   controllers: [AuthenticationController],

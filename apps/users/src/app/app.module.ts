@@ -34,6 +34,7 @@ import { SuggestionService } from './services/suggestion.service';
 import { TracingModule } from '@narando/nest-xray';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
+import { Environment } from '@castcle-api/environments';
 @Module({
   imports: [
     DatabaseModule,
@@ -47,8 +48,8 @@ import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
       daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
     }),
     ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 10,
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
   controllers: [UserController],
