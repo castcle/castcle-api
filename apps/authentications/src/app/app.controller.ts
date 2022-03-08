@@ -78,11 +78,9 @@ import {
   otpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
-  RequestOtpDto,
   SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
-  verificationOtpDto,
   VerificationPasswordBody,
 } from './dtos/dto';
 import {
@@ -528,11 +526,9 @@ export class AuthenticationController {
   @Throttle(1, 60)
   @Post('verificationOTP')
   @HttpCode(200)
-  async verificationOTP(
-    @Body() body: verificationOtpDto,
-    @Req() req: CredentialRequest
-  ) {
-    this.logger.log(
+  async verificationOTP() {
+    //@Req() req: CredentialRequest //@Body() body: verificationOtpDto,
+    /*this.logger.log(
       `Start verify OPT channel: ${body.channel} objective: ${body.objective} refCode: ${body.refCode}`
     );
     const { otp, token } = await this.appService.verificationOTP(body, req);
@@ -546,7 +542,8 @@ export class AuthenticationController {
       return response;
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
-    }
+    }*/
+    throw new CastcleException(CastcleStatus.UNDER_MAINTAINANCED);
   }
 
   @ApiBearerAuth()
@@ -558,8 +555,9 @@ export class AuthenticationController {
   @Throttle(1, 60)
   @Post('requestOTP')
   @HttpCode(200)
-  async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
-    this.logger.log(
+  async requestOTP() {
+    //@Body() body: RequestOtpDto, @Req() req: CredentialRequest
+    /*this.logger.log(
       `Start request OPT channel: ${body.channel} objective: ${body.objective}`
     );
     const otp = await this.appService.requestOtpCode(body, req);
@@ -572,7 +570,8 @@ export class AuthenticationController {
       return response;
     } else {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
-    }
+    }*/
+    throw new CastcleException(CastcleStatus.UNDER_MAINTAINANCED);
   }
 
   /*
