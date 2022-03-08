@@ -205,6 +205,9 @@ export class CommentController {
     };
   }
 
+  /**
+   * @deprecated The method should not be used. Please use POST users/:id/comments/:source_comment_id
+   */
   @ApiBody({
     type: EditCommentBody,
   })

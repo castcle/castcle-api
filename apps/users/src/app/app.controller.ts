@@ -42,6 +42,7 @@ import {
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
+  EditCommentBody,
   ExpansionQuery,
   FollowResponse,
   GetContentsDto,
@@ -1864,9 +1865,42 @@ export class UserController {
     const authorizedUser = await this._validateOwnerAccount(req, requestUser);
 
     const comment = await this.contentService.getCommentById(commentId);
-    if (comment && String(comment.author.id) === String(authorizedUser.id)) {
-      await this.contentService.deleteComment(comment);
-    }
+    if (!comment || String(comment.author._id) !== String(authorizedUser.id))
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    await this.contentService.deleteComment(comment);
     return '';
+  }
+
+  @ApiBody({
+    type: EditCommentBody,
+  })
+  @CastcleBasicAuth()
+  @Put(':id/comments/:source_comment_id')
+  async updateComment(
+    @Param('id') id: string,
+    @Param('source_comment_id') commentId: string,
+    @Body() editCommentBody: EditCommentBody,
+    @Req() req: CredentialRequest
+  ) {
+    const requestUser = await this._getUser(id, req.$credential);
+    const authorizedUser = await this._validateOwnerAccount(req, requestUser);
+
+    const comment = await this.contentService.getCommentById(commentId);
+    if (!comment || String(comment.author._id) !== String(authorizedUser.id))
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const updatedComment = await this.contentService.updateComment(comment, {
+      message: editCommentBody.message,
+    });
+
+    return {
+      payload: await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        updatedComment,
+        [],
+        { hasRelationshipExpansion: true }
+      ),
+    };
   }
 }

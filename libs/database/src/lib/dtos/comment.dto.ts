@@ -86,3 +86,8 @@ export class CreateCommentBody {
   @ApiProperty()
   'castcleId': string;
 }
+
+export class EditCommentBody {
+  @ApiProperty()
+  'message': string;
+}
