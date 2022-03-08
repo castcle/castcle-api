@@ -256,6 +256,7 @@ describe('ContentController', () => {
       expect(result.payload.authorId).toEqual(newPage._id);
     });
   });
+
   describe('getContentFromId', () => {
     it('should be able to get a content that has been created', async () => {
       const shortPayload = {
@@ -552,6 +553,49 @@ describe('ContentController', () => {
       service._userModel.deleteMany({});
       contentService._contentModel.deleteMany({});
       contentService._engagementModel.deleteMany({});
+    });
+  });
+
+  describe('#getParticipates', () => {
+    it('should be able to get a content participates', async () => {
+      const shortPayload = {
+        message: 'content participates test',
+        photo: {
+          contents: [
+            {
+              image: 'testImage',
+            },
+          ],
+        },
+        link: [
+          {
+            type: 'other',
+            url: 'https://www.facebook.com/watch/?v=345357500470873',
+          },
+        ],
+      } as ShortPayload;
+      const actual = await contentController.createFeedContent(
+        {
+          payload: shortPayload,
+          type: ContentType.Short,
+          castcleId: user.displayId,
+        },
+        { hasRelationshipExpansion: false },
+        {
+          $credential: userCredential,
+          $language: 'th',
+        } as any
+      );
+
+      const expected = await contentController.getParticipates(
+        actual.payload.id,
+        {
+          $credential: userCredential,
+          $language: 'th',
+        } as any
+      );
+      expect(expected.payload[0].user).toBeDefined();
+      expect(expected.payload[0].participate).toBeDefined();
     });
   });
 });
