@@ -464,7 +464,8 @@ export class AppService {
       const result = await this.twillioClient.requestOtp(
         receiver,
         twillioChannel,
-        this.buildTemplateMessage(objective, user)
+        this.buildTemplateMessage(objective, user),
+        account.id
       );
       sid = result.sid;
     } catch (ex) {

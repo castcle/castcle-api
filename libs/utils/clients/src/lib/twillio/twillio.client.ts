@@ -47,11 +47,19 @@ export class TwillioClient {
     this.env.twilioAuthToken
   );
 
-  async requestOtp(receiver: string, channel: TwillioChannel, config: any) {
+  async requestOtp(
+    receiver: string,
+    channel: TwillioChannel,
+    config: any,
+    account_id: string
+  ) {
     this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
     return this.client.verify
       .services(this.env.twilioOtpSid)
       .verifications.create({
+        rateLimits: {
+          castcle_account_id: account_id,
+        },
         channelConfiguration: {
           substitutions: config,
         },
