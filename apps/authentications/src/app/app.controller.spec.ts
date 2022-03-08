@@ -1031,7 +1031,7 @@ describe('AppController', () => {
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
-
+  /*
   describe('requestOTP', () => {
     let credentialGuest = null;
     const emailTest = 'test.opt@gmail.com';
@@ -1748,5 +1748,5 @@ describe('AppController', () => {
         )
       );
     });
-  });
+  });*/
 });
