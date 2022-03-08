@@ -76,7 +76,7 @@ import { UxEngagementService } from './services/uxengagement.service';
 import {
   createCastcleMeta,
   getRelationship,
-  getSocialProfix,
+  getSocialPrefix,
 } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -211,7 +211,7 @@ export {
   SocialSyncService,
   CommentService,
   getRelationship,
-  getSocialProfix,
+  getSocialPrefix,
   AdsService,
   AnalyticService,
 };

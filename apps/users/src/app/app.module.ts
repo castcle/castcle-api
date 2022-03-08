@@ -29,7 +29,9 @@ import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { UserController } from './app.controller';
 import { SuggestionService } from './services/suggestion.service';
-
+import { TracingModule } from '@narando/nest-xray';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 @Module({
   imports: [
     DatabaseModule,
@@ -38,8 +40,18 @@ import { SuggestionService } from './services/suggestion.service';
     UtilsInterceptorsModule,
     UtilsAwsModule,
     UtilsClientsModule,
+    TracingModule.forRoot({
+      serviceName: 'users',
+      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [UserController],
-  providers: [SuggestionService],
+  providers: [
+    SuggestionService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class UserModule {}

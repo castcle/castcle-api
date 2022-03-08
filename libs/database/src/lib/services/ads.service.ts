@@ -201,4 +201,26 @@ export class AdsService {
       })
       .exec();
   }
+
+  async updateAdsById(adsId: string, adsRequest: AdsRequestDto) {
+    return this._adsCampaignModel.updateOne(
+      { _id: adsId, status: AdsStatus.Processing },
+      {
+        $set: {
+          detail: {
+            name: adsRequest.campaignName,
+            message: adsRequest.campaignMessage,
+            dailyBudget: adsRequest.dailyBudget,
+            duration: adsRequest.duration,
+          } as AdsDetail,
+        },
+      }
+    );
+  }
+  async deleteAdsById(adsId: string) {
+    return this._adsCampaignModel.deleteOne({
+      _id: adsId,
+      status: AdsStatus.Processing,
+    });
+  }
 }
