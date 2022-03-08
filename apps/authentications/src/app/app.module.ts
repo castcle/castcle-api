@@ -22,10 +22,12 @@
  */
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -36,6 +38,10 @@ import { AppService } from './app.service';
     HealthyModule,
     UtilsClientsModule,
     UtilsAwsModule,
+    ThrottlerModule.forRoot({
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
+    }),
   ],
   controllers: [AuthenticationController],
   providers: [AppService],
