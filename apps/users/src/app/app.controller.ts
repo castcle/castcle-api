@@ -1851,4 +1851,22 @@ export class UserController {
       await this.facebookClient.unsubscribed(social.authToken, social.socialId);
     }
   }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Delete(':id/comments/:source_comment_id')
+  async deleteComment(
+    @Param('id') id: string,
+    @Param('source_comment_id') commentId: string,
+    @Req() req: CredentialRequest
+  ) {
+    const requestUser = await this._getUser(id, req.$credential);
+    const authorizedUser = await this._validateOwnerAccount(req, requestUser);
+
+    const comment = await this.contentService.getCommentById(commentId);
+    if (comment && String(comment.author.id) === String(authorizedUser.id)) {
+      await this.contentService.deleteComment(comment);
+    }
+    return '';
+  }
 }

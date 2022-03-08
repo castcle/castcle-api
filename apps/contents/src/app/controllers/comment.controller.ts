@@ -234,6 +234,9 @@ export class CommentController {
     };
   }
 
+  /**
+   * @deprecated The method should not be used. Please use POST users/:id/comments/:commentId
+   */
   @HttpCode(204)
   @CastcleBasicAuth()
   @Delete(':id/comments/:commentId')
