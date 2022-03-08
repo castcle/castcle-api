@@ -244,7 +244,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th',
         } as any,
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
@@ -252,6 +252,7 @@ describe('AppController', () => {
       expect(response.followed).toBeDefined();
       expect(response.blocking).toBeDefined();
       expect(response.blocked).toBeDefined();
+      expect(response.casts).toBeDefined();
     });
   });
 

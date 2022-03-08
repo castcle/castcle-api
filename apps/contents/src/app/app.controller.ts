@@ -512,4 +512,44 @@ export class ContentController {
       meta: Meta.fromDocuments(engagement.items),
     });
   }
+
+  @CastcleAuth(CacheKeyName.Contents)
+  @Get(':id/participates')
+  async getParticipates(
+    @Param('id') id: string,
+    @Req() req: CredentialRequest
+  ) {
+    const content = await this._getContentIfExist(id, req);
+    const users = await this.userService.getUserAndPagesFromCredential(
+      req.$credential
+    );
+
+    const result = await Promise.all(
+      users.map(async (user) => {
+        const engagements =
+          await this.contentService.getAllEngagementFromContentAndUser(
+            content,
+            user
+          );
+
+        const contentResponse =
+          await this.contentService.convertContentToContentResponse(
+            user,
+            content,
+            engagements,
+            true
+          );
+        return {
+          user: {
+            id: user.id,
+            castcleId: user.displayId,
+            displayName: user.displayName,
+            type: user.type,
+          },
+          participate: contentResponse.payload.participate,
+        };
+      })
+    );
+    return { payload: result };
+  }
 }
