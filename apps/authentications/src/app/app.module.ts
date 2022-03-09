@@ -28,10 +28,11 @@ import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { TracingModule } from '@narando/nest-xray';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -56,7 +57,7 @@ import { AppService } from './app.service';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CastcleThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,

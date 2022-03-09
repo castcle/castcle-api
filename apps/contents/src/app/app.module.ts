@@ -32,7 +32,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { CaslModule } from '@castcle-api/casl';
 import { HealthyModule } from '@castcle-api/healthy';
@@ -40,6 +40,7 @@ import { Environment } from '@castcle-api/environments';
 import { TracingModule } from '@narando/nest-xray';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 
 @Module({
   imports: [
@@ -64,7 +65,7 @@ import { APP_GUARD } from '@nestjs/core';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CastcleThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,

@@ -20,23 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { CastcleException, CastcleStatus } from './castcle.exception';
-import { CastcleThrottlerGuard } from './guards/castcle.throttler.guard';
-import { LocalErrorMessage } from './messages';
-import { ErrorMessages } from './messages/default';
-
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [CastcleThrottlerGuard],
-})
-export class UtilsExceptionModule {}
-
-export {
-  CastcleException,
-  CastcleStatus,
-  LocalErrorMessage,
-  ErrorMessages,
-  CastcleThrottlerGuard,
-};
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { ErrorMessages } from '../utils-exception.module';
+export class CastcleThrottlerGuard extends ThrottlerGuard {
+  protected errorMessage: string = ErrorMessages['1010'].message;
+}
