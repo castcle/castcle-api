@@ -29,10 +29,10 @@ import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { UserController } from './app.controller';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services/suggestion.service';
 import { TracingModule } from '@narando/nest-xray';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { Environment } from '@castcle-api/environments';
 @Module({
@@ -58,6 +58,10 @@ import { Environment } from '@castcle-api/environments';
     {
       provide: APP_INTERCEPTOR,
       useClass: AwsXRayInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

@@ -34,9 +34,10 @@ import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { SearchesController } from './controllers/searches.controller';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services';
 import { Environment } from '@castcle-api/environments';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -60,6 +61,12 @@ import { Environment } from '@castcle-api/environments';
     PagesController,
     SearchesController,
   ],
-  providers: [SuggestionService],
+  providers: [
+    SuggestionService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class BaseModule {}
