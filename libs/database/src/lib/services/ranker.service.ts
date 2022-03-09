@@ -26,8 +26,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
-  pipelineOfGetFeedContents,
   GetFeedContentsResponse,
+  pipelineOfGetFeedContents,
 } from '../aggregations';
 import { FeedQuery, PaginationQuery } from '../dtos';
 import { CastcleMeta } from '../dtos/common.dto';
@@ -341,13 +341,14 @@ export class RankerService {
       String(viewer._id),
       contents.map((content) => String(content))
     );
-    const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
-      contentScore[a] > contentScore[b] ? -1 : 1
-    );
-    console.log(sortedContentIds);
+
     let feeds: FeedItem[] = [];
     let feedPayload: FeedItemPayloadItem[] = [];
     if (contentScore) {
+      const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
+        contentScore[a] > contentScore[b] ? -1 : 1
+      );
+
       const feedItemDtos = sortedContentIds.map(
         (contentId) =>
           ({

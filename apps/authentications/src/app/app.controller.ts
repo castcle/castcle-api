@@ -390,9 +390,18 @@ export class AuthenticationController {
     );
     if (credential && credential.isRefreshTokenValid()) {
       const userProfile = await this.appService.getUserProfile(credential);
+      this.logger.log('Validate profile member.');
+      if (!userProfile.profile && !credential.account.isGuest) {
+        this.logger.warn('Member Profile is empty.');
+        throw new CastcleException(
+          CastcleStatus.INVALID_REFRESH_TOKEN,
+          req.$language
+        );
+      }
 
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(credential);
+
       const newAccessToken = await credential.renewAccessToken(
         accessTokenPayload
       );
