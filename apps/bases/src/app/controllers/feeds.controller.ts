@@ -22,6 +22,7 @@
  */
 
 import {
+  AuthenticationService,
   ContentService,
   RankerService,
   UserService,
@@ -29,6 +30,7 @@ import {
 } from '@castcle-api/database';
 import {
   ContentPayloadItem,
+  EntityVisibility,
   FeedQuery,
   GetSearchRecentDto,
   ResponseDto,
@@ -41,6 +43,7 @@ import {
   CastcleBasicAuth,
   CastcleController,
 } from '@castcle-api/utils/decorators';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   Get,
@@ -64,7 +67,8 @@ export class FeedsController {
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
     private userService: UserService,
-    private uxEngagementService: UxEngagementService
+    private uxEngagementService: UxEngagementService,
+    private authService: AuthenticationService
   ) {}
 
   @CastcleBasicAuth()
@@ -118,7 +122,12 @@ export class FeedsController {
     @Req() { $credential }: CredentialRequest,
     @Query() paginationQuery: FeedQuery
   ) {
-    const account = $credential.account;
+    const account = await this.authService.getAccountFromCredential(
+      $credential
+    );
+    if (account.visibility !== EntityVisibility.Publish)
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+
     const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
       account,
       paginationQuery
