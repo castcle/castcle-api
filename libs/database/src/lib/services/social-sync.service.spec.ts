@@ -30,7 +30,7 @@ import {
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { SocialProvider } from '../models';
-import { User, UserType } from '../schemas';
+import { User, UserType, SocialSync } from '../schemas';
 
 describe('SocialSyncService', () => {
   let mongod: MongoMemoryServer;
@@ -38,6 +38,8 @@ describe('SocialSyncService', () => {
   let service: SocialSyncService;
   let mocksUser: User;
 
+  let mocksPage: User;
+  let mockSocialSync: SocialSync;
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
@@ -58,6 +60,23 @@ describe('SocialSyncService', () => {
       type: UserType.People,
     });
     await mocksUser.save();
+
+    mocksPage = await new service.userModel({
+      ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
+      displayName: 'mock user',
+      displayId: 'mockid',
+      type: UserType.Page,
+    }).save();
+    const socialSyncDto: SocialSyncDto = {
+      castcleId: 'mockcast',
+      provider: SocialProvider.Twitter,
+      socialId: 't12345678',
+      userName: 'mocktw',
+      displayName: 'mock tw',
+      avatar: 'www.twitter.com/mocktw',
+      active: true,
+    };
+    mockSocialSync = await service.create(mocksPage, socialSyncDto);
   });
 
   afterAll(async () => {
@@ -156,5 +175,43 @@ describe('SocialSyncService', () => {
       expect(result.active).toEqual(false);
       expect(socialSyncDoc).toBeDefined();
     });
+  });
+
+  describe('#getPageByUserAndPageId', () => {
+    it('should get page is exist.', async () => {
+      const page = await service.getPageByPageIdAndAccountId(
+        mockSocialSync,
+        mocksUser
+      );
+      expect(mocksPage._id).toEqual(page._id);
+      expect(mocksPage.displayName).toEqual(page.displayName);
+      expect(mocksPage.displayId).toEqual(page.displayId);
+    });
+  });
+  describe('#getSocialSyncBySocialId', () => {
+    it('should get sync social is exist.', async () => {
+      const social = await service.getSocialSyncBySocialId(mockSocialSync._id);
+
+      expect(mockSocialSync.provider).toEqual(social.provider);
+      expect(mockSocialSync.socialId).toEqual(social.socialId);
+      expect(mockSocialSync.userName).toEqual(social.userName);
+      expect(mockSocialSync.displayName).toEqual(social.displayName);
+    });
+  });
+  describe('#updateAutoPostBySocialId', () => {
+    it('should update auto post is exist.', async () => {
+      await service.updateAutoPostBySocialId(mockSocialSync, true);
+      const social = await service.getSocialSyncBySocialId(mockSocialSync._id);
+      expect(social.autoPost).toEqual(true);
+    });
+    it('should delete auto post is exist.', async () => {
+      await service.updateAutoPostBySocialId(mockSocialSync, false);
+      const social = await service.getSocialSyncBySocialId(mockSocialSync._id);
+      expect(social.autoPost).toEqual(false);
+    });
+  });
+  afterAll(() => {
+    service.socialSyncModel.deleteMany({});
+    service.userModel.deleteMany({});
   });
 });
