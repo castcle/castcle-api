@@ -135,6 +135,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   syncSocial: syncSocialDetail[];
+
+  @ApiProperty()
+  casts: number;
 }
 
 export class linkSocialDetail {
@@ -243,6 +246,9 @@ export class PageResponseDto {
 
   @ApiProperty()
   syncSocial: syncSocialDetail;
+
+  @ApiProperty()
+  casts: number;
 }
 
 export class UpdatePageDto {

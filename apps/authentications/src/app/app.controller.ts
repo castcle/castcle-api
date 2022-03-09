@@ -63,6 +63,7 @@ import {
   ApiOkResponse,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { AppService } from './app.service';
 import { getEmailVerificationHtml } from './configs';
@@ -282,7 +283,7 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -325,10 +326,9 @@ export class AuthenticationController {
           password: body.payload.password,
           referral: body.referral,
           ip,
-          userAgent,
         }
       );
-      await this.analyticService.trackRegistration(ip, userAgent);
+      await this.analyticService.trackRegistration(ip, currentAccount._id);
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
@@ -390,9 +390,18 @@ export class AuthenticationController {
     );
     if (credential && credential.isRefreshTokenValid()) {
       const userProfile = await this.appService.getUserProfile(credential);
+      this.logger.log('Validate profile member.');
+      if (!userProfile.profile && !credential.account.isGuest) {
+        this.logger.warn('Member Profile is empty.');
+        throw new CastcleException(
+          CastcleStatus.INVALID_REFRESH_TOKEN,
+          req.$language
+        );
+      }
 
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(credential);
+
       const newAccessToken = await credential.renewAccessToken(
         accessTokenPayload
       );
@@ -524,6 +533,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 secs
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
@@ -553,6 +563,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
   @Post('requestOTP')
   @HttpCode(200)
   async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
@@ -706,15 +717,19 @@ export class AuthenticationController {
   @Post('login-with-social')
   async loginWithSocial(
     @Req() req: CredentialRequest,
-    @Body() body: SocialConnectDto
+    @Body() body: SocialConnectDto,
+    @RequestMeta() { ip, userAgent }: RequestMetadata
   ) {
     this.logger.log(`login with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
-    const { token, users, account } = await this.appService.socialLogin(
-      body,
-      req
-    );
+    const { token, users, account, isNewUser } =
+      await this.appService.socialLogin(body, req, { ip, userAgent });
+
+    if (isNewUser) {
+      await this.analyticService.trackRegistration(ip, userAgent);
+    }
+
     if (!token) {
       this.logger.log(`response merge account.`);
       const error = ErrorMessages[CastcleStatus.DUPLICATE_EMAIL];

@@ -27,6 +27,7 @@ export * from './ads.enum';
 export * from './ads.model';
 export * from './ads.model';
 export * from './analytic.enum';
+export * from './analytic.model';
 export * from './campaign.enum';
 export * from './content.model';
 export * from './feed.enum';

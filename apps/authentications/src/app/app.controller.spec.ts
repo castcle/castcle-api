@@ -41,7 +41,7 @@ import {
   FacebookClient,
   GoogleClient,
   TelegramClient,
-  TwillioClient,
+  TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -144,7 +144,7 @@ describe('AppController', () => {
       useClass: TwitterClientMock,
     };
     const TwillioClientProvider = {
-      provide: TwillioClient,
+      provide: TwilioClient,
       useClass: TwillioClientMock,
     };
     const AppleClientProvider = {
@@ -858,14 +858,18 @@ describe('AppController', () => {
     });
 
     it('should create new account with new user by social ', async () => {
-      const result = await appController.loginWithSocial(credentialGuest, {
-        provider: AccountAuthenIdType.Facebook,
-        socialId: '109364223',
-        displayName: 'test facebook',
-        avatar: '',
-        email: 'testfb@gmail.com',
-        authToken: '',
-      });
+      const result = await appController.loginWithSocial(
+        credentialGuest,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          socialId: '109364223',
+          displayName: 'test facebook',
+          avatar: '',
+          email: 'testfb@gmail.com',
+          authToken: '',
+        },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+      );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
         AccountAuthenIdType.Facebook
@@ -896,10 +900,14 @@ describe('AppController', () => {
         $language: 'th',
       } as any;
 
-      await appController.loginWithSocial(newCredentialGuest, {
-        provider: AccountAuthenIdType.Google,
-        socialId: '109364223777',
-      });
+      await appController.loginWithSocial(
+        newCredentialGuest,
+        {
+          provider: AccountAuthenIdType.Google,
+          socialId: '109364223777',
+        },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+      );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
         AccountAuthenIdType.Google
@@ -917,14 +925,18 @@ describe('AppController', () => {
         $credential: mockUsers[1].credential,
         $language: 'th',
       } as any;
-      const result = await appController.loginWithSocial(newCredentialGuest, {
-        provider: AccountAuthenIdType.Facebook,
-        socialId: '109364223',
-        displayName: 'test facebook',
-        avatar: '',
-        email: 'testfb@gmail.com',
-        authToken: '',
-      });
+      const result = await appController.loginWithSocial(
+        newCredentialGuest,
+        {
+          provider: AccountAuthenIdType.Facebook,
+          socialId: '109364223',
+          displayName: 'test facebook',
+          avatar: '',
+          email: 'testfb@gmail.com',
+          authToken: '',
+        },
+        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+      );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
         AccountAuthenIdType.Facebook
@@ -943,14 +955,18 @@ describe('AppController', () => {
       } as any;
 
       await expect(
-        appController.loginWithSocial(newCredentialGuest, {
-          provider: AccountAuthenIdType.Twitter,
-          socialId: '01234567892388',
-          displayName: 'test twitter',
-          avatar: '',
-          email: 'testfb@gmail.com',
-          authToken: '',
-        })
+        appController.loginWithSocial(
+          newCredentialGuest,
+          {
+            provider: AccountAuthenIdType.Twitter,
+            socialId: '01234567892388',
+            displayName: 'test twitter',
+            avatar: '',
+            email: 'testfb@gmail.com',
+            authToken: '',
+          },
+          { ip: '127.0.0.1', userAgent: 'castcle-app' }
+        )
       ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
     });
   });

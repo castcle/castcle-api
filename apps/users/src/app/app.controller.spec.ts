@@ -27,6 +27,7 @@ import {
   AuthenticationService,
   CampaignService,
   ContentService,
+  DataService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -37,6 +38,7 @@ import {
 } from '@castcle-api/database';
 import {
   AdsQuery,
+  AdsRequestDto,
   CastcleIncludes,
   ContentsResponse,
   ContentType,
@@ -133,6 +135,7 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
+        { provide: DataService, useValue: {} },
         UserService,
         AuthenticationService,
         ContentService,
@@ -237,7 +240,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th',
         } as any,
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
@@ -245,6 +248,7 @@ describe('AppController', () => {
       expect(response.followed).toBeDefined();
       expect(response.blocking).toBeDefined();
       expect(response.blocked).toBeDefined();
+      expect(response.casts).toBeDefined();
     });
   });
 
@@ -1331,6 +1335,61 @@ describe('AppController', () => {
       const result = await appController.getMyPages(credential);
       expect(result.payload).toBeDefined();
       expect(result.payload[0].syncSocial).toBeDefined();
+    });
+  });
+  describe('#updateAds', () => {
+    let mocks: MockUserDetail[];
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(2, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    describe('#updateAds', () => {
+      it('should be able update ads is correct.', async () => {
+        const adsUpdate: AdsRequestDto = {
+          campaignName: 'Ads update',
+          campaignMessage: 'This is ads',
+          dailyBudget: 10,
+          duration: 5,
+          objective: AdsObjective.Engagement,
+        };
+        await adsService.updateAdsById(mockAds.id, adsUpdate);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
+        expect(adsCampaign.detail.message).toEqual(adsUpdate.campaignMessage);
+        expect(adsCampaign.detail.dailyBudget).toEqual(adsUpdate.dailyBudget);
+        expect(adsCampaign.detail.duration).toEqual(adsUpdate.duration);
+        expect(adsCampaign.objective).toEqual(adsUpdate.objective);
+      });
+    });
+    describe('#deleteAds', () => {
+      it('should be able delete ads is correct.', async () => {
+        await adsService.deleteAdsById(mockAds.id);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeNull();
+      });
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
     });
   });
 });

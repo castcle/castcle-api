@@ -22,7 +22,11 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { EventName } from 'aws-sdk/clients/iotevents';
+import {
+  AnalyticMobileVerification,
+  AnalyticRegistration,
+  EventName,
+} from '../models';
 
 @Schema({ timestamps: true })
 export class Analytic {
@@ -45,10 +49,13 @@ export class Analytic {
   data?: string;
 
   @Prop()
-  registered?: boolean;
+  registered?: AnalyticRegistration;
 
   @Prop()
-  mobileVerified?: boolean;
+  mobileVerified?: AnalyticMobileVerification;
+
+  @Prop({ default: 1 })
+  count: number;
 }
 
 export const AnalyticSchema = SchemaFactory.createForClass(Analytic);

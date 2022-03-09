@@ -22,7 +22,7 @@
  */
 import {
   AuthenticationService,
-  getSocialProfix,
+  getSocialPrefix,
   UserService,
 } from '@castcle-api/database';
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
@@ -41,8 +41,9 @@ import {
   Image,
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
-import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
+import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
 import { Host, Password } from '@castcle-api/utils/commons';
+import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Injectable } from '@nestjs/common';
@@ -76,7 +77,7 @@ export class AppService {
     private authService: AuthenticationService,
     private download: Downloader,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwilioClient
   ) {}
 
   private logger = new CastLogger(AppService.name);
@@ -129,16 +130,18 @@ export class AppService {
 
   /**
    * Create user and generate token for login social
-   * @param {SocialConnect} social social response
-   * @param {Credential} credential
-   * @returns {TokenResponse}
    */
-  async socialLogin(body: SocialConnectDto, req: CredentialRequest) {
+  async socialLogin(
+    body: SocialConnectDto,
+    req: CredentialRequest,
+    { ip }: RequestMetadata = {}
+  ) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
       body.provider
     );
+
     if (socialAccount) {
       this.logger.log('Existing Social Account');
       const account = await this.authService.getAccountFromId(
@@ -154,13 +157,13 @@ export class AppService {
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
         );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+      const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: account.id as any,
         }
       );
-      return { token: tokenResult, users: users, account: account };
+      return { token, users, account, isNewUser: false };
     } else {
       if (body.email) {
         this.logger.log('get account from email.');
@@ -173,8 +176,8 @@ export class AppService {
         }
       }
 
-      this.logger.log('Reister new social account');
-      const currentAccount = await this.authService.getAccountFromCredential(
+      this.logger.log('Register new social account');
+      const account = await this.authService.getAccountFromCredential(
         req.$credential
       );
       let avatar: Image;
@@ -192,25 +195,24 @@ export class AppService {
       }
 
       this.logger.log('Update Email to Account.');
-      currentAccount.email = body.email ? body.email : currentAccount.email;
+      account.email = body.email ? body.email : account.email;
       this.logger.log('signup by Social');
-      await this.authService.signupBySocial(currentAccount, {
+      await this.authService.signupBySocial(account, {
         displayName: body.displayName
           ? body.displayName
-          : getSocialProfix(body.socialId, body.provider),
+          : getSocialPrefix(body.socialId, body.provider),
         socialId: body.socialId,
         provider: body.provider,
         avatar: avatar ? avatar.image : undefined,
         socialToken: body.authToken ? body.authToken : undefined,
         socialSecretToken: undefined,
+        referral: body.referral,
+        ip,
       });
 
       if (body.email) {
         const accountActivation =
-          await this.authService.createAccountActivation(
-            currentAccount,
-            'email'
-          );
+          await this.authService.createAccountActivation(account, 'email');
         this.logger.log(`send email with token, email : ${body.email}`);
         await this.sendRegistrationEmail(
           Host.getHostname(req),
@@ -228,13 +230,12 @@ export class AppService {
         await this.authService.getAccessTokenPayloadFromCredential(
           req.$credential
         );
-      const tokenResult: TokenResponse = await req.$credential.renewTokens(
+      const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
-        {
-          id: currentAccount.id as any,
-        }
+        { id: account.id as any }
       );
-      return { token: tokenResult, users: users, account: currentAccount };
+
+      return { token, users, account, isNewUser: true };
     }
   }
 
@@ -262,10 +263,10 @@ export class AppService {
    * get and validate account from email
    * @param {string} email
    * @param {string} lang
-   * @returns {Account} account document
+   * @returns account document
    */
   async getAccountFromEmail(email: string, lang: string) {
-    this.logger.log('Get Account from eamil');
+    this.logger.log('Get Account from email');
     const account = await this.authService.getAccountFromEmail(email);
     if (!account)
       throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
@@ -277,7 +278,7 @@ export class AppService {
     objective: OtpObjective,
     credential: CredentialRequest,
     channel: string,
-    reciever: string
+    receiver: string
   ) {
     const allExistingOtp =
       await this.authService.getAllOtpFromRequestIdObjective(
@@ -290,7 +291,7 @@ export class AppService {
         exOtp.isValid() &&
         exOtp.channel === channel &&
         exOtp.action === objective &&
-        exOtp.reciever === reciever
+        exOtp.reciever === receiver
       ) {
         existingOtp = exOtp;
       } else {
@@ -326,7 +327,7 @@ export class AppService {
     }
 
     if (account && objective === OtpObjective.VerifyMobile) {
-      this.logger.error('Dupplicate mobile : ' + countryCode + mobileNumber);
+      this.logger.error('Duplicate mobile : ' + countryCode + mobileNumber);
       throw new CastcleException(
         CastcleStatus.MOBILE_NUMBER_IS_EXIST,
         credential.$language
@@ -391,7 +392,7 @@ export class AppService {
         otp = await this.generateAndSendOtp(
           request.payload.email,
           account,
-          TwillioChannel.Email,
+          TwilioChannel.Email,
           objective,
           credential,
           request.channel
@@ -421,7 +422,7 @@ export class AppService {
         otp = await this.generateAndSendOtp(
           request.payload.countryCode + request.payload.mobileNumber,
           account,
-          TwillioChannel.Mobile,
+          TwilioChannel.Mobile,
           objective,
           credential,
           request.channel
@@ -441,15 +442,15 @@ export class AppService {
 
   /**
    * generate and send Otp
-   * @param {string} reciever
+   * @param {string} receiver
    * @param {Account} account
    * @param {TwillioChannel} account
    * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
-    reciever: string,
+    receiver: string,
     account: Account,
-    twillioChannel: TwillioChannel,
+    twillioChannel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
     otpChannel: string
@@ -460,9 +461,10 @@ export class AppService {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
       const result = await this.twillioClient.requestOtp(
-        reciever,
+        receiver,
         twillioChannel,
-        this.buildTemplateMessage(objective, user)
+        this.buildTemplateMessage(objective, user),
+        account.id
       );
       sid = result.sid;
     } catch (ex) {
@@ -480,7 +482,7 @@ export class AppService {
       credential.$credential.account._id,
       otpChannel,
       false,
-      reciever,
+      receiver,
       sid
     );
     return otp;

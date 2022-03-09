@@ -41,6 +41,7 @@ import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 import { ExceptionFilter } from './exception/exception.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { AwsXRayInterceptor } from './aws-xray/aws-xray.interceptor';
 
 @Module({
   imports: [DatabaseModule, CaslModule, UtilsCacheModule],
@@ -63,4 +64,5 @@ export {
   HttpCacheClearInterceptor,
   ExceptionFilter,
   IpTrackerInterceptor,
+  AwsXRayInterceptor,
 };

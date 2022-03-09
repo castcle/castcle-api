@@ -34,6 +34,7 @@ export class GetFeedContentsParams {
   decayDays: number;
   followFeedMax: number;
   followFeedRatio: number;
+  geolocation?: string;
   maxResult: number;
   preferLanguages: string[];
   userId: Types.ObjectId;
@@ -135,13 +136,35 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             $match: {
               $expr: {
                 $and: [
-                  { $in: ['$countryCode', params.preferLanguages] },
+                  params.geolocation
+                    ? { $eq: ['$countryCode', params.geolocation] }
+                    : {},
                   {
                     $not: { $in: ['$content', '$$duplicateContents.content'] },
                   },
                 ],
               },
             },
+          },
+          {
+            $lookup: {
+              from: 'contentinfo',
+              localField: 'content',
+              foreignField: 'contentId',
+              as: 'info',
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              content: 1,
+              localized: {
+                $setIsSubset: ['$info.language', params.preferLanguages],
+              },
+            },
+          },
+          {
+            $sort: { localized: -1 },
           },
           { $limit: params.maxResult },
         ],
@@ -179,6 +202,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
               },
             },
           },
+          { $project: { _id: 1 } },
           { $limit: params.maxResult },
         ],
         as: 'followingContents',

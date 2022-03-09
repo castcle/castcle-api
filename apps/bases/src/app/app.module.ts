@@ -25,7 +25,10 @@ import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
@@ -34,7 +37,13 @@ import { FeedsController } from './controllers/feeds.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services';
+import { Environment } from '@castcle-api/environments';
+import { TracingModule } from '@narando/nest-xray';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 
 @Module({
   imports: [
@@ -46,6 +55,14 @@ import { SuggestionService } from './services';
     UtilsInterceptorsModule,
     UtilsPipesModule,
     UtilsQueueModule,
+    ThrottlerModule.forRoot({
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
+    }),
+    TracingModule.forRoot({
+      serviceName: 'bases',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [
     BasesController,
@@ -54,6 +71,16 @@ import { SuggestionService } from './services';
     PagesController,
     SearchesController,
   ],
-  providers: [SuggestionService],
+  providers: [
+    SuggestionService,
+    {
+      provide: APP_GUARD,
+      useClass: CastcleThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class BaseModule {}

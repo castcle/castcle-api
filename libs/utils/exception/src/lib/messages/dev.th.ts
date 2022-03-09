@@ -61,6 +61,11 @@ export const DevErrorMessages = {
     code: '1008',
     message: `The 'maxResults' query parameter value is not between 5 and 100`,
   },
+  '1010': {
+    statusCode: '429',
+    code: '1010',
+    message: `API rate limit exceeded `,
+  },
   '3001': {
     statusCode: '400',
     code: '3001',
