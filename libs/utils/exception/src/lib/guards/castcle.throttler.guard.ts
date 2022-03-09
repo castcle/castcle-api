@@ -20,23 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { HttpModule } from '@nestjs/axios';
-import { Test, TestingModule } from '@nestjs/testing';
-import { TwillioClient } from './twillio.client';
-
-describe('TwillioClient', () => {
-  let service: TwillioClient;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [TwillioClient],
-      imports: [HttpModule],
-    }).compile();
-
-    service = module.get<TwillioClient>(TwillioClient);
-  });
-
-  it('TwillioClient - should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { ErrorMessages } from '../utils-exception.module';
+export class CastcleThrottlerGuard extends ThrottlerGuard {
+  protected errorMessage: string = ErrorMessages['1010'].message;
+}

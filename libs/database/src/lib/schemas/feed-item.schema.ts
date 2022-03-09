@@ -22,7 +22,6 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { ContentAggregator } from '../aggregations';
 import { Account } from './account.schema';
 import { Credential } from './credential.schema';
 import { CastcleBase } from './base.schema';
@@ -30,6 +29,7 @@ import { Content } from './content.schema';
 import { FeedItemPayload } from '../dtos/feedItem.dto';
 import { Engagement } from './engagement.schema';
 import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
+import { ContentAggregator } from '../models';
 
 @Schema({ timestamps: true })
 class FeedItemDocument extends CastcleBase {

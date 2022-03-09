@@ -75,12 +75,14 @@ describe('FacebookController', () => {
     await socialSyncModel.create([
       {
         active: true,
+        autoPost: true,
         socialId: socialId.invalidAuthorId,
         provider: SocialProvider.Facebook,
         author: { id: Types.ObjectId() },
       },
       {
         active: true,
+        autoPost: true,
         socialId: socialId.valid,
         provider: SocialProvider.Facebook,
         author: { id: user._id },
@@ -123,7 +125,7 @@ describe('FacebookController', () => {
       ] as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).lastCalledWith(
+      expect(logger.error).lastCalledWith(
         `#handleWebhook:sync-account-not-found:facebook-${socialId.invalid}`
       );
     });
@@ -142,7 +144,7 @@ describe('FacebookController', () => {
       ] as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).lastCalledWith(
+      expect(logger.error).lastCalledWith(
         `#handleWebhook:no-change:author-${user._id}`
       );
     });
@@ -170,7 +172,7 @@ describe('FacebookController', () => {
       ] as unknown as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).lastCalledWith(
+      expect(logger.error).lastCalledWith(
         `#handleWebhook:verb-mismatched:${post[0].changes[0].value.post_id}`
       );
     });

@@ -36,7 +36,7 @@ import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
 import { AdsObjective } from '../models';
 import { UserProducer } from '@castcle-api/utils/queue';
-import { ContentType, ShortPayload } from '../dtos';
+import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
 import { CacheModule } from '@nestjs/common';
 
@@ -126,5 +126,94 @@ describe('AdsService', () => {
       expect(ads.adsRef).not.toBeUndefined();
       expect(ads.adsRef.$id).toEqual(promoteContent._id);
     });
+  });
+  describe('#listAds', () => {
+    it('should be able to get list ads exist.', async () => {
+      const adsCampaigns = await service.getListAds(mocks[0].account._id, {
+        maxResults: 100,
+        filter: 'week',
+        timezone: '+07:00',
+      } as AdsQuery);
+
+      expect(adsCampaigns.length).toBeGreaterThan(0);
+      expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].account._id));
+    });
+  });
+  describe('#lookupAds', () => {
+    it('should be able to get only one ads exist.', async () => {
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      const ads = await service.createAds(mocks[0].account, adsInput);
+      const adsCampaign = await service.lookupAds(
+        mocks[0].account._id,
+        ads._id
+      );
+
+      expect(adsCampaign).toBeTruthy();
+      expect(String(adsCampaign.owner)).toBe(String(mocks[0].account._id));
+    });
+  });
+
+  describe('#updateAds', () => {
+    it('should be able update ads is correct.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      const adsUpdate: AdsRequestDto = {
+        campaignName: 'Ads update',
+        campaignMessage: 'This is ads',
+        dailyBudget: 10,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      const ads = await service.createAds(mocks[0].account, adsInput);
+      await service.updateAdsById(ads.id, adsUpdate);
+      const adsCampaign = await service._adsCampaignModel
+        .findById(ads.id)
+        .exec();
+
+      expect(adsCampaign).toBeTruthy();
+      expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
+      expect(adsCampaign.detail.message).toEqual(adsUpdate.campaignMessage);
+      expect(adsCampaign.detail.dailyBudget).toEqual(adsUpdate.dailyBudget);
+      expect(adsCampaign.detail.duration).toEqual(adsUpdate.duration);
+      expect(adsCampaign.objective).toEqual(adsUpdate.objective);
+    });
+  });
+  describe('#deleteAds', () => {
+    it('should be able delete ads is correct.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      const ads = await service.createAds(mocks[0].account, adsInput);
+      await service.deleteAdsById(ads.id);
+      const adsCampaign = await service._adsCampaignModel
+        .findById(ads.id)
+        .exec();
+
+      expect(adsCampaign).toBeNull();
+    });
+  });
+  afterAll(() => {
+    service._adsCampaignModel.deleteMany({});
+    userService._accountModel.deleteMany({});
+    userService._userModel.deleteMany({});
+    contentService._contentModel.deleteMany({});
   });
 });

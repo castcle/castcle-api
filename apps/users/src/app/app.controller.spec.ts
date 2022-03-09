@@ -21,11 +21,13 @@
  * or have any questions.
  */
 import {
+  AdsObjective,
   AdsService,
   AnalyticService,
   AuthenticationService,
   CampaignService,
   ContentService,
+  DataService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -35,6 +37,8 @@ import {
   UserService,
 } from '@castcle-api/database';
 import {
+  AdsQuery,
+  AdsRequestDto,
   CastcleIncludes,
   ContentsResponse,
   ContentType,
@@ -51,12 +55,16 @@ import {
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   Account,
+  AdsCampaign,
   Content,
   Credential,
   Engagement,
   User,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
+import { Downloader } from '@castcle-api/utils/aws';
+import { FacebookClient } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
   NotificationProducer,
@@ -72,6 +80,20 @@ import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
 import { SuggestionService } from './services/suggestion.service';
 
+export class DownloaderMock {
+  getImageFromUrl() {
+    return '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';
+  }
+}
+
+export class FacebookClientMock {
+  subscribed(userToken: string, socialId: string) {
+    console.log(userToken);
+    console.log(socialId);
+    return true;
+  }
+}
+
 describe('AppController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
@@ -83,8 +105,19 @@ describe('AppController', () => {
   let userAccount: Account;
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
+  let adsService: AdsService;
 
   beforeAll(async () => {
+    const DownloaderProvider = {
+      provide: Downloader,
+      useClass: DownloaderMock,
+    };
+
+    const FacebookClientProvider = {
+      provide: FacebookClient,
+      useClass: FacebookClientMock,
+    };
+
     mongod = await MongoMemoryServer.create();
     app = await Test.createTestingModule({
       imports: [
@@ -102,6 +135,7 @@ describe('AppController', () => {
       ],
       controllers: [UserController],
       providers: [
+        { provide: DataService, useValue: {} },
         UserService,
         AuthenticationService,
         ContentService,
@@ -114,6 +148,8 @@ describe('AppController', () => {
         AnalyticService,
         NotificationService,
         NotificationProducer,
+        DownloaderProvider,
+        FacebookClientProvider,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -122,6 +158,8 @@ describe('AppController', () => {
     contentService = app.get<ContentService>(ContentService);
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
+    adsService = app.get<AdsService>(AdsService);
+
     const result = await authService.createAccount({
       device: 'iPhone',
       deviceUUID: 'iphone12345',
@@ -202,7 +240,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th',
         } as any,
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
@@ -210,6 +248,7 @@ describe('AppController', () => {
       expect(response.followed).toBeDefined();
       expect(response.blocking).toBeDefined();
       expect(response.blocked).toBeDefined();
+      expect(response.casts).toBeDefined();
     });
   });
 
@@ -986,6 +1025,371 @@ describe('AppController', () => {
       authService._credentialModel.deleteMany({});
       contentService._contentModel.deleteMany({});
       notifyService._notificationModel.deleteMany({});
+    });
+  });
+
+  describe('#getEngagementFromUser', () => {
+    let content: Content | Content[];
+    let mockUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(3, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      content = await contentService.createContentFromUser(mockUsers[0].user, {
+        payload: {
+          message: 'hello world',
+        } as ShortPayload,
+        type: ContentType.Short,
+        castcleId: mockUsers[0].user.displayId,
+      });
+      await new contentService._engagementModel({
+        type: 'like',
+        user: mockUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content.id,
+        },
+        visibility: 'publish',
+      }).save();
+    });
+
+    it('should get user liked content.', async () => {
+      const response = await appController.getLikedCast(
+        {
+          $credential: mockUsers[2].credential,
+          $language: 'th',
+        } as any,
+        mockUsers[1].user.id,
+        {
+          hasRelationshipExpansion: false,
+          maxResults: 100,
+          sinceId: null,
+          untilId: null,
+        }
+      );
+
+      expect(response.payload).toHaveLength(1);
+      expect(response['includes'].users).toHaveLength(1);
+      expect(response['meta'].resultCount).toBe(1);
+      expect(String(response.payload[0].authorId)).toBe(
+        String(mockUsers[0].user._id)
+      );
+      expect(response.payload[0].message).toBe(content['payload'].message);
+    });
+
+    afterAll(() => {
+      service._userModel.deleteMany({});
+      contentService._contentModel.deleteMany({});
+      contentService._engagementModel.deleteMany({});
+    });
+  });
+
+  describe('#listAds', () => {
+    let mocks: MockUserDetail[];
+    let content: Content;
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(2, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      content = await contentService.createContentFromUser(mocks[0].user, {
+        castcleId: mocks[0].pages[0].id,
+        payload: {
+          message: 'this is promote short',
+        } as ShortPayload,
+        type: ContentType.Short,
+      });
+
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    it('should be able to get list ads exist.', async () => {
+      const adsResponse = await appController.listAds(
+        { account: mocks[0].account as Account } as Authorizer,
+        {
+          maxResults: 100,
+          filter: 'week',
+          timezone: '+07:00',
+        } as AdsQuery
+      );
+
+      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(adsResponse.payload?.length).toBeGreaterThan(0);
+      expect(adsResponse.payload[0].campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.payload[0].boostType).toBe('content');
+      expect(adsResponse.payload[0].adStatus).toBe(mockAds.status);
+      expect(adsResponse.payload[0].duration).toEqual(mockAds.detail.duration);
+      expect(adsResponse.payload[0].dailyBudget).toEqual(
+        mockAds.detail.dailyBudget
+      );
+      expect(adsResponse.payload[0].campaignMessage).toBe(
+        mockAds.detail.message
+      );
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
+    });
+  });
+
+  describe('#lookupAds', () => {
+    let mocks: MockUserDetail[];
+    let content: Content;
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(1, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      content = await contentService.createContentFromUser(mocks[0].user, {
+        castcleId: mocks[0].pages[0].id,
+        payload: {
+          message: 'this is promote short',
+        } as ShortPayload,
+        type: ContentType.Short,
+      });
+
+      const adsInput = {
+        campaignName: 'Ads',
+        campaignMessage: 'This is ads',
+        contentId: content.id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    it('should be able to lookup ads detail exist.', async () => {
+      const adsResponse = await appController.lookupAds(
+        { account: mocks[0].account as Account } as Authorizer,
+        mockAds._id
+      );
+
+      expect(mockAds.adsRef).not.toBeUndefined();
+      expect(adsResponse).toBeTruthy();
+      expect(adsResponse.campaignName).toBe(mockAds.detail.name);
+      expect(adsResponse.boostType).toBe('content');
+      expect(adsResponse.adStatus).toBe(mockAds.status);
+      expect(adsResponse.duration).toEqual(mockAds.detail.duration);
+      expect(adsResponse.dailyBudget).toEqual(mockAds.detail.dailyBudget);
+      expect(adsResponse.campaignMessage).toBe(mockAds.detail.message);
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
+    });
+  });
+
+  describe('createPage with social', () => {
+    it('should create new user that has the info from SocialPageDto', async () => {
+      const newPageResponse = await appController.createPageSocial(
+        { $credential: userCredential, $language: 'th' } as any,
+        {
+          payload: [
+            {
+              provider: SocialProvider.Facebook,
+              socialId: 'fb001',
+              userName: 'fb_test1',
+              displayName: 'test1',
+              overview: 'facebook sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.facebook.com/test1',
+            },
+            {
+              provider: SocialProvider.Twitter,
+              socialId: 'tw001',
+              userName: 'tw_test1',
+              displayName: 'test2',
+              overview: 'twitter sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.twitter.com/test2',
+            },
+          ],
+        }
+      );
+
+      const page1 = await service.getByIdOrCastcleId(
+        newPageResponse.payload[0].castcleId
+      );
+      const page2 = await service.getByIdOrCastcleId(
+        newPageResponse.payload[1].castcleId
+      );
+      const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
+      const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
+      expect(newPageResponse.payload.length).toEqual(2);
+      expect(newPageResponse.payload[0].links.facebook).toBeDefined();
+      expect(newPageResponse.payload[0].socialSyncs).toBeDefined();
+      expect(newPageResponse.payload[1].links.twitter).toBeDefined();
+      expect(newPageResponse.payload[1].socialSyncs).toBeDefined();
+      expect(syncSocial1.length).toEqual(1);
+      expect(syncSocial2.length).toEqual(1);
+      expect(syncSocial1[0].author.id).toEqual(page1.id);
+      expect(syncSocial2[0].author.id).toEqual(page2.id);
+    });
+
+    it('should return Exception when use duplicate social id', async () => {
+      await expect(
+        appController.createPageSocial(
+          { $credential: userCredential, $language: 'th' } as any,
+          {
+            payload: [
+              {
+                provider: SocialProvider.Facebook,
+                socialId: 'fb001',
+                userName: 'fb_test1',
+                displayName: 'test1',
+                overview: 'facebook sync 1',
+                avatar: '',
+                cover: '',
+                link: 'http://www.facebook.com/test1',
+              },
+            ],
+          }
+        )
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
+      );
+    });
+
+    it('should return Exception when use guest account', async () => {
+      const guest = await authService.createAccount({
+        device: 'iPhone8+',
+        deviceUUID: 'ios8abc',
+        header: { platform: 'ios' },
+        languagesPreferences: ['th'],
+        geolocation: {
+          countryCode: '+66',
+          continentCode: '+66',
+        },
+      });
+
+      const credentialGuest = {
+        $credential: guest.credentialDocument,
+        $language: 'th',
+      } as any;
+
+      await expect(
+        appController.createPageSocial(credentialGuest, {
+          payload: [
+            {
+              provider: SocialProvider.Facebook,
+              socialId: 'fb001',
+              userName: 'fb_test1',
+              displayName: 'test1',
+              overview: 'facebook sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.facebook.com/test1',
+            },
+          ],
+        })
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+    });
+  });
+
+  describe('#getMyPages', () => {
+    let credential;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(1, 1, {
+        userService: service,
+        accountService: authService,
+      });
+
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th',
+      } as any;
+
+      const page = mocksUsers[0].pages[0];
+
+      const defaultRequest = {
+        castcleId: page.displayId,
+        provider: SocialProvider.Facebook,
+        socialId: 'fb999999',
+        userName: 'mockfb9999',
+        displayName: 'mock fb',
+        avatar: 'www.fb.com/mockfb',
+        active: true,
+      };
+
+      await appController.syncSocial(credential, defaultRequest);
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('should get page data with sync social successful', async () => {
+      const result = await appController.getMyPages(credential);
+      expect(result.payload).toBeDefined();
+      expect(result.payload[0].syncSocial).toBeDefined();
+    });
+  });
+  describe('#updateAds', () => {
+    let mocks: MockUserDetail[];
+    let mockAds: AdsCampaign;
+    beforeAll(async () => {
+      mocks = await generateMockUsers(2, 1, {
+        accountService: authService,
+        userService: service,
+      });
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+      };
+      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+    });
+    describe('#updateAds', () => {
+      it('should be able update ads is correct.', async () => {
+        const adsUpdate: AdsRequestDto = {
+          campaignName: 'Ads update',
+          campaignMessage: 'This is ads',
+          dailyBudget: 10,
+          duration: 5,
+          objective: AdsObjective.Engagement,
+        };
+        await adsService.updateAdsById(mockAds.id, adsUpdate);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.detail.name).toEqual(adsUpdate.campaignName);
+        expect(adsCampaign.detail.message).toEqual(adsUpdate.campaignMessage);
+        expect(adsCampaign.detail.dailyBudget).toEqual(adsUpdate.dailyBudget);
+        expect(adsCampaign.detail.duration).toEqual(adsUpdate.duration);
+        expect(adsCampaign.objective).toEqual(adsUpdate.objective);
+      });
+    });
+    describe('#deleteAds', () => {
+      it('should be able delete ads is correct.', async () => {
+        await adsService.deleteAdsById(mockAds.id);
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(mockAds.id)
+          .exec();
+
+        expect(adsCampaign).toBeNull();
+      });
+    });
+    afterAll(() => {
+      adsService._adsCampaignModel.deleteMany({});
+      adsService._contentModel.deleteMany({});
     });
   });
 });

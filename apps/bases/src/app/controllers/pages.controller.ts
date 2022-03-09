@@ -23,7 +23,7 @@
 import {
   AuthenticationService,
   ContentService,
-  getSocialProfix,
+  getSocialPrefix,
   SocialSyncService,
   UserService,
 } from '@castcle-api/database';
@@ -359,6 +359,7 @@ export class PagesController {
   }
 
   /**
+   * @deprecated The method should not be used. Please use POST users/me/pages/sync-social
    * Create new page with sync social data
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {SocialSyncDto} body social sync payload
@@ -413,7 +414,7 @@ export class PagesController {
           castcleId = syncBody.displayName;
           socialPage.displayName = syncBody.displayName;
         } else {
-          const genId = getSocialProfix(syncBody.socialId, syncBody.provider);
+          const genId = getSocialPrefix(syncBody.socialId, syncBody.provider);
           castcleId = genId;
           socialPage.displayName = genId;
         }

@@ -163,13 +163,19 @@ export class Environment {
   static LINK_VERIFIED_EMAIL = process.env.LINK_VERIFIED_EMAIL;
 
   /**
-   * Number of digits before the decimal point
-   * @default 10
-   */
-  static DECIMALS_INT = Number(process.env.DECIMALS_INT || 10);
-  /**
    * Number of digits after the decimal point
    * @default 8
    */
   static DECIMALS_FLOAT = Number(process.env.DECIMALS_FLOAT || 8);
+
+  // DS Service
+  static DS_SERVICE_BASE_URL = process.env.DS_SERVICE_BASE_URL;
+
+  static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 60;
+  static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 10000;
+  static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 60;
+  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 2000;
+
+  // AWS Xray
+  static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;
 }

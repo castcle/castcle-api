@@ -108,7 +108,7 @@ export const getRelationship = (
   };
 };
 
-export const getSocialProfix = (socialId: string, provider: string) => {
+export const getSocialPrefix = (socialId: string, provider: string) => {
   switch (provider) {
     case 'facebook': {
       return `FB${socialId}`;

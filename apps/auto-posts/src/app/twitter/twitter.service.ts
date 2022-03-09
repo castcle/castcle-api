@@ -23,8 +23,7 @@
 
 import { Injectable } from '@nestjs/common';
 import TwitterApi, {
-  Tweetv2TimelineResult,
-  TwitterApiv2,
+  Tweetv2TimelineResult as TweetTimelineResult,
 } from 'twitter-api-v2';
 import { Environment } from '@castcle-api/environments';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -44,16 +43,14 @@ import { SocialSync } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class TwitterService {
-  private readonly client: TwitterApiv2;
+  private readonly client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
   private readonly logger = new CastLogger(TwitterService.name);
 
   constructor(
     private readonly contentService: ContentService,
     private readonly downloader: Downloader,
     private readonly socialSyncService: SocialSyncService
-  ) {
-    this.client = new TwitterApi(Environment.TWITTER_BEARER_TOKEN).v2;
-  }
+  ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async handleTwitterJobs() {
@@ -111,39 +108,32 @@ export class TwitterService {
     });
   };
 
-  async convertTimelineToContents(
-    userId: string,
-    timeline: Tweetv2TimelineResult
-  ) {
-    const toUploadMedia = timeline.includes?.media?.map(async (medium) => {
-      const imageUrl = medium?.url || medium?.preview_image_url;
-
-      if (!imageUrl) return;
-
-      const image = await this.downloader.getImageFromUrl(imageUrl);
-      const uploadedImage = await Image.upload(image, {
-        filename: `twitter-${medium.media_key}`,
-        sizes: COMMON_SIZE_CONFIGS,
-        subpath: `contents/${userId}`,
-      });
-
-      medium.url = uploadedImage.toSignUrl();
-    });
-
-    if (toUploadMedia) await Promise.all(toUploadMedia);
-
-    return timeline.data
+  convertTimelineToContents(userId: string, timeline: TweetTimelineResult) {
+    const $contents = timeline.data
       .filter(({ referenced_tweets }) => {
         return !referenced_tweets?.some(({ type }) => type === 'quoted');
       })
-      .map(({ attachments, text }) => {
-        const images = attachments?.media_keys?.map((mediaKey) => {
+      .map(async ({ attachments, text }) => {
+        const $images = attachments?.media_keys?.map(async (mediaKey) => {
           const medium = timeline.includes?.media?.find(
             ({ media_key: key }) => key === mediaKey
           );
 
-          return { image: medium?.url };
+          const imageUrl = medium?.url || medium?.preview_image_url;
+
+          if (!imageUrl) return;
+
+          const image = await this.downloader.getImageFromUrl(imageUrl);
+          const uploaded = await Image.upload(image, {
+            filename: `twitter-${medium.media_key}`,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${userId}`,
+          });
+
+          return uploaded.image;
         });
+
+        const images = await Promise.all($images?.filter(Boolean));
 
         return {
           payload: {
@@ -153,5 +143,7 @@ export class TwitterService {
           type: ContentType.Short,
         } as SaveContentDto;
       });
+
+    return Promise.all($contents);
   }
 }

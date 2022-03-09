@@ -30,7 +30,6 @@ import { getLinkPreview } from 'link-preview-js';
 import * as mongoose from 'mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { ContentAggregator } from '../aggregations';
 import {
   Author,
   CastcleContentQueryOptions,
@@ -56,6 +55,7 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
+import { ContentAggregator } from '../models';
 import { EngagementType } from '../models/engagement.enum';
 import {
   Account,
@@ -1096,18 +1096,29 @@ Message: ${message}`,
   async convertContentsToContentsResponse(
     viewer: User | null,
     contents: Content[],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    inputEngagements: Engagement[] = []
   ): Promise<ContentsResponse> {
-    const meta = createCastcleMeta(contents);
+    const meta = createCastcleMeta(
+      inputEngagements.length ? inputEngagements : contents
+    );
     const users: IncludeUser[] = [];
     const authorIds = [];
     const casts: ContentPayloadItem[] = [];
     const payload: ContentPayloadItem[] = [];
-    const engagements = await this.getAllEngagementFromContentsAndUser(
-      contents,
-      viewer?.id
-    );
+    const engageOriginal = contents
+      .filter((content) => content.originalPost)
+      .map((content) => content.originalPost?._id);
 
+    const engagementsOriginal = engageOriginal
+      ? await this.getAllEngagementFromContentIdsAndUser(
+          engageOriginal,
+          viewer?.id
+        )
+      : [];
+    const engagements = inputEngagements.length
+      ? inputEngagements
+      : await this.getAllEngagementFromContentsAndUser(contents, viewer?.id);
     contents.forEach((content) => {
       const contentEngagements = engagements.filter(
         (engagement) =>
@@ -1118,7 +1129,9 @@ Message: ${message}`,
       payload.push(content.toContentPayloadItem(contentEngagements));
 
       if (content.originalPost) {
-        casts.push(toSignedContentPayloadItem(content.originalPost));
+        casts.push(
+          toSignedContentPayloadItem(content.originalPost, engagementsOriginal)
+        );
       }
 
       if (content.originalPost?.author) {
@@ -1293,5 +1306,60 @@ Message: ${message}`,
       total: totalDocument,
       items: result,
     };
+  };
+
+  /**
+   *
+   * @param {string} userId
+   * @param {number} maxResults
+   * @param {string} sinceId
+   * @param {string} untilId
+   * @returns
+   */
+  getEngagementFromUser = async (
+    userId: User,
+    sinceId: string,
+    untilId: string,
+    maxResults = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
+  ) => {
+    let filter: FilterQuery<Engagement> = {
+      'targetRef.$ref': 'content',
+      type: 'like',
+      user: userId,
+      visibility: EntityVisibility.Publish,
+    };
+    const totalDocument = await this._engagementModel
+      .countDocuments(filter)
+      .exec();
+
+    filter = createCastcleFilter(filter, {
+      sinceId: sinceId,
+      untilId: untilId,
+    });
+
+    const engagements = await this._engagementModel
+      .find(filter)
+      .limit(maxResults)
+      .sort({ createdAt: -1 });
+    return {
+      total: totalDocument,
+      items: engagements,
+    };
+  };
+
+  /**
+   * @param {Engagement[]} engagement
+   * @param {string} untilId
+   * @returns {}
+   */
+
+  getContentAllFromId = async (engagement: Engagement[]) => {
+    const filter: FilterQuery<Content> = {
+      _id: {
+        $in: engagement.map((e) => (e = e.targetRef.oid || e.targetRef.$id)),
+      },
+      visibility: EntityVisibility.Publish,
+    };
+    return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
 }

@@ -33,6 +33,7 @@ export enum CastcleStatus {
   UPLOAD_FAILED = '1006',
   FORBIDDEN_REQUEST = '1007',
   INVALID_MAX_RESULT = '1008',
+  RATE_LIMIT_REQUEST = '1010',
   INVLAID_AUTH_TOKEN = '3001',
   INVALID_EMAIL_OR_PASSWORD = '3002',
   INVALID_EMAIL = '3003',
@@ -53,6 +54,7 @@ export enum CastcleStatus {
   SOCIAL_PROVIDER_IS_EXIST = '3019',
   TWILLIO_MAX_LIMIT = '3020',
   DUPLICATE_EMAIL = '3021',
+  TWILLIO_TOO_MANY_REQUESTS = '3022',
   USER_OR_PAGE_NOT_FOUND = '4001',
   FEATURE_NOT_EXIST = '5001',
   PAYLOAD_TYPE_MISMATCH = '5002',
@@ -78,10 +80,10 @@ export class CastcleException extends HttpException {
     this.errorStatus = error;
   }
 
-  getLocalStatus(language: string) {
+  getLocalStatus(language: string, code?: string) {
     if (LocalErrorMessage[language])
-      return LocalErrorMessage[language][this.errorStatus.code];
-    else return LocalErrorMessage.default[this.errorStatus.code];
+      return LocalErrorMessage[language][code ? code : this.errorStatus.code];
+    else return LocalErrorMessage.default[code ? code : this.errorStatus.code];
   }
 
   static REQUEST_URL_NOT_FOUND = new CastcleException('1001');

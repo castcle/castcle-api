@@ -39,6 +39,7 @@ export enum UserField {
   LinkSocial = 'link-social',
   SyncSocial = 'sync-social',
   Wallet = 'wallet',
+  Casts = 'casts',
 }
 
 export enum ExcludeFeedField {

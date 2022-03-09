@@ -22,10 +22,17 @@
  */
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -36,8 +43,26 @@ import { AppService } from './app.service';
     HealthyModule,
     UtilsClientsModule,
     UtilsAwsModule,
+    ThrottlerModule.forRoot({
+      ttl: Environment.RATE_LIMIT_TTL,
+      limit: Environment.RATE_LIMIT_LIMIT,
+    }),
+    TracingModule.forRoot({
+      serviceName: 'authentications',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [AuthenticationController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: CastcleThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class AuthenticationModule {}

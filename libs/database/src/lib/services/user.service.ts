@@ -181,12 +181,17 @@ export class UserService {
       ).flat();
     }
 
+    const content = userFields?.includes(UserField.Casts)
+      ? await this.contentService.getContentsFromUser(user.id)
+      : undefined;
+
     return {
       user: user,
       account: account,
       balance: balance,
       authenSocial: authenSocial,
       syncPage: syncPage,
+      casts: content?.total,
     };
   };
 
@@ -209,9 +214,10 @@ export class UserService {
   private async convertUsersToUserResponses(
     viewer: User | null,
     users: User[],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    userFields?: UserField[]
   ) {
-    if (!hasRelationshipExpansion) {
+    if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
         users.map(async (user) => {
           return user.type === UserType.Page
@@ -234,22 +240,40 @@ export class UserService {
 
     return Promise.all(
       users.map(async (u) => {
+        const syncSocial = userFields?.includes(UserField.SyncSocial)
+          ? await this._socialSyncModel.findOne({ 'author.id': u.id }).exec()
+          : undefined;
+
+        const content = userFields?.includes(UserField.Casts)
+          ? await this.contentService.getContentsFromUser(u.id)
+          : undefined;
+
         const userResponse =
           u.type === UserType.Page
-            ? u.toPageResponse()
-            : await u.toUserResponse();
+            ? u.toPageResponse(
+                undefined,
+                undefined,
+                undefined,
+                syncSocial,
+                content?.total
+              )
+            : await u.toUserResponse({ casts: content?.total });
 
-        const targetRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(user) === String(u.id) &&
-            String(followedUser) === String(viewer?.id)
-        );
+        const targetRelationship = hasRelationshipExpansion
+          ? relationships.find(
+              ({ followedUser, user }) =>
+                String(user) === String(u.id) &&
+                String(followedUser) === String(viewer?.id)
+            )
+          : undefined;
 
-        const getterRelationship = relationships.find(
-          ({ followedUser, user }) =>
-            String(followedUser) === String(u.id) &&
-            String(user) === String(viewer?.id)
-        );
+        const getterRelationship = hasRelationshipExpansion
+          ? relationships.find(
+              ({ followedUser, user }) =>
+                String(followedUser) === String(u.id) &&
+                String(user) === String(viewer?.id)
+            )
+          : undefined;
 
         userResponse.blocked = Boolean(getterRelationship?.blocking);
         userResponse.blocking = Boolean(targetRelationship?.blocking);
@@ -264,7 +288,8 @@ export class UserService {
     user: User,
     id: string,
     type?: UserType,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    userFields?: UserField[]
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
@@ -273,7 +298,8 @@ export class UserService {
     const [userResponse] = await this.convertUsersToUserResponses(
       user,
       [targetUser],
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
+      userFields
     );
 
     return userResponse;
@@ -340,7 +366,8 @@ export class UserService {
     user: User,
     query: FilterQuery<User>,
     queryOptions?: CastcleQueryOptions,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    userFields?: UserField[]
   ) => {
     const {
       items: targetUsers,
@@ -351,7 +378,8 @@ export class UserService {
     const users = await this.convertUsersToUserResponses(
       user,
       targetUsers,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
+      userFields
     );
 
     return { pagination, users, meta };
@@ -917,37 +945,67 @@ export class UserService {
   async blockUser(user: User, blockedUser?: User) {
     if (!blockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const relationship = {
-      user: user._id,
-      followedUser: blockedUser._id,
-      visibility: EntityVisibility.Publish,
-      following: false,
-    };
-
-    await this._relationshipModel
-      .updateOne(
-        { user: user._id, followedUser: blockedUser._id },
-        { $setOnInsert: relationship, $set: { blocking: true } },
-        { upsert: true }
-      )
-      .exec();
+    await Promise.all([
+      this._relationshipModel
+        .updateOne(
+          { user: user._id, followedUser: blockedUser._id },
+          {
+            $setOnInsert: {
+              user: user._id,
+              followedUser: blockedUser._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocked: false,
+            },
+            $set: { blocking: true },
+          },
+          { upsert: true }
+        )
+        .exec(),
+      this._relationshipModel
+        .updateOne(
+          { followedUser: user._id, user: blockedUser._id },
+          {
+            $setOnInsert: {
+              user: blockedUser._id,
+              followedUser: user._id,
+              visibility: EntityVisibility.Publish,
+              following: false,
+              blocking: false,
+            },
+            $set: { blocked: true },
+          },
+          { upsert: true }
+        )
+        .exec(),
+    ]);
   }
 
   async unblockUser(user: User, unblockedUser: User) {
     if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const relationship = await this._relationshipModel
-      .findOne({
-        user: user._id,
-        followedUser: unblockedUser._id,
-        blocking: true,
-      })
-      .exec();
-
-    if (!relationship) return;
-
-    relationship.blocking = false;
-    await relationship.save();
+    await Promise.all([
+      this._relationshipModel
+        .updateOne(
+          {
+            user: user._id,
+            followedUser: unblockedUser._id,
+            blocking: true,
+          },
+          { $set: { blocking: false } }
+        )
+        .exec(),
+      this._relationshipModel
+        .updateOne(
+          {
+            followedUser: user._id,
+            user: unblockedUser._id,
+            blocked: true,
+          },
+          { $set: { blocked: false } }
+        )
+        .exec(),
+    ]);
   }
 
   async reportUser(user: User, reportedUser: User, message: string) {

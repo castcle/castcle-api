@@ -29,12 +29,14 @@ import {
   ContentService,
   createCastcleMeta,
   getRelationship,
+  getSocialPrefix,
+  NotificationService,
   SocialProvider,
   SocialSyncService,
   UserService,
-  NotificationService,
 } from '@castcle-api/database';
 import {
+  AdsQuery,
   AdsRequestDto,
   ContentResponse,
   ContentsResponse,
@@ -51,9 +53,12 @@ import {
   PagesResponse,
   PaginationQuery,
   ResponseDto,
+  SocialPageDto,
   SocialSyncDeleteDto,
   SocialSyncDto,
+  SortDirection,
   UpdateUserDto,
+  UserField,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
@@ -63,7 +68,15 @@ import {
   UserType,
 } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Downloader,
+  Image,
+  ImageUploadOptions,
+} from '@castcle-api/utils/aws';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import {
   Auth,
   Authorizer,
@@ -104,6 +117,7 @@ import {
   ReportingDto,
   UnblockingDto,
 } from './dtos';
+import { ContentLikeBody } from './dtos/content.dto';
 import {
   TargetCastcleDto,
   UpdateMobileDto,
@@ -113,7 +127,6 @@ import {
 } from './dtos/dto';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-import { ContentLikeBody } from './dtos/content.dto';
 class DeleteUserBody {
   channel: string;
   payload: {
@@ -134,8 +147,13 @@ export class UserController {
     private socialSyncService: SocialSyncService,
     private suggestionService: SuggestionService,
     private userService: UserService,
-    private notifyService: NotificationService
+    private notifyService: NotificationService,
+    private download: Downloader,
+    private facebookClient: FacebookClient
   ) {}
+
+  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
+    Image.upload(base64, options);
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -249,17 +267,19 @@ export class UserController {
     @Req() req: CredentialRequest,
     @Query() userQuery?: ExpansionQuery
   ) {
-    const { user, account, balance, authenSocial, syncPage } =
+    const { user, account, balance, authenSocial, syncPage, casts } =
       await this.userService.getUserFromAccountId(
         req.$credential.account._id,
         userQuery?.userFields
       );
+
     return await user.toUserResponse({
       balance: balance,
       passwordNotSet: account.password ? false : true,
       mobile: account.mobile,
       linkSocial: authenSocial,
       syncSocial: syncPage,
+      casts: casts,
     });
   }
 
@@ -324,7 +344,8 @@ export class UserController {
       authorizedUser,
       id,
       undefined,
-      userQuery?.hasRelationshipExpansion
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
     );
   }
 
@@ -465,10 +486,13 @@ export class UserController {
     pageOption: number = DEFAULT_QUERY_OPTIONS.page
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential($credential);
+
     const { users: pages, pagination } = await this.userService.getByCriteria(
       user,
       { ownerAccount: $credential.account._id, type: UserType.Page },
-      { page: pageOption, sortBy: sortByOption }
+      { page: pageOption, sortBy: sortByOption },
+      false,
+      [UserField.SyncSocial]
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
@@ -800,7 +824,7 @@ export class UserController {
   async updateMobile(
     @Auth() { account, user }: Authorizer,
     @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
@@ -832,7 +856,13 @@ export class UserController {
     );
 
     await otp.delete();
-    await this.analyticService.trackMobileVerification(ip, userAgent);
+    await this.analyticService.trackMobileVerification(
+      ip,
+      account._id,
+      countryCode,
+      mobileNumber
+    );
+
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
@@ -1382,5 +1412,278 @@ export class UserController {
     await this.contentService.unLikeContent(content, user);
 
     return '';
+  }
+
+  @CastcleBasicAuth()
+  @Get('me/advertise')
+  async listAds(@Auth() { account }: Authorizer, @Query() adsQuery: AdsQuery) {
+    const adsCampaigns = await this.adsService.getListAds(account, adsQuery);
+    if (!adsCampaigns) return { payload: null };
+    const adsResponses = await Promise.all(
+      adsCampaigns.map((adsCampaign) =>
+        this.adsService.transformAdsCampaignToAdsResponse(adsCampaign)
+      )
+    );
+    return ResponseDto.ok({
+      payload: adsResponses,
+      meta: createCastcleMeta(adsCampaigns),
+    });
+  }
+  /**
+   * @param {Authorizer}  account Authorizer that has account from interceptor or passport
+   * @param {string} adsId - string
+   * @returns response object ads.
+   */
+  @CastcleBasicAuth()
+  @Get('me/advertise/:id')
+  async lookupAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) return;
+    return this.adsService.transformAdsCampaignToAdsResponse(adsCampaign);
+  }
+
+  /**
+   * @param {Authorizer} account Authorizer that has credential from interceptor or passport
+   * @param {string} adsId id by Ads Campaign
+   * @param {AdsRequestDto} adsRequest - AdsRequestDto
+   * @returns Nothing
+   */
+
+  @CastcleBasicAuth()
+  @Put('me/advertise/:id')
+  async updateAds(
+    @Auth() { account }: Authorizer,
+    @Param('id') adsId: string,
+    @Body() adsRequest: AdsRequestDto
+  ) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    await this.adsService.updateAdsById(adsId, adsRequest);
+  }
+
+  /**
+   * @param {Authorizer} account Authorizer that has credential from interceptor or passport
+   * @param {string} adsId id by Ads Campaign
+   * @param {AdsRequestDto} adsRequest - AdsRequestDto
+   * @returns Nothing
+   */
+
+  @CastcleBasicAuth()
+  @Delete('me/advertise/:id')
+  async deleteAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    await this.adsService.deleteAdsById(adsId);
+  }
+
+  /**
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {string} id id by me, castcleId, _id user
+   * @returns {} Returning a promise that will be resolved with the object.
+   */
+
+  @CastcleBasicAuth()
+  @Get(':id/liked-casts')
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
+  async getLikedCast(
+    @Req() req: CredentialRequest,
+    @Param('id') id: string,
+    @Query()
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+  ) {
+    const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
+    if (!user) {
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    if (req.$credential.account.isGuest) {
+      if (id === 'me') {
+        throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      }
+    }
+
+    const engagement = await this.contentService.getEngagementFromUser(
+      user.id,
+      sinceId,
+      untilId,
+      maxResults
+    );
+
+    if (!engagement.items.length) return { payload: null };
+
+    const content = await this.contentService.getContentAllFromId(
+      engagement.items
+    );
+    if (!content.length) return { payload: null };
+
+    return await this.contentService.convertContentsToContentsResponse(
+      viewer,
+      content,
+      hasRelationshipExpansion,
+      engagement.items
+    );
+  }
+
+  /**
+   * Create new page with sync social data
+   * @param {CredentialRequest} req Request that has credential from interceptor or passport
+   * @param {SocialSyncDto} body social sync payload
+   * @returns {PageResponseDto[]}
+   */
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @ApiBody({
+    type: SocialSyncDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social')
+  async createPageSocial(
+    @Req() req: CredentialRequest,
+    @Body() body: { payload: SocialSyncDto[] }
+  ) {
+    this.logger.log(`Start create sync social.`);
+    this.logger.log(JSON.stringify(body));
+
+    this.logger.log('Validate guest');
+    await this.validateGuestAccount(req.$credential);
+
+    this.logger.log('Validate dupplicate social');
+    await Promise.all(
+      body.payload.map(async (socialSync) => {
+        const dupSocialSync =
+          await this.socialSyncService.getAllSocialSyncBySocial(
+            socialSync.provider,
+            socialSync.socialId
+          );
+
+        if (dupSocialSync?.length) {
+          this.logger.error(
+            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
+          );
+          throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+        }
+      })
+    );
+
+    const social: string[] = [];
+    await Promise.all(
+      body.payload.map(async (syncBody) => {
+        let castcleId = '';
+        const socialPage = new SocialPageDto();
+        if (syncBody.userName && syncBody.displayName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.displayName;
+        } else if (syncBody.userName) {
+          castcleId = syncBody.userName;
+          socialPage.displayName = syncBody.userName;
+        } else if (syncBody.displayName) {
+          castcleId = syncBody.displayName;
+          socialPage.displayName = syncBody.displayName;
+        } else {
+          const genId = getSocialPrefix(syncBody.socialId, syncBody.provider);
+          castcleId = genId;
+          socialPage.displayName = genId;
+        }
+
+        this.logger.log('Suggest CastcleId');
+        const sugguestDisplayId = await this.authService.suggestCastcleId(
+          castcleId
+        );
+        socialPage.castcleId = sugguestDisplayId;
+
+        if (syncBody.avatar) {
+          this.logger.log(`download avatar from ${syncBody.avatar}`);
+          const imgAvatar = await this.download.getImageFromUrl(
+            syncBody.avatar
+          );
+
+          this.logger.log('upload avatar to s3');
+          const avatar = await this._uploadImage(imgAvatar, {
+            filename: `page-avatar-${sugguestDisplayId}`,
+            addTime: true,
+            sizes: AVATAR_SIZE_CONFIGS,
+            subpath: `page_${sugguestDisplayId}`,
+          });
+
+          socialPage.avatar = avatar.image;
+          this.logger.log('Upload avatar');
+        }
+
+        if (syncBody.cover) {
+          this.logger.log(`download avatar from ${syncBody.cover}`);
+          const imgCover = await this.download.getImageFromUrl(syncBody.cover);
+
+          this.logger.log('upload cover to s3');
+          const cover = await this._uploadImage(imgCover, {
+            filename: `page-cover-${sugguestDisplayId}`,
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `page_${sugguestDisplayId}`,
+          });
+          socialPage.cover = cover.image;
+          this.logger.log('Suggest Cover');
+        }
+
+        socialPage.overview = syncBody.overview;
+        if (syncBody.link) {
+          socialPage.links = { [syncBody.provider]: syncBody.link };
+        }
+
+        this.logger.log('Create new page');
+        const page = await this.userService.createPageFromSocial(
+          req.$credential.account._id,
+          socialPage
+        );
+        social.push(page.id);
+        this.logger.log('Create sync socail');
+        await this.socialSyncService.create(page, syncBody);
+
+        if (
+          syncBody.provider === SocialProvider.Facebook &&
+          syncBody.authToken
+        ) {
+          this.logger.log('Subscribed facebook page');
+          await this.facebookClient.subscribed(
+            syncBody.authToken,
+            syncBody.socialId
+          );
+        }
+      })
+    );
+
+    this.logger.log(`get page data.`);
+    const user = await this.userService.getUserFromCredential(req.$credential);
+    const { users: pages } = await this.userService.getByCriteria(
+      user,
+      { ownerAccount: req.$credential.account._id, type: UserType.Page },
+      {
+        page: 1,
+        limit: 100,
+        sortBy: {
+          field: 'createdAt',
+          type: SortDirection.DESC,
+        },
+      }
+    );
+
+    this.logger.log(`filter only new pages.`);
+    const pageResult = pages.filter((item) =>
+      social.includes(item.id.toString())
+    );
+
+    const response = await Promise.all(
+      pageResult.map(async (page) => {
+        const sync = await this.socialSyncService.getSocialSyncByPageId(
+          page.id
+        );
+        return {
+          ...page,
+          ...{ socialSyncs: sync.length > 0 ? sync[0] : null },
+        };
+      })
+    );
+    return { payload: response };
   }
 }

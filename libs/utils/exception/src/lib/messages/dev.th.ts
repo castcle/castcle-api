@@ -61,6 +61,11 @@ export const DevErrorMessages = {
     code: '1008',
     message: `The 'maxResults' query parameter value is not between 5 and 100`,
   },
+  '1010': {
+    statusCode: '429',
+    code: '1010',
+    message: `API rate limit exceeded `,
+  },
   '3001': {
     statusCode: '400',
     code: '3001',
@@ -163,12 +168,17 @@ export const DevErrorMessages = {
   '3020': {
     statusCode: '400',
     code: '3020',
-    message: 'Max attempts reached',
+    message: 'Max send attempts reached. Please contact an administrator.',
   },
   '3021': {
     statusCode: '400',
     code: '3021',
     message: 'This email is already in Castcle.',
+  },
+  '3022': {
+    statusCode: '400',
+    code: '3022',
+    message: 'Please wait a few minutes before you try again.',
   },
   '4001': {
     statusCode: '404',

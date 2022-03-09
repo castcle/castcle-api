@@ -20,35 +20,39 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { DateTime, DateTimeUnit } from 'luxon';
 
-import { Module } from '@nestjs/common';
-import { EngagementController } from './app.controller';
-import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { Environment } from '@castcle-api/environments';
-import { TracingModule } from '@narando/nest-xray';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+export class CastcleDate {
+  static inputDate = new Date();
+  /**
+   * Convert a timezone string to a UTC offset.
+   * @param {string} timeZone - The time zone to convert to.
+   * @returns
+   */
+  static convertTimezone(timeZone: string) {
+    return `UTC${timeZone}`;
+  }
 
-@Module({
-  imports: [
-    DatabaseModule,
-    HealthyModule,
-    UtilsInterceptorsModule,
-    TracingModule.forRoot({
-      serviceName: 'engagements',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
-  ],
-  controllers: [EngagementController],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
-})
-export class EngagementModule {}
+  /**
+   * Convert the date filter interval to a start and end date time
+   * @param {string} timeZone - The timezone of the date interval.
+   * @param {FilterInterval} dateInterval enum of filter
+   * @returns
+   */
+  static convertDateFilterInterval(timeZone: string, dateInterval: string) {
+    const interval =
+      dateInterval === 'today' ? 'day' : (dateInterval as DateTimeUnit);
+    return {
+      startDate: DateTime.fromJSDate(this.inputDate, {
+        zone: this.convertTimezone(timeZone),
+      })
+        .startOf(interval)
+        .toJSDate(),
+      endDate: DateTime.fromJSDate(this.inputDate, {
+        zone: this.convertTimezone(timeZone),
+      })
+        .endOf(interval)
+        .toJSDate(),
+    };
+  }
+}

@@ -73,7 +73,6 @@ export interface SignupRequirements {
   displayId: string;
   referral?: string;
   ip?: string;
-  userAgent?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -83,6 +82,8 @@ export interface SignupSocialRequirements {
   avatar: CastcleImage;
   socialToken: string;
   socialSecretToken: string;
+  referral?: string;
+  ip?: string;
 }
 
 @Injectable()
@@ -372,10 +373,7 @@ export class AuthenticationService {
 
     const referrer =
       referrerFromBody ??
-      (await this.getReferrerByRequestMetadata(
-        requirements.ip,
-        requirements.userAgent
-      ));
+      (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
       await new this._accountReferral({
@@ -464,7 +462,7 @@ export class AuthenticationService {
     requestId: string,
     channel: string,
     verify: boolean,
-    reciever?: string,
+    receiver?: string,
     sid?: string
   ) {
     const otp = await this._otpModel.generate(
@@ -473,7 +471,7 @@ export class AuthenticationService {
       requestId,
       channel,
       verify,
-      reciever,
+      receiver,
       sid
     );
     return otp;
@@ -587,7 +585,6 @@ export class AuthenticationService {
    * create new account from social
    * @param {Account} account
    * @param {SignupSocialRequirements} requirements
-   * @returns {AccountAuthenId}
    */
   async signupBySocial(
     account: Account,
@@ -596,13 +593,13 @@ export class AuthenticationService {
     account.isGuest = false;
     await account.save();
 
-    const sugguestDisplayId = await this.suggestCastcleId(
+    const suggestDisplayId = await this.suggestCastcleId(
       requirements.displayName
     );
 
-    const user = new this._userModel({
+    await new this._userModel({
       ownerAccount: account._id,
-      displayId: sugguestDisplayId,
+      displayId: suggestDisplayId,
       displayName: requirements.displayName,
       type: UserType.People,
       profile: {
@@ -610,10 +607,33 @@ export class AuthenticationService {
           avatar: requirements.avatar,
         },
       },
-    });
-    await user.save();
+    }).save();
 
-    return await this.createAccountAuthenId(
+    const referrerFromBody = await this.userService.getByIdOrCastcleId(
+      requirements.referral
+    );
+
+    const referrer =
+      referrerFromBody ??
+      (await this.getReferrerByRequestMetadata(requirements.ip));
+
+    if (referrer) {
+      await new this._accountReferral({
+        referrerAccount: referrer.ownerAccount,
+        referrerDisplayId: referrer.displayId,
+        referringAccount: account._id,
+      }).save();
+    }
+
+    this.logger.log(
+      `#signupBySocial\n${JSON.stringify(
+        { ...requirements, referrer: referrer?.displayId },
+        null,
+        2
+      )}`
+    );
+
+    return this.createAccountAuthenId(
       account,
       requirements.provider,
       requirements.socialId,
@@ -674,12 +694,12 @@ export class AuthenticationService {
     return result;
   }
 
-  async getReferrerByRequestMetadata(ip: string, userAgent: string) {
-    const analytic = await this.analyticModel.findOne({
-      ip,
-      userAgent,
-      name: EventName.INVITE_FRIENDS,
-    });
+  async getReferrerByRequestMetadata(ip: string) {
+    const analytic = await this.analyticModel.findOne(
+      { ip, name: EventName.INVITE_FRIENDS },
+      {},
+      { sort: { createdAt: -1 } }
+    );
 
     return this.userService.getByIdOrCastcleId(analytic?.data);
   }

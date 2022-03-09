@@ -135,6 +135,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   syncSocial: syncSocialDetail[];
+
+  @ApiProperty()
+  casts: number;
 }
 
 export class linkSocialDetail {
@@ -143,6 +146,7 @@ export class linkSocialDetail {
 }
 
 export class syncSocialDetail {
+  id: string;
   provider: string;
   socialId: string;
   userName: string;
@@ -239,6 +243,12 @@ export class PageResponseDto {
 
   @ApiProperty()
   createdAt: string;
+
+  @ApiProperty()
+  syncSocial: syncSocialDetail;
+
+  @ApiProperty()
+  casts: number;
 }
 
 export class UpdatePageDto {
@@ -341,6 +351,11 @@ export class SocialSyncDto {
   @ApiProperty()
   @IsBoolean()
   autoPost?: boolean;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  authToken?: string;
 }
 
 export class SocialSyncDeleteDto {

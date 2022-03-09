@@ -22,12 +22,14 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { predictContents } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ContentAggregator, pipe2ContentFeedAggregator } from '../aggregations';
-import { FeedQuery, PaginationQuery, UserFeedAggregatorDto } from '../dtos';
+import {
+  GetFeedContentsResponse,
+  pipelineOfGetFeedContents,
+} from '../aggregations';
+import { FeedQuery, PaginationQuery } from '../dtos';
 import { CastcleMeta } from '../dtos/common.dto';
 import { Author, CastcleIncludes } from '../dtos/content.dto';
 import { FeedItemDto } from '../dtos/feedItem.dto';
@@ -35,6 +37,7 @@ import {
   FeedItemPayloadItem,
   FeedItemResponse,
 } from '../dtos/guest-feed-item.dto';
+import { ContentAggregator } from '../models';
 import {
   Account,
   Content,
@@ -51,6 +54,7 @@ import {
   UserType,
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
+import { DataService } from './data.service';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -70,7 +74,8 @@ export class RankerService {
     @InjectModel('DefaultContent')
     public _defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>
+    public _engagementModel: Model<Engagement>,
+    private dataService: DataService
   ) {}
 
   /**
@@ -304,34 +309,46 @@ export class RankerService {
    * @returns {FeedItemResponse}
    */
   getMemberFeedItemsFromViewer = async (viewer: Account, query: FeedQuery) => {
-    if (query.mode && query.mode === 'history')
+    if (query.mode && query.mode === 'history') {
       return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
+    }
+
     console.log(viewer);
+
     const user = await this.userModel.findOne({
       ownerAccount: viewer._id,
       type: UserType.People,
     });
-    const aggr = pipe2ContentFeedAggregator({
-      FollowFeedMax: Environment.FEED_FOLLOW_MAX,
-      FollowFeedRatio: Environment.FEED_FOLLOW_RATIO,
-      DecayDays: Environment.FEED_DECAY_DAYS,
-      MaxResult: query.maxResults,
+
+    const pipeline = pipelineOfGetFeedContents({
+      followFeedMax: Environment.FEED_FOLLOW_MAX,
+      followFeedRatio: Environment.FEED_FOLLOW_RATIO,
+      decayDays: Environment.FEED_DECAY_DAYS,
+      geolocation: viewer.geolocation?.countryCode,
+      maxResult: query.maxResults,
       userId: user._id,
+      preferLanguages: viewer.preferences.languages,
     });
-    console.log(JSON.stringify(aggr));
-    const rawResult = await this.userModel.aggregate(aggr);
-    const result: UserFeedAggregatorDto = rawResult[0];
-    const contentScore = await predictContents(
+
+    console.log(JSON.stringify(pipeline));
+
+    const userFeeds = await this.userModel.aggregate<GetFeedContentsResponse>(
+      pipeline
+    );
+
+    const contents = userFeeds[0]?.contents ?? [];
+    const contentScore = await this.dataService.personalizeContents(
       String(viewer._id),
-      result.contents.map((c) => String(c))
+      contents.map((content) => String(content))
     );
-    const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
-      contentScore[a] > contentScore[b] ? -1 : 1
-    );
-    console.log(sortedContentIds);
+
     let feeds: FeedItem[] = [];
     let feedPayload: FeedItemPayloadItem[] = [];
     if (contentScore) {
+      const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
+        contentScore[a] > contentScore[b] ? -1 : 1
+      );
+
       const feedItemDtos = sortedContentIds.map(
         (contentId) =>
           ({
@@ -357,13 +374,22 @@ export class RankerService {
         viewer
       );
     }
+    const contentIds = feeds
+      .filter((doc) => doc.content.originalPost)
+      .map((doc) => doc.content.originalPost?._id);
+
+    const engagements = contentIds
+      ? await this.getAllEngagement(contentIds, viewer)
+      : [];
 
     const includes = {
       users: feeds.map((item) => item.content.author),
       casts: feeds
         .filter((doc) => doc.content.originalPost)
         .map((c) => c.content.originalPost)
-        .map((c) => signedContentPayloadItem(toUnsignedContentPayloadItem(c))),
+        .map((c) =>
+          signedContentPayloadItem(toUnsignedContentPayloadItem(c, engagements))
+        ),
     };
     const meta: CastcleMeta = createCastcleMeta(feeds);
     let authors = includes.users.map((author) => new Author(author));
@@ -387,10 +413,14 @@ export class RankerService {
 
   async sortContentsByScore(accountId: string, contents: Content[]) {
     const contentIds = contents.map((content) => content.id);
-    const score = await predictContents(accountId, contentIds);
+    const score = await this.dataService.personalizeContents(
+      accountId,
+      contentIds
+    );
 
     return contents.sort((a, b) => score[a.id] - score[b.id]);
   }
+
   /**
    *
    * @param account

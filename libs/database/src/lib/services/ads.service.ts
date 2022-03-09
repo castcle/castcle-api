@@ -1,3 +1,4 @@
+import { FilterInterval } from './../models/ads.enum';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -23,9 +24,13 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { mockPipe2AdsAuctionAggregate } from '../aggregations/ads.aggregation';
-import { AdsCampaignResponseDto, AdsRequestDto } from '../dtos/ads.dto';
+import {
+  AdsCampaignResponseDto,
+  AdsQuery,
+  AdsRequestDto,
+} from '../dtos/ads.dto';
 import {
   Account,
   AdsCampaign,
@@ -38,6 +43,8 @@ import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
 import { ContentPayloadItem, PageResponseDto } from '../dtos';
+import { createCastcleFilter } from '../utils/common';
+import { CastcleDate } from '@castcle-api/utils/commons';
 
 const CAST_PRICE = 0.1;
 
@@ -155,4 +162,65 @@ export class AdsService {
       updatedAt: campaign.updatedAt,
     } as AdsCampaignResponseDto;
   };
+
+  async getListAds(
+    { _id }: Account,
+    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery
+  ) {
+    const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
+      { owner: _id },
+      {
+        sinceId,
+        untilId,
+      }
+    );
+
+    if (filter && filter !== FilterInterval.All) {
+      const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
+        timezone,
+        filter
+      );
+
+      filters.createdAt = {
+        $gte: startDate,
+        $lt: endDate,
+      };
+    }
+
+    return this._adsCampaignModel
+      .find(filters)
+      .limit(maxResults)
+      .sort({ createdAt: -1, _id: -1 });
+  }
+
+  lookupAds({ _id }: Account, adsId: string) {
+    return this._adsCampaignModel
+      .findOne({
+        owner: _id,
+        _id: adsId,
+      })
+      .exec();
+  }
+
+  async updateAdsById(adsId: string, adsRequest: AdsRequestDto) {
+    return this._adsCampaignModel.updateOne(
+      { _id: adsId, status: AdsStatus.Processing },
+      {
+        $set: {
+          detail: {
+            name: adsRequest.campaignName,
+            message: adsRequest.campaignMessage,
+            dailyBudget: adsRequest.dailyBudget,
+            duration: adsRequest.duration,
+          } as AdsDetail,
+        },
+      }
+    );
+  }
+  async deleteAdsById(adsId: string) {
+    return this._adsCampaignModel.deleteOne({
+      _id: adsId,
+      status: AdsStatus.Processing,
+    });
+  }
 }

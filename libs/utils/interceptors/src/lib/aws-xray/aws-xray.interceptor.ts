@@ -20,8 +20,29 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
+import { catchError, tap } from 'rxjs';
+import { TracingService } from '@narando/nest-xray';
 
-export enum TwillioChannel {
-  Email = 'email',
-  Mobile = 'sms',
+@Injectable()
+export class AwsXRayInterceptor implements NestInterceptor {
+  constructor(private awsService: TracingService) {}
+
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const methodHandler = context.getHandler().name;
+    const subSegment = this.awsService.createSubSegment(methodHandler);
+
+    return next.handle().pipe(
+      tap(() => subSegment.close()),
+      catchError((error) => {
+        subSegment.close();
+        throw error;
+      })
+    );
+  }
 }
