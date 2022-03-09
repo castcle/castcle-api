@@ -91,3 +91,10 @@ export class EditCommentBody {
   @ApiProperty()
   'message': string;
 }
+
+export class ReplyCommentBody {
+  @ApiProperty()
+  'message': string;
+  @ApiProperty()
+  'castcleId': string;
+}

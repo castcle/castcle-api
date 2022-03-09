@@ -53,6 +53,7 @@ import {
   PageResponseDto,
   PagesResponse,
   PaginationQuery,
+  ReplyCommentBody,
   ResponseDto,
   SocialPageDto,
   SocialSyncDeleteDto,
@@ -1899,7 +1900,53 @@ export class UserController {
         authorizedUser,
         updatedComment,
         [],
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: false }
+      ),
+    };
+  }
+
+  @ApiBody({
+    type: ReplyCommentBody,
+  })
+  @CastcleBasicAuth()
+  @Post(':id/comments/:source_comment_id/reply')
+  async replyComment(
+    @Param('id') id: string,
+    @Param('source_comment_id') commentId: string,
+    @Body() replyCommentBody: ReplyCommentBody,
+    @Req() req: CredentialRequest
+  ) {
+    const requestUser = await this._getUser(id, req.$credential);
+    const authorizedUser = await this._validateOwnerAccount(req, requestUser);
+
+    const comment = await this.contentService.getCommentById(commentId);
+    if (!comment) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const replyComment = await this.contentService.replyComment(
+      authorizedUser,
+      comment,
+      {
+        message: replyCommentBody.message,
+      }
+    );
+    this.notifyService.notifyToUser({
+      type: NotificationType.Comment,
+      message: `${authorizedUser.displayName} ตอบกลับความคิดเห็นของคุณ`,
+      read: false,
+      source: NotificationSource.Profile,
+      sourceUserId: authorizedUser._id,
+      targetRef: {
+        _id: comment._id,
+      },
+      account: { _id: comment.author._id },
+    });
+
+    return {
+      payload: await this.commentService.convertCommentToCommentResponse(
+        authorizedUser,
+        replyComment,
+        [],
+        { hasRelationshipExpansion: false }
       ),
     };
   }

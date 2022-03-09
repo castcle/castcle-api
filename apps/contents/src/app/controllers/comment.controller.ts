@@ -162,6 +162,9 @@ export class CommentController {
     }
   }
 
+  /**
+   * @deprecated The method should not be used. Please use POST users/:id/comments/:source_comment_id
+   */
   @ApiBody({
     type: ReplyCommentBody,
   })
@@ -206,7 +209,7 @@ export class CommentController {
   }
 
   /**
-   * @deprecated The method should not be used. Please use POST users/:id/comments/:source_comment_id
+   * @deprecated The method should not be used. Please use PUT users/:id/comments/:source_comment_id
    */
   @ApiBody({
     type: EditCommentBody,
@@ -238,7 +241,7 @@ export class CommentController {
   }
 
   /**
-   * @deprecated The method should not be used. Please use POST users/:id/comments/:commentId
+   * @deprecated The method should not be used. Please use DELETE users/:id/comments/:commentId
    */
   @HttpCode(204)
   @CastcleBasicAuth()
