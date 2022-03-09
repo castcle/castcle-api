@@ -45,7 +45,7 @@ import { Environment } from '@castcle-api/environments';
     UtilsClientsModule,
     TracingModule.forRoot({
       serviceName: 'users',
-      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
     }),
     ThrottlerModule.forRoot({
       ttl: Environment.RATE_LIMIT_TTL,

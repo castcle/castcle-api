@@ -23,8 +23,11 @@
 
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
+import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
+import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FirebaseModule } from 'nestjs-firebase';
 import { CampaignConsumer } from './consumers/campaign.consumer';
@@ -47,6 +50,10 @@ import { CampaignScheduler } from './schedulers/campaign.scheduler';
           .replace(/\\n/g, '\n'),
       },
     }),
+    TracingModule.forRoot({
+      serviceName: 'backgrounds',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   providers: [
     CampaignConsumer,
@@ -54,6 +61,10 @@ import { CampaignScheduler } from './schedulers/campaign.scheduler';
     ContentConsumer,
     NotificationConsumer,
     UserConsumer,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
   ],
 })
 export class BackgroundModule {}
