@@ -824,7 +824,7 @@ export class UserController {
   async updateMobile(
     @Auth() { account, user }: Authorizer,
     @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
@@ -856,7 +856,13 @@ export class UserController {
     );
 
     await otp.delete();
-    await this.analyticService.trackMobileVerification(ip, userAgent);
+    await this.analyticService.trackMobileVerification(
+      ip,
+      account._id,
+      countryCode,
+      mobileNumber
+    );
+
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
