@@ -1106,9 +1106,9 @@ Message: ${message}`,
     const authorIds = [];
     const casts: ContentPayloadItem[] = [];
     const payload: ContentPayloadItem[] = [];
-    const engageOriginal = contents.filter(
-      (content) => content.originalPost?._id
-    );
+    const engageOriginal = contents
+      .filter((content) => content.originalPost)
+      .map((content) => content.originalPost?._id);
 
     const engagementsOriginal = engageOriginal
       ? await this.getAllEngagementFromContentIdsAndUser(
