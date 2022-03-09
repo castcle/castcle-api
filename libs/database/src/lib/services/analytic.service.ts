@@ -24,6 +24,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { EventName } from '../models';
 import { Analytic } from '../schemas';
 
 @Injectable()
@@ -32,30 +33,45 @@ export class AnalyticService {
     @InjectModel('Analytic') private analyticModel: Model<Analytic>
   ) {}
 
-  track(analytic: Analytic) {
-    return this.analyticModel.updateOne(
+  async track(payload: Analytic) {
+    const analytic = await this.analyticModel.findOne(
       {
-        ip: analytic.ip,
-        userAgent: analytic.userAgent,
-        src: analytic.src,
-        name: analytic.name,
+        ip: payload.ip,
+        src: payload.src,
+        name: payload.name,
       },
-      analytic,
-      { upsert: true }
+      {},
+      { sort: { createdAt: -1 } }
+    );
+
+    if (
+      !analytic ||
+      (analytic.name === EventName.INVITE_FRIENDS && analytic.registered)
+    ) {
+      return new this.analyticModel(payload).save();
+    }
+
+    return analytic
+      .set({ data: payload.data, count: analytic.count + 1 })
+      .save();
+  }
+
+  trackMobileVerification(
+    ip: string,
+    accountId: string,
+    countryCode: string,
+    mobileNumber: string
+  ) {
+    return this.analyticModel.updateMany(
+      { ip, 'registered.account': accountId },
+      { mobileVerified: { countryCode, mobileNumber } }
     );
   }
 
-  trackMobileVerification(ip: string, userAgent: string) {
+  trackRegistration(ip: string, accountId: string) {
     return this.analyticModel.updateMany(
-      { ip, userAgent },
-      { mobileVerified: true }
-    );
-  }
-
-  trackRegistration(ip: string, userAgent: string) {
-    return this.analyticModel.updateMany(
-      { ip, userAgent },
-      { registered: true }
+      { ip, registered: { $exists: false } },
+      { registered: { account: accountId } }
     );
   }
 }

@@ -73,7 +73,6 @@ export interface SignupRequirements {
   displayId: string;
   referral?: string;
   ip?: string;
-  userAgent?: string;
 }
 
 export interface SignupSocialRequirements {
@@ -85,7 +84,6 @@ export interface SignupSocialRequirements {
   socialSecretToken: string;
   referral?: string;
   ip?: string;
-  userAgent?: string;
 }
 
 @Injectable()
@@ -375,10 +373,7 @@ export class AuthenticationService {
 
     const referrer =
       referrerFromBody ??
-      (await this.getReferrerByRequestMetadata(
-        requirements.ip,
-        requirements.userAgent
-      ));
+      (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
       await new this._accountReferral({
@@ -620,10 +615,7 @@ export class AuthenticationService {
 
     const referrer =
       referrerFromBody ??
-      (await this.getReferrerByRequestMetadata(
-        requirements.ip,
-        requirements.userAgent
-      ));
+      (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
       await new this._accountReferral({
@@ -702,12 +694,12 @@ export class AuthenticationService {
     return result;
   }
 
-  async getReferrerByRequestMetadata(ip: string, userAgent: string) {
-    const analytic = await this.analyticModel.findOne({
-      ip,
-      userAgent,
-      name: EventName.INVITE_FRIENDS,
-    });
+  async getReferrerByRequestMetadata(ip: string) {
+    const analytic = await this.analyticModel.findOne(
+      { ip, name: EventName.INVITE_FRIENDS },
+      {},
+      { sort: { createdAt: -1 } }
+    );
 
     return this.userService.getByIdOrCastcleId(analytic?.data);
   }

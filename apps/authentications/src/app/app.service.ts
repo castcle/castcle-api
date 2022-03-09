@@ -134,7 +134,7 @@ export class AppService {
   async socialLogin(
     body: SocialConnectDto,
     req: CredentialRequest,
-    { ip, userAgent }: RequestMetadata = {}
+    { ip }: RequestMetadata = {}
   ) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
@@ -208,7 +208,6 @@ export class AppService {
         socialSecretToken: undefined,
         referral: body.referral,
         ip,
-        userAgent,
       });
 
       if (body.email) {
