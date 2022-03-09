@@ -81,7 +81,7 @@ export class FacebookController {
         );
 
       if (!syncAccount) {
-        this.logger.log(
+        this.logger.error(
           `#handleWebhook:sync-account-not-found:facebook-${socialId}`
         );
         continue;
@@ -92,14 +92,14 @@ export class FacebookController {
       );
 
       if (!author) {
-        this.logger.log(
+        this.logger.error(
           `#handleWebhook:author-not-found:${syncAccount.author.id}`
         );
         continue;
       }
 
       if (!entry.changes?.length) {
-        this.logger.log(`#handleWebhook:no-change:author-${author.id}`);
+        this.logger.error(`#handleWebhook:no-change:author-${author.id}`);
         continue;
       }
 
@@ -110,7 +110,7 @@ export class FacebookController {
         const message = feed.message;
 
         if (feed.verb !== FeedEntryType.ADD) {
-          this.logger.log(`#handleWebhook:verb-mismatched:${feed.post_id}`);
+          this.logger.error(`#handleWebhook:verb-mismatched:${feed.post_id}`);
           continue;
         }
 
@@ -131,19 +131,18 @@ export class FacebookController {
         }
 
         const photoUrls = feed.photos || [feed.link].filter(Boolean);
-        const photos = await Promise.all(
-          photoUrls.map(async (url, index) => {
-            const base64Photo = await this.downloader.getImageFromUrl(url);
-            const photo = await Image.upload(base64Photo, {
-              filename: `facebook-${feed.post_id}-${index}`,
-              sizes: COMMON_SIZE_CONFIGS,
-              subpath: `contents/${socialId}`,
-            });
+        const $photos = photoUrls.map(async (url, index) => {
+          const base64Photo = await this.downloader.getImageFromUrl(url);
+          const uploaded = await Image.upload(base64Photo, {
+            filename: `facebook-${feed.post_id}-${index}`,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${socialId}`,
+          });
 
-            return { image: photo.toSignUrl() };
-          })
-        );
+          return uploaded.image;
+        });
 
+        const photos = await Promise.all($photos);
         const photo = photos.length ? { contents: photos } : undefined;
         const type =
           feed.item === FeedEntryItem.PHOTO && !message

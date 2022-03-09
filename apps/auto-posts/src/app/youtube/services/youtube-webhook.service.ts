@@ -125,12 +125,12 @@ export class YoutubeWebhookService {
   private async getThumbnailUrlFromVideoId(authorId: string, videoId: string) {
     const youtubeThumbnailUrl = Youtube.thumbnailUrlFromId(videoId);
     const image = await this.downloader.getImageFromUrl(youtubeThumbnailUrl);
-    const uploadedImage = await Image.upload(image, {
+    const uploaded = await Image.upload(image, {
       filename: `youtube-${videoId}`,
       sizes: COMMON_SIZE_CONFIGS,
       subpath: `contents/${authorId}`,
     });
 
-    return uploadedImage.toSignUrl();
+    return uploaded.image;
   }
 }
