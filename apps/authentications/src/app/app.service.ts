@@ -41,7 +41,7 @@ import {
   Image,
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
-import { TwillioChannel, TwillioClient } from '@castcle-api/utils/clients';
+import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
 import { Host, Password } from '@castcle-api/utils/commons';
 import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -77,7 +77,7 @@ export class AppService {
     private authService: AuthenticationService,
     private download: Downloader,
     private userService: UserService,
-    private twillioClient: TwillioClient
+    private twillioClient: TwilioClient
   ) {}
 
   private logger = new CastLogger(AppService.name);
@@ -393,7 +393,7 @@ export class AppService {
         otp = await this.generateAndSendOtp(
           request.payload.email,
           account,
-          TwillioChannel.Email,
+          TwilioChannel.Email,
           objective,
           credential,
           request.channel
@@ -423,7 +423,7 @@ export class AppService {
         otp = await this.generateAndSendOtp(
           request.payload.countryCode + request.payload.mobileNumber,
           account,
-          TwillioChannel.Mobile,
+          TwilioChannel.Mobile,
           objective,
           credential,
           request.channel
@@ -451,7 +451,7 @@ export class AppService {
   async generateAndSendOtp(
     receiver: string,
     account: Account,
-    twillioChannel: TwillioChannel,
+    twillioChannel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
     otpChannel: string

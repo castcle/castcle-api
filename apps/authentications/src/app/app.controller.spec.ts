@@ -41,7 +41,7 @@ import {
   FacebookClient,
   GoogleClient,
   TelegramClient,
-  TwillioClient,
+  TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
@@ -144,7 +144,7 @@ describe('AppController', () => {
       useClass: TwitterClientMock,
     };
     const TwillioClientProvider = {
-      provide: TwillioClient,
+      provide: TwilioClient,
       useClass: TwillioClientMock,
     };
     const AppleClientProvider = {

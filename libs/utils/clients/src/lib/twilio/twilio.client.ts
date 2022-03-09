@@ -25,9 +25,9 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import * as Twilio from 'twilio';
-import { TwillioChannel } from './twillio.message';
+import { TwilioChannel } from './twillio.message';
 @Injectable()
-export class TwillioClient {
+export class TwilioClient {
   private readonly env = {
     twilioAccountSid: Environment.TWILIO_ACCOUNT_SID
       ? Environment.TWILIO_ACCOUNT_SID
@@ -40,7 +40,7 @@ export class TwillioClient {
       : 'VA356353',
   };
 
-  private logger = new CastLogger(TwillioClient.name);
+  private logger = new CastLogger(TwilioClient.name);
 
   private readonly client = new Twilio.Twilio(
     this.env.twilioAccountSid,
@@ -49,7 +49,7 @@ export class TwillioClient {
 
   async requestOtp(
     receiver: string,
-    channel: TwillioChannel,
+    channel: TwilioChannel,
     config: any,
     account_id: string
   ) {
@@ -67,6 +67,9 @@ export class TwillioClient {
         channel: channel,
       })
       .then((verification) => {
+        this.logger.log(
+          `${account_id} invoke Twilio Verification SID: ${verification.sid}`
+        );
         return verification;
       })
       .catch((error) => {
