@@ -27,7 +27,8 @@ import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -44,6 +45,12 @@ import { AppService } from './app.service';
     }),
   ],
   controllers: [AuthenticationController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AuthenticationModule {}

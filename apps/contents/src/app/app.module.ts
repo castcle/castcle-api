@@ -29,11 +29,12 @@ import { DatabaseModule } from '@castcle-api/database';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { CaslModule } from '@castcle-api/casl';
 import { HealthyModule } from '@castcle-api/healthy';
 import { Environment } from '@castcle-api/environments';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -50,6 +51,12 @@ import { Environment } from '@castcle-api/environments';
     }),
   ],
   controllers: [ContentController, CommentController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class ContentModule {}

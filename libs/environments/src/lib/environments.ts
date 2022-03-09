@@ -172,7 +172,7 @@ export class Environment {
   static DS_SERVICE_BASE_URL = process.env.DS_SERVICE_BASE_URL;
 
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 60;
-  static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 10;
+  static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 10000;
   static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 60;
-  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 2;
+  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 2000;
 }

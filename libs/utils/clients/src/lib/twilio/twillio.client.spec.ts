@@ -20,8 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { HttpModule } from '@nestjs/axios';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TwilioClient } from './twilio.client';
 
-export enum TwillioChannel {
-  Email = 'email',
-  Mobile = 'sms',
-}
+describe('TwillioClient', () => {
+  let service: TwilioClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TwilioClient],
+      imports: [HttpModule],
+    }).compile();
+
+    service = module.get<TwilioClient>(TwilioClient);
+  });
+
+  it('TwillioClient - should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
