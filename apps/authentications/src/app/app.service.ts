@@ -469,10 +469,17 @@ export class AppService {
       sid = result.sid;
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
-      throw new CastcleException(
-        CastcleStatus.TWILLIO_MAX_LIMIT,
-        credential.$language
-      );
+      if (ex.message == 'Error: Too many requests') {
+        throw new CastcleException(
+          CastcleStatus.TWILLIO_TOO_MANY_REQUESTS,
+          credential.$language
+        );
+      } else {
+        throw new CastcleException(
+          CastcleStatus.TWILLIO_MAX_LIMIT,
+          credential.$language
+        );
+      }
     }
 
     this.logger.log('Generate Ref Code');

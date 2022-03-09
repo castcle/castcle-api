@@ -47,19 +47,49 @@ export class TwilioClient {
     this.env.twilioAuthToken
   );
 
+  async getRateLimitsOTP(
+    receiver: string,
+    channel: TwilioChannel,
+    account_id: string
+  ) {
+    if (channel == TwilioChannel.Email) {
+      return {
+        castcle_account_id: account_id,
+        email: receiver,
+        receiver: receiver,
+      };
+    } else if (channel == TwilioChannel.Mobile) {
+      return {
+        castcle_account_id: account_id,
+        phone_number: receiver,
+        receiver: receiver,
+      };
+    } else {
+      return {
+        castcle_account_id: account_id,
+        receiver: receiver,
+      };
+    }
+  }
+
   async requestOtp(
     receiver: string,
     channel: TwilioChannel,
     config: any,
     account_id: string
   ) {
+    const rateLimits = await this.getRateLimitsOTP(
+      receiver,
+      channel,
+      account_id
+    );
+    this.logger.log(`* [START] requestOtp *`);
     this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
+    this.logger.log(`* [PROCESS] requestOtp: ${JSON.stringify(rateLimits)} *`);
     return this.client.verify
       .services(this.env.twilioOtpSid)
       .verifications.create({
-        rateLimits: {
-          castcle_account_id: account_id,
-        },
+        rateLimits: rateLimits,
         channelConfiguration: {
           substitutions: config,
         },
@@ -67,12 +97,14 @@ export class TwilioClient {
         channel: channel,
       })
       .then((verification) => {
+        this.logger.log(`* [SUCCESS] requestOtp *`);
         this.logger.log(
           `${account_id} invoke Twilio Verification SID: ${verification.sid}`
         );
         return verification;
       })
       .catch((error) => {
+        this.logger.log(`* [ERROR] requestOtp: ${error} *`);
         throw new Error(error);
       });
   }

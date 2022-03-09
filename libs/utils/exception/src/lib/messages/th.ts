@@ -168,12 +168,17 @@ export const ThErrorMessages = {
   '3020': {
     statusCode: '400',
     code: '3020',
-    message: 'Max attempts reached',
+    message: 'Max send attempts reached. Please contact an administrator.',
   },
   '3021': {
     statusCode: '400',
     code: '3021',
     message: 'This email is already in Castcle.',
+  },
+  '3022': {
+    statusCode: '400',
+    code: '3022',
+    message: 'Please wait a few minutes before you try again.',
   },
   '4001': {
     statusCode: '404',
