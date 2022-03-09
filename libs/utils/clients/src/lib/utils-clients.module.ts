@@ -33,8 +33,8 @@ import {
 import { GoogleClient } from './google/google.client';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
-import { TwillioClient } from './twillio/twillio.client';
-import { TwillioChannel } from './twillio/twillio.message';
+import { TwilioClient } from './twilio/twilio.client';
+import { TwilioChannel } from './twilio/twillio.message';
 import { TwitterClient } from './twitter/twitter.client';
 import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 
@@ -49,7 +49,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     FacebookClient,
     TelegramClient,
     TwitterClient,
-    TwillioClient,
+    TwilioClient,
     AppleClient,
     GoogleClient,
   ],
@@ -59,7 +59,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     TelegramClient,
     TwitterClient,
     AppleClient,
-    TwillioClient,
+    TwilioClient,
     GoogleClient,
   ],
 })
@@ -76,7 +76,7 @@ export {
   TwitterAccessToken,
   TwitterUserData,
   AppleClient,
-  TwillioClient,
-  TwillioChannel,
+  TwilioClient,
+  TwilioChannel,
   GoogleClient,
 };

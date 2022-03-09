@@ -375,7 +375,8 @@ export class RankerService {
     }
     const contentIds = feeds
       .filter((doc) => doc.content.originalPost)
-      .map((content) => content.id);
+      .map((doc) => doc.content.originalPost?._id);
+
     const engagements = contentIds
       ? await this.getAllEngagement(contentIds, viewer)
       : [];

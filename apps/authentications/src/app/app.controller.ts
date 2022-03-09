@@ -283,7 +283,7 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -326,10 +326,9 @@ export class AuthenticationController {
           password: body.payload.password,
           referral: body.referral,
           ip,
-          userAgent,
         }
       );
-      await this.analyticService.trackRegistration(ip, userAgent);
+      await this.analyticService.trackRegistration(ip, currentAccount._id);
       //check if display id exist
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);

@@ -21,7 +21,11 @@
  * or have any questions.
  */
 
-export enum TwillioChannel {
-  Email = 'email',
-  Mobile = 'sms',
+export class AnalyticMobileVerification {
+  countryCode: string;
+  mobileNumber: string;
+}
+
+export class AnalyticRegistration {
+  account: string;
 }
