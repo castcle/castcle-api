@@ -22,14 +22,21 @@
  */
 import { Module } from '@nestjs/common';
 import { CastcleException, CastcleStatus } from './castcle.exception';
+import { CastcleThrottlerGuard } from './guards/castcle.throttler.guard';
 import { LocalErrorMessage } from './messages';
 import { ErrorMessages } from './messages/default';
 
 @Module({
   controllers: [],
   providers: [],
-  exports: [],
+  exports: [CastcleThrottlerGuard],
 })
 export class UtilsExceptionModule {}
 
-export { CastcleException, CastcleStatus, LocalErrorMessage, ErrorMessages };
+export {
+  CastcleException,
+  CastcleStatus,
+  LocalErrorMessage,
+  ErrorMessages,
+  CastcleThrottlerGuard,
+};

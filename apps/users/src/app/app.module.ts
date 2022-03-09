@@ -29,12 +29,13 @@ import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
 import { UserController } from './app.controller';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services/suggestion.service';
 import { TracingModule } from '@narando/nest-xray';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { Environment } from '@castcle-api/environments';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 @Module({
   imports: [
     DatabaseModule,
@@ -45,7 +46,7 @@ import { Environment } from '@castcle-api/environments';
     UtilsClientsModule,
     TracingModule.forRoot({
       serviceName: 'users',
-      daemonAddress: process.env.AWS_XRAY_DAEMON_ADDRESS,
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
     }),
     ThrottlerModule.forRoot({
       ttl: Environment.RATE_LIMIT_TTL,
@@ -61,7 +62,7 @@ import { Environment } from '@castcle-api/environments';
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CastcleThrottlerGuard,
     },
   ],
 })

@@ -21,8 +21,12 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
+import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FacebookModule } from './facebook/facebook.module';
 import { TwitterModule } from './twitter/twitter.module';
@@ -35,6 +39,16 @@ import { YoutubeModule } from './youtube/youtube.module';
     FacebookModule,
     TwitterModule,
     YoutubeModule,
+    TracingModule.forRoot({
+      serviceName: 'auto-posts',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
   ],
 })
 export class AppModule {}
