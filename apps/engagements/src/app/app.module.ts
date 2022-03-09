@@ -23,12 +23,32 @@
 
 import { Module } from '@nestjs/common';
 import { EngagementController } from './app.controller';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
 import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
+import { Environment } from '@castcle-api/environments';
+import { TracingModule } from '@narando/nest-xray';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
-  imports: [DatabaseModule, HealthyModule, UtilsInterceptorsModule],
+  imports: [
+    DatabaseModule,
+    HealthyModule,
+    UtilsInterceptorsModule,
+    TracingModule.forRoot({
+      serviceName: 'engagements',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
+  ],
   controllers: [EngagementController],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
 })
 export class EngagementModule {}

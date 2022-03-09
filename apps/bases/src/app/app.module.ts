@@ -25,7 +25,10 @@ import { DatabaseModule } from '@castcle-api/database';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
@@ -37,6 +40,8 @@ import { SearchesController } from './controllers/searches.controller';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services';
 import { Environment } from '@castcle-api/environments';
+import { TracingModule } from '@narando/nest-xray';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
 
 @Module({
@@ -53,6 +58,10 @@ import { APP_GUARD } from '@nestjs/core';
       ttl: Environment.RATE_LIMIT_TTL,
       limit: Environment.RATE_LIMIT_LIMIT,
     }),
+    TracingModule.forRoot({
+      serviceName: 'bases',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
   ],
   controllers: [
     BasesController,
@@ -66,6 +75,10 @@ import { APP_GUARD } from '@nestjs/core';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
     },
   ],
 })

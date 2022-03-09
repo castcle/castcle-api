@@ -79,7 +79,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UserController } from './app.controller';
 import { UserSettingsDto } from './dtos';
 import { SuggestionService } from './services/suggestion.service';
-import { TracingModule } from '@narando/nest-xray';
 
 export class DownloaderMock {
   getImageFromUrl() {
@@ -133,9 +132,6 @@ describe('AppController', () => {
           { name: TopicName.Campaigns },
           { name: TopicName.Users }
         ),
-        TracingModule.forRoot({
-          serviceName: 'users',
-        }),
       ],
       controllers: [UserController],
       providers: [
