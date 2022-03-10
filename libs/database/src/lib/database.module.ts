@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import {
   NotificationProducer,
@@ -40,18 +41,18 @@ import {
   CommentSchemaFactory,
   ContentSchemaFactory,
   CountrySchema,
-  CredentialSchemaFactory,
+  CredentialSchema,
   DsContentReachSchema,
   EngagementSchemaFactory,
-  FeedItemSchemaFactory,
+  FeedItemSchema,
   GuestFeedItemSchema,
   HashtagSchema,
   LanguageSchema,
   NotificationSchema,
   OtpSchema,
   QueueSchema,
-  RelationshipSchemaFactory,
-  RevisionSchemaFactory,
+  RelationshipSchema,
+  RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
   UserSchemaFactory,
@@ -104,17 +105,14 @@ export const MongooseForFeatures = MongooseModule.forFeature([
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
-  { name: 'Credential', useFactory: CredentialSchemaFactory },
-  { name: 'Relationship', useFactory: RelationshipSchemaFactory },
-  { name: 'Revision', useFactory: RevisionSchemaFactory },
+  { name: 'Credential', useFactory: () => CredentialSchema },
+  { name: 'FeedItem', useFactory: () => FeedItemSchema },
+  { name: 'Relationship', useFactory: () => RelationshipSchema },
+  { name: 'Revision', useFactory: () => RevisionSchema },
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
     inject: [getModelToken('Revision'), getModelToken('Content')],
-  },
-  {
-    name: 'FeedItem',
-    useFactory: FeedItemSchemaFactory,
   },
   {
     name: 'Content',

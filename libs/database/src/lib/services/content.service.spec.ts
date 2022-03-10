@@ -341,8 +341,13 @@ describe('ContentService', () => {
         payload: shortPayload2,
         castcleId: user.displayId,
       });
-      await service.createFeedItemFromAuthorToEveryone(content);
+      await new service._feedItemModel({
+        calledAt: new Date(),
+        viewer: user.ownerAccount,
+        content: content._id,
+      }).save();
     });
+
     it('should update total like Count after call', async () => {
       const likeResult = await service.likeContent(content, user);
       expect(likeResult).toBeDefined();

@@ -882,8 +882,11 @@ describe('AppController', () => {
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
+      expect(result.profile.verified.email).toEqual(true);
+      expect(result.profile.verified.social).toEqual(true);
       expect(accountSocial.socialId).toEqual('109364223');
       expect(activation).toBeDefined();
+      expect(activation.activationDate).toBeDefined();
     });
 
     it('should create new account with generate castcle id', async () => {

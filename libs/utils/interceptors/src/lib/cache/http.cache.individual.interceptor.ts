@@ -27,11 +27,13 @@ import {
   ExecutionContext,
   Injectable,
 } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import * as util from '../util';
 
 @Injectable()
 export class HttpCacheIndividualInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
+    const cacheManager = this.cacheManager as Cache;
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,
       context.getHandler()
@@ -41,16 +43,11 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
       const request = context.switchToHttp().getRequest();
       const token = util.getTokenFromRequest(request);
       const finalKey = `${cacheKey}-${token}-${request._parsedUrl.pathname}-${request._parsedUrl.query}`;
-      console.debug('cache key:', finalKey);
-      //get old setting
-      console.debug('this.cacheManager.get(token)', token);
-      this.cacheManager.get(token).then((resultSetting) => {
-        console.debug('result get', resultSetting);
-        const setting: { [key: string]: any } = JSON.parse(resultSetting) || {};
-        console.log(token, 'setting', setting);
+
+      cacheManager.get<string>(token).then((settingString) => {
+        const setting = JSON.parse(settingString || '{}');
         setting[finalKey] = true;
-        console.debug('new setting', setting);
-        this.cacheManager.set(token, JSON.stringify(setting));
+        cacheManager.set(token, JSON.stringify(setting));
       });
 
       return finalKey;
