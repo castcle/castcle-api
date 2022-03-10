@@ -62,7 +62,3 @@ export class Relationship extends CastcleBase {
 }
 
 export const RelationshipSchema = SchemaFactory.createForClass(Relationship);
-
-export const RelationshipSchemaFactory = (): mongoose.Schema<any> => {
-  return RelationshipSchema;
-};

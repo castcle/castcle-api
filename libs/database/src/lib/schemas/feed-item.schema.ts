@@ -20,32 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import { SchemaTypes } from 'mongoose';
 import { Account } from './account.schema';
 import { Credential } from './credential.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { FeedItemPayload } from '../dtos/feedItem.dto';
-import { Engagement } from './engagement.schema';
-import { FeedItemPayloadItem } from '../dtos/guest-feed-item.dto';
-import { ContentAggregator } from '../models';
+import { FeedAggregator, FeedAnalytics } from '../models';
 
 @Schema({ timestamps: true })
-class FeedItemDocument extends CastcleBase {
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Content',
-    index: true,
-  })
+export class FeedItem extends CastcleBase {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Content', index: true })
   content: Content;
-  @Prop({
-    required: true,
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-  })
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Account' })
   viewer: Account;
+
   @Prop({ type: Object })
   calledAt?: Date;
 
@@ -55,31 +46,17 @@ class FeedItemDocument extends CastcleBase {
   @Prop()
   offScreenAt?: Date;
 
-  @Prop({
-    required: true,
-    type: Object,
-  })
-  aggregator: ContentAggregator;
+  @Prop({ type: Object })
+  aggregator?: FeedAggregator;
 
-  @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Credential',
-  })
+  @Prop({ type: Object })
+  analytics?: FeedAnalytics;
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
   seenCredential?: Credential;
 }
 
-export const FeedItemSchema = SchemaFactory.createForClass(FeedItemDocument);
+export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
 
 FeedItemSchema.index({ 'content.id': 1 });
-FeedItemSchema.index({
-  viewer: 1,
-});
-
-export class FeedItem extends FeedItemDocument {
-  toFeedItemPayload: (engagements?: Engagement[]) => FeedItemPayload;
-  toFeedItemPayloadV2: (engagements?: Engagement[]) => FeedItemPayloadItem;
-}
-
-export const FeedItemSchemaFactory = (): mongoose.Schema<any> => {
-  return FeedItemSchema;
-};
+FeedItemSchema.index({ viewer: 1 });

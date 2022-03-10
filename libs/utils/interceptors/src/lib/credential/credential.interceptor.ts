@@ -22,6 +22,7 @@
  */
 import { AuthenticationService, UserService } from '@castcle-api/database';
 import { Credential, User } from '@castcle-api/database/schemas';
+import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CallHandler,
@@ -39,6 +40,8 @@ export interface CredentialRequest extends TokenRequest {
 
 @Injectable()
 export class CredentialInterceptor implements NestInterceptor {
+  #logger = new CastLogger(CredentialInterceptor.name);
+
   constructor(
     private authService: AuthenticationService,
     private userService: UserService
@@ -59,10 +62,12 @@ export class CredentialInterceptor implements NestInterceptor {
 
     const isAccessTokenValid = request.$credential?.isAccessTokenValid();
 
-    console.debug('Credential', request.$credential);
-    console.debug(
-      'isAccessTokenValid',
-      request.$credential ? isAccessTokenValid : null
+    this.#logger.log(
+      JSON.stringify({
+        isAccessTokenValid,
+        credentialId: request.$credential?._id,
+        accountId: request.$credential?.account?._id,
+      })
     );
 
     if (!isAccessTokenValid) throw CastcleException.INVALID_ACCESS_TOKEN;
