@@ -26,7 +26,6 @@ export * from './common.dto';
 export * from './content.dto';
 export * from './country.dto';
 export * from './feed.dto';
-export * from './feedItem.dto';
 export * from './guest-feed-item.dto';
 export * from './hashtag.dto';
 export * from './language.dto';

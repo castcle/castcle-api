@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -30,12 +31,15 @@ import { Account, UxEngagement, DsContentReach } from '../schemas';
 
 @Injectable()
 export class UxEngagementService {
+  #logger = new CastLogger(UxEngagementService.name);
+
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('UxEngagement')
     public _uxEngagementModel: Model<UxEngagement>,
     @InjectModel('DsContentReach')
-    public _dsContentReachModel: Model<DsContentReach>
+    public reachModel: Model<DsContentReach>
   ) {}
 
   /**
@@ -55,50 +59,43 @@ export class UxEngagementService {
   }
 
   /**
-   *
-   * @param contentIds
-   * @param userId
-   * @returns {DsContentReach[]}
-   */
-  async addReachToContents(contentIds: string[], userId: string) {
-    console.log('contents', contentIds);
-    return Promise.all(
-      contentIds.map((id) => this.addReachToSingleContent(id, userId))
-    );
-  }
-
-  /**
    * Add reach to collection DsContentReach
-   * @param contentId
-   * @param userId
-   * @returns {DsContentReach}
+   * @param accountId
+   * @param contentIds
    */
-  async addReachToSingleContent(
-    contentId: string,
-    accountId: string
-  ): Promise<DsContentReach> {
-    const newMappedAccount: any = {};
-    newMappedAccount[accountId] = 1;
-    const setOnInsert = {
-      content: contentId,
-      mappedAccount: newMappedAccount,
-      reachCount: 1,
-    };
-    console.log('setOnInsert', setOnInsert);
-    const dsReach = await this._dsContentReachModel
-      .findOne({ content: contentId })
-      .exec();
-    if (dsReach) {
-      if (dsReach.mappedAccount[accountId]) {
-        dsReach.mappedAccount[accountId] = dsReach.mappedAccount[accountId] + 1;
-      } else {
-        dsReach.mappedAccount[accountId] = 1;
+  async addReachToContents(accountId: string, contentIds: string[]) {
+    this.#logger.log(
+      JSON.stringify({ accountId, contentIds }),
+      'addReachToContents'
+    );
+
+    const existingReaches = await this.reachModel.find({
+      content: { $in: contentIds },
+    });
+
+    const $reaches = contentIds.map((contentId) => {
+      const reach = existingReaches.find(
+        (reach) => String(reach.content) === String(contentId)
+      );
+
+      if (!reach) {
+        return new this.reachModel({
+          content: contentId,
+          mappedAccount: { [accountId]: 1 },
+          reachCount: 1,
+        }).save();
       }
-      dsReach.reachCount = dsReach.reachCount + 1;
-      dsReach.markModified('mappedAccount');
-      return dsReach.save();
-    } else {
-      return new this._dsContentReachModel(setOnInsert).save();
-    }
+
+      reach.reachCount = reach.reachCount + 1;
+      reach.markModified('mappedAccount');
+      reach.mappedAccount[accountId] =
+        (reach.mappedAccount[accountId] ?? 0) + 1;
+
+      return reach.save();
+    });
+
+    const reaches = await Promise.all($reaches);
+
+    return reaches;
   }
 }

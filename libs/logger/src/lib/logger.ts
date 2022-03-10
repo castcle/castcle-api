@@ -25,6 +25,8 @@ import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 import { Environment as env } from '@castcle-api/environments';
 
 export class CastLogger extends ConsoleLogger {
+  timer: Record<string, number> = {};
+
   /**
    * Create a logger with context and default options: `CastLoggerOptions`
    */
@@ -32,40 +34,53 @@ export class CastLogger extends ConsoleLogger {
     super(context, options);
   }
 
+  #formatContext = (context?: string, time?: number) => {
+    const logContext = context ? `#${context}` : '';
+    const timeContext = time ? `+${time}ms` : '';
+
+    return `${this.context}${logContext}${timeContext}`;
+  };
+
   /**
    * Write a 'log' level log.
    */
   log(message: any, context?: string) {
-    const argArray: Array<any> = [message];
-    if (context) {
-      argArray.push(context);
-    }
-    super.log.apply(this, argArray);
+    super.log(message, this.#formatContext(context));
   }
 
   /**
    * Write an 'error' level log.
    */
-  error(message: any, stack?: string, context?: string) {
-    const argArray: Array<any> = [message];
-    if (stack) {
-      argArray.push(stack);
-    }
-    if (context) {
-      argArray.push(context);
-    }
-    super.error.apply(this, argArray);
+  error(message: any, context?: string) {
+    super.error(
+      message instanceof Error ? message.message : message,
+      message instanceof Error ? message.stack : '',
+      this.#formatContext(context)
+    );
   }
 
   /**
    * Write a 'warn' level log.
    */
   warn(message: any, context?: string) {
-    const argArray: Array<any> = [message];
-    if (context) {
-      argArray.push(context);
-    }
-    super.warn.apply(this, argArray);
+    super.warn(message, this.#formatContext(context));
+  }
+
+  time(message: any, context?: string) {
+    this.timer[JSON.stringify({ context, message })] = Date.now();
+  }
+
+  timeEnd(message: any, context?: string) {
+    const afterMs = Date.now();
+    const beforeMs = this.timer[JSON.stringify({ context, message })];
+
+    if (!beforeMs) return;
+
+    const time = afterMs - beforeMs;
+
+    delete this.timer[JSON.stringify({ context, message })];
+
+    super.log(message, this.#formatContext(context, time));
   }
 }
 

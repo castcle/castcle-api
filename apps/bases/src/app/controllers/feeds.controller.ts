@@ -109,8 +109,8 @@ export class FeedsController {
     );
 
     this.uxEngagementService.addReachToContents(
-      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id),
-      String(account._id)
+      String(account._id),
+      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
     );
 
     return this.suggestionService.suggest(account.id, feedItems);
@@ -125,16 +125,19 @@ export class FeedsController {
     const account = await this.authService.getAccountFromCredential(
       $credential
     );
-    if (account.visibility !== EntityVisibility.Publish)
-      throw CastcleException.INVALID_ACCESS_TOKEN;
 
-    const feedItems = await this.rankerService.getMemberFeedItemsFromViewer(
+    if (account.visibility !== EntityVisibility.Publish) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+
+    const feedItems = await this.rankerService.getFeeds(
       account,
       paginationQuery
     );
+
     this.uxEngagementService.addReachToContents(
-      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id),
-      String(account._id)
+      String(account._id),
+      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
     );
 
     return this.suggestionService.suggest(account.id, feedItems);
