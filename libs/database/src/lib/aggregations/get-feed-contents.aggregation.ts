@@ -27,7 +27,8 @@ export class GetFeedContentsResponse {
   _id: Types.ObjectId;
   ownerAccount: Types.ObjectId;
   displayId: string;
-  contents: Types.ObjectId[];
+  followingContents: Types.ObjectId[];
+  globalContents: Types.ObjectId[];
 }
 
 export class GetFeedContentsParams {
@@ -213,9 +214,8 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         _id: 1,
         ownerAccount: 1,
         displayId: 1,
-        contents: {
-          $concatArrays: ['$globalContents.content', '$followingContents._id'],
-        },
+        followingContents: '$followingContents._id',
+        globalContents: '$globalContents.content',
       },
     },
   ];

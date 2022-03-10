@@ -32,60 +32,6 @@ type HookModels = {
   relationshipModel: Model<Relationship>;
   userModel: Model<User>;
 };
-/**
- * transform userId[] to accountId[] by find users and return user.ownerAccount
- * @param {mongoose.Schema.Types.ObjectId[]} userIds
- * @param {HookModels} models
- * @returns {mongoose.Schema.Types.ObjectId[]} accountIds
- */
-//[depecrate]
-/*const convertUserIdsToAccountIds = async (
-  userIds: mongoose.Schema.Types.ObjectId[],
-  models: HookModels
-) => {
-  const users = await models.userModel
-    .find({
-      _id: {
-        $in: userIds,
-      },
-    })
-    .exec();
-  return users.map(
-    (user) => user.ownerAccount as unknown as mongoose.Schema.Types.ObjectId
-  );
-};*/
-
-/**
- * get all follower of author to createContentItem with aggregator.createTime to now
- * @param {Content} doc
- * @param {HookModels}  models
- * @returns {ContentItem[]}
- */
-/*const createRelatedContentItem = async (doc: Content, models: HookModels) => {
-  //get all author follower
-  const relationships = await models.relationshipModel
-    .find({ followedUser: doc.author.id as any })
-    .exec();
-  const followerUserIds = relationships.map(
-    (relation) => relation.user as unknown as mongoose.Schema.Types.ObjectId
-  );
-  const feedItemDtos = (
-    await convertUserIdsToAccountIds(followerUserIds, models)
-  ).map(
-    (accountId) =>
-      ({
-        viewer: accountId,
-        content: doc._id,
-        called: false,
-        aggregator: {
-          createTime: new Date(),
-          following: true,
-        } as ContentAggregator,
-        __v: 2,
-      } as FeedItemDto)
-  );
-  return models.feedItemModel.insertMany(feedItemDtos);
-};*/
 
 /**
  * Main logic of content.post('save) this will create revision document and create contentItems

@@ -42,7 +42,6 @@ import {
   createFilterQuery,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
-  FeedItemDto,
   GetLinkPreview,
   GetSearchRecentDto,
   GuestFeedItemDto,
@@ -55,7 +54,6 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
-import { ContentAggregator } from '../models';
 import { EngagementType } from '../models/engagement.enum';
 import {
   Account,
@@ -902,100 +900,6 @@ export class ContentService {
         user: user._id,
       })
       .exec();
-
-  /**
-   *
-   * @param {User} author
-   * @param {User} viewer
-   * @returns {Promise<FeedItem[]>}
-   */
-  //[deprecate]
-  /*createFeedItemFromAuthorToViewer = async (author: User, viewer: User) => {
-    const contents = await this._contentModel
-      .find({ 'author.id': author._id, visibility: EntityVisibility.Publish })
-      .exec();
-    const promisesFeedItem = contents.map((content) =>
-      new this._feedItemModel({
-        called: false,
-        viewer: viewer,
-        content: content._id,
-        aggregator: {
-          createTime: new Date(),
-          following: true,
-        } as ContentAggregator,
-      } as FeedItemDto).save()
-    );
-    return await Promise.all(promisesFeedItem);
-  };*/
-
-  /**
-   * Convert content => feedItem to group of viewers
-   * @param {Content} content
-   * @param {Account[]} viewers
-   * @returns {Promise<FeedItem[]>}
-   */
-  //[deprecate]
-  _createFeedItemFromAuthorToViewers = async (
-    content: Content,
-    viewers: Account[]
-  ) => {
-    const promisesFeedItem = viewers.map((viewer) => {
-      return new this._feedItemModel({
-        calledAt: new Date(),
-        viewer: viewer,
-        content: content._id,
-        aggregator: {
-          createTime: new Date(),
-          following: true,
-        } as ContentAggregator,
-      } as FeedItemDto).save();
-    });
-    const result = await Promise.all(promisesFeedItem);
-    console.debug('result feed ', result);
-    return result;
-  };
-
-  /**
-   * Create a feed item to every user in the system
-   * @param {Content} content
-   * @returns {Promise<FeedItem[]>}
-   */
-  //[deprecate]
-  createFeedItemFromAuthorToEveryone = async (content: Content) => {
-    //TODO !!! should do pagination later on
-    const viewers = await this._accountModel.find().exec();
-    console.debug('publish to ', viewers);
-    return this._createFeedItemFromAuthorToViewers(content, viewers);
-  };
-
-  /**
-   * Create a feed item to every user in the system
-   * @param {ObjectId} contentId
-   * @returns {Promise<FeedItem[]>}
-   */
-  //[deprecate]
-  /*
-  createFeedItemFromAuthorIdToEveryone = async (contentId: any) => {
-    const content = await this._contentModel.findById(contentId).exec();
-    console.debug('create feed with content', content);
-    return this.createFeedItemFromAuthorToEveryone(content);
-  };*/
-
-  /**
-   *
-   * @param {ObjectId} authorId
-   * @param {ObjectId}  viewerId
-   * @returns {Promise<FeedItem[]>}
-   */ //[deprecate]
-  /*
-  createFeedItemFromAuthorIdToViewerId = async (
-    authorId: any,
-    viewerId: any
-  ) => {
-    const author = await this._userModel.findById(authorId).exec();
-    const viewer = await this._userModel.findById(viewerId).exec();
-    return this.createFeedItemFromAuthorToViewer(author, viewer);
-  };*/
 
   /**
    *

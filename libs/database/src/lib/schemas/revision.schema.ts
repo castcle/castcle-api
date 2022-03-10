@@ -22,7 +22,6 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
 import { Comment } from './comment.schema';
@@ -37,6 +36,3 @@ export class Revision extends CastcleBase {
 }
 
 export const RevisionSchema = SchemaFactory.createForClass(Revision);
-export const RevisionSchemaFactory = (): mongoose.Schema<any> => {
-  return RevisionSchema;
-};
