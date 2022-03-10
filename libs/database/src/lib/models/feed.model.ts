@@ -21,8 +21,45 @@
  * or have any questions.
  */
 
-export class ContentAggregator {
+import { ContentPayloadDto } from '../dtos';
+import { FeedAggregatorName, FeedAnalyticSource } from './feed.enum';
+
+export class FeedAggregator {
+  name?: FeedAggregatorName;
   createTime?: Date;
-  following?: boolean;
-  fromGlobal?: boolean;
+}
+
+export class FeedAnalytics {
+  source: FeedAnalyticSource;
+  score: number;
+}
+
+export class FeedItemDto {
+  content: any;
+  viewer: any;
+  calledAt: Date;
+  __v?: any;
+}
+
+export interface FeedItemPayload {
+  id: string;
+  feature: {
+    id: 'feed';
+    slug: 'feed';
+    name: 'Feed'; // ส่งตาม localize
+    key: 'feature.feed'; // for analytics
+  };
+  circle: {
+    id: 'for-you';
+    slug: 'forYou';
+    name: 'For You'; // ส่งตาม localize
+    key: 'circle.forYou'; // for analytics
+  };
+  aggregator: {
+    type: 'createTime'; // friend or following or topic
+  };
+  type: 'content'; // content or suggestion or reminder or ads
+  payload: ContentPayloadDto;
+  createdAt: string;
+  updatedAt: string;
 }

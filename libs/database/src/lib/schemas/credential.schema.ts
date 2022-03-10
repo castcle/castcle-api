@@ -187,5 +187,3 @@ CredentialSchema.methods.isRefreshTokenValid = function () {
 
   return Token.isTokenValid(refreshToken, Environment.JWT_REFRESH_SECRET);
 };
-
-export const CredentialSchemaFactory = () => CredentialSchema;

@@ -21,6 +21,15 @@
  * or have any questions.
  */
 
+export enum FeedAggregatorName {
+  DEFAULT = 'default',
+}
+
+export enum FeedAnalyticSource {
+  GLOBAL = 'global',
+  PERSONAL = 'personal',
+}
+
 export enum SearchType {
   PHOTO = 'photo',
   VIDEO = 'video',

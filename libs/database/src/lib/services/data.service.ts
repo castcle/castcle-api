@@ -36,10 +36,10 @@ export class DataService {
   private async post<T>(url: string, body: any, context: string) {
     const payload = JSON.stringify({ url, body });
 
-    this.logger.log(`${context}:init:${payload}`);
+    this.logger.log(payload, `${context}:init`);
 
     try {
-      console.time(`${context}:time:${payload}`);
+      this.logger.time(payload, `${context}:time`);
 
       const result = await lastValueFrom(
         this.httpService
@@ -47,17 +47,13 @@ export class DataService {
           .pipe(map(({ data }) => data?.result ?? {}))
       );
 
-      console.timeEnd(`${context}:time:${payload}`);
-      this.logger.log(`${context}:success:${JSON.stringify(result)}`);
+      this.logger.timeEnd(payload, `${context}:time`);
+      this.logger.log(JSON.stringify(result), `${context}:success`);
 
       return result as T;
     } catch (error: unknown) {
-      console.timeEnd(`${context}:time:${payload}`);
-      this.logger.error(
-        `${context}:error:${
-          error instanceof Error ? error.stack : JSON.stringify(error)
-        }`
-      );
+      this.logger.timeEnd(payload, `${context}:time`);
+      this.logger.error(error, `${context}:error`);
     }
   }
 
@@ -67,7 +63,7 @@ export class DataService {
     const personalizedContents = this.post<Record<string, number>>(
       url,
       body,
-      '#personalizeContents'
+      'personalizeContents'
     );
 
     return personalizedContents ?? {};
@@ -80,7 +76,7 @@ export class DataService {
     const body = { accountId };
     const followingSuggestions = this.post<
       { engagements: number; userId: string }[]
-    >(url, body, '#getFollowingSuggestions');
+    >(url, body, 'getFollowingSuggestions');
 
     return followingSuggestions ?? [];
   }
