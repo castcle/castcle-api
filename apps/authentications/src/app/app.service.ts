@@ -42,7 +42,7 @@ import {
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
-import { Host, Password } from '@castcle-api/utils/commons';
+import { Password } from '@castcle-api/utils/commons';
 import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
@@ -213,12 +213,11 @@ export class AppService {
       if (body.email) {
         const accountActivation =
           await this.authService.createAccountActivation(account, 'email');
-        this.logger.log(`send email with token, email : ${body.email}`);
-        await this.sendRegistrationEmail(
-          Host.getHostname(req),
-          body.email,
-          accountActivation.verifyToken
-        );
+
+        if (accountActivation && accountActivation.isVerifyTokenValid()) {
+          this.logger.log(`activate user account, email : ${body.email}`);
+          await this.authService.verifyAccount(accountActivation);
+        }
       }
 
       this.logger.log('get All User');
