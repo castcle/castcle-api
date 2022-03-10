@@ -294,9 +294,10 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        await this.cancelOtp(exOtp);
-        this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
-        await exOtp.delete();
+        // disable cancle
+        // await this.cancelOtp(exOtp);
+        // this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
+        // await exOtp.delete();
       }
     }
 
