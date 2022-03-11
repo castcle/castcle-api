@@ -35,6 +35,7 @@ export class GetFeedContentsParams {
   decayDays: number;
   followFeedMax: number;
   followFeedRatio: number;
+  duplicateContentMax: number;
   geolocation?: string;
   maxResult: number;
   preferLanguages: string[];
@@ -120,7 +121,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, content: 1 } },
-          { $limit: 200 },
+          { $limit: params.duplicateContentMax },
         ],
         as: 'duplicateContents',
       },
