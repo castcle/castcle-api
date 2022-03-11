@@ -157,6 +157,9 @@ export class Environment {
   static FEED_DECAY_DAYS = Number(
     process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays
   );
+  static FEED_DUPLICATE_MAX = Number(
+    process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax
+  );
 
   // Links
   static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
