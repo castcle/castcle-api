@@ -61,6 +61,15 @@ export class FacebookController {
       'hub.verify_token': verifyToken,
     }: ValidateWebhookQuery
   ) {
+    this.logger.log(
+      JSON.stringify({
+        challenge,
+        verifyToken,
+        isValidToken: verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN,
+      }),
+      'validateWebhook'
+    );
+
     if (verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN) return;
 
     return challenge;
@@ -70,7 +79,7 @@ export class FacebookController {
   async handleWebhook(
     @Body('entry') entries: SubscriptionEntry<FeedEntryChange>[]
   ) {
-    this.logger.log(`#handleWebhook\n${JSON.stringify(entries, null, 2)}`);
+    this.logger.log(JSON.stringify(entries), 'handleWebhook:init');
 
     for (const entry of entries) {
       const socialId = entry.id;
@@ -82,7 +91,8 @@ export class FacebookController {
 
       if (!syncAccount) {
         this.logger.error(
-          `#handleWebhook:sync-account-not-found:facebook-${socialId}`
+          `facebook-${socialId}`,
+          'handleWebhook:sync-account-not-found'
         );
         continue;
       }
@@ -93,13 +103,14 @@ export class FacebookController {
 
       if (!author) {
         this.logger.error(
-          `#handleWebhook:author-not-found:${syncAccount.author.id}`
+          `authorId: ${syncAccount.author.id}`,
+          'handleWebhook:author-not-found'
         );
         continue;
       }
 
       if (!entry.changes?.length) {
-        this.logger.error(`#handleWebhook:no-change:author-${author.id}`);
+        this.logger.error(`author-${author.id}`, 'handleWebhook:no-change');
         continue;
       }
 
@@ -110,7 +121,10 @@ export class FacebookController {
         const message = feed.message;
 
         if (feed.verb !== FeedEntryType.ADD) {
-          this.logger.error(`#handleWebhook:verb-mismatched:${feed.post_id}`);
+          this.logger.error(
+            `postId: ${feed.post_id}`,
+            'handleWebhook:verb-mismatched'
+          );
           continue;
         }
 
@@ -163,11 +177,8 @@ export class FacebookController {
         await this.contentService.createContentsFromAuthor(author, contents);
 
       this.logger.log(
-        `#handleWebhook:contents-created:${JSON.stringify(
-          createdContents,
-          null,
-          2
-        )}`
+        JSON.stringify(createdContents),
+        'handleWebhook:contents-created'
       );
     }
   }

@@ -122,7 +122,6 @@ describe('Twitter Service', () => {
     contentService = app.get(ContentService);
     socialSyncService = app.get(SocialSyncService);
     twitterService = app.get(TwitterService);
-    twitterService.logger = { log: jest.fn() } as any;
     twitterService.client = { userTimeline: jest.fn() } as any;
   });
 
@@ -143,7 +142,7 @@ describe('Twitter Service', () => {
 
       await twitterService.handleTwitterJobs();
 
-      expect(twitterService.logger.log).toBeCalledTimes(2);
+      expect(twitterService.logger.log).toBeCalledTimes(3);
     });
   });
 
@@ -190,11 +189,12 @@ describe('Twitter Service', () => {
     it('should return user timeline', async () => {
       jest.spyOn(twitterService.client, 'userTimeline').mockResolvedValueOnce({
         data: timeline,
+        meta: { result_count: timeline.data.length },
       } as TweetUserTimelineV2Paginator);
 
-      expect(() =>
+      await expect(
         twitterService.getTimelineByUserId('userId', '1')
-      ).not.toThrow();
+      ).resolves.not.toThrow();
     });
   });
 

@@ -54,15 +54,27 @@ export class TwitterService {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async handleTwitterJobs() {
-    this.logger.log(`Start looking for user's timeline`);
+    this.logger.log(
+      `Start looking for user's timeline`,
+      'handleTwitterJobs:init'
+    );
 
     const syncAccounts = await this.socialSyncService.getAutoSyncAccounts(
       SocialProvider.Twitter
     );
 
-    await Promise.all(syncAccounts.map(this.getTweetsByAccount));
+    this.logger.log(JSON.stringify(syncAccounts), 'handleTwitterJobs:start');
 
-    this.logger.log('Done, waiting for next available schedule');
+    try {
+      await Promise.all(syncAccounts.map(this.getTweetsByAccount));
+    } catch (error: unknown) {
+      this.logger.error(error, 'handleTwitterJobs');
+    }
+
+    this.logger.log(
+      'Waiting for next available schedule',
+      'handleTwitterJobs:done'
+    );
   }
 
   getTweetsByAccount = async (syncAccount: SocialSync) => {
@@ -71,11 +83,7 @@ export class TwitterService {
       syncAccount.latestSyncId
     );
 
-    this.logger.log(
-      `Name: ${syncAccount.displayName}, tweet(s): ${timeline.meta.result_count}`
-    );
-
-    if (!timeline.meta.result_count) return;
+    if (!timeline?.meta?.result_count) return;
 
     const [author, contents] = await Promise.all([
       this.contentService.getAuthorFromId(syncAccount.author.id),
@@ -98,14 +106,31 @@ export class TwitterService {
     );
   };
 
-  getTimelineByUserId = (userId: string, latestPostId: string) => {
-    return this.client.userTimeline(userId, {
-      exclude: ['retweets', 'replies'],
-      expansions: ['attachments.media_keys', 'author_id'],
-      'media.fields': ['media_key', 'preview_image_url', 'type', 'url'],
-      since_id: latestPostId,
-      'tweet.fields': ['referenced_tweets'],
-    });
+  getTimelineByUserId = async (userId: string, latestPostId: string) => {
+    try {
+      const timeline = await this.client.userTimeline(userId, {
+        exclude: ['retweets', 'replies'],
+        expansions: ['attachments.media_keys', 'author_id'],
+        'media.fields': ['media_key', 'preview_image_url', 'type', 'url'],
+        since_id: latestPostId,
+        'tweet.fields': ['referenced_tweets'],
+      });
+
+      if (timeline.data.errors?.length) throw timeline.data.errors;
+
+      this.logger.log(
+        JSON.stringify({
+          userId,
+          latestPostId,
+          tweetsCount: timeline.meta.result_count,
+        }),
+        'getTimelineByUserId'
+      );
+
+      return timeline;
+    } catch (error: unknown) {
+      this.logger.error(error, 'getTimelineByUserId');
+    }
   };
 
   convertTimelineToContents(userId: string, timeline: TweetTimelineResult) {

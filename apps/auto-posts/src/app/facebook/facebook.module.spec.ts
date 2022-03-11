@@ -126,7 +126,8 @@ describe('FacebookController', () => {
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
-        `#handleWebhook:sync-account-not-found:facebook-${socialId.invalid}`
+        `facebook-${socialId.invalid}`,
+        'handleWebhook:sync-account-not-found'
       );
     });
 
@@ -145,7 +146,8 @@ describe('FacebookController', () => {
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
-        `#handleWebhook:no-change:author-${user._id}`
+        `author-${user._id}`,
+        `handleWebhook:no-change`
       );
     });
 
@@ -173,7 +175,8 @@ describe('FacebookController', () => {
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
-        `#handleWebhook:verb-mismatched:${post[0].changes[0].value.post_id}`
+        `postId: ${post[0].changes[0].value.post_id}`,
+        'handleWebhook:verb-mismatched'
       );
     });
 
@@ -200,14 +203,13 @@ describe('FacebookController', () => {
       ] as unknown as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
       );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(post[0].changes[0].value.message)
-      );
-      expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "short"`)
+        expect.stringContaining(`"type":"short"`),
+        'handleWebhook:contents-created'
       );
     });
 
@@ -235,13 +237,12 @@ describe('FacebookController', () => {
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
       );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(post[0].changes[0].value.message)
-      );
-      expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "long"`)
+        expect.stringContaining(`"type":"long"`),
+        'handleWebhook:contents-created'
       );
     });
 
@@ -271,13 +272,12 @@ describe('FacebookController', () => {
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
       );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(post[0].changes[0].value.message)
-      );
-      expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "video"`)
+        expect.stringContaining(`"type":"video"`),
+        'handleWebhook:contents-created'
       );
     });
 
@@ -305,11 +305,9 @@ describe('FacebookController', () => {
       ] as unknown as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
-      );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "image"`)
+        expect.stringContaining(`"type":"image"`),
+        'handleWebhook:contents-created'
       );
     });
 
@@ -338,14 +336,13 @@ describe('FacebookController', () => {
       ] as unknown as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
       );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(post[0].changes[0].value.message)
-      );
-      expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "short"`)
+        expect.stringContaining(`"type":"short"`),
+        'handleWebhook:contents-created'
       );
     });
 
@@ -377,14 +374,13 @@ describe('FacebookController', () => {
       ] as unknown as SubscriptionEntry<FeedEntryChange>[];
 
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
-      expect(logger.log).toBeCalledWith(
-        expect.stringContaining('#handleWebhook:contents-created')
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
       );
       expect(logger.log).lastCalledWith(
-        expect.stringContaining(post[0].changes[0].value.message)
-      );
-      expect(logger.log).lastCalledWith(
-        expect.stringContaining(`"type": "short"`)
+        expect.stringContaining(`"type":"short"`),
+        'handleWebhook:contents-created'
       );
     });
   });
