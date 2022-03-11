@@ -390,6 +390,7 @@ export class AppService {
 
         this.logger.log('Create Otp');
         otp = await this.generateAndSendOtp(
+          request.payload.countryCode,
           request.payload.email,
           account,
           TwilioChannel.Email,
@@ -420,6 +421,7 @@ export class AppService {
 
         this.logger.log('Create OTP');
         otp = await this.generateAndSendOtp(
+          request.payload.countryCode,
           request.payload.countryCode + request.payload.mobileNumber,
           account,
           TwilioChannel.Mobile,
@@ -448,6 +450,7 @@ export class AppService {
    * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
+    countryCode: string,
     receiver: string,
     account: Account,
     twillioChannel: TwilioChannel,
@@ -461,6 +464,7 @@ export class AppService {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
       const result = await this.twillioClient.requestOtp(
+        countryCode,
         receiver,
         twillioChannel,
         this.buildTemplateMessage(objective, user),
