@@ -40,31 +40,13 @@ type HookModels = {
  * @returns
  */
 export const postContentSave = async (doc: Content, models: HookModels) => {
-  const session = await models.revisionModel.startSession();
-
-  session.withTransaction(async () => {
-    //update revision
-    const newRevison = new models.revisionModel({
-      objectRef: {
-        $ref: 'content',
-        $id: mongoose.Types.ObjectId((doc as Content)._id),
-      },
-      payload: doc as Content,
-    });
-    await newRevison.save();
-    //change all embed content from recast/quotecast
-
-    if ((doc as Content).visibility != EntityVisibility.Publish) {
-      //if this is quote cast
-    }
-  });
-  session.endSession();
-  //create contentItem
-  //if is new and
-  if (doc.wasNew && doc.visibility === EntityVisibility.Publish) {
-    console.debug('saving doc -->', JSON.stringify(doc));
-    // await createRelatedContentItem(doc, models);
-  }
+  new models.revisionModel({
+    objectRef: {
+      $ref: 'content',
+      $id: mongoose.Types.ObjectId((doc as Content)._id),
+    },
+    payload: doc as Content,
+  }).save();
 
   return true;
 };
@@ -75,7 +57,6 @@ export const postContentSave = async (doc: Content, models: HookModels) => {
  * @returns
  */
 export const preContentSave = async (doc: Content) => {
-  console.debug('preSaveDoc', doc);
   doc.wasNew = doc.isNew;
   doc.visibility = doc.visibility ? doc.visibility : EntityVisibility.Publish;
   doc.revisionCount = doc.revisionCount ? doc.revisionCount + 1 : 1;
