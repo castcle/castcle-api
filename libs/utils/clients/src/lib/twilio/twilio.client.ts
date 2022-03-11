@@ -48,37 +48,52 @@ export class TwilioClient {
   );
 
   async getRateLimitsOTP(
+    countryCode: string,
     receiver: string,
     channel: TwilioChannel,
     account_id: string
   ) {
     if (channel == TwilioChannel.Email) {
       return {
-        castcle_account_id: account_id,
-        email: receiver,
-        receiver: receiver,
+        session_id: account_id,
+        user_agent: receiver,
       };
     } else if (channel == TwilioChannel.Mobile) {
-      return {
-        castcle_account_id: account_id,
-        phone_number: receiver,
-        receiver: receiver,
-      };
+      if (
+        countryCode == '+62' ||
+        countryCode == '+91' ||
+        countryCode == '+880'
+      ) {
+        return {
+          phone_number: receiver,
+          phone_number_country_code: countryCode,
+          session_id: account_id,
+          user_agent: receiver,
+        };
+      } else {
+        return {
+          phone_number: receiver,
+          session_id: account_id,
+          user_agent: receiver,
+        };
+      }
     } else {
       return {
-        castcle_account_id: account_id,
-        receiver: receiver,
+        session_id: account_id,
+        user_agent: receiver,
       };
     }
   }
 
   async requestOtp(
+    countryCode: string,
     receiver: string,
     channel: TwilioChannel,
     config: any,
     account_id: string
   ) {
     const rateLimits = await this.getRateLimitsOTP(
+      countryCode,
       receiver,
       channel,
       account_id
