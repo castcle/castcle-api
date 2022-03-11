@@ -53,8 +53,16 @@ export class CastLogger extends ConsoleLogger {
    */
   error(message: any, context?: string) {
     super.error(
-      message instanceof Error ? message.message : message,
-      message instanceof Error ? message.stack : '',
+      message instanceof Error
+        ? JSON.stringify({
+            name: message.name,
+            message: message.name,
+            stack: message.stack,
+          })
+        : typeof message === 'string'
+        ? message
+        : JSON.stringify(message),
+      '',
       this.#formatContext(context)
     );
   }
