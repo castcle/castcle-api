@@ -331,6 +331,7 @@ export class RankerService {
       followFeedMax: Environment.FEED_FOLLOW_MAX,
       followFeedRatio: Environment.FEED_FOLLOW_RATIO,
       decayDays: Environment.FEED_DECAY_DAYS,
+      duplicateContentMax: Environment.FEED_DUPLICATE_MAX,
       geolocation: viewer.geolocation?.countryCode,
       maxResult: query.maxResults,
       userId: user._id,

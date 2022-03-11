@@ -54,10 +54,7 @@ export class TwilioClient {
     account_id: string
   ) {
     if (channel == TwilioChannel.Email) {
-      return {
-        session_id: account_id,
-        user_agent: receiver,
-      };
+      return {};
     } else if (channel == TwilioChannel.Mobile) {
       if (
         countryCode == '+62' ||
@@ -101,27 +98,51 @@ export class TwilioClient {
     this.logger.log(`* [START] requestOtp *`);
     this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
     this.logger.log(`* [PROCESS] requestOtp: ${JSON.stringify(rateLimits)} *`);
-    return this.client.verify
-      .services(this.env.twilioOtpSid)
-      .verifications.create({
-        rateLimits: rateLimits,
-        channelConfiguration: {
-          substitutions: config,
-        },
-        to: receiver,
-        channel: channel,
-      })
-      .then((verification) => {
-        this.logger.log(`* [SUCCESS] requestOtp *`);
-        this.logger.log(
-          `${account_id} invoke Twilio Verification SID: ${verification.sid}`
-        );
-        return verification;
-      })
-      .catch((error) => {
-        this.logger.log(`* [ERROR] requestOtp: ${error} *`);
-        throw new Error(error);
-      });
+    if (channel == TwilioChannel.Mobile) {
+      return this.client.verify
+        .services(this.env.twilioOtpSid)
+        .verifications.create({
+          rateLimits: rateLimits,
+          channelConfiguration: {
+            substitutions: config,
+          },
+          to: receiver,
+          channel: channel,
+        })
+        .then((verification) => {
+          this.logger.log(`* [SUCCESS] requestOtp *`);
+          this.logger.log(
+            `${account_id} invoke Twilio Verification SID: ${verification.sid}`
+          );
+          return verification;
+        })
+        .catch((error) => {
+          this.logger.log(`* [ERROR] requestOtp: ${error} *`);
+          throw new Error(error);
+        });
+    } else {
+      // channel = email
+      return this.client.verify
+        .services(this.env.twilioOtpSid)
+        .verifications.create({
+          channelConfiguration: {
+            substitutions: config,
+          },
+          to: receiver,
+          channel: channel,
+        })
+        .then((verification) => {
+          this.logger.log(`* [SUCCESS] requestOtp *`);
+          this.logger.log(
+            `${account_id} invoke Twilio Verification SID: ${verification.sid}`
+          );
+          return verification;
+        })
+        .catch((error) => {
+          this.logger.log(`* [ERROR] requestOtp: ${error} *`);
+          throw new Error(error);
+        });
+    }
   }
 
   async verifyOtp(receiver: string, otp: string) {
