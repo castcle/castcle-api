@@ -1395,7 +1395,7 @@ describe('AppController', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new socialSyncService.userModel({
+      mocksPage = await new (socialSyncService as any).userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1431,7 +1431,7 @@ describe('AppController', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
     beforeAll(async () => {
-      mocksPage = await new socialSyncService.userModel({
+      mocksPage = await new (socialSyncService as any).userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
@@ -1465,8 +1465,8 @@ describe('AppController', () => {
   });
   afterAll(() => {
     service._userModel.deleteMany({});
-    socialSyncService.socialSyncModel.deleteMany({});
+    (socialSyncService as any).socialSyncModel.deleteMany({});
     service._userModel.deleteMany({});
-    socialSyncService.socialSyncModel.deleteMany({});
+    (socialSyncService as any).socialSyncModel.deleteMany({});
   });
 });

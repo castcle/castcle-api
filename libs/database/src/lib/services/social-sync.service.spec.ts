@@ -53,7 +53,7 @@ describe('SocialSyncService', () => {
 
     service = app.get<SocialSyncService>(SocialSyncService);
 
-    mocksUser = new service.userModel({
+    mocksUser = new (service as any).userModel({
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
@@ -61,7 +61,7 @@ describe('SocialSyncService', () => {
     });
     await mocksUser.save();
 
-    mocksPage = await new service.userModel({
+    mocksPage = await new (service as any).userModel({
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
@@ -211,7 +211,7 @@ describe('SocialSyncService', () => {
     });
   });
   afterAll(() => {
-    service.socialSyncModel.deleteMany({});
-    service.userModel.deleteMany({});
+    (service as any).socialSyncModel.deleteMany({});
+    (service as any).userModel.deleteMany({});
   });
 });

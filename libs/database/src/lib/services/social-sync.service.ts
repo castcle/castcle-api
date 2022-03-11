@@ -34,9 +34,9 @@ export class SocialSyncService {
 
   constructor(
     @InjectModel('SocialSync')
-    public socialSyncModel: Model<SocialSync>,
+    private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public userModel: Model<User>
+    private userModel: Model<User>
   ) {}
 
   /**
