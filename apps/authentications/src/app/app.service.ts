@@ -652,7 +652,7 @@ export class AppService {
       return { otp: newOtp, token: tokenResult };
     } else {
       this.logger.error(`Otp expired.`);
-      await this.cancelOtp(otp);
+      // await this.cancelOtp(otp);
       this.logger.log('Delete OTP refCode: ' + otp.refCode);
       await otp.delete();
       throw new CastcleException(
