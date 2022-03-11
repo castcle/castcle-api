@@ -24,4 +24,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { ErrorMessages } from '../utils-exception.module';
 export class CastcleThrottlerGuard extends ThrottlerGuard {
   protected errorMessage: string = ErrorMessages['1010'].message;
+
+  getTracker(req: Record<string, any>): string {
+    return req.ips.length ? req.ips[0] : req.ip;
+  }
 }
