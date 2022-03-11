@@ -23,6 +23,7 @@
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { isBoolean } from 'class-validator';
 import { Model } from 'mongoose';
 import { SocialProvider } from '../models';
 import { SocialSync, User } from '../schemas';
@@ -211,7 +212,8 @@ export class SocialSyncService {
    * */
   delete = async (
     socialSyncDeleteDto: SocialSyncDeleteDto,
-    user: User
+    user: User,
+    unsubscribe = false
   ): Promise<SocialSync> => {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
@@ -223,9 +225,10 @@ export class SocialSyncService {
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');
       deleteSocialSync.active = false;
+      if (unsubscribe) deleteSocialSync.autoPost = false;
       return deleteSocialSync.save();
     } else {
-      this.logger.warn('Cnn not found social sync');
+      this.logger.warn('Can not found social sync');
       return null;
     }
   };

@@ -1759,4 +1759,117 @@ export class UserController {
 
     await this.socialSyncService.updateAutoPostBySocialId(social, false);
   }
+
+  /**
+   * Reconnect sync social data
+   * @param {Authorizer} req Request that has credential from interceptor or passport
+   * @param {string} id social sync _id
+   * @param {SocialSyncDto} body social sync payload
+   * @returns
+   */
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @ApiBody({
+    type: SocialSyncDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social/:id/connect')
+  async connectSyncSocial(
+    @Auth() { credential, user }: Authorizer,
+    @Param('id') id: string,
+    @Body() body: { payload: SocialSyncDto }
+  ) {
+    this.logger.log(`Start reconnect sync social.`);
+
+    await this.validateGuestAccount(credential);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const syncBody = body.payload;
+    const socialPage = new SocialPageDto();
+
+    syncBody.provider = social.provider;
+    syncBody.castcleId = page.displayId;
+    syncBody.autoPost = true;
+    syncBody.active = true;
+
+    if (syncBody.displayName) socialPage.displayName = syncBody.displayName;
+    if (syncBody.overview) socialPage.overview = syncBody.overview;
+
+    if (syncBody.avatar) {
+      const imageAvatar = await this.download.getImageFromUrl(syncBody.avatar);
+      const { image } = await this._uploadImage(imageAvatar, {
+        filename: `page-avatar-${syncBody.castcleId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `page_${syncBody.castcleId}`,
+      });
+      socialPage.avatar = image;
+    }
+
+    if (syncBody.cover) {
+      const imageAvatar = await this.download.getImageFromUrl(syncBody.cover);
+      const { image } = await this._uploadImage(imageAvatar, {
+        filename: `page-cover-${syncBody.castcleId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `page_${syncBody.castcleId}`,
+      });
+      socialPage.cover = image;
+    }
+
+    if (syncBody.link) socialPage.links = { [social.provider]: syncBody.link };
+
+    await Promise.all([
+      this.userService.updatePageFromSocial(page, socialPage),
+      this.socialSyncService.update(syncBody, page),
+    ]);
+
+    if (syncBody.provider === SocialProvider.Facebook) {
+      this.logger.log('Subscribed facebook page.');
+      await this.facebookClient.subscribed(
+        syncBody.authToken || social.authToken,
+        syncBody.socialId || social.socialId
+      );
+    }
+  }
+
+  /**
+   * Disconnect sync social data
+   * @param {Authorizer} req Request that has credential from interceptor or passport
+   * @param {string} id social sync _id
+   * @returns
+   */
+  @CastcleBasicAuth()
+  @Delete('me/pages/sync-social/:id/connect')
+  async disconnectSyncSocial(
+    @Auth() { credential, user }: Authorizer,
+    @Param('id') id: string
+  ) {
+    this.logger.log(`Start create sync social.`);
+
+    await this.validateGuestAccount(credential);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    await this.socialSyncService.delete(social, page, true);
+
+    if (social.provider === SocialProvider.Facebook && social.authToken) {
+      this.logger.log('Unsubscribed facebook page');
+      await this.facebookClient.unsubscribed(social.authToken, social.socialId);
+    }
+  }
 }
