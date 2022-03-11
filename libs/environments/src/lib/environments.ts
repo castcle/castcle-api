@@ -174,7 +174,7 @@ export class Environment {
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 300;
   static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 200;
   static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 300;
-  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 2;
+  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 200;
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;
