@@ -51,7 +51,7 @@ describe('SocialSyncService', () => {
 
     service = app.get<SocialSyncService>(SocialSyncService);
 
-    mocksUser = new service.userModel({
+    mocksUser = new (service as any).userModel({
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',

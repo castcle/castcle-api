@@ -327,30 +327,13 @@ export class UserController {
     const pages = await this.userService.getPagesFromCredential(
       req.$credential
     );
+    const socials = await this.socialSyncService.getSocialSyncByUser(...pages);
 
-    const socials: SocialSync[] = [];
-    await Promise.all(
-      pages.map(async (page) => {
-        const syncData = await this.socialSyncService.getSocialSyncByUser(page);
-        socials.push(...syncData);
-      })
+    if (!socials.length) return { payload: null };
+
+    const socialResponse = socials.map((social) =>
+      social.toSocialSyncPayload()
     );
-
-    if (!socials?.length) return { payload: null };
-
-    const socialResponse = await Promise.all(
-      socials
-        .map((social) => {
-          if (
-            Object.values(SocialProvider).find(
-              (provider) => provider === social.provider
-            )
-          )
-            return social.toSocialSyncPayload();
-        })
-        .filter((social) => social != null || social != undefined)
-    );
-
     return { payload: socialResponse };
   }
 
