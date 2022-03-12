@@ -1092,7 +1092,11 @@ describe('AppController', () => {
           mobileNumber: numberTest,
         },
       };
-      const result = await appController.requestOTP(request, credentialGuest);
+      const result = await appController.requestOTP(
+        request,
+        credentialGuest,
+        {} as any
+      );
 
       expect(result).toBeDefined;
       expect(result.refCode).toBeDefined;
@@ -1100,7 +1104,8 @@ describe('AppController', () => {
 
       const resultAgain = await appController.requestOTP(
         request,
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       expect(resultAgain).toBeDefined;
@@ -1119,7 +1124,11 @@ describe('AppController', () => {
           mobileNumber: mobileNumber,
         },
       };
-      const result = await appController.requestOTP(request, credentialGuest);
+      const result = await appController.requestOTP(
+        request,
+        credentialGuest,
+        {} as any
+      );
 
       expect(result).toBeDefined;
       expect(result.refCode).toBeDefined;
@@ -1137,7 +1146,8 @@ describe('AppController', () => {
 
       const resultAgain = await appController.requestOTP(
         requestnew,
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       expect(resultAgain).toBeDefined;
@@ -1155,7 +1165,11 @@ describe('AppController', () => {
           mobileNumber: '',
         },
       };
-      const result = await appController.requestOTP(request, credentialGuest);
+      const result = await appController.requestOTP(
+        request,
+        credentialGuest,
+        {} as any
+      );
 
       expect(result).toBeDefined;
       expect(result.refCode).toBeDefined;
@@ -1163,7 +1177,8 @@ describe('AppController', () => {
 
       const resultAgain = await appController.requestOTP(
         request,
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       expect(resultAgain).toBeDefined;
@@ -1183,7 +1198,8 @@ describe('AppController', () => {
               mobileNumber: '',
             },
           },
-          credentialGuest
+          credentialGuest,
+          {} as any
         )
       ).rejects.toEqual(
         new CastcleException(
@@ -1213,7 +1229,8 @@ describe('AppController', () => {
               mobileNumber: '',
             },
           },
-          credentialGuest
+          credentialGuest,
+          {} as any
         )
       ).rejects.toEqual(
         new CastcleException(
@@ -1233,7 +1250,8 @@ describe('AppController', () => {
               mobileNumber: '',
             },
           },
-          credentialGuest
+          credentialGuest,
+          {} as any
         )
       ).rejects.toEqual(
         new CastcleException(
@@ -1264,7 +1282,7 @@ describe('AppController', () => {
         };
       };
       await expect(
-        appController.requestOTP(request(), credentialGuest)
+        appController.requestOTP(request(), credentialGuest, {} as any)
       ).rejects.toEqual(
         new CastcleException(
           CastcleStatus.PAYLOAD_TYPE_MISMATCH,
@@ -1286,7 +1304,7 @@ describe('AppController', () => {
         };
       };
       await expect(
-        appController.requestOTP(request(), credentialGuest)
+        appController.requestOTP(request(), credentialGuest, {} as any)
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.MOBILE_NUMBER_IS_EXIST)
       );
@@ -1318,7 +1336,9 @@ describe('AppController', () => {
           },
         };
       };
-      await expect(appController.requestOTP(request(), guest)).rejects.toEqual(
+      await expect(
+        appController.requestOTP(request(), guest, {} as any)
+      ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, guest.$language)
       );
     });
@@ -1366,7 +1386,8 @@ describe('AppController', () => {
             mobileNumber: numberTest,
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       const result = await appController.verificationOTP(
@@ -1400,7 +1421,8 @@ describe('AppController', () => {
             mobileNumber: '',
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       const result = await appController.verificationOTP(
@@ -1434,7 +1456,8 @@ describe('AppController', () => {
             mobileNumber: '',
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       const result = await appController.verificationOTP(
@@ -1547,7 +1570,8 @@ describe('AppController', () => {
             mobileNumber: numberTest,
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       await expect(
@@ -1636,7 +1660,8 @@ describe('AppController', () => {
             mobileNumber: numberTest,
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       await expect(
@@ -1676,7 +1701,8 @@ describe('AppController', () => {
             mobileNumber: numberTest,
           },
         },
-        credentialGuest
+        credentialGuest,
+        {} as any
       );
 
       await expect(
