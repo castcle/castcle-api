@@ -566,11 +566,15 @@ export class AuthenticationController {
   @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
   @Post('requestOTP')
   @HttpCode(200)
-  async requestOTP(@Body() body: RequestOtpDto, @Req() req: CredentialRequest) {
+  async requestOTP(
+    @Body() body: RequestOtpDto,
+    @Req() req: CredentialRequest,
+    @RequestMeta() { ip, userAgent }: RequestMetadata
+  ) {
     this.logger.log(
       `Start request OPT channel: ${body.channel} objective: ${body.objective}`
     );
-    const otp = await this.appService.requestOtpCode(body, req);
+    const otp = await this.appService.requestOtpCode(body, req, ip, userAgent);
     if (otp && otp.isValid()) {
       const response: otpResponse = {
         objective: body.objective,

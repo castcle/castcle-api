@@ -133,6 +133,7 @@ export class Environment {
   static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
   static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
   static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID;
+  static TWILIO_COUNTRY_CODE = process.env.TWILIO_COUNTRY_CODE;
 
   // Youtube
   static YOUTUBE_VERIFY_TOKEN = process.env.YOUTUBE_VERIFY_TOKEN;
