@@ -355,9 +355,16 @@ export class AppService {
    * forgot password request Otp
    * @param {RequestOtpDto} request
    * @param {CredentialRequest} credential
+   * @param {string} ip
+   * @param {string} userAgent
    * @returns {Otp} Opt data
    */
-  async requestOtpCode(request: RequestOtpDto, credential: CredentialRequest) {
+  async requestOtpCode(
+    request: RequestOtpDto,
+    credential: CredentialRequest,
+    ip: string,
+    userAgent: string
+  ) {
     let account: Account = null;
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
@@ -390,6 +397,8 @@ export class AppService {
 
         this.logger.log('Create Otp');
         otp = await this.generateAndSendOtp(
+          ip,
+          userAgent,
           request.payload.countryCode,
           request.payload.email,
           account,
@@ -421,6 +430,8 @@ export class AppService {
 
         this.logger.log('Create OTP');
         otp = await this.generateAndSendOtp(
+          ip,
+          userAgent,
           request.payload.countryCode,
           request.payload.countryCode + request.payload.mobileNumber,
           account,
@@ -450,6 +461,8 @@ export class AppService {
    * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
+    ip: string,
+    userAgent: string,
     countryCode: string,
     receiver: string,
     account: Account,
@@ -464,6 +477,8 @@ export class AppService {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
       const result = await this.twillioClient.requestOtp(
+        ip,
+        userAgent,
         countryCode,
         receiver,
         twillioChannel,

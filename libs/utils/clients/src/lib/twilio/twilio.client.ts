@@ -38,6 +38,9 @@ export class TwilioClient {
     twilioOtpSid: Environment.TWILIO_OTP_SID
       ? Environment.TWILIO_OTP_SID
       : 'VA356353',
+    twilioCountryCode: Environment.TWILIO_COUNTRY_CODE
+      ? Environment.TWILIO_COUNTRY_CODE
+      : '+62,+91,+880',
   };
 
   private logger = new CastLogger(TwilioClient.name);
@@ -48,6 +51,8 @@ export class TwilioClient {
   );
 
   async getRateLimitsOTP(
+    ip: string,
+    userAgent: string,
     countryCode: string,
     receiver: string,
     channel: TwilioChannel,
@@ -56,36 +61,37 @@ export class TwilioClient {
     if (channel == TwilioChannel.Email) {
       return {
         session_id: account_id,
-        user_agent: receiver,
+        user_agent: userAgent,
       };
     } else if (channel == TwilioChannel.Mobile) {
-      if (
-        countryCode == '+62' ||
-        countryCode == '+91' ||
-        countryCode == '+880'
-      ) {
+      const countries = this.env.twilioCountryCode.split(',');
+      const indexOfCountry = countries.indexOf(countryCode);
+      if (indexOfCountry != -1) {
         return {
+          end_user_ip_address: ip,
           phone_number: receiver,
           phone_number_country_code: countryCode,
           session_id: account_id,
-          user_agent: receiver,
+          user_agent: userAgent,
         };
       } else {
         return {
           phone_number: receiver,
           session_id: account_id,
-          user_agent: receiver,
+          user_agent: userAgent,
         };
       }
     } else {
       return {
         session_id: account_id,
-        user_agent: receiver,
+        user_agent: userAgent,
       };
     }
   }
 
   async requestOtp(
+    ip: string,
+    userAgent: string,
     countryCode: string,
     receiver: string,
     channel: TwilioChannel,
@@ -93,6 +99,8 @@ export class TwilioClient {
     account_id: string
   ) {
     const rateLimits = await this.getRateLimitsOTP(
+      ip,
+      userAgent,
       countryCode,
       receiver,
       channel,
