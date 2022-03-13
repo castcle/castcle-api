@@ -372,9 +372,8 @@ export class AppService {
     let account: Account = null;
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
-
-    if (request.token.recaptcha) {
-      const token = request.token.recaptcha;
+    if (request.payload.recapchaToken) {
+      const token = request.payload.recapchaToken;
       const url = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments?key=${env.RECAPTCHA_API_KEY}`;
       const objectRequest = {
         event: {
