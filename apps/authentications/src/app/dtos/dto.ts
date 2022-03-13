@@ -208,6 +208,14 @@ export class ForgotPasswordPayload {
 
   @ApiProperty()
   mobileNumber: string;
+
+  @ApiProperty()
+  recapchaToken: string;
+}
+
+export class OtpToken {
+  @ApiProperty()
+  recaptcha?: string;
 }
 
 export class RequestOtpDto {
@@ -219,6 +227,9 @@ export class RequestOtpDto {
 
   @ApiProperty()
   payload: ForgotPasswordPayload;
+
+  @ApiProperty()
+  token?: OtpToken;
 }
 export class verificationOtpDto extends RequestOtpDto {
   @ApiProperty()
