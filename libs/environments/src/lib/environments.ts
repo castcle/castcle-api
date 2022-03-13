@@ -182,4 +182,9 @@ export class Environment {
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;
+
+  //RECAPCHA
+  static RECAPTCHA_API_KEY = process.env.RECAPTCHA_API_KEY || 'asdsd';
+  static RECAPTCHA_PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || 'asdasd';
+  static RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '1asdasd';
 }
