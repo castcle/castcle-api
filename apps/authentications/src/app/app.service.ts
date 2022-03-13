@@ -376,7 +376,7 @@ export class AppService {
     if (request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
-        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${env.RECAPTCHA_API_KEY}&response=${token}&remoteip=${ip}`;
+        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${env.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
         this.logger.log(`[requestOtpCode] url: ${url}`);
         const captchaResponse = await lastValueFrom(
           this.httpService.post(url).pipe(map(({ data }) => data))
