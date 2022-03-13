@@ -373,7 +373,7 @@ export class AppService {
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
     // recapchaToken mobile only
-    if (request.channel == TwilioChannel.Mobile) {
+    if (request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
         const url = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments?key=${env.RECAPTCHA_API_KEY}`;
