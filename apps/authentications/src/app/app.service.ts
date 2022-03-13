@@ -372,25 +372,30 @@ export class AppService {
     let account: Account = null;
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
-    if (request.payload.recapchaToken) {
-      const token = request.payload.recapchaToken;
-      const url = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments?key=${env.RECAPTCHA_API_KEY}`;
-      const objectRequest = {
-        event: {
-          token: token,
-          siteKey: env.RECAPTCHA_SITE_KEY,
-        },
-      };
-      //console.log('objectRequest', objectRequest);
-      const captchaResponse = await lastValueFrom(
-        this.httpService.post(url, objectRequest).pipe(map(({ data }) => data))
-      );
-      if (!(captchaResponse && captchaResponse.tokenProperties.valid)) {
+    // recapchaToken mobile only
+    if (request.channel == TwilioChannel.Mobile) {
+      if (request.payload.recapchaToken) {
+        const token = request.payload.recapchaToken;
+        const url = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments?key=${env.RECAPTCHA_API_KEY}`;
+        const objectRequest = {
+          event: {
+            token: token,
+            siteKey: env.RECAPTCHA_SITE_KEY,
+          },
+        };
+        //console.log('objectRequest', objectRequest);
+        const captchaResponse = await lastValueFrom(
+          this.httpService
+            .post(url, objectRequest)
+            .pipe(map(({ data }) => data))
+        );
+        if (!(captchaResponse && captchaResponse.tokenProperties.valid)) {
+          throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
+        }
+      } else {
+        //throw error
         throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
       }
-    } else {
-      //throw error
-      throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
     }
 
     if (!objective || !Object.values(OtpObjective).includes(objective)) {
