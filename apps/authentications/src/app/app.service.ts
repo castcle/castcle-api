@@ -373,23 +373,18 @@ export class AppService {
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
     // recapchaToken mobile only
-    if (request.channel == TwilioChannel.Mobile) {
+    if (request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
-        const url = `https://recaptchaenterprise.googleapis.com/v1beta1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments?key=${env.RECAPTCHA_API_KEY}`;
-        const objectRequest = {
-          event: {
-            token: token,
-            siteKey: env.RECAPTCHA_SITE_KEY,
-          },
-        };
-        //console.log('objectRequest', objectRequest);
+        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${env.RECAPTCHA_API_KEY}&response=${token}&remoteip=${ip}`;
+        this.logger.log(`[requestOtpCode] url: ${url}`);
         const captchaResponse = await lastValueFrom(
-          this.httpService
-            .post(url, objectRequest)
-            .pipe(map(({ data }) => data))
+          this.httpService.post(url).pipe(map(({ data }) => data))
         );
-        if (!(captchaResponse && captchaResponse.tokenProperties.valid)) {
+        this.logger.log(
+          `[requestOtpCode] captchaResponse: ${JSON.stringify(captchaResponse)}`
+        );
+        if (captchaResponse && captchaResponse.success == false) {
           throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
         }
       } else {
