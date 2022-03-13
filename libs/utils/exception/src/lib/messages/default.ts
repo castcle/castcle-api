@@ -66,6 +66,11 @@ export const ErrorMessages = {
     code: '1010',
     message: `Please wait a few minutes before you try again.`,
   },
+  '1011': {
+    statusCode: '400',
+    code: '1011',
+    message: `Captcha failed please try again`,
+  },
   '3001': {
     statusCode: '400',
     code: '3001',

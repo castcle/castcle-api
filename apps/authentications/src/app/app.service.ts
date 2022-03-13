@@ -57,6 +57,9 @@ import {
   TokenResponse,
   verificationOtpDto,
 } from './dtos/dto';
+import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs/operators';
+import { lastValueFrom } from 'rxjs';
 
 /*
  * TODO: !!!
@@ -77,7 +80,8 @@ export class AppService {
     private authService: AuthenticationService,
     private download: Downloader,
     private userService: UserService,
-    private twillioClient: TwilioClient
+    private twillioClient: TwilioClient,
+    private httpService: HttpService
   ) {}
 
   private logger = new CastLogger(AppService.name);
@@ -368,6 +372,26 @@ export class AppService {
     let account: Account = null;
     let otp: Otp = null;
     const objective: OtpObjective = <OtpObjective>request.objective;
+    // recapchaToken mobile only
+    if (request.channel == 'mobile') {
+      if (request.payload.recapchaToken) {
+        const token = request.payload.recapchaToken;
+        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${env.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
+        this.logger.log(`[requestOtpCode] url: ${url}`);
+        const captchaResponse = await lastValueFrom(
+          this.httpService.post(url).pipe(map(({ data }) => data))
+        );
+        this.logger.log(
+          `[requestOtpCode] captchaResponse: ${JSON.stringify(captchaResponse)}`
+        );
+        if (captchaResponse && captchaResponse.success == false) {
+          throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
+        }
+      } else {
+        //throw error
+        throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
+      }
+    }
 
     if (!objective || !Object.values(OtpObjective).includes(objective)) {
       this.logger.error(`Invalid objective.`);

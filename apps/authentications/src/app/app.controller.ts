@@ -586,7 +586,6 @@ export class AuthenticationController {
       throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
     }
   }
-
   /*
    * TODO: !!! use for test link verification only will remove in production
    */

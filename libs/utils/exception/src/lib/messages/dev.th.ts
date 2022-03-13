@@ -66,6 +66,11 @@ export const DevErrorMessages = {
     code: '1010',
     message: `API rate limit exceeded `,
   },
+  '1011': {
+    statusCode: '400',
+    code: '1011',
+    message: `Captcha failed please try again`,
+  },
   '3001': {
     statusCode: '400',
     code: '3001',
