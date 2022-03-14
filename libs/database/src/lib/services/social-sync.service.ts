@@ -198,9 +198,13 @@ export class SocialSyncService {
     if (updateSocialSync.displayName)
       socialSync.displayName = updateSocialSync.displayName;
     if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
-    socialSync.active = updateSocialSync.active;
     if (updateSocialSync.authToken)
       socialSync.authToken = updateSocialSync.authToken;
+    if (isBoolean(socialSync.autoPost))
+      socialSync.autoPost = updateSocialSync.autoPost;
+    if (isBoolean(socialSync.active))
+      socialSync.active = updateSocialSync.active;
+
     return socialSync.save();
   };
 
