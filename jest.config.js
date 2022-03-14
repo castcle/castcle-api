@@ -21,31 +21,6 @@
  * or have any questions.
  */
 
-module.exports = {
-  projects: [
-    '<rootDir>/apps/authentications',
-    '<rootDir>/apps/auto-posts',
-    '<rootDir>/apps/backgrounds',
-    '<rootDir>/apps/bases',
-    '<rootDir>/apps/contents',
-    '<rootDir>/apps/engagements',
-    '<rootDir>/apps/metadata',
-    '<rootDir>/apps/users',
-    '<rootDir>/libs/casl',
-    '<rootDir>/libs/database',
-    '<rootDir>/libs/e2e',
-    '<rootDir>/libs/environments',
-    '<rootDir>/libs/healthy',
-    '<rootDir>/libs/logger',
-    '<rootDir>/libs/ranker',
-    '<rootDir>/libs/utils/aws',
-    '<rootDir>/libs/utils/cache',
-    '<rootDir>/libs/utils/clients',
-    '<rootDir>/libs/utils/commons',
-    '<rootDir>/libs/utils/decorators',
-    '<rootDir>/libs/utils/exception',
-    '<rootDir>/libs/utils/interceptors',
-    '<rootDir>/libs/utils/pipes',
-    '<rootDir>/libs/utils/queue'
-  ]
-};
+const { getJestProjects } = require('@nrwl/jest');
+
+module.exports = { projects: [...getJestProjects()] };
