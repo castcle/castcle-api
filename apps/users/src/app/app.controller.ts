@@ -283,6 +283,11 @@ export class UserController {
     });
   }
 
+  /**
+   * @deprecate The method should not be used. Please use [GET] me/pages/sync-social
+   * @param {CredentialRequest} req - CredentialRequest
+   * @returns
+   */
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('sync-social')
   async getSyncSocial(@Req() req: CredentialRequest) {
@@ -310,6 +315,26 @@ export class UserController {
       response[key] = data ? data.toSocialSyncPayload() : null;
     }
     return response;
+  }
+
+  /**
+   * @param {CredentialRequest} req - CredentialRequest
+   * @returns
+   */
+  @CastcleAuth(CacheKeyName.SyncSocial)
+  @Get('me/pages/sync-social')
+  async getSyncSocialOfArray(@Req() req: CredentialRequest) {
+    const pages = await this.userService.getPagesFromCredential(
+      req.$credential
+    );
+    const socials = await this.socialSyncService.getSocialSyncByUser(...pages);
+
+    if (!socials.length) return { payload: null };
+
+    const socialResponse = socials.map((social) =>
+      social.toSocialSyncPayload()
+    );
+    return { payload: socialResponse };
   }
 
   @CastcleAuth(CacheKeyName.Users)

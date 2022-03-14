@@ -74,8 +74,10 @@ SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {
     socialId: this.socialId,
     username: this.userName,
+    provider: this.provider,
     displayName: this.displayName,
     avatar: this.avatar,
     active: this.active,
+    autoPost: this.autoPost,
   } as SocialSyncDto;
 };

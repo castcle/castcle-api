@@ -36,7 +36,7 @@ export class SocialSyncService {
     @InjectModel('SocialSync')
     private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public userModel: Model<User>
+    private userModel: Model<User>
   ) {}
 
   /**
@@ -112,20 +112,22 @@ export class SocialSyncService {
   /**
    * get social sync from User Document
    *
-   * @param {User} user
-   * @returns {SocialSync[]} return all social sync Document
+   * @param {User} users
+   * @returns return all social sync Document
    * */
-  getSocialSyncByUser = (user: User): Promise<SocialSync[]> => {
-    return this.socialSyncModel.find({ 'author.id': user.id }).exec();
+  getSocialSyncByUser = (...users: User[]) => {
+    return this.socialSyncModel
+      .find({ 'author.id': { $in: users.map((user) => user.id) } })
+      .exec();
   };
 
   /**
    * get social sync from User id
    *
    * @param {string} id
-   * @returns {SocialSync[]} return all social sync Document
+   * @returns return all social sync Document
    * */
-  getSocialSyncByPageId = (id: string): Promise<SocialSync[]> => {
+  getSocialSyncByPageId = (id: string) => {
     return this.socialSyncModel.find({ 'author.id': id as any }).exec();
   };
   /**
@@ -143,26 +145,27 @@ export class SocialSyncService {
     const socialSync = socialSyncDoc.find(
       (x) => x.provider === updateSocialSync.provider
     );
-    if (socialSync) {
-      this.logger.log('update social sync.');
-      if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
-      if (updateSocialSync.provider)
-        socialSync.provider = updateSocialSync.provider;
-      if (updateSocialSync.socialId)
-        socialSync.socialId = updateSocialSync.socialId;
-      if (updateSocialSync.userName)
-        socialSync.userName = updateSocialSync.userName;
-      if (updateSocialSync.displayName)
-        socialSync.displayName = updateSocialSync.displayName;
-      if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
-      socialSync.active = updateSocialSync.active;
-      if (updateSocialSync.authToken)
-        socialSync.authToken = updateSocialSync.authToken;
-      return socialSync.save();
-    } else {
+
+    if (!socialSync) {
       this.logger.warn('Can not found social sync');
       return null;
     }
+
+    this.logger.log('update social sync.');
+    if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
+    if (updateSocialSync.provider)
+      socialSync.provider = updateSocialSync.provider;
+    if (updateSocialSync.socialId)
+      socialSync.socialId = updateSocialSync.socialId;
+    if (updateSocialSync.userName)
+      socialSync.userName = updateSocialSync.userName;
+    if (updateSocialSync.displayName)
+      socialSync.displayName = updateSocialSync.displayName;
+    if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
+    socialSync.active = updateSocialSync.active;
+    if (updateSocialSync.authToken)
+      socialSync.authToken = updateSocialSync.authToken;
+    return socialSync.save();
   };
 
   /**
