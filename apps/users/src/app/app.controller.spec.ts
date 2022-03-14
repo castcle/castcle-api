@@ -26,6 +26,7 @@ import {
   AnalyticService,
   AuthenticationService,
   CampaignService,
+  CommentService,
   ContentService,
   DataService,
   HashtagService,
@@ -108,6 +109,7 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
   let adsService: AdsService;
+  let commentService: CommentService;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -152,6 +154,7 @@ describe('AppController', () => {
         NotificationProducer,
         DownloaderProvider,
         FacebookClientProvider,
+        CommentService,
       ],
     }).compile();
     appController = app.get(UserController);
@@ -161,6 +164,7 @@ describe('AppController', () => {
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
+    commentService = app.get<CommentService>(CommentService);
 
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -1409,6 +1413,7 @@ describe('AppController', () => {
       adsService._contentModel.deleteMany({});
     });
   });
+
   describe('#updateAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1445,6 +1450,7 @@ describe('AppController', () => {
       expect(social.displayName).toEqual(mockSocialSync.displayName);
     });
   });
+
   describe('#deleteAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1617,6 +1623,115 @@ describe('AppController', () => {
       expect(social.active).toEqual(false);
     });
   });
+
+  describe('#Comment()', () => {
+    let credential;
+    let mocksUsers: MockUserDetail[];
+    let content;
+    let comment;
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: service,
+        accountService: authService,
+      });
+
+      credential = {
+        $credential: mocksUsers[0].credential,
+        $language: 'th',
+      } as any;
+
+      content = await contentService.createContentFromUser(mocksUsers[0].user, {
+        type: ContentType.Short,
+        payload: {
+          message: 'Hi Jack',
+        } as ShortPayload,
+        castcleId: mocksUsers[0].user.displayId,
+      });
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('createComment() should be able to create a comment content', async () => {
+      const user = mocksUsers[0].user;
+      comment = await appController.createComment(
+        content._id,
+        {
+          message: 'hello',
+          castcleId: user.displayId,
+        },
+        credential,
+        { hasRelationshipExpansion: false }
+      );
+      expect(comment.payload).toBeDefined();
+    });
+
+    it('updateComment() should update a message of comment', async () => {
+      const user = mocksUsers[0].user;
+      const updateComment = await appController.updateComment(
+        user.displayId,
+        comment.payload.id,
+        { message: 'zup' },
+        credential
+      );
+      expect(updateComment.payload).toBeDefined();
+    });
+
+    it('updateComment() return Exception when use wrong account', async () => {
+      const user = mocksUsers[1].user;
+      await expect(
+        appController.updateComment(
+          user.displayId,
+          comment.payload.id,
+          { message: 'zup' },
+          credential
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+    });
+
+    it('replyComment() should be able create a comment in comment(reply)', async () => {
+      const user1 = mocksUsers[1].user;
+      const credentialUser1 = {
+        $credential: mocksUsers[1].credential,
+        $language: 'th',
+      } as any;
+
+      const replyResult = await appController.replyComment(
+        user1.displayId,
+        comment.payload.id,
+        { message: 'yo', castcleId: user1.displayId },
+        credentialUser1
+      );
+      expect(replyResult.payload).toBeDefined();
+    });
+
+    it('deleteComment() return Exception when use wrong account', async () => {
+      const user = mocksUsers[1].user;
+      await expect(
+        appController.deleteComment(
+          user.displayId,
+          comment.payload.id,
+          credential
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+    });
+
+    it('deleteComment() should delete a comment', async () => {
+      const user = mocksUsers[0].user;
+      await appController.deleteComment(
+        user.displayId,
+        comment.payload.id,
+        credential
+      );
+      const result = await commentService.getCommentsByContentId(
+        user,
+        comment.payload.id
+      );
+      expect(result.payload.length).toEqual(0);
+    });
+  });
+
   afterAll(() => {
     service._userModel.deleteMany({});
     (socialSyncService as any).socialSyncModel.deleteMany({});
