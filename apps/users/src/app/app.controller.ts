@@ -1711,4 +1711,52 @@ export class UserController {
     );
     return { payload: response };
   }
+
+  /**
+   * @param {Authorizer} user  - Authorizer from interceptor or passport
+   * @param {string} socialId - The id of the social sync to update.
+   */
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social/:id/auto-post')
+  async updateAutoPost(
+    @Auth() { credential }: Authorizer,
+    @Param('id') id: string
+  ) {
+    const user = await this.userService.getUserFromCredential(credential);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    await this.socialSyncService.updateAutoPostBySocialId(social, true);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleBasicAuth()
+  @Delete('me/pages/sync-social/:id/auto-post')
+  async deleteAutoPost(
+    @Auth() { credential }: Authorizer,
+    @Param('id') id: string
+  ) {
+    const user = await this.userService.getUserFromCredential(credential);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    await this.socialSyncService.updateAutoPostBySocialId(social, false);
+  }
 }

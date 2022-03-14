@@ -130,6 +130,41 @@ export class SocialSyncService {
   getSocialSyncByPageId = (id: string) => {
     return this.socialSyncModel.find({ 'author.id': id as any }).exec();
   };
+
+  /**
+   * @param {string} id by Page
+   * @returns {SocialSync} page Document
+   */
+  getPageByPageIdAndAccountId = (
+    { author }: SocialSync,
+    { ownerAccount }: User
+  ): Promise<User> => {
+    return this.userModel
+      .findOne({ _id: author.id, ownerAccount: ownerAccount })
+      .exec();
+  };
+
+  /**
+   * @param {string} id
+   * @param {string} id by User
+   * @returns {SocialSync} social sync Document
+   */
+  getSocialSyncBySocialId = (id: string): Promise<SocialSync> => {
+    return this.socialSyncModel.findOne({ _id: id }).exec();
+  };
+
+  /**
+   * Update the autoPost field of the document with the given socialId
+   * @param {string} socialId - The socialId of the socialSync document you want to update.
+   * @param {boolean} isAutoPost - boolean
+   * @returns Nothing.
+   */
+  updateAutoPostBySocialId({ id }: SocialSync, isAutoPost: boolean) {
+    return this.socialSyncModel
+      .updateOne({ _id: id }, { $set: { autoPost: isAutoPost } })
+      .exec();
+  }
+
   /**
    * update social sync
    * @param {SocialSyncDto} updateSocialSync payload
