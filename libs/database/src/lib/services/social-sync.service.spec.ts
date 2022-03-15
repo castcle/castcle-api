@@ -147,6 +147,7 @@ describe('SocialSyncService', () => {
         displayName: 'mock fb',
         avatar: 'www.facebook.com/mockfb',
         active: false,
+        autoPost: false,
       };
       await service.update(updateSocialSyncDto, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
@@ -157,6 +158,7 @@ describe('SocialSyncService', () => {
       expect(result.provider).toEqual(SocialProvider.Facebook);
       expect(result.socialId).toEqual('7891234');
       expect(result.active).toEqual(false);
+      expect(result.autoPost).toEqual(false);
     });
   });
 
@@ -167,12 +169,13 @@ describe('SocialSyncService', () => {
         provider: SocialProvider.Facebook,
         socialId: '7891234',
       };
-      await service.delete(deleteSocial, mocksUser);
+      await service.delete(deleteSocial, mocksUser, true);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
       const result = socialSyncDoc.find(
         (x) => x.provider === deleteSocial.provider
       );
       expect(result.active).toEqual(false);
+      expect(result.autoPost).toEqual(false);
       expect(socialSyncDoc).toBeDefined();
     });
   });

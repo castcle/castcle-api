@@ -55,6 +55,7 @@ import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
+import { SocialPageDto } from './../dtos/user.dto';
 
 describe('User Service', () => {
   let mongod: MongoMemoryServer;
@@ -1143,6 +1144,48 @@ describe('User Service', () => {
       }).save();
 
       await expect(service.getBalance(user)).resolves.toEqual(5);
+    });
+  });
+
+  describe('#updatePageFromSocialSync()', () => {
+    let page: User;
+    beforeAll(async () => {
+      page = await service.createPageFromSocial(
+        result.credentialDocument.account,
+        {
+          castcleId: 'synctest',
+          displayName: 'new Sync Page',
+          overview: 'sync facebook',
+          avatar: {
+            original: 'http://placehold.it/200x200',
+          },
+          cover: {
+            original: 'http://placehold.it/200x200',
+          },
+          links: {
+            facebook: 'https://facebook.com/test',
+          },
+        }
+      );
+    });
+    it('should update a user that type page from SocialPageDto', async () => {
+      const updatePageDto = {
+        displayName: 'update',
+        overview: 'sync facebook update',
+        links: {
+          facebook: 'https://facebook.com/update',
+        },
+      } as SocialPageDto;
+      const updatePage = await service.updatePageFromSocial(
+        page,
+        updatePageDto
+      );
+
+      expect(updatePage.displayName).toEqual(updatePageDto.displayName);
+      expect(updatePage.profile.overview).toEqual(updatePageDto.overview);
+      expect(updatePage.profile.socials.facebook).toEqual(
+        updatePageDto.links.facebook
+      );
     });
   });
 });
