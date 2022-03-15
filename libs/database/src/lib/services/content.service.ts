@@ -27,7 +27,6 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { getLinkPreview } from 'link-preview-js';
-import * as mongoose from 'mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
@@ -265,8 +264,8 @@ export class ContentService {
   getRecastContent = (originalPostId: string, authorId: string) => {
     return this._contentModel
       .findOne({
-        'author.id': mongoose.Types.ObjectId(authorId),
-        'originalPost._id': mongoose.Types.ObjectId(originalPostId),
+        'author.id': Types.ObjectId(authorId),
+        'originalPost._id': Types.ObjectId(originalPostId),
         isRecast: true,
       })
       .exec();
@@ -1075,7 +1074,7 @@ Message: ${message}`,
     untilId?: string
   ) => {
     let filter: FilterQuery<Content> = {
-      'originalPost._id': mongoose.Types.ObjectId(originalPostId),
+      'originalPost._id': Types.ObjectId(originalPostId),
     };
     const totalDocument = await this._contentModel
       .countDocuments(filter)
@@ -1084,14 +1083,14 @@ Message: ${message}`,
       filter = {
         ...filter,
         'author.id': {
-          $gt: mongoose.Types.ObjectId(sinceId),
+          $gt: Types.ObjectId(sinceId),
         },
       };
     } else if (untilId) {
       filter = {
         ...filter,
         'author.id': {
-          $lt: mongoose.Types.ObjectId(untilId),
+          $lt: Types.ObjectId(untilId),
         },
       };
     }
@@ -1190,7 +1189,7 @@ Message: ${message}`,
       type: 'like',
       targetRef: {
         $ref: 'content',
-        $id: mongoose.Types.ObjectId(contentId),
+        $id: Types.ObjectId(contentId),
       },
     };
     const totalDocument = await this._engagementModel

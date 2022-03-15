@@ -435,20 +435,19 @@ describe('AppController', () => {
       expect(followerResult.meta).toBeDefined();
     });
   });
+
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
-      await appController.deleteMyData(
-        'email',
-        {
-          password: '1234AbcD',
-        },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
-      );
       const user = await service.getUserFromCredential(userCredential);
-      expect(user).toBeNull();
+      await appController.deleteMyData(
+        { account: userAccount, user } as any,
+        'email',
+        '1234AbcD'
+      );
+
+      await expect(
+        service.getUserFromCredential(userCredential)
+      ).resolves.toBeNull();
     });
   });
 
