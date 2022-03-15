@@ -1747,7 +1747,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns
    */
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({
     type: SocialSyncDto,
   })
