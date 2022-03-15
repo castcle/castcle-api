@@ -60,7 +60,7 @@ export class DataService {
   async personalizeContents(accountId: string, contentIds: string[]) {
     const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/personalize_content_predict`;
     const body = { accountId, contents: contentIds };
-    const personalizedContents = this.post<Record<string, number>>(
+    const personalizedContents = await this.post<Record<string, number>>(
       url,
       body,
       'personalizeContents'
@@ -74,10 +74,22 @@ export class DataService {
   ): Promise<{ engagements: number; userId: string }[]> {
     const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/suggest_follow_score`;
     const body = { accountId };
-    const followingSuggestions = this.post<
+    const followingSuggestions = await this.post<
       { engagements: number; userId: string }[]
     >(url, body, 'getFollowingSuggestions');
 
     return followingSuggestions ?? [];
+  }
+
+  async detectContent(contentId: string) {
+    const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/contentflow`;
+    const body = { contentflow: contentId };
+    const detection = await this.post<{ illegalClass: boolean }>(
+      url,
+      body,
+      'detectContent'
+    );
+
+    return Boolean(detection?.illegalClass);
   }
 }
