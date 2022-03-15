@@ -106,8 +106,6 @@ import {
   Put,
   Query,
   Req,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
@@ -339,7 +337,6 @@ export class UserController {
 
   @CastcleAuth(CacheKeyName.Users)
   @Get('search')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getSearch(
     @Auth() { user }: Authorizer,
     @Query() getSearchUsersDto: GetSearchUsersDto
@@ -353,7 +350,6 @@ export class UserController {
   }
 
   @ApiOkResponse({ type: UserResponseDto })
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
   async getUserById(
@@ -537,7 +533,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id/contents')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getUserContents(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -759,7 +754,6 @@ export class UserController {
 
   @Get(':id/blocking')
   @CastcleBasicAuth()
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getBlockedUsers(
     @Req() req: CredentialRequest,
     @Query() paginationQuery: PaginationQuery,
@@ -778,7 +772,6 @@ export class UserController {
   @Post(':id/blocking')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async blockUser(
     @Req() req: CredentialRequest,
     @Body() { targetCastcleId }: BlockingDto,
@@ -797,7 +790,6 @@ export class UserController {
   @Delete(':id/unblocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async unblockUser(
     @Req() req: CredentialRequest,
     @Param() { id: requestById, targetCastcleId }: UnblockingDto
@@ -811,7 +803,6 @@ export class UserController {
     await this.userService.unblockUser(authorizedUser, unblockUser);
   }
 
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/reporting')
   @CastcleBasicAuth()
@@ -841,7 +832,6 @@ export class UserController {
     }
   }
 
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({ type: UpdateMobileDto })
   @ApiOkResponse({ type: UserResponseDto })
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -924,7 +914,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -985,7 +974,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1012,7 +1000,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1050,7 +1037,6 @@ export class UserController {
    * @param {UserSettingsDto} body setting dto payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1094,7 +1080,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referrer')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getReferrer(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -1150,7 +1135,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referee')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getReferee(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -1278,7 +1262,6 @@ export class UserController {
    * @param {string} sourceContentId original content id
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1301,7 +1284,6 @@ export class UserController {
 
   @Get('me/airdrops')
   @CastcleBasicAuth()
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   async getMyAirdropBalances(
     @Auth() { account }: Authorizer,
     @Query() { status }: GetAirdropBalancesQuery
@@ -1513,7 +1495,6 @@ export class UserController {
 
   @CastcleBasicAuth()
   @Get(':id/liked-casts')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getLikedCast(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
@@ -1558,7 +1539,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {PageResponseDto[]}
    */
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({
     type: SocialSyncDto,
   })
