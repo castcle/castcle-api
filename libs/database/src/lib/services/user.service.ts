@@ -29,11 +29,11 @@ import {
 } from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { UserMessage, UserProducer } from '@castcle-api/utils/queue';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isMongoId } from 'class-validator';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
 import {
@@ -58,10 +58,14 @@ import {
 import { CastcleNumber } from '../models';
 import {
   Account,
+  AccountActivationModel,
   AccountAuthenId,
   AccountReferral,
+  Comment,
   Content,
   Credential,
+  Engagement,
+  Hashtag,
   Relationship,
   SocialSync,
   Transaction,
@@ -87,20 +91,30 @@ export class UserService {
   constructor(
     @InjectModel('Account')
     public _accountModel: Model<Account>,
-    @InjectModel('AccountReferral')
-    public _accountReferral: Model<AccountReferral>,
-    @InjectModel('Credential')
-    public _credentialModel: Model<Credential>,
-    @InjectModel('Relationship')
-    public _relationshipModel: Model<Relationship>,
-    @InjectModel('User')
-    public _userModel: Model<User>,
+    @InjectModel('AccountActivation')
+    public activationModel: Model<AccountActivationModel>,
     @InjectModel('AccountAuthenId')
     public _accountAuthenId: Model<AccountAuthenId>,
+    @InjectModel('AccountReferral')
+    public _accountReferral: Model<AccountReferral>,
+    @InjectModel('Comment')
+    private commentModel: Model<Comment>,
+    @InjectModel('Content')
+    private contentModel: Model<Content>,
+    @InjectModel('Credential')
+    public _credentialModel: Model<Credential>,
+    @InjectModel('Engagement')
+    public engagementModel: Model<Engagement>,
+    @InjectModel('Hashtag')
+    public hashtagModel: Model<Hashtag>,
+    @InjectModel('Relationship')
+    public _relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
     private _socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction')
     private transactionModel: Model<Transaction>,
+    @InjectModel('User')
+    public _userModel: Model<User>,
     private contentService: ContentService,
     private userProducer: UserProducer
   ) {}
@@ -452,11 +466,11 @@ export class UserService {
 
   updateUserInEmbedContent = async (user: User) => {
     console.debug('updating contents of user');
-    await this.contentService._contentModel
+    await this.contentModel
       .updateMany({ 'author.id': user._id }, { author: user.toAuthor() })
       .exec();
     console.debug('updating comments of user');
-    await this.contentService._commentModel
+    await this.commentModel
       .updateMany({ 'author._id': user._id }, { author: user })
       .exec();
   };
@@ -699,137 +713,123 @@ export class UserService {
   };
 
   /**
-   * TODO !!! need to find a way to put in transaction
-   * Deactivate User account
-   * @param {User} user
-   * @returns {User}
+   * Deactivate accounts, users and related items
+   * @param {Account} account
    */
-  deactive = async (user: User) => {
-    //all page from user has to be delete
-    if (user.type === UserType.People) {
-      //check if he has a page;
-      //each page has to be deactivated
-      const pages = await this._userModel
-        .find({ ownerAccount: user.ownerAccount, type: UserType.Page })
-        .exec();
-      const promiseDeactivatePages = pages.map((p) => this.deactive(p));
-      await Promise.all(promiseDeactivatePages);
-      //all content from page of user has to be delete
+  deactivate = async (account: Account) => {
+    const users = await this._userModel.find({ ownerAccount: account._id });
+
+    try {
+      const deactivateResults = await Promise.all([
+        this.removeAllAccountAuthenIdsFromAccount(account),
+        this.removeAllAccountActivationsFromAccount(account),
+        this.removeAllAccountReferralFromAccount(account),
+        this.removeAllCommentsFromUsers(users),
+        this.removeAllContentsFromUsers(users),
+        this.removeAllEngagementsFromUsers(users),
+        this.removeAllPagesAndUsersFromAccount(account),
+        this.removeAllRelationshipsFromUsers(users),
+      ]);
+
+      this.logger.log(
+        JSON.stringify(deactivateResults),
+        `deactivate:success:account-${account._id}`
+      );
+
+      this.userProducer.sendMessage({
+        id: account,
+        action: CastcleQueueAction.Deleting,
+      });
+    } catch (error: unknown) {
+      this.logger.error(error, `deactivate:error:account-${account._id}`);
+      throw error;
     }
-    user.visibility = EntityVisibility.Deleted;
-    const userResult = user.save();
-    //deactive userAccount
-    if (user.type === UserType.People) {
-      await this._accountModel.updateOne(
-        { _id: user.ownerAccount },
+  };
+
+  removeAllAccountAuthenIdsFromAccount = (account: Account) => {
+    return this._accountAuthenId.updateMany(
+      { account: account._id },
+      { visibility: EntityVisibility.Deleted }
+    );
+  };
+
+  removeAllAccountActivationsFromAccount = (account: Account) => {
+    return this.activationModel.updateMany(
+      { account: account._id },
+      { visibility: EntityVisibility.Deleted }
+    );
+  };
+
+  removeAllAccountReferralFromAccount = (account: Account) => {
+    return this._accountReferral.updateMany(
+      { $or: [{ referrerAccount: account }, { referringAccount: account }] },
+      { visibility: EntityVisibility.Deleted }
+    );
+  };
+
+  removeAllCommentsFromUsers = (users: User[]) => {
+    return this.commentModel.updateMany(
+      { 'author._id': { $in: users.map((user) => user._id) } },
+      { visibility: EntityVisibility.Deleted }
+    );
+  };
+
+  removeAllContentsFromUsers = async (users: User[]) => {
+    const contents = await this.contentModel.find({
+      'author.id': { $in: users.map((user) => user._id) },
+    });
+
+    const hashtags: string[] = [];
+    const $deletedContents = contents.map((content) => {
+      hashtags.push(...(content.hashtags || []));
+
+      return content.set({ visibility: EntityVisibility.Deleted }).save();
+    });
+
+    return Promise.all<UpdateWriteOpResult | Content>([
+      this.hashtagModel.updateMany(
+        { tag: { $in: hashtags }, score: { $gt: 0 } },
+        { $inc: { score: -1 } }
+      ),
+      ...$deletedContents,
+    ]);
+  };
+
+  removeAllEngagementsFromUsers = async (users: User[]) => {
+    const engagements = await this.engagementModel.find({
+      user: { $in: users.map((user) => user._id) },
+    });
+
+    const $deletedEngagements = engagements.map((engagement) => {
+      return engagement.set({ visibility: EntityVisibility.Deleted }).save();
+    });
+
+    return Promise.all($deletedEngagements);
+  };
+
+  removeAllPagesAndUsersFromAccount = (account: Account) => {
+    return Promise.all([
+      this._accountModel.updateOne(
+        { _id: account._id },
         {
           visibility: EntityVisibility.Deleted,
           queueAction: CastcleQueueAction.Deleting,
         }
-      );
-      this.userProducer.sendMessage({
-        id: user.ownerAccount,
-        action: CastcleQueueAction.Deleting,
-      } as UserMessage);
-    }
-    return userResult;
+      ),
+      this._userModel.updateMany(
+        { ownerAccount: account._id },
+        { visibility: EntityVisibility.Deleted }
+      ),
+    ]);
   };
 
-  /**
-   * get all user account this this account is owned;
-   * @param {Account} account
-   * @returns {User[]}
-   */
-  _getAllUserFromAccount = (account: Account) =>
-    this._userModel.find({ ownerAccount: account._id }).exec();
-
-  /**
-   * flag all contents that this user has create to deleted // this will update the engagement recast/quotecast to -1 if it was recast or quotecast
-   * @param {User} user
-   * @returns {Content[]}
-   */
-  _removeAllContentFromUser = async (user: User): Promise<Content[]> => {
-    const contents = await this.contentService._contentModel
-      .find({ 'author.id': user._id })
-      .exec();
-    const promiseRemoveContents: Promise<Content>[] = contents.map(
-      (contentItem) => this.contentService.deleteContentFromId(contentItem._id)
+  removeAllRelationshipsFromUsers = (users: User[]) => {
+    return this._relationshipModel.updateMany(
+      {
+        $or: [{ user: { $in: users } }, { followedUser: { $in: users } }],
+      },
+      { visibility: EntityVisibility.Deleted }
     );
-    return Promise.all(promiseRemoveContents);
-  };
-
-  _removeAllCommentFromUser = async (user: User) => {
-    const comments = await this.contentService._commentModel
-      .find({ 'author._id': user._id })
-      .exec();
-    console.log('allcomment from user', comments);
-    return Promise.all(
-      comments.map(async (comment) => {
-        comment.visibility = EntityVisibility.Hidden;
-        const result = await comment.save();
-        console.log('resultRemoveComment', result);
-        return this.contentService._updateCommentCounter(result);
-      })
-    );
-  };
-
-  /**
-   * update engagements flag of this user to hidden this should invoke engagement.post('save') to update like counter
-   * @param {User} user
-   * @returns {Engagement[]}
-   */
-  _removeAllEngagements = async (user: User) => {
-    const engagements = await this.contentService._engagementModel
-      .find({ user: user._id, visibility: EntityVisibility.Publish })
-      .exec();
-    const promiseHideEngagements = engagements.map(async (engagement) => {
-      engagement.visibility = EntityVisibility.Hidden;
-      return engagement.save();
-    });
-    return Promise.all(promiseHideEngagements);
-  };
-
-  /**
-   * Update all follower account count to 0
-   * @param user
-   */
-  _removeAllFollower = async (user: User) => {
-    const relationships = await this._relationshipModel
-      .find({ user: user._id, blocking: false, following: true })
-      .exec();
-    console.log('relationships', relationships);
-    //make all relationship hidden
-    return await this._relationshipModel
-      .updateMany({ user: user._id }, { visibility: EntityVisibility.Hidden })
-      .exec();
-  };
-
-  /**
-   * get all user form account and removeAll content, engagement and followers
-   * @param account
-   */
-  _deactiveAccount = async (account: Account) => {
-    await Promise.all(
-      await this._getAllUserFromAccount(account).then((users) =>
-        users.map(async (user) => {
-          await this._removeAllContentFromUser(user);
-          await this._removeAllEngagements(user);
-          await this._removeAllFollower(user);
-          await this._removeAllCommentFromUser(user);
-          return user;
-        })
-      )
-    );
-    //update queueAction to deleted
-    await this._accountModel
-      .updateOne(
-        { _id: account._id },
-        {
-          queueAction: CastcleQueueAction.Deleted,
-          visibility: EntityVisibility.Deleted,
-        }
-      )
-      .exec();
   };
 
   /**
@@ -838,84 +838,25 @@ export class UserService {
    */
   deactiveBackground = async (accountId: any) => {
     const account = await this._accountModel.findById(accountId).exec();
-    await this._deactiveAccount(account);
+    await this.deactivate(account);
   };
 
-  /**
-   * Deactvate all account that has been flag as Deleting
-   */
-  deactiveQueue = async () => {
-    //get all account that is in the delete queue
-    const accounts = await this._accountModel
-      .find({ queueAction: CastcleQueueAction.Deleting })
-      .exec();
-    accounts.forEach(async (account) => {
-      await this._deactiveAccount(account);
-    });
-  };
-
-  reactive = async (user: User) => {
-    //all page from user has to be delete
-    if (user.type === UserType.People) {
-      //check if he has a page;
-      //each page has to be deactivated
-      const pages = await this._userModel
-        .find({ ownerAccount: user.ownerAccount, type: UserType.Page })
-        .exec();
-      const promiseReactivatePages = pages.map((p) => this.reactive(p));
-      await Promise.all(promiseReactivatePages);
-      //all content from page of user has to be delete
-    }
-    //TODO !!! will move this logic to queue
-    /*
-    //all content form user has to be delete
-    //TODO !!! this should move to cron or something to do at background and add pagination
-    const contents = await this.contentService._contentModel
-      .find({ 'author.id': user._id })
-      .exec();
-    const promiseReactiveContents: Promise<Content>[] = contents.map(
-      (contentItem) => this.contentService.recoverContentFromId(contentItem._id)
-    );
-    await Promise.all(promiseReactiveContents);
-
-    //remove all engagements (like) Aggregator that this user do (quote/requote agg) already remove with deleteContentFromId()
-    //TODO !!! need to improve performance by bypass the engagement save hook and use updateMany instead
-    // but need to find a way to get all engagement contents to be more effective
-    const engagements = await this.contentService._engagementModel
-      .find({ user: user._id, visibility: EntityVisibility.Publish })
-      .exec();
-    const promisePublishEngagements = engagements.map((engagement) => {
-      engagement.visibility = EntityVisibility.Publish;
-      return engagement.save();
-    });
-    await Promise.all(promisePublishEngagements);
-    //update follower / followee aggregator
-    const relationships = await this._relationshipModel
-      .find({ user: user._id })
-      .populate('followedUser')
-      .exec();
-    //TODO !!! need to improve performance
-    const promiseUpdateFollower = relationships.map((r) =>
-      this._userModel
-        .updateOne(r._id, {
-          $inc: {
-            followerCount: 1
-          }
-        })
-        .exec()
-    );
-    await Promise.all(promiseUpdateFollower);
-    */
-    //change status to delete
+  reactivate = async (user: User) => {
     user.visibility = EntityVisibility.Publish;
-    //deactive userAccount
-    if (user.type === UserType.People)
-      await this._accountModel.updateOne(
-        { _id: user.ownerAccount },
-        {
-          visibility: EntityVisibility.Publish,
-        }
-      );
+
+    if (user.type === UserType.Page) return user.save();
+
+    await this._userModel.updateMany({
+      ownerAccount: user.ownerAccount,
+      type: UserType.Page,
+      visibility: EntityVisibility.Publish,
+    });
+
+    await this._accountModel.updateOne(
+      { _id: user.ownerAccount },
+      { visibility: EntityVisibility.Publish }
+    );
+
     return user.save();
   };
 

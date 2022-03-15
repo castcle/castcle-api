@@ -20,8 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import { Credential, User } from '@castcle-api/database/schemas';
+import { Account, Credential, User } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
@@ -34,6 +35,7 @@ import { TokenRequest } from '../token/token.interceptor';
 import { getLanguageFromRequest, getTokenFromRequest } from '../util';
 
 export interface CredentialRequest extends TokenRequest {
+  $account?: Promise<Account>;
   $credential?: Credential;
   $user?: Promise<User>;
 }
@@ -55,6 +57,7 @@ export class CredentialInterceptor implements NestInterceptor {
       accessToken
     );
 
+    request.$account = this.authService.getAccountFromCredential(credential);
     request.$credential = credential;
     request.$language = language;
     request.$token = accessToken;
