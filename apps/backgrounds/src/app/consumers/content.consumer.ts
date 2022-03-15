@@ -21,40 +21,55 @@
  * or have any questions.
  */
 
-import { CastLogger } from '@castcle-api/logger';
-import { ContentMessage, TopicName } from '@castcle-api/utils/queue';
-import { ContentService } from '@castcle-api/database';
-import { Process, Processor } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
-import { Job } from 'bull';
+import { ContentService, DataService } from '@castcle-api/database';
 import { CastcleQueueAction } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { TopicName, ContentMessage } from '@castcle-api/utils/queue';
+import { Processor, Process } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { Job } from 'bull';
+
 @Injectable()
 @Processor(TopicName.Contents)
 export class ContentConsumer {
-  constructor(private contentService: ContentService) {}
+  #logger = new CastLogger(ContentConsumer.name);
 
-  private logger = new CastLogger(ContentConsumer.name);
+  constructor(
+    private contentService: ContentService,
+    private dataService: DataService
+  ) {}
 
   @Process()
-  readOperationJob(job: Job<{ content: ContentMessage }>) {
+  async readOperationJob(job: Job<{ content: ContentMessage }>) {
     try {
-      this.logger.log(
-        `consume content message '${JSON.stringify(job.data.content)}}' `
+      this.#logger.log(
+        JSON.stringify(job.data.content),
+        'readOperationJob:consumeContentMessage'
       );
-      //this.userService.deactiveQueue();
+
+      const contentId = String(job.data.content.id);
+      const isIllegal = await this.dataService.detectContent(String(contentId));
+
+      if (isIllegal) return;
+
+      await this.contentService.publishContent(contentId);
+
       switch (job.data.content.action) {
         case CastcleQueueAction.CreateFeedItemToEveryOne:
           if (Environment.AUTO_CREATE_GUEST_FEED) {
             this.contentService.createGuestFeedItemFromAuthorId(
               job.data.content.id
             );
-            this.logger.log(`Creating Feedd Item for all guests`);
+            this.#logger.log(
+              `Creating Feed Item for all guests`,
+              'readOperationJob:createGuestFeedItemFromAuthorId'
+            );
           }
           break;
       }
     } catch (error) {
-      this.logger.error(error);
+      this.#logger.error(error, 'readOperationJob');
     }
   }
 }

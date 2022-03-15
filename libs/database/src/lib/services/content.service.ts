@@ -43,7 +43,6 @@ import {
   EntityVisibility,
   GetLinkPreview,
   GetSearchRecentDto,
-  GuestFeedItemDto,
   IncludeUser,
   Link,
   LinkType,
@@ -179,7 +178,7 @@ export class ContentService {
         payload,
         revisionCount: 0,
         type,
-        visibility: EntityVisibility.Publish,
+        visibility: EntityVisibility.Hidden,
         hashtags: hashtags,
       } as Content;
     });
@@ -901,18 +900,15 @@ export class ContentService {
       .exec();
 
   /**
-   *
    * @param contentId
-   * @returns {GuestFeedItem}
    */
-  createGuestFeedItemFromAuthorId = async (contentId: any) => {
-    const newGuestFeedItem = new this._guestFeedItemModel({
+  createGuestFeedItemFromAuthorId = (contentId: any) => {
+    return new this._guestFeedItemModel({
       score: 0,
       type: GuestFeedItemType.Content,
       content: contentId,
-    } as GuestFeedItemDto);
-    newGuestFeedItem.__v = 2;
-    return newGuestFeedItem.save();
+      __v: 2,
+    }).save();
   };
 
   async reportContent(user: User, content: Content, message: string) {
@@ -1265,4 +1261,10 @@ Message: ${message}`,
     };
     return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
+
+  publishContent(contentId: string) {
+    return this._contentModel
+      .findByIdAndUpdate(contentId, { visibility: EntityVisibility.Publish })
+      .exec();
+  }
 }
