@@ -208,6 +208,9 @@ export class UserController {
     }
   };
 
+  /**
+   * @deprecated The method should not be used. Please use [POST] /users/me/mentions
+   */
   @ApiQuery({
     name: 'page',
     type: Number,
@@ -246,6 +249,37 @@ export class UserController {
       message: 'success message',
       payload: users,
       pagination,
+    };
+  }
+
+  @Get('me/mentions')
+  @CastcleAuth(CacheKeyName.Users)
+  async getMeMentions(
+    @Req() { $credential }: CredentialRequest,
+    @Query('keyword', KeywordPipe) keyword: string,
+    @Query() userQuery?: ExpansionQuery
+  ) {
+    this.logger.log(`Me mentions keyword: ${keyword}`);
+    const authorizedUser = await this.userService.getUserFromCredential(
+      $credential
+    );
+
+    const { users } = await this.userService.getMentionsFromPublic(
+      authorizedUser,
+      keyword,
+      { page: DEFAULT_QUERY_OPTIONS.page, limit: DEFAULT_QUERY_OPTIONS.limit },
+      userQuery.userFields?.includes(UserField.Relationships)
+    );
+
+    this.logger.log(`Filter block user.`);
+    const resultFilter = users.filter((u) => !u.blocked && !u.blocking);
+    this.logger.log(`Sorting followed.`);
+    const sortResult = resultFilter.sort(
+      (pre, last) => +pre.followed - +last.followed
+    );
+
+    return {
+      payload: sortResult.length > 10 ? sortResult.slice(0, 10) : sortResult,
     };
   }
 
