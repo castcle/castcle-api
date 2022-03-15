@@ -385,6 +385,7 @@ export class SuggestToFollowResponseDto {
 export class SocialPageDto {
   castcleId: string;
   displayName: string;
+  userName?: string;
   overview?: string;
   avatar?: CastcleImage;
   cover?: CastcleImage;

@@ -23,6 +23,7 @@
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { isBoolean } from 'class-validator';
 import { Model } from 'mongoose';
 import { SocialProvider } from '../models';
 import { SocialSync, User } from '../schemas';
@@ -36,7 +37,7 @@ export class SocialSyncService {
     @InjectModel('SocialSync')
     private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public userModel: Model<User>
+    private userModel: Model<User>
   ) {}
 
   /**
@@ -112,22 +113,59 @@ export class SocialSyncService {
   /**
    * get social sync from User Document
    *
-   * @param {User} user
-   * @returns {SocialSync[]} return all social sync Document
+   * @param {User} users
+   * @returns return all social sync Document
    * */
-  getSocialSyncByUser = (user: User): Promise<SocialSync[]> => {
-    return this.socialSyncModel.find({ 'author.id': user.id }).exec();
+  getSocialSyncByUser = (...users: User[]) => {
+    return this.socialSyncModel
+      .find({ 'author.id': { $in: users.map((user) => user.id) } })
+      .exec();
   };
 
   /**
    * get social sync from User id
    *
    * @param {string} id
-   * @returns {SocialSync[]} return all social sync Document
+   * @returns return all social sync Document
    * */
-  getSocialSyncByPageId = (id: string): Promise<SocialSync[]> => {
+  getSocialSyncByPageId = (id: string) => {
     return this.socialSyncModel.find({ 'author.id': id as any }).exec();
   };
+
+  /**
+   * @param {string} id by Page
+   * @returns {SocialSync} page Document
+   */
+  getPageByPageIdAndAccountId = (
+    { author }: SocialSync,
+    { ownerAccount }: User
+  ): Promise<User> => {
+    return this.userModel
+      .findOne({ _id: author.id, ownerAccount: ownerAccount })
+      .exec();
+  };
+
+  /**
+   * @param {string} id
+   * @param {string} id by User
+   * @returns {SocialSync} social sync Document
+   */
+  getSocialSyncBySocialId = (id: string): Promise<SocialSync> => {
+    return this.socialSyncModel.findOne({ _id: id }).exec();
+  };
+
+  /**
+   * Update the autoPost field of the document with the given socialId
+   * @param {string} socialId - The socialId of the socialSync document you want to update.
+   * @param {boolean} isAutoPost - boolean
+   * @returns Nothing.
+   */
+  updateAutoPostBySocialId({ id }: SocialSync, isAutoPost: boolean) {
+    return this.socialSyncModel
+      .updateOne({ _id: id }, { $set: { autoPost: isAutoPost } })
+      .exec();
+  }
+
   /**
    * update social sync
    * @param {SocialSyncDto} updateSocialSync payload
@@ -143,26 +181,31 @@ export class SocialSyncService {
     const socialSync = socialSyncDoc.find(
       (x) => x.provider === updateSocialSync.provider
     );
-    if (socialSync) {
-      this.logger.log('update social sync.');
-      if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
-      if (updateSocialSync.provider)
-        socialSync.provider = updateSocialSync.provider;
-      if (updateSocialSync.socialId)
-        socialSync.socialId = updateSocialSync.socialId;
-      if (updateSocialSync.userName)
-        socialSync.userName = updateSocialSync.userName;
-      if (updateSocialSync.displayName)
-        socialSync.displayName = updateSocialSync.displayName;
-      if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
-      socialSync.active = updateSocialSync.active;
-      if (updateSocialSync.authToken)
-        socialSync.authToken = updateSocialSync.authToken;
-      return socialSync.save();
-    } else {
+
+    if (!socialSync) {
       this.logger.warn('Can not found social sync');
       return null;
     }
+
+    this.logger.log('update social sync.');
+    if (updateSocialSync.castcleId && user) socialSync.author.id = user.id;
+    if (updateSocialSync.provider)
+      socialSync.provider = updateSocialSync.provider;
+    if (updateSocialSync.socialId)
+      socialSync.socialId = updateSocialSync.socialId;
+    if (updateSocialSync.userName)
+      socialSync.userName = updateSocialSync.userName;
+    if (updateSocialSync.displayName)
+      socialSync.displayName = updateSocialSync.displayName;
+    if (updateSocialSync.avatar) socialSync.avatar = updateSocialSync.avatar;
+    if (updateSocialSync.authToken)
+      socialSync.authToken = updateSocialSync.authToken;
+    if (isBoolean(socialSync.autoPost))
+      socialSync.autoPost = updateSocialSync.autoPost;
+    if (isBoolean(socialSync.active))
+      socialSync.active = updateSocialSync.active;
+
+    return socialSync.save();
   };
 
   /**
@@ -173,7 +216,8 @@ export class SocialSyncService {
    * */
   delete = async (
     socialSyncDeleteDto: SocialSyncDeleteDto,
-    user: User
+    user: User,
+    unsubscribe = false
   ): Promise<SocialSync> => {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
@@ -185,9 +229,10 @@ export class SocialSyncService {
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');
       deleteSocialSync.active = false;
+      if (unsubscribe) deleteSocialSync.autoPost = false;
       return deleteSocialSync.save();
     } else {
-      this.logger.warn('Cnn not found social sync');
+      this.logger.warn('Can not found social sync');
       return null;
     }
   };

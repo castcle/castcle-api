@@ -59,7 +59,9 @@ import {
   Content,
   Credential,
   Engagement,
+  SocialSync,
   User,
+  UserType,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
@@ -579,22 +581,35 @@ describe('AppController', () => {
         twitter: {
           socialId: 't12345678',
           username: 'mocktw',
+          provider: 'twitter',
           displayName: 'mock tw',
           avatar: 'www.twitter.com/mocktw',
           active: true,
+          autoPost: true,
         },
         facebook: {
           socialId: 'f89766',
           username: 'mockfb',
+          provider: 'facebook',
           displayName: 'mock fb',
           avatar: 'www.facebook.com/mockfb',
           active: true,
+          autoPost: true,
         },
         youtube: null,
         medium: null,
       };
       expect(result).toBeDefined();
       expect(result).toEqual(expectResult);
+    });
+
+    it('should get payload all sync social from user', async () => {
+      const syncSocialResponse = await appController.getSyncSocialOfArray(
+        credential
+      );
+
+      expect(syncSocialResponse.payload).toHaveLength(2);
+      expect(syncSocialResponse.payload?.length).toBeGreaterThan(0);
     });
 
     it('should update sync social successful', async () => {
@@ -1327,16 +1342,13 @@ describe('AppController', () => {
       await appController.syncSocial(credential, defaultRequest);
     });
 
-    afterAll(async () => {
-      await service._userModel.deleteMany({});
-    });
-
     it('should get page data with sync social successful', async () => {
       const result = await appController.getMyPages(credential);
       expect(result.payload).toBeDefined();
       expect(result.payload[0].syncSocial).toBeDefined();
     });
   });
+
   describe('#updateAds', () => {
     let mocks: MockUserDetail[];
     let mockAds: AdsCampaign;
@@ -1391,5 +1403,219 @@ describe('AppController', () => {
       adsService._adsCampaignModel.deleteMany({});
       adsService._contentModel.deleteMany({});
     });
+  });
+  describe('#updateAutoPost', () => {
+    let mocksPage: User;
+    let mockSocialSync: SocialSync;
+    beforeAll(async () => {
+      mocksPage = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.Page,
+      }).save();
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true,
+      };
+      mockSocialSync = await socialSyncService.create(mocksPage, socialSyncDto);
+    });
+    it('should update auto post is exist.', async () => {
+      await appController.updateAutoPost(
+        { credential: userCredential } as any,
+        mockSocialSync._id
+      );
+      const social = await socialSyncService.getSocialSyncBySocialId(
+        mockSocialSync._id
+      );
+
+      expect(social.autoPost).toEqual(true);
+      expect(social.socialId).toEqual(mockSocialSync.socialId);
+      expect(social.userName).toEqual(mockSocialSync.userName);
+      expect(social.displayName).toEqual(mockSocialSync.displayName);
+    });
+  });
+  describe('#deleteAutoPost', () => {
+    let mocksPage: User;
+    let mockSocialSync: SocialSync;
+    beforeAll(async () => {
+      mocksPage = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.Page,
+      }).save();
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true,
+      };
+      mockSocialSync = await socialSyncService.create(mocksPage, socialSyncDto);
+    });
+    it('should delete auto post is exist.', async () => {
+      await appController.updateAutoPost(
+        { credential: userCredential } as any,
+        mockSocialSync._id
+      );
+      const social = await socialSyncService.getSocialSyncBySocialId(
+        mockSocialSync._id
+      );
+
+      expect(social.autoPost).toEqual(true);
+      expect(social.socialId).toEqual(mockSocialSync.socialId);
+      expect(social.userName).toEqual(mockSocialSync.userName);
+      expect(social.displayName).toEqual(mockSocialSync.displayName);
+    });
+  });
+
+  describe('#deleteAutoPost', () => {
+    let mocksPage: User;
+    let mockSocialSync: SocialSync;
+    beforeAll(async () => {
+      mocksPage = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.Page,
+      }).save();
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: true,
+      };
+      mockSocialSync = await socialSyncService.create(mocksPage, socialSyncDto);
+    });
+    it('should delete auto post is exist.', async () => {
+      await appController.updateAutoPost(
+        { credential: userCredential } as any,
+        mockSocialSync._id
+      );
+      const social = await socialSyncService.getSocialSyncBySocialId(
+        mockSocialSync._id
+      );
+
+      expect(social.autoPost).toEqual(true);
+      expect(social.socialId).toEqual(mockSocialSync.socialId);
+      expect(social.userName).toEqual(mockSocialSync.userName);
+      expect(social.displayName).toEqual(mockSocialSync.displayName);
+    });
+  });
+
+  describe('#connectSyncSocial', () => {
+    let mocksPage: User;
+    let user: User;
+    let mockSocialSync: SocialSync;
+    beforeAll(async () => {
+      mocksPage = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.Page,
+      }).save();
+
+      user = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.People,
+      }).save();
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: false,
+        autoPost: false,
+      };
+      mockSocialSync = await socialSyncService.create(mocksPage, socialSyncDto);
+    });
+    it('should update sync social is correct.', async () => {
+      const payloadSyncSocial = {
+        payload: {
+          userName: 'reconnect sync social',
+          displayName: 'reconnect123',
+          overview: 'reconnect sync social',
+          socialId: '123456789',
+        } as SocialSyncDto,
+      };
+      await appController.connectSyncSocial(
+        { credential: userCredential, user: user } as any,
+        mockSocialSync._id,
+        payloadSyncSocial
+      );
+
+      const social = await (socialSyncService as any).getSocialSyncBySocialId(
+        mockSocialSync._id
+      );
+      expect(social.autoPost).toEqual(true);
+      expect(social.active).toEqual(true);
+      expect(social.socialId).toEqual(payloadSyncSocial.payload.socialId);
+      expect(social.userName).toEqual(payloadSyncSocial.payload.userName);
+      expect(social.displayName).toEqual(payloadSyncSocial.payload.displayName);
+    });
+  });
+  describe('#disconnectSyncSocial', () => {
+    let mocksPage: User;
+    let user: User;
+    let mockSocialSync: SocialSync;
+    beforeAll(async () => {
+      mocksPage = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.Page,
+      }).save();
+
+      user = await new (socialSyncService as any).userModel({
+        ownerAccount: userCredential.account._id,
+        displayName: 'mock user',
+        displayId: 'mockid',
+        type: UserType.People,
+      }).save();
+      const socialSyncDto: SocialSyncDto = {
+        castcleId: 'mockcast',
+        provider: SocialProvider.Twitter,
+        socialId: 't12345678',
+        userName: 'mocktw',
+        displayName: 'mock tw',
+        avatar: 'www.twitter.com/mocktw',
+        active: false,
+        autoPost: false,
+      };
+      mockSocialSync = await socialSyncService.create(mocksPage, socialSyncDto);
+    });
+    it('should update sync social is correct.', async () => {
+      await appController.disconnectSyncSocial(
+        { credential: userCredential, user: user } as any,
+        mockSocialSync._id
+      );
+
+      const social = await socialSyncService.getSocialSyncBySocialId(
+        mockSocialSync._id
+      );
+      expect(social.autoPost).toEqual(false);
+      expect(social.active).toEqual(false);
+    });
+  });
+  afterAll(() => {
+    service._userModel.deleteMany({});
+    (socialSyncService as any).socialSyncModel.deleteMany({});
+    service._userModel.deleteMany({});
+    (socialSyncService as any).socialSyncModel.deleteMany({});
   });
 });
