@@ -600,7 +600,12 @@ describe('AppController', () => {
         medium: null,
       };
       expect(result).toBeDefined();
-      expect(result).toEqual(expectResult);
+      expect(result['twitter']).toEqual(
+        expect.objectContaining(expectResult.twitter)
+      );
+      expect(result['facebook']).toEqual(
+        expect.objectContaining(expectResult.facebook)
+      );
     });
 
     it('should get payload all sync social from user', async () => {

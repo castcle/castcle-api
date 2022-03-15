@@ -72,6 +72,7 @@ export class SocialSync extends SocialSyncDocument {
 
 SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {
+    id: this._id,
     socialId: this.socialId,
     username: this.userName,
     provider: this.provider,
