@@ -25,7 +25,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import {
   FacebookAccessToken,
   FacebookTokenData,
@@ -104,7 +104,28 @@ export class FacebookClient {
     this.logger.log('get user info');
 
     return lastValueFrom(
-      this.httpService.post(url).pipe(map(({ data }) => data))
+      this.httpService.post(url).pipe(
+        map(({ data }) => data),
+        catchError(async (error) => this.logger.error(error))
+      )
+    );
+  }
+  /**
+   * Get User data from facebook
+   * @param {string} userToken authorize user token
+   * @param {string} socialId facebook id
+   * @returns {Object} facebook response
+   */
+  async unsubscribed(userToken: string, socialId: string) {
+    const parameter = `access_token=${userToken}&subscribed_fields=feed`;
+    const url = `${this.subscribedUrl(socialId)}${parameter}`;
+    this.logger.log('get user info');
+
+    return lastValueFrom(
+      this.httpService.delete(url).pipe(
+        map(({ data }) => data),
+        catchError(async (error) => this.logger.error(error))
+      )
     );
   }
 }

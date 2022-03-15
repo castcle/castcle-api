@@ -1258,4 +1258,49 @@ Message: ${message}`,
       },
     }).save();
   };
+  /**
+   * Update page with sync social
+   * @param {Account} account
+   * @param {SocialPageDto} socialPageDto
+   * @returns {User}
+   */
+  updatePageFromSocial = async (page: User, socialPageDto: SocialPageDto) => {
+    const updatePage = await this._userModel.findById(page.id);
+
+    if (socialPageDto.displayName) {
+      updatePage.set({ displayName: socialPageDto.displayName });
+    }
+    if (socialPageDto.overview) {
+      updatePage.set({ 'profile.overview': socialPageDto.overview });
+    }
+    if (socialPageDto.avatar) {
+      updatePage.set({
+        'profile.images.avatar': socialPageDto.avatar,
+      });
+    }
+    if (socialPageDto.cover) {
+      updatePage.set({
+        'profile.images.cover': socialPageDto.cover,
+      });
+    }
+    if (socialPageDto.links) {
+      if (socialPageDto.links.facebook)
+        updatePage.set({
+          'profile.socials.facebook': socialPageDto.links.facebook,
+        });
+      if (socialPageDto.links.medium)
+        updatePage.set({
+          'profile.socials.facebook': socialPageDto.links.medium,
+        });
+      if (socialPageDto.links.twitter)
+        updatePage.set({
+          'profile.socials.facebook': socialPageDto.links.twitter,
+        });
+      if (socialPageDto.links.youtube)
+        updatePage.set({
+          'profile.socials.facebook': socialPageDto.links.youtube,
+        });
+    }
+    return updatePage.save();
+  };
 }
