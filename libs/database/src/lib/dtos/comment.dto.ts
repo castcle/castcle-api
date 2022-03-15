@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { CommentType } from '../schemas';
 import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
 import { IncludeUser } from './content.dto';
@@ -80,21 +81,28 @@ export class CommentsResponse {
 
 export class CreateCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
   @ApiProperty()
-  'feedItemId'?: string;
+  @IsString()
+  @IsOptional()
+  feedItemId?: string;
   @ApiProperty()
-  'castcleId': string;
+  @IsString()
+  castcleId: string;
 }
 
 export class EditCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
 }
 
 export class ReplyCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
   @ApiProperty()
-  'castcleId': string;
+  @IsString()
+  castcleId: string;
 }

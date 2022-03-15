@@ -1868,6 +1868,7 @@ export class UserController {
     @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
+    this.logger.log('Start comment : ' + JSON.stringify(commentBody));
     try {
       const [authorizedUser, content, user] = await Promise.all([
         this.authService.getUserFromAccount($credential.account),
@@ -1902,6 +1903,7 @@ export class UserController {
 
       return { payload };
     } catch (error) {
+      this.logger.error(error);
       throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
     }
   }
