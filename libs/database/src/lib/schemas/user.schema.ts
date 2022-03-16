@@ -215,7 +215,7 @@ UserSchema.methods.toUserResponse = async function (
   if (linkSocial) {
     response.linkSocial = Object.assign(
       {},
-      ...linkSocial?.map((social: AccountAuthenId) => {
+      ...linkSocial.map((social: AccountAuthenId) => {
         return {
           [social.type]: {
             socialId: social.socialId,

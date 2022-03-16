@@ -14,7 +14,8 @@
     "default": {
       "runner": "@nrwl/workspace/tasks-runners/default",
       "options": {
-        "cacheableOperations": ["build", "lint", "test", "e2e"]
+        "cacheableOperations": ["build", "lint", "test", "e2e"],
+        "parallel": 3
       }
     }
   },
@@ -25,76 +26,5 @@
         "projects": "dependencies"
       }
     ]
-  },
-  "projects": {
-    "authentications": {
-      "tags": []
-    },
-    "auto-posts": {
-      "tags": []
-    },
-    "backgrounds": {
-      "tags": []
-    },
-    "bases": {
-      "tags": []
-    },
-    "casl": {
-      "tags": []
-    },
-    "contents": {
-      "tags": []
-    },
-    "database": {
-      "tags": []
-    },
-    "e2e": {
-      "tags": []
-    },
-    "engagements": {
-      "tags": []
-    },
-    "environments": {
-      "tags": []
-    },
-    "healthy": {
-      "tags": []
-    },
-    "logger": {
-      "tags": []
-    },
-    "metadata": {
-      "tags": []
-    },
-    "users": {
-      "tags": []
-    },
-    "utils-aws": {
-      "tags": []
-    },
-    "utils-cache": {
-      "tags": []
-    },
-    "utils-clients": {
-      "tags": []
-    },
-    "utils-commons": {
-      "tags": []
-    },
-    "utils-decorators": {
-      "tags": []
-    },
-    "utils-exception": {
-      "tags": []
-    },
-    "utils-interceptors": {
-      "tags": []
-    },
-    "utils-pipes": {
-      "tags": []
-    },
-    "utils-queue": {
-      "tags": []
-    }
   }
 }

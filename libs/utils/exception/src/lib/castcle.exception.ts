@@ -35,7 +35,7 @@ export enum CastcleStatus {
   INVALID_MAX_RESULT = '1008',
   RATE_LIMIT_REQUEST = '1010',
   RECAPTCHA_FAILED = '1011',
-  INVLAID_AUTH_TOKEN = '3001',
+  INVALID_AUTH_TOKEN = '3001',
   INVALID_EMAIL_OR_PASSWORD = '3002',
   INVALID_EMAIL = '3003',
   INVALID_PHONE_NUMBER = '3004',
@@ -91,6 +91,7 @@ export class CastcleException extends HttpException {
   static MISSING_AUTHORIZATION_HEADERS = new CastcleException('1002');
   static INVALID_ACCESS_TOKEN = new CastcleException('1003');
   static FORBIDDEN = new CastcleException('1007');
+  static INVALID_PASSWORD = new CastcleException('3011');
   static INVALID_REF_CODE = new CastcleException('3012');
   static MOBILE_NUMBER_ALREADY_EXISTS = new CastcleException('3018');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');

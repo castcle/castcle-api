@@ -24,8 +24,8 @@ import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Test } from '@nestjs/testing';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
@@ -58,12 +58,12 @@ import { UserService } from './user.service';
 import { SocialPageDto } from './../dtos/user.dto';
 
 describe('User Service', () => {
-  let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let mongod: MongoMemoryReplSet;
   let service: UserService;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentService;
+  let accountModel: Model<Account>;
   let transactionModel: Model<Transaction>;
   let result: {
     accountDocument: Account;
@@ -71,11 +71,11 @@ describe('User Service', () => {
   };
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    mongod = await MongoMemoryReplSet.create();
+    const module = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
-        MongooseModule.forRoot(mongod.getUri()),
+        MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
@@ -89,11 +89,12 @@ describe('User Service', () => {
       ],
     }).compile();
 
-    service = app.get<UserService>(UserService);
+    service = module.get<UserService>(UserService);
+    accountModel = (service as any)._accountModel;
     transactionModel = (service as any).transactionModel;
-    authService = app.get<AuthenticationService>(AuthenticationService);
-    contentService = app.get<ContentService>(ContentService);
-    commentService = app.get(CommentService);
+    authService = module.get<AuthenticationService>(AuthenticationService);
+    contentService = module.get<ContentService>(ContentService);
+    commentService = module.get(CommentService);
     result = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -112,7 +113,6 @@ describe('User Service', () => {
   });
 
   afterAll(async () => {
-    await app.close();
     await mongod.stop();
   });
 
@@ -370,98 +370,69 @@ describe('User Service', () => {
   });
 
   describe('#deactivate, reactivate', () => {
-    const userInfo = {
-      accountRequirement: {
+    let account: Account;
+    let user: User;
+    let page: User;
+    const dto = {
+      account: {
         device: 'iphone',
         deviceUUID: 'iphone1234',
-        header: {
-          platform: 'iOs',
-        },
+        header: { platform: 'iOS' },
         languagesPreferences: ['th', 'th'],
       },
-      signupRequirement: {
-        displayId: 'npop',
-        displayName: 'npop',
-        email: 'sompop.k@gmail.com',
+      signup: {
+        displayId: 'test',
+        displayName: 'test',
+        email: 'test@gmail.com',
         password: '123456789',
       },
-      pages: [
-        {
-          avatar: {
-            original: 'http://placehold.it/200x200',
-          },
-          castcleId: 'test-12345',
-          cover: {
-            original: 'http://placehold.it/200x200',
-          },
-          displayName: 'hello12345',
-        } as PageDto,
-      ],
+      page: {
+        castcleId: 'test-12345',
+        displayName: 'hello12345',
+        avatar: { original: 'http://placehold.it/200x200' },
+        cover: { original: 'http://placehold.it/200x200' },
+      },
     };
 
-    let userA: User;
-    let pageA: User;
-    let accountA: Account;
     beforeAll(async () => {
-      //create new user
-      const result = await authService.createAccount(
-        userInfo.accountRequirement
-      );
-      accountA = result.accountDocument;
-      await authService.signupByEmail(accountA, userInfo.signupRequirement);
-      userA = await service.getUserFromCredential(result.credentialDocument);
-      pageA = await service.createPageFromUser(userA, userInfo.pages[0]);
+      const created = await authService.createAccount(dto.account);
+      await authService.signupByEmail(created.accountDocument, dto.signup);
+      account = created.accountDocument;
+      user = await service.getUserFromCredential(created.credentialDocument);
+      page = await service.createPageFromUser(user, dto.page);
+      await service.deactivate(account);
     });
-    describe('#deactive()', () => {
-      let postUserAFromModel: User;
-      let postUserA: User;
-      let postPageAFromModel: User;
-      let postPageA: User;
-      let postAccountA: Account;
-      beforeAll(async () => {
-        await service.deactive(userA);
-        postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getByIdOrCastcleId(userA._id);
-        postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getByIdOrCastcleId(pageA._id);
-        postAccountA = await authService._accountModel.findById(accountA._id);
-      });
-      it('should set status user to delete', async () => {
-        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Deleted);
-        expect(postUserA).toBeNull();
-      });
-      it('should set all page that user own to delete flag', async () => {
-        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Deleted);
-        expect(postPageA).toBeNull();
-      });
-      it('should set account of user to Delete', () => {
-        expect(postAccountA.visibility).toEqual(EntityVisibility.Deleted);
+
+    describe('#deactivate', () => {
+      it('should set statuses of account all related items to deleted', async () => {
+        const userEntity = await service._userModel.findById(user._id);
+        const pageEntity = await service._userModel.findById(page._id);
+        const accountEntity = await accountModel.findById(account._id);
+
+        await expect(service.getByIdOrCastcleId(user._id)).resolves.toBeNull();
+        await expect(service.getByIdOrCastcleId(page._id)).resolves.toBeNull();
+        expect(userEntity.visibility).toEqual(EntityVisibility.Deleted);
+        expect(pageEntity.visibility).toEqual(EntityVisibility.Deleted);
+        expect(accountEntity.visibility).toEqual(EntityVisibility.Deleted);
       });
     });
-    describe('#reactive()', () => {
-      let postUserAFromModel: User;
-      let postUserA: User;
-      let postPageAFromModel: User;
-      let postPageA: User;
-      let postAccountA: Account;
-      beforeAll(async () => {
-        await service.reactive(userA);
-        postUserAFromModel = await service._userModel.findById(userA._id);
-        postUserA = await service.getByIdOrCastcleId(userA._id);
-        postPageAFromModel = await service._userModel.findById(pageA._id);
-        postPageA = await service.getByIdOrCastcleId(pageA._id);
-        postAccountA = await authService._accountModel.findById(accountA._id);
-      });
-      it('should set status user to publish', async () => {
-        expect(postUserAFromModel.visibility).toEqual(EntityVisibility.Publish);
-        expect(postUserA).not.toBeNull();
-      });
-      it('should set all page that user own to publish flag', async () => {
-        expect(postPageAFromModel.visibility).toEqual(EntityVisibility.Publish);
-        expect(postPageA).not.toBeNull();
-      });
-      it('should set account of user to publish', () => {
-        expect(postAccountA.visibility).toEqual(EntityVisibility.Publish);
+
+    describe('#reactivate', () => {
+      it('should set statuses of account all related items to published', async () => {
+        await service.reactivate(user);
+        const userEntity = await service._userModel.findById(user._id);
+        const pageEntity = await service._userModel.findById(page._id);
+        const accountEntity = await accountModel.findById(account._id);
+
+        await expect(
+          service.getByIdOrCastcleId(user._id)
+        ).resolves.toBeDefined();
+        await expect(
+          service.getByIdOrCastcleId(page._id)
+        ).resolves.toBeDefined();
+        expect(userEntity.visibility).toEqual(EntityVisibility.Publish);
+        expect(pageEntity.visibility).toEqual(EntityVisibility.Publish);
+        expect(accountEntity.visibility).toEqual(EntityVisibility.Publish);
       });
     });
   });
@@ -657,17 +628,17 @@ describe('User Service', () => {
       await contentService.likeComment(userA, testLikeComment);
       await contentService.likeComment(userB, testLikeComment);
     });
+
     describe('_removeAllContentFromUser()', () => {
       it('should flag all content from user to deleted', async () => {
-        //service._removeAllContentFromUser()
         const preContents = await contentService.getContentsFromUser(userA.id);
         expect(preContents.total).toEqual(contents.length);
-        await service._removeAllContentFromUser(userA);
+        await service.removeAllContentsFromUsers([userA]);
         const postContents = await contentService.getContentsFromUser(userA.id);
         expect(postContents.total).toEqual(0);
       });
-      // /it('should update the recast counter from original content', async () => {});
     });
+
     describe('_removeAllEngagements()', () => {
       it('should update like amount of contents', async () => {
         const preContent = await contentService.getContentFromId(
@@ -680,7 +651,7 @@ describe('User Service', () => {
         console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
         expect(preComment.engagements.like.count).toEqual(2);
-        await service._removeAllEngagements(userA);
+        await service.removeAllEngagementsFromUsers([userA]);
         const postContent = await contentService.getContentFromId(
           fixContents[0]._id
         );
@@ -692,6 +663,7 @@ describe('User Service', () => {
         expect(postComment.engagements.like.count).toEqual(1);
       });
     });
+
     describe('_removeAllFollower()', () => {
       it('should flag all content from user to deleted', async () => {
         const preFollower = await service.getFollowers(
@@ -703,7 +675,7 @@ describe('User Service', () => {
           }
         );
         expect(preFollower.users.length).toEqual(2);
-        await service._removeAllFollower(userA);
+        await service.removeAllRelationshipsFromUsers([userA]);
         const postFollower = await service.getFollowers(
           userNotDelete,
           userNotDelete,
@@ -715,6 +687,7 @@ describe('User Service', () => {
         expect(postFollower.users.length).toEqual(1);
       });
     });
+
     describe('_removeAllCommentFromUser()', () => {
       it('should flag all comment from user to hidden', async () => {
         const comments = await commentService.getCommentsByContentId(
@@ -723,7 +696,7 @@ describe('User Service', () => {
         );
         expect(comments.payload.length).toEqual(3);
         expect(comments.meta.resultCount).toEqual(3);
-        await service._removeAllCommentFromUser(userA);
+        await service.removeAllCommentsFromUsers([userA]);
         const comments2 = await commentService.getCommentsByContentId(
           userA,
           fixContents[0]._id
@@ -732,9 +705,10 @@ describe('User Service', () => {
         expect(comments2.payload.length).toEqual(2);
       });
     });
+
     describe('_deactiveAccount()', () => {
       it('should use all remove functions above to completely deactivate account', async () => {
-        await service._deactiveAccount(accountB);
+        await service.deactivate(accountB);
         const postAccountB = await authService._accountModel
           .findById(accountB._id)
           .exec();

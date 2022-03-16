@@ -22,6 +22,8 @@
  */
 
 export * from './blocking.dto';
+export * from './content.dto';
+export * from './delete-user.dto';
 export * from './dto';
 export * from './get-airdrop-balances.dto';
 export * from './reporting.dto';
