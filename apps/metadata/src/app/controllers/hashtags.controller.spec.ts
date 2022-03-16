@@ -103,9 +103,32 @@ describe('HashtagsController', () => {
           },
         ],
       };
-      console.log(result);
       result.payload[0].id = '';
       expect(expectResult).toEqual(result);
+    });
+  });
+
+  describe('hashtagSearch', () => {
+    it('should get hashtag with search keyword', async () => {
+      await hashtagService.create({
+        tag: 'btc',
+        score: 1000,
+        aggregator: {
+          _id: '6138afa4f616a467b5c4eb72',
+        },
+        name: 'BTC',
+      });
+      const result = await appController.hashtagSearch('');
+      expect(result.payload.length).toEqual(2);
+      expect(result.payload[0].rank).toEqual(1);
+      expect(result.payload[0].slug).toEqual('btc');
+      expect(result.payload[1].rank).toEqual(2);
+      expect(result.payload[1].slug).toEqual('castcle');
+
+      const resultKeyword = await appController.hashtagSearch('bt');
+      expect(resultKeyword.payload.length).toEqual(1);
+      expect(resultKeyword.payload[0].rank).toEqual(1);
+      expect(resultKeyword.payload[0].slug).toEqual('btc');
     });
   });
 });

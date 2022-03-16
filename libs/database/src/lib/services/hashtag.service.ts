@@ -24,7 +24,7 @@ import { CastcleName } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { BlogPayload } from '../dtos';
+import { BlogPayload, CastcleQueryOptions, SortDirection } from '../dtos';
 import { CommentDto } from '../dtos/comment.dto';
 import { ImagePayload, ShortPayload } from '../dtos/content.dto';
 import { CreateHashtag } from '../dtos/hashtag.dto';
@@ -192,5 +192,39 @@ export class HashtagService {
       return this.extractHashtagFromText(commentDto.message);
     }
     return [];
+  };
+
+  /**
+   * Get all hashtag that could get from the system sort by score
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @returns {Hashtag[]}
+   */
+  searchHashtag = async (
+    keyword: string,
+    queryOptions: CastcleQueryOptions
+  ) => {
+    const query = {
+      tag: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
+    };
+
+    queryOptions.sortBy = {
+      field: 'score',
+      type: SortDirection.DESC,
+    };
+
+    let hashtagQuery = this._hashtagModel.find(query);
+
+    if (queryOptions?.limit)
+      hashtagQuery = hashtagQuery.limit(queryOptions.limit);
+    if (queryOptions?.page)
+      hashtagQuery = hashtagQuery.skip(queryOptions.page - 1);
+    if (queryOptions?.sortBy) {
+      const sortDirection = queryOptions.sortBy.type === 'desc' ? '-' : '';
+      const sortOrder = `${sortDirection}${queryOptions.sortBy.field}`;
+
+      hashtagQuery = hashtagQuery.sort(sortOrder);
+    }
+    return hashtagQuery.exec();
   };
 }

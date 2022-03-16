@@ -23,7 +23,9 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
+import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
@@ -39,8 +41,10 @@ import { LanguagesController } from './controllers/languages.controller';
   imports: [
     DatabaseModule,
     HealthyModule,
-    UtilsInterceptorsModule,
     UtilsCacheModule,
+    UtilsInterceptorsModule,
+    UtilsAwsModule,
+    UtilsClientsModule,
     TracingModule.forRoot({
       serviceName: 'metadata',
       daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,

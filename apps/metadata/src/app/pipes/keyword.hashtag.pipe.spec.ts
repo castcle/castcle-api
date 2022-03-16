@@ -20,61 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 1,
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 1,
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600,
-  },
-  Hashtags: {
-    Name: 'HASHTAGS',
-    Ttl: 10,
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 10,
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 10,
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 10,
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 10,
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 10,
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 10,
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 10,
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 10,
-  },
-  SyncSocial: {
-    Name: 'SYNC_SOCIAL',
-    Ttl: 10,
-  },
-  Referrer: {
-    Name: 'REFERRER',
-    Ttl: 10,
-  },
-};
+
+import { KeywordHashtagPipe } from './keyword.hashtag.pipe';
+describe('Keyword Pipe', () => {
+  let pipe: KeywordHashtagPipe;
+  beforeAll(() => {
+    pipe = new KeywordHashtagPipe();
+  });
+  it("should return '' if keyword is underfined ", () => {
+    const result = pipe.transform(undefined);
+    expect(result).toEqual('');
+  });
+  it('should get content after @ in keyword', () => {
+    const result = pipe.transform('#btc');
+    expect(result).toEqual('btc');
+    const result2 = pipe.transform('#');
+    expect(result2).toEqual('');
+  });
+  it('should return keyword as it is if there is no content', () => {
+    const result = pipe.transform('sol');
+    expect(result).toEqual('sol');
+    const result2 = pipe.transform('');
+    expect(result2).toEqual('');
+  });
+});
