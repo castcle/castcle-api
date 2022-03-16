@@ -21,10 +21,15 @@
  * or have any questions.
  */
 import { HashtagService } from '@castcle-api/database';
-import { HashtagResponse, LanguageResponse } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  HashtagResponse,
+  LanguageResponse,
+} from '@castcle-api/database/dtos';
 import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
+import { CastcleAuth } from '@castcle-api/utils/decorators';
 import {
   CredentialInterceptor,
   HttpCacheSharedInterceptor,
@@ -34,9 +39,11 @@ import {
   CacheTTL,
   Controller,
   Get,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOkResponse } from '@nestjs/swagger';
+import { KeywordHashtagPipe } from '../pipes/keyword.hashtag.pipe';
 
 @ApiHeader({
   name: Configs.RequiredHeaders.AcceptLanguage.name,
@@ -64,8 +71,8 @@ export class HashtagsController {
     type: LanguageResponse,
   })
   @UseInterceptors(HttpCacheSharedInterceptor)
-  @CacheKey(CacheKeyName.HashtagsGet.Name)
-  @CacheTTL(CacheKeyName.HashtagsGet.Ttl)
+  @CacheKey(CacheKeyName.Hashtags.Name)
+  @CacheTTL(CacheKeyName.Hashtags.Ttl)
   @UseInterceptors(CredentialInterceptor)
   @Get('hashtags')
   async getAllHashtags(): Promise<HashtagResponse> {
@@ -75,6 +82,23 @@ export class HashtagsController {
     return {
       message: 'success',
       payload: result.map((hashtag) => hashtag.toHashtagPayload()),
+    };
+  }
+
+  @Get('hashtag/search')
+  @CastcleAuth(CacheKeyName.Hashtags)
+  async hashtagSearch(@Query('keyword', KeywordHashtagPipe) keyword: string) {
+    this.logger.log(`Hashtag search keyword: ${keyword}`);
+    const result = await this.hashtagService.searchHashtag(keyword, {
+      page: DEFAULT_QUERY_OPTIONS.page,
+      limit: 10,
+    });
+
+    this.logger.log('Success search hashtags');
+    return {
+      payload: result.map((hashtag, index) =>
+        hashtag.toSearchTopTrendhPayload(index)
+      ),
     };
   }
 }

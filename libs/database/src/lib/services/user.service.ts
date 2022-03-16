@@ -869,18 +869,31 @@ export class UserService {
   getMentionsFromPublic = async (
     user: User,
     keyword: string,
-    queryOption: CastcleQueryOptions
+    queryOption: CastcleQueryOptions,
+    hasRelationshipExpansion = false
   ) => {
     const query = {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
     };
 
-    queryOption.sortBy = {
-      field: 'followerCount',
-      type: SortDirection.DESC,
-    };
+    if (hasRelationshipExpansion) {
+      queryOption.sortBy = {
+        field: 'updatedAt',
+        type: SortDirection.DESC,
+      };
+    } else {
+      queryOption.sortBy = {
+        field: 'followerCount',
+        type: SortDirection.DESC,
+      };
+    }
 
-    return this.getByCriteria(user, query, queryOption);
+    return this.getByCriteria(
+      user,
+      query,
+      queryOption,
+      hasRelationshipExpansion
+    );
   };
 
   async blockUser(user: User, blockedUser?: User) {
