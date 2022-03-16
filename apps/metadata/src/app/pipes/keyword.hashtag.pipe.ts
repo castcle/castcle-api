@@ -20,61 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 1,
-  },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 1,
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600,
-  },
-  Hashtags: {
-    Name: 'HASHTAGS',
-    Ttl: 10,
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 10,
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 10,
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 10,
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 10,
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 10,
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 10,
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 10,
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 10,
-  },
-  SyncSocial: {
-    Name: 'SYNC_SOCIAL',
-    Ttl: 10,
-  },
-  Referrer: {
-    Name: 'REFERRER',
-    Ttl: 10,
-  },
-};
+
+import { Injectable, PipeTransform } from '@nestjs/common';
+
+@Injectable()
+export class KeywordHashtagPipe implements PipeTransform {
+  transform(keyword: string) {
+    if (!keyword) return '';
+    if (keyword.length > 0 && keyword.charAt(0) === '#')
+      return keyword.slice(1);
+    else return keyword;
+  }
+}
