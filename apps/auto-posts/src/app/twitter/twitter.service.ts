@@ -65,10 +65,8 @@ export class TwitterService {
 
     this.logger.log(JSON.stringify(syncAccounts), 'handleTwitterJobs:start');
 
-    try {
-      await Promise.all(syncAccounts.map(this.getTweetsByAccount));
-    } catch (error: unknown) {
-      this.logger.error(error, 'handleTwitterJobs');
+    for (const syncAccount of syncAccounts) {
+      await this.syncTwittersTweets(syncAccount);
     }
 
     this.logger.log(
@@ -77,33 +75,38 @@ export class TwitterService {
     );
   }
 
-  getTweetsByAccount = async (syncAccount: SocialSync) => {
-    const timeline = await this.getTimelineByUserId(
-      syncAccount.socialId,
-      syncAccount.latestSyncId
-    );
+  syncTwittersTweets = async (syncAccount: SocialSync) => {
+    try {
+      const timeline = await this.getTimelineByUserId(
+        syncAccount.socialId,
+        syncAccount.latestSyncId
+      );
 
-    if (!timeline?.meta?.result_count) return;
+      if (!timeline?.meta?.result_count) return;
 
-    const [author, contents] = await Promise.all([
-      this.contentService.getAuthorFromId(syncAccount.author.id),
-      this.convertTimelineToContents(syncAccount.author.id, timeline.data),
-    ]);
+      const [author, contents] = await Promise.all([
+        this.contentService.getAuthorFromId(syncAccount.author.id),
+        this.convertTimelineToContents(syncAccount.author.id, timeline.data),
+      ]);
 
-    await this.contentService.createContentsFromAuthor(
-      new Author(author),
-      contents
-    );
+      await this.contentService.createContentsFromAuthor(
+        new Author(author),
+        contents
+      );
 
-    syncAccount.author = author;
-    syncAccount.displayName = timeline.includes?.users?.[0]?.name;
-    syncAccount.latestSyncId = timeline.data.data[0].id;
-    syncAccount.latestSyncDate = new Date();
-    syncAccount.save();
+      syncAccount.author = author;
+      syncAccount.displayName = timeline.includes?.users?.[0]?.name;
+      syncAccount.latestSyncId = timeline.data.data[0].id;
+      syncAccount.latestSyncDate = new Date();
+      await syncAccount.save();
 
-    this.logger.log(
-      `Name: ${syncAccount.displayName}, ${timeline.meta.result_count} tweet(s) saved`
-    );
+      this.logger.log(
+        `Name: ${syncAccount.displayName}, ${timeline.meta.result_count} tweet(s) saved`,
+        `${syncAccount.socialId}:syncTweetsByAccount`
+      );
+    } catch (error: unknown) {
+      this.logger.error(error, `${syncAccount.socialId}:syncTweetsByAccount`);
+    }
   };
 
   getTimelineByUserId = async (userId: string, latestPostId: string) => {
@@ -124,12 +127,12 @@ export class TwitterService {
           latestPostId,
           tweetsCount: timeline.meta.result_count,
         }),
-        'getTimelineByUserId'
+        `${userId}:getTimelineByUserId`
       );
 
       return timeline;
     } catch (error: unknown) {
-      this.logger.error(error, 'getTimelineByUserId');
+      this.logger.error(error, `${userId}:getTimelineByUserId`);
     }
   };
 
@@ -158,12 +161,12 @@ export class TwitterService {
           return uploaded.image;
         });
 
-        const images = await Promise.all($images?.filter(Boolean));
+        const images = await Promise.all(($images ?? []).filter(Boolean));
 
         return {
           payload: {
             message: text,
-            photo: images ? { contents: images } : undefined,
+            photo: images.length ? { contents: images } : undefined,
           },
           type: ContentType.Short,
         } as SaveContentDto;
