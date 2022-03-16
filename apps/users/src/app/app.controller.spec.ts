@@ -378,6 +378,28 @@ describe('AppController', () => {
       expect(response.payload[0].following).toBeDefined();
     });
   });
+
+  describe('getMeMentions', () => {
+    it('should get all mentions user form system', async () => {
+      const response = await appController.getMeMentions(
+        { $credential: userCredential } as any,
+        '',
+        {
+          userFields: [UserField.Relationships],
+          hasRelationshipExpansion: true,
+        }
+      );
+      expect(response.payload.length).toEqual(1);
+      expect(response.payload[0].castcleId).toBeDefined();
+      expect(response.payload[0].displayName).toBeDefined();
+      expect(response.payload[0].followers).toBeDefined();
+      expect(response.payload[0].following).toBeDefined();
+      expect(response.payload[0].blocking).toBeDefined();
+      expect(response.payload[0].blocked).toBeDefined();
+      expect(response.payload[0].followed).toBeDefined();
+    });
+  });
+
   describe('getUserFollowing', () => {
     let mocks: MockUserDetail[];
     beforeAll(async () => {

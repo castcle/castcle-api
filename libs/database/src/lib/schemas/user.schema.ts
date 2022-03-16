@@ -204,7 +204,7 @@ UserSchema.methods.toUserResponse = async function (
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
   const response = _covertToUserResponse(self, followed);
-  response.email = self.ownerAccount.email;
+  response.email = self.ownerAccount?.email ?? null;
   response.blocking = blocking;
   response.blocked = blocked;
   response.passwordNotSet = passwordNotSet;
