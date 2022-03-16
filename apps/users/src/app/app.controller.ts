@@ -110,27 +110,20 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
   BlockingDto,
+  ContentLikeBody,
+  DeleteUserDto,
   GetAirdropBalancesQuery,
   GetAirdropBalancesStatus,
   ReportingDto,
-  UnblockingDto,
-} from './dtos';
-import { ContentLikeBody } from './dtos/content.dto';
-import {
   TargetCastcleDto,
+  UnblockingDto,
   UpdateMobileDto,
   UserRefereeResponse,
   UserReferrerResponse,
   UserSettingsDto,
-} from './dtos/dto';
+} from './dtos';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-class DeleteUserBody {
-  channel: string;
-  payload: {
-    password: string;
-  };
-}
 
 @CastcleController('1.0')
 export class UserController {
@@ -405,41 +398,26 @@ export class UserController {
       );
   }
 
-  @ApiResponse({
-    status: 204,
-  })
-  @ApiBody({
-    type: DeleteUserBody,
-  })
+  @ApiResponse({ status: 204 })
+  @ApiBody({ type: DeleteUserDto })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
+    @Auth() { account, user }: Authorizer,
     @Body('channel') channel: string,
-    @Body('payload') passwordPayload: { password: string },
-    @Req() req: CredentialRequest
+    @Body('payload.password') password: string
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
-      const account = await this.authService.getAccountFromCredential(
-        req.$credential
-      );
-      if (
-        channel === 'email' &&
-        (await account.verifyPassword(passwordPayload.password))
-      ) {
-        await this.userService.deactive(user);
-        return '';
-      } else
-        throw new CastcleException(
-          CastcleStatus.INVALID_PASSWORD,
-          req.$language
-        );
-    } else {
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const isValidChannel = channel === 'email';
+    const isPasswordValid = await account.verifyPassword(password);
+
+    if (!isValidChannel || !isPasswordValid) {
+      throw CastcleException.INVALID_PASSWORD;
     }
+
+    await this.userService.deactivate(account);
   }
 
   @ApiOkResponse({ type: ContentsResponse })

@@ -7,6 +7,11 @@
     "types": ["node"],
     "target": "es6"
   },
-  "exclude": ["**/*.spec.ts", "**/*.e2e-spec.ts"],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.e2e-spec.ts",
+    "**/*.e2e-test.ts"
+  ],
   "include": ["**/*.ts"]
 }

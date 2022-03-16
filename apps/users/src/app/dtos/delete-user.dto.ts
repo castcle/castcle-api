@@ -21,6 +21,9 @@
  * or have any questions.
  */
 
-const { getJestProjects } = require('@nrwl/jest');
-
-module.exports = { projects: [...getJestProjects()] };
+export class DeleteUserDto {
+  channel: string;
+  payload: {
+    password: string;
+  };
+}
