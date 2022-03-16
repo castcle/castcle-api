@@ -60,7 +60,7 @@ export class Authorizer {
 export const Auth = createParamDecorator(
   async (_: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const account = request.$credential.account;
+    const account = await request.$account;
     const user = await request.$user;
     const credential = request.$credential;
     return new Authorizer(account, user, credential);

@@ -106,33 +106,24 @@ import {
   Put,
   Query,
   Req,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
   BlockingDto,
+  ContentLikeBody,
+  DeleteUserDto,
   GetAirdropBalancesQuery,
   GetAirdropBalancesStatus,
   ReportingDto,
-  UnblockingDto,
-} from './dtos';
-import { ContentLikeBody } from './dtos/content.dto';
-import {
   TargetCastcleDto,
+  UnblockingDto,
   UpdateMobileDto,
   UserRefereeResponse,
   UserReferrerResponse,
   UserSettingsDto,
-} from './dtos/dto';
+} from './dtos';
 import { KeywordPipe } from './pipes/keyword.pipe';
 import { SuggestionService } from './services/suggestion.service';
-class DeleteUserBody {
-  channel: string;
-  payload: {
-    password: string;
-  };
-}
 
 @CastcleController('1.0')
 export class UserController {
@@ -283,6 +274,11 @@ export class UserController {
     });
   }
 
+  /**
+   * @deprecate The method should not be used. Please use [GET] me/pages/sync-social
+   * @param {CredentialRequest} req - CredentialRequest
+   * @returns
+   */
   @CastcleAuth(CacheKeyName.SyncSocial)
   @Get('sync-social')
   async getSyncSocial(@Req() req: CredentialRequest) {
@@ -312,9 +308,28 @@ export class UserController {
     return response;
   }
 
+  /**
+   * @param {CredentialRequest} req - CredentialRequest
+   * @returns
+   */
+  @CastcleAuth(CacheKeyName.SyncSocial)
+  @Get('me/pages/sync-social')
+  async getSyncSocialOfArray(@Req() req: CredentialRequest) {
+    const pages = await this.userService.getPagesFromCredential(
+      req.$credential
+    );
+    const socials = await this.socialSyncService.getSocialSyncByUser(...pages);
+
+    if (!socials.length) return { payload: null };
+
+    const socialResponse = socials.map((social) =>
+      social.toSocialSyncPayload()
+    );
+    return { payload: socialResponse };
+  }
+
   @CastcleAuth(CacheKeyName.Users)
   @Get('search')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getSearch(
     @Auth() { user }: Authorizer,
     @Query() getSearchUsersDto: GetSearchUsersDto
@@ -328,7 +343,6 @@ export class UserController {
   }
 
   @ApiOkResponse({ type: UserResponseDto })
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id')
   async getUserById(
@@ -384,41 +398,26 @@ export class UserController {
       );
   }
 
-  @ApiResponse({
-    status: 204,
-  })
-  @ApiBody({
-    type: DeleteUserBody,
-  })
+  @ApiResponse({ status: 204 })
+  @ApiBody({ type: DeleteUserDto })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
+    @Auth() { account, user }: Authorizer,
     @Body('channel') channel: string,
-    @Body('payload') passwordPayload: { password: string },
-    @Req() req: CredentialRequest
+    @Body('payload.password') password: string
   ) {
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    if (user) {
-      const account = await this.authService.getAccountFromCredential(
-        req.$credential
-      );
-      if (
-        channel === 'email' &&
-        (await account.verifyPassword(passwordPayload.password))
-      ) {
-        await this.userService.deactive(user);
-        return '';
-      } else
-        throw new CastcleException(
-          CastcleStatus.INVALID_PASSWORD,
-          req.$language
-        );
-    } else {
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const isValidChannel = channel === 'email';
+    const isPasswordValid = await account.verifyPassword(password);
+
+    if (!isValidChannel || !isPasswordValid) {
+      throw CastcleException.INVALID_PASSWORD;
     }
+
+    await this.userService.deactivate(account);
   }
 
   @ApiOkResponse({ type: ContentsResponse })
@@ -512,7 +511,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Users)
   @Get(':id/contents')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getUserContents(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -734,7 +732,6 @@ export class UserController {
 
   @Get(':id/blocking')
   @CastcleBasicAuth()
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getBlockedUsers(
     @Req() req: CredentialRequest,
     @Query() paginationQuery: PaginationQuery,
@@ -753,7 +750,6 @@ export class UserController {
   @Post(':id/blocking')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async blockUser(
     @Req() req: CredentialRequest,
     @Body() { targetCastcleId }: BlockingDto,
@@ -772,7 +768,6 @@ export class UserController {
   @Delete(':id/unblocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async unblockUser(
     @Req() req: CredentialRequest,
     @Param() { id: requestById, targetCastcleId }: UnblockingDto
@@ -786,7 +781,6 @@ export class UserController {
     await this.userService.unblockUser(authorizedUser, unblockUser);
   }
 
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @Post(':id/reporting')
   @CastcleBasicAuth()
@@ -816,7 +810,6 @@ export class UserController {
     }
   }
 
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({ type: UpdateMobileDto })
   @ApiOkResponse({ type: UserResponseDto })
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -899,7 +892,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -960,7 +952,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -987,7 +978,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1025,7 +1015,6 @@ export class UserController {
    * @param {UserSettingsDto} body setting dto payload
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1069,7 +1058,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referrer')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getReferrer(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -1125,7 +1113,6 @@ export class UserController {
   })
   @CastcleAuth(CacheKeyName.Referrer)
   @Get(':id/referee')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getReferee(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
@@ -1253,7 +1240,6 @@ export class UserController {
    * @param {string} sourceContentId original content id
    * @returns {''}
    */
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
   })
@@ -1276,7 +1262,6 @@ export class UserController {
 
   @Get('me/airdrops')
   @CastcleBasicAuth()
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   async getMyAirdropBalances(
     @Auth() { account }: Authorizer,
     @Query() { status }: GetAirdropBalancesQuery
@@ -1488,7 +1473,6 @@ export class UserController {
 
   @CastcleBasicAuth()
   @Get(':id/liked-casts')
-  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getLikedCast(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
@@ -1533,7 +1517,6 @@ export class UserController {
    * @param {SocialSyncDto} body social sync payload
    * @returns {PageResponseDto[]}
    */
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiBody({
     type: SocialSyncDto,
   })
@@ -1685,5 +1668,165 @@ export class UserController {
       })
     );
     return { payload: response };
+  }
+
+  /**
+   * @param {Authorizer} user  - Authorizer from interceptor or passport
+   * @param {string} socialId - The id of the social sync to update.
+   */
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social/:id/auto-post')
+  async updateAutoPost(
+    @Auth() { credential }: Authorizer,
+    @Param('id') id: string
+  ) {
+    const user = await this.userService.getUserFromCredential(credential);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    await this.socialSyncService.updateAutoPostBySocialId(social, true);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @CastcleBasicAuth()
+  @Delete('me/pages/sync-social/:id/auto-post')
+  async deleteAutoPost(
+    @Auth() { credential }: Authorizer,
+    @Param('id') id: string
+  ) {
+    const user = await this.userService.getUserFromCredential(credential);
+    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    await this.socialSyncService.updateAutoPostBySocialId(social, false);
+  }
+
+  /**
+   * Reconnect sync social data
+   * @param {Authorizer} req Request that has credential from interceptor or passport
+   * @param {string} id social sync _id
+   * @param {SocialSyncDto} body social sync payload
+   * @returns
+   */
+  @ApiBody({
+    type: SocialSyncDto,
+  })
+  @CastcleBasicAuth()
+  @Post('me/pages/sync-social/:id/connect')
+  async connectSyncSocial(
+    @Auth() { credential, user }: Authorizer,
+    @Param('id') id: string,
+    @Body() body: { payload: SocialSyncDto }
+  ) {
+    this.logger.log(`Start reconnect sync social.`);
+
+    await this.validateGuestAccount(credential);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const syncBody = body.payload;
+    const socialPage = new SocialPageDto();
+
+    syncBody.provider = social.provider;
+    syncBody.castcleId = page.displayId;
+    syncBody.autoPost = true;
+    syncBody.active = true;
+
+    if (syncBody.displayName) socialPage.displayName = syncBody.displayName;
+    if (syncBody.overview) socialPage.overview = syncBody.overview;
+
+    if (syncBody.avatar) {
+      const imageAvatar = await this.download.getImageFromUrl(syncBody.avatar);
+      const { image } = await this._uploadImage(imageAvatar, {
+        filename: `page-avatar-${syncBody.castcleId}`,
+        addTime: true,
+        sizes: AVATAR_SIZE_CONFIGS,
+        subpath: `page_${syncBody.castcleId}`,
+      });
+      socialPage.avatar = image;
+    }
+
+    if (syncBody.cover) {
+      const imageAvatar = await this.download.getImageFromUrl(syncBody.cover);
+      const { image } = await this._uploadImage(imageAvatar, {
+        filename: `page-cover-${syncBody.castcleId}`,
+        addTime: true,
+        sizes: COMMON_SIZE_CONFIGS,
+        subpath: `page_${syncBody.castcleId}`,
+      });
+      socialPage.cover = image;
+    }
+
+    if (syncBody.link) socialPage.links = { [social.provider]: syncBody.link };
+
+    await Promise.all([
+      this.userService.updatePageFromSocial(page, socialPage),
+      this.socialSyncService.update(syncBody, page),
+    ]);
+
+    if (syncBody.provider === SocialProvider.Facebook) {
+      this.logger.log('Subscribed facebook page.');
+      await this.facebookClient.subscribed(
+        syncBody.authToken || social.authToken,
+        syncBody.socialId || social.socialId
+      );
+    }
+  }
+
+  /**
+   * Disconnect sync social data
+   * @param {Authorizer} req Request that has credential from interceptor or passport
+   * @param {string} id social sync _id
+   * @returns
+   */
+  @CastcleBasicAuth()
+  @Delete('me/pages/sync-social/:id/connect')
+  async disconnectSyncSocial(
+    @Auth() { credential, user }: Authorizer,
+    @Param('id') id: string
+  ) {
+    this.logger.log(`Start create sync social.`);
+
+    await this.validateGuestAccount(credential);
+
+    const social = await this.socialSyncService.getSocialSyncBySocialId(id);
+    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+
+    const page = await this.socialSyncService.getPageByPageIdAndAccountId(
+      social,
+      user
+    );
+
+    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    await this.socialSyncService.delete(social, page, true);
+
+    if (social.provider === SocialProvider.Facebook && social.authToken) {
+      this.logger.log('Unsubscribed facebook page');
+      await this.facebookClient.unsubscribed(social.authToken, social.socialId);
+    }
   }
 }
