@@ -1,27 +1,4 @@
-/*
- * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
- * version 3 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 3 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Castcle, 22 Phet Kasem 47/2 Alley, Bang Khae, Bangkok,
- * Thailand 10160, or visit www.castcle.com if you need additional information
- * or have any questions.
- */
-
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -100,6 +77,9 @@ class UserDocument extends CastcleBase {
 
   @Prop()
   followedCount: number;
+
+  @Prop()
+  displayIdUpdatedAt?: Date;
 }
 
 type UserResponseOption = {
@@ -168,6 +148,9 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     links: selfSocial,
     verified: self.verified, //self.verified ? true : false,
     followed: followed,
+    canUpdateCastcleId: self.displayIdUpdatedAt
+      ? _verifyUpdateCastcleId(self.displayIdUpdatedAt)
+      : true,
   } as UserResponseDto;
 };
 
@@ -334,6 +317,9 @@ UserSchema.methods.toPageResponse = function (
         }
       : undefined,
     casts: casts,
+    canUpdateCastcleId: (this as User).displayIdUpdatedAt
+      ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
+      : true,
   } as PageResponseDto;
 };
 
@@ -403,6 +389,14 @@ UserSchema.methods.toSearchResponse = function () {
   } as SearchFollowsResponseDto;
 };
 
+const _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+  displayIdUpdateAt.setDate(
+    displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+  );
+  const now = new Date().getTime();
+  const allowUpdate = displayIdUpdateAt.getTime();
+  return allowUpdate - now >= 0;
+};
 export const UserSchemaFactory = (
   relationshipModel: Model<Relationship>
   /*contentModel: Model<Content>,

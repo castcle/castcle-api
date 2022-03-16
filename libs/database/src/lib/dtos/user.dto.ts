@@ -138,6 +138,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
 }
 
 export class linkSocialDetail {
@@ -249,6 +252,9 @@ export class PageResponseDto {
 
   @ApiProperty()
   casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
 }
 
 export class UpdatePageDto {

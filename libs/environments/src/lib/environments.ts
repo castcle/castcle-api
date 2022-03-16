@@ -187,4 +187,8 @@ export class Environment {
   static RECAPTCHA_API_KEY = process.env.RECAPTCHA_API_KEY || 'asdsd';
   static RECAPTCHA_PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || 'asdasd';
   static RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '1asdasd';
+
+  // Castcle ID Update
+  static CASTCLE_ID_ALLOW_UPDATE_DAYS =
+    Number(process.env.CASTCLE_ID_ALLOW_UPDATE_DAYS) || 60;
 }
