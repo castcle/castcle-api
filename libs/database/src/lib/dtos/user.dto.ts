@@ -47,18 +47,23 @@ export class UserModelImage {
 
 class Link {
   @ApiProperty()
+  @IsString()
   facebook?: string;
 
   @ApiProperty()
+  @IsString()
   twitter?: string;
 
   @ApiProperty()
+  @IsString()
   youtube?: string;
 
   @ApiProperty()
+  @IsString()
   medium?: string;
 
   @ApiProperty()
+  @IsString()
   website?: string | null;
 }
 
@@ -160,19 +165,37 @@ export class syncSocialDetail {
 }
 export class UpdateUserDto {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   overview?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   dob?: string;
 
   @ApiProperty()
+  @IsOptional()
   images?: UserImage;
 
   @ApiProperty()
+  @IsOptional()
   links?: Link;
 }
 
 export class UpdateModelUserDto {
+  castcleId?: string;
+  displayName?: string;
   overview?: string;
   dob?: string;
   links?: Link;

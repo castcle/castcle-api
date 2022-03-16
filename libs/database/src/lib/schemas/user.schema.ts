@@ -394,8 +394,8 @@ const _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
     displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
   );
   const now = new Date().getTime();
-  const allowUpdate = displayIdUpdateAt.getTime();
-  return allowUpdate - now >= 0;
+  const blockUpdate = displayIdUpdateAt.getTime();
+  return now - blockUpdate >= 0;
 };
 export const UserSchemaFactory = (
   relationshipModel: Model<Relationship>

@@ -289,6 +289,71 @@ describe('AppController', () => {
       } as any);
       expect(postReponse).toEqual(responseFull);
     });
+
+    it('should update castcleid and dispalyname from UpdateUserDto', async () => {
+      const updateDto = {
+        castcleId: 'test01',
+        displayName: 'testDisplay01',
+        dob: '1990-12-10',
+        links: {
+          facebook: 'http://facebook.com/abc',
+          medium: 'https://medium.com/abc',
+          website: 'https://djjam.app',
+          youtube: 'https://youtube.com/abcdef',
+        },
+        images: {
+          avatar: 'https://placehold.it/200x200',
+          cover: 'https://placehold.it/1500x300',
+        },
+        overview: 'this is a test',
+      } as UpdateUserDto;
+
+      const responseFull = await appController.updateMyData(
+        { $credential: userCredential, $language: 'th' } as any,
+        'me',
+        updateDto
+      );
+      expect(responseFull.castcleId).toEqual(updateDto.castcleId);
+      expect(responseFull.displayName).toEqual(updateDto.displayName);
+
+      const response = (await appController.getUserById(
+        responseFull.id,
+        {
+          $credential: userCredential,
+          $language: 'th',
+        } as any,
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
+      )) as unknown as UserResponseDto;
+
+      expect(response.canUpdateCastcleId).toEqual(false);
+    });
+
+    it('should return Exception when update block period', async () => {
+      const updateDto = {
+        castcleId: 'test01',
+        displayName: 'testDisplay01',
+        dob: '1990-12-10',
+        links: {
+          facebook: 'http://facebook.com/abc',
+          medium: 'https://medium.com/abc',
+          website: 'https://djjam.app',
+          youtube: 'https://youtube.com/abcdef',
+        },
+        images: {
+          avatar: 'https://placehold.it/200x200',
+          cover: 'https://placehold.it/1500x300',
+        },
+        overview: 'this is a test',
+      } as UpdateUserDto;
+
+      await expect(
+        appController.updateMyData(
+          { $credential: userCredential, $language: 'th' } as any,
+          'me',
+          updateDto
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+    });
   });
 
   describe('- Contents related', () => {
