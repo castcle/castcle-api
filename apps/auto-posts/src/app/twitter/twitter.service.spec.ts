@@ -156,7 +156,7 @@ describe('Twitter Service', () => {
         .spyOn(twitterService, 'convertTimelineToContents')
         .mockImplementationOnce(jest.fn());
 
-      await twitterService.getTweetsByAccount(syncAccount);
+      await twitterService.syncTwittersTweets(syncAccount);
 
       expect(twitterService.convertTimelineToContents).not.toBeCalled();
     });
@@ -180,7 +180,7 @@ describe('Twitter Service', () => {
         .mockResolvedValueOnce([]);
 
       await expect(
-        twitterService.getTweetsByAccount(syncAccount)
+        twitterService.syncTwittersTweets(syncAccount)
       ).resolves.not.toThrow();
     });
   });
