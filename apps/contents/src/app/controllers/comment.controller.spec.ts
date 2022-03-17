@@ -129,7 +129,7 @@ describe('CommentController', () => {
         userCredentialRequest,
         { hasRelationshipExpansion: false }
       );
-      //console.log(commentResult.payload)
+
       expect(commentResult.payload).toBeDefined();
       rootCommentId = commentResult.payload.id;
     });
@@ -160,6 +160,7 @@ describe('CommentController', () => {
   describe('#likeComment()', () => {
     it('should be able to like a comment', async () => {
       const result = await commentController.likeComment(
+        userCredentialRequest,
         content._id,
         rootCommentId,
         { castcleId: user.displayId, feedItemId: 'test' }
@@ -173,10 +174,15 @@ describe('CommentController', () => {
         { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
-      await commentController.likeComment(content._id, rootCommentId, {
-        castcleId: user.displayId,
-        feedItemId: 'test',
-      });
+      await commentController.likeComment(
+        userCredentialRequest,
+        content._id,
+        rootCommentId,
+        {
+          castcleId: user.displayId,
+          feedItemId: 'test',
+        }
+      );
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,

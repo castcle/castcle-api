@@ -46,6 +46,7 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
+  NotificationRef,
   NotificationSource,
   NotificationType,
   PageDto,
@@ -1219,6 +1220,24 @@ export class UserController {
       content,
       userRecast
     );
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Recast,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      req.$language
+    );
 
     return this.contentService.convertContentToContentResponse(
       userRecast,
@@ -1242,13 +1261,35 @@ export class UserController {
       `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`
     );
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    const userQuotecast = await this._validateOwnerAccount(req, user);
-    const content = await this._getContentIfExist(contentId);
+    const [userQuotecast, content] = await Promise.all([
+      this._validateOwnerAccount(req, user),
+      this._getContentIfExist(contentId),
+    ]);
     const result = await this.contentService.quoteContentFromUser(
       content,
       userQuotecast,
       message
     );
+
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Quote,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      req.$language
+    );
+
     return this.contentService.convertContentToContentResponse(
       userQuotecast,
       result.quoteContent
@@ -1351,9 +1392,10 @@ export class UserController {
     @Body('contentId') contentId: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(contentId);
-
-    const user = await this._getUser(id, req.$credential);
+    const [content, user] = await Promise.all([
+      this._getContentIfExist(contentId),
+      this._getUser(id, req.$credential),
+    ]);
 
     if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
       throw new CastcleException(
@@ -1364,24 +1406,27 @@ export class UserController {
 
     await this.contentService.likeContent(content, user);
 
-    if (id === 'me') return;
+    if (id === 'me' || id === user.id || id === content.author.castcleId)
+      return;
 
-    if (id === user.id) return;
-
-    if (id === content.author.castcleId) return;
-
-    // //TODO !!! has to implement message libs and i18N and message functions
-    this.notifyService.notifyToUser({
-      type: NotificationType.Like,
-      message: `${user.displayName} ถูกใจโพสของคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: content._id,
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Like,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
       },
-      account: { _id: content.author.id },
-    });
+      userOwner,
+      req.$language
+    );
   }
 
   /**
