@@ -5,7 +5,6 @@ export class UsersRequest {
   static headers = {
     'Accept-Language': 'en',
     'Accept-Version': '1.0',
-    'API-Metadata': 'ip=127.0.0.1,src=CastcleOS,dest=castcle',
     Device: 'CastclePhone',
     Platform: 'CastcleOS',
   };
