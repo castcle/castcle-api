@@ -266,7 +266,6 @@ describe('NotificationsController', () => {
         new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
       );
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.notificationRead(
           {
@@ -304,7 +303,6 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.notificationReadAll({
           $credential: wrongUserCredential,
@@ -346,7 +344,6 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.registerToken(
           {
