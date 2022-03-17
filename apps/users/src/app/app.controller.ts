@@ -271,26 +271,44 @@ export class UserController {
     @Query() userQuery?: ExpansionQuery
   ) {
     this.logger.log(`Me mentions keyword: ${keyword}`);
+    const maxResult = 10;
     const authorizedUser = await this.userService.getUserFromCredential(
       $credential
     );
 
-    const { users } = await this.userService.getMentionsFromPublic(
+    let { users: followingUser } = await this.userService.getMentionsFollowing(
       authorizedUser,
       keyword,
-      { page: DEFAULT_QUERY_OPTIONS.page, limit: DEFAULT_QUERY_OPTIONS.limit },
+      {
+        page: DEFAULT_QUERY_OPTIONS.page,
+        limit: DEFAULT_QUERY_OPTIONS.limit,
+      },
       userQuery.userFields?.includes(UserField.Relationships)
     );
 
-    this.logger.log(`Filter block user.`);
-    const resultFilter = users.filter((u) => !u.blocked && !u.blocking);
-    this.logger.log(`Sorting followed.`);
-    const sortResult = resultFilter.sort(
-      (pre, last) => +pre.followed - +last.followed
-    );
+    if (followingUser.length < maxResult) {
+      this.logger.log(`Get mention user from public`);
+      const { users: publicUser } =
+        await this.userService.getMentionsFromPublic(
+          authorizedUser,
+          keyword,
+          {
+            page: DEFAULT_QUERY_OPTIONS.page,
+            limit: DEFAULT_QUERY_OPTIONS.limit,
+          },
+          userQuery.userFields?.includes(UserField.Relationships)
+        );
+      this.logger.log(`Filter block user.`);
+      const resultFilter = publicUser.filter((u) => !u.blocked && !u.blocking);
+      this.logger.log(`Merge mention user`);
+      followingUser = [...followingUser, ...resultFilter];
+    }
 
     return {
-      payload: sortResult.length > 10 ? sortResult.slice(0, 10) : sortResult,
+      payload:
+        followingUser.length > maxResult
+          ? followingUser.slice(0, maxResult)
+          : followingUser,
     };
   }
 
