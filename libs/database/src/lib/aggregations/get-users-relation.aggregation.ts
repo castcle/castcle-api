@@ -20,9 +20,47 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
+import { Relationship, User } from '../schemas';
 
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-eligible-accounts.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-users-relation.aggregation';
+export class GetUserRelationParams {
+  userId: Types.ObjectId;
+  keyword: string;
+  limit: number;
+}
+
+export type GetUserRelationResponse = Relationship & {
+  user_relation: User[];
+};
+
+export const pipelineOfUserRelation = (params: GetUserRelationParams) => {
+  return [
+    {
+      $match: {
+        user: params.userId,
+        $or: [{ isFollowPage: true }, { following: true }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'followedUser',
+        foreignField: '_id',
+        pipeline: [
+          { $sort: { updatedAt: -1 } },
+          {
+            $match: {
+              displayId: {
+                $regex: new RegExp('^' + params.keyword.toLowerCase(), 'i'),
+              },
+              visibility: EntityVisibility.Publish,
+            },
+          },
+        ],
+        as: 'user_relation',
+      },
+    },
+    { $limit: params.limit },
+  ];
+};

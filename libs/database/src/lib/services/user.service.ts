@@ -34,9 +34,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
+import {
+  GetBalanceResponse,
+  GetUserRelationResponse,
+  pipelineOfGetBalance,
+  pipelineOfUserRelation,
+} from '../aggregations';
 import {
   Author,
   CastcleQueryOptions,
@@ -859,8 +865,10 @@ export class UserService {
 
   /**
    * Get all user,pages that could get from the system sort by followerCount
+   * @param {User} user
    * @param {string} keyword
    * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
    * @returns {Promise<{users:User[], pagination:Pagination}>}
    */
   getMentionsFromPublic = async (
@@ -873,18 +881,54 @@ export class UserService {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
     };
 
-    if (hasRelationshipExpansion) {
-      queryOption.sortBy = {
-        field: 'updatedAt',
-        type: SortDirection.DESC,
-      };
-    } else {
-      queryOption.sortBy = {
-        field: 'followerCount',
-        type: SortDirection.DESC,
-      };
-    }
+    queryOption.sortBy = {
+      field: 'followerCount',
+      type: SortDirection.DESC,
+    };
 
+    return this.getByCriteria(
+      user,
+      query,
+      queryOption,
+      hasRelationshipExpansion
+    );
+  };
+
+  /**
+   * Get user,pages from following user with filter
+   * @param {User} user
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
+   * @returns {Promise<{users:User[], pagination:Pagination}>}
+   */
+  getMentionsFollowing = async (
+    user: User,
+    keyword: string,
+    queryOption: CastcleQueryOptions,
+    hasRelationshipExpansion = false
+  ) => {
+    const pipeline = pipelineOfUserRelation({
+      userId: user._id,
+      keyword: keyword,
+      limit: queryOption.limit,
+    });
+
+    this.logger.log(JSON.stringify(pipeline), ' getUserRelation:aggregate');
+    const userRelation =
+      await this._relationshipModel.aggregate<GetUserRelationResponse>(
+        pipeline
+      );
+
+    const followingUsersId = userRelation.flatMap((u) =>
+      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id))
+    );
+
+    const query = {
+      _id: { $in: followingUsersId },
+    };
+
+    this.logger.log('get user from following list');
     return this.getByCriteria(
       user,
       query,
