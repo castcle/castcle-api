@@ -1,10 +1,12 @@
 import { UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType } from '../dtos';
+import { QueueName } from '../models';
 import { Comment, Content, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
@@ -39,6 +41,10 @@ describe('CommentService', () => {
         HashtagService,
         UserProducer,
         UserService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

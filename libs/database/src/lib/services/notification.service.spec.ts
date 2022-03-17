@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -32,6 +33,7 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '../dtos/notification.dto';
+import { QueueName } from '../models';
 import { User, Account, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -74,6 +76,10 @@ describe('NotificationService', () => {
         NotificationProducer,
         UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

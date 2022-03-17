@@ -148,7 +148,6 @@ export class Environment {
   static GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 
   // Feed Setting
-  static AUTO_CREATE_GUEST_FEED = process.env.AUTO_CREATE_GUEST_FEED === '1';
   static FEED_FOLLOW_MAX = Number(
     process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax
   );

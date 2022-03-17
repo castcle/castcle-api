@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-export * from './lib/messages/content.message';
 export * from './lib/messages/notification.message';
 export * from './lib/messages/user.message';
 export * from './lib/utils-queue.module';

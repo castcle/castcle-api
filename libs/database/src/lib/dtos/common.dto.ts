@@ -63,6 +63,7 @@ export enum EntityVisibility {
   Hidden = 'hidden',
   Publish = 'publish',
   Deleted = 'deleted',
+  Illegal = 'illegal',
 }
 
 export enum CastcleQueueAction {
@@ -71,7 +72,6 @@ export enum CastcleQueueAction {
   Restore = 'restore',
   UpdateProfile = 'updateProfile',
   CreateFollowFeedItem = 'craeteFollowFeedItem',
-  CreateFeedItemToEveryOne = 'createFeedItemToEveryone',
   CreateFeedItemToGuests = 'createFeedItemToGuests',
 }
 

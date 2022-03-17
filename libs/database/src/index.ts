@@ -22,4 +22,5 @@
  */
 
 export * from './lib/models';
+export * from './lib/database.config';
 export * from './lib/database.module';

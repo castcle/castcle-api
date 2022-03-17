@@ -34,11 +34,12 @@ import {
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
-import { AdsObjective } from '../models';
+import { AdsObjective, QueueName } from '../models';
 import { UserProducer } from '@castcle-api/utils/queue';
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
 import { CacheModule } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('AdsService', () => {
   let mongod: MongoMemoryServer;
@@ -66,6 +67,10 @@ describe('AdsService', () => {
         ContentService,
         UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = app.get<AdsService>(AdsService);
