@@ -32,7 +32,7 @@ import {
   CacheTTL,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
   return applyDecorators(
@@ -64,13 +64,5 @@ export function CastcleClearCacheAuth(cacheConfig: {
 }
 
 export function CastcleTrack() {
-  return applyDecorators(
-    ApiHeader({
-      name: 'api-metadata',
-      description: 'ip=127.0.0.1,src=iOS,dest=castcle-authentications',
-      example: 'android',
-      required: true,
-    }),
-    UseInterceptors(IpTrackerInterceptor)
-  );
+  return applyDecorators(UseInterceptors(IpTrackerInterceptor));
 }
