@@ -67,6 +67,7 @@ import {
   User,
   UserType,
 } from '@castcle-api/database/schemas';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -206,6 +207,16 @@ export class UserController {
     } catch (e) {
       throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
     }
+  };
+
+  _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+    displayIdUpdateAt.setDate(
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+    );
+
+    const now = new Date().getTime();
+    const blockUpdate = displayIdUpdateAt.getTime();
+    return now - blockUpdate >= 0;
   };
 
   /**
@@ -413,6 +424,15 @@ export class UserController {
     const user = await this._getUser(id, req.$credential);
     if (user) {
       if (String(user.ownerAccount) !== String(req.$credential.account._id))
+        throw new CastcleException(
+          CastcleStatus.FORBIDDEN_REQUEST,
+          req.$language
+        );
+      if (
+        (body.castcleId || body.displayName) &&
+        user.displayIdUpdatedAt &&
+        !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
+      )
         throw new CastcleException(
           CastcleStatus.FORBIDDEN_REQUEST,
           req.$language
