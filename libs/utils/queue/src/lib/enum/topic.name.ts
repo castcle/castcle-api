@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 export const TopicName = {
   Campaigns: 'campaigns',
-  Contents: 'contents',
   Notifications: 'notifications-message',
   Users: 'users',
 };

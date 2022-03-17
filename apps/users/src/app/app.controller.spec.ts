@@ -32,6 +32,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
   SocialProvider,
   SocialSyncService,
   UserService,
@@ -73,7 +74,7 @@ import {
   TopicName,
   UserProducer,
 } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { BullModule, getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -152,6 +153,10 @@ describe('AppController', () => {
         NotificationProducer,
         DownloaderProvider,
         FacebookClientProvider,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     appController = app.get(UserController);

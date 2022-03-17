@@ -27,9 +27,14 @@ import {
   UtilsQueueModule,
 } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
+import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { getMongooseModuleOptions } from './database.config';
+import {
+  getBullModuleOptions,
+  getMongooseModuleOptions,
+} from './database.config';
+import { QueueName } from './models';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -148,6 +153,10 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
+    BullModule.forRootAsync({
+      useFactory: () => getBullModuleOptions(),
+    }),
+    BullModule.registerQueue({ name: QueueName.CONTENT }),
     HttpModule,
     MongooseModule.forRootAsync({
       useFactory: () => getMongooseModuleOptions(),

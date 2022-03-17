@@ -24,8 +24,10 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { getLinkPreview } from 'link-preview-js';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
@@ -52,6 +54,7 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
+import { ContentMessage, ContentMessageEvent, QueueName } from '../models';
 import { EngagementType } from '../models/engagement.enum';
 import {
   Account,
@@ -61,7 +64,6 @@ import {
   Engagement,
   FeedItem,
   GuestFeedItem,
-  GuestFeedItemType,
   Relationship,
   Revision,
   toSignedContentPayloadItem,
@@ -89,7 +91,8 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: Model<Credential>,
     @InjectModel('User')
@@ -108,7 +111,9 @@ export class ContentService {
     @InjectModel('GuestFeedItem')
     public _guestFeedItemModel: Model<GuestFeedItem>,
     @InjectModel('Relationship')
-    private relationshipModel: Model<Relationship>
+    private relationshipModel: Model<Relationship>,
+    @InjectQueue(QueueName.CONTENT)
+    private contentQueue: Queue<ContentMessage>
   ) {}
 
   /**
@@ -139,21 +144,25 @@ export class ContentService {
     await this.hashtagService.createFromTags(hashtags);
     try {
       await this.updatePayloadMessage(contentDto.payload);
-    } catch (ex) {
-      this.logger.warn(ex);
+    } catch (error) {
+      this.logger.error(error, 'createContentFromUser:updatePayloadMessage');
     }
 
-    const newContent = {
+    const content = await new this._contentModel({
       author: author,
       payload: contentDto.payload,
       revisionCount: 0,
       type: contentDto.type,
       visibility: EntityVisibility.Publish,
       hashtags: hashtags,
-    } as Content;
-    const content = new this._contentModel(newContent);
+    }).save();
 
-    return content.save();
+    this.contentQueue.add({
+      event: ContentMessageEvent.NEW_CONTENT,
+      contentId: content.id,
+    });
+
+    return content;
   }
 
   /**
@@ -166,7 +175,7 @@ export class ContentService {
     author: Author,
     contentsDtos: SaveContentDto[]
   ): Promise<Content[]> {
-    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
+    const $contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
@@ -183,9 +192,17 @@ export class ContentService {
       } as Content;
     });
 
-    const contents = await Promise.all(contentsToCreate);
+    const contentsToCreate = await Promise.all($contentsToCreate);
+    const contents = await this._contentModel.insertMany(contentsToCreate);
 
-    return this._contentModel.create(contents);
+    contents.forEach((content) => {
+      this.contentQueue.add({
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      });
+    });
+
+    return contents;
   }
 
   async getAuthorFromId(authorId: string) {
@@ -899,18 +916,6 @@ export class ContentService {
       })
       .exec();
 
-  /**
-   * @param contentId
-   */
-  createGuestFeedItemFromAuthorId = (contentId: any) => {
-    return new this._guestFeedItemModel({
-      score: 0,
-      type: GuestFeedItemType.Content,
-      content: contentId,
-      __v: 2,
-    }).save();
-  };
-
   async reportContent(user: User, content: Content, message: string) {
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
@@ -1262,9 +1267,13 @@ Message: ${message}`,
     return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
 
-  publishContent(contentId: string) {
+  publishContent(contentId: string, isIllegal: boolean) {
     return this._contentModel
-      .findByIdAndUpdate(contentId, { visibility: EntityVisibility.Publish })
+      .findByIdAndUpdate(contentId, {
+        visibility: isIllegal
+          ? EntityVisibility.Illegal
+          : EntityVisibility.Publish,
+      })
       .exec();
   }
 }

@@ -25,7 +25,6 @@ import { Environment } from '@castcle-api/environments';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { TopicName } from './enum/topic.name';
-import { ContentProducer } from './producers/content.producer';
 import { NotificationProducer } from './producers/notification.producer';
 import { UserProducer } from './producers/user.producer';
 
@@ -39,15 +38,14 @@ import { UserProducer } from './producers/user.producer';
     }),
     BullModule.registerQueue(
       { name: TopicName.Campaigns },
-      { name: TopicName.Contents },
       { name: TopicName.Notifications },
       { name: TopicName.Users }
     ),
   ],
   controllers: [],
-  providers: [NotificationProducer, UserProducer, ContentProducer],
-  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer],
+  providers: [NotificationProducer, UserProducer],
+  exports: [BullModule, NotificationProducer, UserProducer],
 })
 export class UtilsQueueModule {}
 
-export { TopicName, NotificationProducer, UserProducer, ContentProducer };
+export { TopicName, NotificationProducer, UserProducer };

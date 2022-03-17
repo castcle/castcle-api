@@ -29,6 +29,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
 } from '@castcle-api/database';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
@@ -38,6 +39,7 @@ import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('CommentController', () => {
   let mongod: MongoMemoryServer;
@@ -74,6 +76,10 @@ describe('CommentController', () => {
         NotificationProducer,
         NotificationService,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = app.get<UserService>(UserService);

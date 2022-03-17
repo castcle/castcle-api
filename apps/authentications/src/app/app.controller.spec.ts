@@ -27,6 +27,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  QueueName,
   UserService,
 } from '@castcle-api/database';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
@@ -45,8 +46,9 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -164,7 +166,6 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
         HttpModule,
-        UtilsQueueModule,
       ],
       controllers: [AuthenticationController],
       providers: [
@@ -182,6 +183,10 @@ describe('AppController', () => {
         HashtagService,
         UserProducer,
         AnalyticService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

@@ -41,7 +41,7 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { WalletType } from '../models';
+import { QueueName, WalletType } from '../models';
 import {
   Account,
   Comment,
@@ -56,6 +56,7 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 import { SocialPageDto } from './../dtos/user.dto';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('User Service', () => {
   let mongod: MongoMemoryReplSet;
@@ -86,6 +87,10 @@ describe('User Service', () => {
         CommentService,
         UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

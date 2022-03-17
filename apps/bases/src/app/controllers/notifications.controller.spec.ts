@@ -27,6 +27,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -37,6 +38,7 @@ import {
 import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -134,6 +136,10 @@ describe('NotificationsController', () => {
         NotificationProducer,
         UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     userService = app.get<UserService>(UserService);

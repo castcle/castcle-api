@@ -20,15 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Action, CaslAbilityFactory } from '@castcle-api/casl';
 import {
-  AuthenticationService,
   ContentService,
   NotificationService,
   UserService,
 } from '@castcle-api/database';
 import {
-  CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -55,7 +54,6 @@ import {
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { SortByPipe } from '@castcle-api/utils/pipes';
-import { ContentProducer } from '@castcle-api/utils/queue';
 import {
   Body,
   Controller,
@@ -85,11 +83,9 @@ export class ContentController {
   private logger = new CastLogger(ContentController.name);
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
     private caslAbility: CaslAbilityFactory,
-    private contentProducer: ContentProducer,
     private notifyService: NotificationService
   ) {}
 
@@ -121,11 +117,6 @@ export class ContentController {
       user,
       uploadedBody
     );
-
-    this.contentProducer.sendMessage({
-      action: CastcleQueueAction.CreateFeedItemToEveryOne,
-      id: content._id,
-    });
 
     return this.contentService.convertContentToContentResponse(
       authorizedUser,

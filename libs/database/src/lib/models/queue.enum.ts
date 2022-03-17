@@ -21,6 +21,10 @@
  * or have any questions.
  */
 
+export enum QueueName {
+  CONTENT = 'content',
+}
+
 export enum QueueStatus {
   DONE = 'done',
   FAILED = 'failed',
