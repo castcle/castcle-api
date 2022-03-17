@@ -428,6 +428,10 @@ export class UserService {
 
   updateUser = (user: User, updateUserDto: UpdateModelUserDto) => {
     if (!user.profile) user.profile = {};
+    if (updateUserDto.castcleId) user.displayId = updateUserDto.castcleId;
+    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
+    if (updateUserDto.displayName || updateUserDto.castcleId)
+      user.displayIdUpdatedAt = new Date();
     if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
     if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
     if (updateUserDto.images) {
