@@ -22,7 +22,9 @@
  */
 
 export enum QueueName {
+  CAMPAIGN = 'campaign',
   CONTENT = 'content',
+  NOTIFICATION = 'notification',
   USER = 'user',
 }
 

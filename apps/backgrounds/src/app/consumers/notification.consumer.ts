@@ -43,41 +43,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { NotificationMessage, QueueName } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { NotificationMessage, TopicName } from '@castcle-api/utils/queue';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
 import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
 
 @Injectable()
-@Processor(TopicName.Notifications)
+@Processor(QueueName.NOTIFICATION)
 export class NotificationConsumer {
-  constructor(
-    @InjectFirebaseAdmin() private readonly firebase: FirebaseAdmin
-  ) {}
-
   private logger = new CastLogger(NotificationConsumer.name);
 
-  /**
-   * consume notofication message from queue
-   * @param {NotificationMessage} NotificationMessage notofication message
-   * @returns {}
-   */
+  constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) {}
+
   @Process()
-  readOperationJob(job: Job<{ notification: NotificationMessage }>) {
+  readOperationJob(job: Job<NotificationMessage>) {
     try {
-      this.logger.log(
-        `consume message '${JSON.stringify(job.data.notification)}}' `
-      );
+      this.logger.log(JSON.stringify(job));
       this.firebase.messaging.sendMulticast({
-        tokens: job.data.notification.firebaseTokens,
+        tokens: job.data.firebaseTokens,
         apns: {
-          payload: {
-            aps: job.data.notification.aps,
-          },
+          payload: { aps: job.data.aps },
         },
-        data: job.data.notification.payload,
+        data: job.data.payload,
       });
     } catch (error) {
       this.logger.error(error);

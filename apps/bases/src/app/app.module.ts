@@ -30,7 +30,6 @@ import {
   UtilsInterceptorsModule,
 } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { Module } from '@nestjs/common';
 import { BasesController } from './controllers/bases.controller';
 import { FeedsController } from './controllers/feeds.controller';
@@ -54,7 +53,6 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
     UtilsCacheModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    UtilsQueueModule,
     ThrottlerModule.forRoot({
       ttl: Environment.RATE_LIMIT_TTL,
       limit: Environment.RATE_LIMIT_LIMIT,

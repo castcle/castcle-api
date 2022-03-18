@@ -69,7 +69,6 @@ import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -138,7 +137,6 @@ describe('AppController', () => {
         AdsService,
         AnalyticService,
         NotificationService,
-        NotificationProducer,
         DownloaderProvider,
         FacebookClientProvider,
         {
@@ -150,7 +148,11 @@ describe('AppController', () => {
           useValue: { add: jest.fn() },
         },
         {
-          provide: getQueueToken(TopicName.Campaigns),
+          provide: getQueueToken(QueueName.CAMPAIGN),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
           useValue: { add: jest.fn() },
         },
       ],

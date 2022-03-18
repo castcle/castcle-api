@@ -30,7 +30,6 @@ import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
 } from '@castcle-api/utils/interceptors';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
@@ -48,7 +47,6 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
     CaslModule,
     HealthyModule,
     UtilsInterceptorsModule,
-    UtilsQueueModule,
     UtilsCacheModule,
     UtilsPipesModule,
     ThrottlerModule.forRoot({

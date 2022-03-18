@@ -21,12 +21,10 @@
  * or have any questions.
  */
 import { CastLogger } from '@castcle-api/logger';
-import {
-  NotificationMessage,
-  NotificationProducer,
-} from '@castcle-api/utils/queue';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { FilterQuery, Model, Types } from 'mongoose';
 import {
   CreateNotification,
@@ -35,7 +33,8 @@ import {
   NotificationSource,
   NotificationType,
   RegisterTokenDto,
-} from '../dtos/notification.dto';
+} from '../dtos';
+import { NotificationMessage, QueueName } from '../models';
 import { Account, Credential, Notification, User } from '../schemas';
 import { createCastcleMeta } from '../utils/common';
 
@@ -48,10 +47,12 @@ export class NotificationService {
     public _notificationModel: Model<Notification>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    private readonly notificationProducer: NotificationProducer,
     @InjectModel('Credential')
     public _credentialModel: Model<Credential>,
-    @InjectModel('Account') public _accountModel: Model<Account>
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
+    @InjectQueue(QueueName.NOTIFICATION)
+    private notificationQueue: Queue<NotificationMessage>
   ) {}
 
   /**
@@ -247,8 +248,8 @@ export class NotificationService {
           .filter((c) => c.firebaseNotificationToken)
           .map((c) => c.firebaseNotificationToken as string),
       };
-      console.log('add to queue');
-      this.notificationProducer.sendMessage(message);
+
+      this.notificationQueue.add(message);
     }
     return createResult;
   };
