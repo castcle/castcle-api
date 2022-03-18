@@ -295,6 +295,38 @@ describe('AppController', () => {
       expect(postReponse).toEqual(responseFull);
     });
 
+    it('should return Exception when update dupplicate castcle id', async () => {
+      const mocks = await generateMockUsers(1, 0, {
+        accountService: authService,
+        userService: service,
+      });
+
+      const updateDto = {
+        castcleId: mocks[0].user.displayId,
+        displayName: 'testDisplay01',
+        dob: '1990-12-10',
+        links: {
+          facebook: 'http://facebook.com/abc',
+          medium: 'https://medium.com/abc',
+          website: 'https://djjam.app',
+          youtube: 'https://youtube.com/abcdef',
+        },
+        images: {
+          avatar: 'https://placehold.it/200x200',
+          cover: 'https://placehold.it/1500x300',
+        },
+        overview: 'this is a test',
+      } as UpdateUserDto;
+
+      await expect(
+        appController.updateMyData(
+          { $credential: userCredential, $language: 'th' } as any,
+          'me',
+          updateDto
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.USER_ID_IS_EXIST));
+    });
+
     it('should update castcleid and dispalyname from UpdateUserDto', async () => {
       const updateDto = {
         castcleId: 'test01',
@@ -441,7 +473,7 @@ describe('AppController', () => {
         1,
         5
       );
-      expect(response.payload.length).toEqual(1);
+      expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
@@ -459,7 +491,7 @@ describe('AppController', () => {
           hasRelationshipExpansion: true,
         }
       );
-      expect(response.payload.length).toEqual(1);
+      expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
