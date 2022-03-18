@@ -23,7 +23,6 @@
 
 import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
@@ -39,7 +38,7 @@ async function bootstrap() {
   app.setGlobalPrefix(prefix);
 
   await app.listen(port);
-  Logger.log('Listening at http://localhost:' + port + '/');
+  logger.log(`Listening at http://localhost:${port}/`);
   logger.log(`Environment at ${Environment.NODE_ENV}`);
 }
 
