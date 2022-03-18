@@ -276,7 +276,8 @@ export class UserController {
       $credential
     );
 
-    let { users: followingUser } = await this.userService.getMentionsFollowing(
+    let userMentions = [];
+    const followingUser = await this.userService.getMentionsFollowing(
       authorizedUser,
       keyword,
       {
@@ -286,7 +287,7 @@ export class UserController {
       userQuery.userFields?.includes(UserField.Relationships)
     );
 
-    if (followingUser.length < maxResult) {
+    if (followingUser.userData.users.length < maxResult) {
       this.logger.log(`Get mention user from public`);
       const { users: publicUser } =
         await this.userService.getMentionsFromPublic(
@@ -296,19 +297,22 @@ export class UserController {
             page: DEFAULT_QUERY_OPTIONS.page,
             limit: DEFAULT_QUERY_OPTIONS.limit,
           },
-          userQuery.userFields?.includes(UserField.Relationships)
+          userQuery.userFields?.includes(UserField.Relationships),
+          followingUser.followingUserId
         );
       this.logger.log(`Filter block user.`);
       const resultFilter = publicUser.filter((u) => !u.blocked && !u.blocking);
       this.logger.log(`Merge mention user`);
-      followingUser = [...followingUser, ...resultFilter];
+      userMentions = [...followingUser.userData.users, ...resultFilter];
+    } else {
+      userMentions = [...followingUser.userData.users];
     }
 
     return {
       payload:
-        followingUser.length > maxResult
-          ? followingUser.slice(0, maxResult)
-          : followingUser,
+        userMentions.length > maxResult
+          ? userMentions.slice(0, maxResult)
+          : userMentions,
     };
   }
 
