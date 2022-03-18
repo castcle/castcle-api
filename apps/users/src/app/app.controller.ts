@@ -460,6 +460,14 @@ export class UserController {
           req.$language
         );
 
+      if (body.castcleId) {
+        const userExisting = await this.authService.getExistedUserFromCastcleId(
+          body.castcleId
+        );
+        if (userExisting && userExisting.id !== user.id)
+          throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+      }
+
       const newBody = await this.userService.uploadUserInfo(
         body,
         req.$credential.account._id
