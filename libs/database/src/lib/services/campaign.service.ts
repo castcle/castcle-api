@@ -27,6 +27,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job, Queue as BullQueue } from 'bull';
+import { TLedger } from '../schemas';
 import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   pipelineOfGetEligibleAccountsFromCampaign,
@@ -35,6 +36,7 @@ import {
   GetCampaignClaimsResponse,
 } from '../aggregations';
 import {
+  CACCOUNT_NO,
   CampaignStatus,
   CampaignType,
   CastcleNumber,
@@ -296,12 +298,29 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
 
       return { account, type, value: amount };
     });
-
     const from = { type: WalletType.CASTCLE_AIRDROP, value: sumAmount };
+    //for campaign account
+    const ledgers = to.map(
+      (item) =>
+        ({
+          debit: {
+            caccountNo: CACCOUNT_NO.VAULT.AIRDROP,
+            value: item.value,
+          },
+          credit: {
+            caccountNo:
+              item.type === WalletType.ADS
+                ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            value: item.value,
+          },
+        } as TLedger)
+    );
     const transaction = await new this.transactionModel({
       from,
       to,
       data: { campaignId: claimCampaignsAirdropJob.campaignId },
+      ledgers,
     }).save({ session });
 
     await campaign.save({ session });

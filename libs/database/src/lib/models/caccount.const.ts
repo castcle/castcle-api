@@ -21,24 +21,15 @@
  * or have any questions.
  */
 
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './analytic.model';
-export * from './campaign.enum';
-export * from './content.message';
-export * from './engagement.enum';
-export * from './feed.enum';
-export * from './feed.model';
-export * from './notification.message';
-export * from './number.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './user.message';
-export * from './wallet.enum';
-export * from './wallet.model';
-export * from './caccount.const';
+export const CACCOUNT_NO = {
+  VAULT: {
+    NO: '0000',
+    AIRDROP: '0500',
+  },
+  LIABILITY: {
+    USER_WALLET: {
+      PERSONAL: '2110',
+      ADS: '2120',
+    },
+  },
+};

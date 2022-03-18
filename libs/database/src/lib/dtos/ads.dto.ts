@@ -62,6 +62,10 @@ export class AdsRequestDto {
   'duration': number;
   @ApiProperty()
   'contentId'?: string;
+
+  @ApiProperty()
+  'paymentMethod': string;
+
   @ApiProperty()
   'userId'?: string;
 }

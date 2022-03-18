@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { AdsPaymentMethod } from '../models';
 
 /**
  * Detail should not change much once it created
@@ -42,6 +43,9 @@ export class AdsDetail {
 
   @Prop({ required: true })
   duration: number;
+
+  @Prop({ required: true, type: String })
+  paymentMethod: AdsPaymentMethod;
 }
 
 export const AdsDetailSchema = SchemaFactory.createForClass(AdsDetail);

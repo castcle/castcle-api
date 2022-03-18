@@ -22,6 +22,7 @@
  */
 import {
   AdsObjective,
+  AdsPaymentMethod,
   AdsService,
   AnalyticService,
   AuthenticationService,
@@ -1220,6 +1221,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1276,6 +1278,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1459,6 +1462,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1470,6 +1474,7 @@ describe('AppController', () => {
           dailyBudget: 10,
           duration: 5,
           objective: AdsObjective.Engagement,
+          paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
         await adsService.updateAdsById(mockAds.id, adsUpdate);
         const adsCampaign = await adsService._adsCampaignModel
