@@ -212,24 +212,32 @@ export class ContentService {
   }
 
   updatePayloadMessage = async (shortPayload: ShortPayload) => {
-    const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
-    const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
+    this.logger.log(JSON.stringify(shortPayload), 'updatePayloadMessage');
 
-    if (linkIndex >= 0) {
-      const twitterLink = shortPayload.message.slice(linkIndex);
-      const linkPreview = (await getLinkPreview(twitterLink)) as GetLinkPreview;
-      const link = {
-        type: LinkType.Other,
-        url: linkPreview.url,
-        title: linkPreview.title,
-        description: linkPreview.description,
-        imagePreview: linkPreview.images?.[0],
-      } as Link;
+    try {
+      const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
+      const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
 
-      shortPayload.message = shortPayload.message.slice(0, linkIndex);
-      shortPayload.link = shortPayload.link
-        ? [...shortPayload.link, link]
-        : [link];
+      if (linkIndex >= 0) {
+        const twitterLink = shortPayload.message.slice(linkIndex);
+        const linkPreview = (await getLinkPreview(
+          twitterLink
+        )) as GetLinkPreview;
+        const link = {
+          type: LinkType.Other,
+          url: linkPreview.url,
+          title: linkPreview.title,
+          description: linkPreview.description,
+          imagePreview: linkPreview.images?.[0],
+        } as Link;
+
+        shortPayload.message = shortPayload.message.slice(0, linkIndex);
+        shortPayload.link = shortPayload.link
+          ? [...shortPayload.link, link]
+          : [link];
+      }
+    } catch (error: unknown) {
+      this.logger.error(error, 'updatePayloadMessage');
     }
   };
 

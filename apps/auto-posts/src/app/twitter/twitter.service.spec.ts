@@ -26,11 +26,13 @@ import { ContentService, SocialSyncService } from '@castcle-api/database';
 import { TwitterService } from './twitter.service';
 import {
   ReferencedTweetV2,
+  TweetEntitiesV2,
   TweetUserTimelineV2Paginator,
   TwitterApiv2,
 } from 'twitter-api-v2';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastLogger } from '@castcle-api/logger';
+import { ShortPayload } from '@castcle-api/database/dtos';
 
 jest.mock('twitter-api-v2');
 jest.mock('@castcle-api/utils/aws');
@@ -212,6 +214,38 @@ describe('Twitter Service', () => {
       );
 
       expect(contents.length).toEqual(1);
+    });
+
+    it('should replace links with expanded urls', async () => {
+      const contents = await twitterService.convertTimelineToContents(
+        author.id,
+        {
+          data: [
+            {
+              id: '1461307091956551690',
+              text: 'Sign Up Now 👉 https://t.co/1 https://t.co/2',
+              entities: {
+                urls: [
+                  {
+                    url: 'https://t.co/1',
+                    expanded_url: 'https://www.castcle.com/',
+                  },
+                  {
+                    url: 'https://t.co/2',
+                    expanded_url:
+                      'https://twitter.com/castcle/status/1461307091956551690/photo/1',
+                  },
+                ],
+              } as TweetEntitiesV2,
+            },
+          ],
+          meta,
+        }
+      );
+
+      expect((contents[0].payload as ShortPayload).message).toEqual(
+        'Sign Up Now 👉 https://www.castcle.com/'
+      );
     });
   });
 });

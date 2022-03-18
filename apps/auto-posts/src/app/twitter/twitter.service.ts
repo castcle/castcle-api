@@ -141,7 +141,7 @@ export class TwitterService {
       .filter(({ referenced_tweets }) => {
         return !referenced_tweets?.some(({ type }) => type === 'quoted');
       })
-      .map(async ({ attachments, text }) => {
+      .map(async ({ attachments, entities, id, text }) => {
         const $images = attachments?.media_keys?.map(async (mediaKey) => {
           const medium = timeline.includes?.media?.find(
             ({ media_key: key }) => key === mediaKey
@@ -163,9 +163,16 @@ export class TwitterService {
 
         const images = await Promise.all(($images ?? []).filter(Boolean));
 
+        entities?.urls?.forEach(({ expanded_url, url }) => {
+          text = text.replace(
+            url,
+            expanded_url.includes(id) ? '' : expanded_url
+          );
+        });
+
         return {
           payload: {
-            message: text,
+            message: text.trim(),
             photo: images.length ? { contents: images } : undefined,
           },
           type: ContentType.Short,
