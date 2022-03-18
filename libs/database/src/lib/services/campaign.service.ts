@@ -23,7 +23,6 @@
 
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { TopicName } from '@castcle-api/utils/queue';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -40,6 +39,7 @@ import {
   CampaignType,
   CastcleNumber,
   ClaimAirdropPayload,
+  QueueName,
   QueueStatus,
   QueueTopic,
 } from '../models';
@@ -59,7 +59,7 @@ export class CampaignService {
     private transactionModel: Model<Transaction>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
-    @InjectQueue(TopicName.Campaigns)
+    @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>
   ) {}
 

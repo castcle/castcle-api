@@ -21,7 +21,23 @@
  * or have any questions.
  */
 
-export const TopicName = {
-  Campaigns: 'campaigns',
-  Notifications: 'notifications-message',
+type Aps = {
+  alert: string;
+  sound: string;
+  category: 'CONTENTS';
+  badge: number;
+  'mutable-content': number;
 };
+
+type NotificationPayload = {
+  notifyId: string;
+  source: 'PROFILE' | 'PAGE' | 'SYSTEM';
+  content?: string;
+  comment?: string;
+};
+
+export interface NotificationMessage {
+  aps: Aps;
+  payload: NotificationPayload;
+  firebaseTokens: string[];
+}

@@ -24,7 +24,6 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
-import { UtilsQueueModule } from '@castcle-api/utils/queue';
 import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -40,7 +39,6 @@ import { CampaignScheduler } from './schedulers/campaign.scheduler';
   imports: [
     DatabaseModule,
     ScheduleModule.forRoot(),
-    UtilsQueueModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
         projectId: Environment.FIREBASE_PROJECT_ID,

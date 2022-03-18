@@ -22,10 +22,6 @@
  */
 
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import {
-  NotificationProducer,
-  UtilsQueueModule,
-} from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
@@ -157,7 +153,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       useFactory: () => getBullModuleOptions(),
     }),
     BullModule.registerQueue(
+      { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
+      { name: QueueName.NOTIFICATION },
       { name: QueueName.USER }
     ),
     HttpModule,
@@ -167,9 +165,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsCacheModule,
-    UtilsQueueModule,
   ],
-  controllers: [],
   providers: [
     AuthenticationService,
     UserService,
@@ -178,7 +174,6 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
     NotificationService,
     RankerService,
-    NotificationProducer,
     LanguageService,
     HashtagService,
     SearchService,
