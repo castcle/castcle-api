@@ -46,7 +46,6 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UserProducer } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -181,10 +180,13 @@ describe('AppController', () => {
         UserService,
         ContentService,
         HashtagService,
-        UserProducer,
         AnalyticService,
         {
           provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

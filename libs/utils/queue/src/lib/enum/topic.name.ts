@@ -24,5 +24,4 @@
 export const TopicName = {
   Campaigns: 'campaigns',
   Notifications: 'notifications-message',
-  Users: 'users',
 };

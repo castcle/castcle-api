@@ -29,9 +29,10 @@ import {
 } from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { UserProducer } from '@castcle-api/utils/queue';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
@@ -55,7 +56,7 @@ import {
   UserField,
   UserModelImage,
 } from '../dtos';
-import { CastcleNumber } from '../models';
+import { CastcleNumber, QueueName, UserMessage } from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -115,8 +116,9 @@ export class UserService {
     private transactionModel: Model<Transaction>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    private contentService: ContentService,
-    private userProducer: UserProducer
+    @InjectQueue(QueueName.USER)
+    private userQueue: Queue<UserMessage>,
+    private contentService: ContentService
   ) {}
 
   getUserFromCredential = (credential: Credential) =>
@@ -460,7 +462,7 @@ export class UserService {
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
-    this.userProducer.sendMessage({
+    this.userQueue.add({
       id: user._id,
       action: CastcleQueueAction.UpdateProfile,
     });
@@ -569,19 +571,10 @@ export class UserService {
   };
 
   /**
-   *
    * @param {User} user
    * @param {User} followedUser
-   * @returns {Promise<void>}
    */
   follow = async (user: User, followedUser: User) => {
-    this.userProducer.sendMessage({
-      id: user._id,
-      action: CastcleQueueAction.CreateFollowFeedItem,
-      options: {
-        followedId: followedUser._id,
-      },
-    });
     return user.follow(followedUser);
   };
 
@@ -740,7 +733,7 @@ export class UserService {
         `deactivate:success:account-${account._id}`
       );
 
-      this.userProducer.sendMessage({
+      this.userQueue.add({
         id: account,
         action: CastcleQueueAction.Deleting,
       });
@@ -840,7 +833,7 @@ export class UserService {
    * Deactivate one account by id
    * @param id
    */
-  deactiveBackground = async (accountId: any) => {
+  deactivateBackground = async (accountId: any) => {
     const account = await this._accountModel.findById(accountId).exec();
     await this.deactivate(account);
   };

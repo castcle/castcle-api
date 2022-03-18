@@ -69,12 +69,8 @@ import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer,
-} from '@castcle-api/utils/queue';
-import { BullModule, getQueueToken } from '@nestjs/bull';
+import { NotificationProducer, TopicName } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -125,16 +121,9 @@ describe('AppController', () => {
     app = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
-        CacheModule.register({
-          store: 'memory',
-          ttl: 1000,
-        }),
+        CacheModule.register(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        BullModule.registerQueue(
-          { name: TopicName.Campaigns },
-          { name: TopicName.Users }
-        ),
       ],
       controllers: [UserController],
       providers: [
@@ -142,7 +131,6 @@ describe('AppController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        UserProducer,
         HashtagService,
         SocialSyncService,
         CampaignService,
@@ -157,8 +145,17 @@ describe('AppController', () => {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
         },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(TopicName.Campaigns),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
+
     appController = app.get(UserController);
     service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);

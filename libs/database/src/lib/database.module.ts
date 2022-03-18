@@ -156,7 +156,10 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     BullModule.forRootAsync({
       useFactory: () => getBullModuleOptions(),
     }),
-    BullModule.registerQueue({ name: QueueName.CONTENT }),
+    BullModule.registerQueue(
+      { name: QueueName.CONTENT },
+      { name: QueueName.USER }
+    ),
     HttpModule,
     MongooseModule.forRootAsync({
       useFactory: () => getMongooseModuleOptions(),

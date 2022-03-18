@@ -37,7 +37,7 @@ import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { NotificationProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
 
@@ -72,12 +72,15 @@ describe('CommentController', () => {
         AuthenticationService,
         ContentService,
         CommentService,
-        UserProducer,
         NotificationProducer,
         NotificationService,
         HashtagService,
         {
           provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

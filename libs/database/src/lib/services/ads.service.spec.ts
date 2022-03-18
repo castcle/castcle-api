@@ -35,7 +35,6 @@ import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
 import { AdsObjective, QueueName } from '../models';
-import { UserProducer } from '@castcle-api/utils/queue';
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
 import { CacheModule } from '@nestjs/common';
@@ -65,10 +64,13 @@ describe('AdsService', () => {
         AuthenticationService,
         UserService,
         ContentService,
-        UserProducer,
         HashtagService,
         {
           provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],
