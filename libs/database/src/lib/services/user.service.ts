@@ -35,7 +35,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
 import * as mongoose from 'mongoose';
-import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
+import { FilterQuery, Model, Types, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
   GetBalanceResponse,
@@ -875,10 +875,12 @@ export class UserService {
     user: User,
     keyword: string,
     queryOption: CastcleQueryOptions,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    excludeUserId?: Types.ObjectId[]
   ) => {
     const query = {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
+      _id: { $nin: excludeUserId },
     };
 
     queryOption.sortBy = {
@@ -929,12 +931,16 @@ export class UserService {
     };
 
     this.logger.log('get user from following list');
-    return this.getByCriteria(
+    const userData = await this.getByCriteria(
       user,
       query,
       queryOption,
       hasRelationshipExpansion
     );
+    return {
+      followingUserId: followingUsersId,
+      userData: userData,
+    };
   };
 
   async blockUser(user: User, blockedUser?: User) {
