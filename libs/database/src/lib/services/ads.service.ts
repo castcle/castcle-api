@@ -25,7 +25,10 @@ import { FilterInterval } from './../models/ads.enum';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
-import { mockPipe2AdsAuctionAggregate } from '../aggregations/ads.aggregation';
+import {
+  GetAdsPriceResponse,
+  pipe2AdsAuctionPrice,
+} from '../aggregations/ads.aggregation';
 import {
   AdsCampaignResponseDto,
   AdsQuery,
@@ -42,11 +45,15 @@ import {
 import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
-import { ContentPayloadItem, PageResponseDto } from '../dtos';
+import {
+  ContentPayloadItem,
+  FeedItemPayloadItem,
+  FeedItemResponse,
+  PageResponseDto,
+} from '../dtos';
 import { createCastcleFilter } from '../utils/common';
 import { CastcleDate } from '@castcle-api/utils/commons';
-
-const CAST_PRICE = 0.1;
+import { CastLogger } from '@castcle-api/logger';
 
 @Injectable()
 export class AdsService {
@@ -60,22 +67,101 @@ export class AdsService {
     public _userModel: Model<User>
   ) {}
 
+  private logger = new CastLogger(AdsService.name);
+
   getAdsPlacementFromAuction = async (
     contentIds: string[],
     viewer: Account
   ) => {
-    const aggrResult = mockPipe2AdsAuctionAggregate();
+    const session = await this._adsPlacementModel.startSession();
+    try {
+      session.startTransaction();
+      const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
+        pipe2AdsAuctionPrice()
+      );
+      const selectAds =
+        price[0].ads[Math.floor(Math.random() * price[0].ads.length)];
+      const adsPlacement = new this._adsPlacementModel({
+        campaign: selectAds,
+        contents: contentIds,
+        cost: {
+          UST: price[0].price,
+        },
+        viewer: viewer._id,
+      });
+      this.logger.log('##Creating ads placement');
+      this.logger.log(adsPlacement);
+      const afterSave = adsPlacement.save();
+      await session.commitTransaction();
+      return afterSave;
+    } catch (error: unknown) {
+      this.logger.log('cant create ads placement');
+      this.logger.log(error);
+    }
+  };
 
-    const adsPlacement = new this._adsPlacementModel({
-      campaign: aggrResult.campaign,
-      contents: contentIds,
-      cost: {
-        CAST: aggrResult.auctionPrice / CAST_PRICE,
-        USDC: aggrResult.auctionPrice,
-      },
-      viewer: viewer._id,
-    });
-    return adsPlacement.save();
+  addAdsToFeeds = async (viewer: Account, feeds: FeedItemResponse) => {
+    const contentIds = feeds.payload
+      .filter((item) => item.type === 'content')
+      .map((item) => (item.payload as ContentPayloadItem).id);
+    const adsplacement = await this.getAdsPlacementFromAuction(
+      contentIds,
+      viewer
+    );
+    const campaign = await this._adsCampaignModel.findById(
+      adsplacement.campaign
+    );
+    let adsItem: FeedItemPayloadItem;
+    if (
+      campaign.adsRef.$ref === 'content' ||
+      campaign.adsRef.oref === 'content'
+    ) {
+      const content = await this._contentModel.findById(
+        campaign.adsRef.$id | campaign.adsRef.oid
+      );
+      adsItem = {
+        id: adsplacement.id,
+        type: 'ads-content',
+        payload: content.toContentPayloadItem(),
+        feature: {
+          slug: 'feed',
+          key: 'feature.feed',
+          name: 'Feed',
+        },
+        circle: {
+          id: 'for-you',
+          key: 'circle.forYou',
+          name: 'For You',
+          slug: 'forYou',
+        },
+        campaignName: campaign.detail.name,
+        campaignMessage: campaign.detail.message,
+      };
+    } else {
+      const page = await this._userModel.findById(
+        campaign.adsRef.$id | campaign.adsRef.oid
+      );
+      adsItem = {
+        id: adsplacement.id,
+        type: 'ads-page',
+        payload: [page.toPageResponse()],
+        feature: {
+          slug: 'feed',
+          key: 'feature.feed',
+          name: 'Feed',
+        },
+        circle: {
+          id: 'for-you',
+          key: 'circle.forYou',
+          name: 'For You',
+          slug: 'forYou',
+        },
+        campaignName: campaign.detail.name,
+        campaignMessage: campaign.detail.message,
+      };
+    }
+    feeds.payload = [...feeds.payload, adsItem];
+    return feeds;
   };
 
   getCode = (account: Account) =>

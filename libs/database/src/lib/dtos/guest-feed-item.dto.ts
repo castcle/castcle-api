@@ -47,7 +47,9 @@ export class FeedItemPayloadItem {
     name: 'For You';
     slug: 'forYou';
   };
-  type: 'content' | 'suggestion-follow' | 'ads'; // content or suggestion or reminder or ads
+  type: 'content' | 'suggestion-follow' | 'ads-content' | 'ads-page'; // content or suggestion or reminder or ads
+  campaignName?: string; //for ads only
+  campaignMessage?: string; // for ads only
   payload: ContentPayloadItem | (UserResponseDto | PageResponseDto)[];
 }
 
