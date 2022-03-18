@@ -26,51 +26,30 @@ import { SchemaTypes } from 'mongoose';
 import { WalletType } from '../models';
 import { CastcleBase } from './base.schema';
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class MicroTransaction {
-  @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
-  account?: string;
+export type CAccountNature = {
+  DEBIT: 'debit';
+  CREDIT: 'credit';
+};
+
+@Schema()
+export class CAccount extends CastcleBase {
+  @Prop()
+  name: string;
 
   @Prop({ type: String })
-  type: WalletType;
+  nature: CAccountNature;
 
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value?: number;
+  @Prop({ unique: true, index: true })
+  no: string;
+
+  @Prop({ type: SchemaTypes.ObjectId })
+  parent?: CAccount;
+
+  @Prop({ type: String })
+  walletType?: WalletType;
+
+  @Prop()
+  walletAddress?: string;
 }
 
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TItem {
-  @Prop({ index: true })
-  caccountNo: string;
-
-  @Prop({ type: SchemaTypes.Decimal128 })
-  value: number;
-}
-
-@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
-export class TLedger {
-  @Prop({ type: Object })
-  debit: TItem;
-
-  @Prop({ type: Object })
-  credit: TItem;
-}
-
-const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
-
-@Schema({ timestamps: true })
-export class Transaction extends CastcleBase {
-  @Prop({ type: MicroTransactionSchema, index: true })
-  from?: MicroTransaction;
-
-  @Prop({ type: [MicroTransactionSchema], index: true })
-  to?: MicroTransaction[];
-
-  @Prop({ type: Object })
-  data?: any;
-
-  @Prop({ type: Array })
-  ledgers?: TLedger[];
-}
-
-export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+export const CAccountchema = SchemaFactory.createForClass(CAccount);

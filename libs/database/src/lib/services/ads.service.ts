@@ -109,6 +109,7 @@ export class AdsService {
         code: this.getCode(account), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
+        paymentMethod: adsRequest.paymentMethod,
       } as AdsDetail,
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,

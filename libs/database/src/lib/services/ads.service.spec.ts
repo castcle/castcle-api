@@ -34,7 +34,8 @@ import {
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
-import { AdsObjective, QueueName } from '../models';
+import { AdsObjective, QueueName, AdsPaymentMethod } from '../models';
+import { UserProducer } from '@castcle-api/utils/queue';
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { Content } from '../schemas';
 import { CacheModule } from '@nestjs/common';
@@ -105,7 +106,8 @@ describe('AdsService', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
-      };
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+      } as AdsRequestDto;
       const ads = await service.createAds(mocks[0].account, adsIput);
       expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
       expect(ads.detail.duration).toEqual(adsIput.duration);
@@ -123,6 +125,7 @@ describe('AdsService', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       const ads = await service.createAds(mocks[0].account, adsIput);
       expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
@@ -155,6 +158,7 @@ describe('AdsService', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       const ads = await service.createAds(mocks[0].account, adsInput);
       const adsCampaign = await service.lookupAds(
@@ -176,6 +180,7 @@ describe('AdsService', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       const adsUpdate: AdsRequestDto = {
         campaignName: 'Ads update',
@@ -183,6 +188,7 @@ describe('AdsService', () => {
         dailyBudget: 10,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       const ads = await service.createAds(mocks[0].account, adsInput);
       await service.updateAdsById(ads.id, adsUpdate);
@@ -207,6 +213,7 @@ describe('AdsService', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       const ads = await service.createAds(mocks[0].account, adsInput);
       await service.deleteAdsById(ads.id);
