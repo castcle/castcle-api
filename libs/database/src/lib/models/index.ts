@@ -37,5 +37,6 @@ export * from './queue.enum';
 export * from './queue.model';
 export * from './social-sync.enum';
 export * from './user.enum';
+export * from './user.message';
 export * from './wallet.enum';
 export * from './wallet.model';

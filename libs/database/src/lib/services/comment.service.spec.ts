@@ -1,4 +1,3 @@
-import { UserProducer } from '@castcle-api/utils/queue';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -39,10 +38,13 @@ describe('CommentService', () => {
         CommentService,
         ContentService,
         HashtagService,
-        UserProducer,
         UserService,
         {
           provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

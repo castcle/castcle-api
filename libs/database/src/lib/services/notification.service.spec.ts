@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { NotificationProducer } from '@castcle-api/utils/queue';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -74,10 +74,13 @@ describe('NotificationService', () => {
         AuthenticationService,
         NotificationService,
         NotificationProducer,
-        UserProducer,
         HashtagService,
         {
           provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
       ],

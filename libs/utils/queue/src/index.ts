@@ -22,5 +22,4 @@
  */
 
 export * from './lib/messages/notification.message';
-export * from './lib/messages/user.message';
 export * from './lib/utils-queue.module';

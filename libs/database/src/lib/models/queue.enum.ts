@@ -23,6 +23,7 @@
 
 export enum QueueName {
   CONTENT = 'content',
+  USER = 'user',
 }
 
 export enum QueueStatus {
