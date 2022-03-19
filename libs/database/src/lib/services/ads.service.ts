@@ -1,4 +1,3 @@
-import { FilterInterval } from './../models/ads.enum';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,19 +20,28 @@ import { FilterInterval } from './../models/ads.enum';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleDate } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import {
   GetAdsPriceResponse,
   pipe2AdsAuctionPrice,
 } from '../aggregations/ads.aggregation';
 import {
+  ContentPayloadItem,
+  FeedItemPayloadItem,
+  FeedItemResponse,
+  PageResponseDto,
+} from '../dtos';
+import {
   AdsCampaignResponseDto,
   AdsQuery,
   AdsRequestDto,
 } from '../dtos/ads.dto';
+import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
 import {
   Account,
   AdsCampaign,
@@ -42,18 +50,11 @@ import {
   toSignedContentPayloadItem,
   User,
 } from '../schemas';
-import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
-import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
-import {
-  ContentPayloadItem,
-  FeedItemPayloadItem,
-  FeedItemResponse,
-  PageResponseDto,
-} from '../dtos';
 import { createCastcleFilter } from '../utils/common';
-import { CastcleDate } from '@castcle-api/utils/commons';
-import { CastLogger } from '@castcle-api/logger';
+import { FilterInterval } from './../models/ads.enum';
+
+const CAST_PRICE = 0.1;
 
 @Injectable()
 export class AdsService {
@@ -308,5 +309,16 @@ export class AdsService {
       _id: adsId,
       status: AdsStatus.Processing,
     });
+  }
+
+  async updateAdsBoostStatus(adsId: string, adsBoostStatus: AdsBoostStatus) {
+    return this._adsCampaignModel.updateOne(
+      { _id: adsId, status: AdsStatus.Approved },
+      {
+        $set: {
+          boostStatus: adsBoostStatus,
+        },
+      }
+    );
   }
 }

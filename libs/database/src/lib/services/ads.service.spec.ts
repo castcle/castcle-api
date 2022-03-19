@@ -21,24 +21,30 @@
  * or have any questions.
  */
 
+import { getQueueToken } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { AdsService } from './ads.service';
 import {
   ContentService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
+import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import {
+  AdsBoostStatus,
+  AdsObjective,
+  AdsPaymentMethod,
+  AdsStatus,
+  QueueName,
+} from '../models';
+import { Content } from '../schemas';
+import { AdsService } from './ads.service';
 import { AuthenticationService } from './authentication.service';
 import { UserService } from './user.service';
-import { AdsObjective, QueueName, AdsPaymentMethod } from '../models';
-import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
-import { Content } from '../schemas';
-import { CacheModule } from '@nestjs/common';
-import { getQueueToken } from '@nestjs/bull';
 
 describe('AdsService', () => {
   let mongod: MongoMemoryServer;
@@ -221,6 +227,36 @@ describe('AdsService', () => {
         .exec();
 
       expect(adsCampaign).toBeNull();
+    });
+  });
+  describe('#updateAdsBoostStatus', () => {
+    it('should be able update ads boost status.', async () => {
+      const adsInput: AdsRequestDto = {
+        campaignName: 'Ads1',
+        campaignMessage: 'This is ads',
+        userId: mocks[0].pages[0].id,
+        dailyBudget: 1,
+        duration: 5,
+        objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+      };
+      const ads = await service.createAds(mocks[0].account, adsInput);
+      await service._adsCampaignModel.updateOne(
+        { _id: ads._id },
+        {
+          $set: {
+            status: AdsStatus.Approved,
+          },
+        }
+      );
+
+      await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);
+      const adsCampaign = await service._adsCampaignModel
+        .findById(ads.id)
+        .exec();
+
+      expect(adsCampaign).toBeTruthy();
+      expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
     });
   });
   afterAll(() => {

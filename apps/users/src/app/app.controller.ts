@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsBoostStatus,
   AdsService,
   AnalyticService,
   AuthenticationService,
@@ -1957,5 +1958,35 @@ export class UserController {
       this.logger.log('Unsubscribed facebook page');
       await this.facebookClient.unsubscribed(social.authToken, social.socialId);
     }
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/running')
+  async adsRunning(
+    @Auth() { credential }: Authorizer,
+    @Param('id') adsId: string
+  ) {
+    this.logger.log(`Start running ads.`);
+    const account = await this.validateGuestAccount(credential);
+
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign) {
+      this.logger.log('Ads campaign not found.');
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+
+    if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.Running
+    );
   }
 }

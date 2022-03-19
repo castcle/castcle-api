@@ -21,9 +21,11 @@
  * or have any questions.
  */
 import {
+  AdsBoostStatus,
   AdsObjective,
   AdsPaymentMethod,
   AdsService,
+  AdsStatus,
   AnalyticService,
   AuthenticationService,
   CampaignService,
@@ -1570,6 +1572,49 @@ describe('AppController', () => {
         expect(adsCampaign.objective).toEqual(adsUpdate.objective);
       });
     });
+    describe('#adsRunning', () => {
+      let ads: AdsCampaign;
+      it('should be able update ads running.', async () => {
+        const adsInput: AdsRequestDto = {
+          campaignName: 'Ads2',
+          campaignMessage: 'This is ads2',
+          userId: mocks[0].pages[0].id,
+          dailyBudget: 1,
+          duration: 5,
+          objective: AdsObjective.Engagement,
+        };
+        ads = await adsService.createAds(mocks[0].account, adsInput);
+        await adsService._adsCampaignModel.updateOne(
+          { _id: ads._id },
+          {
+            $set: {
+              status: AdsStatus.Approved,
+              boostStatus: AdsBoostStatus.Pause,
+            },
+          }
+        );
+        await appController.adsRunning(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
+      });
+      it('should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsRunning(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
+    });
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
         await adsService.deleteAdsById(mockAds.id);
@@ -1585,6 +1630,7 @@ describe('AppController', () => {
       adsService._contentModel.deleteMany({});
     });
   });
+
   describe('#updateAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1621,6 +1667,7 @@ describe('AppController', () => {
       expect(social.displayName).toEqual(mockSocialSync.displayName);
     });
   });
+
   describe('#deleteAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1750,6 +1797,7 @@ describe('AppController', () => {
       expect(social.displayName).toEqual(payloadSyncSocial.payload.displayName);
     });
   });
+
   describe('#disconnectSyncSocial', () => {
     let mocksPage: User;
     let user: User;
@@ -1793,6 +1841,7 @@ describe('AppController', () => {
       expect(social.active).toEqual(false);
     });
   });
+
   afterAll(() => {
     service._userModel.deleteMany({});
     (socialSyncService as any).socialSyncModel.deleteMany({});
