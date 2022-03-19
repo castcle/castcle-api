@@ -185,6 +185,11 @@ export const ThErrorMessages = {
     code: '3022',
     message: 'Please wait a few minutes before you try again.',
   },
+  '3023': {
+    statusCode: '400',
+    code: '3023',
+    message: 'Sorry, Boost Status not match. Please try again.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
