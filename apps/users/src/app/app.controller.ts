@@ -456,7 +456,7 @@ export class UserController {
         !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
       )
         throw new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
+          CastcleStatus.CHANGE_CASTCLE_ID_FAILED,
           req.$language
         );
 
