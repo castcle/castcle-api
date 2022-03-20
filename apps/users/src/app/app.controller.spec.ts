@@ -1572,7 +1572,7 @@ describe('AppController', () => {
         expect(adsCampaign.objective).toEqual(adsUpdate.objective);
       });
     });
-    describe('#adsRunning', () => {
+    describe('#adsRunning, #adsPause, #adsEnd', () => {
       let ads: AdsCampaign;
       it('should be able update ads running.', async () => {
         const adsInput: AdsRequestDto = {
@@ -1604,7 +1604,7 @@ describe('AppController', () => {
         expect(adsCampaign).toBeTruthy();
         expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
       });
-      it('should return Exception when get wrong boost status.', async () => {
+      it('ads running should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsRunning(
             { credential: mocks[0].credential } as any,
@@ -1614,7 +1614,52 @@ describe('AppController', () => {
           new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
         );
       });
+      it('should be able update ads Pause.', async () => {
+        await appController.adsPause(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+      });
+      it('ads Pause should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsPause(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
+      it('should be able update ads End.', async () => {
+        await appController.adsEnd(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.End);
+      });
+      it('ads End should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsEnd(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
     });
+
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
         await adsService.deleteAdsById(mockAds.id);

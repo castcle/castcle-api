@@ -23,6 +23,7 @@
 import {
   AdsBoostStatus,
   AdsService,
+  AdsStatus,
   AnalyticService,
   AuthenticationService,
   CampaignService,
@@ -64,6 +65,7 @@ import {
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
+  Account,
   Credential,
   SocialSync,
   User,
@@ -221,6 +223,14 @@ export class UserController {
     return now - blockUpdate >= 0;
   };
 
+  _verifyAdsApprove = async (account: Account, adsId: string) => {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
+      this.logger.log('Ads campaign not found.');
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    return adsCampaign;
+  };
   /**
    * @deprecated The method should not be used. Please use [POST] /users/me/mentions
    */
@@ -1970,12 +1980,7 @@ export class UserController {
   ) {
     this.logger.log(`Start running ads.`);
     const account = await this.validateGuestAccount(credential);
-
-    const adsCampaign = await this.adsService.lookupAds(account, adsId);
-    if (!adsCampaign) {
-      this.logger.log('Ads campaign not found.');
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
-    }
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
       this.logger.log(
@@ -1987,6 +1992,58 @@ export class UserController {
     await this.adsService.updateAdsBoostStatus(
       adsCampaign._id,
       AdsBoostStatus.Running
+    );
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/pause')
+  async adsPause(
+    @Auth() { credential }: Authorizer,
+    @Param('id') adsId: string
+  ) {
+    this.logger.log(`Start pause ads.`);
+    const account = await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+
+    if (adsCampaign.boostStatus !== AdsBoostStatus.Running) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.Pause
+    );
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/end')
+  async adsEnd(@Auth() { credential }: Authorizer, @Param('id') adsId: string) {
+    this.logger.log(`Start end ads.`);
+    const account = await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+
+    if (
+      !(
+        adsCampaign.boostStatus === AdsBoostStatus.Running ||
+        adsCampaign.boostStatus === AdsBoostStatus.Pause
+      )
+    ) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.End
     );
   }
 }
