@@ -210,6 +210,11 @@ export const ErrorMessages = {
     code: '4005',
     message: 'The reward is not enough',
   },
+  '4006': {
+    statusCode: '400',
+    code: '4005',
+    message: 'You cannot change your Castcle Id.',
+  },
   '5001': {
     statusCode: '400',
     code: '5001',

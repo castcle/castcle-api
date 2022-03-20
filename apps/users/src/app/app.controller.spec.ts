@@ -389,7 +389,9 @@ describe('AppController', () => {
           'me',
           updateDto
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.CHANGE_CASTCLE_ID_FAILED)
+      );
     });
   });
 
