@@ -45,6 +45,7 @@ import {
 import {
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
+  NotificationRef,
   NotificationSource,
   NotificationType,
 } from '@castcle-api/database/dtos';
@@ -64,6 +65,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
+import { UserType } from '@castcle-api/database/schemas';
 
 @CastcleController('1.0')
 @Controller()
@@ -85,7 +87,7 @@ export class CommentController {
   async createComment(
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
-    @Req() { $credential }: CredentialRequest,
+    @Req() { $credential, $language }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     try {
@@ -101,17 +103,22 @@ export class CommentController {
         { message: commentBody.message }
       );
 
-      this.notifyService.notifyToUser({
-        type: NotificationType.Comment,
-        message: `${user.displayName} ตอบกลับโพสต์ของคุณ`,
-        read: false,
-        source: NotificationSource.Profile,
-        sourceUserId: user._id,
-        targetRef: {
-          _id: comment._id,
-        },
-        account: { _id: content.author.id },
-      });
+      if (String(authorizedUser.ownerAccount) !== String(user.ownerAccount))
+        this.notifyService.notifyToUser(
+          {
+            source:
+              user.type === UserType.People
+                ? NotificationSource.Profile
+                : NotificationSource.Page,
+            sourceUserId: authorizedUser._id,
+            type: NotificationType.Comment,
+            targetRef: { _id: content._id, ref: NotificationRef.Content },
+            account: user.ownerAccount,
+            read: false,
+          },
+          user,
+          $language
+        );
 
       const payload = await this.commentService.convertCommentToCommentResponse(
         authorizedUser,
@@ -167,7 +174,7 @@ export class CommentController {
   async replyComment(
     @Param('commentId') commentId: string,
     @Body() replyCommentBody: ReplyCommentBody,
-    @Req() { $credential }: CredentialRequest,
+    @Req() { $credential, $language }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     const authorizedUser = await this.authService.getUserFromAccount(
@@ -180,17 +187,22 @@ export class CommentController {
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
     });
-    this.notifyService.notifyToUser({
-      type: NotificationType.Comment,
-      message: `${user.displayName} ตอบกลับความคิดเห็นของคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: comment._id,
-      },
-      account: { _id: comment.author._id },
-    });
+    if (String(authorizedUser.ownerAccount) !== String(user.ownerAccount))
+      this.notifyService.notifyToUser(
+        {
+          source:
+            user.type === UserType.People
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: authorizedUser._id,
+          type: NotificationType.Reply,
+          targetRef: { _id: comment._id, ref: NotificationRef.Comment },
+          account: user.ownerAccount,
+          read: false,
+        },
+        user,
+        $language
+      );
 
     return {
       payload: await this.commentService.convertCommentToCommentResponse(
@@ -248,26 +260,32 @@ export class CommentController {
   @CastcleBasicAuth()
   @Put(':id/comments/:commentId/liked')
   async likeComment(
+    @Req() req: CredentialRequest,
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
     @Body() likeCommentBody: LikeCommentBody
   ) {
-    const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.userService.getByIdOrCastcleId(
-      likeCommentBody.castcleId
-    );
+    const [authorizedUser, comment, user] = await Promise.all([
+      this.authService.getUserFromAccount(req.$credential.account),
+      this.contentService.getCommentById(commentId),
+      this.userService.getByIdOrCastcleId(likeCommentBody.castcleId),
+    ]);
     await this.contentService.likeComment(user, comment);
-    this.notifyService.notifyToUser({
-      type: NotificationType.Comment,
-      message: `${user.displayName} ถูกใจความคิดเห็นคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: comment._id,
+    this.notifyService.notifyToUser(
+      {
+        source:
+          user.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: authorizedUser._id,
+        type: NotificationType.Like,
+        targetRef: { _id: comment._id, ref: NotificationRef.Comment },
+        account: user.ownerAccount,
+        read: false,
       },
-      account: { _id: comment.author._id },
-    });
+      user,
+      req.$language
+    );
     return '';
   }
 

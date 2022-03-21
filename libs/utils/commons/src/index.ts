@@ -28,3 +28,4 @@ export * from './lib/regexp';
 export * from './lib/token';
 export * from './lib/transformers';
 export * from './lib/datetime';
+export * from './lib/localization';

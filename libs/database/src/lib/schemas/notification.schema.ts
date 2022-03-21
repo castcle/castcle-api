@@ -20,34 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Configs } from '@castcle-api/environments';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import {
   NotificationPayloadDto,
+  NotificationSource,
   NotificationType,
 } from '../dtos/notification.dto';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
-
+import { Image } from '@castcle-api/utils/aws';
 @Schema({ timestamps: true })
 class NotificationDocument extends CastcleBase {
-  @Prop()
-  avatar: string;
-
-  @Prop({ required: true })
-  message: string;
-
-  @Prop({ required: true })
-  source: string;
+  @Prop({ required: true, type: String })
+  source: NotificationSource;
 
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: [SchemaTypes.ObjectId],
     ref: 'User',
     index: true,
   })
-  sourceUserId: User;
+  sourceUserId: Types.ObjectId[];
 
   @Prop({ required: true, type: String })
   type: NotificationType;
@@ -60,40 +56,54 @@ class NotificationDocument extends CastcleBase {
 
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'Account',
     index: true,
   })
   account: Account;
 }
 
+type NotifyResponseOption = {
+  message: string;
+  user?: User;
+};
+
 export const NotificationSchema =
   SchemaFactory.createForClass(NotificationDocument);
 
 export class Notification extends NotificationDocument {
-  toNotificationPayload: () => NotificationPayloadDto;
+  toNotificationPayload: (
+    option: NotifyResponseOption
+  ) => NotificationPayloadDto;
 }
 
-NotificationSchema.methods.toNotificationPayload = function () {
+NotificationSchema.methods.toNotificationPayload = function ({
+  message,
+  user,
+}: NotifyResponseOption) {
   return {
     id: this._id,
-    avatar: this.avatar,
-    message: this.message,
+    notifyId: this._id,
     source: this.source,
-    type: this.type,
-    read: this.read,
-    content: {
-      id:
-        this.type === NotificationType.Content ||
-        this.type === NotificationType.Like
-          ? this.targetRef.oid
-          : null,
-    },
-    comment: {
-      id: this.type === NotificationType.Comment ? this.targetRef.oid : null,
-    },
-    system: {
-      id: null,
-    },
+    message,
+    avatar: user
+      ? user?.profile && user?.profile?.images && user?.profile?.images?.avatar
+        ? new Image(user.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages
+      : undefined,
+    comment:
+      this.type === NotificationType.Comment ||
+      this.type === NotificationType.Reply
+        ? this.targetRef.oid
+        : undefined,
+    content:
+      this.type !== NotificationType.Comment &&
+      this.type !== NotificationType.Reply
+        ? this.targetRef.oid
+        : undefined,
+    system:
+      this.source === NotificationSource.System
+        ? this.targetRef.oid
+        : undefined,
   } as NotificationPayloadDto;
 };

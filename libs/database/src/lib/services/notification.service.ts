@@ -1,3 +1,4 @@
+import { NotificationRef } from './../dtos/notification.dto';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -30,27 +31,26 @@ import {
   CreateNotification,
   DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions,
-  NotificationSource,
   NotificationType,
   RegisterTokenDto,
 } from '../dtos';
 import { NotificationMessage, QueueName } from '../models';
-import { Account, Credential, Notification, User } from '../schemas';
-import { createCastcleMeta } from '../utils/common';
+import { Content, Credential, Notification, User, UserType } from '../schemas';
+import { CastcleLocalization } from '@castcle-api/utils/commons';
 
 @Injectable()
 export class NotificationService {
-  private logger = new CastLogger(NotificationService.name);
+  #logger = new CastLogger(NotificationService.name);
 
   constructor(
     @InjectModel('Notification')
-    public _notificationModel: Model<Notification>,
+    private _notificationModel: Model<Notification>,
     @InjectModel('User')
-    public _userModel: Model<User>,
+    private _userModel: Model<User>,
     @InjectModel('Credential')
-    public _credentialModel: Model<Credential>,
-    @InjectModel('Account')
-    public _accountModel: Model<Account>,
+    private _credentialModel: Model<Credential>,
+    @InjectModel('Comment') private _commentModel: Model<Comment>,
+    @InjectModel('Content') private _contentModel: Model<Content>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>
   ) {}
@@ -58,200 +58,155 @@ export class NotificationService {
   /**
    * get all notifications
    * @param {Credential} credential
-   * @param {NotificationQueryOptions} options contain option for sorting page = skip + 1,
-   * @returns {Promise<{items:Notification[], total:number, pagination: {Pagination}}>}
+   * @param {NotificationQueryOptions} options contain option for sorting page,
+   * @returns
    */
-  getAll = async (
+  getNotificationAll = async (
     credential: Credential,
-    options: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
+    {
+      source,
+      sinceId,
+      untilId,
+      maxResults,
+    }: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
   ) => {
-    this.logger.log('prepare filter');
     const filter: FilterQuery<Notification> = {
       account: credential.account._id,
     };
 
-    if (options.source) filter.source = options.source;
-    if (options.sinceId) {
-      const notificationSince = await this._notificationModel
-        .findById(options.sinceId)
-        .exec();
-      filter.createdAt = {
-        $gt: new Date(notificationSince.createdAt),
+    if (source) filter.source = source;
+    if (sinceId)
+      filter._id = {
+        $gt: Types.ObjectId(sinceId),
       };
-    } else if (options.untilId) {
-      const notificationUntil = await this._notificationModel
-        .findById(options.untilId)
-        .exec();
-      filter.createdAt = {
-        $lt: new Date(notificationUntil.createdAt),
-      };
-    }
 
-    this.logger.log('get notification.');
-    const documents = await this._notificationModel
+    if (untilId)
+      filter._id = {
+        $lt: Types.ObjectId(untilId),
+      };
+
+    return this._notificationModel
       .find(filter)
-      .limit(+options.maxResults)
-      .sort({ createdAt: -1 })
+      .limit(+maxResults)
+      .sort({ updatedAt: -1 })
       .exec();
-
-    return {
-      items: documents,
-      meta: createCastcleMeta(documents),
-    };
   };
 
   /**
    * get notification from notification's id
    * @param {string} id notification's id
-   * @returns {Notification}
+   * @returns
    */
   getFromId = async (id: string) => {
-    const notification = await this._notificationModel
-      .findById(id ? id : null)
-      .exec();
-    if (notification) return notification;
-    return null;
+    return this._notificationModel.findById(id ? id : null).exec();
   };
 
   /**
-   * update read flag from notofication
-   * @param {Notification} notification notofication document
-   * @returns {Notification}
+   * update read flag from notification
+   * @param {Notification} notification notification document
+   * @returns
    */
   flagRead = async (notification: Notification) => {
-    if (notification) {
-      notification.read = true;
-      const result = notification.save();
-      //update account notification Badge
-      this._accountModel
-        .updateOne(
-          { _id: notification.account._id },
-          {
-            $inc: {
-              notificationBadgeCount: -1,
-            },
-          }
-        )
-        .exec();
-      return result;
-    } else {
-      return null;
-    }
+    if (!notification) return;
+    notification.read = true;
+    return await notification.save();
   };
 
   /**
-   * update read flag all notofication
+   * update read flag all notification
    * @param {Credential} credential
    * @returns {UpdateWriteOpResult} update result status
    */
-  flagReadAll = async (credential: Credential) => {
-    const user = await this._userModel
+  flagReadAll = async ({ account }: Credential) => {
+    return this._notificationModel
+      .updateMany({ account: account._id }, { read: true })
+      .exec();
+  };
+  /**
+   * create notification and push to queue
+   * @param {CreateNotification} notificationData notification document
+   * @returns
+   */
+  notifyToUser = async (
+    { sourceUserId, read, ...notificationData }: CreateNotification,
+    userOwner: User,
+    language: string
+  ) => {
+    this.#logger.log('Notification to user.');
+    const targetRef = {
+      $id: notificationData.targetRef._id,
+      $ref: notificationData.targetRef.ref
+        ? notificationData.targetRef.ref
+        : null,
+    };
+
+    this.#logger.log('Prepare data into notification.');
+    if (notificationData.type === NotificationType.Tag) {
+      await new this._notificationModel({
+        ...notificationData,
+        targetRef,
+        read,
+        sourceUserId,
+      }).save();
+    } else {
+      const updateNotify = await this._notificationModel.updateOne(
+        {
+          targetRef,
+          account: notificationData.account,
+          type: notificationData.type,
+        },
+        {
+          $set: { read },
+          $setOnInsert: {
+            ...notificationData,
+            targetRef,
+          },
+          $addToSet: { sourceUserId },
+        },
+        {
+          upsert: true,
+        }
+      );
+
+      if (!updateNotify.nModified && !updateNotify.upserted) return;
+    }
+    this.#logger.log('Insert data into notification is done.');
+
+    const notify = await this._notificationModel
       .findOne({
-        ownerAccount:
-          credential.account && credential.account._id
-            ? credential.account._id
-            : null,
+        targetRef,
+        account: notificationData.account,
+        type: notificationData.type,
       })
       .exec();
 
-    if (user) {
-      const findFilter: {
-        sourceUserId: any;
-      } = {
-        sourceUserId: user._id,
-      };
-      console.log(findFilter);
+    this.#logger.log(
+      'Insert data into notification is done.',
+      JSON.stringify(notify)
+    );
 
-      const result = await this._notificationModel
-        .updateMany(findFilter, { read: true }, null, (err: any, docs: any) => {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log('Updated Docs : ', docs);
-          }
-        })
-        .exec();
-      this._accountModel
-        .updateOne(
-          { _id: credential.account._id },
-          { notificationBadgeCount: 0 }
-        )
-        .exec();
-      return result;
-    } else {
-      return null;
-    }
-  };
-  /**
-   * create notofication and push to queue
-   * @param {CreateNotification} notificationData notofication document
-   * @returns {Notification}
-   */
-  notifyToUser = async (notificationData: CreateNotification) => {
-    console.log('save notification');
-    const newNotification = {
-      ...notificationData,
-      targetRef: {
-        $id: notificationData.targetRef._id,
-        $ref:
-          notificationData.type !== NotificationType.System
-            ? notificationData.type
-            : null,
-      },
-    };
-
-    const createResult = await new this._notificationModel(
-      newNotification
-    ).save();
-    //update account notification Badge
-    this._accountModel
-      .updateOne(
-        { _id: notificationData.account._id },
-        {
-          $inc: {
-            notificationBadgeCount: 1,
-          },
-        }
-      )
-      .exec();
-    notificationData.account._id;
+    this.#logger.log('Get credentials by account.');
 
     const credentials = await this._credentialModel
       .find({
         'account._id': Types.ObjectId(notificationData.account._id),
       })
       .exec();
-    if (createResult && notificationData.account) {
-      console.log('testSendStuff', notificationData.account);
-      console.log(JSON.stringify(credentials));
-      const message: NotificationMessage = {
-        aps: {
-          alert: createResult.message,
-          'mutable-content': 1,
-          badge: 1,
-          category: 'CONTENTS',
-          sound: 'default',
-        },
-        payload: {
-          notifyId: createResult._id,
-          source: NotificationSource[createResult.source],
-          comment:
-            NotificationType[createResult.type] === NotificationType.Comment
-              ? notificationData.targetRef._id
-              : undefined,
-          content:
-            NotificationType[createResult.type] === NotificationType.Content
-              ? notificationData.targetRef._id
-              : undefined,
-        },
-        firebaseTokens: credentials
-          .filter((c) => c.firebaseNotificationToken)
-          .map((c) => c.firebaseNotificationToken as string),
-      };
 
-      this.notificationQueue.add(message);
-    }
-    return createResult;
+    this.#logger.log('Credentials data', JSON.stringify(credentials));
+
+    this.#logger.log('Generate notification message.');
+
+    const message = await this.generateMessage(userOwner, notify, language);
+    this.#logger.log('Generate notification message is done.');
+
+    this.#logger.log('Send notification message.', JSON.stringify(message));
+
+    this.notificationQueue.add(
+      this.generateNotification(message, notify, credentials)
+    );
+
+    return notify;
   };
 
   /**
@@ -260,19 +215,14 @@ export class NotificationService {
    * @returns {UpdateWriteOpResult} update result status
    */
   registerToken = async (registerTokenDto: RegisterTokenDto) => {
-    if (registerTokenDto) {
-      console.log('register firebase token');
-      return await this._credentialModel
-        .updateOne(
-          { deviceUUID: registerTokenDto.deviceUUID },
-          {
-            firebaseNotificationToken: registerTokenDto.firebaseToken,
-          }
-        )
-        .exec();
-    } else {
-      return null;
-    }
+    return this._credentialModel
+      .updateOne(
+        { deviceUUID: registerTokenDto?.deviceUUID },
+        {
+          firebaseNotificationToken: registerTokenDto?.firebaseToken,
+        }
+      )
+      .exec();
   };
 
   /**
@@ -286,9 +236,227 @@ export class NotificationService {
       read: false,
     });
 
-    this.logger.log(`total badges : ${totalNotification}`);
-    if (totalNotification === 0) return '';
+    this.#logger.log(`Total notification badges : ${totalNotification}`);
+
+    if (!totalNotification) return '';
     if (totalNotification > 99) return '+99';
-    if (totalNotification <= 99) return totalNotification + '';
+    if (totalNotification <= 99) return String(totalNotification);
+  };
+
+  generateMessage = async (
+    userOwner: User,
+    notify: Notification,
+    language: string
+  ) => {
+    this.#logger.log('Reverse latest user.');
+
+    const userIds = notify.sourceUserId?.reverse();
+
+    this.#logger.log('Get user data.');
+
+    const users = await this._userModel
+      .find({
+        _id: { $in: userIds },
+      })
+      .exec();
+
+    if (!notify) return;
+
+    const userSort: User[] = [];
+
+    this.#logger.log('Sort user by latest user action.');
+
+    users.forEach((user) => {
+      const index = userIds.indexOf(user._id);
+      if (index > -1) userSort[index] = user;
+    });
+    let message = '';
+    const displayNames = users.map((user) => user.displayName);
+    if (notify.type === NotificationType.Like)
+      message = CastcleLocalization.getTemplateLike(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+    if (notify.type === NotificationType.Comment)
+      message = CastcleLocalization.getTemplateComment(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+    if (notify.type === NotificationType.Farm)
+      message = CastcleLocalization.getTemplateFarm(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+    if (notify.type === NotificationType.Quote)
+      message = CastcleLocalization.getTemplateQuote(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+    if (notify.type === NotificationType.Recast)
+      message = CastcleLocalization.getTemplateRecast(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+    if (notify.type === NotificationType.Reply)
+      message = CastcleLocalization.getTemplateReply(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+
+    if (notify.type === NotificationType.Tag)
+      message = CastcleLocalization.getTemplateTag(
+        language,
+        displayNames,
+        userOwner.type === UserType.Page ? userOwner.displayName : ''
+      );
+
+    if (notify.type === NotificationType.System)
+      message = CastcleLocalization.getTemplateSystem(language, displayNames);
+    this.#logger.log('Prepare message show display name.', message);
+
+    if (notify.type === NotificationType.AdsApprove)
+      message = CastcleLocalization.getTemplateAdsApprove(language);
+
+    if (notify.type === NotificationType.AdsDecline)
+      message = CastcleLocalization.getTemplateAdsDecline(language);
+
+    return message;
+  };
+  generateMessagesToNotifications = async (
+    notifies: Notification[],
+    language: string
+  ) => {
+    this.#logger.log('Start generate notification message list.');
+    return await Promise.all(
+      notifies.map(async (notify: Notification) => {
+        let targetRef: any;
+        if (notify.targetRef?.$ref === NotificationRef.Comment) {
+          targetRef = await this._commentModel
+            .findOne({ _id: notify.targetRef.oid || notify.targetRef.$id })
+            .exec();
+        }
+        if (notify.targetRef?.$ref === NotificationRef.Content) {
+          targetRef = await this._contentModel
+            .findOne({ _id: notify.targetRef.oid || notify.targetRef.$id })
+            .exec();
+        }
+        const userIds = notify.sourceUserId?.reverse();
+        const users: User[] = await this._userModel
+          .find({
+            _id: { $in: userIds },
+          })
+          .exec();
+        const userSort: User[] = [];
+        users.forEach((user) => {
+          const index = userIds.indexOf(user._id);
+          if (index > -1) userSort[index] = user;
+        });
+
+        let message = '';
+        const displayNames = users.map((user) => user.displayName);
+        if (notify.type === NotificationType.Like)
+          message = CastcleLocalization.getTemplateLike(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+        if (notify.type === NotificationType.Comment)
+          message = CastcleLocalization.getTemplateComment(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+        if (notify.type === NotificationType.Farm)
+          message = CastcleLocalization.getTemplateFarm(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+        if (notify.type === NotificationType.Quote)
+          message = CastcleLocalization.getTemplateQuote(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+        if (notify.type === NotificationType.Recast)
+          message = CastcleLocalization.getTemplateRecast(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+        if (notify.type === NotificationType.Reply)
+          message = CastcleLocalization.getTemplateReply(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+
+        if (notify.type === NotificationType.Tag)
+          message = CastcleLocalization.getTemplateTag(
+            language,
+            displayNames,
+            targetRef?.author.type === UserType.Page
+              ? targetRef?.author.displayName
+              : ''
+          );
+
+        if (notify.type === NotificationType.System)
+          message = CastcleLocalization.getTemplateSystem(
+            language,
+            displayNames
+          );
+        if (notify.type === NotificationType.AdsApprove)
+          message = CastcleLocalization.getTemplateAdsApprove(language);
+
+        if (notify.type === NotificationType.AdsDecline)
+          message = CastcleLocalization.getTemplateAdsDecline(language);
+
+        this.#logger.log('Prepare message show display name.', message);
+
+        return notify.toNotificationPayload({
+          message: message,
+          user: users[0],
+        });
+      })
+    );
+  };
+
+  generateNotification = (
+    message: string,
+    notify: Notification,
+    credentials: Credential[]
+  ) => {
+    return {
+      aps: {
+        alert: message,
+        badge: 1,
+        category:
+          notify.type === NotificationType.Comment ? 'COMMENTS' : 'CONTENTS',
+        sound: 'default',
+        'mutable-content': 1,
+      },
+      payload: notify.toNotificationPayload({ message }),
+      firebaseTokens: credentials
+        .filter((item) => item.firebaseNotificationToken)
+        .map((item) => String(item.firebaseNotificationToken)),
+    } as NotificationMessage;
   };
 }

@@ -20,20 +20,23 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { NotificationSource } from './../dtos/notification.dto';
 
 type Aps = {
   alert: string;
   sound: string;
-  category: 'CONTENTS';
+  category: 'CONTENTS' | 'COMMENTS';
   badge: number;
   'mutable-content': number;
 };
 
 type NotificationPayload = {
   notifyId: string;
-  source: 'PROFILE' | 'PAGE' | 'SYSTEM';
+  message: string;
+  source: NotificationSource;
   content?: string;
   comment?: string;
+  system?: string;
 };
 
 export interface NotificationMessage {
