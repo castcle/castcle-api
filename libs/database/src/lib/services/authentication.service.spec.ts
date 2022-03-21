@@ -717,4 +717,139 @@ describe('Authentication Service', () => {
       });
     });
   });
+  describe('Account Device', () => {
+    describe('#createAccountDevice', () => {
+      let account: Account;
+      let accountDup: Account;
+      beforeAll(async () => {
+        account = await new service._accountModel({
+          email: 'test@gmail.com',
+          password: '11223344a',
+          isGuest: true,
+          preferences: {
+            languages: ['en', 'en'],
+          },
+        }).save();
+
+        accountDup = await new service._accountModel({
+          email: 'test2@gmail.com',
+          password: '11223344a',
+          isGuest: true,
+          preferences: {
+            languages: ['en', 'en'],
+          },
+        }).save();
+      });
+      it('should create firebase token on platform ios is exits.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'ios',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).createAccountDevice({
+          account: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(requestBody).toBeTruthy();
+        expect(requestBody.uuid).toEqual(accountDevice.uuid);
+        expect(requestBody.platform).toEqual(accountDevice.platform);
+        expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
+      });
+      it('should create firebase token on platform android is exits.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'android',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).createAccountDevice({
+          account: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(requestBody).toBeTruthy();
+        expect(requestBody.uuid).toEqual(accountDevice.uuid);
+        expect(requestBody.platform).toEqual(accountDevice.platform);
+        expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
+      });
+      it('should not create firebase token wrong is duplicate.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'android',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        const duplicate = await (service as any)
+          .createAccountDevice({
+            account: accountDup._id,
+            ...requestBody,
+          })
+          .catch((error) => {
+            return error;
+          });
+
+        expect(duplicate.code).toEqual(11000);
+        expect(duplicate.keyValue).toEqual({
+          uuid: requestBody.uuid,
+          platform: requestBody.platform,
+        });
+      });
+    });
+    describe('#deleteAccountDevice', () => {
+      let account: Account;
+      beforeAll(async () => {
+        account = await service._accountModel.findOne({
+          email: 'test@gmail.com',
+        });
+      });
+
+      it('should delete firebase token on platform ios.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'ios',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).deleteAccountDevice({
+          account: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(accountDevice).toBeNull();
+      });
+      it('should delete firebase token on platform android.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'android',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).deleteAccountDevice({
+          account: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(accountDevice).toBeNull();
+      });
+      it('should get account device is not exits.', async () => {
+        const accountDevice = await (service as any)._accountDeviceModel
+          .find()
+          .exec();
+
+        expect(accountDevice).toHaveLength(0);
+      });
+    });
+    afterAll(() => {
+      (service as any)._accountDeviceModel.deleteMany({});
+    });
+  });
 });
