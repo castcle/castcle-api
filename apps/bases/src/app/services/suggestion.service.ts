@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { DataService, UserService } from '@castcle-api/database';
+import { AdsService, DataService, UserService } from '@castcle-api/database';
 import {
   FeedItemPayloadItem,
   FeedItemResponse,
@@ -42,7 +42,8 @@ export class SuggestionService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private dataService: DataService,
-    private userService: UserService
+    private userService: UserService,
+    private adsService: AdsService
   ) {}
 
   _seenKey = (accountId: string) => `${accountId}-seen`;
@@ -86,7 +87,8 @@ export class SuggestionService {
     const currentSetting: string = await this.cacheManager.get(
       this._seenKey(accountId)
     );
-    if (!currentSetting) return feedResponse;
+    if (!currentSetting)
+      return this.adsService.addAdsToFeeds(accountId, feedResponse);
     const setting: SeenState = JSON.parse(currentSetting);
     const diffSuggestionTime =
       new Date().getTime() -
@@ -144,7 +146,7 @@ export class SuggestionService {
           lastSuggestion: new Date(),
         } as SeenState)
       );
-      return feedResponse;
-    } else return feedResponse;
+      return this.adsService.addAdsToFeeds(accountId, feedResponse);
+    } else return this.adsService.addAdsToFeeds(accountId, feedResponse);
   }
 }
