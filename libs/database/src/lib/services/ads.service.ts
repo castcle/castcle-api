@@ -71,7 +71,7 @@ export class AdsService {
 
   getAdsPlacementFromAuction = async (
     contentIds: string[],
-    viewer: Account
+    viewerAccountId: string
   ) => {
     const session = await this._adsPlacementModel.startSession();
     try {
@@ -87,7 +87,7 @@ export class AdsService {
         cost: {
           UST: price[0].price,
         },
-        viewer: viewer._id,
+        viewer: mongoose.Types.ObjectId(viewerAccountId),
       });
       this.logger.log('##Creating ads placement');
       this.logger.log(adsPlacement);
@@ -100,13 +100,13 @@ export class AdsService {
     }
   };
 
-  addAdsToFeeds = async (viewer: Account, feeds: FeedItemResponse) => {
+  addAdsToFeeds = async (viewerAccountId: string, feeds: FeedItemResponse) => {
     const contentIds = feeds.payload
       .filter((item) => item.type === 'content')
       .map((item) => (item.payload as ContentPayloadItem).id);
     const adsplacement = await this.getAdsPlacementFromAuction(
       contentIds,
-      viewer
+      viewerAccountId
     );
     const campaign = await this._adsCampaignModel.findById(
       adsplacement.campaign
@@ -114,10 +114,10 @@ export class AdsService {
     let adsItem: FeedItemPayloadItem;
     if (
       campaign.adsRef.$ref === 'content' ||
-      campaign.adsRef.oref === 'content'
+      campaign.adsRef.namespace === 'content'
     ) {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id | campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
       );
       adsItem = {
         id: adsplacement.id,
@@ -139,7 +139,7 @@ export class AdsService {
       };
     } else {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id | campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
       );
       adsItem = {
         id: adsplacement.id,
@@ -183,7 +183,6 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    console.log(adsRef);
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,

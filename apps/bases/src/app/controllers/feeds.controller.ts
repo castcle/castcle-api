@@ -139,7 +139,7 @@ export class FeedsController {
       String(account._id),
       feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
     );
-
+    console.log('-------- feeds member for you');
     return this.suggestionService.suggest(account.id, feedItems);
   }
 
