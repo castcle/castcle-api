@@ -66,6 +66,12 @@ export enum EntityVisibility {
   Illegal = 'illegal',
 }
 
+export enum AcceptPlatform {
+  IOS = 'ios',
+  Android = 'android',
+  Web = 'web',
+}
+
 export enum CastcleQueueAction {
   Deleting = 'deleting',
   Deleted = 'deleted',

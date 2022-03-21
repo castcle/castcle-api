@@ -20,12 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import * as mongoose from 'mongoose';
-import { EntityVisibility } from './common.dto';
+import { Types } from 'mongoose';
+import { AcceptPlatform, EntityVisibility } from './common.dto';
 
 export class SaveCredentialDto {
   account?: {
-    _id: mongoose.Types.ObjectId;
+    _id: Types.ObjectId;
     isGuest: boolean;
   };
   accessToken: string;
@@ -39,7 +39,7 @@ export class SaveCredentialDto {
 
 export class CreateCredentialDto {
   account: {
-    _id: mongoose.Types.ObjectId;
+    _id: Types.ObjectId;
     isGuest: boolean;
   };
   accessToken: string;
@@ -63,4 +63,11 @@ export class CreateAccountDto {
     continentCode: string;
   };
   visibility = EntityVisibility.Publish;
+}
+
+export class CreateAccountDeviceDto {
+  account: Types.ObjectId;
+  firebaseToken: string;
+  uuid: string;
+  platform: AcceptPlatform;
 }

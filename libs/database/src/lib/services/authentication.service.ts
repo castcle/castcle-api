@@ -1,3 +1,4 @@
+import { AccountDevice } from './../schemas/account-device.schema';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -26,7 +27,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
+import {
+  CreateAccountDeviceDto,
+  CreateAccountDto,
+  CreateCredentialDto,
+} from '../dtos/account.dto';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
@@ -107,6 +112,8 @@ export class AuthenticationService {
     public _accountAuthenId: Model<AccountAuthenId>,
     @InjectModel('AccountReferral')
     public _accountReferral: Model<AccountReferral>,
+    @InjectModel('AccountDevice')
+    private _accountDeviceModel: Model<AccountDevice>,
     private userService: UserService
   ) {}
 
@@ -702,5 +709,48 @@ export class AuthenticationService {
     );
 
     return this.userService.getByIdOrCastcleId(analytic?.data);
+  }
+
+  async createAccountDevice({
+    account,
+    uuid,
+    platform,
+    firebaseToken,
+  }: CreateAccountDeviceDto) {
+    return this._accountDeviceModel
+      .updateOne(
+        {
+          account,
+          uuid,
+          platform,
+        },
+        {
+          $set: {
+            firebaseToken,
+          },
+          $setOnInsert: {
+            account,
+            uuid,
+            platform,
+          },
+        },
+        {
+          upsert: true,
+        }
+      )
+      .exec();
+  }
+  async deleteAccountDevice({
+    account,
+    uuid,
+    platform,
+  }: CreateAccountDeviceDto) {
+    return this._accountDeviceModel
+      .deleteOne({
+        account,
+        uuid,
+        platform,
+      })
+      .exec();
   }
 }
