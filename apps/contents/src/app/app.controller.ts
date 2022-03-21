@@ -40,7 +40,7 @@ import {
   ResponseDto,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, User } from '@castcle-api/database/schemas';
+import { Content, User, UserType } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -296,18 +296,24 @@ export class ContentController {
 
     if (user.id === castcleId) return;
 
-    //TODO !!! has to implement message libs and i18N and message functions
-    this.notifyService.notifyToUser({
-      type: NotificationType.Like,
-      message: `${user.displayName} ถูกใจโพสของคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: content._id,
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Like,
+        targetRef: { _id: content._id },
+        account: userOwner.ownerAccount,
+        read: false,
       },
-      account: { _id: content.author.id },
-    });
+      userOwner,
+      req.$language
+    );
   }
   /**
    * @deprecated The method should not be used. Please use [DEL] users/:id/likes/:source_content_id

@@ -999,6 +999,27 @@ describe('AppController', () => {
         $language: 'th',
       } as any;
 
+      const userOwner = await service.getByIdOrCastcleId(contentA.author.id);
+
+      const notify = await notifyService.notifyToUser(
+        {
+          type: NotificationType.Like,
+          read: false,
+          source: NotificationSource.Profile,
+          sourceUserId: user._id,
+          targetRef: {
+            _id: contentA._id,
+            ref: 'content',
+          },
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
+      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+
       await expect(
         appController.recastContent(
           mocksUsers[1].user.displayId,
@@ -1050,8 +1071,29 @@ describe('AppController', () => {
         'this is good content',
         credential
       );
+      const userOwner = await service.getByIdOrCastcleId(contentA.author.id);
+
+      const notify = await notifyService.notifyToUser(
+        {
+          type: NotificationType.Like,
+          read: false,
+          source: NotificationSource.Profile,
+          sourceUserId: user._id,
+          targetRef: {
+            _id: contentA._id,
+            ref: 'content',
+          },
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
+      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
-      expect(result.includes).toBeDefined;
+      expect(result.includes).toBeDefined();
     });
   });
 
@@ -1132,20 +1174,25 @@ describe('AppController', () => {
       );
 
       await contentService.likeContent(content, user);
+      const userOwner = await service.getByIdOrCastcleId(content.author.id);
 
-      expect(
-        await notifyService.notifyToUser({
+      const notify = await notifyService.notifyToUser(
+        {
           type: NotificationType.Like,
-          message: `${user.displayName} ถูกใจโพสของคุณ`,
           read: false,
           source: NotificationSource.Profile,
           sourceUserId: user._id,
           targetRef: {
             _id: content._id,
+            ref: 'content',
           },
-          account: { _id: content.author.id },
-        })
-      ).toBeTruthy();
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(notify).toBeTruthy();
 
       const result = await contentService.getContentFromId(contentId);
       expect(result.engagements.like.count).toBe(1);
@@ -1169,7 +1216,7 @@ describe('AppController', () => {
       authService._accountModel.deleteMany({});
       authService._credentialModel.deleteMany({});
       contentService._contentModel.deleteMany({});
-      notifyService._notificationModel.deleteMany({});
+      (notifyService as any)._notificationModel.deleteMany({});
     });
   });
 

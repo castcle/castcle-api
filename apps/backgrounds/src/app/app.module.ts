@@ -43,9 +43,7 @@ import { CampaignScheduler } from './schedulers/campaign.scheduler';
       googleApplicationCredential: {
         projectId: Environment.FIREBASE_PROJECT_ID,
         clientEmail: Environment.FIREBASE_CLIENT_EMAIL,
-        privateKey: Buffer.from(Environment.FIREBASE_PRIVATE_KEY, 'base64')
-          .toString('ascii')
-          .replace(/\\n/g, '\n'),
+        privateKey: Environment.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       },
     }),
     TracingModule.forRoot({

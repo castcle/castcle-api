@@ -22,24 +22,32 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleMeta } from './common.dto';
+import { Types } from 'mongoose';
+import { Account } from '../schemas';
+import { CastcleImage, CastcleMeta } from './common.dto';
 
 export enum NotificationType {
-  Comment = 'comment',
-  Content = 'content',
   Like = 'like',
+  Comment = 'comment',
+  Quote = 'quote',
+  Recast = 'recast',
+  Tag = 'tag',
+  Farm = 'farm',
+  Reply = 'reply',
   System = 'system',
+  AdsApprove = 'ad-approve',
+  AdsDecline = 'ad-decline',
 }
 
 export enum NotificationSource {
-  Profile = 'PROFILE',
-  Page = 'PAGE',
-  System = 'SYSTEM',
+  Profile = 'profile',
+  Page = 'page',
+  System = 'system',
 }
 
-class ObjectRef {
-  @ApiProperty()
-  id: string;
+export enum NotificationRef {
+  Comment = 'comment',
+  Content = 'content',
 }
 
 export class NotificationPayloadDto {
@@ -47,7 +55,10 @@ export class NotificationPayloadDto {
   id: string;
 
   @ApiProperty()
-  avatar: string;
+  notifyId?: string;
+
+  @ApiProperty()
+  avatar?: CastcleImage;
 
   @ApiProperty()
   message: string;
@@ -59,13 +70,13 @@ export class NotificationPayloadDto {
   type: string;
 
   @ApiProperty()
-  content?: ObjectRef;
+  content?: string;
 
   @ApiProperty()
-  comment?: ObjectRef;
+  comment?: string;
 
   @ApiProperty()
-  system?: ObjectRef;
+  system?: string;
 
   @ApiProperty()
   read: boolean;
@@ -91,19 +102,15 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
 } as NotificationQueryOptions;
 
 export interface CreateNotification {
-  message: string;
   source: NotificationSource;
-  sourceUserId?: {
-    _id: string;
-  };
+  sourceUserId?: Types.ObjectId;
   type: NotificationType;
   targetRef: {
     _id: string;
+    ref?: string;
   };
+  account: Account;
   read: boolean;
-  account: {
-    _id: string;
-  };
 }
 
 export class RegisterTokenDto {
