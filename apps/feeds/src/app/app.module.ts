@@ -20,47 +20,61 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CaslModule } from '@castcle-api/casl';
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { UtilsAwsModule } from '@castcle-api/utils/aws';
+
+import { Module } from '@nestjs/common';
+import { CommentController } from './controllers/comment.controller';
+import { ContentController } from './controllers/content.controller';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { DatabaseModule } from '@castcle-api/database';
 import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
 } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { Module } from '@nestjs/common';
-import { BasesController } from './controllers/bases.controller';
-import { NotificationsController } from './controllers/notifications.controller';
-import { PagesController } from './controllers/pages.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CaslModule } from '@castcle-api/casl';
+import { HealthyModule } from '@castcle-api/healthy';
 import { Environment } from '@castcle-api/environments';
 import { TracingModule } from '@narando/nest-xray';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
+import { FeedsController } from './controllers/feeds.controller';
+import { SearchesController } from './controllers/searches.controller';
+import { AppService, SuggestionService } from './services';
+import { LanguagesController } from './controllers/languages.controller';
+import { HashtagsController } from './controllers/hashtags.controller';
+import { CountryController } from './controllers/country.controller';
 
 @Module({
   imports: [
-    CaslModule,
     DatabaseModule,
+    CaslModule,
     HealthyModule,
-    UtilsAwsModule,
-    UtilsCacheModule,
     UtilsInterceptorsModule,
+    UtilsCacheModule,
     UtilsPipesModule,
     ThrottlerModule.forRoot({
       ttl: Environment.RATE_LIMIT_TTL,
       limit: Environment.RATE_LIMIT_LIMIT,
     }),
     TracingModule.forRoot({
-      serviceName: 'bases',
+      serviceName: 'feeds',
       daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
     }),
   ],
-  controllers: [BasesController, NotificationsController, PagesController],
+  controllers: [
+    CommentController,
+    ContentController,
+    CountryController,
+    FeedsController,
+    HashtagsController,
+    LanguagesController,
+    SearchesController,
+  ],
   providers: [
+    AppService,
+    SuggestionService,
     {
       provide: APP_GUARD,
       useClass: CastcleThrottlerGuard,
@@ -71,4 +85,4 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
     },
   ],
 })
-export class BaseModule {}
+export class AppModule {}

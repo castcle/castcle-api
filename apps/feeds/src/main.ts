@@ -21,12 +21,33 @@
  * or have any questions.
  */
 
-export * from './lib/castcle-name';
-export * from './lib/datetime';
-export * from './lib/documentation';
-export * from './lib/host';
-export * from './lib/localization';
-export * from './lib/password';
-export * from './lib/regexp';
-export * from './lib/token';
-export * from './lib/transformers';
+import { Configs, Environment } from '@castcle-api/environments';
+import { Documentation } from '@castcle-api/utils/commons';
+import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
+import { AppModule } from './app/app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const port = process.env.PORT || 3339;
+
+  Documentation.setup('Feeds', app);
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.useGlobalFilters(new ExceptionFilter());
+  app.useGlobalPipes(new ValidationPipe({}));
+  app.enableCors();
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name,
+  });
+
+  await app.listen(port, () => {
+    Logger.log(`Listening at http://localhost:${port}`);
+    Logger.log(`Environment at ${Environment.NODE_ENV}`);
+  });
+}
+
+bootstrap();
