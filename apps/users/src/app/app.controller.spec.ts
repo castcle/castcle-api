@@ -1582,6 +1582,7 @@ describe('AppController', () => {
           dailyBudget: 1,
           duration: 5,
           objective: AdsObjective.Engagement,
+          paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
         ads = await adsService.createAds(mocks[0].account, adsInput);
         await adsService._adsCampaignModel.updateOne(
