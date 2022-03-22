@@ -21,11 +21,30 @@
  * or have any questions.
  */
 
-import { DocumentBuilder } from '@nestjs/swagger';
+import { AnalyticService } from '@castcle-api/database';
+import { Analytic } from '@castcle-api/database/schemas';
+import { CastLogger } from '@castcle-api/logger';
+import { RequestMeta, RequestMetadata } from '@castcle-api/utils/decorators';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 
-export const DocumentConfig = new DocumentBuilder()
-  .setTitle('UX Engagemetn Service Service')
-  .setDescription('The  API description')
-  .setVersion('1.0')
-  .addBearerAuth()
-  .build();
+@Controller()
+export class LinksController {
+  private logger = new CastLogger(LinksController.name);
+
+  constructor(private analyticService: AnalyticService) {}
+
+  @Get('links')
+  async trackAndRedirect(
+    @RequestMeta() requestMetadata: RequestMetadata,
+    @Res() res: Response,
+    @Query()
+    { e: name, d: data, dest, src }: Record<string, string>
+  ) {
+    const analytic = { ...requestMetadata, name, data, dest, src } as Analytic;
+
+    this.logger.log(`#trackAndRedirect:${JSON.stringify(analytic, null, 2)}`);
+    await this.analyticService.track(analytic);
+    res.redirect(dest);
+  }
+}
