@@ -161,59 +161,6 @@
       },
       "tags": []
     },
-    "bases": {
-      "root": "apps/bases",
-      "sourceRoot": "apps/bases/src",
-      "projectType": "application",
-      "targets": {
-        "build": {
-          "executor": "@nrwl/node:webpack",
-          "outputs": ["{options.outputPath}"],
-          "options": {
-            "outputPath": "dist/apps/bases",
-            "main": "apps/bases/src/main.ts",
-            "tsConfig": "apps/bases/tsconfig.app.json",
-            "assets": ["apps/bases/src/assets"],
-            "generatePackageJson": true
-          },
-          "configurations": {
-            "production": {
-              "optimization": true,
-              "extractLicenses": true,
-              "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/bases/src/environments/environment.ts",
-                  "with": "apps/bases/src/environments/environment.prod.ts"
-                }
-              ]
-            }
-          }
-        },
-        "serve": {
-          "executor": "@nrwl/node:node",
-          "options": {
-            "buildTarget": "bases:build"
-          }
-        },
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["apps/bases/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/apps/bases"],
-          "options": {
-            "jestConfig": "apps/bases/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
     "casl": {
       "root": "libs/casl",
       "sourceRoot": "libs/casl/src",
@@ -353,59 +300,7 @@
       },
       "tags": []
     },
-    "users": {
-      "root": "apps/users",
-      "sourceRoot": "apps/users/src",
-      "projectType": "application",
-      "targets": {
-        "build": {
-          "executor": "@nrwl/node:webpack",
-          "outputs": ["{options.outputPath}"],
-          "options": {
-            "outputPath": "dist/apps/users",
-            "main": "apps/users/src/main.ts",
-            "tsConfig": "apps/users/tsconfig.app.json",
-            "assets": ["apps/users/src/assets"],
-            "generatePackageJson": true
-          },
-          "configurations": {
-            "production": {
-              "optimization": true,
-              "extractLicenses": true,
-              "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/users/src/environments/environment.ts",
-                  "with": "apps/users/src/environments/environment.prod.ts"
-                }
-              ]
-            }
-          }
-        },
-        "serve": {
-          "executor": "@nrwl/node:node",
-          "options": {
-            "buildTarget": "users:build"
-          }
-        },
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["apps/users/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/apps/users"],
-          "options": {
-            "jestConfig": "apps/users/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
+    "users": "apps/users",
     "utils-aws": {
       "root": "libs/utils/aws",
       "sourceRoot": "libs/utils/aws/src",

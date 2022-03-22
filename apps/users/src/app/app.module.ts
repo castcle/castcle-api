@@ -28,7 +28,6 @@ import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { UserController } from './app.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services/suggestion.service';
 import { TracingModule } from '@narando/nest-xray';
@@ -36,6 +35,10 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { Environment } from '@castcle-api/environments';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
+import { NotificationsController } from './controllers/notifications.controller';
+import { PagesController } from './controllers/pages.controller';
+import { UsersController } from './controllers/users.controller';
+
 @Module({
   imports: [
     DatabaseModule,
@@ -53,7 +56,7 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
       limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
-  controllers: [UserController],
+  controllers: [NotificationsController, PagesController, UsersController],
   providers: [
     SuggestionService,
     {
@@ -66,4 +69,4 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
     },
   ],
 })
-export class UserModule {}
+export class AppModule {}

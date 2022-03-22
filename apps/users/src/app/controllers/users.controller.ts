@@ -126,13 +126,13 @@ import {
   UserRefereeResponse,
   UserReferrerResponse,
   UserSettingsDto,
-} from './dtos';
-import { KeywordPipe } from './pipes/keyword.pipe';
-import { SuggestionService } from './services/suggestion.service';
+} from '../dtos';
+import { KeywordPipe } from '../pipes/keyword.pipe';
+import { SuggestionService } from '../services/suggestion.service';
 
-@CastcleController('1.0')
-export class UserController {
-  private logger = new CastLogger(UserController.name);
+@CastcleController({ path: 'users', version: '1.0' })
+export class UsersController {
+  private logger = new CastLogger(UsersController.name);
 
   constructor(
     private adsService: AdsService,

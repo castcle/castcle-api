@@ -77,9 +77,9 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { UserController } from './app.controller';
-import { UserSettingsDto } from './dtos';
-import { SuggestionService } from './services/suggestion.service';
+import { UsersController } from './users.controller';
+import { UserSettingsDto } from '../dtos';
+import { SuggestionService } from '../services/suggestion.service';
 
 export class DownloaderMock {
   getImageFromUrl() {
@@ -98,7 +98,7 @@ export class FacebookClientMock {
 describe('AppController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
-  let appController: UserController;
+  let appController: UsersController;
   let service: UserService;
   let contentService: ContentService;
   let authService: AuthenticationService;
