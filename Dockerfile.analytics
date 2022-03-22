@@ -21,12 +21,9 @@
 
 FROM public.ecr.aws/castcle/node:latest
 WORKDIR /app
-COPY ./dist/apps/bases .
+COPY ./dist/apps/analytics .
 COPY package*.json ./
 ENV PORT=80
 EXPOSE ${PORT}
 RUN npm install --ignore-scripts --prod
-RUN npm i @narando/nest-xray --force
-RUN npm i @nestjs/axios --save 
-RUN npm install sharp@0.28.3 --save
 CMD node ./main.js
