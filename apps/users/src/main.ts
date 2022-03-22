@@ -21,48 +21,32 @@
  * or have any questions.
  */
 
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
-import { NestFactory } from '@nestjs/core';
-import { UserModule } from './app/app.module';
-import { Configs, Environment as env } from '@castcle-api/environments';
-import { json, urlencoded } from 'express';
-import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
-import { SwaggerModule } from '@nestjs/swagger';
-import { DocumentConfig } from './docs/document.config';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { Configs, Environment } from '@castcle-api/environments';
+import { Documentation } from '@castcle-api/utils/commons';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
+import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const logger = new CastLogger('Bootstrap');
-  const app = await NestFactory.create(UserModule, {
-    logger: CastLoggerLevel,
-  });
+  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT || 3338;
-  const prefix = 'users';
 
-  // For Global
-  app.setGlobalPrefix(prefix);
-  // For versioning
+  Documentation.setup('Users', app);
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.useGlobalFilters(new ExceptionFilter());
+  app.useGlobalPipes(new ValidationPipe({}));
+  app.enableCors();
   app.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  // For documentations
-  const document = SwaggerModule.createDocument(app, DocumentConfig);
-  SwaggerModule.setup(`${prefix}/documentations`, app, document);
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
-  app.useGlobalFilters(new ExceptionFilter());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  app.enableCors();
   await app.listen(port, () => {
-    logger.log('Listening at http://localhost:' + port);
-    logger.log(`Environment at ${env.NODE_ENV}`);
+    Logger.log(`Listening at http://localhost:${port}`);
+    Logger.log(`Environment at ${Environment.NODE_ENV}`);
   });
 }
 

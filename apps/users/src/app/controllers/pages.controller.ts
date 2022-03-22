@@ -80,9 +80,9 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { DeletePageDto } from '../dtos/delete.page.dto';
+import { DeletePageDto } from '../dtos';
 
-@CastcleController('1.0')
+@CastcleController({ version: '1.0' })
 @Controller()
 export class PagesController {
   private logger = new CastLogger(PagesController.name);

@@ -53,7 +53,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
-@CastcleController('1.0')
+@CastcleController({ version: '1.0' })
 export class NotificationsController {
   #logger = new CastLogger(NotificationsController.name);
 
