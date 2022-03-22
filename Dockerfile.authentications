@@ -25,8 +25,6 @@ COPY ./dist/apps/authentications .
 COPY package*.json ./
 ENV PORT=80
 EXPOSE ${PORT}
-RUN npm install --ignore-scripts --prod
-RUN npm i @narando/nest-xray --force
-RUN npm i @nestjs/axios --save 
-RUN npm install sharp@0.28.3 --save
+RUN npm set-script prepare ""
+RUN npm install --prod
 CMD node ./main.js

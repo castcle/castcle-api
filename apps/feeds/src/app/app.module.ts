@@ -36,7 +36,7 @@ import { CaslModule } from '@castcle-api/casl';
 import { HealthyModule } from '@castcle-api/healthy';
 import { Environment } from '@castcle-api/environments';
 import { TracingModule } from '@narando/nest-xray';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { FeedsController } from './controllers/feeds.controller';
@@ -50,7 +50,7 @@ import { CountryController } from './controllers/country.controller';
   imports: [
     DatabaseModule,
     CaslModule,
-    HealthyModule,
+    RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,
     UtilsCacheModule,
     UtilsPipesModule,

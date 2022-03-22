@@ -127,7 +127,7 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      controllers: [UserController],
+      controllers: [UsersController],
       providers: [
         { provide: DataService, useValue: {} },
         UserService,
@@ -161,7 +161,7 @@ describe('AppController', () => {
       ],
     }).compile();
 
-    appController = app.get(UserController);
+    appController = app.get(UsersController);
     service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);

@@ -17,6 +17,9 @@ describe('Castcle E2E Tests', () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
     (getMongooseModuleOptions as jest.Mock).mockReturnValue({
       uri: mongoMemoryReplSet.getUri(),
+      useCreateIndex: true,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
 
     await connect(mongoMemoryReplSet.getUri('test'));
