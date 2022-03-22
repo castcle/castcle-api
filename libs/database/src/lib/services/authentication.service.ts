@@ -388,6 +388,18 @@ export class AuthenticationService {
         referrerDisplayId: referrer.displayId,
         referringAccount: account._id,
       }).save();
+
+      account.referrerAccount = referrer.ownerAccount._id;
+      await account.save();
+
+      await this._accountModel.updateOne(
+        {
+          _id: referrer.ownerAccount._id,
+        },
+        {
+          $inc: { referringCounts: 1 },
+        }
+      );
     }
 
     this.logger.log(
@@ -630,6 +642,18 @@ export class AuthenticationService {
         referrerDisplayId: referrer.displayId,
         referringAccount: account._id,
       }).save();
+
+      account.referrerAccount = referrer.ownerAccount._id;
+      await account.save();
+
+      await this._accountModel.updateOne(
+        {
+          _id: referrer.ownerAccount._id,
+        },
+        {
+          $inc: { referringCounts: 1 },
+        }
+      );
     }
 
     this.logger.log(
