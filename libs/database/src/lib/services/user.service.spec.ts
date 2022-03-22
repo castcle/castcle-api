@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -41,7 +40,7 @@ import {
 } from '../dtos/common.dto';
 import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { WalletType } from '../models';
+import { QueueName, WalletType } from '../models';
 import {
   Account,
   Comment,
@@ -56,6 +55,7 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 import { SocialPageDto } from './../dtos/user.dto';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('User Service', () => {
   let mongod: MongoMemoryReplSet;
@@ -84,8 +84,15 @@ describe('User Service', () => {
         AuthenticationService,
         ContentService,
         CommentService,
-        UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

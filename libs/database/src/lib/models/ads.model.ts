@@ -9,5 +9,11 @@
 
 export class AdsCost {
   CAST: number;
-  USDC: number;
+  UST: number;
+}
+
+export enum AdsPaymentMethod {
+  ADS_CREDIT = 'ads-credit',
+  TOKEN_WALLET = 'token-wallet',
+  CREDIT_CARD = 'credit-card',
 }

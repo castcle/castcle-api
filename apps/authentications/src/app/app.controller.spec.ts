@@ -27,8 +27,10 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  QueueName,
   UserService,
 } from '@castcle-api/database';
+import { AcceptPlatform } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
@@ -45,8 +47,8 @@ import {
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -164,7 +166,6 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
         HttpModule,
-        UtilsQueueModule,
       ],
       controllers: [AuthenticationController],
       providers: [
@@ -180,8 +181,15 @@ describe('AppController', () => {
         UserService,
         ContentService,
         HashtagService,
-        UserProducer,
         AnalyticService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -1048,6 +1056,51 @@ describe('AppController', () => {
           authToken: '',
         })
       ).rejects.toEqual(CastcleException.FORBIDDEN);
+    });
+  });
+  describe('registerToken', () => {
+    let credential = null;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(1, 0, {
+        userService: userService,
+        accountService: service,
+      });
+
+      credential = {
+        $credential: mockUsers[0].credential,
+        $language: 'th',
+      } as any;
+    });
+    it('should create or update account device is exists', async () => {
+      const registerTokenBody = {
+        uuid: 'testmockuuid',
+        firebaseToken: 'testmockfirebasetoken',
+        platform: AcceptPlatform.IOS,
+      };
+      await appController.registerToken(credential, registerTokenBody);
+      const registerToken = await (service as any)._accountDeviceModel
+        .findOne(registerTokenBody)
+        .exec();
+
+      expect(registerToken.uuid).toEqual(registerTokenBody.uuid);
+      expect(registerToken.platform).toEqual(registerTokenBody.platform);
+      expect(registerToken.firebaseToken).toEqual(
+        registerTokenBody.firebaseToken
+      );
+    });
+    it('should delete account device is empty', async () => {
+      const registerTokenBody = {
+        uuid: 'testmockuuid',
+        firebaseToken: 'testmockfirebasetoken',
+        platform: AcceptPlatform.IOS,
+      };
+      await appController.unregisterToken(credential, registerTokenBody);
+      const registerToken = await (service as any)._accountDeviceModel
+        .findOne(registerTokenBody)
+        .exec();
+
+      expect(registerToken).toBeNull();
     });
   });
   /*

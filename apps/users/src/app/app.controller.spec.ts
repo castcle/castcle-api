@@ -21,8 +21,11 @@
  * or have any questions.
  */
 import {
+  AdsBoostStatus,
   AdsObjective,
+  AdsPaymentMethod,
   AdsService,
+  AdsStatus,
   AnalyticService,
   AuthenticationService,
   CampaignService,
@@ -32,6 +35,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
   SocialProvider,
   SocialSyncService,
   UserService,
@@ -68,12 +72,7 @@ import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import {
-  NotificationProducer,
-  TopicName,
-  UserProducer,
-} from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -124,16 +123,9 @@ describe('AppController', () => {
     app = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
-        CacheModule.register({
-          store: 'memory',
-          ttl: 1000,
-        }),
+        CacheModule.register(),
         MongooseAsyncFeatures,
         MongooseForFeatures,
-        BullModule.registerQueue(
-          { name: TopicName.Campaigns },
-          { name: TopicName.Users }
-        ),
       ],
       controllers: [UserController],
       providers: [
@@ -141,7 +133,6 @@ describe('AppController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        UserProducer,
         HashtagService,
         SocialSyncService,
         CampaignService,
@@ -149,11 +140,27 @@ describe('AppController', () => {
         AdsService,
         AnalyticService,
         NotificationService,
-        NotificationProducer,
         DownloaderProvider,
         FacebookClientProvider,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.CAMPAIGN),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
+
     appController = app.get(UserController);
     service = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
@@ -290,6 +297,38 @@ describe('AppController', () => {
       expect(postReponse).toEqual(responseFull);
     });
 
+    it('should return Exception when update dupplicate castcle id', async () => {
+      const mocks = await generateMockUsers(1, 0, {
+        accountService: authService,
+        userService: service,
+      });
+
+      const updateDto = {
+        castcleId: mocks[0].user.displayId,
+        displayName: 'testDisplay01',
+        dob: '1990-12-10',
+        links: {
+          facebook: 'http://facebook.com/abc',
+          medium: 'https://medium.com/abc',
+          website: 'https://djjam.app',
+          youtube: 'https://youtube.com/abcdef',
+        },
+        images: {
+          avatar: 'https://placehold.it/200x200',
+          cover: 'https://placehold.it/1500x300',
+        },
+        overview: 'this is a test',
+      } as UpdateUserDto;
+
+      await expect(
+        appController.updateMyData(
+          { $credential: userCredential, $language: 'th' } as any,
+          'me',
+          updateDto
+        )
+      ).rejects.toEqual(new CastcleException(CastcleStatus.USER_ID_IS_EXIST));
+    });
+
     it('should update castcleid and dispalyname from UpdateUserDto', async () => {
       const updateDto = {
         castcleId: 'test01',
@@ -352,7 +391,9 @@ describe('AppController', () => {
           'me',
           updateDto
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(
+        new CastcleException(CastcleStatus.CHANGE_CASTCLE_ID_FAILED)
+      );
     });
   });
 
@@ -436,7 +477,7 @@ describe('AppController', () => {
         1,
         5
       );
-      expect(response.payload.length).toEqual(1);
+      expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
@@ -454,7 +495,7 @@ describe('AppController', () => {
           hasRelationshipExpansion: true,
         }
       );
-      expect(response.payload.length).toEqual(1);
+      expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
       expect(response.payload[0].displayName).toBeDefined();
       expect(response.payload[0].followers).toBeDefined();
@@ -960,6 +1001,27 @@ describe('AppController', () => {
         $language: 'th',
       } as any;
 
+      const userOwner = await service.getByIdOrCastcleId(contentA.author.id);
+
+      const notify = await notifyService.notifyToUser(
+        {
+          type: NotificationType.Like,
+          read: false,
+          source: NotificationSource.Profile,
+          sourceUserId: user._id,
+          targetRef: {
+            _id: contentA._id,
+            ref: 'content',
+          },
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
+      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+
       await expect(
         appController.recastContent(
           mocksUsers[1].user.displayId,
@@ -1011,8 +1073,29 @@ describe('AppController', () => {
         'this is good content',
         credential
       );
+      const userOwner = await service.getByIdOrCastcleId(contentA.author.id);
+
+      const notify = await notifyService.notifyToUser(
+        {
+          type: NotificationType.Like,
+          read: false,
+          source: NotificationSource.Profile,
+          sourceUserId: user._id,
+          targetRef: {
+            _id: contentA._id,
+            ref: 'content',
+          },
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
+      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
-      expect(result.includes).toBeDefined;
+      expect(result.includes).toBeDefined();
     });
   });
 
@@ -1093,20 +1176,25 @@ describe('AppController', () => {
       );
 
       await contentService.likeContent(content, user);
+      const userOwner = await service.getByIdOrCastcleId(content.author.id);
 
-      expect(
-        await notifyService.notifyToUser({
+      const notify = await notifyService.notifyToUser(
+        {
           type: NotificationType.Like,
-          message: `${user.displayName} ถูกใจโพสของคุณ`,
           read: false,
           source: NotificationSource.Profile,
           sourceUserId: user._id,
           targetRef: {
             _id: content._id,
+            ref: 'content',
           },
-          account: { _id: content.author.id },
-        })
-      ).toBeTruthy();
+          account: userOwner.ownerAccount,
+        },
+        userOwner,
+        'th'
+      );
+
+      expect(notify).toBeTruthy();
 
       const result = await contentService.getContentFromId(contentId);
       expect(result.engagements.like.count).toBe(1);
@@ -1130,7 +1218,7 @@ describe('AppController', () => {
       authService._accountModel.deleteMany({});
       authService._credentialModel.deleteMany({});
       contentService._contentModel.deleteMany({});
-      notifyService._notificationModel.deleteMany({});
+      (notifyService as any)._notificationModel.deleteMany({});
     });
   });
 
@@ -1216,6 +1304,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1272,6 +1361,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1455,6 +1545,7 @@ describe('AppController', () => {
         dailyBudget: 1,
         duration: 5,
         objective: AdsObjective.Engagement,
+        paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
@@ -1466,6 +1557,7 @@ describe('AppController', () => {
           dailyBudget: 10,
           duration: 5,
           objective: AdsObjective.Engagement,
+          paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
         await adsService.updateAdsById(mockAds.id, adsUpdate);
         const adsCampaign = await adsService._adsCampaignModel
@@ -1480,6 +1572,95 @@ describe('AppController', () => {
         expect(adsCampaign.objective).toEqual(adsUpdate.objective);
       });
     });
+    describe('#adsRunning, #adsPause, #adsEnd', () => {
+      let ads: AdsCampaign;
+      it('should be able update ads running.', async () => {
+        const adsInput: AdsRequestDto = {
+          campaignName: 'Ads2',
+          campaignMessage: 'This is ads2',
+          userId: mocks[0].pages[0].id,
+          dailyBudget: 1,
+          duration: 5,
+          objective: AdsObjective.Engagement,
+          paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        };
+        ads = await adsService.createAds(mocks[0].account, adsInput);
+        await adsService._adsCampaignModel.updateOne(
+          { _id: ads._id },
+          {
+            $set: {
+              status: AdsStatus.Approved,
+              boostStatus: AdsBoostStatus.Pause,
+            },
+          }
+        );
+        await appController.adsRunning(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Running);
+      });
+      it('ads running should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsRunning(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
+      it('should be able update ads Pause.', async () => {
+        await appController.adsPause(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.Pause);
+      });
+      it('ads Pause should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsPause(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
+      it('should be able update ads End.', async () => {
+        await appController.adsEnd(
+          { credential: mocks[0].credential } as any,
+          ads._id
+        );
+        const adsCampaign = await adsService._adsCampaignModel
+          .findById(ads.id)
+          .exec();
+
+        expect(adsCampaign).toBeTruthy();
+        expect(adsCampaign.boostStatus).toEqual(AdsBoostStatus.End);
+      });
+      it('ads End should return Exception when get wrong boost status.', async () => {
+        await expect(
+          appController.adsEnd(
+            { credential: mocks[0].credential } as any,
+            ads._id
+          )
+        ).rejects.toEqual(
+          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
+        );
+      });
+    });
+
     describe('#deleteAds', () => {
       it('should be able delete ads is correct.', async () => {
         await adsService.deleteAdsById(mockAds.id);
@@ -1495,6 +1676,7 @@ describe('AppController', () => {
       adsService._contentModel.deleteMany({});
     });
   });
+
   describe('#updateAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1531,6 +1713,7 @@ describe('AppController', () => {
       expect(social.displayName).toEqual(mockSocialSync.displayName);
     });
   });
+
   describe('#deleteAutoPost', () => {
     let mocksPage: User;
     let mockSocialSync: SocialSync;
@@ -1660,6 +1843,7 @@ describe('AppController', () => {
       expect(social.displayName).toEqual(payloadSyncSocial.payload.displayName);
     });
   });
+
   describe('#disconnectSyncSocial', () => {
     let mocksPage: User;
     let user: User;
@@ -1703,6 +1887,7 @@ describe('AppController', () => {
       expect(social.active).toEqual(false);
     });
   });
+
   afterAll(() => {
     service._userModel.deleteMany({});
     (socialSyncService as any).socialSyncModel.deleteMany({});

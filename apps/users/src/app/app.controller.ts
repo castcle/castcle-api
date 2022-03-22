@@ -21,7 +21,9 @@
  * or have any questions.
  */
 import {
+  AdsBoostStatus,
   AdsService,
+  AdsStatus,
   AnalyticService,
   AuthenticationService,
   CampaignService,
@@ -46,6 +48,7 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
+  NotificationRef,
   NotificationSource,
   NotificationType,
   PageDto,
@@ -62,6 +65,7 @@ import {
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
+  Account,
   Credential,
   SocialSync,
   User,
@@ -219,6 +223,14 @@ export class UserController {
     return now - blockUpdate >= 0;
   };
 
+  _verifyAdsApprove = async (account: Account, adsId: string) => {
+    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
+      this.logger.log('Ads campaign not found.');
+      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    }
+    return adsCampaign;
+  };
   /**
    * @deprecated The method should not be used. Please use [POST] /users/me/mentions
    */
@@ -271,26 +283,48 @@ export class UserController {
     @Query() userQuery?: ExpansionQuery
   ) {
     this.logger.log(`Me mentions keyword: ${keyword}`);
+    const maxResult = 10;
     const authorizedUser = await this.userService.getUserFromCredential(
       $credential
     );
 
-    const { users } = await this.userService.getMentionsFromPublic(
+    let userMentions = [];
+    const followingUser = await this.userService.getMentionsFollowing(
       authorizedUser,
       keyword,
-      { page: DEFAULT_QUERY_OPTIONS.page, limit: DEFAULT_QUERY_OPTIONS.limit },
+      {
+        page: DEFAULT_QUERY_OPTIONS.page,
+        limit: DEFAULT_QUERY_OPTIONS.limit,
+      },
       userQuery.userFields?.includes(UserField.Relationships)
     );
 
-    this.logger.log(`Filter block user.`);
-    const resultFilter = users.filter((u) => !u.blocked && !u.blocking);
-    this.logger.log(`Sorting followed.`);
-    const sortResult = resultFilter.sort(
-      (pre, last) => +pre.followed - +last.followed
-    );
+    if (followingUser.userData.users.length < maxResult) {
+      this.logger.log(`Get mention user from public`);
+      const { users: publicUser } =
+        await this.userService.getMentionsFromPublic(
+          authorizedUser,
+          keyword,
+          {
+            page: DEFAULT_QUERY_OPTIONS.page,
+            limit: DEFAULT_QUERY_OPTIONS.limit,
+          },
+          userQuery.userFields?.includes(UserField.Relationships),
+          followingUser.followingUserId
+        );
+      this.logger.log(`Filter block user.`);
+      const resultFilter = publicUser.filter((u) => !u.blocked && !u.blocking);
+      this.logger.log(`Merge mention user`);
+      userMentions = [...followingUser.userData.users, ...resultFilter];
+    } else {
+      userMentions = [...followingUser.userData.users];
+    }
 
     return {
-      payload: sortResult.length > 10 ? sortResult.slice(0, 10) : sortResult,
+      payload:
+        userMentions.length > maxResult
+          ? userMentions.slice(0, maxResult)
+          : userMentions,
     };
   }
 
@@ -434,9 +468,17 @@ export class UserController {
         !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
       )
         throw new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
+          CastcleStatus.CHANGE_CASTCLE_ID_FAILED,
           req.$language
         );
+
+      if (body.castcleId) {
+        const userExisting = await this.authService.getExistedUserFromCastcleId(
+          body.castcleId
+        );
+        if (userExisting && userExisting.id !== user.id)
+          throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+      }
 
       const newBody = await this.userService.uploadUserInfo(
         body,
@@ -1251,6 +1293,24 @@ export class UserController {
       content,
       userRecast
     );
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Recast,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      req.$language
+    );
 
     return this.contentService.convertContentToContentResponse(
       userRecast,
@@ -1274,13 +1334,35 @@ export class UserController {
       `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`
     );
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    const userQuotecast = await this._validateOwnerAccount(req, user);
-    const content = await this._getContentIfExist(contentId);
+    const [userQuotecast, content] = await Promise.all([
+      this._validateOwnerAccount(req, user),
+      this._getContentIfExist(contentId),
+    ]);
     const result = await this.contentService.quoteContentFromUser(
       content,
       userQuotecast,
       message
     );
+
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Quote,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      req.$language
+    );
+
     return this.contentService.convertContentToContentResponse(
       userQuotecast,
       result.quoteContent
@@ -1383,9 +1465,10 @@ export class UserController {
     @Body('contentId') contentId: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(contentId);
-
-    const user = await this._getUser(id, req.$credential);
+    const [content, user] = await Promise.all([
+      this._getContentIfExist(contentId),
+      this._getUser(id, req.$credential),
+    ]);
 
     if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
       throw new CastcleException(
@@ -1396,24 +1479,27 @@ export class UserController {
 
     await this.contentService.likeContent(content, user);
 
-    if (id === 'me') return;
+    if (id === 'me' || id === user.id || id === content.author.castcleId)
+      return;
 
-    if (id === user.id) return;
-
-    if (id === content.author.castcleId) return;
-
-    // //TODO !!! has to implement message libs and i18N and message functions
-    this.notifyService.notifyToUser({
-      type: NotificationType.Like,
-      message: `${user.displayName} ถูกใจโพสของคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: content._id,
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Like,
+        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        account: userOwner.ownerAccount,
+        read: false,
       },
-      account: { _id: content.author.id },
-    });
+      userOwner,
+      req.$language
+    );
   }
 
   /**
@@ -1882,5 +1968,82 @@ export class UserController {
       this.logger.log('Unsubscribed facebook page');
       await this.facebookClient.unsubscribed(social.authToken, social.socialId);
     }
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/running')
+  async adsRunning(
+    @Auth() { credential }: Authorizer,
+    @Param('id') adsId: string
+  ) {
+    this.logger.log(`Start running ads.`);
+    const account = await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+
+    if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.Running
+    );
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/pause')
+  async adsPause(
+    @Auth() { credential }: Authorizer,
+    @Param('id') adsId: string
+  ) {
+    this.logger.log(`Start pause ads.`);
+    const account = await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+
+    if (adsCampaign.boostStatus !== AdsBoostStatus.Running) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.Pause
+    );
+  }
+
+  @ApiResponse({ status: 204 })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleBasicAuth()
+  @Post('me/advertise/:id/end')
+  async adsEnd(@Auth() { credential }: Authorizer, @Param('id') adsId: string) {
+    this.logger.log(`Start end ads.`);
+    const account = await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+
+    if (
+      !(
+        adsCampaign.boostStatus === AdsBoostStatus.Running ||
+        adsCampaign.boostStatus === AdsBoostStatus.Pause
+      )
+    ) {
+      this.logger.log(
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+      );
+      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+    }
+
+    await this.adsService.updateAdsBoostStatus(
+      adsCampaign._id,
+      AdsBoostStatus.End
+    );
   }
 }

@@ -21,33 +21,35 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { BullModule } from '@nestjs/bull';
-import { Module } from '@nestjs/common';
-import { TopicName } from './enum/topic.name';
-import { ContentProducer } from './producers/content.producer';
-import { NotificationProducer } from './producers/notification.producer';
-import { UserProducer } from './producers/user.producer';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { WalletType } from '../models';
+import { CastcleBase } from './base.schema';
 
-@Module({
-  imports: [
-    BullModule.forRoot({
-      redis: {
-        host: Environment.REDIS_HOST,
-        port: Environment.REDIS_PORT,
-      },
-    }),
-    BullModule.registerQueue(
-      { name: TopicName.Campaigns },
-      { name: TopicName.Contents },
-      { name: TopicName.Notifications },
-      { name: TopicName.Users }
-    ),
-  ],
-  controllers: [],
-  providers: [NotificationProducer, UserProducer, ContentProducer],
-  exports: [BullModule, NotificationProducer, UserProducer, ContentProducer],
-})
-export class UtilsQueueModule {}
+export type CAccountNature = {
+  DEBIT: 'debit';
+  CREDIT: 'credit';
+};
 
-export { TopicName, NotificationProducer, UserProducer, ContentProducer };
+@Schema()
+export class CAccount extends CastcleBase {
+  @Prop()
+  name: string;
+
+  @Prop({ type: String })
+  nature: CAccountNature;
+
+  @Prop({ unique: true, index: true })
+  no: string;
+
+  @Prop({ type: SchemaTypes.ObjectId })
+  parent?: CAccount;
+
+  @Prop({ type: String })
+  walletType?: WalletType;
+
+  @Prop()
+  walletAddress?: string;
+}
+
+export const CAccountchema = SchemaFactory.createForClass(CAccount);

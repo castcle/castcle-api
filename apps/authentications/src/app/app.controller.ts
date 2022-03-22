@@ -46,6 +46,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
   Get,
   HttpCode,
   HttpException,
@@ -79,6 +80,7 @@ import {
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
+  RequestTokenDeviceDto,
   SocialConnectDto,
   SuggestCastcleIdReponse,
   TokenResponse,
@@ -708,9 +710,12 @@ export class AuthenticationController {
   }
 
   @CastcleBasicAuth()
-  @ApiBody({
-    type: SocialConnectDto,
-  })
+  @ApiBody(
+    /* Creating a type alias for a function that takes a string and returns a string. */
+    {
+      type: SocialConnectDto,
+    }
+  )
   @ApiOkResponse({
     status: 200,
     type: LoginResponse,
@@ -828,5 +833,31 @@ export class AuthenticationController {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
     } as LoginResponse;
+  }
+
+  @UseInterceptors(CredentialInterceptor)
+  @Post('register-token')
+  @HttpCode(200)
+  async registerToken(
+    @Req() { $credential }: CredentialRequest,
+    @Body() body: RequestTokenDeviceDto
+  ) {
+    await this.authService.createAccountDevice({
+      account: $credential.account._id,
+      ...body,
+    });
+  }
+
+  @UseInterceptors(CredentialInterceptor)
+  @Delete('register-token')
+  @HttpCode(200)
+  async unregisterToken(
+    @Req() { $credential }: CredentialRequest,
+    @Body() body: RequestTokenDeviceDto
+  ) {
+    await this.authService.deleteAccountDevice({
+      account: $credential.account._id,
+      ...body,
+    });
   }
 }

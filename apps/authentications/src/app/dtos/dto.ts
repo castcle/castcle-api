@@ -20,10 +20,21 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { PageResponseDto, UserResponseDto } from '@castcle-api/database/dtos';
+import {
+  AcceptPlatform,
+  PageResponseDto,
+  UserResponseDto,
+} from '@castcle-api/database/dtos';
 import { AccountAuthenIdType } from '@castcle-api/database/schemas';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 export class GuestLoginDto {
   @IsString()
   @IsNotEmpty()
@@ -251,4 +262,23 @@ export class otpResponse {
 
   @ApiProperty()
   accessToken?: string;
+}
+
+export class RequestTokenDeviceDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  firebaseToken: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID()
+  @ApiProperty()
+  uuid: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(AcceptPlatform)
+  @ApiProperty()
+  platform: AcceptPlatform;
 }

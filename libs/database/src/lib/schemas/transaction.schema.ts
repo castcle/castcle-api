@@ -38,6 +38,24 @@ export class MicroTransaction {
   value?: number;
 }
 
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class TItem {
+  @Prop({ index: true })
+  caccountNo: string;
+
+  @Prop({ type: SchemaTypes.Decimal128 })
+  value: number;
+}
+
+@Schema({ id: false, _id: false, timestamps: false, versionKey: false })
+export class TLedger {
+  @Prop({ type: Object })
+  debit: TItem;
+
+  @Prop({ type: Object })
+  credit: TItem;
+}
+
 const MicroTransactionSchema = SchemaFactory.createForClass(MicroTransaction);
 
 @Schema({ timestamps: true })
@@ -50,6 +68,9 @@ export class Transaction extends CastcleBase {
 
   @Prop({ type: Object })
   data?: any;
+
+  @Prop({ type: Array })
+  ledgers?: TLedger[];
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

@@ -27,6 +27,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  QueueName,
   SocialProvider,
   SocialSyncService,
   UserService,
@@ -43,7 +44,7 @@ import { Content, Credential } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -95,10 +96,17 @@ describe('PageController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        UserProducer,
         HashtagService,
         SocialSyncService,
         DownloaderProvider,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     authService = app.get<AuthenticationService>(AuthenticationService);

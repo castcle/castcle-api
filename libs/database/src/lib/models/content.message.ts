@@ -20,27 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { TopicName } from '../enum/topic.name';
-import { UserMessage } from '../messages/user.message';
-@Injectable()
-export class UserProducer {
-  private logger = new CastLogger(UserProducer.name);
 
-  constructor(@InjectQueue(TopicName.Users) private queue: Queue) {}
+export enum ContentMessageEvent {
+  NEW_CONTENT = 'new-content',
+}
 
-  /**
-   * send user message to queue !!! if action === Deactivate send account id instead of user id
-   * @param {UserMessage} UserMessage user message
-   * @returns {}
-   */
-  async sendMessage(message: UserMessage) {
-    await this.queue.add({
-      user: message,
-    });
-    this.logger.log(`produce message '${JSON.stringify(message)}' `);
-  }
+export class ContentMessage {
+  event: ContentMessageEvent;
+  contentId: string;
 }

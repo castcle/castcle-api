@@ -24,8 +24,10 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { getLinkPreview } from 'link-preview-js';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
@@ -43,7 +45,6 @@ import {
   EntityVisibility,
   GetLinkPreview,
   GetSearchRecentDto,
-  GuestFeedItemDto,
   IncludeUser,
   Link,
   LinkType,
@@ -53,6 +54,7 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
+import { ContentMessage, ContentMessageEvent, QueueName } from '../models';
 import { EngagementType } from '../models/engagement.enum';
 import {
   Account,
@@ -62,7 +64,6 @@ import {
   Engagement,
   FeedItem,
   GuestFeedItem,
-  GuestFeedItemType,
   Relationship,
   Revision,
   toSignedContentPayloadItem,
@@ -90,7 +91,8 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: Model<Credential>,
     @InjectModel('User')
@@ -109,7 +111,9 @@ export class ContentService {
     @InjectModel('GuestFeedItem')
     public _guestFeedItemModel: Model<GuestFeedItem>,
     @InjectModel('Relationship')
-    private relationshipModel: Model<Relationship>
+    private relationshipModel: Model<Relationship>,
+    @InjectQueue(QueueName.CONTENT)
+    private contentQueue: Queue<ContentMessage>
   ) {}
 
   /**
@@ -140,21 +144,25 @@ export class ContentService {
     await this.hashtagService.createFromTags(hashtags);
     try {
       await this.updatePayloadMessage(contentDto.payload);
-    } catch (ex) {
-      this.logger.warn(ex);
+    } catch (error) {
+      this.logger.error(error, 'createContentFromUser:updatePayloadMessage');
     }
 
-    const newContent = {
+    const content = await new this._contentModel({
       author: author,
       payload: contentDto.payload,
       revisionCount: 0,
       type: contentDto.type,
       visibility: EntityVisibility.Publish,
       hashtags: hashtags,
-    } as Content;
-    const content = new this._contentModel(newContent);
+    }).save();
 
-    return content.save();
+    this.contentQueue.add({
+      event: ContentMessageEvent.NEW_CONTENT,
+      contentId: content.id,
+    });
+
+    return content;
   }
 
   /**
@@ -167,7 +175,7 @@ export class ContentService {
     author: Author,
     contentsDtos: SaveContentDto[]
   ): Promise<Content[]> {
-    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
+    const $contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
@@ -179,14 +187,22 @@ export class ContentService {
         payload,
         revisionCount: 0,
         type,
-        visibility: EntityVisibility.Publish,
+        visibility: EntityVisibility.Hidden,
         hashtags: hashtags,
       } as Content;
     });
 
-    const contents = await Promise.all(contentsToCreate);
+    const contentsToCreate = await Promise.all($contentsToCreate);
+    const contents = await this._contentModel.insertMany(contentsToCreate);
 
-    return this._contentModel.create(contents);
+    contents.forEach((content) => {
+      this.contentQueue.add({
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      });
+    });
+
+    return contents;
   }
 
   async getAuthorFromId(authorId: string) {
@@ -196,24 +212,32 @@ export class ContentService {
   }
 
   updatePayloadMessage = async (shortPayload: ShortPayload) => {
-    const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
-    const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
+    this.logger.log(JSON.stringify(shortPayload), 'updatePayloadMessage');
 
-    if (linkIndex >= 0) {
-      const twitterLink = shortPayload.message.slice(linkIndex);
-      const linkPreview = (await getLinkPreview(twitterLink)) as GetLinkPreview;
-      const link = {
-        type: LinkType.Other,
-        url: linkPreview.url,
-        title: linkPreview.title,
-        description: linkPreview.description,
-        imagePreview: linkPreview.images?.[0],
-      } as Link;
+    try {
+      const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
+      const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
 
-      shortPayload.message = shortPayload.message.slice(0, linkIndex);
-      shortPayload.link = shortPayload.link
-        ? [...shortPayload.link, link]
-        : [link];
+      if (linkIndex >= 0) {
+        const twitterLink = shortPayload.message.slice(linkIndex);
+        const linkPreview = (await getLinkPreview(
+          twitterLink
+        )) as GetLinkPreview;
+        const link = {
+          type: LinkType.Other,
+          url: linkPreview.url,
+          title: linkPreview.title,
+          description: linkPreview.description,
+          imagePreview: linkPreview.images?.[0],
+        } as Link;
+
+        shortPayload.message = shortPayload.message.slice(0, linkIndex);
+        shortPayload.link = shortPayload.link
+          ? [...shortPayload.link, link]
+          : [link];
+      }
+    } catch (error: unknown) {
+      this.logger.error(error, 'updatePayloadMessage');
     }
   };
 
@@ -900,21 +924,6 @@ export class ContentService {
       })
       .exec();
 
-  /**
-   *
-   * @param contentId
-   * @returns {GuestFeedItem}
-   */
-  createGuestFeedItemFromAuthorId = async (contentId: any) => {
-    const newGuestFeedItem = new this._guestFeedItemModel({
-      score: 0,
-      type: GuestFeedItemType.Content,
-      content: contentId,
-    } as GuestFeedItemDto);
-    newGuestFeedItem.__v = 2;
-    return newGuestFeedItem.save();
-  };
-
   async reportContent(user: User, content: Content, message: string) {
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
@@ -1265,4 +1274,14 @@ Message: ${message}`,
     };
     return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
+
+  publishContent(contentId: string, isIllegal: boolean) {
+    return this._contentModel
+      .findByIdAndUpdate(contentId, {
+        visibility: isIllegal
+          ? EntityVisibility.Illegal
+          : EntityVisibility.Publish,
+      })
+      .exec();
+  }
 }

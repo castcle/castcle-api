@@ -20,27 +20,47 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastLogger } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { TopicName } from '../enum/topic.name';
-import { ContentMessage } from '../messages/content.message';
-@Injectable()
-export class ContentProducer {
-  private logger = new CastLogger(ContentProducer.name);
+import { Types } from 'mongoose';
+import { EntityVisibility } from '../dtos';
+import { Relationship, User } from '../schemas';
 
-  constructor(@InjectQueue(TopicName.Contents) private queue: Queue) {}
-
-  /**
-   * send user message to queue !!! if action === Deactivate send account id instead of user id
-   * @param {ContentMessage} ContentMessage user message
-   * @returns {}
-   */
-  async sendMessage(message: ContentMessage) {
-    await this.queue.add({
-      content: message,
-    });
-    this.logger.log(`produce message '${JSON.stringify(message)}' `);
-  }
+export class GetUserRelationParams {
+  userId: Types.ObjectId;
+  keyword: string;
+  limit: number;
 }
+
+export type GetUserRelationResponse = Relationship & {
+  user_relation: User[];
+};
+
+export const pipelineOfUserRelation = (params: GetUserRelationParams) => {
+  return [
+    {
+      $match: {
+        user: params.userId,
+        $or: [{ isFollowPage: true }, { following: true }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'followedUser',
+        foreignField: '_id',
+        pipeline: [
+          { $sort: { updatedAt: -1 } },
+          {
+            $match: {
+              displayId: {
+                $regex: new RegExp('^' + params.keyword.toLowerCase(), 'i'),
+              },
+              visibility: EntityVisibility.Publish,
+            },
+          },
+        ],
+        as: 'user_relation',
+      },
+    },
+    { $limit: params.limit },
+  ];
+};

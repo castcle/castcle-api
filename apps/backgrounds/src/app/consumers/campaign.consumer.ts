@@ -24,20 +24,20 @@
 import {
   CampaignService,
   ClaimAirdropPayload,
+  QueueName,
   QueueTopic,
 } from '@castcle-api/database';
 import { Queue } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
-import { TopicName } from '@castcle-api/utils/queue';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Job, Queue as BullQueue } from 'bull';
 
-@Processor(TopicName.Campaigns)
+@Processor(QueueName.CAMPAIGN)
 export class CampaignConsumer {
   private logger = new CastLogger(CampaignConsumer.name);
 
   constructor(
-    @InjectQueue(TopicName.Campaigns)
+    @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>,
     private campaignService: CampaignService
   ) {

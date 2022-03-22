@@ -746,29 +746,6 @@
         }
       },
       "tags": []
-    },
-    "utils-queue": {
-      "root": "libs/utils/queue",
-      "sourceRoot": "libs/utils/queue/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/utils/queue/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/utils/queue"],
-          "options": {
-            "jestConfig": "libs/utils/queue/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
     }
   }
 }

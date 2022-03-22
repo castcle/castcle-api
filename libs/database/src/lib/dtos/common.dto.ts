@@ -63,16 +63,18 @@ export enum EntityVisibility {
   Hidden = 'hidden',
   Publish = 'publish',
   Deleted = 'deleted',
+  Illegal = 'illegal',
+}
+
+export enum AcceptPlatform {
+  IOS = 'ios',
+  Android = 'android',
+  Web = 'web',
 }
 
 export enum CastcleQueueAction {
   Deleting = 'deleting',
-  Deleted = 'deleted',
-  Restore = 'restore',
   UpdateProfile = 'updateProfile',
-  CreateFollowFeedItem = 'craeteFollowFeedItem',
-  CreateFeedItemToEveryOne = 'createFeedItemToEveryone',
-  CreateFeedItemToGuests = 'createFeedItemToGuests',
 }
 
 export class CastcleImage {

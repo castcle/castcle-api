@@ -185,6 +185,11 @@ export const ThErrorMessages = {
     code: '3022',
     message: 'Please wait a few minutes before you try again.',
   },
+  '3023': {
+    statusCode: '400',
+    code: '3023',
+    message: 'Sorry, Boost Status not match. Please try again.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
@@ -209,6 +214,11 @@ export const ThErrorMessages = {
     statusCode: '400',
     code: '4005',
     message: 'The reward is not enough',
+  },
+  '4006': {
+    statusCode: '400',
+    code: '4005',
+    message: 'You cannot change your Castcle Id.',
   },
   '5001': {
     statusCode: '400',

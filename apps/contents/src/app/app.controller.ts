@@ -20,15 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Action, CaslAbilityFactory } from '@castcle-api/casl';
 import {
-  AuthenticationService,
   ContentService,
   NotificationService,
   UserService,
 } from '@castcle-api/database';
 import {
-  CastcleQueueAction,
   ContentResponse,
   ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
@@ -41,7 +40,7 @@ import {
   ResponseDto,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, User } from '@castcle-api/database/schemas';
+import { Content, User, UserType } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -55,7 +54,6 @@ import {
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { SortByPipe } from '@castcle-api/utils/pipes';
-import { ContentProducer } from '@castcle-api/utils/queue';
 import {
   Body,
   Controller,
@@ -85,11 +83,9 @@ export class ContentController {
   private logger = new CastLogger(ContentController.name);
   constructor(
     private readonly appService: AppService,
-    private authService: AuthenticationService,
     private userService: UserService,
     private contentService: ContentService,
     private caslAbility: CaslAbilityFactory,
-    private contentProducer: ContentProducer,
     private notifyService: NotificationService
   ) {}
 
@@ -121,11 +117,6 @@ export class ContentController {
       user,
       uploadedBody
     );
-
-    this.contentProducer.sendMessage({
-      action: CastcleQueueAction.CreateFeedItemToEveryOne,
-      id: content._id,
-    });
 
     return this.contentService.convertContentToContentResponse(
       authorizedUser,
@@ -305,18 +296,24 @@ export class ContentController {
 
     if (user.id === castcleId) return;
 
-    //TODO !!! has to implement message libs and i18N and message functions
-    this.notifyService.notifyToUser({
-      type: NotificationType.Like,
-      message: `${user.displayName} ถูกใจโพสของคุณ`,
-      read: false,
-      source: NotificationSource.Profile,
-      sourceUserId: user._id,
-      targetRef: {
-        _id: content._id,
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.People
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Like,
+        targetRef: { _id: content._id },
+        account: userOwner.ownerAccount,
+        read: false,
       },
-      account: { _id: content.author.id },
-    });
+      userOwner,
+      req.$language
+    );
   }
   /**
    * @deprecated The method should not be used. Please use [DEL] users/:id/likes/:source_content_id

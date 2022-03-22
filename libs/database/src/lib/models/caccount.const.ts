@@ -20,33 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-/*export interface NotificationMessage {
-  id: string;
-  message: string;
-  source: string;
-  sourceUserId: string;
-  type: string;
-  targetRefId: string;
-  firebaseToken: string;
-}*/
 
-type Aps = {
-  alert: string; // Castcle is display name
-  sound: string;
-  category: 'CONTENTS';
-  badge: number; // นับ noti ที่ยังไม่อ่าน
-  'mutable-content': number;
+export const CACCOUNT_NO = {
+  VAULT: {
+    NO: '0000',
+    AIRDROP: '0500',
+  },
+  LIABILITY: {
+    USER_WALLET: {
+      PERSONAL: '2110',
+      ADS: '2120',
+    },
+  },
 };
-
-type NotificationPayload = {
-  notifyId: string;
-  source: 'PROFILE' | 'PAGE' | 'SYSTEM'; // PROFILE OR PAGE OR SYSTEM
-  content?: string;
-  comment?: string;
-};
-
-export interface NotificationMessage {
-  aps: Aps;
-  payload: NotificationPayload;
-  firebaseTokens: string[];
-}

@@ -9,7 +9,7 @@
     "build": "nx build",
     "build:all": "nx run-many --target=build --all",
     "test": "nx test",
-    "test:all": "nx run-many --target=test --all --runInBand --silent",
+    "test:all": "nx run-many --target=test --all --runInBand --silent --parallel=1",
     "lint": "nx workspace-lint && nx lint",
     "lint:all": "nx run-many --target=lint --all",
     "e2e": "nx run e2e:test --testFile=/app.e2e-spec --runInBand --silent",

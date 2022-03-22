@@ -29,13 +29,20 @@ import {
 } from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { UserProducer } from '@castcle-api/utils/queue';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
-import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { FilterQuery, Model, Types, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
+import {
+  GetBalanceResponse,
+  GetUserRelationResponse,
+  pipelineOfGetBalance,
+  pipelineOfUserRelation,
+} from '../aggregations';
 import {
   Author,
   CastcleQueryOptions,
@@ -55,7 +62,7 @@ import {
   UserField,
   UserModelImage,
 } from '../dtos';
-import { CastcleNumber } from '../models';
+import { CastcleNumber, QueueName, UserMessage } from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -115,8 +122,9 @@ export class UserService {
     private transactionModel: Model<Transaction>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    private contentService: ContentService,
-    private userProducer: UserProducer
+    @InjectQueue(QueueName.USER)
+    private userQueue: Queue<UserMessage>,
+    private contentService: ContentService
   ) {}
 
   getUserFromCredential = (credential: Credential) =>
@@ -460,7 +468,7 @@ export class UserService {
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
-    this.userProducer.sendMessage({
+    this.userQueue.add({
       id: user._id,
       action: CastcleQueueAction.UpdateProfile,
     });
@@ -569,19 +577,10 @@ export class UserService {
   };
 
   /**
-   *
    * @param {User} user
    * @param {User} followedUser
-   * @returns {Promise<void>}
    */
   follow = async (user: User, followedUser: User) => {
-    this.userProducer.sendMessage({
-      id: user._id,
-      action: CastcleQueueAction.CreateFollowFeedItem,
-      options: {
-        followedId: followedUser._id,
-      },
-    });
     return user.follow(followedUser);
   };
 
@@ -740,7 +739,7 @@ export class UserService {
         `deactivate:success:account-${account._id}`
       );
 
-      this.userProducer.sendMessage({
+      this.userQueue.add({
         id: account,
         action: CastcleQueueAction.Deleting,
       });
@@ -840,7 +839,7 @@ export class UserService {
    * Deactivate one account by id
    * @param id
    */
-  deactiveBackground = async (accountId: any) => {
+  deactivateBackground = async (accountId: any) => {
     const account = await this._accountModel.findById(accountId).exec();
     await this.deactivate(account);
   };
@@ -866,31 +865,28 @@ export class UserService {
 
   /**
    * Get all user,pages that could get from the system sort by followerCount
+   * @param {User} user
    * @param {string} keyword
    * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
    * @returns {Promise<{users:User[], pagination:Pagination}>}
    */
   getMentionsFromPublic = async (
     user: User,
     keyword: string,
     queryOption: CastcleQueryOptions,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
+    excludeUserId?: Types.ObjectId[]
   ) => {
     const query = {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
+      _id: { $nin: excludeUserId },
     };
 
-    if (hasRelationshipExpansion) {
-      queryOption.sortBy = {
-        field: 'updatedAt',
-        type: SortDirection.DESC,
-      };
-    } else {
-      queryOption.sortBy = {
-        field: 'followerCount',
-        type: SortDirection.DESC,
-      };
-    }
+    queryOption.sortBy = {
+      field: 'followerCount',
+      type: SortDirection.DESC,
+    };
 
     return this.getByCriteria(
       user,
@@ -898,6 +894,53 @@ export class UserService {
       queryOption,
       hasRelationshipExpansion
     );
+  };
+
+  /**
+   * Get user,pages from following user with filter
+   * @param {User} user
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
+   * @returns {Promise<{users:User[], pagination:Pagination}>}
+   */
+  getMentionsFollowing = async (
+    user: User,
+    keyword: string,
+    queryOption: CastcleQueryOptions,
+    hasRelationshipExpansion = false
+  ) => {
+    const pipeline = pipelineOfUserRelation({
+      userId: user._id,
+      keyword: keyword,
+      limit: queryOption.limit,
+    });
+
+    this.logger.log(JSON.stringify(pipeline), ' getUserRelation:aggregate');
+    const userRelation =
+      await this._relationshipModel.aggregate<GetUserRelationResponse>(
+        pipeline
+      );
+
+    const followingUsersId = userRelation.flatMap((u) =>
+      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id))
+    );
+
+    const query = {
+      _id: { $in: followingUsersId },
+    };
+
+    this.logger.log('get user from following list');
+    const userData = await this.getByCriteria(
+      user,
+      query,
+      queryOption,
+      hasRelationshipExpansion
+    );
+    return {
+      followingUserId: followingUsersId,
+      userData: userData,
+    };
   };
 
   async blockUser(user: User, blockedUser?: User) {

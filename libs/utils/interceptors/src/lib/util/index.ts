@@ -22,7 +22,7 @@
  */
 
 import { Request } from 'express';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 
 export const getTokenFromRequest = (request: Request) => {
   const token = request.headers.authorization?.split(' ')?.[1];
@@ -38,19 +38,4 @@ export const getLanguageFromRequest = (request: Request) => {
   if (!language) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
 
   return language;
-};
-
-/**
- * get ip from current request
- * @param {Request} request
- */
-export const getIpFromRequest = (request: Request) => {
-  /** Example: `API-Metadata="ip=127.0.0.1,src=iOS,dest=castcle-authentications"` */
-  const API_METADATA_PATTERN = /ip=(\d+\.\d+\.\d+\.\d+),src=(\w+),dest=(.+)/;
-  const metadata = request.headers['api-metadata'] as string;
-  const ip = metadata?.match(API_METADATA_PATTERN)?.[1];
-
-  if (!ip) throw new CastcleException(CastcleStatus.INVALID_FORMAT);
-
-  return ip;
 };

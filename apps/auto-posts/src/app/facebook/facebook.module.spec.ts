@@ -21,9 +21,10 @@
  * or have any questions.
  */
 
-import { SocialProvider } from '@castcle-api/database';
+import { QueueName, SocialProvider } from '@castcle-api/database';
 import { SocialSync, User, UserType } from '@castcle-api/database/schemas';
 import { Image } from '@castcle-api/utils/aws';
+import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -57,6 +58,12 @@ describe('FacebookController', () => {
     mongo = await MongoMemoryReplSet.create();
     const module = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongo.getUri()), FacebookModule],
+      providers: [
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     controller = module.get(FacebookController);

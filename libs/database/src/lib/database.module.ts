@@ -22,14 +22,15 @@
  */
 
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import {
-  NotificationProducer,
-  UtilsQueueModule,
-} from '@castcle-api/utils/queue';
 import { HttpModule } from '@nestjs/axios';
+import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { getMongooseModuleOptions } from './database.config';
+import {
+  getBullModuleOptions,
+  getMongooseModuleOptions,
+} from './database.config';
+import { QueueName } from './models';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -58,6 +59,7 @@ import {
   UserSchemaFactory,
   UxEngagementSchema,
 } from './schemas';
+import { AccountDeviceSchema } from './schemas/account-device.schema';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
@@ -86,6 +88,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
   { name: 'AccountReferral', schema: AccountReferralSchema },
+  { name: 'AccountDevice', schema: AccountDeviceSchema },
   { name: 'AdsCampaign', schema: AdsCampaignSchema },
   { name: 'AdsPlacement', schema: AdsPlacementSchema },
   { name: 'Analytic', schema: AnalyticSchema },
@@ -148,6 +151,15 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
+    BullModule.forRootAsync({
+      useFactory: () => getBullModuleOptions(),
+    }),
+    BullModule.registerQueue(
+      { name: QueueName.CAMPAIGN },
+      { name: QueueName.CONTENT },
+      { name: QueueName.NOTIFICATION },
+      { name: QueueName.USER }
+    ),
     HttpModule,
     MongooseModule.forRootAsync({
       useFactory: () => getMongooseModuleOptions(),
@@ -155,9 +167,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsCacheModule,
-    UtilsQueueModule,
   ],
-  controllers: [],
   providers: [
     AuthenticationService,
     UserService,
@@ -166,7 +176,6 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
     NotificationService,
     RankerService,
-    NotificationProducer,
     LanguageService,
     HashtagService,
     SearchService,

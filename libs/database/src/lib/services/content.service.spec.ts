@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -34,7 +34,7 @@ import {
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { UserVerified } from '../models';
+import { QueueName, UserVerified } from '../models';
 import { Comment, User, Account, Content, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -123,8 +123,15 @@ describe('ContentService', () => {
         ContentService,
         CommentService,
         HashtagService,
-        UserProducer,
         UserService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -672,7 +679,7 @@ describe('ContentService', () => {
     it('should not create any content', async () => {
       const contents = await service.createContentsFromAuthor(author, []);
 
-      expect(contents).toBeUndefined();
+      expect(contents).toEqual([]);
     });
 
     it('should create a short content from timeline', async () => {

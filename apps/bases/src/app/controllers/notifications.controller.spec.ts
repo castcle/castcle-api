@@ -27,6 +27,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -36,7 +37,7 @@ import {
 } from '@castcle-api/database/dtos';
 import { Credential, User } from '@castcle-api/database/schemas';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -49,7 +50,7 @@ const buildMockData = async (
   userCredential: Credential
 ) => {
   await creatMockData(
-    notification,
+    notification as any,
     user,
     NotificationSource.Profile,
     NotificationType.Comment,
@@ -58,7 +59,7 @@ const buildMockData = async (
   );
 
   await creatMockData(
-    notification,
+    notification as any,
     user,
     NotificationSource.Page,
     NotificationType.Comment,
@@ -67,7 +68,7 @@ const buildMockData = async (
   );
 
   await creatMockData(
-    notification,
+    notification as any,
     user,
     NotificationSource.Profile,
     NotificationType.System,
@@ -84,9 +85,8 @@ const creatMockData = async (
   docRefId: string,
   userCredential: Credential
 ) => {
-  const newNotification = new notification._notificationModel({
+  const newNotification = new (notification as any)._notificationModel({
     avatar: '',
-    message: `sample ${sourceType}`,
     source: sourceType,
     sourceUserId: user,
     type: typeNoti,
@@ -131,9 +131,19 @@ describe('NotificationsController', () => {
         AuthenticationService,
         ContentService,
         NotificationService,
-        NotificationProducer,
-        UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     userService = app.get<UserService>(UserService);
@@ -178,79 +188,15 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      const expectResult = {
-        payload: [
-          {
-            id: '',
-            avatar: '',
-            message: 'sample PROFILE',
-            source: 'PROFILE',
-            read: false,
-            content: {
-              id: null,
-            },
-            comment: {
-              id: null,
-            },
-            system: {
-              id: null,
-            },
-            type: 'system',
-          },
-          {
-            id: '',
-            avatar: '',
-            message: 'sample PAGE',
-            source: 'PAGE',
-            read: false,
-            content: {
-              id: null,
-            },
-            comment: {
-              id: '6138afa4f616a467b5c4eb72',
-            },
-            system: {
-              id: null,
-            },
-            type: 'comment',
-          },
-          {
-            id: '',
-            avatar: '',
-            message: 'sample PROFILE',
-            source: 'PROFILE',
-            read: false,
-            content: {
-              id: null,
-            },
-            comment: {
-              id: '6138afa4f616a467b5c4eb72',
-            },
-            system: {
-              id: null,
-            },
-            type: 'comment',
-          },
-        ],
-      };
-
-      responseResult.payload.forEach((x) => (x.id = ''));
-      expect(responseResult.payload).toEqual(
-        expect.arrayContaining(expectResult.payload)
-      );
-      expect(responseResult.payload.length).toEqual(3);
-      expect(
-        responseResult.payload.filter(({ comment }) => comment.id).length
-      ).toEqual(2);
+      expect(responseResult.payload).toHaveLength(3);
       expect(
         responseResult.payload.filter(
-          (x) =>
-            x.system.id == null && x.comment.id == null && x.content.id == null
+          (x) => x.system == null && x.comment == null && x.content == null
         ).length
-      ).toEqual(1);
+      ).toEqual(0);
     });
 
-    it('should return NotificationReponse that contain all notification source page', async () => {
+    it('should return NotificationResponse that contain all notification source page', async () => {
       const responseResult = await controller.getAll(
         {
           $credential: userCredential,
@@ -260,37 +206,37 @@ describe('NotificationsController', () => {
         null,
         NotificationSource.Page
       );
+
       const expectResult = {
         payload: [
           {
-            id: '',
-            avatar: '',
-            message: 'sample PAGE',
-            source: 'PAGE',
-            read: false,
-            content: {
-              id: null,
+            id: 'test',
+            notifyId: 'test',
+            avatar: {
+              fullHd:
+                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+              large:
+                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+              original:
+                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
+              thumbnail:
+                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
             },
-            comment: {
-              id: '6138afa4f616a467b5c4eb72',
-            },
-            system: {
-              id: null,
-            },
-            type: 'comment',
+            message: 'test commented on your cast',
+            source: 'page',
+            content: undefined,
+            comment: '6138afa4f616a467b5c4eb72',
+            system: undefined,
           },
         ],
       };
+      responseResult.payload.map((item) => {
+        item.id = 'test';
+        item.notifyId = 'test';
+      });
 
-      responseResult.payload.forEach((x) => (x.id = ''));
       expect(responseResult.payload).toEqual(expectResult.payload);
-      expect(responseResult.payload.length).toEqual(1);
-      expect(responseResult.payload.filter((x) => x.comment.id).length).toEqual(
-        1
-      );
-      expect(responseResult.payload.filter((x) => x.system.id).length).toEqual(
-        0
-      );
+      expect(responseResult.payload).toHaveLength(1);
     });
   });
 
@@ -301,18 +247,18 @@ describe('NotificationsController', () => {
       } as any);
 
       const readNoti = allNotification.payload[0];
-      await controller.notificationRead(readNoti.id, {
-        $credential: userCredential,
-      } as any);
+      await controller.notificationRead(
+        {
+          $credential: userCredential,
+        } as any,
+        readNoti.id
+      );
 
-      const result = await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      const result = await (notification as any)._notificationModel.findById(
+        readNoti.id
+      );
 
-      expect(
-        result.payload.find((x) => x.id.toString() === readNoti.id.toString())
-          .read
-      ).toEqual(true);
+      expect(result.read).toEqual(true);
     });
 
     it('should return Exception as expect', async () => {
@@ -321,18 +267,23 @@ describe('NotificationsController', () => {
       } as any);
 
       await expect(
-        controller.notificationRead('', {
-          $credential: userCredential,
-        } as any)
+        controller.notificationRead(
+          {
+            $credential: userCredential,
+          } as any,
+          ''
+        )
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
       );
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
-        controller.notificationRead('', {
-          $credential: wrongUserCredential,
-        } as any)
+        controller.notificationRead(
+          {
+            $credential: wrongUserCredential,
+          } as any,
+          ''
+        )
       ).rejects.toEqual(
         new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
       );
@@ -341,7 +292,6 @@ describe('NotificationsController', () => {
 
   describe('notifications read all', () => {
     it('should success update all read status', async () => {
-      console.log(userCredential.account._id);
       await controller.notificationReadAll({
         $credential: userCredential,
       } as any);
@@ -350,7 +300,11 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      expect(result.payload.filter((x) => x.read).length).toEqual(
+      const notificationList = await (
+        notification as any
+      )._notificationModel.find();
+
+      expect(notificationList.filter((x) => x.read).length).toEqual(
         result.payload.length
       );
     });
@@ -360,7 +314,6 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.notificationReadAll({
           $credential: wrongUserCredential,
@@ -387,7 +340,7 @@ describe('NotificationsController', () => {
         } as RegisterTokenDto
       );
 
-      const credentailUpdate = await notification._credentialModel
+      const credentailUpdate = await (notification as any)._credentialModel
         .findOne({ deviceUUID: deviceID })
         .exec();
 
@@ -402,7 +355,6 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      wrongUserCredential.account._id = '6138afa4f616a467b5c4eb72';
       await expect(
         controller.registerToken(
           {
@@ -425,6 +377,7 @@ describe('NotificationsController', () => {
       const result = await controller.badges({
         $credential: userCredential,
       } as any);
+
       expect(result).toEqual(expectResult);
     });
 

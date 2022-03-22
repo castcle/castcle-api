@@ -20,9 +20,27 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const TopicName = {
-  Campaigns: 'campaigns',
-  Contents: 'contents',
-  Notifications: 'notifications-message',
-  Users: 'users',
+import { NotificationSource } from './../dtos/notification.dto';
+
+type Aps = {
+  alert: string;
+  sound: string;
+  category: 'CONTENTS' | 'COMMENTS';
+  badge: number;
+  'mutable-content': number;
 };
+
+type NotificationPayload = {
+  notifyId: string;
+  message: string;
+  source: NotificationSource;
+  content?: string;
+  comment?: string;
+  system?: string;
+};
+
+export interface NotificationMessage {
+  aps: Aps;
+  payload: NotificationPayload;
+  firebaseTokens: string[];
+}

@@ -29,6 +29,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QueueName,
 } from '@castcle-api/database';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
@@ -36,8 +37,8 @@ import { CommentController } from './comment.controller';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('CommentController', () => {
   let mongod: MongoMemoryServer;
@@ -70,10 +71,20 @@ describe('CommentController', () => {
         AuthenticationService,
         ContentService,
         CommentService,
-        UserProducer,
-        NotificationProducer,
         NotificationService,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = app.get<UserService>(UserService);
@@ -129,7 +140,7 @@ describe('CommentController', () => {
         userCredentialRequest,
         { hasRelationshipExpansion: false }
       );
-      //console.log(commentResult.payload)
+
       expect(commentResult.payload).toBeDefined();
       rootCommentId = commentResult.payload.id;
     });
@@ -160,6 +171,7 @@ describe('CommentController', () => {
   describe('#likeComment()', () => {
     it('should be able to like a comment', async () => {
       const result = await commentController.likeComment(
+        userCredentialRequest,
         content._id,
         rootCommentId,
         { castcleId: user.displayId, feedItemId: 'test' }
@@ -173,10 +185,15 @@ describe('CommentController', () => {
         { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
-      await commentController.likeComment(content._id, rootCommentId, {
-        castcleId: user.displayId,
-        feedItemId: 'test',
-      });
+      await commentController.likeComment(
+        userCredentialRequest,
+        content._id,
+        rootCommentId,
+        {
+          castcleId: user.displayId,
+          feedItemId: 'test',
+        }
+      );
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,

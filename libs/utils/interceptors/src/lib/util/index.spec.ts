@@ -22,11 +22,7 @@
  */
 
 import { CastcleException } from '@castcle-api/utils/exception';
-import {
-  getIpFromRequest,
-  getLanguageFromRequest,
-  getTokenFromRequest,
-} from '.';
+import { getLanguageFromRequest, getTokenFromRequest } from '.';
 
 describe('#getTokenFromRequest', () => {
   it('should return token from headers as string', () => {
@@ -61,24 +57,6 @@ describe('#getLanguageFromRequest', () => {
 
   it('should throw exception when there is no header', () => {
     expect(() => getLanguageFromRequest({ headers: {} } as any)).toThrow(
-      CastcleException
-    );
-  });
-});
-
-describe('#getIpFromRequest', () => {
-  it('should return IP from headers as string', () => {
-    const headers = {
-      'api-metadata': 'ip=127.0.0.1,src=iOS,dest=castcle-authentications',
-    };
-
-    const ip = getIpFromRequest({ headers } as any);
-
-    expect(ip).toBe('127.0.0.1');
-  });
-
-  it('should throw exception when there is no header', () => {
-    expect(() => getIpFromRequest({ headers: {} } as any)).toThrow(
       CastcleException
     );
   });
