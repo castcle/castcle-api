@@ -1,6 +1,7 @@
 {
   "version": 2,
   "projects": {
+    "analytics": "apps/analytics",
     "authentications": {
       "root": "apps/authentications",
       "sourceRoot": "apps/authentications/src",
@@ -276,59 +277,6 @@
           "outputs": ["coverage/libs/e2e"],
           "options": {
             "jestConfig": "libs/e2e/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
-    "engagements": {
-      "root": "apps/engagements",
-      "sourceRoot": "apps/engagements/src",
-      "projectType": "application",
-      "targets": {
-        "build": {
-          "executor": "@nrwl/node:webpack",
-          "outputs": ["{options.outputPath}"],
-          "options": {
-            "outputPath": "dist/apps/engagements",
-            "main": "apps/engagements/src/main.ts",
-            "tsConfig": "apps/engagements/tsconfig.app.json",
-            "assets": ["apps/engagements/src/assets"],
-            "generatePackageJson": true
-          },
-          "configurations": {
-            "production": {
-              "optimization": true,
-              "extractLicenses": true,
-              "inspect": false,
-              "fileReplacements": [
-                {
-                  "replace": "apps/engagements/src/environments/environment.ts",
-                  "with": "apps/engagements/src/environments/environment.prod.ts"
-                }
-              ]
-            }
-          }
-        },
-        "serve": {
-          "executor": "@nrwl/node:node",
-          "options": {
-            "buildTarget": "engagements:build"
-          }
-        },
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["apps/engagements/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/apps/engagements"],
-          "options": {
-            "jestConfig": "apps/engagements/jest.config.js",
             "passWithNoTests": true
           }
         }

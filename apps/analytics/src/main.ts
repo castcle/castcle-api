@@ -21,34 +21,33 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { EngagementController } from './app.controller';
-import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
-import { DatabaseModule } from '@castcle-api/database';
-import { HealthyModule } from '@castcle-api/healthy';
-import { Environment } from '@castcle-api/environments';
-import { TracingModule } from '@narando/nest-xray';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { Configs, Environment } from '@castcle-api/environments';
+import { Documentation } from '@castcle-api/utils/commons';
+import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
+import { AppModule } from './app/app.module';
 
-@Module({
-  imports: [
-    DatabaseModule,
-    HealthyModule,
-    UtilsInterceptorsModule,
-    TracingModule.forRoot({
-      serviceName: 'engagements',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
-  ],
-  controllers: [EngagementController],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
-})
-export class EngagementModule {}
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const port = process.env.PORT || 3340;
+
+  Documentation.setup('Analytics', app);
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.useGlobalFilters(new ExceptionFilter());
+  app.useGlobalPipes(new ValidationPipe({}));
+  app.enableCors();
+  app.enableVersioning({
+    type: VersioningType.HEADER,
+    header: Configs.RequiredHeaders.AcceptVersion.name,
+  });
+
+  await app.listen(port, () => {
+    Logger.log(`Listening at http://localhost:${port}`);
+    Logger.log(`Environment at ${Environment.NODE_ENV}`);
+  });
+}
+
+bootstrap();

@@ -21,14 +21,7 @@
  * or have any questions.
  */
 
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Req,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
 import { UxEngagementBody } from '@castcle-api/database/dtos';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import {
@@ -36,22 +29,10 @@ import {
   CredentialRequest,
 } from '@castcle-api/utils/interceptors';
 import { UxEngagementService } from '@castcle-api/database';
-import { ApiBody, ApiHeader, ApiResponse } from '@nestjs/swagger';
-import { Configs } from '@castcle-api/environments';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
+import { CastcleController } from '@castcle-api/utils/decorators';
 
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptLanguage.name,
-  description: Configs.RequiredHeaders.AcceptLanguage.description,
-  example: Configs.RequiredHeaders.AcceptLanguage.example,
-  required: true,
-})
-@ApiHeader({
-  name: Configs.RequiredHeaders.AcceptVersion.name,
-  description: Configs.RequiredHeaders.AcceptVersion.description,
-  example: Configs.RequiredHeaders.AcceptVersion.example,
-  required: true,
-})
-@Controller()
+@CastcleController({ path: 'engagements', version: '1.0' })
 export class EngagementController {
   constructor(private uxEngagementService: UxEngagementService) {}
 

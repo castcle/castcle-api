@@ -21,6 +21,35 @@
  * or have any questions.
  */
 
-export const environment = {
-  production: true,
-};
+import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { HealthyModule } from '@castcle-api/healthy';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
+import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { EngagementController } from './controllers/engagement.controller';
+import { LinksController } from './controllers/links.controller';
+
+@Module({
+  imports: [
+    DatabaseModule,
+    HealthyModule,
+    UtilsInterceptorsModule,
+    TracingModule.forRoot({
+      serviceName: 'analytics',
+      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
+    }),
+  ],
+  controllers: [EngagementController, LinksController],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+  ],
+})
+export class AppModule {}
