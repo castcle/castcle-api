@@ -54,8 +54,6 @@ import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { FilterInterval } from './../models/ads.enum';
 
-const CAST_PRICE = 0.1;
-
 @Injectable()
 export class AdsService {
   constructor(
