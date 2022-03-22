@@ -92,7 +92,7 @@ import {
   GuestRequest,
 } from './interceptors/guest.interceptor';
 
-@CastcleController('1.0')
+@CastcleController({ path: 'authentications', version: '1.0' })
 export class AuthenticationController {
   constructor(
     private analyticService: AnalyticService,

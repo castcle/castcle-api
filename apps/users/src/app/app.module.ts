@@ -31,7 +31,7 @@ import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { SuggestionService } from './services/suggestion.service';
 import { TracingModule } from '@narando/nest-xray';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { Environment } from '@castcle-api/environments';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
@@ -42,7 +42,7 @@ import { UsersController } from './controllers/users.controller';
 @Module({
   imports: [
     DatabaseModule,
-    HealthyModule,
+    RouterModule.register([{ path: 'users', module: HealthyModule }]),
     UtilsCacheModule,
     UtilsInterceptorsModule,
     UtilsAwsModule,

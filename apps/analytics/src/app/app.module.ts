@@ -30,14 +30,14 @@ import {
 } from '@castcle-api/utils/interceptors';
 import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { EngagementController } from './controllers/engagement.controller';
 import { LinksController } from './controllers/links.controller';
 
 @Module({
   imports: [
     DatabaseModule,
-    HealthyModule,
+    RouterModule.register([{ path: 'analytics', module: HealthyModule }]),
     UtilsInterceptorsModule,
     TracingModule.forRoot({
       serviceName: 'analytics',

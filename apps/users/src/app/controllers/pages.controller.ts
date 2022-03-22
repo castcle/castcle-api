@@ -67,7 +67,6 @@ import {
 } from '@castcle-api/utils/pipes';
 import {
   Body,
-  Controller,
   Delete,
   Get,
   HttpCode,
@@ -82,8 +81,7 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { DeletePageDto } from '../dtos';
 
-@CastcleController({ version: '1.0' })
-@Controller()
+@CastcleController({ path: 'pages', version: '1.0' })
 export class PagesController {
   private logger = new CastLogger(PagesController.name);
 
@@ -151,7 +149,7 @@ export class PagesController {
     type: PageDto,
   })
   @CastcleBasicAuth()
-  @Post('pages')
+  @Post()
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     console.debug('create body', body);
     //check if page name exist
@@ -182,7 +180,7 @@ export class PagesController {
   @HttpCode(201)
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @CastcleClearCacheAuth(CacheKeyName.Pages)
-  @Put('pages/:id')
+  @Put(':id')
   async updatePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
@@ -240,7 +238,7 @@ export class PagesController {
 
   @ApiOkResponse({ type: PageResponseDto })
   @CastcleAuth(CacheKeyName.Pages)
-  @Get('pages/:id')
+  @Get(':id')
   async getPageFromId(
     @Req() { $credential }: CredentialRequest,
     @Param('id') id: string
@@ -254,7 +252,7 @@ export class PagesController {
 
   @ApiOkResponse({ type: PagesResponse })
   @CastcleAuth(CacheKeyName.Pages)
-  @Get('pages')
+  @Get()
   async getAllPages(
     @Req() { $credential }: CredentialRequest,
     @Query('sortBy', SortByPipe)
@@ -282,7 +280,7 @@ export class PagesController {
   @HttpCode(204)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
-  @Delete('pages/:id')
+  @Delete(':id')
   async deletePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
@@ -332,7 +330,7 @@ export class PagesController {
     enum: SortByEnum,
     required: false,
   })
-  @Get('pages/:id/contents')
+  @Get(':id/contents')
   @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   async getPageContents(
     @Param('id') id: string,
@@ -370,7 +368,7 @@ export class PagesController {
     type: SocialSyncDto,
   })
   @CastcleBasicAuth()
-  @Post('pages/social')
+  @Post('social')
   async createPageSocial(
     @Req() req: CredentialRequest,
     @Body() body: { payload: SocialSyncDto[] }

@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import {
   createCastcleMeta,
   NotificationService,
@@ -53,7 +54,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
-@CastcleController({ version: '1.0' })
+@CastcleController({ path: 'notifications', version: '1.0' })
 export class NotificationsController {
   #logger = new CastLogger(NotificationsController.name);
 
@@ -96,7 +97,7 @@ export class NotificationsController {
     enum: NotificationSource,
     required: false,
   })
-  @Get('notifications')
+  @Get()
   async getAll(
     @Req() req: CredentialRequest,
     @Query('maxResults') maxResults?: number,
@@ -138,7 +139,7 @@ export class NotificationsController {
     status: 204,
   })
   @CastcleBasicAuth()
-  @Put('notifications/:id/read')
+  @Put(':id/read')
   @HttpCode(204)
   async notificationRead(
     @Req() req: CredentialRequest,
@@ -161,7 +162,7 @@ export class NotificationsController {
     status: 204,
   })
   @CastcleBasicAuth()
-  @Put('notifications/readAll')
+  @Put('readAll')
   @HttpCode(204)
   async notificationReadAll(@Req() req: CredentialRequest) {
     this.#logger.log('Notification mark read all.');
@@ -184,7 +185,7 @@ export class NotificationsController {
     status: 204,
   })
   @CastcleBasicAuth()
-  @Post('notifications/registerToken')
+  @Post('registerToken')
   async registerToken(
     @Req() req: CredentialRequest,
     @Body() body: RegisterTokenDto
@@ -206,7 +207,7 @@ export class NotificationsController {
     type: NotificationBadgesResponse,
   })
   @CastcleAuth(CacheKeyName.NotificationsBadges)
-  @Get('notifications/badges')
+  @Get('badges')
   async badges(@Req() req: CredentialRequest) {
     const badgeNotify = await this.notificationService.getBadges(
       req.$credential
