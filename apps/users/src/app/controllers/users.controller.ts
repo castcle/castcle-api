@@ -501,8 +501,7 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
     @Auth() { account, user }: Authorizer,
-    @Body('channel') channel: string,
-    @Body('payload.password') password: string
+    @Body() { channel, payload: { password } }: DeleteUserDto
   ) {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
 
