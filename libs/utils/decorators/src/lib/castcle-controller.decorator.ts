@@ -21,11 +21,11 @@
  * or have any questions.
  */
 
-import { applyDecorators, Controller } from '@nestjs/common';
+import { applyDecorators, Controller, ControllerOptions } from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
 import { ApiHeader } from '@nestjs/swagger';
 
-export function CastcleController(defaultVersion: string) {
+export function CastcleController(options: ControllerOptions) {
   return applyDecorators(
     ApiHeader({
       name: Configs.RequiredHeaders.AcceptVersion.name,
@@ -39,8 +39,6 @@ export function CastcleController(defaultVersion: string) {
       example: Configs.RequiredHeaders.AcceptLanguage.example,
       required: true,
     }),
-    Controller({
-      version: defaultVersion,
-    })
+    Controller(options)
   );
 }

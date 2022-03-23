@@ -22,10 +22,11 @@
  */
 
 export * from './lib/castcle-name';
+export * from './lib/datetime';
+export * from './lib/documentation';
 export * from './lib/host';
+export * from './lib/localization';
 export * from './lib/password';
 export * from './lib/regexp';
 export * from './lib/token';
 export * from './lib/transformers';
-export * from './lib/datetime';
-export * from './lib/localization';

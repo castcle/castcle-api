@@ -187,6 +187,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
   ],
   exports: [
+    BullModule,
     AuthenticationService,
     UserService,
     CampaignService,

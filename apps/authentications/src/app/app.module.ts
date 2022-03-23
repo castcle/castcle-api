@@ -30,7 +30,7 @@ import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { TracingModule } from '@narando/nest-xray';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthenticationController } from './app.controller';
@@ -40,7 +40,7 @@ import { AppService } from './app.service';
   imports: [
     DatabaseModule,
     CaslModule,
-    HealthyModule,
+    RouterModule.register([{ path: 'authentications', module: HealthyModule }]),
     UtilsClientsModule,
     UtilsAwsModule,
     ThrottlerModule.forRoot({
@@ -65,4 +65,4 @@ import { AppService } from './app.service';
     },
   ],
 })
-export class AuthenticationModule {}
+export class AppModule {}
