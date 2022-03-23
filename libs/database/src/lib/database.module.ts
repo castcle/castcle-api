@@ -61,6 +61,7 @@ import {
 } from './schemas';
 import { AccountDeviceSchema } from './schemas/account-device.schema';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
+import { CAccountSchema } from './schemas/caccount';
 import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
@@ -76,6 +77,7 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
+import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 import {
@@ -105,6 +107,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'CAccount', schema: CAccountSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -185,6 +188,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AdsService,
     AnalyticService,
     DataService,
+    TAccountService,
   ],
   exports: [
     BullModule,
@@ -204,6 +208,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AdsService,
     AnalyticService,
     DataService,
+    TAccountService,
   ],
 })
 export class DatabaseModule {}
@@ -228,4 +233,5 @@ export {
   AdsService,
   AnalyticService,
   DataService,
+  TAccountService,
 };

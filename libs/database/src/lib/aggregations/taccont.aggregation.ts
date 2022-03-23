@@ -20,39 +20,3 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ObjectId, SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
-
-export type CAccountNature = {
-  DEBIT: 'debit';
-  CREDIT: 'credit';
-};
-
-@Schema()
-export class CAccount extends CastcleBase {
-  @Prop()
-  name: string;
-
-  @Prop({ type: String })
-  nature: CAccountNature;
-
-  @Prop({ unique: true, index: true })
-  no: string;
-
-  @Prop({ type: SchemaTypes.ObjectId })
-  parent?: CAccount;
-
-  @Prop({ type: Array })
-  child?: ObjectId[];
-
-  @Prop({ type: String })
-  walletType?: WalletType;
-
-  @Prop()
-  walletAddress?: string;
-}
-
-export const CAccountSchema = SchemaFactory.createForClass(CAccount);
