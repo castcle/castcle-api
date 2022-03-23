@@ -21,38 +21,37 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ObjectId, SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, Model } from 'mongoose';
+import { Transaction } from '../schemas';
+import { CAccount } from '../schemas/caccount';
 
-export type CAccountNature = {
-  DEBIT: 'debit';
-  CREDIT: 'credit';
-};
+@Injectable()
+export class TAccountService {
+  constructor(
+    @InjectModel('Transaction') public _transactionModel: Model<Transaction>,
+    @InjectModel('CAccount') public _caccountModel: Model<CAccount>
+  ) {}
 
-@Schema()
-export class CAccount extends CastcleBase {
-  @Prop()
-  name: string;
+  async getLedgers(caccountNo: string) {
+    const findFilter: FilterQuery<Transaction> = {
+      $or: [
+        {
+          'ledgers.debit.caccountNo': caccountNo,
+        },
+        {
+          'ledgers.credit.caccountNo': caccountNo,
+        },
+      ],
+    };
+    return this._transactionModel.find(findFilter);
+  }
 
-  @Prop({ type: String })
-  nature: CAccountNature;
+  /*  async getBalance(caccountNo: string) {
+    //get account First
+    const caccount = await this._caccountModel.findOne({ no: caccountNo });
+  }
 
-  @Prop({ unique: true, index: true })
-  no: string;
-
-  @Prop({ type: SchemaTypes.ObjectId })
-  parent?: CAccount;
-
-  @Prop({ type: Array })
-  child?: ObjectId[];
-
-  @Prop({ type: String })
-  walletType?: WalletType;
-
-  @Prop()
-  walletAddress?: string;
+  async canSpend(caccoountNo: string, amount: number) {}*/
 }
-
-export const CAccountSchema = SchemaFactory.createForClass(CAccount);
