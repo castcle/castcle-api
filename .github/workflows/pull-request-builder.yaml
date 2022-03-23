@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '16'
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         id: cache
         with:
           path: |
@@ -26,7 +26,7 @@ jobs:
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
+        run: rm -rf node_modules && npm ci
 
       - name: Lint Project
         run: npm run lint:all
@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: '16'
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         id: cache
         with:
           path: |
@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
+        run: rm -rf node_modules && npm ci
 
       - name: Test Project
         run: npm run test:all
