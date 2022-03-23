@@ -50,6 +50,7 @@ import { CountryController } from './controllers/country.controller';
   imports: [
     DatabaseModule,
     CaslModule,
+    HealthyModule,
     RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,
     UtilsCacheModule,

@@ -37,6 +37,7 @@ import { LinksController } from './controllers/links.controller';
 @Module({
   imports: [
     DatabaseModule,
+    HealthyModule,
     RouterModule.register([{ path: 'analytics', module: HealthyModule }]),
     UtilsInterceptorsModule,
     TracingModule.forRoot({

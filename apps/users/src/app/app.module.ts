@@ -42,6 +42,7 @@ import { UsersController } from './controllers/users.controller';
 @Module({
   imports: [
     DatabaseModule,
+    HealthyModule,
     RouterModule.register([{ path: 'users', module: HealthyModule }]),
     UtilsCacheModule,
     UtilsInterceptorsModule,

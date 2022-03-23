@@ -40,6 +40,7 @@ import { AppService } from './app.service';
   imports: [
     DatabaseModule,
     CaslModule,
+    HealthyModule,
     RouterModule.register([{ path: 'authentications', module: HealthyModule }]),
     UtilsClientsModule,
     UtilsAwsModule,
