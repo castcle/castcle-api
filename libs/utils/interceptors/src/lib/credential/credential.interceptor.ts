@@ -57,11 +57,13 @@ export class CredentialInterceptor implements NestInterceptor {
       accessToken
     );
 
-    request.$account = this.authService.getAccountFromCredential(credential);
     request.$credential = credential;
     request.$language = language;
     request.$token = accessToken;
     request.$user = this.userService.getUserFromCredential(credential);
+    request.$account = this.authService.getAccountFromId(
+      credential?.account._id
+    );
 
     const isAccessTokenValid = request.$credential?.isAccessTokenValid();
 
