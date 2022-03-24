@@ -180,6 +180,36 @@ describe('FacebookController', () => {
       );
     });
 
+    it('should not create any content when item !== photo|status|video', async () => {
+      const post = [
+        {
+          id: socialId.valid,
+          time: 1645161222,
+          changes: [
+            {
+              value: {
+                from: { id: socialId.valid, name: 'Castcle' },
+                message: 'status post',
+                post_id: '100776219104570_137039418811583',
+                created_time: 1644917973,
+                item: 'reaction',
+                parent_id: '103289818986235_113129651335585',
+                reaction_type: 'like',
+                verb: 'add',
+              },
+              field: 'feed',
+            },
+          ],
+        },
+      ] as unknown as SubscriptionEntry<FeedEntryChange>[];
+
+      await expect(controller.handleWebhook(post)).resolves.not.toThrow();
+      expect(logger.error).lastCalledWith(
+        `postId: ${post[0].changes[0].value.post_id}`,
+        'handleWebhook:item-mismatched'
+      );
+    });
+
     it('should create short content from status post', async () => {
       const post = [
         {
