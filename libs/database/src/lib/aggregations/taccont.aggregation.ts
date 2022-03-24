@@ -20,18 +20,3 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
-export enum WalletType {
-  ADS = 'ads',
-  LOCKING = 'locking',
-  PERSONAL = 'personal',
-  CASTCLE_MINT_CONTRACT = 'castcle.mintcontract',
-  CASTCLE_TREASURY = 'castcle.treasury',
-  CASTCLE_SOCIAL = 'castcle.social',
-  CASTCLE_AIRDROP = 'castcle.airdrop',
-  CASTCLE_ADS_LOCKED = 'castcle.ads.locked',
-  CASTCLE_REFERAL = 'castcle.referal',
-  EXTERNAL_DEPOSIT = 'external.deposit',
-  EXTERNAL_WITHDRAW = 'external.withdraw',
-  EXTERNAL_MINT = 'external.mint',
-}

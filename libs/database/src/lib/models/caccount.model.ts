@@ -21,35 +21,11 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { WalletType } from '../models';
-import { CastcleBase } from './base.schema';
+import { MicroTransaction, TLedger } from '../schemas';
 
-export type CAccountNature = {
-  DEBIT: 'debit';
-  CREDIT: 'credit';
-};
-
-@Schema()
-export class CAccount extends CastcleBase {
-  @Prop()
-  name: string;
-
-  @Prop({ type: String })
-  nature: CAccountNature;
-
-  @Prop({ unique: true, index: true })
-  no: string;
-
-  @Prop({ type: SchemaTypes.ObjectId })
-  parent?: CAccount;
-
-  @Prop({ type: String })
-  walletType?: WalletType;
-
-  @Prop()
-  walletAddress?: string;
+export class TransactionDto {
+  from: MicroTransaction;
+  to: MicroTransaction[];
+  data?: any;
+  ledgers: TLedger[];
 }
-
-export const CAccountchema = SchemaFactory.createForClass(CAccount);

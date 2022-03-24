@@ -21,17 +21,41 @@
  * or have any questions.
  */
 
-export enum WalletType {
-  ADS = 'ads',
-  LOCKING = 'locking',
-  PERSONAL = 'personal',
-  CASTCLE_MINT_CONTRACT = 'castcle.mintcontract',
-  CASTCLE_TREASURY = 'castcle.treasury',
-  CASTCLE_SOCIAL = 'castcle.social',
-  CASTCLE_AIRDROP = 'castcle.airdrop',
-  CASTCLE_ADS_LOCKED = 'castcle.ads.locked',
-  CASTCLE_REFERAL = 'castcle.referal',
-  EXTERNAL_DEPOSIT = 'external.deposit',
-  EXTERNAL_WITHDRAW = 'external.withdraw',
-  EXTERNAL_MINT = 'external.mint',
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
+import { WalletType } from '../models';
+import { CastcleBase } from './base.schema';
+
+export enum CAccountNature {
+  DEBIT = 'debit',
+  CREDIT = 'credit',
 }
+
+@Schema()
+export class CAccount extends CastcleBase {
+  @Prop()
+  name: string;
+
+  @Prop({ type: String })
+  nature: CAccountNature;
+
+  @Prop({ unique: true, index: true })
+  no: string;
+
+  @Prop({ type: SchemaTypes.ObjectId })
+  parent?: CAccount;
+
+  @Prop({ type: Array })
+  child?: string[];
+
+  @Prop({ type: String })
+  walletType?: WalletType;
+
+  @Prop()
+  walletAddress?: string;
+
+  @Prop({ type: SchemaTypes.Decimal128 })
+  balance: number;
+}
+
+export const CAccountSchema = SchemaFactory.createForClass(CAccount);
