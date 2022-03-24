@@ -250,4 +250,9 @@ export const DevErrorMessages = {
     code: '7001',
     message: 'Sorry, Something went wrong. Please try again.',
   },
+  '8001': {
+    statusCode: '400',
+    code: '8001',
+    message: 'Invalid transaction data',
+  },
 };

@@ -38,6 +38,7 @@ import {
   QueueName,
   SocialProvider,
   SocialSyncService,
+  TAccountService,
   UserService,
 } from '@castcle-api/database';
 import {
@@ -136,6 +137,7 @@ describe('AppController', () => {
         HashtagService,
         SocialSyncService,
         CampaignService,
+        TAccountService,
         SuggestionService,
         AdsService,
         AnalyticService,

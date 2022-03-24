@@ -33,6 +33,7 @@ import {
 } from '../database.module';
 import { CampaignType, QueueName } from '../models';
 import { Campaign, CampaignSchema } from '../schemas';
+import { TAccountService } from './taccount.service';
 
 describe('Campaign Service', () => {
   let mongo: MongoMemoryServer;
@@ -51,6 +52,7 @@ describe('Campaign Service', () => {
       ],
       providers: [
         CampaignService,
+        TAccountService,
         {
           provide: getQueueToken(QueueName.CAMPAIGN),
           useValue: { add: jest.fn() },
