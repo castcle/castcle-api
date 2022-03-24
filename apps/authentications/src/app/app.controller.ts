@@ -815,6 +815,13 @@ export class AuthenticationController {
       body.displayName ? body.displayName : undefined
     );
 
+    await this.authService.embedAuthentication(currentAccount, {
+      provider: body.provider,
+      socialId: body.socialId,
+      avatar: body.avatar ? body.avatar : undefined,
+      socialToken: body.authToken ? body.authToken : undefined,
+    });
+
     const { token, users, account } = await this.appService.socialLogin(
       body,
       req

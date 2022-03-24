@@ -63,7 +63,8 @@ export class LoginDto {
 
 export class SocialConnectDto {
   @IsNotEmpty()
-  @ApiProperty({ enum: AccountAuthenIdType })
+  @IsEnum(AccountAuthenIdType)
+  @ApiProperty()
   provider: AccountAuthenIdType;
   @IsString()
   @ApiProperty()

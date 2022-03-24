@@ -20,7 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+export class AuthenticationDetail {
+  socialId: string;
+  socialToken?: string;
+  avatar?: string;
+}
 export class AccountCampaigns {
   [campaignId: string]: Date[];
+}
+
+export class AccountAuthentication {
+  [key: string]: AuthenticationDetail;
 }

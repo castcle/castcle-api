@@ -24,7 +24,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
 import { Password } from '@castcle-api/utils/commons';
-import { AccountCampaigns } from '../models';
+import { AccountAuthentication, AccountCampaigns } from '../models';
 import { SchemaTypes, Types } from 'mongoose';
 
 export enum AccountRole {
@@ -72,6 +72,9 @@ class AccountDocument extends CastcleBase {
 
   @Prop({ type: Array })
   credentials: ICredential[];
+
+  @Prop({ type: Object })
+  authentications: AccountAuthentication;
 
   @Prop({ select: false })
   campaigns?: AccountCampaigns;
