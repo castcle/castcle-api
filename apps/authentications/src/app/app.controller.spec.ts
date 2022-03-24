@@ -208,6 +208,10 @@ describe('AppController', () => {
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
+
+    jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
+      console.log('embed authentication.');
+    });
   });
 
   afterAll(async () => {

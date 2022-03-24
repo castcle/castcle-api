@@ -33,7 +33,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
 } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
@@ -64,7 +63,8 @@ export class LoginDto {
 
 export class SocialConnectDto {
   @IsNotEmpty()
-  @ApiProperty({ enum: AccountAuthenIdType })
+  @IsEnum(AccountAuthenIdType)
+  @ApiProperty()
   provider: AccountAuthenIdType;
   @IsString()
   @ApiProperty()
@@ -273,7 +273,6 @@ export class RequestTokenDeviceDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
   @ApiProperty()
   uuid: string;
 

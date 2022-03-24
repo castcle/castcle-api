@@ -84,6 +84,10 @@ describe('Authentication Service', () => {
 
     service = app.get(AuthenticationService);
     userService = app.get(UserService);
+
+    jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
+      console.log('embed authentication.');
+    });
   });
 
   afterAll(async () => {

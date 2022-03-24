@@ -31,6 +31,7 @@ import {
   CreateAccountDeviceDto,
   CreateAccountDto,
   CreateCredentialDto,
+  SocialContentDto,
 } from '../dtos/account.dto';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import {
@@ -383,11 +384,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(
@@ -587,7 +600,17 @@ export class AuthenticationService {
       return payload;
     }
   }
+  async embedAuthentication(account: Account, socialConnect: SocialContentDto) {
+    account.authentications[socialConnect.provider] = {
+      socialId: socialConnect.socialId,
+      socialToken: socialConnect.socialToken,
+      avatar: socialConnect.avatar,
+    };
 
+    account.markModified('authentications');
+    await account.save();
+    return;
+  }
   /**
    * create new account from social
    * @param {Account} account
@@ -599,6 +622,12 @@ export class AuthenticationService {
   ) {
     account.isGuest = false;
     await account.save();
+    await this.embedAuthentication(account, {
+      provider: requirements.provider,
+      socialId: requirements.socialId,
+      socialToken: requirements.socialToken,
+      avatar: requirements.avatar?.original,
+    });
 
     const suggestDisplayId = await this.suggestCastcleId(
       requirements.displayName
@@ -625,11 +654,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(

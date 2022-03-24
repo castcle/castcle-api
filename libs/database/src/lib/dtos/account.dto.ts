@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Types } from 'mongoose';
+import { AccountAuthenIdType } from '../schemas';
 import { AcceptPlatform, EntityVisibility } from './common.dto';
 
 export class SaveCredentialDto {
@@ -70,4 +71,10 @@ export class CreateAccountDeviceDto {
   firebaseToken: string;
   uuid: string;
   platform: AcceptPlatform;
+}
+export class SocialContentDto {
+  provider: AccountAuthenIdType;
+  socialId: string;
+  socialToken?: string;
+  avatar?: string;
 }

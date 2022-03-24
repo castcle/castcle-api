@@ -37,6 +37,7 @@ import {
 import { NotificationMessage, QueueName } from '../models';
 import { Content, Credential, Notification, User, UserType } from '../schemas';
 import { CastcleLocalization } from '@castcle-api/utils/commons';
+import { AccountDevice } from '../schemas/account-device.schema';
 
 @Injectable()
 export class NotificationService {
@@ -51,6 +52,8 @@ export class NotificationService {
     private _credentialModel: Model<Credential>,
     @InjectModel('Comment') private _commentModel: Model<Comment>,
     @InjectModel('Content') private _contentModel: Model<Content>,
+    @InjectModel('AccountDevice')
+    private _accountDeviceModel: Model<AccountDevice>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>
   ) {}
@@ -187,13 +190,11 @@ export class NotificationService {
 
     this.#logger.log('Get credentials by account.');
 
-    const credentials = await this._credentialModel
+    const firebaseToken = await this._accountDeviceModel
       .find({
-        'account._id': Types.ObjectId(notificationData.account._id),
+        account: Types.ObjectId(notificationData.account._id),
       })
       .exec();
-
-    this.#logger.log('Credentials data', JSON.stringify(credentials));
 
     this.#logger.log('Generate notification message.');
 
@@ -203,7 +204,7 @@ export class NotificationService {
     this.#logger.log('Send notification message.', JSON.stringify(message));
 
     this.notificationQueue.add(
-      this.generateNotification(message, notify, credentials)
+      this.generateNotification(message, notify, firebaseToken)
     );
 
     return notify;
@@ -318,7 +319,6 @@ export class NotificationService {
 
     if (notify.type === NotificationType.System)
       message = CastcleLocalization.getTemplateSystem(language, displayNames);
-    this.#logger.log('Prepare message show display name.', message);
 
     if (notify.type === NotificationType.AdsApprove)
       message = CastcleLocalization.getTemplateAdsApprove(language);
@@ -326,6 +326,7 @@ export class NotificationService {
     if (notify.type === NotificationType.AdsDecline)
       message = CastcleLocalization.getTemplateAdsDecline(language);
 
+    this.#logger.log('Prepare message show display name.', message);
     return message;
   };
   generateMessagesToNotifications = async (
@@ -442,7 +443,7 @@ export class NotificationService {
   generateNotification = (
     message: string,
     notify: Notification,
-    credentials: Credential[]
+    firebaseToken: AccountDevice[]
   ) => {
     return {
       aps: {
@@ -454,9 +455,7 @@ export class NotificationService {
         'mutable-content': 1,
       },
       payload: notify.toNotificationPayload({ message }),
-      firebaseTokens: credentials
-        .filter((item) => item.firebaseNotificationToken)
-        .map((item) => String(item.firebaseNotificationToken)),
+      firebaseTokens: firebaseToken.map((item) => String(item.firebaseToken)),
     } as NotificationMessage;
   };
 }
