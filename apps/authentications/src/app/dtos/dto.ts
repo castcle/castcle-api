@@ -33,7 +33,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
 } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
@@ -273,7 +272,6 @@ export class RequestTokenDeviceDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
   @ApiProperty()
   uuid: string;
 
