@@ -20,21 +20,30 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import * as mongoose from 'mongoose';
 import { Types } from 'mongoose';
-import { EntityVisibility } from '../dtos';
+import { EntityVisibility, QueryOption, SortBy } from '../dtos';
 import { Relationship, User } from '../schemas';
 
 export class GetUserRelationParams {
   userId: Types.ObjectId;
-  keyword: string;
   limit: number;
+  keyword?: string;
+  sinceId?: string;
+  untilId?: string;
+  userType?: string;
+  sortBy?: SortBy;
 }
 
 export type GetUserRelationResponse = Relationship & {
   user_relation: User[];
 };
 
-export const pipelineOfUserRelation = (params: GetUserRelationParams) => {
+export type GetUserRelationResponseCount = {
+  total: number;
+};
+
+export const pipelineOfUserRelationSearch = (params: GetUserRelationParams) => {
   return [
     {
       $match: {
@@ -62,5 +71,82 @@ export const pipelineOfUserRelation = (params: GetUserRelationParams) => {
       },
     },
     { $limit: params.limit },
+  ];
+};
+
+const filterId = (queryOption: QueryOption) => {
+  if (queryOption.sinceId) {
+    return {
+      _id: {
+        $gt: mongoose.Types.ObjectId(queryOption.sinceId),
+      },
+    };
+  } else if (queryOption.untilId) {
+    return {
+      _id: {
+        $lt: mongoose.Types.ObjectId(queryOption.untilId),
+      },
+    };
+  }
+};
+
+const sorting = (sortBy?: SortBy) => {
+  const direction = sortBy?.type === 'asc' ? 1 : -1;
+  return {
+    [sortBy?.field]: direction,
+    _id: direction,
+  };
+};
+
+const filterType = (userType?: string) => {
+  if (userType)
+    return {
+      'user_relation.type': userType,
+    };
+};
+
+const userFollowQuery = (params: GetUserRelationParams) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: '_id',
+        as: 'user_relation',
+      },
+    },
+    {
+      $match: {
+        followedUser: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'user_relation.visibility': EntityVisibility.Publish,
+        ...filterType(params.userType),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    { $sort: sorting(params.sortBy) },
+  ];
+};
+
+export const pipelineOfUserRelationFollowers = (
+  params: GetUserRelationParams
+) => {
+  return [...userFollowQuery(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowersCount = (
+  params: GetUserRelationParams
+) => {
+  return [
+    ...userFollowQuery(params),
+    ...[
+      {
+        $count: 'total',
+      },
+    ],
   ];
 };
