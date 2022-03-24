@@ -510,6 +510,7 @@
       },
       "tags": []
     },
+    "queues": "apps/queues",
     "users": {
       "root": "apps/users",
       "sourceRoot": "apps/users/src",
