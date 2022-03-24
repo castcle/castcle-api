@@ -21,11 +21,13 @@
  * or have any questions.
  */
 
+import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import { TransactionDto } from '../models/caccount.model';
 import { Transaction } from '../schemas';
-import { CAccount } from '../schemas/caccount';
+import { CAccount, CAccountNature } from '../schemas/caccount.schema';
 
 @Injectable()
 export class TAccountService {
@@ -34,24 +36,110 @@ export class TAccountService {
     @InjectModel('CAccount') public _caccountModel: Model<CAccount>
   ) {}
 
-  async getLedgers(caccountNo: string) {
+  getFindQueryForChild(caccount: CAccount) {
+    const orQuery = [
+      {
+        'ledgers.debit.caccountNo': caccount.no,
+      },
+      {
+        'ledgers.credit.caccountNo': caccount.no,
+      },
+    ];
+    if (caccount.child)
+      caccount.child.forEach((childNo) => {
+        orQuery.push({
+          'ledgers.debit.caccountNo': childNo,
+        });
+        orQuery.push({
+          'ledgers.credit.caccountNo': childNo,
+        });
+      });
+    return orQuery;
+  }
+
+  async _getLedgers(caccount: CAccount) {
+    const orQuery = this.getFindQueryForChild(caccount);
     const findFilter: FilterQuery<Transaction> = {
-      $or: [
-        {
-          'ledgers.debit.caccountNo': caccountNo,
-        },
-        {
-          'ledgers.credit.caccountNo': caccountNo,
-        },
-      ],
+      $or: orQuery,
     };
     return this._transactionModel.find(findFilter);
   }
 
-  /*  async getBalance(caccountNo: string) {
-    //get account First
+  async getLedgers(caccountNo: string) {
     const caccount = await this._caccountModel.findOne({ no: caccountNo });
+    return this._getLedgers(caccount);
   }
 
-  async canSpend(caccoountNo: string, amount: number) {}*/
+  async validateTransfer(transferDTO: TransactionDto) {
+    //value from equal value to
+    if (
+      !(
+        transferDTO.from.value ===
+        transferDTO.to.reduce((prev, now) => prev + now.value, 0)
+      )
+    ) {
+      return false;
+    }
+    //debit credit is balance
+    const totalDebit = transferDTO.ledgers.reduce(
+      (prev, now) => prev + now.debit.value,
+      0
+    );
+    const totalCredit = transferDTO.ledgers.reduce(
+      (prev, now) => prev + now.credit.value,
+      0
+    );
+    if (
+      !(totalDebit === totalCredit && totalDebit === transferDTO.from.value)
+    ) {
+      return false;
+    }
+
+    //simulate after transfer there is no minus balance
+    //get all CAccount balance from ledgers
+    //add the ledgers info and check if they all 0
+    return true;
+  }
+
+  async transfers(transferDTO: TransactionDto) {
+    //check if balance available
+    if (await this.validateTransfer(transferDTO))
+      return new this._transactionModel(transferDTO).save();
+    else throw new CastcleException(CastcleStatus.INVALID_TRANSACTIONS_DATA);
+  }
+
+  async getBalance(caccountNo: string) {
+    //get account First
+    const caccount = await this._caccountModel.findOne({ no: caccountNo });
+    const txs = await this._getLedgers(caccount);
+    const allDebit = txs.reduce((totalDebit, currentTx) => {
+      return (
+        totalDebit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.debit.caccountNo === childNo
+              ) >= 0 || caccount.no === t.debit.caccountNo
+          )
+          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+      );
+    }, 0);
+    const allCredit = txs.reduce((totalCredit, currentTx) => {
+      return (
+        totalCredit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.credit.caccountNo === childNo
+              ) >= 0 || caccount.no === t.credit.caccountNo
+          )
+          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+      );
+    }, 0);
+    console.log(caccountNo, 'txs', txs.length, allDebit, allCredit);
+    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    else return allCredit - allDebit;
+  }
 }

@@ -28,7 +28,7 @@ import { Model } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { WalletType } from '../models';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
-import { CAccount } from '../schemas/caccount';
+import { CAccount } from '../schemas/caccount.schema';
 import { TAccountService } from './taccount.service';
 
 describe('TAccount Service', () => {
@@ -42,15 +42,22 @@ describe('TAccount Service', () => {
       AIRDROP: {
         caccount: {} as CAccount,
       },
+      TEAM: {
+        caccount: {} as CAccount,
+      },
     },
     MINTANDBURN: {
       caccount: {} as CAccount,
       DISTRIBUTED_AIRDROP: {
         caccount: {} as CAccount,
       },
+      DISTRIBUTED_TEAM: {
+        caccount: {} as CAccount,
+      },
     },
   };
   let transactions: Transaction[];
+  const mintValue = 1000;
   beforeAll(async () => {
     //create taccounts for mint, airdrop, referal
     //create taccounts for claim
@@ -76,25 +83,64 @@ describe('TAccount Service', () => {
     }).save();
     CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount = await new caccountModel({
       no: '0100',
-      parent: CHART_OF_ACCOUNT.VAULT.caccount.id,
+      parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
       name: 'VAULT_AIRDROP',
+      nature: 'debit',
+    }).save();
+    CHART_OF_ACCOUNT.VAULT.TEAM.caccount = await new caccountModel({
+      no: '0200',
+      parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
+      name: 'VAULT_TEAM',
       nature: 'debit',
     }).save();
     CHART_OF_ACCOUNT.MINTANDBURN.caccount = await new caccountModel({
       no: '7000',
-      parent: CHART_OF_ACCOUNT.VAULT.caccount.id,
-      name: 'VAULT_AIRDROP',
+      parent: CHART_OF_ACCOUNT.VAULT.caccount._id,
+      name: 'MINT and burn',
       nature: 'credit',
     }).save();
     CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount =
       await new caccountModel({
         no: '7100',
-        parent: CHART_OF_ACCOUNT.VAULT.caccount.id,
-        name: 'VAULT_AIRDROP',
+        parent: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id,
+        name: 'Distrubute airdrop',
+        nature: 'credit',
+      }).save();
+    CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount =
+      await new caccountModel({
+        no: '7200',
+        parent: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id,
+        name: 'Distrubute team',
         nature: 'credit',
       }).save();
     //mint 1000 token to airdrop
-    const mintValue = 1000;
+    await caccountModel.updateOne(
+      { _id: CHART_OF_ACCOUNT.VAULT.caccount._id },
+      {
+        $push: {
+          child: {
+            $each: [
+              CHART_OF_ACCOUNT.VAULT.TEAM.caccount.no,
+              CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+            ],
+          },
+        },
+      }
+    );
+    await caccountModel.updateOne(
+      { _id: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id },
+      {
+        $push: {
+          child: {
+            $each: [
+              CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+              CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_TEAM.caccount.no,
+            ],
+          },
+        },
+      }
+    );
+
     transactions.push(
       await new transactionModel({
         from: {
@@ -170,10 +216,27 @@ describe('TAccount Service', () => {
       //expect(txs[0].id).toBe (transactions.map(t => t.id));
       //expect(txs[1].id).toBeInstanceOf(transactions.map(t => t.id));
     });
+    it('should get transactions that contain childs ledgers', async () => {
+      const txs = await service.getLedgers(CHART_OF_ACCOUNT.VAULT.caccount.no);
+      expect(txs.length).toEqual(transactions.length);
+      expect(txs.map((tx) => tx.id)).toEqual(
+        expect.arrayContaining(transactions.map((t) => t.id))
+      );
+      //expect(txs[0].id).toBe (transactions.map(t => t.id));
+      //expect(txs[1].id).toBeInstanceOf(transactions.map(t => t.id));
+    });
   });
   describe('getBalance()', () => {
     it('should be ok', () => {
       expect(true).toEqual(true);
+    });
+    it('should show correct child balance', async () => {
+      expect(
+        await service.getBalance(CHART_OF_ACCOUNT.VAULT.caccount.no)
+      ).toEqual(mintValue * 2);
+      expect(
+        await service.getBalance(CHART_OF_ACCOUNT.MINTANDBURN.caccount.no)
+      ).toEqual(mintValue * 2);
     });
   });
   describe('canSpend()', () => {

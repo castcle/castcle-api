@@ -64,6 +64,7 @@ export enum CastcleStatus {
   RECAST_IS_EXIST = '5004',
   NOTIFICATION_NOT_FOUND = '6001',
   SOMETHING_WRONG = '7001',
+  INVALID_TRANSACTIONS_DATA = '8001',
 }
 
 interface ErrorStatus {
