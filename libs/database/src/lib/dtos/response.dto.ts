@@ -36,8 +36,10 @@ export class Meta {
     resultTotal?: number
   ): Meta => {
     return {
-      oldestId: documents[documents.length - 1]?.id,
-      newestId: documents[0]?.id,
+      oldestId: documents[documents.length - 1]?.id
+        ? documents[documents.length - 1]?.id
+        : documents[documents.length - 1]?._id,
+      newestId: documents[0]?.id ? documents[0]?.id : documents[0]?._id,
       resultCount: documents.length,
       resultTotal,
     };
