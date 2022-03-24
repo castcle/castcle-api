@@ -383,11 +383,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(
@@ -625,11 +637,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(

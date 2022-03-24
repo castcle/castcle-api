@@ -732,6 +732,7 @@ export class UserService {
         this.removeAllEngagementsFromUsers(users),
         this.removeAllPagesAndUsersFromAccount(account),
         this.removeAllRelationshipsFromUsers(users),
+        this.removeReferralCountParentAccountFromAccount(account),
       ]);
 
       this.logger.log(
@@ -747,6 +748,13 @@ export class UserService {
       this.logger.error(error, `deactivate:error:account-${account._id}`);
       throw error;
     }
+  };
+
+  removeReferralCountParentAccountFromAccount = (account: Account) => {
+    return this._accountModel.updateOne(
+      { _id: account.referralBy },
+      { $inc: { referralCount: -1 } }
+    );
   };
 
   removeAllAccountAuthenIdsFromAccount = (account: Account) => {
