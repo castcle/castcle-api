@@ -527,14 +527,24 @@ describe('NotificationService', () => {
       const deviceID = '9999999999';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
-      const credential = await (service as any)._credentialModel.find({
-        deviceUUID: deviceID,
+      await (service as any)
+        ._accountDeviceModel({
+          uuid: deviceID,
+          firebaseToken: firebaseToken,
+          platform: 'ios',
+          account: result.accountDocument.id,
+        })
+        .save();
+      const firebaseTokens = await (service as any)._accountDeviceModel.find({
+        uuid: deviceID,
       });
+
       const payloadNotify = await (service as any).generateNotification(
         message,
         notification[0],
-        credential
+        firebaseTokens
       );
+
       expect(payloadNotify.firebaseTokens[0]).toEqual(firebaseToken);
       expect(payloadNotify.aps.alert).toEqual(message);
       expect(String(payloadNotify.payload.id)).toEqual(
