@@ -43,7 +43,9 @@ export type GetUserRelationResponseCount = {
   total: number;
 };
 
-export const pipelineOfUserRelationSearch = (params: GetUserRelationParams) => {
+export const pipelineOfUserRelationMentions = (
+  params: GetUserRelationParams
+) => {
   return [
     {
       $match: {
@@ -143,6 +145,52 @@ export const pipelineOfUserRelationFollowersCount = (
 ) => {
   return [
     ...userFollowQuery(params),
+    ...[
+      {
+        $count: 'total',
+      },
+    ],
+  ];
+};
+
+const userFollowingQuery = (params: GetUserRelationParams) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'followedUser',
+        foreignField: '_id',
+        as: 'user_relation',
+      },
+    },
+    {
+      $match: {
+        user: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'user_relation.visibility': EntityVisibility.Publish,
+        ...filterType(params.userType),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    { $sort: sorting(params.sortBy) },
+  ];
+};
+
+export const pipelineOfUserRelationFollowing = (
+  params: GetUserRelationParams
+) => {
+  return [...userFollowingQuery(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowingCount = (
+  params: GetUserRelationParams
+) => {
+  return [
+    ...userFollowingQuery(params),
     ...[
       {
         $count: 'total',
