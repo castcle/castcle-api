@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { AcceptPlatform } from './../dtos/common.dto';
 export class AuthenticationDetail {
   socialId: string;
   socialToken?: string;
@@ -31,4 +32,9 @@ export class AccountCampaigns {
 
 export class AccountAuthentication {
   [key: string]: AuthenticationDetail;
+}
+export class AccountDevices {
+  uuid: string;
+  firebaseToken: string;
+  platform: AcceptPlatform;
 }

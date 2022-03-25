@@ -763,15 +763,15 @@ export class AuthenticationService {
   }
 
   async createAccountDevice({
-    account,
+    accountId,
     uuid,
     platform,
     firebaseToken,
   }: CreateAccountDeviceDto) {
-    return this._accountDeviceModel
+    await this._accountDeviceModel
       .updateOne(
         {
-          account,
+          account: accountId,
           uuid,
           platform,
         },
@@ -780,7 +780,7 @@ export class AuthenticationService {
             firebaseToken,
           },
           $setOnInsert: {
-            account,
+            account: accountId,
             uuid,
             platform,
           },
@@ -790,18 +790,100 @@ export class AuthenticationService {
         }
       )
       .exec();
+
+    const account = await this._accountModel
+      .findOne({
+        _id: accountId,
+      })
+      .exec();
+
+    const haveDevice = account?.devices
+      ? account.devices.find(
+          (device) => device.uuid === uuid && device.platform === platform
+        )
+      : null;
+
+    if (!haveDevice) {
+      return this._accountModel
+        .updateOne(
+          {
+            _id: accountId,
+          },
+          {
+            $addToSet: {
+              devices: {
+                uuid,
+                platform,
+                firebaseToken,
+              },
+            },
+          }
+        )
+        .exec();
+    }
+
+    return this._accountModel
+      .updateOne(
+        {
+          _id: accountId,
+          'devices.uuid': uuid,
+          'devices.platform': platform,
+        },
+        {
+          $set: {
+            'devices.$.firebaseToken': firebaseToken,
+          },
+        }
+      )
+      .exec();
   }
+
   async deleteAccountDevice({
-    account,
+    accountId,
     uuid,
     platform,
   }: CreateAccountDeviceDto) {
-    return this._accountDeviceModel
-      .deleteOne({
-        account,
-        uuid,
-        platform,
-      })
-      .exec();
+    const [account, accountDevices] = await Promise.all([
+      this._accountModel
+        .findOne({
+          _id: accountId,
+        })
+        .exec(),
+      this._accountDeviceModel.find({
+        _id: accountId,
+      }),
+    ]);
+
+    if (!account?.devices && !accountDevices.length) return;
+
+    const haveDevice = account?.devices
+      ? account.devices.find(
+          (device) => device.uuid === uuid && device.platform === platform
+        )
+      : null;
+
+    if (!haveDevice) return;
+
+    return await Promise.all([
+      this._accountModel
+        .updateOne(
+          {
+            _id: accountId,
+            'devices.uuid': uuid,
+            'devices.platform': platform,
+          },
+          {
+            $pull: { devices: { uuid: uuid, platform: platform } },
+          }
+        )
+        .exec(),
+      this._accountDeviceModel
+        .deleteOne({
+          uuid,
+          platform,
+          account: accountId,
+        })
+        .exec(),
+    ]);
   }
 }

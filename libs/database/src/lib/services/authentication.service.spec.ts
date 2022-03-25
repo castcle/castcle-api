@@ -751,7 +751,7 @@ describe('Authentication Service', () => {
           firebaseToken: 'testfirebasetokenismock',
         };
         await (service as any).createAccountDevice({
-          account: account._id,
+          accountId: account._id,
           ...requestBody,
         });
         const accountDevice = await (service as any)._accountDeviceModel
@@ -770,7 +770,7 @@ describe('Authentication Service', () => {
           firebaseToken: 'testfirebasetokenismock',
         };
         await (service as any).createAccountDevice({
-          account: account._id,
+          accountId: account._id,
           ...requestBody,
         });
         const accountDevice = await (service as any)._accountDeviceModel
@@ -788,9 +788,10 @@ describe('Authentication Service', () => {
           platform: 'android',
           firebaseToken: 'testfirebasetokenismock',
         };
+
         const duplicate = await (service as any)
           .createAccountDevice({
-            account: accountDup._id,
+            accountId: accountDup._id,
             ...requestBody,
           })
           .catch((error) => {
@@ -819,7 +820,7 @@ describe('Authentication Service', () => {
           firebaseToken: 'testfirebasetokenismock',
         };
         await (service as any).deleteAccountDevice({
-          account: account._id,
+          accountId: account._id,
           ...requestBody,
         });
         const accountDevice = await (service as any)._accountDeviceModel
@@ -835,7 +836,7 @@ describe('Authentication Service', () => {
           firebaseToken: 'testfirebasetokenismock',
         };
         await (service as any).deleteAccountDevice({
-          account: account._id,
+          accountId: account._id,
           ...requestBody,
         });
         const accountDevice = await (service as any)._accountDeviceModel

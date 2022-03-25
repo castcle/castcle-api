@@ -850,7 +850,7 @@ export class AuthenticationController {
     @Body() body: RequestTokenDeviceDto
   ) {
     await this.authService.createAccountDevice({
-      account: $credential.account._id,
+      accountId: $credential.account._id,
       ...body,
     });
   }
@@ -863,7 +863,7 @@ export class AuthenticationController {
     @Body() body: RequestTokenDeviceDto
   ) {
     await this.authService.deleteAccountDevice({
-      account: $credential.account._id,
+      accountId: $credential.account._id,
       ...body,
     });
   }
