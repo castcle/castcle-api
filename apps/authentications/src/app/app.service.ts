@@ -46,8 +46,11 @@ import { Password } from '@castcle-api/utils/commons';
 import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { lastValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 import { getSignupHtml } from './configs/signupEmail';
 import {
@@ -57,9 +60,6 @@ import {
   TokenResponse,
   verificationOtpDto,
 } from './dtos/dto';
-import { HttpService } from '@nestjs/axios';
-import { map } from 'rxjs/operators';
-import { lastValueFrom } from 'rxjs';
 
 /*
  * TODO: !!!
@@ -184,6 +184,9 @@ export class AppService {
       const account = await this.authService.getAccountFromCredential(
         req.$credential
       );
+
+      if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+
       let avatar: Image;
       if (body.avatar) {
         this.logger.log(`download avatar from ${body.provider}`);
@@ -198,9 +201,9 @@ export class AppService {
         });
       }
 
-      this.logger.log('Update Email to Account.');
+      this.logger.log(`Update Email to Account : ${body.email}`);
       account.email = body.email ? body.email : account.email;
-      this.logger.log('signup by Social');
+      this.logger.log(`signup by Social : ${body.provider}`);
       await this.authService.signupBySocial(account, {
         displayName: body.displayName
           ? body.displayName
