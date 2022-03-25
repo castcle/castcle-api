@@ -22,7 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { Account } from './account.schema';
 import { Credential } from './credential.schema';
 import { CastcleBase } from './base.schema';
@@ -31,6 +31,9 @@ import { FeedAggregator, FeedAnalytics } from '../models';
 
 @Schema({ timestamps: true })
 export class FeedItem extends CastcleBase {
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'User', index: true })
+  author: Types.ObjectId;
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Content', index: true })
   content: Content;
 
@@ -58,5 +61,6 @@ export class FeedItem extends CastcleBase {
 
 export const FeedItemSchema = SchemaFactory.createForClass(FeedItem);
 
+FeedItemSchema.index({ 'author.id': 1 });
 FeedItemSchema.index({ 'content.id': 1 });
 FeedItemSchema.index({ viewer: 1 });
