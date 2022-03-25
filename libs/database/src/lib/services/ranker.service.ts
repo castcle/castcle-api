@@ -369,6 +369,7 @@ export class RankerService {
     }
 
     const feedDtos = contents.map<DocumentDefinition<FeedItem>>((content) => ({
+      author: content.author.id,
       content: content._id,
       viewer,
       calledAt: new Date(),
