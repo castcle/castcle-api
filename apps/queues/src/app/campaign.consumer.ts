@@ -21,13 +21,7 @@
  * or have any questions.
  */
 
-import {
-  CampaignService,
-  ClaimAirdropPayload,
-  QueueName,
-  QueueTopic,
-} from '@castcle-api/database';
-import { Queue } from '@castcle-api/database/schemas';
+import { CampaignService, QueueName, QueueTopic } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Job, Queue as BullQueue } from 'bull';
@@ -38,7 +32,7 @@ export class CampaignConsumer {
 
   constructor(
     @InjectQueue(QueueName.CAMPAIGN)
-    private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>,
+    private campaignQueue: BullQueue<{ queueId: string }>,
     private campaignService: CampaignService
   ) {
     this.addQueues();
@@ -53,11 +47,11 @@ export class CampaignConsumer {
 
     await this.campaignQueue.addBulk(queues);
 
-    this.logger.log(`#addQueues\n${JSON.stringify(queues, null, 2)}`);
+    this.logger.log(JSON.stringify(queues), 'addQueues');
   }
 
   @Process()
-  async processClaimAirdropJob(job: Job<Queue<ClaimAirdropPayload>>) {
+  async processClaimAirdropJob(job: Job<{ queueId: string }>) {
     await this.campaignService.processClaimAirdrop(job);
   }
 }
