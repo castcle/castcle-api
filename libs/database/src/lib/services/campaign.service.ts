@@ -27,13 +27,13 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job, Queue as BullQueue } from 'bull';
-import { TLedger } from '../schemas';
+import { FeedItem, TLedger } from '../schemas';
 import { FilterQuery, Model } from 'mongoose';
 import {
-  pipelineOfGetEligibleAccountsFromCampaign,
   EligibleAccount,
   pipelineOfGetCampaignClaims,
   GetCampaignClaimsResponse,
+  pipelineOfEstimateContentReach,
 } from '../aggregations';
 import {
   CACCOUNT_NO,
@@ -58,6 +58,8 @@ export class CampaignService {
     private accountModel: Model<Account>,
     @InjectModel('Campaign')
     private campaignModel: Model<Campaign>,
+    @InjectModel('FeedItem')
+    private feedModel: Model<FeedItem>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
     @InjectQueue(QueueName.CAMPAIGN)
@@ -93,10 +95,14 @@ export class CampaignService {
     }
 
     if (campaign.rewardBalance > 0) {
-      const eligibleAccounts =
-        await this.campaignModel.aggregate<EligibleAccount>(
-          pipelineOfGetEligibleAccountsFromCampaign({ _id: campaign._id })
-        );
+      const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
+        pipelineOfEstimateContentReach(campaign)
+      );
+
+      this.logger.log(
+        JSON.stringify(eligibleAccounts),
+        `getAirdropBalances:${campaign._id}`
+      );
 
       const to = eligibleAccounts.map(({ id, amount }) => {
         return {
@@ -341,13 +347,20 @@ export class CampaignService {
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
 
-    const eligibleAccounts = [] as EligibleAccount[];
+    const $balances = campaigns.map(async (campaign) => {
+      if (campaign.type !== CampaignType.CONTENT_REACH) return campaign;
 
-    return campaigns.map((campaign) => {
+      const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
+        pipelineOfEstimateContentReach(campaign, accountId)
+      );
+
+      this.logger.log(
+        JSON.stringify(eligibleAccounts),
+        `getAirdropBalances:${campaign._id}:${accountId}`
+      );
+
       const eligibleAccount = eligibleAccounts.find(
-        (eligibleAccount) =>
-          String(eligibleAccount.campaignId) === String(campaign._id) &&
-          String(eligibleAccount.id) === String(accountId)
+        (eligibleAccount) => String(eligibleAccount.id) === String(accountId)
       );
 
       return {
@@ -355,5 +368,7 @@ export class CampaignService {
         estimateRewards: CastcleNumber.from(eligibleAccount?.amount).toNumber(),
       };
     });
+
+    return Promise.all($balances);
   }
 }
