@@ -300,6 +300,7 @@
       },
       "tags": []
     },
+    "queues": "apps/queues",
     "users": "apps/users",
     "utils-aws": {
       "root": "libs/utils/aws",
