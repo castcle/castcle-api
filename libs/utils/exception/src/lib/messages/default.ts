@@ -217,7 +217,7 @@ export const ErrorMessages = {
   },
   '4006': {
     statusCode: '400',
-    code: '4005',
+    code: '4006',
     message: 'You cannot change your Castcle Id.',
   },
   '5001': {
