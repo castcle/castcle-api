@@ -601,11 +601,21 @@ export class AuthenticationService {
     }
   }
   async embedAuthentication(account: Account, socialConnect: SocialContentDto) {
-    account.authentications[socialConnect.provider] = {
-      socialId: socialConnect.socialId,
-      socialToken: socialConnect.socialToken,
-      avatar: socialConnect.avatar,
-    };
+    if (account.authentications) {
+      account.authentications[socialConnect.provider] = {
+        socialId: socialConnect.socialId,
+        socialToken: socialConnect.socialToken,
+        avatar: socialConnect.avatar,
+      };
+    } else {
+      account.authentications = {
+        [socialConnect.provider]: {
+          socialId: socialConnect.socialId,
+          socialToken: socialConnect.socialToken,
+          avatar: socialConnect.avatar,
+        },
+      };
+    }
 
     account.markModified('authentications');
     await account.save();
