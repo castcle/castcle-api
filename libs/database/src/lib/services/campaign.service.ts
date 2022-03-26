@@ -27,13 +27,13 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job, Queue as BullQueue } from 'bull';
-import { TLedger } from '../schemas';
-import { ClientSession, FilterQuery, Model } from 'mongoose';
+import { FeedItem, TLedger } from '../schemas';
+import { FilterQuery, Model } from 'mongoose';
 import {
-  pipelineOfGetEligibleAccountsFromCampaign,
   EligibleAccount,
   pipelineOfGetCampaignClaims,
   GetCampaignClaimsResponse,
+  pipelineOfEstimateContentReach,
 } from '../aggregations';
 import {
   CACCOUNT_NO,
@@ -46,7 +46,7 @@ import {
   QueueTopic,
 } from '../models';
 import { WalletType } from '../models/wallet.enum';
-import { Account, Campaign, Queue, Transaction } from '../schemas';
+import { Account, Campaign, Queue } from '../schemas';
 import { TAccountService } from './taccount.service';
 
 @Injectable()
@@ -58,13 +58,13 @@ export class CampaignService {
     private accountModel: Model<Account>,
     @InjectModel('Campaign')
     private campaignModel: Model<Campaign>,
-    @InjectModel('Transaction')
-    private transactionModel: Model<Transaction>,
+    @InjectModel('FeedItem')
+    private feedModel: Model<FeedItem>,
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
     @InjectQueue(QueueName.CAMPAIGN)
-    private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>,
-    private taccountService: TAccountService
+    private campaignQueue: BullQueue<{ queueId: string }>,
+    private tAccountService: TAccountService
   ) {}
 
   /**
@@ -77,7 +77,7 @@ export class CampaignService {
       'payload.topic': queueTopic,
     });
 
-    return queues.map((queue) => ({ data: queue }));
+    return queues.map((queue) => ({ data: { queueId: queue.id } }));
   }
 
   async claimContentReachAirdrops() {
@@ -88,14 +88,21 @@ export class CampaignService {
     });
 
     if (!campaign) {
-      return this.logger.log(`#claimContentReachAirdrops:completed`);
+      return this.logger.log(
+        JSON.stringify(campaign),
+        'claimContentReachAirdrops:completed'
+      );
     }
 
     if (campaign.rewardBalance > 0) {
-      const eligibleAccounts =
-        await this.campaignModel.aggregate<EligibleAccount>(
-          pipelineOfGetEligibleAccountsFromCampaign({ _id: campaign._id })
-        );
+      const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
+        pipelineOfEstimateContentReach(campaign)
+      );
+
+      this.logger.log(
+        JSON.stringify(eligibleAccounts),
+        `getAirdropBalances:${campaign._id}`
+      );
 
       const to = eligibleAccounts.map(({ id, amount }) => {
         return {
@@ -109,18 +116,18 @@ export class CampaignService {
         payload: new ClaimAirdropPayload(campaign.id, to),
       }).save();
 
-      await this.campaignQueue.add(queue);
+      await this.campaignQueue.add({ queueId: queue.id });
       this.logger.log(
-        `#claimContentReachAirdrops:submit:queueId-${queue.id}
-  Claim campaign's airdrop: ${campaign.id}
-  For: ${JSON.stringify(queue, null, 2)}`
+        JSON.stringify({ campaign, queue }),
+        `claimContentReachAirdrops:submit:queueId-${queue.id}`
       );
     }
 
     await campaign.set({ status: CampaignStatus.COMPLETE }).save();
 
     this.logger.log(
-      `#claimContentReachAirdrops - campaignId: ${campaign.id} updated`
+      `campaignId: ${campaign.id} updated`,
+      `claimContentReachAirdrops`
     );
 
     await this.claimContentReachAirdrops();
@@ -156,10 +163,14 @@ export class CampaignService {
     const hasReachedMaxClaims = claimsCount >= campaign.maxClaims;
 
     this.logger.log(
-      `#claimCampaignsAirdrop:init
-Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${accountId}
-Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]`
+      JSON.stringify({
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        accountId,
+        hasReachedMaxClaims,
+        reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
+      }),
+      'claimCampaignsAirdrop:init'
     );
 
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
@@ -182,40 +193,36 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
       ),
     }).save();
 
-    await this.campaignQueue.add(queue);
+    await this.campaignQueue.add({ queueId: queue.id });
 
     this.logger.log(
-      `#claimCampaignAirdrops:submit:queueId-${queue.id}
-Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${accountId}`
+      JSON.stringify({
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        accountId,
+        hasReachedMaxClaims,
+        reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
+      }),
+      `claimCampaignAirdrops:submit:queueId-${queue.id}`
     );
   }
 
-  async processClaimAirdrop(job: Job<Queue<ClaimAirdropPayload>>) {
+  async processClaimAirdrop(job: Job<{ queueId: string }>) {
+    const queue = await this.queueModel.findById(job.data.queueId);
     this.logger.log(
-      `#processClaimAirdropJob:init:jobId-${job.id}\n${JSON.stringify(
-        job.data,
-        null,
-        2
-      )}`
+      JSON.stringify(queue),
+      `processClaimAirdropJob:init:jobId-${job.id}`
     );
 
-    const session = await this.transactionModel.startSession();
-    const queue = await this.queueModel.findById(job.data._id);
-
     try {
-      session.startTransaction();
       queue.startedAt = new Date();
       const payload = queue.payload;
       const campaign = await this.campaignModel.findById(payload.campaignId);
+      const accounts = await this.accountModel
+        .find({ _id: payload.to.map(({ account }) => account) })
+        .select('+campaigns');
 
-      payload.to.forEach(async ({ account: accountId }) => {
-        const account = await this.accountModel
-          .findById(accountId)
-          .select('+campaigns');
-
-        if (!account) return;
-
+      const $accountsToSave = accounts.map(async (account) => {
         switch (campaign.type) {
           case CampaignType.FRIEND_REFERRAL:
           case CampaignType.VERIFY_MOBILE:
@@ -228,32 +235,20 @@ For account: ${accountId}`
         }
 
         account.campaigns[campaign.id].push(new Date());
-        await account.save({ session });
+        return account.save();
       });
 
-      await this.claimAirdrop(campaign, payload, session);
-      await session.commitTransaction();
+      await Promise.all($accountsToSave);
+      await this.claimAirdrop(campaign, payload);
 
       queue.status = QueueStatus.DONE;
 
       this.logger.log(
-        `#processClaimAirdropJob:done:jobId-${job.id}\n${JSON.stringify(
-          job.data,
-          null,
-          2
-        )}`
+        JSON.stringify(queue),
+        `processClaimAirdropJob:done:jobId-${job.id}`
       );
     } catch (error: unknown) {
-      await session.abortTransaction();
-
-      this.logger.error(
-        `#processClaimAirdropJob:error:jobId-${job.id}\n${JSON.stringify(
-          job.data,
-          null,
-          2
-        )}`,
-        error instanceof Error ? error.stack : JSON.stringify(error, null, 2)
-      );
+      this.logger.error(error, `processClaimAirdropJob:error:jobId-${job.id}`);
 
       queue.status = QueueStatus.FAILED;
     } finally {
@@ -273,10 +268,14 @@ For account: ${accountId}`
     const hasReachedMaxClaims = claimsCount > campaign.maxClaims;
 
     this.logger.log(
-      `#isEligibleForVerifyMobileCampaign:done
-Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-For account: ${account.id}
-Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]`
+      JSON.stringify({
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        accountId: account.id,
+        hasReachedMaxClaims,
+        reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
+      }),
+      'isEligibleForVerifyMobileCampaign:done'
     );
 
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
@@ -284,8 +283,7 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
 
   private async claimAirdrop(
     campaign: Campaign,
-    claimCampaignsAirdropJob: ClaimAirdropPayload,
-    session: ClientSession
+    claimCampaignsAirdropJob: ClaimAirdropPayload
   ) {
     let sumAmount = 0;
     const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
@@ -318,24 +316,19 @@ Reached max limit: ${hasReachedMaxClaims} [${claimsCount}/${campaign.maxClaims}]
           },
         } as TLedger)
     );
-    /*const transaction = await new this.transactionModel({
-      from,
-      to,
-      data: { campaignId: claimCampaignsAirdropJob.campaignId },
-      ledgers,
-    }).save({ session });*/
-    const transaction = await this.taccountService.transfers({
+
+    const transaction = await this.tAccountService.transfers({
       from,
       to,
       data: { campaignId: claimCampaignsAirdropJob.campaignId },
       ledgers,
     });
-    await campaign.save({ session });
+
+    await campaign.save();
 
     this.logger.log(
-      `#claimAirdrop:transaction-created:${transaction.id}
-Claim campaign's airdrop: ${campaign.name} [${campaign.id}]
-${JSON.stringify(transaction, null, 2)}`
+      JSON.stringify({ campaign, transaction }),
+      `claimAirdrop:transaction-created:${transaction.id}`
     );
 
     return transaction;
@@ -354,13 +347,20 @@ ${JSON.stringify(transaction, null, 2)}`
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
 
-    const eligibleAccounts = [] as EligibleAccount[];
+    const $balances = campaigns.map(async (campaign) => {
+      if (campaign.type !== CampaignType.CONTENT_REACH) return campaign;
 
-    return campaigns.map((campaign) => {
+      const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
+        pipelineOfEstimateContentReach(campaign, accountId)
+      );
+
+      this.logger.log(
+        JSON.stringify(eligibleAccounts),
+        `getAirdropBalances:${campaign._id}:${accountId}`
+      );
+
       const eligibleAccount = eligibleAccounts.find(
-        (eligibleAccount) =>
-          String(eligibleAccount.campaignId) === String(campaign._id) &&
-          String(eligibleAccount.id) === String(accountId)
+        (eligibleAccount) => String(eligibleAccount.id) === String(accountId)
       );
 
       return {
@@ -368,5 +368,7 @@ ${JSON.stringify(transaction, null, 2)}`
         estimateRewards: CastcleNumber.from(eligibleAccount?.amount).toNumber(),
       };
     });
+
+    return Promise.all($balances);
   }
 }

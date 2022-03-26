@@ -965,11 +965,7 @@ export class UsersController {
           CampaignType.FRIEND_REFERRAL
         );
       } catch (error: unknown) {
-        this.logger.log(
-          `#updateMobile:claimAirdrop:error\n${
-            error instanceof Error ? error.stack : JSON.stringify(error)
-          }`
-        );
+        this.logger.error(error, `updateMobile:claimAirdrop:error`);
       }
     }
 

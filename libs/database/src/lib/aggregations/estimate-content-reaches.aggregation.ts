@@ -21,70 +21,53 @@
  * or have any questions.
  */
 
-import { FilterQuery } from 'mongoose';
+import { Types } from 'mongoose';
 import { Campaign } from '../schemas';
 
 export class EligibleAccount {
   id: string;
-  campaignId: string;
+  totalViews: number;
+  views: number;
   amount: number;
 }
 
-export const pipelineOfGetEligibleAccountsFromCampaign = (
-  campaignQuery: FilterQuery<Campaign>
+export const pipelineOfEstimateContentReach = (
+  campaign: Campaign,
+  accountId?: string
 ) => [
-  { $match: campaignQuery },
   {
-    $lookup: {
-      from: 'feeditems',
-      let: { endDate: '$endDate', startDate: '$startDate' },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $and: [
-                { $gte: ['$updatedAt', '$$startDate'] },
-                { $lte: ['$updatedAt', '$$endDate'] },
-              ],
-            },
-          },
-        },
-      ],
-      as: 'feedItems',
+    $match: {
+      updatedAt: {
+        $gte: campaign.startDate,
+        $lte: campaign.endDate,
+      },
     },
   },
-  { $unwind: { path: '$feedItems' } },
   {
     $facet: {
-      totalViews: [{ $count: 'n' }],
+      totalViews: [{ $group: { _id: null, n: { $count: {} } } }],
       viewers: [
         {
-          $group: {
-            _id: {
-              viewer: '$feedItems.viewer',
-              campaignId: '$_id',
-              rewardBalance: '$rewardBalance',
-            },
-            views: { $count: {} },
+          $match: {
+            viewer: accountId ? Types.ObjectId(accountId) : { $exists: true },
           },
         },
+        { $group: { _id: '$viewer', n: { $count: {} } } },
       ],
     },
   },
   { $unwind: { path: '$viewers' } },
   {
     $addFields: {
-      id: '$viewers._id.viewer',
-      campaignId: '$viewers._id.campaignId',
+      id: '$viewers._id',
+      totalViews: { $arrayElemAt: ['$totalViews.n', 0] },
+      views: '$viewers.n',
       amount: {
         $multiply: [
-          '$viewers._id.rewardBalance',
-          {
-            $divide: ['$viewers.views', { $arrayElemAt: ['$totalViews.n', 0] }],
-          },
+          campaign.rewardBalance,
+          { $divide: ['$viewers.n', { $arrayElemAt: ['$totalViews.n', 0] }] },
         ],
       },
     },
   },
-  { $project: { totalViews: 0, viewers: 0 } },
 ];

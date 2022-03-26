@@ -1,4 +1,3 @@
-import { AccountDevice } from './../schemas/account-device.schema';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -57,6 +56,7 @@ import {
   User,
   UserType,
 } from '../schemas';
+import { AccountDevice } from './../schemas/account-device.schema';
 import { UserService } from './user.service';
 
 export interface AccountRequirements {
@@ -601,7 +601,11 @@ export class AuthenticationService {
     }
   }
   async embedAuthentication(account: Account, socialConnect: SocialContentDto) {
-    if (account.authentications) {
+    this.logger.log(`Embed : ${socialConnect.provider}`);
+    if (
+      account.authentications &&
+      account.authentications[socialConnect.provider]
+    ) {
       account.authentications[socialConnect.provider] = {
         socialId: socialConnect.socialId,
         socialToken: socialConnect.socialToken,
@@ -632,6 +636,7 @@ export class AuthenticationService {
   ) {
     account.isGuest = false;
     await account.save();
+    this.logger.log('Embed Authentication');
     await this.embedAuthentication(account, {
       provider: requirements.provider,
       socialId: requirements.socialId,
@@ -643,6 +648,7 @@ export class AuthenticationService {
       requirements.displayName
     );
 
+    this.logger.log('Create User.');
     await new this._userModel({
       ownerAccount: account._id,
       displayId: suggestDisplayId,

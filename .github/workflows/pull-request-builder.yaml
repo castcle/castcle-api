@@ -7,14 +7,12 @@ jobs:
   build:
     name: Lint and Build Project
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
-
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-
+          cache: 'npm'
       - uses: actions/cache@v3
         id: cache
         with:
@@ -23,28 +21,23 @@ jobs:
           key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-
-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: rm -rf node_modules && npm ci
-
       - name: Lint Project
         run: npm run lint:all
-
       - name: Build Project
         run: npm run build:all
 
   test:
     name: Test Project
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
-
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-
+          cache: 'npm'
       - uses: actions/cache@v3
         id: cache
         with:
@@ -53,10 +46,8 @@ jobs:
           key: ${{ runner.os }}-test-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-
-
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: rm -rf node_modules && npm ci
-
       - name: Test Project
         run: npm run test:all
