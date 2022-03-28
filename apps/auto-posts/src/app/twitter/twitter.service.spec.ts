@@ -32,7 +32,6 @@ import {
 } from 'twitter-api-v2';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastLogger } from '@castcle-api/logger';
-import { ShortPayload } from '@castcle-api/database/dtos';
 
 jest.mock('twitter-api-v2');
 jest.mock('@castcle-api/utils/aws');
@@ -216,7 +215,7 @@ describe('Twitter Service', () => {
       expect(contents.length).toEqual(1);
     });
 
-    it('should replace links with expanded urls', async () => {
+    it('should replace links with expanded urls and push all preview links to payload', async () => {
       const contents = await twitterService.convertTimelineToContents(
         author.id,
         {
@@ -229,6 +228,9 @@ describe('Twitter Service', () => {
                   {
                     url: 'https://t.co/1',
                     expanded_url: 'https://www.castcle.com/',
+                    images: [{ url: 'https://www.castcle.com/icon.svg' }],
+                    title: 'Castcle',
+                    description: 'Castcle Social Media',
                   },
                   {
                     url: 'https://t.co/2',
@@ -243,9 +245,18 @@ describe('Twitter Service', () => {
         }
       );
 
-      expect((contents[0].payload as ShortPayload).message).toEqual(
-        'Sign Up Now 👉 https://www.castcle.com/'
-      );
+      expect(contents[0].payload).toEqual({
+        message: 'Sign Up Now 👉 https://www.castcle.com/',
+        link: [
+          {
+            type: 'other',
+            url: 'https://t.co/1',
+            imagePreview: 'https://www.castcle.com/icon.svg',
+            title: 'Castcle',
+            description: 'Castcle Social Media',
+          },
+        ],
+      });
     });
   });
 });
