@@ -282,7 +282,6 @@ describe('ContentService', () => {
       const hashtags = await service.hashtagService.getAll();
       expect(hashtags[0].score).toEqual(0);
       expect(hashtags[1].score).toEqual(0);
-      expect(hashtags[2].score).toEqual(0);
     });
   });
   describe('#getContentsFromUser()', () => {
