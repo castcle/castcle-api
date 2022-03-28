@@ -755,7 +755,7 @@ describe('AppController', () => {
         avatar: 'www.facebook.com/mockfb2',
         active: true,
       };
-      await appController.updateSyncSocial(credential, request);
+      await appController.updateSyncSocial(request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result.socialId).toEqual(request.socialId);
@@ -770,7 +770,7 @@ describe('AppController', () => {
         provider: SocialProvider.Facebook,
         socialId: '56738393',
       };
-      await appController.deleteSyncSocial(credential, request);
+      await appController.deleteSyncSocial(request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
       expect(result.active).toEqual(false);
@@ -1821,13 +1821,12 @@ describe('AppController', () => {
     });
     it('should update sync social is correct.', async () => {
       const payloadSyncSocial = {
-        payload: {
-          userName: 'reconnect sync social',
-          displayName: 'reconnect123',
-          overview: 'reconnect sync social',
-          socialId: '123456789',
-        } as SocialSyncDto,
-      };
+        userName: 'reconnect sync social',
+        displayName: 'reconnect123',
+        overview: 'reconnect sync social',
+        socialId: '123456789',
+      } as SocialSyncDto;
+
       await appController.connectSyncSocial(
         { credential: userCredential, user: user } as any,
         mockSocialSync._id,
@@ -1839,9 +1838,9 @@ describe('AppController', () => {
       );
       expect(social.autoPost).toEqual(true);
       expect(social.active).toEqual(true);
-      expect(social.socialId).toEqual(payloadSyncSocial.payload.socialId);
-      expect(social.userName).toEqual(payloadSyncSocial.payload.userName);
-      expect(social.displayName).toEqual(payloadSyncSocial.payload.displayName);
+      expect(social.socialId).toEqual(payloadSyncSocial.socialId);
+      expect(social.userName).toEqual(payloadSyncSocial.userName);
+      expect(social.displayName).toEqual(payloadSyncSocial.displayName);
     });
   });
 

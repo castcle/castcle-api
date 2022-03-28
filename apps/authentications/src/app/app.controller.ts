@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { AnalyticService, AuthenticationService } from '@castcle-api/database';
-import { OtpObjective } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';
@@ -82,11 +81,12 @@ import {
   RequestOtpDto,
   RequestTokenDeviceDto,
   SocialConnectDto,
-  SuggestCastcleIdReponse,
+  SuggestCastcleIdDto,
+  SuggestCastcleIdResponse,
   TokenResponse,
-  verificationOtpDto,
+  VerificationOtpDto,
   VerificationPasswordBody,
-} from './dtos/dto';
+} from './dtos';
 import {
   GuestInterceptor,
   GuestRequest,
@@ -539,7 +539,7 @@ export class AuthenticationController {
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
-    @Body() body: verificationOtpDto,
+    @Body() body: VerificationOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
@@ -614,14 +614,12 @@ export class AuthenticationController {
     );
   }
 
-  @ApiOkResponse({
-    type: SuggestCastcleIdReponse,
-  })
+  @ApiOkResponse({ type: SuggestCastcleIdResponse })
   @Post('suggestCastcleId')
   @HttpCode(200)
   async suggestCastcleId(
-    @Body('displayName') displayName: string
-  ): Promise<SuggestCastcleIdReponse> {
+    @Body() { displayName }: SuggestCastcleIdDto
+  ): Promise<SuggestCastcleIdResponse> {
     const suggestId = await this.authService.suggestCastcleId(displayName);
     return {
       payload: {
@@ -643,19 +641,6 @@ export class AuthenticationController {
     @Body() payload: VerificationPasswordBody,
     @Req() req: CredentialRequest
   ): Promise<otpResponse> {
-    const objective: OtpObjective = <OtpObjective>payload.objective;
-    if (
-      !objective ||
-      !Object.values(OtpObjective).includes(objective) ||
-      objective !== OtpObjective.ChangePassword
-    ) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        req.$language
-      );
-    }
-
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
@@ -664,7 +649,7 @@ export class AuthenticationController {
     if (await account.verifyPassword(payload.password)) {
       const otp = await this.authService.generateOtp(
         account,
-        objective,
+        payload.objective,
         req.$credential.account._id,
         '',
         true
@@ -691,20 +676,6 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
-    const objective: OtpObjective = <OtpObjective>payload.objective;
-    if (
-      !objective ||
-      !Object.values(OtpObjective).includes(objective) ||
-      (objective !== OtpObjective.ChangePassword &&
-        objective !== OtpObjective.ForgotPassword)
-    ) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        req.$language
-      );
-    }
-
     this.logger.log(`Start change password refCode: ${payload.refCode}`);
     return this.appService.resetPassword(payload, req);
   }

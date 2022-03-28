@@ -26,32 +26,48 @@ import {
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
+
 export class CreateCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
+
   @ApiProperty()
-  'feedItemId'?: string;
+  @IsString()
+  @IsOptional()
+  feedItemId?: string;
+
   @ApiProperty()
-  'castcleId': string;
+  @IsString()
+  castcleId: string;
 }
 
 export class ReplyCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
+
   @ApiProperty()
-  'castcleId': string;
+  @IsString()
+  castcleId: string;
 }
 
 export class EditCommentBody {
   @ApiProperty()
-  'message': string;
+  @IsString()
+  message: string;
 }
 
 export class LikeCommentBody {
   @ApiProperty()
-  'feedItemId'?: string;
+  @IsOptional()
+  @IsString()
+  feedItemId?: string;
+
   @ApiProperty()
-  'castcleId': string;
+  @IsString()
+  castcleId: string;
 }
 
 export class UserRecastedResponse {

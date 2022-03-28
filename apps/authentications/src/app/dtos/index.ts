@@ -25,12 +25,16 @@ import {
   PageResponseDto,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+import {
+  AccountAuthenIdType,
+  OtpObjective,
+} from '@castcle-api/database/schemas';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsNotEmptyObject,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -157,25 +161,35 @@ class suggestCastcleIdPayload {
   suggestCastcleId: string;
 }
 
-export class SuggestCastcleIdReponse {
+export class SuggestCastcleIdResponse {
   @ApiProperty()
   payload: suggestCastcleIdPayload;
 }
 
 export class ChangePasswordBody {
   @ApiProperty()
-  objective: string;
+  @IsEnum([OtpObjective.ChangePassword, OtpObjective.ForgotPassword])
+  objective: OtpObjective;
+
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   refCode: string;
+
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   newPassword: string;
 }
 
 export class VerificationPasswordBody {
   @ApiProperty()
-  objective: string;
+  @IsEnum([OtpObjective.ChangePassword])
+  objective: OtpObjective;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   password: string;
 }
 
@@ -232,22 +246,34 @@ export class OtpToken {
 
 export class RequestOtpDto {
   @ApiProperty()
-  objective: string;
+  @IsEnum(OtpObjective)
+  objective: OtpObjective;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   channel: string;
 
   @ApiProperty()
+  @IsNotEmptyObject()
   payload: ForgotPasswordPayload;
 
   @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
   token?: OtpToken;
 }
-export class verificationOtpDto extends RequestOtpDto {
+
+export class VerificationOtpDto extends RequestOtpDto {
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   refCode: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   otp: string;
 }
 
@@ -281,4 +307,10 @@ export class RequestTokenDeviceDto {
   @IsEnum(AcceptPlatform)
   @ApiProperty()
   platform: AcceptPlatform;
+}
+
+export class SuggestCastcleIdDto {
+  @ApiProperty()
+  @IsString()
+  displayName: string;
 }

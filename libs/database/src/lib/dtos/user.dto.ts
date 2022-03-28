@@ -21,12 +21,14 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
@@ -385,6 +387,12 @@ export class SocialSyncDto {
   @IsString()
   @IsOptional()
   authToken?: string;
+}
+
+export class CreatePageSocialDto {
+  @Type(() => SocialSyncDto)
+  @ValidateNested({ each: true })
+  payload: SocialSyncDto[];
 }
 
 export class SocialSyncDeleteDto {
