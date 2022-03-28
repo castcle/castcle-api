@@ -32,3 +32,10 @@ export class AccountCampaigns {
 export class AccountAuthentication {
   [key: string]: AuthenticationDetail;
 }
+export class AccountActivations {
+  type: 'email' | 'phone';
+  verifyToken: string;
+  verifyTokenExpireDate: Date;
+  activationDate?: Date;
+  revocationDate?: Date;
+}

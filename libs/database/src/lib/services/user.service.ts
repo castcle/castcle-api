@@ -791,11 +791,17 @@ export class UserService {
     );
   };
 
-  removeAllAccountActivationsFromAccount = (account: Account) => {
-    return this.activationModel.updateMany(
-      { account: account._id },
-      { visibility: EntityVisibility.Deleted }
-    );
+  removeAllAccountActivationsFromAccount = async (account: Account) => {
+    return await Promise.all([
+      this.activationModel.updateMany(
+        { account: account._id },
+        { visibility: EntityVisibility.Deleted }
+      ),
+      this._accountModel.updateMany(
+        { account: account._id },
+        { 'activations.$.visibility': EntityVisibility.Deleted }
+      ),
+    ]);
   };
 
   removeAllAccountReferralFromAccount = (account: Account) => {
