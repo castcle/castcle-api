@@ -563,18 +563,24 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
-  @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
+  @Throttle(1, 300) //limit 1 ttl 300 sec
   @Post('requestOTP')
   @HttpCode(200)
   async requestOTP(
     @Body() body: RequestOtpDto,
     @Req() req: CredentialRequest,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip, userAgent, source }: RequestMetadata
   ) {
     this.logger.log(
       `Start request OPT channel: ${body.channel} objective: ${body.objective}`
     );
-    const otp = await this.appService.requestOtpCode(body, req, ip, userAgent);
+    const otp = await this.appService.requestOtpCode(
+      body,
+      req,
+      ip,
+      userAgent,
+      source
+    );
     if (otp && otp.isValid()) {
       const response: otpResponse = {
         objective: body.objective,
