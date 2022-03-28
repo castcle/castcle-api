@@ -46,7 +46,7 @@ import {
   QueueTopic,
 } from '../models';
 import { WalletType } from '../models/wallet.enum';
-import { Account, Campaign, Queue, Transaction } from '../schemas';
+import { Account, Campaign, Queue } from '../schemas';
 import { TAccountService } from './taccount.service';
 
 @Injectable()
@@ -63,7 +63,7 @@ export class CampaignService {
     @InjectModel('Queue')
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
     @InjectQueue(QueueName.CAMPAIGN)
-    private campaignQueue: BullQueue<Queue<ClaimAirdropPayload>>,
+    private campaignQueue: BullQueue<{ queueId: string }>,
     private taccountService: TAccountService
   ) {}
 
@@ -316,19 +316,13 @@ export class CampaignService {
           },
         } as TLedger)
     );
-    /*const transaction = await new this.transactionModel({
-      from,
-      to,
-      data: { campaignId: claimCampaignsAirdropJob.campaignId },
-      ledgers,
-    }).save({ session });*/
     const transaction = await this.taccountService.transfers({
       from,
       to,
       data: { campaignId: claimCampaignsAirdropJob.campaignId },
       ledgers,
     });
-    await campaign.save({ session });
+    await campaign.save();
 
     this.logger.log(
       JSON.stringify({ campaign, transaction }),
