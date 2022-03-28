@@ -36,12 +36,8 @@ import { CastcleController } from '@castcle-api/utils/decorators';
 export class EngagementController {
   constructor(private uxEngagementService: UxEngagementService) {}
 
-  @ApiBody({
-    type: UxEngagementBody,
-  })
-  @ApiResponse({
-    status: 204,
-  })
+  @ApiBody({ type: UxEngagementBody })
+  @ApiResponse({ status: 204 })
   @UseInterceptors(CredentialInterceptor)
   @HttpCode(204)
   @Post()

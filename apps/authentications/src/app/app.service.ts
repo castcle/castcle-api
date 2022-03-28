@@ -58,8 +58,8 @@ import {
   RequestOtpDto,
   SocialConnectDto,
   TokenResponse,
-  verificationOtpDto,
-} from './dtos/dto';
+  VerificationOtpDto,
+} from './dtos';
 
 /*
  * TODO: !!!
@@ -374,8 +374,8 @@ export class AppService {
   ) {
     let account: Account = null;
     let otp: Otp = null;
-    const objective: OtpObjective = <OtpObjective>request.objective;
-    // recapchaToken mobile only
+    const objective = request.objective;
+    // recaptchaToken mobile only
     if (request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
@@ -394,14 +394,6 @@ export class AppService {
         //throw error
         throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
       }
-    }
-
-    if (!objective || !Object.values(OtpObjective).includes(objective)) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        credential.$language
-      );
     }
 
     switch (request.channel) {
@@ -565,26 +557,18 @@ export class AppService {
   }
   /**
    * forgot password verify Otp
-   * @param {verificationOtpDto} request
+   * @param {VerificationOtpDto} request
    * @param {CredentialRequest} credential
    * @returns {Otp} Opt data
    */
   async verificationOTP(
-    request: verificationOtpDto,
+    request: VerificationOtpDto,
     credential: CredentialRequest
   ) {
     const limitRetry = 3;
     let account: Account = null;
     let receiver = '';
-
-    const objective: OtpObjective = <OtpObjective>request.objective;
-    if (!objective || !Object.values(OtpObjective).includes(objective)) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        credential.$language
-      );
-    }
+    const objective = request.objective;
 
     switch (request.channel) {
       case 'email': {

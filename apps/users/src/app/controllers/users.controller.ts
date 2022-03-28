@@ -1052,10 +1052,7 @@ export class UsersController {
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put('sync-social')
-  async updateSyncSocial(
-    @Req() req: CredentialRequest,
-    @Body() body: SocialSyncDto
-  ) {
+  async updateSyncSocial(@Body() body: SocialSyncDto) {
     this.logger.log(`Start update sync social.`);
     this.logger.log(JSON.stringify(body));
     const user = await this.userService.findUser(body.castcleId);
@@ -1078,10 +1075,7 @@ export class UsersController {
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Delete('sync-social')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteSyncSocial(
-    @Req() req: CredentialRequest,
-    @Body() body: SocialSyncDeleteDto
-  ) {
+  async deleteSyncSocial(@Body() body: SocialSyncDeleteDto) {
     this.logger.log(`Start delete sync social.`);
     this.logger.log(JSON.stringify(body));
     const user = await this.userService.findUser(body.castcleId);
@@ -1868,7 +1862,7 @@ export class UsersController {
   async connectSyncSocial(
     @Auth() { credential, user }: Authorizer,
     @Param('id') id: string,
-    @Body() body: { payload: SocialSyncDto }
+    @Body('payload') syncBody: SocialSyncDto
   ) {
     this.logger.log(`Start reconnect sync social.`);
 
@@ -1883,7 +1877,6 @@ export class UsersController {
     );
     if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
 
-    const syncBody = body.payload;
     const socialPage = new SocialPageDto();
 
     syncBody.provider = social.provider;

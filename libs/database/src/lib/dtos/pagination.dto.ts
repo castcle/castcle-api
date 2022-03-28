@@ -30,6 +30,7 @@ import {
   IsMongoId,
   IsNumber,
   IsOptional,
+  IsString,
   Max,
 } from 'class-validator';
 import { DEFAULT_QUERY_OPTIONS } from './common.dto';
@@ -96,9 +97,13 @@ export class PaginationQuery extends ExpansionQuery {
 
 export class FeedQuery extends PaginationQuery {
   @IsOptional()
+  @IsString()
   mode?: 'current' | 'history';
+
   @IsOptional()
+  @IsString()
   hashtag?: string;
+
   @IsOptional()
   @TransformStringToArrayOfStrings()
   @IsEnum(ExcludeFeedField, { each: true })

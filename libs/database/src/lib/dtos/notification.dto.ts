@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
 import { CastcleImage, CastcleMeta } from './common.dto';
@@ -115,9 +116,13 @@ export interface CreateNotification {
 
 export class RegisterTokenDto {
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   deviceUUID: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   firebaseToken: string;
 }
 
