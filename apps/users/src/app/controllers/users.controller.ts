@@ -463,7 +463,7 @@ export class UsersController {
           req.$language
         );
       if (
-        (body.castcleId || body.displayName) &&
+        body.castcleId &&
         user.displayIdUpdatedAt &&
         !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
       )
