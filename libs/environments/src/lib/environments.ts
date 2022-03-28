@@ -193,4 +193,7 @@ export class Environment {
 
   // ADS
   static ADS_MINIMUM_CPM = process.env.ADS_MINIMUM_CPM || 0.01;
+  static ADS_MINIMUM_FEED_VIEW = process.env.ADS_MINIMUM_FEED_VIEW || 6;
+  static ADS_MINIMUM_FEED_COOL_DOWN =
+    process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;
 }

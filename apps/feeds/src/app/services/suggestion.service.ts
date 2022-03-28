@@ -32,7 +32,7 @@ import {
   FeedItemResponse,
 } from '@castcle-api/database/dtos';
 import { Account, Credential, UserType } from '@castcle-api/database/schemas';
-import { Configs } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
@@ -53,6 +53,18 @@ export class SuggestionService {
   ) {}
 
   _seenKey = (accountId: string) => `${accountId}-seen`;
+  _seenAdsKey = (accountId: string) => `${accountId}-ads-seen`;
+
+  _resetSeen = (setting: SeenState, seenKey: string) =>
+    this.cacheManager.set(
+      seenKey,
+      JSON.stringify({
+        ...setting,
+        seenCount: 0,
+        lastSeen: new Date(),
+        lastSuggestion: new Date(),
+      } as SeenState)
+    );
 
   /**
    * Mark Cache that this content have been seen
@@ -87,6 +99,28 @@ export class SuggestionService {
         } as SeenState)
       );
     }
+    const adsSetting: string = await this.cacheManager.get(
+      this._seenAdsKey(accountId)
+    );
+    if (!adsSetting) {
+      this.cacheManager.set(
+        this._seenAdsKey(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    } else {
+      const setting: SeenState = JSON.parse(adsSetting);
+      this.cacheManager.set(
+        this._seenAdsKey(accountId),
+        JSON.stringify({
+          ...setting,
+          seenCount: setting.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    }
   }
 
   /**
@@ -99,66 +133,84 @@ export class SuggestionService {
     const currentSetting: string = await this.cacheManager.get(
       this._seenKey(accountId)
     );
-    if (!currentSetting)
-      return this.adsService.addAdsToFeeds(accountId, feedResponse);
-    const setting: SeenState = JSON.parse(currentSetting);
-    const diffSuggestionTime =
-      new Date().getTime() -
-      (setting.lastSuggestion ? new Date(setting.lastSuggestion).getTime() : 0);
-    if (
-      setting.seenCount > Configs.Suggestion.MinContent &&
-      diffSuggestionTime > Configs.Suggestion.MinDiffTime
-    ) {
-      console.log('do predict');
-      const result = await this.dataService.getFollowingSuggestions(accountId);
-      const userIds = result.map((item) => item.userId);
-      const users = await Promise.all(
-        userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
-      );
-      const userResponses = await Promise.all(
-        users
-          .filter((u) => u && u.type)
-          .splice(0, Configs.Suggestion.SuggestAmount)
-          .map(async (u) =>
-            u.type === UserType.People ? u.toUserResponse() : u.toPageResponse()
-          )
-      );
+    const adsSetting: string = await this.cacheManager.get(
+      this._seenAdsKey(accountId)
+    );
+    //no suggest and no ads
+    if (!currentSetting && !adsSetting) return feedResponse;
+    //has some suggest setting
+    if (currentSetting) {
+      const setting: SeenState = JSON.parse(currentSetting);
+      const diffSuggestionTime =
+        new Date().getTime() -
+        (setting.lastSuggestion
+          ? new Date(setting.lastSuggestion).getTime()
+          : 0);
+      if (
+        setting.seenCount > Configs.Suggestion.MinContent &&
+        diffSuggestionTime > Configs.Suggestion.MinDiffTime
+      ) {
+        console.log('do predict');
+        const result = await this.dataService.getFollowingSuggestions(
+          accountId
+        );
+        const userIds = result.map((item) => item.userId);
+        const users = await Promise.all(
+          userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
+        );
+        const userResponses = await Promise.all(
+          users
+            .filter((u) => u && u.type)
+            .splice(0, Configs.Suggestion.SuggestAmount)
+            .map(async (u) =>
+              u.type === UserType.People
+                ? u.toUserResponse()
+                : u.toPageResponse()
+            )
+        );
 
-      if (!userResponses.length) return feedResponse;
+        if (!userResponses.length) return feedResponse;
 
-      const suggestItem: FeedItemPayloadItem = {
-        id: 'for-you',
-        feature: {
-          slug: 'feed',
-          key: 'feature.feed',
-          name: 'Feed',
-        },
-        circle: {
+        const suggestItem: FeedItemPayloadItem = {
           id: 'for-you',
-          key: 'circle.forYou',
-          name: 'For You',
-          slug: 'forYou',
-        },
-        type: 'suggestion-follow',
-        payload: userResponses,
-      };
-      console.log('suggestItem', suggestItem);
-      const insertIndex =
-        Configs.Suggestion.MinContent > feedResponse.payload.length
-          ? feedResponse.payload.length - 1
-          : Configs.Suggestion.MinContent - 1;
-
-      feedResponse.payload.splice(insertIndex, 0, suggestItem);
-      this.cacheManager.set(
-        this._seenKey(accountId),
-        JSON.stringify({
-          ...setting,
-          seenCount: 0,
-          lastSeen: new Date(),
-          lastSuggestion: new Date(),
-        } as SeenState)
-      );
-      return this.adsService.addAdsToFeeds(accountId, feedResponse);
-    } else return this.adsService.addAdsToFeeds(accountId, feedResponse);
-  }
+          feature: {
+            slug: 'feed',
+            key: 'feature.feed',
+            name: 'Feed',
+          },
+          circle: {
+            id: 'for-you',
+            key: 'circle.forYou',
+            name: 'For You',
+            slug: 'forYou',
+          },
+          type: 'suggestion-follow',
+          payload: userResponses,
+        };
+        const insertIndex =
+          Configs.Suggestion.MinContent > feedResponse.payload.length
+            ? feedResponse.payload.length - 1
+            : Configs.Suggestion.MinContent - 1;
+        //in theory should pass by ref
+        feedResponse.payload.splice(insertIndex, 0, suggestItem);
+        await this._resetSeen(setting, this._seenKey(accountId));
+      }
+    }
+    if (adsSetting) {
+      const adsState: SeenState = JSON.parse(adsSetting);
+      const diffSuggestionTime =
+        new Date().getTime() -
+        (adsState.lastSuggestion
+          ? new Date(adsState.lastSuggestion).getTime()
+          : 0);
+      if (
+        adsState.seenCount > Environment.ADS_MINIMUM_FEED_VIEW &&
+        diffSuggestionTime > Environment.ADS_MINIMUM_FEED_COOL_DOWN
+      ) {
+        await this._resetSeen(adsState, this._seenAdsKey(accountId));
+        return this.adsService.addAdsToFeeds(accountId, feedResponse);
+      }
+    }
+    return feedResponse;
+  } //end suggest
 }
