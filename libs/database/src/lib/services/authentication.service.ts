@@ -359,6 +359,21 @@ export class AuthenticationService {
       .exec();
     account.isGuest = false;
     account.activateDate = now;
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: account._id,
+          'activations.verifyToken': accountActivation.verifyToken,
+        },
+        {
+          $set: {
+            'activations.$.activationDate': new Date(),
+          },
+        }
+      )
+      .exec();
+
     const savedAccount = await account.save();
     return savedAccount;
   }
@@ -418,6 +433,24 @@ export class AuthenticationService {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: account._id,
     });
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: account._id,
+        },
+        {
+          $addToSet: {
+            activations: {
+              type: type,
+              verifyToken: emailTokenResult.verifyToken,
+              verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate,
+            },
+          },
+        }
+      )
+      .exec();
+
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
@@ -431,6 +464,21 @@ export class AuthenticationService {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: accountActivation.account as unknown as string,
     });
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: accountActivation.account,
+          'activations.verifyToken': emailTokenResult.verifyToken,
+        },
+        {
+          $set: {
+            'activations.$.revocationDate': new Date(),
+          },
+        }
+      )
+      .exec();
+
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = emailTokenResult.verifyToken;
     accountActivation.verifyTokenExpireDate =
