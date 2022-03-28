@@ -41,7 +41,14 @@ import {
   AdsQuery,
   AdsRequestDto,
 } from '../dtos/ads.dto';
-import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
+import {
+  AdsBoostStatus,
+  AdsPaymentMethod,
+  AdsStatus,
+  CACCOUNT_NO,
+  DefaultAdsStatistic,
+  WalletType,
+} from '../models';
 import {
   Account,
   AdsCampaign,
@@ -53,6 +60,13 @@ import {
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { FilterInterval } from './../models/ads.enum';
+import { TAccountService } from './taccount.service';
+
+/**
+ * TODO
+ * !!! need to use from oracle instead
+ */
+const CAST_PRICE = 0.001; //
 
 @Injectable()
 export class AdsService {
@@ -63,7 +77,8 @@ export class AdsService {
     @InjectModel('Content')
     public _contentModel: Model<Content>,
     @InjectModel('User')
-    public _userModel: Model<User>
+    public _userModel: Model<User>,
+    public taccountService: TAccountService
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -319,4 +334,67 @@ export class AdsService {
       }
     );
   }
+
+  seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
+    const adsPlacement = await this._adsPlacementModel.findById(adsPlacementId);
+    const session = await this._adsPlacementModel.startSession();
+    try {
+      if (!adsPlacement.seenAt) {
+        adsPlacement.seenAt = new Date();
+        adsPlacement.seenCredential = mongoose.Types.ObjectId(
+          seenByCredentialId
+        ) as any;
+        const adsCampaign = await this._adsCampaignModel.findById(
+          adsPlacement.campaign
+        );
+        const estAdsCostCAST = adsPlacement.cost.UST / CAST_PRICE;
+        //transferFrom ads owner to locked account
+        //debit personal account or ads_credit account of adsowner
+        //credit ads ownner locked_for ads
+        const tx = await this.taccountService.transfers({
+          from: {
+            account: adsCampaign.owner as unknown as string,
+            type:
+              adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+                ? WalletType.ADS
+                : WalletType.PERSONAL,
+            value: estAdsCostCAST,
+          },
+          to: [
+            {
+              type: WalletType.CASTCLE_ADS_LOCKED,
+              value: estAdsCostCAST,
+            },
+          ],
+          ledgers: [
+            {
+              debit: {
+                caccountNo:
+                  adsCampaign.detail.paymentMethod ===
+                  AdsPaymentMethod.ADS_CREDIT
+                    ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                    : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: estAdsCostCAST,
+              },
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                value: estAdsCostCAST,
+              },
+            },
+          ],
+        });
+        await adsPlacement.save();
+        return {
+          adsPlacement: adsPlacement,
+          txId: tx.id,
+        };
+      }
+      await session.commitTransaction();
+      return {
+        adsPlacement: adsPlacement,
+      };
+    } catch (error: unknown) {
+      this.logger.log(error);
+    }
+  };
 }

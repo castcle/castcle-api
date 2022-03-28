@@ -21,12 +21,17 @@
  * or have any questions.
  */
 
-import { AdsService, DataService, UserService } from '@castcle-api/database';
+import {
+  AdsService,
+  DataService,
+  RankerService,
+  UserService,
+} from '@castcle-api/database';
 import {
   FeedItemPayloadItem,
   FeedItemResponse,
 } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
+import { Account, Credential, UserType } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
@@ -43,7 +48,8 @@ export class SuggestionService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private dataService: DataService,
     private userService: UserService,
-    private adsService: AdsService
+    private adsService: AdsService,
+    private rankerService: RankerService
   ) {}
 
   _seenKey = (accountId: string) => `${accountId}-seen`;
@@ -52,7 +58,13 @@ export class SuggestionService {
    * Mark Cache that this content have been seen
    * @param accountId
    */
-  async seen(accountId: string) {
+  async seen(account: Account, id: string, credential: Credential) {
+    //accountId: string
+    await Promise.all([
+      this.rankerService.seenFeedItem(account, id, credential),
+      this.adsService.seenAds(id, credential.id),
+    ]);
+    const accountId = account.id;
     const currentSetting: string = await this.cacheManager.get(
       this._seenKey(accountId)
     );

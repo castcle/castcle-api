@@ -333,7 +333,7 @@ export class RankerService {
       decayDays: Environment.FEED_DECAY_DAYS,
       duplicateContentMax: Environment.FEED_DUPLICATE_MAX,
       geolocation: viewer.geolocation?.countryCode,
-      maxResult: query.maxResults,
+      maxResult: Number(query.maxResults),
       userId: user._id,
       preferLanguages: viewer.preferences.languages,
     });
@@ -343,6 +343,7 @@ export class RankerService {
     const [userFeed] = await this.userModel.aggregate<GetFeedContentsResponse>(
       pipeline
     );
+    this.logger.log('DONE AGGREGATE');
 
     const followingContentIds = userFeed?.followingContents.map(String) ?? [];
     const globalContentIds = userFeed?.globalContents.map(String) ?? [];
