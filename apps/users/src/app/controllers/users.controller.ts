@@ -1950,7 +1950,7 @@ export class UsersController {
     );
 
     if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
-    await this.socialSyncService.delete(social, page, true);
+    await this.socialSyncService.disconnect(social, page, true);
 
     if (social.provider === SocialProvider.Facebook && social.authToken) {
       this.logger.log('Unsubscribed facebook page');

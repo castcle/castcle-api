@@ -30,7 +30,7 @@ import {
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
 import { SocialProvider } from '../models';
-import { User, UserType, SocialSync } from '../schemas';
+import { SocialSync, User, UserType } from '../schemas';
 
 describe('SocialSyncService', () => {
   let mongod: MongoMemoryServer;
@@ -174,9 +174,7 @@ describe('SocialSyncService', () => {
       const result = socialSyncDoc.find(
         (x) => x.provider === deleteSocial.provider
       );
-      expect(result.active).toEqual(false);
-      expect(result.autoPost).toEqual(false);
-      expect(socialSyncDoc).toBeDefined();
+      expect(result).toBeUndefined();
     });
   });
 

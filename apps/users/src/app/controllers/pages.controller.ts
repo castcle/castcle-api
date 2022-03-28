@@ -301,8 +301,26 @@ export class PagesController {
         );
       }
       if (String(page.ownerAccount) === String(req.$credential.account._id)) {
+        const syncSocial = await this.socialSyncService.getSocialSyncByPageId(
+          page._id as string
+        );
+
+        await Promise.all(
+          syncSocial.map(async (s) => {
+            this.logger.log('Delete Sync Social.');
+            await this.socialSyncService.delete(
+              {
+                provider: s.provider,
+                socialId: s.socialId,
+                castcleId: page.displayId,
+              },
+              page,
+              true
+            );
+          })
+        );
+
         await this.userService.deleteUserFromId(page._id);
-        //await page.delete();
         return '';
       } else
         throw new CastcleException(
