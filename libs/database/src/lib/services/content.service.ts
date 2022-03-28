@@ -28,7 +28,6 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
-import { getLinkPreview } from 'link-preview-js';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
@@ -43,11 +42,8 @@ import {
   createFilterQuery,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
-  GetLinkPreview,
   GetSearchRecentDto,
   IncludeUser,
-  Link,
-  LinkType,
   Meta,
   SaveContentDto,
   ShortPayload,
@@ -142,12 +138,6 @@ export class ContentService {
     );
 
     await this.hashtagService.createFromTags(hashtags);
-    try {
-      await this.updatePayloadMessage(contentDto.payload);
-    } catch (error) {
-      this.logger.error(error, 'createContentFromUser:updatePayloadMessage');
-    }
-
     const content = await new this._contentModel({
       author: author,
       payload: contentDto.payload,
@@ -180,7 +170,6 @@ export class ContentService {
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
       await this.hashtagService.createFromTags(hashtags);
-      await this.updatePayloadMessage(payload);
 
       return {
         author,
@@ -210,36 +199,6 @@ export class ContentService {
 
     return this._getAuthorFromUser(user);
   }
-
-  updatePayloadMessage = async (shortPayload: ShortPayload) => {
-    this.logger.log(JSON.stringify(shortPayload), 'updatePayloadMessage');
-
-    try {
-      const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
-      const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
-
-      if (linkIndex >= 0) {
-        const twitterLink = shortPayload.message.slice(linkIndex);
-        const linkPreview = (await getLinkPreview(
-          twitterLink
-        )) as GetLinkPreview;
-        const link = {
-          type: LinkType.Other,
-          url: linkPreview.url,
-          title: linkPreview.title,
-          description: linkPreview.description,
-          imagePreview: linkPreview.images?.[0],
-        } as Link;
-
-        shortPayload.message = shortPayload.message.slice(0, linkIndex);
-        shortPayload.link = shortPayload.link
-          ? [...shortPayload.link, link]
-          : [link];
-      }
-    } catch (error: unknown) {
-      this.logger.error(error, 'updatePayloadMessage');
-    }
-  };
 
   /**
    *
