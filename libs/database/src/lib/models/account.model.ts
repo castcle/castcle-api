@@ -32,8 +32,12 @@ export class AccountCampaigns {
 export class AccountAuthentication {
   [key: string]: AuthenticationDetail;
 }
-export class AccountActivations {
-  type: 'email' | 'phone';
+export enum AccountActivationType {
+  EMAIL = 'email',
+  PHONE = 'phone',
+}
+export class AccountActivation {
+  type: AccountActivationType;
   verifyToken: string;
   verifyTokenExpireDate: Date;
   activationDate?: Date;
