@@ -73,7 +73,6 @@ export class FeedsController {
     @Auth() { account, credential }: Authorizer,
     @Param() { id }: FeedParam
   ) {
-    //await this.rankerService.seenFeedItem(account, id, credential);
     this.suggestionService.seen(account, id, credential);
   }
 

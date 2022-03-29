@@ -212,5 +212,5 @@ export class SuggestionService {
       }
     }
     return feedResponse;
-  } //end suggest
+  }
 }

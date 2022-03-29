@@ -66,7 +66,9 @@ import { TAccountService } from './taccount.service';
  * TODO
  * !!! need to use from oracle instead
  */
-const CAST_PRICE = 0.001; //
+const mockOracleService = {
+  getCastPrice: () => 0.001,
+};
 
 @Injectable()
 export class AdsService {
@@ -347,7 +349,8 @@ export class AdsService {
         const adsCampaign = await this._adsCampaignModel.findById(
           adsPlacement.campaign
         );
-        const estAdsCostCAST = adsPlacement.cost.UST / CAST_PRICE;
+        const estAdsCostCAST =
+          adsPlacement.cost.UST / mockOracleService.getCastPrice();
         //transferFrom ads owner to locked account
         //debit personal account or ads_credit account of adsowner
         //credit ads ownner locked_for ads
@@ -394,7 +397,8 @@ export class AdsService {
         adsPlacement: adsPlacement,
       };
     } catch (error: unknown) {
-      this.logger.log(error);
+      await session.abortTransaction();
+      this.logger.error(error);
     }
   };
 }
