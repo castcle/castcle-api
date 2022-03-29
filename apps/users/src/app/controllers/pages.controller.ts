@@ -30,6 +30,7 @@ import {
 import {
   ContentResponse,
   ContentsResponse,
+  CreatePageSocialDto,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   GetContentsDto,
@@ -371,7 +372,7 @@ export class PagesController {
   @Post('social')
   async createPageSocial(
     @Req() req: CredentialRequest,
-    @Body() body: { payload: SocialSyncDto[] }
+    @Body() body: CreatePageSocialDto
   ) {
     this.logger.log(`Start create sync social.`);
     this.logger.log(JSON.stringify(body));
@@ -379,7 +380,7 @@ export class PagesController {
     this.logger.log('Validate guest');
     await this.validateGuestAccount(req.$credential);
 
-    this.logger.log('Validate dupplicate social');
+    this.logger.log('Validate duplicate social');
     await Promise.all(
       body.payload.map(async (socialSync) => {
         const dupSocialSync =

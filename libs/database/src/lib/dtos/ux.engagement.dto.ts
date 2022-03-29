@@ -21,31 +21,56 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
+
 export class UxEngagementBody {
   @ApiProperty()
-  'platform': string;
+  @IsOptional()
+  platform: string;
+
   @ApiProperty()
-  'client': string;
+  @IsOptional()
+  client: string;
+
   @ApiProperty()
-  'accountId': string;
+  @IsOptional()
+  accountId: string;
+
   @ApiProperty()
-  'uxSessionId': string;
+  @IsOptional()
+  uxSessionId: string;
+
   @ApiProperty()
-  'screenId': string;
+  @IsOptional()
+  screenId: string;
+
   @ApiProperty()
-  'screenInstance': any;
+  @IsOptional()
+  screenInstance: any;
+
   @ApiProperty()
-  'feedItemId': string;
+  @IsOptional()
+  feedItemId: string;
+
   @ApiProperty()
-  'target': string;
+  @IsOptional()
+  target: string;
+
   @ApiProperty()
-  'targetId': string;
+  @IsOptional()
+  targetId: string;
+
   @ApiProperty()
-  'eventType': string;
+  @IsOptional()
+  eventType: string;
+
   @ApiProperty()
-  'eventData': any;
+  @IsOptional()
+  eventData: any;
+
   @ApiProperty()
-  'timestamp': string; //date time stamp
+  @IsOptional()
+  timestamp: string;
 }
 
 export class UxEngagementDto {

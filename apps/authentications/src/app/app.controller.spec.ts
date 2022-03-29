@@ -64,7 +64,7 @@ import {
   TwillioClientMock,
   TwitterClientMock,
 } from './client.mock';
-import { LoginResponse, TokenResponse } from './dtos/dto';
+import { LoginResponse, TokenResponse } from './dtos';
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -790,26 +790,6 @@ describe('AppController', () => {
         genRefCode = response.refCode;
         expect(response.expiresTime).toBeDefined();
       });
-
-      it('should return exception when wrong objective', async () => {
-        const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
-        );
-        await expect(
-          appController.verificationPassword(
-            {
-              objective: OtpObjective.ForgotPassword,
-              password: '2@HelloWorld',
-            },
-            {
-              $credential: credential,
-              $language: 'th',
-            } as any
-          )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
-        );
-      });
     });
 
     describe('changePasswordSubmit', () => {
@@ -829,27 +809,6 @@ describe('AppController', () => {
           } as any
         );
         expect(response).toEqual('');
-      });
-
-      it('should return exception when wrong objective', async () => {
-        const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
-        );
-        await expect(
-          appController.changePasswordSubmit(
-            {
-              objective: OtpObjective.VerifyMobile,
-              newPassword: '2@BlaBlaBla',
-              refCode: genRefCode,
-            },
-            {
-              $credential: credential,
-              $language: 'th',
-            } as any
-          )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
-        );
       });
     });
   });
