@@ -1282,6 +1282,8 @@ export class UsersController {
       content,
       userRecast
     );
+    if (id === content.author.id || id === content.author.castcleId) return;
+
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
     );
@@ -1332,6 +1334,8 @@ export class UsersController {
       userQuotecast,
       message
     );
+
+    if (id === content.author.id || id === content.author.castcleId) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
@@ -1468,8 +1472,7 @@ export class UsersController {
 
     await this.contentService.likeContent(content, user);
 
-    if (id === 'me' || id === user.id || id === content.author.castcleId)
-      return;
+    if (id === content.author.id || id === content.author.castcleId) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
