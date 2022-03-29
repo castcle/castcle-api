@@ -25,7 +25,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
 import { Password } from '@castcle-api/utils/commons';
 import {
-  AccountActivations,
+  AccountActivation,
   AccountAuthentication,
   AccountCampaigns,
 } from '../models';
@@ -94,7 +94,7 @@ class AccountDocument extends CastcleBase {
   referralCount: number;
 
   @Prop({ type: Array })
-  activations: AccountActivations[];
+  activations: AccountActivation[];
 
   /**
    * TO DO !!! this is a hot fix for guests
