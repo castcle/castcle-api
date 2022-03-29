@@ -35,8 +35,10 @@ import { Meta } from './response.dto';
 
 class UserImage {
   @ApiProperty()
+  @IsString()
   avatar: string | CastcleImage;
   @ApiProperty()
+  @IsString()
   cover: string | CastcleImage;
 }
 
@@ -47,18 +49,28 @@ export class UserModelImage {
 
 class Link {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   facebook?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   twitter?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   youtube?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   medium?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   website?: string | null;
 }
 
@@ -157,15 +169,21 @@ export class syncSocialDetail {
 }
 export class UpdateUserDto {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   overview?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   dob?: string;
 
   @ApiProperty()
+  @IsOptional()
   images?: UserImage;
 
   @ApiProperty()
+  @IsOptional()
   links?: Link;
 }
 
@@ -307,11 +325,13 @@ export class SocialSyncDto {
   castcleId?: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsEnum(SocialProvider)
   provider?: SocialProvider;
 
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   socialId: string;
 
   @ApiProperty()
@@ -360,10 +380,12 @@ export class SocialSyncDto {
 
 export class SocialSyncDeleteDto {
   @ApiProperty()
+  @IsOptional()
   @IsString()
   castcleId?: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsEnum(SocialProvider)
   provider?: SocialProvider;
 
