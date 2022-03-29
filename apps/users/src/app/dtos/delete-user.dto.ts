@@ -20,9 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class DeleteUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
   channel: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
   payload: {
     password: string;
   };

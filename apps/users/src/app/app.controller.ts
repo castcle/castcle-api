@@ -405,18 +405,21 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
     @Auth() { account, user }: Authorizer,
-    @Body('channel') channel: string,
-    @Body('payload.password') password: string
+    @Body() deleteUserDto: DeleteUserDto
   ) {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
 
-    const isValidChannel = channel === 'email';
-    const isPasswordValid = await account.verifyPassword(password);
+    const isValidChannel = deleteUserDto.channel === 'email';
+    this.logger.log('Verify password.');
+    const isPasswordValid = await account.verifyPassword(
+      deleteUserDto.payload.password
+    );
 
     if (!isValidChannel || !isPasswordValid) {
+      this.logger.warn('Invalid password or channel.');
       throw CastcleException.INVALID_PASSWORD;
     }
-
+    this.logger.log('Deactivate user.');
     await this.userService.deactivate(account);
   }
 

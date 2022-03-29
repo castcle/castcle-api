@@ -439,11 +439,12 @@ describe('AppController', () => {
   describe('deleteMyData', () => {
     it('should remove user from User schema', async () => {
       const user = await service.getUserFromCredential(userCredential);
-      await appController.deleteMyData(
-        { account: userAccount, user } as any,
-        'email',
-        '1234AbcD'
-      );
+      await appController.deleteMyData({ account: userAccount, user } as any, {
+        channel: 'email',
+        payload: {
+          password: '1234AbcD',
+        },
+      });
 
       await expect(
         service.getUserFromCredential(userCredential)
