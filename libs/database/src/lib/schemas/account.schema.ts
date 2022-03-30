@@ -95,6 +95,11 @@ class AccountDocument extends CastcleBase {
   @Prop({ required: true, default: 0 })
   referralCount: number;
 
+  @Prop({ type: Array })
+  activations: AccountActivation[];
+
+  @Prop({ type: Array })
+  devices: AccountDevice[];
   /**
    * TO DO !!! this is a hot fix for guests
    */
