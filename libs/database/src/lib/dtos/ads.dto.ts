@@ -64,11 +64,13 @@ export class AdsRequestDto {
   @IsNotEmpty()
   @ApiProperty()
   duration: number;
-
+  
+  @IsString()
   @ApiProperty()
   @IsOptional()
   contentId?: string;
 
+  @IsString()
   @ApiProperty()
   @IsOptional()
   paymentMethod: string;
