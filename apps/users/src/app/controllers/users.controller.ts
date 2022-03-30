@@ -1470,7 +1470,9 @@ export class UsersController {
       );
     }
 
-    await this.contentService.likeContent(content, user);
+    const likeContent = await this.contentService.likeContent(content, user);
+    if (!likeContent)
+      throw new CastcleException(CastcleStatus.LIKE_IS_EXIST, req.$language);
 
     if (id === content.author.id || id === content.author.castcleId) return;
 

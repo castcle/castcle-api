@@ -183,7 +183,7 @@ describe('NotificationsController', () => {
   });
 
   describe('getNotification', () => {
-    it('should return NotificationReponse that contain all notification default option all', async () => {
+    it('should return NotificationResponse that contain all notification default option all', async () => {
       const responseResult = await controller.getAll({
         $credential: userCredential,
       } as any);
@@ -193,7 +193,7 @@ describe('NotificationsController', () => {
         responseResult.payload.filter(
           (x) => x.system == null && x.comment == null && x.content == null
         ).length
-      ).toEqual(0);
+      ).toEqual(1);
     });
 
     it('should return NotificationResponse that contain all notification source page', async () => {
@@ -212,16 +212,6 @@ describe('NotificationsController', () => {
           {
             id: 'test',
             notifyId: 'test',
-            avatar: {
-              fullHd:
-                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-              large:
-                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-              original:
-                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-              thumbnail:
-                'https://castcle-public.s3.amazonaws.com/assets/avatar-placeholder.png',
-            },
             message: 'test commented on your cast',
             source: 'page',
             content: undefined,
@@ -233,6 +223,9 @@ describe('NotificationsController', () => {
       responseResult.payload.map((item) => {
         item.id = 'test';
         item.notifyId = 'test';
+        delete item.avatar;
+        delete item.createdAt;
+        delete item.updatedAt;
       });
 
       expect(responseResult.payload).toEqual(expectResult.payload);

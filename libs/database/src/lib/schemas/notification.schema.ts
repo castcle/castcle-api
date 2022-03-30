@@ -66,6 +66,7 @@ class NotificationDocument extends CastcleBase {
 type NotifyResponseOption = {
   message: string;
   user?: User;
+  isDate?: boolean;
 };
 
 export const NotificationSchema =
@@ -80,6 +81,7 @@ export class Notification extends NotificationDocument {
 NotificationSchema.methods.toNotificationPayload = function ({
   message,
   user,
+  isDate = false,
 }: NotifyResponseOption) {
   return {
     id: this._id,
@@ -97,13 +99,18 @@ NotificationSchema.methods.toNotificationPayload = function ({
         ? this.targetRef.oid
         : undefined,
     content:
-      this.type !== NotificationType.Comment &&
-      this.type !== NotificationType.Reply
+      this.type == NotificationType.Like ||
+      this.type === NotificationType.Quote ||
+      this.type === NotificationType.Recast ||
+      this.type === NotificationType.Farm ||
+      this.type === NotificationType.Tag
         ? this.targetRef.oid
         : undefined,
     system:
       this.source === NotificationSource.System
         ? this.targetRef.oid
         : undefined,
+    createdAt: isDate ? this.createdAt : undefined,
+    updatedAt: isDate ? this.updatedAt : undefined,
   } as NotificationPayloadDto;
 };

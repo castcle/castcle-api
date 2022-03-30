@@ -272,7 +272,7 @@ export class NotificationService {
       if (index > -1) userSort[index] = user;
     });
     let message = '';
-    const displayNames = users.map((user) => user.displayName);
+    const displayNames = userSort.map((user) => user.displayName);
     if (notify.type === NotificationType.Like)
       message = CastcleLocalization.getTemplateLike(
         language,
@@ -360,7 +360,8 @@ export class NotificationService {
         });
 
         let message = '';
-        const displayNames = users.map((user) => user.displayName);
+        const displayNames = userSort.map((user) => user.displayName);
+
         if (notify.type === NotificationType.Like)
           message = CastcleLocalization.getTemplateLike(
             language,
@@ -435,6 +436,7 @@ export class NotificationService {
         return notify.toNotificationPayload({
           message: message,
           user: users[0],
+          isDate: true,
         });
       })
     );
