@@ -64,7 +64,7 @@ export class AdsRequestDto {
   @IsNotEmpty()
   @ApiProperty()
   duration: number;
-  
+
   @IsString()
   @ApiProperty()
   @IsOptional()
