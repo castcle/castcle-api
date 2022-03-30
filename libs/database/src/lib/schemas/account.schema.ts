@@ -28,7 +28,9 @@ import {
   AccountActivation,
   AccountAuthentication,
   AccountCampaigns,
+  AccountDevice,
 } from '../models';
+
 import { SchemaTypes, Types } from 'mongoose';
 
 export enum AccountRole {
@@ -96,6 +98,8 @@ class AccountDocument extends CastcleBase {
   @Prop({ type: Array })
   activations: AccountActivation[];
 
+  @Prop({ type: Array })
+  devices: AccountDevice[];
   /**
    * TO DO !!! this is a hot fix for guests
    */
