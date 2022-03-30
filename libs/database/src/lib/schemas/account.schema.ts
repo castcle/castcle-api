@@ -28,7 +28,9 @@ import {
   AccountActivation,
   AccountAuthentication,
   AccountCampaigns,
+  AccountDevice,
 } from '../models';
+
 import { SchemaTypes, Types } from 'mongoose';
 
 export enum AccountRole {
@@ -92,9 +94,6 @@ class AccountDocument extends CastcleBase {
 
   @Prop({ required: true, default: 0 })
   referralCount: number;
-
-  @Prop({ type: Array })
-  activations: AccountActivation[];
 
   /**
    * TO DO !!! this is a hot fix for guests
