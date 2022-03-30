@@ -26,6 +26,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
 import { CastcleImage, CastcleMeta } from './common.dto';
+import { CastcleBase } from './../schemas/base.schema';
 
 export enum NotificationType {
   Like = 'like',
@@ -51,7 +52,7 @@ export enum NotificationRef {
   Content = 'content',
 }
 
-export class NotificationPayloadDto {
+export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
 
