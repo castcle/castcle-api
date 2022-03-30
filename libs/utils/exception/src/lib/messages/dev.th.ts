@@ -240,6 +240,11 @@ export const DevErrorMessages = {
     code: '5004',
     message: 'You already recast this cast',
   },
+  '5005': {
+    statusCode: '404',
+    code: '5005',
+    message: 'You already like this cast',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',

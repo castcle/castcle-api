@@ -1470,7 +1470,9 @@ export class UsersController {
       );
     }
 
-    await this.contentService.likeContent(content, user);
+    const likeContent = await this.contentService.likeContent(content, user);
+    if (!likeContent)
+      throw new CastcleException(CastcleStatus.LIKE_IS_EXIST, req.$language);
 
     if (id === content.author.id || id === content.author.castcleId) return;
 
@@ -1953,7 +1955,7 @@ export class UsersController {
     );
 
     if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
-    await this.socialSyncService.delete(social, page, true);
+    await this.socialSyncService.disconnect(social, page, true);
 
     if (social.provider === SocialProvider.Facebook && social.authToken) {
       this.logger.log('Unsubscribed facebook page');

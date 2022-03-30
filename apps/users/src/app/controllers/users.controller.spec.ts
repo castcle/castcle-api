@@ -78,9 +78,9 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { UsersController } from './users.controller';
 import { UserSettingsDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
+import { UsersController } from './users.controller';
 
 export class DownloaderMock {
   getImageFromUrl() {
@@ -773,7 +773,7 @@ describe('AppController', () => {
       await appController.deleteSyncSocial(request);
       const userSync = await socialSyncService.getSocialSyncByUser(page);
       const result = userSync.find((x) => x.provider === request.provider);
-      expect(result.active).toEqual(false);
+      expect(result).toBeUndefined();
     });
   });
 
