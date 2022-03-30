@@ -34,5 +34,6 @@ export const getBullModuleOptions = (): QueueOptions => ({
   redis: {
     host: Environment.REDIS_HOST,
     port: Environment.REDIS_PORT,
+    password: Environment.REDIS_PASSWORD,
   },
 });
