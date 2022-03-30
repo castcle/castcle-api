@@ -36,6 +36,8 @@ import { CastLogger } from '@castcle-api/logger';
 import {
   Author,
   ContentType,
+  Link,
+  LinkType,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
@@ -162,18 +164,33 @@ export class TwitterService {
         });
 
         const images = await Promise.all(($images ?? []).filter(Boolean));
+        const link: Link[] = [];
 
-        entities?.urls?.forEach(({ expanded_url, url }) => {
-          text = text.replace(
-            url,
-            expanded_url.includes(id) ? '' : expanded_url
-          );
-        });
+        entities?.urls?.forEach(
+          ({ expanded_url, images, title, description, url }) => {
+            const isTwitterReferenceLink = expanded_url.includes(id);
+            text = text.replace(
+              url,
+              isTwitterReferenceLink ? '' : expanded_url
+            );
+
+            if (!isTwitterReferenceLink) {
+              link.push({
+                type: LinkType.Other,
+                url,
+                imagePreview: images?.[0]?.url,
+                title,
+                description,
+              });
+            }
+          }
+        );
 
         return {
           payload: {
             message: text.trim(),
             photo: images.length ? { contents: images } : undefined,
+            link,
           },
           type: ContentType.Short,
         } as SaveContentDto;

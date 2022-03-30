@@ -73,8 +73,7 @@ export class FeedsController {
     @Auth() { account, credential }: Authorizer,
     @Param() { id }: FeedParam
   ) {
-    await this.rankerService.seenFeedItem(account, id, credential);
-    this.suggestionService.seen(account.id);
+    this.suggestionService.seen(account, id, credential);
   }
 
   @CastcleBasicAuth()
@@ -134,7 +133,7 @@ export class FeedsController {
       String(account._id),
       feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
     );
-    console.log('-------- feeds member for you');
+
     return this.suggestionService.suggest(account.id, feedItems);
   }
 

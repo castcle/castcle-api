@@ -31,6 +31,7 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  TAccountService,
 } from '../database.module';
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
@@ -70,6 +71,7 @@ describe('AdsService', () => {
         AuthenticationService,
         UserService,
         ContentService,
+        TAccountService,
         HashtagService,
         {
           provide: getQueueToken(QueueName.CONTENT),

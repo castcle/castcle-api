@@ -64,7 +64,7 @@ export class CampaignService {
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
     @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<{ queueId: string }>,
-    private tAccountService: TAccountService
+    private taccountService: TAccountService
   ) {}
 
   /**
@@ -316,14 +316,12 @@ export class CampaignService {
           },
         } as TLedger)
     );
-
-    const transaction = await this.tAccountService.transfers({
+    const transaction = await this.taccountService.transfers({
       from,
       to,
       data: { campaignId: claimCampaignsAirdropJob.campaignId },
       ledgers,
     });
-
     await campaign.save();
 
     this.logger.log(

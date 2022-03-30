@@ -27,9 +27,22 @@ export const CACCOUNT_NO = {
     AIRDROP: '0500',
   },
   LIABILITY: {
+    NO: '2000',
     USER_WALLET: {
+      NO: '2100',
       PERSONAL: '2110',
       ADS: '2120',
+    },
+    LOCKED_TOKEN: {
+      NO: '2200',
+      PERSONAL: {
+        NO: '2210',
+        ADS: '2211',
+        FARM: '2212',
+      },
+      ADS_CREDIT: {
+        NO: '2220',
+      },
     },
   },
 };
