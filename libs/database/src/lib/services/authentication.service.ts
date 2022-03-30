@@ -817,15 +817,15 @@ export class AuthenticationService {
   }
 
   async createAccountDevice({
-    account,
+    accountId,
     uuid,
     platform,
     firebaseToken,
   }: CreateAccountDeviceDto) {
-    return this._accountDeviceModel
+    await this._accountDeviceModel
       .updateOne(
         {
-          account,
+          account: accountId,
           uuid,
           platform,
         },
@@ -834,7 +834,7 @@ export class AuthenticationService {
             firebaseToken,
           },
           $setOnInsert: {
-            account,
+            account: accountId,
             uuid,
             platform,
           },
@@ -844,18 +844,70 @@ export class AuthenticationService {
         }
       )
       .exec();
+
+    const account = await this._accountModel
+      .findOne({
+        _id: accountId,
+        'devices.uuid': uuid,
+        'devices.platform': platform,
+      })
+      .exec();
+
+    return await this._accountModel
+      .updateOne(
+        account
+          ? {
+              _id: accountId,
+              'devices.uuid': uuid,
+              'devices.platform': platform,
+            }
+          : {
+              _id: accountId,
+            },
+        account
+          ? {
+              $set: {
+                'devices.$.firebaseToken': firebaseToken,
+              },
+            }
+          : {
+              $addToSet: {
+                devices: {
+                  uuid,
+                  platform,
+                  firebaseToken,
+                },
+              },
+            }
+      )
+      .exec();
   }
+
   async deleteAccountDevice({
-    account,
+    accountId,
     uuid,
     platform,
   }: CreateAccountDeviceDto) {
-    return this._accountDeviceModel
-      .deleteOne({
-        account,
-        uuid,
-        platform,
-      })
-      .exec();
+    return await Promise.all([
+      this._accountModel
+        .updateOne(
+          {
+            _id: accountId,
+            'devices.uuid': uuid,
+            'devices.platform': platform,
+          },
+          {
+            $pull: { devices: { uuid: uuid, platform: platform } },
+          }
+        )
+        .exec(),
+      this._accountDeviceModel
+        .deleteOne({
+          uuid,
+          platform,
+          account: accountId,
+        })
+        .exec(),
+    ]);
   }
 }

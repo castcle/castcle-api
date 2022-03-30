@@ -67,7 +67,7 @@ export class CreateAccountDto {
 }
 
 export class CreateAccountDeviceDto {
-  account: Types.ObjectId;
+  accountId: Types.ObjectId;
   firebaseToken: string;
   uuid: string;
   platform: AcceptPlatform;
