@@ -724,19 +724,9 @@ describe('Authentication Service', () => {
   describe('Account Device', () => {
     describe('#createAccountDevice', () => {
       let account: Account;
-      let accountDup: Account;
       beforeAll(async () => {
         account = await new service._accountModel({
           email: 'test@gmail.com',
-          password: '11223344a',
-          isGuest: true,
-          preferences: {
-            languages: ['en', 'en'],
-          },
-        }).save();
-
-        accountDup = await new service._accountModel({
-          email: 'test2@gmail.com',
           password: '11223344a',
           isGuest: true,
           preferences: {
@@ -781,28 +771,6 @@ describe('Authentication Service', () => {
         expect(requestBody.uuid).toEqual(accountDevice.uuid);
         expect(requestBody.platform).toEqual(accountDevice.platform);
         expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
-      });
-      it('should not create firebase token wrong is duplicate.', async () => {
-        const requestBody = {
-          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
-          platform: 'android',
-          firebaseToken: 'testfirebasetokenismock',
-        };
-
-        const duplicate = await (service as any)
-          .createAccountDevice({
-            accountId: accountDup._id,
-            ...requestBody,
-          })
-          .catch((error) => {
-            return error;
-          });
-
-        expect(duplicate.code).toEqual(11000);
-        expect(duplicate.keyValue).toEqual({
-          uuid: requestBody.uuid,
-          platform: requestBody.platform,
-        });
       });
     });
     describe('#deleteAccountDevice', () => {
