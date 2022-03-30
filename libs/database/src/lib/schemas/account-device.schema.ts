@@ -23,5 +23,8 @@ export class AccountDevice extends CastcleBase {
 }
 
 export const AccountDeviceSchema = SchemaFactory.createForClass(AccountDevice);
-AccountDeviceSchema.index({ account: 1, uuid: 1, platform: 1 });
-AccountDeviceSchema.index({ uuid: 1, platform: 1 }, { unique: true });
+
+AccountDeviceSchema.index(
+  { account: 1, uuid: 1, platform: 1 },
+  { unique: true }
+);
