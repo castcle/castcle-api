@@ -40,7 +40,7 @@ import {
   FeedQuery,
   Meta,
 } from '../dtos';
-import { FeedAggregatorName, FeedAnalyticSource } from '../models';
+import { FeedAggregatorName, FeedAnalyticSource, UserType } from '../models';
 import {
   Account,
   Content,
@@ -54,7 +54,6 @@ import {
   toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
   User,
-  UserType,
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { DataService } from './data.service';
@@ -324,7 +323,7 @@ export class RankerService {
 
     const user = await this.userModel.findOne({
       ownerAccount: viewer._id,
-      type: UserType.People,
+      type: UserType.PEOPLE,
     });
 
     const pipeline = pipelineOfGetFeedContents({

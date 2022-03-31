@@ -40,6 +40,7 @@ import {
   SocialSyncService,
   TAccountService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   AdsQuery,
@@ -66,7 +67,6 @@ import {
   Engagement,
   SocialSync,
   User,
-  UserType,
 } from '@castcle-api/database/schemas';
 import { Configs } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
@@ -1686,7 +1686,7 @@ describe('AppController', () => {
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.Page,
+        type: UserType.PAGE,
       }).save();
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
@@ -1723,7 +1723,7 @@ describe('AppController', () => {
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.Page,
+        type: UserType.PAGE,
       }).save();
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
@@ -1760,7 +1760,7 @@ describe('AppController', () => {
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.Page,
+        type: UserType.PAGE,
       }).save();
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
@@ -1798,14 +1798,14 @@ describe('AppController', () => {
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.Page,
+        type: UserType.PAGE,
       }).save();
 
       user = await new (socialSyncService as any).userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.People,
+        type: UserType.PEOPLE,
       }).save();
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',
@@ -1853,14 +1853,14 @@ describe('AppController', () => {
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.Page,
+        type: UserType.PAGE,
       }).save();
 
       user = await new (socialSyncService as any).userModel({
         ownerAccount: userCredential.account._id,
         displayName: 'mock user',
         displayId: 'mockid',
-        type: UserType.People,
+        type: UserType.PEOPLE,
       }).save();
       const socialSyncDto: SocialSyncDto = {
         castcleId: 'mockcast',

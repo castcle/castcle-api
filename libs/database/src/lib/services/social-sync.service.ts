@@ -20,15 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isBoolean } from 'class-validator';
 import { Model } from 'mongoose';
-import { EntityVisibility } from '../dtos/common.dto';
+import { EntityVisibility, SocialSyncDeleteDto, SocialSyncDto } from '../dtos';
 import { SocialProvider } from '../models';
 import { SocialSync, User } from '../schemas';
-import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {

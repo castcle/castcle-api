@@ -21,23 +21,46 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './ux.engagement.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { SocialProvider } from '../models';
+
+export class SyncSocialDtoV2 {
+  @ApiProperty()
+  @IsString()
+  socialId: string;
+
+  @ApiProperty({ enum: SocialProvider })
+  @IsEnum(SocialProvider)
+  provider: SocialProvider;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  userName?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+
+  @ApiProperty({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  active = true;
+
+  @ApiProperty({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  autoPost = true;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  authToken?: string;
+}

@@ -34,8 +34,8 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '../dtos';
-import { NotificationMessage, QueueName } from '../models';
-import { Content, Credential, Notification, User, UserType } from '../schemas';
+import { NotificationMessage, QueueName, UserType } from '../models';
+import { Content, Credential, Notification, User } from '../schemas';
 import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { AccountDevice } from '../schemas/account-device.schema';
 
@@ -277,44 +277,44 @@ export class NotificationService {
       message = CastcleLocalization.getTemplateLike(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
     if (notify.type === NotificationType.Comment)
       message = CastcleLocalization.getTemplateComment(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
     if (notify.type === NotificationType.Farm)
       message = CastcleLocalization.getTemplateFarm(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
     if (notify.type === NotificationType.Quote)
       message = CastcleLocalization.getTemplateQuote(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
     if (notify.type === NotificationType.Recast)
       message = CastcleLocalization.getTemplateRecast(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
     if (notify.type === NotificationType.Reply)
       message = CastcleLocalization.getTemplateReply(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
 
     if (notify.type === NotificationType.Tag)
       message = CastcleLocalization.getTemplateTag(
         language,
         displayNames,
-        userOwner.type === UserType.Page ? userOwner.displayName : ''
+        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
       );
 
     if (notify.type === NotificationType.System)
@@ -366,7 +366,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateLike(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -374,7 +374,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateComment(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -382,7 +382,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateFarm(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -390,7 +390,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateQuote(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -398,7 +398,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateRecast(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -406,7 +406,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateReply(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );
@@ -415,7 +415,7 @@ export class NotificationService {
           message = CastcleLocalization.getTemplateTag(
             language,
             displayNames,
-            targetRef?.author.type === UserType.Page
+            targetRef?.author.type === UserType.PAGE
               ? targetRef?.author.displayName
               : ''
           );

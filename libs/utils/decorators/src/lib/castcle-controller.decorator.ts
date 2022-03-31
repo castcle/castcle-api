@@ -21,7 +21,12 @@
  * or have any questions.
  */
 
-import { applyDecorators, Controller, ControllerOptions } from '@nestjs/common';
+import {
+  applyDecorators,
+  Controller,
+  ControllerOptions,
+  VERSION_NEUTRAL,
+} from '@nestjs/common';
 import { Configs } from '@castcle-api/environments';
 import { ApiHeader } from '@nestjs/swagger';
 
@@ -42,3 +47,9 @@ export function CastcleController(options: ControllerOptions) {
     Controller(options)
   );
 }
+
+export const CastcleControllerV2 = ({ path, ...options }: ControllerOptions) =>
+  applyDecorators(
+    ApiHeader(Configs.RequiredHeaders.AcceptVersion),
+    Controller({ ...options, path: `v2/${path}`, version: VERSION_NEUTRAL })
+  );

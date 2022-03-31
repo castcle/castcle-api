@@ -27,9 +27,10 @@ import {
   MongooseForFeatures,
   SearchService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import { CreateHashtag } from '@castcle-api/database/dtos';
-import { Credential, UserType } from '@castcle-api/database/schemas';
+import { Credential } from '@castcle-api/database/schemas';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -111,7 +112,7 @@ describe('NotificationsController', () => {
     for (let i = 0; i < 15; i++) {
       await mockUser(
         `User ${i}`,
-        UserType.People,
+        UserType.PEOPLE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -119,7 +120,7 @@ describe('NotificationsController', () => {
     for (let i = 0; i < 15; i++) {
       await mockUser(
         `Page ${i}`,
-        UserType.Page,
+        UserType.PAGE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -127,7 +128,7 @@ describe('NotificationsController', () => {
     for (let i = 0; i < 5; i++) {
       await mockUser(
         `cPage ${i}`,
-        UserType.Page,
+        UserType.PAGE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -135,7 +136,7 @@ describe('NotificationsController', () => {
     for (let i = 0; i < 5; i++) {
       await mockUser(
         `cUser ${i}`,
-        UserType.People,
+        UserType.PEOPLE,
         Math.floor(Math.random() * 99999)
       );
     }

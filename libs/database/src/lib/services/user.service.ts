@@ -63,7 +63,7 @@ import {
   UserField,
   UserModelImage,
 } from '../dtos';
-import { CastcleNumber, QueueName, UserMessage } from '../models';
+import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -78,7 +78,6 @@ import {
   SocialSync,
   Transaction,
   User,
-  UserType,
 } from '../schemas';
 import { createCastcleFilter, createPagination } from '../utils/common';
 import {
@@ -139,7 +138,7 @@ export class UserService {
     this._userModel
       .findOne({
         ownerAccount: credential?.account?._id,
-        type: UserType.People,
+        type: UserType.PEOPLE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -148,7 +147,7 @@ export class UserService {
     this._userModel
       .find({
         ownerAccount: credential.account._id,
-        type: UserType.Page,
+        type: UserType.PAGE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -157,7 +156,7 @@ export class UserService {
     this._userModel
       .find({
         ownerAccount: accountId as any,
-        type: UserType.Page,
+        type: UserType.PAGE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -182,7 +181,7 @@ export class UserService {
     const user = await this._userModel
       .findOne({
         ownerAccount: accountId as any,
-        type: UserType.People,
+        type: UserType.PEOPLE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -250,7 +249,7 @@ export class UserService {
     if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
         users.map(async (user) => {
-          return user.type === UserType.Page
+          return user.type === UserType.PAGE
             ? user.toPageResponse()
             : await user.toUserResponse();
         })
@@ -279,7 +278,7 @@ export class UserService {
           : undefined;
 
         const userResponse =
-          u.type === UserType.Page
+          u.type === UserType.PAGE
             ? u.toPageResponse(
                 undefined,
                 undefined,
@@ -517,7 +516,7 @@ export class UserService {
   createPageFromUser = (user: User, pageDto: PageDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       displayId: pageDto.castcleId,
       displayName: pageDto.displayName,
     });
@@ -556,7 +555,7 @@ export class UserService {
   };
 
   getAllPages = (queryOptions: CastcleQueryOptions) => {
-    return this.getAllByCriteria({ type: UserType.Page }, queryOptions);
+    return this.getAllByCriteria({ type: UserType.PAGE }, queryOptions);
   };
 
   /**
@@ -568,7 +567,7 @@ export class UserService {
   getUserPages = async (user: User, queryOptions: CastcleQueryOptions) => {
     const filter = {
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       visibility: EntityVisibility.Publish,
     };
     const pages = this._userModel.find(filter).skip(queryOptions.page - 1);
@@ -888,11 +887,11 @@ export class UserService {
   reactivate = async (user: User) => {
     user.visibility = EntityVisibility.Publish;
 
-    if (user.type === UserType.Page) return user.save();
+    if (user.type === UserType.PAGE) return user.save();
 
     await this._userModel.updateMany({
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       visibility: EntityVisibility.Publish,
     });
 
@@ -1184,7 +1183,7 @@ Message: ${message}`,
     if (accountRef) {
       const userRef = this.getByIdOrCastcleId(
         accountRef.referrerDisplayId,
-        UserType.People
+        UserType.PEOPLE
       );
       this.logger.log('Success get referrer.');
       return userRef;
@@ -1285,7 +1284,7 @@ Message: ${message}`,
   createPageFromSocial = (account: Account, socialPageDto: SocialPageDto) => {
     return new this._userModel({
       ownerAccount: account._id,
-      type: UserType.Page,
+      type: UserType.PAGE,
       displayId: socialPageDto.castcleId,
       displayName: socialPageDto.displayName,
       profile: {

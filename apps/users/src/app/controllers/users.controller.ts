@@ -36,6 +36,7 @@ import {
   SocialProvider,
   SocialSyncService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   AdsQuery,
@@ -69,7 +70,6 @@ import {
   Credential,
   SocialSync,
   User,
-  UserType,
 } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -583,7 +583,7 @@ export class UsersController {
 
     const { users: pages, pagination } = await this.userService.getByCriteria(
       user,
-      { ownerAccount: $credential.account._id, type: UserType.Page },
+      { ownerAccount: $credential.account._id, type: UserType.PAGE },
       { page: pageOption, sortBy: sortByOption },
       false,
       [UserField.SyncSocial]
@@ -1004,7 +1004,7 @@ export class UsersController {
       this.logger.error(`Can't get user data`);
       throw new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND);
     }
-    if (user?.type === UserType.People) {
+    if (user?.type === UserType.PEOPLE) {
       this.logger.error(`People User is forbiden.`);
       throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
     }
@@ -1290,7 +1290,7 @@ export class UsersController {
     this.notifyService.notifyToUser(
       {
         source:
-          userOwner.type === UserType.People
+          userOwner.type === UserType.PEOPLE
             ? NotificationSource.Profile
             : NotificationSource.Page,
         sourceUserId: user._id,
@@ -1343,7 +1343,7 @@ export class UsersController {
     this.notifyService.notifyToUser(
       {
         source:
-          userOwner.type === UserType.People
+          userOwner.type === UserType.PEOPLE
             ? NotificationSource.Profile
             : NotificationSource.Page,
         sourceUserId: user._id,
@@ -1434,7 +1434,7 @@ export class UsersController {
       req.$credential,
       body
     );
-    return this.userService.getById(authorizedUser, page.id, UserType.Page);
+    return this.userService.getById(authorizedUser, page.id, UserType.PAGE);
   }
 
   /**
@@ -1482,7 +1482,7 @@ export class UsersController {
     this.notifyService.notifyToUser(
       {
         source:
-          userOwner.type === UserType.People
+          userOwner.type === UserType.PEOPLE
             ? NotificationSource.Profile
             : NotificationSource.Page,
         sourceUserId: user._id,
@@ -1774,7 +1774,7 @@ export class UsersController {
     const user = await this.userService.getUserFromCredential(req.$credential);
     const { users: pages } = await this.userService.getByCriteria(
       user,
-      { ownerAccount: req.$credential.account._id, type: UserType.Page },
+      { ownerAccount: req.$credential.account._id, type: UserType.PAGE },
       {
         page: 1,
         limit: 100,

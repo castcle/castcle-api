@@ -26,6 +26,7 @@ import {
   getSocialPrefix,
   SocialSyncService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   ContentResponse,
@@ -42,7 +43,7 @@ import {
   SortDirection,
   UpdatePageDto,
 } from '@castcle-api/database/dtos';
-import { Credential, UserType } from '@castcle-api/database/schemas';
+import { Credential } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -104,11 +105,11 @@ export class PagesController {
     const idResult = await this.userService.getByIdOrCastcleId(idOrCastCleId);
     if (
       idResult &&
-      idResult.type === UserType.Page &&
+      idResult.type === UserType.PAGE &&
       String(idResult.ownerAccount) === String(req.$credential.account._id)
     )
       return idResult;
-    else if (idResult && idResult.type === UserType.Page)
+    else if (idResult && idResult.type === UserType.PAGE)
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
@@ -118,12 +119,12 @@ export class PagesController {
     );
     if (
       castcleIdResult &&
-      castcleIdResult.type === UserType.Page &&
+      castcleIdResult.type === UserType.PAGE &&
       String(castcleIdResult.ownerAccount) ===
         String(req.$credential.account._id)
     )
       return castcleIdResult;
-    else if (castcleIdResult && castcleIdResult.type === UserType.Page)
+    else if (castcleIdResult && castcleIdResult.type === UserType.PAGE)
       throw new CastcleException(
         CastcleStatus.INVALID_ACCESS_TOKEN,
         req.$language
@@ -168,7 +169,7 @@ export class PagesController {
       body
     );
 
-    return this.userService.getById(authorizedUser, page.id, UserType.Page);
+    return this.userService.getById(authorizedUser, page.id, UserType.PAGE);
   }
 
   @ApiBody({
@@ -234,7 +235,7 @@ export class PagesController {
     const authorizedUser = await this.userService.getUserFromCredential(
       req.$credential
     );
-    return this.userService.getById(authorizedUser, id, UserType.Page);
+    return this.userService.getById(authorizedUser, id, UserType.PAGE);
   }
 
   @ApiOkResponse({ type: PageResponseDto })
@@ -248,7 +249,7 @@ export class PagesController {
       $credential
     );
 
-    return this.userService.getById(authorizedUser, id, UserType.Page);
+    return this.userService.getById(authorizedUser, id, UserType.PAGE);
   }
 
   @ApiOkResponse({ type: PagesResponse })
@@ -268,7 +269,7 @@ export class PagesController {
     );
     const { users: pages, pagination } = await this.userService.getByCriteria(
       authorizedUser,
-      { type: UserType.Page },
+      { type: UserType.PAGE },
       { page, sortBy, limit }
     );
 
@@ -358,7 +359,7 @@ export class PagesController {
     @Query('sortBy', SortByPipe)
     sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
   ): Promise<ContentsResponse> {
-    const page = await this.userService.getByIdOrCastcleId(id, UserType.Page);
+    const page = await this.userService.getByIdOrCastcleId(id, UserType.PAGE);
 
     if (!page) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
@@ -495,7 +496,7 @@ export class PagesController {
     const user = await this.userService.getUserFromCredential(req.$credential);
     const { users: pages } = await this.userService.getByCriteria(
       user,
-      { ownerAccount: req.$credential.account._id, type: UserType.Page },
+      { ownerAccount: req.$credential.account._id, type: UserType.PAGE },
       {
         page: 1,
         limit: 100,
