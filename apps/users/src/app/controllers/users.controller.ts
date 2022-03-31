@@ -49,7 +49,6 @@ import {
   FollowResponse,
   GetContentsDto,
   GetSearchUsersDto,
-  NotificationRef,
   NotificationSource,
   NotificationType,
   PageDto,
@@ -658,6 +657,22 @@ export class UsersController {
         req.$language
       );
     await this.userService.follow(currentUser, followedUser);
+
+    this.notifyService.notifyToUser(
+      {
+        source:
+          followedUser.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: currentUser._id,
+        type: NotificationType.Follow,
+        profileRef: followedUser._id,
+        account: followedUser.ownerAccount,
+        read: false,
+      },
+      followedUser,
+      req.$language
+    );
     return '';
   }
 
@@ -690,6 +705,22 @@ export class UsersController {
         req.$language
       );
     await this.userService.follow(user, followedUser);
+
+    this.notifyService.notifyToUser(
+      {
+        source:
+          followedUser.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Follow,
+        profileRef: followedUser._id,
+        account: followedUser.ownerAccount,
+        read: false,
+      },
+      followedUser,
+      req.$language
+    );
     return '';
   }
 
@@ -1295,7 +1326,7 @@ export class UsersController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Recast,
-        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        contentRef: content._id,
         account: userOwner.ownerAccount,
         read: false,
       },
@@ -1348,7 +1379,7 @@ export class UsersController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Quote,
-        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        contentRef: content._id,
         account: userOwner.ownerAccount,
         read: false,
       },
@@ -1487,7 +1518,7 @@ export class UsersController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Like,
-        targetRef: { _id: content._id, ref: NotificationRef.Content },
+        contentRef: content._id,
         account: userOwner.ownerAccount,
         read: false,
       },

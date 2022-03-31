@@ -25,6 +25,7 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   CreateNotification,
@@ -347,10 +348,7 @@ describe('NotificationService', () => {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         type: NotificationType.Comment,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-          ref: 'content',
-        },
+        contentRef: Types.ObjectId('6138afa4f616a467b5c4eb72'),
         read: false,
         account: result.accountDocument.id,
       };
@@ -368,9 +366,6 @@ describe('NotificationService', () => {
       expect(notifyData[0].source).toEqual(newNoti.source);
       expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
       expect(notifyData[0].type).toEqual(newNoti.type);
-      expect(notifyData[0].targetRef.namespace).toEqual('content');
-      expect(notifyData[0].targetRef.oid).toEqual(newNoti.targetRef._id);
-      expect(notifyData[0].read).toEqual(newNoti.read);
       expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
 
@@ -379,10 +374,6 @@ describe('NotificationService', () => {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         type: NotificationType.System,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-          ref: 'system',
-        },
         read: false,
         account: result.accountDocument.id,
       };
@@ -399,15 +390,12 @@ describe('NotificationService', () => {
       expect(notifyData).toBeDefined();
       expect(notifyData[0].source).toEqual(newNoti.source);
       expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
-      expect(notifyData[0].type).toEqual(newNoti.type);
-      expect(notifyData[0].targetRef.namespace).toEqual('system');
-      expect(notifyData[0].read).toEqual(newNoti.read);
       expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
   });
 
   describe('#registerToken', () => {
-    it('should update firebase token fron device uuid in db', async () => {
+    it('should update firebase token from device uuid in db', async () => {
       const deviceID = '9999999999';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
@@ -435,10 +423,18 @@ describe('NotificationService', () => {
 
   describe('#badges', () => {
     it('should return total notification number when lower than 99', async () => {
+      await new (service as any)._notificationModel({
+        account: result.credentialDocument.account._id,
+        source: 'profile',
+        type: 'like',
+        read: false,
+      }).save();
+
       const badges = await (service as any).getBadges(
         result.credentialDocument
       );
-      expect(badges).toEqual('2');
+
+      expect(badges).toEqual('1');
     });
 
     it('should return expty notification when get empty notification', async () => {
@@ -453,11 +449,13 @@ describe('NotificationService', () => {
       const badges = await (service as any).getBadges(
         credentialData.credentialDocument
       );
+      console.log(badges);
+
       expect(badges).toBeDefined();
     });
 
     it('should return total notification number when more than 99', async () => {
-      for (let i = 0; i < 99; i++) {
+      for (let i = 0; i < 101; i++) {
         const newNoti = new (service as any)._notificationModel({
           message: 'sample profile' + i,
           source: NotificationSource.Profile,

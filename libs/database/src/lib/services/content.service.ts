@@ -777,16 +777,16 @@ export class ContentService {
       },
       type: EngagementType.Like,
     });
-    if (!engagement)
-      engagement = new this._engagementModel({
-        type: EngagementType.Like,
-        user: user._id,
-        targetRef: {
-          $ref: 'comment',
-          $id: comment._id,
-        },
-        visibility: EntityVisibility.Publish,
-      });
+    if (engagement) return null;
+    engagement = new this._engagementModel({
+      type: EngagementType.Like,
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id,
+      },
+      visibility: EntityVisibility.Publish,
+    });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
     return engagement.save();

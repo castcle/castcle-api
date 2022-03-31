@@ -301,7 +301,7 @@ export class ContentController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Like,
-        targetRef: { _id: content._id },
+        contentRef: content._id,
         account: userOwner.ownerAccount,
         read: false,
       },
