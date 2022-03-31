@@ -20,7 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationSource } from './../dtos/notification.dto';
+import {
+  AndroidMessagePriority,
+  NotificationSource,
+} from './../dtos/notification.dto';
 
 type Aps = {
   alert: string;
@@ -39,8 +42,24 @@ type NotificationPayload = {
   system?: string;
 };
 
+type AndroidConfigs = {
+  priority: AndroidMessagePriority;
+  data: any;
+  notification: {
+    body: string;
+    default_sound: boolean;
+    notification_count: number;
+  };
+};
+
+type NotificationConfig = {
+  body: string;
+};
+
 export interface NotificationMessage {
   aps: Aps;
+  notification: NotificationConfig;
+  android: AndroidConfigs;
   payload: NotificationPayload;
   firebaseTokens: string[];
 }

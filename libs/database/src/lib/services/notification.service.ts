@@ -37,7 +37,10 @@ import { Credential, Notification, User } from '../schemas';
 import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { AccountDevice } from '../schemas/account-device.schema';
 import { Environment } from '@castcle-api/environments';
-import { NotificationSource } from './../dtos/notification.dto';
+import {
+  AndroidMessagePriority,
+  NotificationSource,
+} from './../dtos/notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -467,6 +470,18 @@ export class NotificationService {
     badgeCounts: number
   ) => {
     return {
+      notification: {
+        body: message,
+      },
+      android: {
+        priority: AndroidMessagePriority.Normal,
+        data: notify.toNotificationPayload({ message }),
+        notification: {
+          body: message,
+          default_sound: true,
+          notification_count: badgeCounts,
+        },
+      },
       aps: {
         alert: message,
         badge: badgeCounts,
@@ -479,6 +494,7 @@ export class NotificationService {
       firebaseTokens: firebaseToken.map((item) => String(item.firebaseToken)),
     } as NotificationMessage;
   };
+
   checkNotify = (notify) => {
     if (notify.type === NotificationType.Like) {
       return Environment.NOTIFY_LIKE == '1' ? true : false;
