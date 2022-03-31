@@ -28,13 +28,12 @@ import { Queue } from 'bull';
 import { FilterQuery, Model, Types } from 'mongoose';
 import {
   CreateNotification,
-  DEFAULT_NOTIFICATION_QUERY_OPTIONS,
   NotificationQueryOptions,
   NotificationType,
   RegisterTokenDto,
 } from '../dtos';
 import { NotificationMessage, QueueName, UserType } from '../models';
-import { Content, Credential, Notification, User } from '../schemas';
+import { Credential, Notification, User } from '../schemas';
 import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { AccountDevice } from '../schemas/account-device.schema';
 import { Environment } from '@castcle-api/environments';
@@ -51,8 +50,6 @@ export class NotificationService {
     private _userModel: Model<User>,
     @InjectModel('Credential')
     private _credentialModel: Model<Credential>,
-    @InjectModel('Comment') private _commentModel: Model<Comment>,
-    @InjectModel('Content') private _contentModel: Model<Content>,
     @InjectModel('AccountDevice')
     private _accountDeviceModel: Model<AccountDevice>,
     @InjectQueue(QueueName.NOTIFICATION)
@@ -67,12 +64,7 @@ export class NotificationService {
    */
   getNotificationAll = async (
     credential: Credential,
-    {
-      source,
-      sinceId,
-      untilId,
-      maxResults,
-    }: NotificationQueryOptions = DEFAULT_NOTIFICATION_QUERY_OPTIONS
+    { source, sinceId, untilId, maxResults }: NotificationQueryOptions
   ) => {
     const filter: FilterQuery<Notification> = {
       account: credential.account._id,

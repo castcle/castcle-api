@@ -184,10 +184,13 @@ describe('NotificationsController', () => {
 
   describe('getNotification', () => {
     it('should return NotificationResponse that contain all notification default option all', async () => {
-      const responseResult = await controller.getAll({
-        $credential: userCredential,
-      } as any);
-      console.log(responseResult);
+      const responseResult = await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       expect(responseResult.payload).toHaveLength(3);
       expect(
@@ -202,8 +205,6 @@ describe('NotificationsController', () => {
         {
           $credential: userCredential,
         } as any,
-        null,
-        null,
         null,
         NotificationSource.Page
       );
@@ -237,9 +238,13 @@ describe('NotificationsController', () => {
 
   describe('notifications read', () => {
     it('should success update read status', async () => {
-      const allNotification = await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      const allNotification = await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       const readNoti = allNotification.payload[0];
       await controller.notificationRead(
@@ -257,9 +262,13 @@ describe('NotificationsController', () => {
     });
 
     it('should return Exception as expect', async () => {
-      await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       await expect(
         controller.notificationRead(
@@ -291,9 +300,13 @@ describe('NotificationsController', () => {
         $credential: userCredential,
       } as any);
 
-      const result = await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      const result = await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       const notificationList = await (
         notification as any
@@ -305,9 +318,13 @@ describe('NotificationsController', () => {
     });
 
     it('should return Exception as expect', async () => {
-      await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       await expect(
         controller.notificationReadAll({
@@ -346,9 +363,13 @@ describe('NotificationsController', () => {
       const deviceID = 'iphone12345';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
-      await controller.getAll({
-        $credential: userCredential,
-      } as any);
+      await controller.getAll(
+        {
+          $credential: userCredential,
+        } as any,
+        null,
+        null
+      );
 
       await expect(
         controller.registerToken(

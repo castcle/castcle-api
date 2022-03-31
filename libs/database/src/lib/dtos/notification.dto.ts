@@ -25,7 +25,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
-import { CastcleImage, CastcleMeta } from './common.dto';
+import { CastcleImage, CastcleMeta, DEFAULT_QUERY_OPTIONS } from './common.dto';
 import { CastcleBase } from './../schemas/base.schema';
 
 export enum NotificationType {
@@ -101,7 +101,7 @@ export class NotificationResponse {
 
 export class NotificationQueryOptions {
   source?: NotificationSource;
-  maxResults?: number;
+  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
   sinceId?: string;
   untilId?: string;
 }
