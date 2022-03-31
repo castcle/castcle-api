@@ -185,20 +185,13 @@ describe('CommentController', () => {
         { hasRelationshipExpansion: false }
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
-      await commentController.likeComment(
-        userCredentialRequest,
-        content._id,
-        rootCommentId,
-        {
-          castcleId: user.displayId,
-          feedItemId: 'test',
-        }
-      );
+
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
         { hasRelationshipExpansion: false }
       );
+
       expect(comments2.payload[0].metrics.likeCount).toEqual(1);
     });
   });

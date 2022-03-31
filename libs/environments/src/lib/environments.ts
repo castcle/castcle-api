@@ -197,4 +197,15 @@ export class Environment {
   static ADS_MINIMUM_FEED_VIEW = process.env.ADS_MINIMUM_FEED_VIEW || 6;
   static ADS_MINIMUM_FEED_COOL_DOWN =
     process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;
+
+  static NOTIFY_LIKE = process.env.NOTIFY_LIKE || 0;
+  static NOTIFY_RECAST = process.env.NOTIFY_RECAST || 0;
+  static NOTIFY_QUOTE = process.env.NOTIFY_QUOTE || 0;
+  static NOTIFY_COMMENT = process.env.NOTIFY_COMMENT || 0;
+  static NOTIFY_TAG = process.env.NOTIFY_TAG || 0;
+  static NOTIFY_FARM = process.env.NOTIFY_FARM || 0;
+  static NOTIFY_REPLY = process.env.NOTIFY_REPLY || 0;
+  static NOTIFY_ADS = process.env.NOTIFY_ADS || 0;
+  static NOTIFY_FOLLOW = process.env.NOTIFY_FOLLOW || 0;
+  static NOTIFY_SYSTEM = process.env.NOTIFY_SYSTEM || 0;
 }

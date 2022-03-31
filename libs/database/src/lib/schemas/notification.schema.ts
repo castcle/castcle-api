@@ -34,7 +34,7 @@ import { User } from './user.schema';
 import { Image } from '@castcle-api/utils/aws';
 @Schema({ timestamps: true })
 class NotificationDocument extends CastcleBase {
-  @Prop({ required: true, type: String })
+  @Prop({ required: true, type: String, index: true })
   source: NotificationSource;
 
   @Prop({
@@ -45,13 +45,25 @@ class NotificationDocument extends CastcleBase {
   })
   sourceUserId: Types.ObjectId[];
 
-  @Prop({ required: true, type: String })
+  @Prop({ required: true, type: String, index: true })
   type: NotificationType;
 
-  @Prop({ required: true, type: Object })
-  targetRef: any;
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  contentRef: Types.ObjectId;
 
-  @Prop()
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  commentRef: Types.ObjectId;
+
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  replyRef: Types.ObjectId;
+
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  adsRef: Types.ObjectId;
+
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  profileRef: Types.ObjectId;
+
+  @Prop({ index: true })
   read: boolean;
 
   @Prop({
@@ -93,23 +105,11 @@ NotificationSchema.methods.toNotificationPayload = function ({
         ? new Image(user.profile.images.avatar).toSignUrls()
         : Configs.DefaultAvatarImages
       : undefined,
-    comment:
-      this.type === NotificationType.Comment ||
-      this.type === NotificationType.Reply
-        ? this.targetRef.oid
-        : undefined,
-    content:
-      this.type == NotificationType.Like ||
-      this.type === NotificationType.Quote ||
-      this.type === NotificationType.Recast ||
-      this.type === NotificationType.Farm ||
-      this.type === NotificationType.Tag
-        ? this.targetRef.oid
-        : undefined,
-    system:
-      this.source === NotificationSource.System
-        ? this.targetRef.oid
-        : undefined,
+    commentId: this.commentRef,
+    contentId: this.contentRef,
+    replyId: this.replyRef,
+    adsId: this.adsRef,
+    profileId: this.profileRef,
     createdAt: isDate ? this.createdAt : undefined,
     updatedAt: isDate ? this.updatedAt : undefined,
   } as NotificationPayloadDto;

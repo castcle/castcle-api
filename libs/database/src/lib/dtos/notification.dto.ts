@@ -39,6 +39,7 @@ export enum NotificationType {
   System = 'system',
   AdsApprove = 'ad-approve',
   AdsDecline = 'ad-decline',
+  Follow = 'follow',
 }
 
 export enum NotificationSource {
@@ -72,13 +73,19 @@ export class NotificationPayloadDto extends CastcleBase {
   type: string;
 
   @ApiProperty()
-  content?: string;
+  contentId?: Types.ObjectId;
 
   @ApiProperty()
-  comment?: string;
+  commentId?: Types.ObjectId;
 
   @ApiProperty()
-  system?: string;
+  replyId?: Types.ObjectId;
+
+  @ApiProperty()
+  adsId?: Types.ObjectId;
+
+  @ApiProperty()
+  profileId?: Types.ObjectId;
 
   @ApiProperty()
   read: boolean;
@@ -107,10 +114,10 @@ export interface CreateNotification {
   source: NotificationSource;
   sourceUserId?: Types.ObjectId;
   type: NotificationType;
-  targetRef: {
-    _id: string;
-    ref?: string;
-  };
+  contentRef?: Types.ObjectId;
+  profileRef?: Types.ObjectId;
+  commentRef?: Types.ObjectId;
+  replyRef?: Types.ObjectId;
   account: Account;
   read: boolean;
 }

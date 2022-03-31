@@ -43,7 +43,6 @@ import {
 import {
   DEFAULT_QUERY_OPTIONS,
   ExpansionQuery,
-  NotificationRef,
   NotificationSource,
   NotificationType,
 } from '@castcle-api/database/dtos';
@@ -85,47 +84,52 @@ export class CommentController {
     @Req() { $credential, $language }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
-    try {
-      const [authorizedUser, content, user] = await Promise.all([
-        this.authService.getUserFromAccount($credential.account),
-        this.contentService.getContentById(contentId),
-        this.userService.getByIdOrCastcleId(commentBody.castcleId),
-      ]);
+    // try {
+    const [authorizedUser, content, user] = await Promise.all([
+      this.authService.getUserFromAccount($credential.account),
+      this.contentService.getContentById(contentId),
+      this.userService.getByIdOrCastcleId(commentBody.castcleId),
+    ]);
 
-      const comment = await this.contentService.createCommentForContent(
+    const comment = await this.contentService.createCommentForContent(
+      user,
+      content,
+      { message: commentBody.message }
+    );
+
+    if (String(authorizedUser._id) !== String(content.author.id)) {
+      const userOwner = await this.userService.getByIdOrCastcleId(
+        content.author.id
+      );
+
+      this.notifyService.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: authorizedUser._id,
+          type: NotificationType.Comment,
+          contentRef: content._id,
+          commentRef: comment._id,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
         user,
-        content,
-        { message: commentBody.message }
+        $language
       );
-
-      if (String(authorizedUser.ownerAccount) !== String(user.ownerAccount))
-        this.notifyService.notifyToUser(
-          {
-            source:
-              user.type === UserType.PEOPLE
-                ? NotificationSource.Profile
-                : NotificationSource.Page,
-            sourceUserId: authorizedUser._id,
-            type: NotificationType.Comment,
-            targetRef: { _id: content._id, ref: NotificationRef.Content },
-            account: user.ownerAccount,
-            read: false,
-          },
-          user,
-          $language
-        );
-
-      const payload = await this.commentService.convertCommentToCommentResponse(
-        authorizedUser,
-        comment,
-        [],
-        expansionQuery
-      );
-
-      return { payload };
-    } catch (error) {
-      throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
     }
+    const payload = await this.commentService.convertCommentToCommentResponse(
+      authorizedUser,
+      comment,
+      [],
+      expansionQuery
+    );
+
+    return { payload };
+    // } catch (error) {
+    //   throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
+    // }
   }
 
   @CastcleAuth(CacheKeyName.Comments)
@@ -172,33 +176,38 @@ export class CommentController {
     @Req() { $credential, $language }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
-    const authorizedUser = await this.authService.getUserFromAccount(
-      $credential.account
-    );
-    const comment = await this.contentService.getCommentById(commentId);
-    const user = await this.userService.getByIdOrCastcleId(
-      replyCommentBody.castcleId
-    );
+    const [authorizedUser, comment, user] = await Promise.all([
+      this.authService.getUserFromAccount($credential.account),
+      this.contentService.getCommentById(commentId),
+      this.userService.getByIdOrCastcleId(replyCommentBody.castcleId),
+    ]);
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
     });
-    if (String(authorizedUser.ownerAccount) !== String(user.ownerAccount))
+
+    if (String(authorizedUser._id) !== String(comment.author.id)) {
+      const userOwner = await this.userService.getByIdOrCastcleId(
+        comment.author._id
+      );
+
       this.notifyService.notifyToUser(
         {
           source:
-            user.type === UserType.PEOPLE
+            userOwner.type === UserType.PEOPLE
               ? NotificationSource.Profile
               : NotificationSource.Page,
           sourceUserId: authorizedUser._id,
           type: NotificationType.Reply,
-          targetRef: { _id: comment._id, ref: NotificationRef.Comment },
-          account: user.ownerAccount,
+          contentRef: comment.targetRef.oid,
+          commentRef: comment._id,
+          replyRef: replyComment._id,
+          account: userOwner.ownerAccount,
           read: false,
         },
         user,
         $language
       );
-
+    }
     return {
       payload: await this.commentService.convertCommentToCommentResponse(
         authorizedUser,
@@ -260,27 +269,39 @@ export class CommentController {
     @Param('commentId') commentId: string,
     @Body() likeCommentBody: LikeCommentBody
   ) {
-    const [authorizedUser, comment, user] = await Promise.all([
+    const [authorizedUser, comment, user, content] = await Promise.all([
       this.authService.getUserFromAccount(req.$credential.account),
       this.contentService.getCommentById(commentId),
       this.userService.getByIdOrCastcleId(likeCommentBody.castcleId),
+      this.contentService.getContentFromId(contentId),
     ]);
-    await this.contentService.likeComment(user, comment);
-    this.notifyService.notifyToUser(
-      {
-        source:
-          user.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: authorizedUser._id,
-        type: NotificationType.Like,
-        targetRef: { _id: comment._id, ref: NotificationRef.Comment },
-        account: user.ownerAccount,
-        read: false,
-      },
-      user,
-      req.$language
-    );
+
+    const likeComment = await this.contentService.likeComment(user, comment);
+    if (!likeComment)
+      throw new CastcleException(CastcleStatus.LIKE_IS_EXIST, req.$language);
+
+    if (String(authorizedUser._id) !== String(comment.author.id)) {
+      const userOwner = await this.userService.getByIdOrCastcleId(
+        comment.author._id
+      );
+
+      this.notifyService.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: authorizedUser._id,
+          type: NotificationType.Like,
+          contentRef: content._id,
+          commentRef: comment._id,
+          account: user.ownerAccount,
+          read: false,
+        },
+        user,
+        req.$language
+      );
+    }
     return '';
   }
 

@@ -187,13 +187,14 @@ describe('NotificationsController', () => {
       const responseResult = await controller.getAll({
         $credential: userCredential,
       } as any);
+      console.log(responseResult);
 
       expect(responseResult.payload).toHaveLength(3);
       expect(
         responseResult.payload.filter(
-          (x) => x.system == null && x.comment == null && x.content == null
+          (x) => !x.commentId || !x.contentId || !x.replyId || !x.adsId
         ).length
-      ).toEqual(1);
+      ).toEqual(3);
     });
 
     it('should return NotificationResponse that contain all notification source page', async () => {
@@ -210,13 +211,14 @@ describe('NotificationsController', () => {
       const expectResult = {
         payload: [
           {
+            adsId: undefined,
+            commentId: undefined,
+            contentId: undefined,
             id: 'test',
-            notifyId: 'test',
             message: 'test commented on your cast',
+            notifyId: 'test',
+            replyId: undefined,
             source: 'page',
-            content: undefined,
-            comment: '6138afa4f616a467b5c4eb72',
-            system: undefined,
           },
         ],
       };
