@@ -52,7 +52,10 @@ export enum NotificationRef {
   Comment = 'comment',
   Content = 'content',
 }
-
+export enum AndroidMessagePriority {
+  Normal = 'normal',
+  High = 'high',
+}
 export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
