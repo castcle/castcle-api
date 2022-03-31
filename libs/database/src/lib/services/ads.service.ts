@@ -340,65 +340,69 @@ export class AdsService {
   seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
     const adsPlacement = await this._adsPlacementModel.findById(adsPlacementId);
     const session = await this._adsPlacementModel.startSession();
-    try {
-      if (!adsPlacement.seenAt) {
-        adsPlacement.seenAt = new Date();
-        adsPlacement.seenCredential = mongoose.Types.ObjectId(
-          seenByCredentialId
-        ) as any;
-        const adsCampaign = await this._adsCampaignModel.findById(
-          adsPlacement.campaign
-        );
-        const estAdsCostCAST =
-          adsPlacement.cost.UST / mockOracleService.getCastPrice();
-        //transferFrom ads owner to locked account
-        //debit personal account or ads_credit account of adsowner
-        //credit ads ownner locked_for ads
-        const tx = await this.taccountService.transfers({
-          from: {
-            account: adsCampaign.owner as unknown as string,
-            type:
-              adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
-                ? WalletType.ADS
-                : WalletType.PERSONAL,
-            value: estAdsCostCAST,
-          },
-          to: [
-            {
-              type: WalletType.CASTCLE_ADS_LOCKED,
+    let tx;
+    await session.withTransaction(async () => {
+      try {
+        if (adsPlacement && !adsPlacement.seenAt) {
+          adsPlacement.seenAt = new Date();
+          adsPlacement.seenCredential = mongoose.Types.ObjectId(
+            seenByCredentialId
+          ) as any;
+          const adsCampaign = await this._adsCampaignModel.findById(
+            adsPlacement.campaign
+          );
+          const estAdsCostCAST =
+            adsPlacement.cost.UST / mockOracleService.getCastPrice();
+          //transferFrom ads owner to locked account
+          //debit personal account or ads_credit account of adsowner
+          //credit ads ownner locked_for ads
+          tx = await this.taccountService.transfers({
+            from: {
+              account: adsCampaign.owner as unknown as string,
+              type:
+                adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+                  ? WalletType.ADS
+                  : WalletType.PERSONAL,
               value: estAdsCostCAST,
             },
-          ],
-          ledgers: [
-            {
-              debit: {
-                caccountNo:
-                  adsCampaign.detail.paymentMethod ===
-                  AdsPaymentMethod.ADS_CREDIT
-                    ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
-                    : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            to: [
+              {
+                type: WalletType.CASTCLE_ADS_LOCKED,
                 value: estAdsCostCAST,
               },
-              credit: {
-                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
-                value: estAdsCostCAST,
+            ],
+            ledgers: [
+              {
+                debit: {
+                  caccountNo:
+                    adsCampaign.detail.paymentMethod ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                      : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: estAdsCostCAST,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                  value: estAdsCostCAST,
+                },
               },
-            },
-          ],
-        });
-        await adsPlacement.save();
-        return {
+            ],
+          });
+          await adsPlacement.save();
+        }
+        await session.endSession();
+      } catch (error: unknown) {
+        await session.abortTransaction();
+        this.logger.error(error);
+      }
+    });
+    return tx
+      ? {
           adsPlacement: adsPlacement,
           txId: tx.id,
+        }
+      : {
+          adsPlacement: adsPlacement,
         };
-      }
-      await session.commitTransaction();
-      return {
-        adsPlacement: adsPlacement,
-      };
-    } catch (error: unknown) {
-      await session.abortTransaction();
-      this.logger.error(error);
-    }
   };
 }
