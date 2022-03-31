@@ -38,6 +38,7 @@ import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
+import { UsersControllerV2 } from './controllers/users.controller.v2';
 
 @Module({
   imports: [
@@ -57,7 +58,12 @@ import { UsersController } from './controllers/users.controller';
       limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
-  controllers: [NotificationsController, PagesController, UsersController],
+  controllers: [
+    NotificationsController,
+    PagesController,
+    UsersController,
+    UsersControllerV2,
+  ],
   providers: [
     SuggestionService,
     {

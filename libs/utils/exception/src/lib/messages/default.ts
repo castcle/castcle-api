@@ -71,6 +71,11 @@ export const ErrorMessages = {
     code: '1011',
     message: `Captcha failed please try again`,
   },
+  '1012': {
+    statusCode: '400',
+    code: '1012',
+    message: `Unable to sync with social platform`,
+  },
   '3001': {
     statusCode: '400',
     code: '3001',

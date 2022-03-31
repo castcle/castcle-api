@@ -22,6 +22,7 @@
  */
 
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
@@ -77,6 +78,7 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
+import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
@@ -89,11 +91,12 @@ import {
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
-  { name: 'AccountReferral', schema: AccountReferralSchema },
   { name: 'AccountDevice', schema: AccountDeviceSchema },
+  { name: 'AccountReferral', schema: AccountReferralSchema },
   { name: 'AdsCampaign', schema: AdsCampaignSchema },
   { name: 'AdsPlacement', schema: AdsPlacementSchema },
   { name: 'Analytic', schema: AnalyticSchema },
+  { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
@@ -107,7 +110,6 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'CAccount', schema: CAccountSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -170,6 +172,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsCacheModule,
+    UtilsClientsModule,
   ],
   providers: [
     AuthenticationService,
@@ -189,6 +192,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AnalyticService,
     DataService,
     TAccountService,
+    SocialSyncServiceV2,
   ],
   exports: [
     BullModule,
@@ -209,6 +213,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AnalyticService,
     DataService,
     TAccountService,
+    SocialSyncServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -234,4 +239,5 @@ export {
   AnalyticService,
   DataService,
   TAccountService,
+  SocialSyncServiceV2,
 };

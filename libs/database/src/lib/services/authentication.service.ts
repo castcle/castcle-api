@@ -39,7 +39,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { EventName } from '../models';
+import { EventName, UserType } from '../models';
 import {
   Account,
   AccountActivation,
@@ -54,7 +54,6 @@ import {
   OtpModel,
   OtpObjective,
   User,
-  UserType,
 } from '../schemas';
 import { AccountDevice } from './../schemas/account-device.schema';
 import { UserService } from './user.service';
@@ -386,7 +385,7 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayName: requirements.displayName,
       displayId: requirements.displayId,
-      type: UserType.People,
+      type: UserType.PEOPLE,
     }).save();
 
     const updateAccount = await this.createAccountActivation(account, 'email');
@@ -633,7 +632,7 @@ export class AuthenticationService {
       const user = await this._userModel
         .findOne({
           ownerAccount: credential.account._id,
-          type: UserType.People,
+          type: UserType.PEOPLE,
           visibility: EntityVisibility.Publish,
         })
         .exec();
@@ -701,7 +700,7 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayId: suggestDisplayId,
       displayName: requirements.displayName,
-      type: UserType.People,
+      type: UserType.PEOPLE,
       profile: {
         images: {
           avatar: requirements.avatar,
@@ -761,7 +760,7 @@ export class AuthenticationService {
       .updateOne(
         {
           ownerAccount: account._id,
-          type: UserType.People,
+          type: UserType.PEOPLE,
           visibility: EntityVisibility.Publish,
         },
         {

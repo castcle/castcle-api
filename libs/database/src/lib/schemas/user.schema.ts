@@ -1,13 +1,16 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { Model } from 'mongoose';
-import { SearchFollowsResponseDto } from '../dtos';
-import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
-import { Author } from '../dtos/content.dto';
-import { PageResponseDto, UserResponseDto } from '../dtos/user.dto';
-import { PageVerified, UserVerified } from '../models';
+import { Model, SchemaTypes } from 'mongoose';
+import {
+  SearchFollowsResponseDto,
+  CastcleImage,
+  EntityVisibility,
+  Author,
+  PageResponseDto,
+  UserResponseDto,
+} from '../dtos';
+import { PageVerified, UserType, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { Relationship } from './relationship.schema';
@@ -37,17 +40,11 @@ export interface UserProfile {
   images?: ProfileImage;
 }
 
-export enum UserType {
-  People = 'people',
-  Page = 'page',
-  Topic = 'topic',
-}
-
 @Schema({ timestamps: true })
 class UserDocument extends CastcleBase {
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'Account',
     index: true,
   })
@@ -66,16 +63,16 @@ class UserDocument extends CastcleBase {
   @Prop({ type: Object })
   profile?: UserProfile;
 
-  @Prop({ required: true })
-  type: string;
+  @Prop({ type: String, required: true })
+  type: UserType;
 
   @Prop({ type: Object })
   verified: UserVerified;
 
-  @Prop()
+  @Prop({ default: 0 })
   followerCount: number;
 
-  @Prop()
+  @Prop({ default: 0 })
   followedCount: number;
 
   @Prop()
@@ -402,7 +399,7 @@ export const UserSchemaFactory = (
   /*contentModel: Model<Content>,
   feedModel: Model<FeedItem>,
   commentModel: Model<Comment>*/
-): mongoose.Schema<any> => {
+) => {
   /**
    * Make sure all aggregate counter is 0
    */
@@ -448,7 +445,7 @@ export const UserSchemaFactory = (
         blocking: false,
         visibility: EntityVisibility.Publish,
       };
-      if ((followedUser as User).type === UserType.Page)
+      if ((followedUser as User).type === UserType.PAGE)
         setObject.isFollowPage = true;
       const result = await relationshipModel
         .updateOne(
