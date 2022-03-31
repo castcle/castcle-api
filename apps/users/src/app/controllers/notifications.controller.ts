@@ -28,6 +28,7 @@ import {
 } from '@castcle-api/database';
 import {
   NotificationBadgesResponse,
+  NotificationQueryOptions,
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto,
@@ -51,6 +52,8 @@ import {
   Put,
   Query,
   Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
@@ -97,17 +100,16 @@ export class NotificationsController {
     enum: NotificationSource,
     required: false,
   })
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true }))
   @Get()
   async getAll(
     @Req() req: CredentialRequest,
-    @Query('maxResults') maxResults?: number,
-    @Query('sinceId') sinceId?: string,
-    @Query('untilId') untilId?: string,
+    @Query() query?: NotificationQueryOptions,
     @Query('source', NotificationSourcePipe)
-    notificationSourceOption?: NotificationSource
+    sourceOption?: NotificationSource
   ) {
-    if (maxResults) {
-      if (+maxResults < 5 || +maxResults > 100) {
+    if (query?.maxResults) {
+      if (+query.maxResults < 5 || +query.maxResults > 100) {
         throw new CastcleException(
           CastcleStatus.INVALID_MAX_RESULT,
           req.$language
@@ -117,10 +119,8 @@ export class NotificationsController {
     const notifications = await this.notificationService.getNotificationAll(
       req.$credential,
       {
-        maxResults: maxResults,
-        sinceId: sinceId,
-        untilId: untilId,
-        source: notificationSourceOption,
+        ...query,
+        ...{ source: sourceOption },
       }
     );
 

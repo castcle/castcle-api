@@ -223,7 +223,8 @@ describe('NotificationService', () => {
   describe('#getNotificationAll', () => {
     it('should get all notification in db with source as default option', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       expect(notification).toHaveLength(3);
     });
@@ -241,7 +242,8 @@ describe('NotificationService', () => {
 
     it('should get notification filter with sinceId in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -256,7 +258,8 @@ describe('NotificationService', () => {
 
     it('should get notification filter with untilId in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -274,7 +277,8 @@ describe('NotificationService', () => {
   describe('#getFromId', () => {
     it('should get notification in db with id', async () => {
       const allNotification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const notification = await service.getFromId(allNotification[0].id);
       expect(notification).toEqual(allNotification[0]);
@@ -294,7 +298,8 @@ describe('NotificationService', () => {
   describe('#flagRead', () => {
     it('should update read flag notification in db', async () => {
       const allNotification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const updateRead = allNotification[0];
       const notificationId = updateRead.id;
@@ -314,10 +319,12 @@ describe('NotificationService', () => {
     it('should update read flag all notification in db', async () => {
       const resultUpdate = await service.flagReadAll(result.credentialDocument);
       const profileNoti = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const pageNoti = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(resultUpdate.n).toEqual(3);
@@ -359,7 +366,8 @@ describe('NotificationService', () => {
       await service.notifyToUser(newNoti, userOwner[0], 'th');
 
       const notifyData = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(notifyData).toBeDefined();
@@ -384,7 +392,8 @@ describe('NotificationService', () => {
       await service.notifyToUser(newNoti, userOwner[0], 'th');
 
       const notifyData = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(notifyData).toBeDefined();
@@ -480,7 +489,8 @@ describe('NotificationService', () => {
   describe('#generateNotificationToMessage', () => {
     it('should create notification message in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id
@@ -498,7 +508,8 @@ describe('NotificationService', () => {
   describe('#generateMessagesToNotifications', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       const message = await (service as any).generateMessagesToNotifications(
@@ -506,13 +517,14 @@ describe('NotificationService', () => {
         'th'
       );
 
-      expect(message).toHaveLength(25);
+      expect(message).toHaveLength(105);
     });
   });
   describe('#generateNotification', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id
