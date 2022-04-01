@@ -26,4 +26,10 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/guestLogin`);
   static register = () =>
     AuthenticationsRequest.post(`/authentications/register`);
+  static memberLogin = () =>
+    AuthenticationsRequest.post(`/authentications/login`);
+  static verificationEmail = () =>
+    AuthenticationsRequest.post(`/authentications/verificationEmail`);
+  static refreshToken = () =>
+    AuthenticationsRequest.post(`/authentications/refreshToken`);
 }
