@@ -26,7 +26,7 @@ import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { AuthenticationService } from '@castcle-api/database';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 
 @Injectable()
 export class CredentialStrategy extends PassportStrategy(Strategy) {
@@ -39,11 +39,7 @@ export class CredentialStrategy extends PassportStrategy(Strategy) {
   async validate(req: Request) {
     const haveAllHeader =
       req.headers['authorization'] && req.headers['accept-language'];
-    if (!haveAllHeader)
-      throw new CastcleException(
-        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
-        req.headers['accept-language'] ? req.headers['accept-language'] : 'en'
-      );
+    if (!haveAllHeader) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
     const token = req.headers['authorization'].split(' ')[1];
     const credential = await this.authService.getCredentialFromAccessToken(
       token
@@ -53,10 +49,6 @@ export class CredentialStrategy extends PassportStrategy(Strategy) {
         $credential: credential,
         $language: req.headers['accept-language'],
       };
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.headers['accept-language']
-      );
+    } else throw CastcleException.INVALID_ACCESS_TOKEN;
   }
 }

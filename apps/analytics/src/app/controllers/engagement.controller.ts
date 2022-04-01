@@ -23,7 +23,7 @@
 
 import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
 import { UxEngagementBody } from '@castcle-api/database/dtos';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -45,9 +45,9 @@ export class EngagementController {
     //check if they have the same id
     const accountId = String(body.accountId);
     if (accountId !== String(req.$credential.account._id))
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     const result = this.uxEngagementService.track(body);
     if (result) return '';
-    else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    else throw CastcleException.FORBIDDEN;
   }
 }

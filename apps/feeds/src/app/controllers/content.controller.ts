@@ -52,7 +52,7 @@ import {
   CastcleClearCacheAuth,
   CastcleController,
 } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { SortByPipe } from '@castcle-api/utils/pipes';
 import {
@@ -131,7 +131,7 @@ export class ContentController {
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
     const user = await this.userService.getUserFromCredential(req.$credential);
     const engagements =
       await this.contentService.getAllEngagementFromContentAndUser(
@@ -148,20 +148,13 @@ export class ContentController {
   }
 
   //TO BE REMOVED !!! this should be check at interceptor or guards
-  async _getContentIfExist(id: string, req: CredentialRequest) {
+  async _getContentIfExist(id: string) {
     try {
       const content = await this.contentService.getContentFromId(id);
       if (content) return content;
-      else
-        throw new CastcleException(
-          CastcleStatus.REQUEST_URL_NOT_FOUND,
-          req.$language
-        );
+      else throw CastcleException.REQUEST_URL_NOT_FOUND;
     } catch (e) {
-      throw new CastcleException(
-        CastcleStatus.REQUEST_URL_NOT_FOUND,
-        req.$language
-      );
+      throw CastcleException.REQUEST_URL_NOT_FOUND;
     }
   }
 
@@ -170,10 +163,7 @@ export class ContentController {
       req.$credential.account.isGuest ||
       !req.$credential.account.activateDate
     )
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     const users = await this.userService.getUserAndPagesFromCredential(
       req.$credential
     );
@@ -189,11 +179,7 @@ export class ContentController {
       content
     );*/
     if (result) return true;
-    else
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+    else throw CastcleException.FORBIDDEN;
   }
 
   @ApiBody({ type: SaveContentDto })
@@ -206,7 +192,7 @@ export class ContentController {
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
 
     await this._checkPermissionForUpdate(content, req);
 
@@ -234,7 +220,7 @@ export class ContentController {
     @Param('id') id: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
 
     await this._checkPermissionForUpdate(content, req);
     await this.contentService.deleteContentFromId(content._id);
@@ -284,7 +270,7 @@ export class ContentController {
     @Body('castcleId') castcleId: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.likeContent(content, user);
 
@@ -329,7 +315,7 @@ export class ContentController {
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
     const user = await this.appService.getUserFromBody(req, castcleId);
     await this.contentService.unLikeContent(content, user);
     return '';
@@ -350,7 +336,7 @@ export class ContentController {
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
     const user = await this.appService.getUserFromBody(req, castcleId);
     const result = await this.contentService.recastContentFromUser(
       content,
@@ -377,7 +363,7 @@ export class ContentController {
     @Req() req: CredentialRequest
   ) {
     //TODO !!! has to add feedItem once implement
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
 
     const user = await this.appService.getUserFromBody(req, castcleId);
     const result = await this.contentService.quoteContentFromUser(
@@ -442,7 +428,7 @@ export class ContentController {
     let relationUser: any = [];
     let relationStatus;
 
-    await this._getContentIfExist(contentId, req);
+    await this._getContentIfExist(contentId);
     const engagement: any = await this.contentService.getLikingCastUser(
       contentId,
       maxResults,
@@ -508,7 +494,7 @@ export class ContentController {
     @Param('id') id: string,
     @Req() req: CredentialRequest
   ) {
-    const content = await this._getContentIfExist(id, req);
+    const content = await this._getContentIfExist(id);
     const users = await this.userService.getUserAndPagesFromCredential(
       req.$credential
     );

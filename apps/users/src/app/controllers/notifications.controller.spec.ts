@@ -36,7 +36,7 @@ import {
   RegisterTokenDto,
 } from '@castcle-api/database/dtos';
 import { Credential, User } from '@castcle-api/database/schemas';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -277,9 +277,7 @@ describe('NotificationsController', () => {
           } as any,
           ''
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.NOTIFICATION_NOT_FOUND, 'th')
-      );
+      ).rejects.toEqual(CastcleException.NOTIFICATION_NOT_FOUND);
 
       await expect(
         controller.notificationRead(
@@ -288,9 +286,7 @@ describe('NotificationsController', () => {
           } as any,
           ''
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
-      );
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 
@@ -330,9 +326,7 @@ describe('NotificationsController', () => {
         controller.notificationReadAll({
           $credential: wrongUserCredential,
         } as any)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
-      );
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 
@@ -381,9 +375,7 @@ describe('NotificationsController', () => {
             firebaseToken: firebaseToken,
           } as RegisterTokenDto
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, 'th')
-      );
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 

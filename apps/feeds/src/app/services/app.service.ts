@@ -28,7 +28,7 @@ import {
   SaveContentDto,
   Url,
 } from '@castcle-api/database/dtos';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
@@ -51,10 +51,7 @@ export class AppService {
     const account = credentialRequest.$credential?.account;
     const user = await this.userService.getByIdOrCastcleId(castcleId);
     if (String(user.ownerAccount) !== String(account._id)) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        credentialRequest.$language
-      );
+      throw CastcleException.FORBIDDEN;
     }
     return user;
   }

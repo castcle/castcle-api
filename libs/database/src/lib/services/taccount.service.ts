@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { TransactionDto } from '../models/caccount.model';
-import { Transaction } from '../schemas';
 import { CAccount, CAccountNature } from '../schemas/caccount.schema';
+import { Transaction } from '../schemas/transaction.schema';
 
 @Injectable()
 export class TAccountService {
@@ -105,7 +105,7 @@ export class TAccountService {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
       return new this._transactionModel(transferDTO).save();
-    else throw new CastcleException(CastcleStatus.INVALID_TRANSACTIONS_DATA);
+    else throw CastcleException.INVALID_TRANSACTIONS_DATA;
   }
 
   async getBalance(caccountNo: string) {

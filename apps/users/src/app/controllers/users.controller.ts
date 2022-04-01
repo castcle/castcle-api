@@ -91,7 +91,7 @@ import {
   RequestMeta,
   RequestMetadata,
 } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import {
   LimitPipe,
@@ -164,7 +164,7 @@ export class UsersController {
       credentialRequest.$credential
     );
     if (String(user.ownerAccount) !== String(account._id)) {
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
     return user;
   };
@@ -206,9 +206,9 @@ export class UsersController {
     try {
       const content = await this.contentService.getContentFromId(id);
       if (content) return content;
-      else throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+      else throw CastcleException.REQUEST_URL_NOT_FOUND;
     } catch (e) {
-      throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+      throw CastcleException.REQUEST_URL_NOT_FOUND;
     }
   };
 
@@ -226,7 +226,7 @@ export class UsersController {
     const adsCampaign = await this.adsService.lookupAds(account, adsId);
     if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
       this.logger.log('Ads campaign not found.');
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
     return adsCampaign;
   };
@@ -457,26 +457,20 @@ export class UsersController {
     const user = await this._getUser(id, req.$credential);
     if (user) {
       if (String(user.ownerAccount) !== String(req.$credential.account._id))
-        throw new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          req.$language
-        );
+        throw CastcleException.FORBIDDEN;
       if (
         body.castcleId &&
         user.displayIdUpdatedAt &&
         !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
       )
-        throw new CastcleException(
-          CastcleStatus.CHANGE_CASTCLE_ID_FAILED,
-          req.$language
-        );
+        throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
       if (body.castcleId) {
         const userExisting = await this.authService.getExistedUserFromCastcleId(
           body.castcleId
         );
         if (userExisting && userExisting.id !== user.id)
-          throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+          throw CastcleException.USER_ID_IS_EXIST;
       }
 
       const newBody = await this.userService.uploadUserInfo(
@@ -486,11 +480,7 @@ export class UsersController {
       const afterUpdateUser = await this.userService.updateUser(user, newBody);
       const response = await afterUpdateUser.toUserResponse();
       return response;
-    } else
-      throw new CastcleException(
-        CastcleStatus.INVALID_ACCESS_TOKEN,
-        req.$language
-      );
+    } else throw CastcleException.INVALID_ACCESS_TOKEN;
   }
 
   @ApiResponse({ status: 204 })
@@ -652,10 +642,7 @@ export class UsersController {
     const currentUser = await this.userService.findUser(id);
     const followedUser = await this.userService.findUser(body.targetCastcleId);
     if (!currentUser.ownerAccount === req.$credential.account._id)
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     await this.userService.follow(currentUser, followedUser);
 
     this.notifyService.notifyToUser(
@@ -700,10 +687,7 @@ export class UsersController {
     const followedUser = await this.userService.findUser(body.targetCastcleId);
 
     if (!user.ownerAccount === req.$credential.account._id)
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     await this.userService.follow(user, followedUser);
 
     this.notifyService.notifyToUser(
@@ -748,10 +732,7 @@ export class UsersController {
     const currentUser = await this.userService.findUser(id);
     const followedUser = await this.userService.findUser(body.targetCastcleId);
     if (!currentUser.ownerAccount === req.$credential.account._id)
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     await this.userService.unfollow(currentUser, followedUser);
     return '';
   }
@@ -779,10 +760,7 @@ export class UsersController {
     const { user } = await this._getUserAndViewer(id, req.$credential);
     const followedUser = await this.userService.findUser(targetCastcleId);
     if (!user.ownerAccount === req.$credential.account._id)
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     await this.userService.unfollow(user, followedUser);
     return '';
   }
@@ -963,7 +941,7 @@ export class UsersController {
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
     if (otp.reciever !== countryCode + mobileNumber)
-      throw new CastcleException(CastcleStatus.INVALID_PHONE_NUMBER);
+      throw CastcleException.INVALID_PHONE_NUMBER;
 
     const isFirstTimeVerification = !user.verified.mobile;
 
@@ -1033,11 +1011,11 @@ export class UsersController {
     const user = await this.userService.findUser(body.castcleId);
     if (!user) {
       this.logger.error(`Can't get user data`);
-      throw new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND);
+      throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     }
     if (user?.type === UserType.PEOPLE) {
       this.logger.error(`People User is forbiden.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
 
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
@@ -1045,7 +1023,7 @@ export class UsersController {
       this.logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
-      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+      throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
@@ -1057,10 +1035,7 @@ export class UsersController {
       this.logger.error(
         `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
       );
-      throw new CastcleException(
-        CastcleStatus.SOCIAL_PROVIDER_IS_EXIST,
-        req.$language
-      );
+      throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
     }
 
     this.logger.log(`create sync data.`);
@@ -1087,7 +1062,7 @@ export class UsersController {
     this.logger.log(`Start update sync social.`);
     this.logger.log(JSON.stringify(body));
     const user = await this.userService.findUser(body.castcleId);
-    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!user) throw CastcleException.FORBIDDEN;
     await this.socialSyncService.update(body, user);
   }
 
@@ -1112,14 +1087,14 @@ export class UsersController {
     const user = await this.userService.findUser(body.castcleId);
     if (user) {
       await this.socialSyncService.delete(body, user);
-    } else throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    } else throw CastcleException.FORBIDDEN;
   }
 
   private async validateGuestAccount(credential: Credential) {
     const account = await this.authService.getAccountFromCredential(credential);
     if (!account || account.isGuest) {
       this.logger.error(`Forbidden guest account.`);
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     } else {
       return account;
     }
@@ -1151,12 +1126,12 @@ export class UsersController {
     );
     if (!body?.preferredLanguages?.length) {
       this.logger.error('Payload is empty.');
-      throw new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH);
+      throw CastcleException.PAYLOAD_TYPE_MISMATCH;
     }
 
     if (!account || account.isGuest) {
       this.logger.error('Can not get account.');
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
 
     await this.userService.userSettings(account.id, body.preferredLanguages);
@@ -1305,7 +1280,7 @@ export class UsersController {
 
     if (recastContent) {
       this.logger.error(`Already recast this content id: ${contentId}.`);
-      throw new CastcleException(CastcleStatus.RECAST_IS_EXIST);
+      throw CastcleException.RECAST_IS_EXIST;
     }
 
     const userRecast = await this._validateOwnerAccount(req, user);
@@ -1459,8 +1434,7 @@ export class UsersController {
     const namingResult = await this.authService.getExistedUserFromCastcleId(
       body.castcleId
     );
-    if (namingResult)
-      throw new CastcleException(CastcleStatus.PAGE_IS_EXIST, req.$language);
+    if (namingResult) throw CastcleException.PAGE_IS_EXIST;
     const page = await this.userService.createPageFromCredential(
       req.$credential,
       body
@@ -1495,15 +1469,11 @@ export class UsersController {
     ]);
 
     if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     }
 
     const likeContent = await this.contentService.likeContent(content, user);
-    if (!likeContent)
-      throw new CastcleException(CastcleStatus.LIKE_IS_EXIST, req.$language);
+    if (!likeContent) throw CastcleException.LIKE_IS_EXIST;
 
     if (id === content.author.id || id === content.author.castcleId) return;
 
@@ -1553,10 +1523,7 @@ export class UsersController {
     const user = await this._getUser(id, req.$credential);
 
     if (String(user.ownerAccount) !== String(req.$credential.account._id)) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     }
 
     await this.contentService.unLikeContent(content, user);
@@ -1608,7 +1575,7 @@ export class UsersController {
   ) {
     const adsCampaign = await this.adsService.lookupAds(account, adsId);
     if (!adsCampaign) {
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
     await this.adsService.updateAdsById(adsId, adsRequest);
   }
@@ -1625,7 +1592,7 @@ export class UsersController {
   async deleteAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
     const adsCampaign = await this.adsService.lookupAds(account, adsId);
     if (!adsCampaign) {
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
     await this.adsService.deleteAdsById(adsId);
   }
@@ -1646,11 +1613,11 @@ export class UsersController {
   ) {
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) {
-      throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+      throw CastcleException.FORBIDDEN;
     }
     if (req.$credential.account.isGuest) {
       if (id === 'me') {
-        throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+        throw CastcleException.FORBIDDEN;
       }
     }
 
@@ -1710,7 +1677,7 @@ export class UsersController {
           this.logger.error(
             `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
           );
-          throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+          throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
         }
       })
     );
@@ -1847,16 +1814,16 @@ export class UsersController {
     @Param('id') id: string
   ) {
     const user = await this.userService.getUserFromCredential(credential);
-    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!user) throw CastcleException.FORBIDDEN;
 
     const social = await this.socialSyncService.getSocialSyncBySocialId(id);
-    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!social) throw CastcleException.FORBIDDEN;
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
       user
     );
-    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!page) throw CastcleException.FORBIDDEN;
 
     await this.socialSyncService.updateAutoPostBySocialId(social, true);
   }
@@ -1869,16 +1836,16 @@ export class UsersController {
     @Param('id') id: string
   ) {
     const user = await this.userService.getUserFromCredential(credential);
-    if (!user) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!user) throw CastcleException.FORBIDDEN;
 
     const social = await this.socialSyncService.getSocialSyncBySocialId(id);
-    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!social) throw CastcleException.FORBIDDEN;
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
       user
     );
-    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!page) throw CastcleException.FORBIDDEN;
 
     await this.socialSyncService.updateAutoPostBySocialId(social, false);
   }
@@ -1905,13 +1872,13 @@ export class UsersController {
     await this.validateGuestAccount(credential);
 
     const social = await this.socialSyncService.getSocialSyncBySocialId(id);
-    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!social) throw CastcleException.FORBIDDEN;
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
       user
     );
-    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!page) throw CastcleException.FORBIDDEN;
 
     const socialPage = new SocialPageDto();
 
@@ -1978,14 +1945,14 @@ export class UsersController {
     await this.validateGuestAccount(credential);
 
     const social = await this.socialSyncService.getSocialSyncBySocialId(id);
-    if (!social) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!social) throw CastcleException.FORBIDDEN;
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
       user
     );
 
-    if (!page) throw new CastcleException(CastcleStatus.FORBIDDEN_REQUEST);
+    if (!page) throw CastcleException.FORBIDDEN;
     await this.socialSyncService.disconnect(social, page, true);
 
     if (social.provider === SocialProvider.Facebook && social.authToken) {
@@ -2010,7 +1977,7 @@ export class UsersController {
       this.logger.log(
         `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
       );
-      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+      throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(
@@ -2035,7 +2002,7 @@ export class UsersController {
       this.logger.log(
         `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
       );
-      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+      throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(
@@ -2062,7 +2029,7 @@ export class UsersController {
       this.logger.log(
         `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
       );
-      throw new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH);
+      throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(

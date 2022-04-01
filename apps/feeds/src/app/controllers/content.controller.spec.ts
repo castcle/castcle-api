@@ -499,10 +499,7 @@ describe('ContentController', () => {
     });
 
     it('should create get liking', async () => {
-      await contentController._getContentIfExist(contentMock.id, {
-        $credential: userCredential,
-        $language: 'th',
-      } as any);
+      await contentController._getContentIfExist(contentMock.id);
 
       const engagements: any = await contentService.getLikingCastUser(
         contentMock.id,

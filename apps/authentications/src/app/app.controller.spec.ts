@@ -46,7 +46,7 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -323,9 +323,7 @@ describe('AppController', () => {
           $token: '123',
           $language: language,
         } as any)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_REFRESH_TOKEN, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_REFRESH_TOKEN);
     });
   });
 
@@ -605,9 +603,7 @@ describe('AppController', () => {
             username: 'error',
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
     it('should get Exception when wrong password', async () => {
@@ -631,9 +627,7 @@ describe('AppController', () => {
             username: registerEmail,
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
     it('should be able to login and return all pages', async () => {
@@ -941,7 +935,7 @@ describe('AppController', () => {
           },
           { ip: '127.0.0.1', userAgent: 'castcle-app' }
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
+      ).rejects.toEqual(CastcleException.DUPLICATE_EMAIL);
     });
   });
 
@@ -997,9 +991,7 @@ describe('AppController', () => {
           email: mockUsers[0].account.email,
           authToken: '',
         })
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
     it('should return Exception when use guest account', async () => {
@@ -1322,7 +1314,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), credentialGuest, {} as any)
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.MOBILE_NUMBER_IS_EXIST)
+        CastcleException.MOBILE_NUMBER_IS_EXIST
       );
     });
 
@@ -1355,7 +1347,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), guest, {} as any)
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, guest.$language)
+        CastcleException.FORBIDDEN
       );
     });
   });
