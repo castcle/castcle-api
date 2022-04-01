@@ -51,6 +51,6 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.socialSyncService.sync(user.id, syncSocialDto);
+    return this.socialSyncService.sync(user, syncSocialDto);
   }
 }
