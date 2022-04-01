@@ -29,8 +29,8 @@ import {
   SocialSyncService,
 } from '../database.module';
 import { SocialSyncDeleteDto, SocialSyncDto } from '../dtos/user.dto';
-import { SocialProvider } from '../models';
-import { SocialSync, User, UserType } from '../schemas';
+import { SocialProvider, UserType } from '../models';
+import { SocialSync, User } from '../schemas';
 
 describe('SocialSyncService', () => {
   let mongod: MongoMemoryServer;
@@ -57,7 +57,7 @@ describe('SocialSyncService', () => {
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
-      type: UserType.People,
+      type: UserType.PEOPLE,
     });
     await mocksUser.save();
 
@@ -65,7 +65,7 @@ describe('SocialSyncService', () => {
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
       displayName: 'mock user',
       displayId: 'mockid',
-      type: UserType.Page,
+      type: UserType.PAGE,
     }).save();
     const socialSyncDto: SocialSyncDto = {
       castcleId: 'mockcast',

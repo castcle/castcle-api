@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -433,4 +433,14 @@ export class SocialPageDto {
     medium?: string | null;
     website?: string | null;
   };
+}
+
+export class GetUserParam {
+  @ApiProperty()
+  @IsString()
+  userId: string;
+
+  @Expose()
+  @Transform(({ obj }) => obj.userId === 'me')
+  isMe = () => this.userId === 'me';
 }

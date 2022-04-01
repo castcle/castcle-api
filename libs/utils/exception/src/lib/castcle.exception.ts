@@ -86,15 +86,17 @@ export class CastcleException extends HttpException {
   }
 
   getLocalStatus(language: string, code?: string) {
-    if (LocalErrorMessage[language])
-      return LocalErrorMessage[language][code ? code : this.errorStatus.code];
-    else return LocalErrorMessage.default[code ? code : this.errorStatus.code];
+    return (
+      LocalErrorMessage[language]?.[code ? code : this.errorStatus.code] ||
+      LocalErrorMessage.default[code ? code : this.errorStatus.code]
+    );
   }
 
   static REQUEST_URL_NOT_FOUND = new CastcleException('1001');
   static MISSING_AUTHORIZATION_HEADERS = new CastcleException('1002');
   static INVALID_ACCESS_TOKEN = new CastcleException('1003');
   static FORBIDDEN = new CastcleException('1007');
+  static UNABLE_TO_SYNC = new CastcleException('1012');
   static INVALID_PASSWORD = new CastcleException('3011');
   static INVALID_REF_CODE = new CastcleException('3012');
   static MOBILE_NUMBER_ALREADY_EXISTS = new CastcleException('3018');

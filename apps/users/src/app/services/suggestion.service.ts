@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
-import { DataService, UserService } from '@castcle-api/database';
+import { DataService, UserService, UserType } from '@castcle-api/database';
 import { SuggestToFollowResponseDto } from '@castcle-api/database/dtos';
-import { UserType } from '@castcle-api/database/schemas';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -48,7 +47,7 @@ export class SuggestionService {
       users
         .filter((u) => u && u.type)
         .map(async (u) =>
-          u.type === UserType.People ? u.toUserResponse() : u.toPageResponse()
+          u.type === UserType.PEOPLE ? u.toUserResponse() : u.toPageResponse()
         )
     );
     return {

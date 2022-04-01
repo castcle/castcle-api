@@ -38,6 +38,7 @@ import {
   NotificationService,
   CommentService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
@@ -62,7 +63,6 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
-import { UserType } from '@castcle-api/database/schemas';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class CommentController {
@@ -102,7 +102,7 @@ export class CommentController {
         this.notifyService.notifyToUser(
           {
             source:
-              user.type === UserType.People
+              user.type === UserType.PEOPLE
                 ? NotificationSource.Profile
                 : NotificationSource.Page,
             sourceUserId: authorizedUser._id,
@@ -186,7 +186,7 @@ export class CommentController {
       this.notifyService.notifyToUser(
         {
           source:
-            user.type === UserType.People
+            user.type === UserType.PEOPLE
               ? NotificationSource.Profile
               : NotificationSource.Page,
           sourceUserId: authorizedUser._id,
@@ -269,7 +269,7 @@ export class CommentController {
     this.notifyService.notifyToUser(
       {
         source:
-          user.type === UserType.People
+          user.type === UserType.PEOPLE
             ? NotificationSource.Profile
             : NotificationSource.Page,
         sourceUserId: authorizedUser._id,

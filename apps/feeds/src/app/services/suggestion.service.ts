@@ -26,12 +26,13 @@ import {
   DataService,
   RankerService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   FeedItemPayloadItem,
   FeedItemResponse,
 } from '@castcle-api/database/dtos';
-import { Account, Credential, UserType } from '@castcle-api/database/schemas';
+import { Account, Credential } from '@castcle-api/database/schemas';
 import { Configs, Environment } from '@castcle-api/environments';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
@@ -163,7 +164,7 @@ export class SuggestionService {
             .filter((u) => u && u.type)
             .splice(0, Configs.Suggestion.SuggestAmount)
             .map(async (u) =>
-              u.type === UserType.People
+              u.type === UserType.PEOPLE
                 ? u.toUserResponse()
                 : u.toPageResponse()
             )

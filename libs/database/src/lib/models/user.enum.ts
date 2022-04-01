@@ -21,13 +21,7 @@
  * or have any questions.
  */
 
-export class UserVerified {
-  email: boolean;
-  mobile: boolean;
-  official: boolean;
-  social: boolean;
-}
-
-export class PageVerified {
-  official: boolean;
+export enum UserType {
+  PAGE = 'page',
+  PEOPLE = 'people',
 }

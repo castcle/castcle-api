@@ -26,6 +26,7 @@ import {
   ContentService,
   NotificationService,
   UserService,
+  UserType,
 } from '@castcle-api/database';
 import {
   ContentResponse,
@@ -40,7 +41,7 @@ import {
   ResponseDto,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, User, UserType } from '@castcle-api/database/schemas';
+import { Content, User } from '@castcle-api/database/schemas';
 import { CastLogger } from '@castcle-api/logger';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -295,7 +296,7 @@ export class ContentController {
     this.notifyService.notifyToUser(
       {
         source:
-          userOwner.type === UserType.People
+          userOwner.type === UserType.PEOPLE
             ? NotificationSource.Profile
             : NotificationSource.Page,
         sourceUserId: user._id,

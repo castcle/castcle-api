@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import { QueueName, SocialProvider } from '@castcle-api/database';
-import { SocialSync, User, UserType } from '@castcle-api/database/schemas';
+import { QueueName, SocialProvider, UserType } from '@castcle-api/database';
+import { SocialSync, User } from '@castcle-api/database/schemas';
 import { Image } from '@castcle-api/utils/aws';
 import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
@@ -51,7 +51,7 @@ describe('FacebookController', () => {
     ownerAccount: Types.ObjectId(),
     displayName: 'Tester',
     displayId: 'tester',
-    type: UserType.People,
+    type: UserType.PEOPLE,
   };
 
   beforeAll(async () => {

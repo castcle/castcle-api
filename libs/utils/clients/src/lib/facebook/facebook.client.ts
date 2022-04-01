@@ -22,6 +22,7 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
@@ -127,5 +128,44 @@ export class FacebookClient {
         catchError(async (error) => this.logger.error(error))
       )
     );
+  }
+
+  async subscribeApps(authToken: string, socialId: string) {
+    const url = `${Environment.FACEBOOK_HOST}/v13.0/${socialId}/subscribed_apps?access_token=${authToken}&subscribed_fields=feed`;
+    this.logger.log(JSON.stringify({ url }), `subscribeApps:${socialId}:init`);
+
+    try {
+      const { data } = await lastValueFrom(
+        this.httpService.post<{ success: boolean }>(url)
+      );
+
+      this.logger.log(JSON.stringify({ data }), `subscribeApps:${socialId}`);
+
+      return data;
+    } catch (error) {
+      this.logger.error(error, `subscribeApps:${socialId}`);
+      throw CastcleException.UNABLE_TO_SYNC;
+    }
+  }
+
+  async unsubscribeApps(authToken: string, socialId: string) {
+    const url = `${Environment.FACEBOOK_HOST}/v13.0/${socialId}/subscribed_apps?access_token=${authToken}&subscribed_fields=feed`;
+    this.logger.log(
+      JSON.stringify({ url }),
+      `unsubscribeApps:${socialId}:init`
+    );
+
+    try {
+      const { data } = await lastValueFrom(
+        this.httpService.delete<{ success: boolean }>(url)
+      );
+
+      this.logger.log(JSON.stringify({ data }), `unsubscribeApps:${socialId}`);
+
+      return data;
+    } catch (error) {
+      this.logger.error(error, `unsubscribeApps:${socialId}`);
+      throw CastcleException.UNABLE_TO_SYNC;
+    }
   }
 }

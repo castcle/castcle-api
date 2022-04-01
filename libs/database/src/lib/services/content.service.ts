@@ -50,8 +50,13 @@ import {
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
-import { ContentMessage, ContentMessageEvent, QueueName } from '../models';
-import { EngagementType } from '../models/engagement.enum';
+import {
+  ContentMessage,
+  ContentMessageEvent,
+  EngagementType,
+  QueueName,
+  UserType,
+} from '../models';
 import {
   Account,
   Comment,
@@ -64,7 +69,6 @@ import {
   Revision,
   toSignedContentPayloadItem,
   User,
-  UserType,
 } from '../schemas';
 import {
   createCastcleFilter,
@@ -509,7 +513,7 @@ export class ContentService {
       avatar: user.profile?.images?.avatar || null,
       castcleId: user.displayId,
       displayName: user.displayName,
-      type: user.type === UserType.Page ? UserType.Page : UserType.People,
+      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
       verified: user.verified,
     });
   };

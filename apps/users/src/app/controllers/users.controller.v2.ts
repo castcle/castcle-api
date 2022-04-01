@@ -21,23 +21,36 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './ux.engagement.dto';
+import { SocialSyncServiceV2, UserService } from '@castcle-api/database';
+import { GetUserParam, SyncSocialDtoV2 } from '@castcle-api/database/dtos';
+import {
+  Auth,
+  Authorizer,
+  CastcleBasicAuth,
+  CastcleControllerV2,
+} from '@castcle-api/utils/decorators';
+import { Body, Param, Post } from '@nestjs/common';
+
+@CastcleControllerV2({ path: 'users' })
+export class UsersControllerV2 {
+  constructor(
+    private socialSyncService: SocialSyncServiceV2,
+    private userService: UserService
+  ) {}
+
+  @CastcleBasicAuth()
+  @Post(':userId/sync-social')
+  async syncSocial(
+    @Auth() authorizer: Authorizer,
+    @Body() syncSocialDto: SyncSocialDtoV2,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.socialSyncService.sync(user.id, syncSocialDto);
+  }
+}
