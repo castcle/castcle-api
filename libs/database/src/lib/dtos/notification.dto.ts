@@ -25,7 +25,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
-import { CastcleImage, CastcleMeta } from './common.dto';
+import { CastcleImage, CastcleMeta, DEFAULT_QUERY_OPTIONS } from './common.dto';
 import { CastcleBase } from './../schemas/base.schema';
 
 export enum NotificationType {
@@ -39,6 +39,7 @@ export enum NotificationType {
   System = 'system',
   AdsApprove = 'ad-approve',
   AdsDecline = 'ad-decline',
+  Follow = 'follow',
 }
 
 export enum NotificationSource {
@@ -51,7 +52,10 @@ export enum NotificationRef {
   Comment = 'comment',
   Content = 'content',
 }
-
+export enum AndroidMessagePriority {
+  NORMAL = 'normal',
+  HIGH = 'high',
+}
 export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
@@ -72,13 +76,19 @@ export class NotificationPayloadDto extends CastcleBase {
   type: string;
 
   @ApiProperty()
-  content?: string;
+  contentId?: Types.ObjectId;
 
   @ApiProperty()
-  comment?: string;
+  commentId?: Types.ObjectId;
 
   @ApiProperty()
-  system?: string;
+  replyId?: Types.ObjectId;
+
+  @ApiProperty()
+  adsId?: Types.ObjectId;
+
+  @ApiProperty()
+  profileId?: Types.ObjectId;
 
   @ApiProperty()
   read: boolean;
@@ -94,7 +104,7 @@ export class NotificationResponse {
 
 export class NotificationQueryOptions {
   source?: NotificationSource;
-  maxResults?: number;
+  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
   sinceId?: string;
   untilId?: string;
 }
@@ -107,10 +117,10 @@ export interface CreateNotification {
   source: NotificationSource;
   sourceUserId?: Types.ObjectId;
   type: NotificationType;
-  targetRef: {
-    _id: string;
-    ref?: string;
-  };
+  contentRef?: Types.ObjectId;
+  profileRef?: Types.ObjectId;
+  commentRef?: Types.ObjectId;
+  replyRef?: Types.ObjectId;
   account: Account;
   read: boolean;
 }

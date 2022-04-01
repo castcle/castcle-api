@@ -25,6 +25,7 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   CreateNotification,
@@ -222,7 +223,8 @@ describe('NotificationService', () => {
   describe('#getNotificationAll', () => {
     it('should get all notification in db with source as default option', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       expect(notification).toHaveLength(3);
     });
@@ -240,7 +242,8 @@ describe('NotificationService', () => {
 
     it('should get notification filter with sinceId in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -255,7 +258,8 @@ describe('NotificationService', () => {
 
     it('should get notification filter with untilId in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const filterId = notification[1].id;
       const notiResult = await service.getNotificationAll(
@@ -273,7 +277,8 @@ describe('NotificationService', () => {
   describe('#getFromId', () => {
     it('should get notification in db with id', async () => {
       const allNotification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const notification = await service.getFromId(allNotification[0].id);
       expect(notification).toEqual(allNotification[0]);
@@ -293,7 +298,8 @@ describe('NotificationService', () => {
   describe('#flagRead', () => {
     it('should update read flag notification in db', async () => {
       const allNotification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const updateRead = allNotification[0];
       const notificationId = updateRead.id;
@@ -313,10 +319,12 @@ describe('NotificationService', () => {
     it('should update read flag all notification in db', async () => {
       const resultUpdate = await service.flagReadAll(result.credentialDocument);
       const profileNoti = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const pageNoti = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(resultUpdate.n).toEqual(3);
@@ -347,10 +355,7 @@ describe('NotificationService', () => {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         type: NotificationType.Comment,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-          ref: 'content',
-        },
+        contentRef: Types.ObjectId('6138afa4f616a467b5c4eb72'),
         read: false,
         account: result.accountDocument.id,
       };
@@ -361,16 +366,14 @@ describe('NotificationService', () => {
       await service.notifyToUser(newNoti, userOwner[0], 'th');
 
       const notifyData = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(notifyData).toBeDefined();
       expect(notifyData[0].source).toEqual(newNoti.source);
       expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
       expect(notifyData[0].type).toEqual(newNoti.type);
-      expect(notifyData[0].targetRef.namespace).toEqual('content');
-      expect(notifyData[0].targetRef.oid).toEqual(newNoti.targetRef._id);
-      expect(notifyData[0].read).toEqual(newNoti.read);
       expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
 
@@ -379,10 +382,6 @@ describe('NotificationService', () => {
         source: NotificationSource.Profile,
         sourceUserId: user._id,
         type: NotificationType.System,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-          ref: 'system',
-        },
         read: false,
         account: result.accountDocument.id,
       };
@@ -393,21 +392,19 @@ describe('NotificationService', () => {
       await service.notifyToUser(newNoti, userOwner[0], 'th');
 
       const notifyData = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       expect(notifyData).toBeDefined();
       expect(notifyData[0].source).toEqual(newNoti.source);
       expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
-      expect(notifyData[0].type).toEqual(newNoti.type);
-      expect(notifyData[0].targetRef.namespace).toEqual('system');
-      expect(notifyData[0].read).toEqual(newNoti.read);
       expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
   });
 
   describe('#registerToken', () => {
-    it('should update firebase token fron device uuid in db', async () => {
+    it('should update firebase token from device uuid in db', async () => {
       const deviceID = '9999999999';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
@@ -435,10 +432,18 @@ describe('NotificationService', () => {
 
   describe('#badges', () => {
     it('should return total notification number when lower than 99', async () => {
+      await new (service as any)._notificationModel({
+        account: result.credentialDocument.account._id,
+        source: 'profile',
+        type: 'like',
+        read: false,
+      }).save();
+
       const badges = await (service as any).getBadges(
         result.credentialDocument
       );
-      expect(badges).toEqual('2');
+
+      expect(badges).toEqual('1');
     });
 
     it('should return expty notification when get empty notification', async () => {
@@ -453,11 +458,13 @@ describe('NotificationService', () => {
       const badges = await (service as any).getBadges(
         credentialData.credentialDocument
       );
+      console.log(badges);
+
       expect(badges).toBeDefined();
     });
 
     it('should return total notification number when more than 99', async () => {
-      for (let i = 0; i < 99; i++) {
+      for (let i = 0; i < 101; i++) {
         const newNoti = new (service as any)._notificationModel({
           message: 'sample profile' + i,
           source: NotificationSource.Profile,
@@ -482,7 +489,8 @@ describe('NotificationService', () => {
   describe('#generateNotificationToMessage', () => {
     it('should create notification message in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id
@@ -500,7 +508,8 @@ describe('NotificationService', () => {
   describe('#generateMessagesToNotifications', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
 
       const message = await (service as any).generateMessagesToNotifications(
@@ -508,13 +517,14 @@ describe('NotificationService', () => {
         'th'
       );
 
-      expect(message).toHaveLength(25);
+      expect(message).toHaveLength(105);
     });
   });
   describe('#generateNotification', () => {
     it('should create notification messages in db', async () => {
       const notification = await service.getNotificationAll(
-        result.credentialDocument
+        result.credentialDocument,
+        {}
       );
       const userOwner = await userService.getUserAndPagesFromAccountId(
         result.accountDocument.id

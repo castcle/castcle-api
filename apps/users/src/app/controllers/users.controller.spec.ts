@@ -1006,22 +1006,18 @@ describe('AppController', () => {
 
       const notify = await notifyService.notifyToUser(
         {
-          type: NotificationType.Like,
+          type: NotificationType.Recast,
           read: false,
           source: NotificationSource.Profile,
           sourceUserId: user._id,
-          targetRef: {
-            _id: contentA._id,
-            ref: 'content',
-          },
+          contentRef: contentA._id,
           account: userOwner.ownerAccount,
         },
         userOwner,
         'th'
       );
 
-      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
-      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+      expect(notify).toBeUndefined();
 
       await expect(
         appController.recastContent(
@@ -1082,18 +1078,14 @@ describe('AppController', () => {
           read: false,
           source: NotificationSource.Profile,
           sourceUserId: user._id,
-          targetRef: {
-            _id: contentA._id,
-            ref: 'content',
-          },
+          contentRef: contentA._id,
           account: userOwner.ownerAccount,
         },
         userOwner,
         'th'
       );
 
-      expect(String(contentA._id)).toEqual(String(notify.targetRef.oid));
-      expect(String(user._id)).toEqual(String(notify.sourceUserId[0]));
+      expect(notify).toBeUndefined();
 
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
       expect(result.includes).toBeDefined();
@@ -1185,17 +1177,14 @@ describe('AppController', () => {
           read: false,
           source: NotificationSource.Profile,
           sourceUserId: user._id,
-          targetRef: {
-            _id: content._id,
-            ref: 'content',
-          },
+          contentRef: content._id,
           account: userOwner.ownerAccount,
         },
         userOwner,
         'th'
       );
 
-      expect(notify).toBeTruthy();
+      expect(notify).toBeUndefined();
 
       const result = await contentService.getContentFromId(contentId);
       expect(result.engagements.like.count).toBe(1);

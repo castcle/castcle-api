@@ -27,7 +27,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EntityVisibility, SyncSocialDtoV2 } from '../dtos';
 import { SocialProvider } from '../models';
-import { SocialSync } from '../schemas';
+import { SocialSync, User } from '../schemas';
 
 @Injectable()
 export class SocialSyncServiceV2 {
@@ -36,17 +36,15 @@ export class SocialSyncServiceV2 {
     private facebookClient: FacebookClient
   ) {}
 
-  async sync(userId: string, socialSyncDto: SyncSocialDtoV2) {
+  async sync(user: User, socialSyncDto: SyncSocialDtoV2) {
     const socialSync = await this.socialSyncModel.findOne({
-      'author.id': userId,
+      account: user.ownerAccount,
       provider: socialSyncDto.provider,
       visibility: EntityVisibility.Publish,
+      $or: [{ 'author.id': user.id }, { socialId: socialSyncDto.socialId }],
     });
 
-    if (socialSync) {
-      await this.unsync(socialSync);
-    }
-
+    if (socialSync) await this.unsync(socialSync);
     if (
       socialSyncDto.provider === SocialProvider.Facebook &&
       socialSyncDto.autoPost
@@ -61,7 +59,8 @@ export class SocialSyncServiceV2 {
       duplicate: Boolean(socialSync),
       socialSync: await new this.socialSyncModel({
         ...socialSyncDto,
-        author: { id: userId },
+        account: user.ownerAccount,
+        author: { id: user.id },
         visibility: EntityVisibility.Publish,
       }).save(),
     };
@@ -78,6 +77,6 @@ export class SocialSyncServiceV2 {
       );
     }
 
-    await socialSync.set({ visibility: EntityVisibility.Deleted }).save();
+    await socialSync.delete();
   }
 }

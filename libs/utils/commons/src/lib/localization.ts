@@ -316,4 +316,78 @@ export class CastcleLocalization {
         return `Your ads is declined. Please check again`;
     }
   };
+
+  static getTemplateLikeComment = (
+    language: string,
+    displayNames: string[],
+    page = ''
+  ) => {
+    switch (language) {
+      case LocalizationLang.Thai:
+        switch (displayNames.length) {
+          case 1:
+            return `${displayNames[0]} ถูกใจความคิดเห็น cast ของ${
+              page ? ' ' + page : 'คุณ'
+            }`;
+          case 2:
+            return `${displayNames[0]} และ ${
+              displayNames[1]
+            } ถูกใจความคิดเห็น cast ของ${page ? ' ' + page : 'คุณ'}`;
+          default:
+            return `${displayNames[0]}, ${displayNames[1]} และ อีก ${
+              displayNames.length - 2
+            } คน ถูกใจความคิดเห็น cast ของ${page ? ' ' + page : 'คุณ'}`;
+        }
+      default:
+        switch (displayNames.length) {
+          case 1:
+            return `${displayNames[0]} like commented on ${
+              page || 'your'
+            } cast`;
+          case 2:
+            return `${displayNames[0]} and ${
+              displayNames[1]
+            } like commented on ${page || 'your'} cast`;
+          default:
+            return `${displayNames[0]}, ${displayNames[1]} and ${
+              displayNames.length - 2
+            } other people like commented on ${page || 'your'} cast`;
+        }
+    }
+  };
+
+  static getTemplateFollow = (
+    language: string,
+    displayNames: string[],
+    page = ''
+  ) => {
+    switch (language) {
+      case LocalizationLang.Thai:
+        switch (displayNames.length) {
+          case 1:
+            return `${displayNames[0]} ได้ติดตาม${page ? ' ' + page : 'คุณ'}`;
+          case 2:
+            return `${displayNames[0]} และ ${displayNames[1]} ได้ติดตาม${
+              page ? ' ' + page : 'คุณ'
+            }`;
+          default:
+            return `${displayNames[0]}, ${displayNames[1]} และ อีก ${
+              displayNames.length - 2
+            } คน ได้ติดตาม${page ? ' ' + page : 'คุณ'}`;
+        }
+      default:
+        switch (displayNames.length) {
+          case 1:
+            return `${displayNames[0]} started following ${page || 'you'}`;
+          case 2:
+            return `${displayNames[0]} and ${
+              displayNames[1]
+            } started following ${page || 'you'}`;
+          default:
+            return `${displayNames[0]}, ${displayNames[1]} and ${
+              displayNames.length - 2
+            } other people started following ${page || 'you'}`;
+        }
+    }
+  };
 }

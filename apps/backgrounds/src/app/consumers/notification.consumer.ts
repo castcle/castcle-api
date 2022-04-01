@@ -62,11 +62,13 @@ export class NotificationConsumer {
     try {
       this.logger.log(JSON.stringify(job));
       this.firebase.messaging.sendMulticast({
+        data: job.data.payload,
+        notification: job.data.notification,
+        android: job.data.android,
         tokens: job.data.firebaseTokens,
         apns: {
           payload: { aps: job.data.aps },
         },
-        data: job.data.payload,
       });
     } catch (error) {
       this.logger.error(error);

@@ -424,4 +424,109 @@ describe('CastcleLocalization', () => {
       });
     });
   });
+  describe('#getTemplateLikeComment', () => {
+    describe('Localization thai.', () => {
+      it('should get template like comment one thai language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.Thai,
+          ['test1']
+        );
+        expect(message).toEqual('test1 ถูกใจความคิดเห็น cast ของคุณ');
+      });
+      it('should get template like comment two people thai language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.Thai,
+          ['test1', 'test2']
+        );
+        expect(message).toEqual('test1 และ test2 ถูกใจความคิดเห็น cast ของคุณ');
+      });
+      it('should get template like comment more than two people thai language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.Thai,
+          ['test1', 'test2', 'test3', 'test4']
+        );
+        expect(message).toEqual(
+          'test1, test2 และ อีก 2 คน ถูกใจความคิดเห็น cast ของคุณ'
+        );
+      });
+    });
+
+    describe('Localization default', () => {
+      it('should get template like comment one default language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.English,
+          ['test1']
+        );
+        expect(message).toEqual('test1 like commented on your cast');
+      });
+      it('should get template like comment two people default language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.English,
+          ['test1', 'test2']
+        );
+        expect(message).toEqual('test1 and test2 like commented on your cast');
+      });
+      it('should get template like comment more than two people default language.', () => {
+        const message = CastcleLocalization.getTemplateLikeComment(
+          LocalizationLang.English,
+          ['test1', 'test2', 'test3', 'test4']
+        );
+        expect(message).toEqual(
+          'test1, test2 and 2 other people like commented on your cast'
+        );
+      });
+    });
+  });
+
+  describe('#getTemplateFollow', () => {
+    describe('Localization thai.', () => {
+      it('should get template started following one thai language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.Thai,
+          ['test1']
+        );
+        expect(message).toEqual('test1 ได้ติดตามคุณ');
+      });
+      it('should get template started following two people thai language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.Thai,
+          ['test1', 'test2']
+        );
+        expect(message).toEqual('test1 และ test2 ได้ติดตามคุณ');
+      });
+      it('should get template started following more than two people thai language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.Thai,
+          ['test1', 'test2', 'test3', 'test4']
+        );
+        expect(message).toEqual('test1, test2 และ อีก 2 คน ได้ติดตามคุณ');
+      });
+    });
+
+    describe('Localization default', () => {
+      it('should get template like comment one default language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.English,
+          ['test1']
+        );
+        expect(message).toEqual('test1 started following you');
+      });
+      it('should get template like comment two people default language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.English,
+          ['test1', 'test2']
+        );
+        expect(message).toEqual('test1 and test2 started following you');
+      });
+      it('should get template like comment more than two people default language.', () => {
+        const message = CastcleLocalization.getTemplateFollow(
+          LocalizationLang.English,
+          ['test1', 'test2', 'test3', 'test4']
+        );
+        expect(message).toEqual(
+          'test1, test2 and 2 other people started following you'
+        );
+      });
+    });
+  });
 });
