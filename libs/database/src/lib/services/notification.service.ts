@@ -474,7 +474,7 @@ export class NotificationService {
         body: message,
       },
       android: {
-        priority: AndroidMessagePriority.Normal,
+        priority: AndroidMessagePriority.NORMAL,
         data: notify.toNotificationPayload({ message }),
         notification: {
           body: message,
