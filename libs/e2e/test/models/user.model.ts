@@ -38,5 +38,10 @@ export class User {
     password: this.password,
   });
 
+  toVerificationPasswordPayload = () => ({
+    objective: 'change_password',
+    password: this.password,
+  });
+
   randomPhone = () => Date.now().toString().slice(-8);
 }
