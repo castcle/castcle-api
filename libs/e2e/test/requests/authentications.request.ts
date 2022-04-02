@@ -32,4 +32,8 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/verificationEmail`);
   static refreshToken = () =>
     AuthenticationsRequest.post(`/authentications/refreshToken`);
+  static verificationPassword = () =>
+    AuthenticationsRequest.post(`/authentications/verificationPassword`);
+  static changePasswordSubmit = () =>
+    AuthenticationsRequest.post(`/authentications/changePasswordSubmit`);
 }

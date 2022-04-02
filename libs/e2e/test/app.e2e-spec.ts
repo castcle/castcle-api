@@ -1,7 +1,10 @@
 import { getMongooseModuleOptions } from 'libs/database/src/lib/database.config';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { connect, disconnect } from 'mongoose';
-import { initializeUsers, testRegisterFlow } from './modules/authentications';
+import {
+  initializeUsers,
+  testAuthenticationsFlow,
+} from './modules/authentications';
 import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
 import {
   closeAuthenticationsModule,
@@ -35,7 +38,7 @@ describe('Castcle E2E Tests', () => {
 
   describe('# Authentication Microservice', () => {
     describe('- Register Member Flow', () => {
-      testRegisterFlow();
+      testAuthenticationsFlow();
     });
   });
 
