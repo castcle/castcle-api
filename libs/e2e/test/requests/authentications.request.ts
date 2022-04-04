@@ -40,4 +40,8 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/register-token`);
   static unregisterToken = () =>
     AuthenticationsRequest.delete(`/authentications/register-token`);
+  static loginWithSocial = () =>
+    AuthenticationsRequest.post(`/authentications/login-with-social`);
+  static connectWithSocial = () =>
+    AuthenticationsRequest.post(`/authentications/connect-with-social`);
 }
