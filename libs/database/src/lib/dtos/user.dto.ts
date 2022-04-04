@@ -24,8 +24,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   ValidateNested,
@@ -94,7 +97,7 @@ export class UserResponseDto {
   overview: string | null;
 
   @ApiProperty()
-  dob: string | null;
+  dob: Date | null;
 
   @ApiProperty()
   images: UserImage;
@@ -148,6 +151,8 @@ export class UserResponseDto {
 
   @ApiProperty()
   canUpdateCastcleId: boolean;
+
+  contact?: ContactDto;
 }
 
 export class linkSocialDetail {
@@ -193,15 +198,6 @@ export class UpdateUserDto {
   @ApiProperty()
   @IsOptional()
   links?: Link;
-}
-
-export class UpdateModelUserDto {
-  castcleId?: string;
-  displayName?: string;
-  overview?: string;
-  dob?: string;
-  links?: Link;
-  images?: UserModelImage;
 }
 
 export class PageDto {
@@ -443,4 +439,72 @@ export class GetUserParam {
   @Expose()
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
+}
+
+export class ImageBaseDto {
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+
+  @IsOptional()
+  @IsString()
+  cover?: string;
+}
+
+export class ContactDto {
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class LinkSocialDetail {
+  [key: string]: string;
+}
+
+export class UpdateDataDto {
+  @IsOptional()
+  @IsString()
+  castcleId?: string;
+
+  @IsOptional()
+  @IsString()
+  displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dob?: string;
+
+  @IsOptional()
+  @IsObject()
+  contact?: ContactDto;
+
+  @IsOptional()
+  @IsObject()
+  links?: LinkSocialDetail;
+
+  @IsOptional()
+  @IsObject()
+  images?: ImageBaseDto;
+}
+export interface UserContact {
+  phone?: string;
+  email?: string;
+}
+
+export class UpdateModelUserDto {
+  castcleId?: string;
+  displayName?: string;
+  overview?: string;
+  dob?: string;
+  links?: Link;
+  contact?: ContactDto;
+  images?: UserModelImage;
 }

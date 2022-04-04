@@ -81,6 +81,7 @@ import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
+import { UserServiceV2 } from './services/user.service.v2';
 import { UxEngagementService } from './services/uxengagement.service';
 import {
   createCastcleMeta,
@@ -193,6 +194,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     TAccountService,
     SocialSyncServiceV2,
+    UserServiceV2,
   ],
   exports: [
     BullModule,
@@ -214,6 +216,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     TAccountService,
     SocialSyncServiceV2,
+    UserServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -240,4 +243,5 @@ export {
   DataService,
   TAccountService,
   SocialSyncServiceV2,
+  UserServiceV2,
 };

@@ -21,22 +21,58 @@
  * or have any questions.
  */
 
-import { SocialSyncServiceV2, UserService } from '@castcle-api/database';
-import { GetUserParam, SyncSocialDtoV2 } from '@castcle-api/database/dtos';
+import {
+  SocialSyncServiceV2,
+  AuthenticationService,
+  UserServiceV2,
+} from '@castcle-api/database';
+import {
+  GetUserParam,
+  SyncSocialDtoV2,
+  UpdateDataDto,
+} from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   Auth,
   Authorizer,
   CastcleBasicAuth,
+  CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Body, Param, Post } from '@nestjs/common';
-
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Body, Param, Post, Put, Req } from '@nestjs/common';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { Credential } from '@castcle-api/database/schemas';
+import { Environment } from '@castcle-api/environments';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   constructor(
     private socialSyncService: SocialSyncServiceV2,
-    private userService: UserService
+    private authService: AuthenticationService,
+    private userService: UserServiceV2
   ) {}
+
+  _getUser = async (id: string, credential: Credential) => {
+    if (id.toLocaleLowerCase() === 'me') {
+      const me = await this.userService.getUserFromCredential(credential);
+      if (!me) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+      return me;
+    } else {
+      const user = await this.userService.getByIdOrCastcleId(id);
+      if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+      return user;
+    }
+  };
+
+  _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+    displayIdUpdateAt.setDate(
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+    );
+
+    const now = new Date().getTime();
+    const blockUpdate = displayIdUpdateAt.getTime();
+    return now - blockUpdate >= 0;
+  };
 
   @CastcleBasicAuth()
   @Post(':userId/sync-social')
@@ -52,5 +88,43 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.socialSyncService.sync(user, syncSocialDto);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
+  @Put(':id')
+  async updateMyData(
+    @Req() { $credential }: CredentialRequest,
+    @Param('id') id: string,
+    @Body() body: UpdateDataDto
+  ) {
+    const user = await this._getUser(id, $credential);
+    if (!user) throw CastcleException.FORBIDDEN;
+
+    if (String(user.ownerAccount) !== String($credential.account._id))
+      throw CastcleException.FORBIDDEN;
+
+    if (
+      body.castcleId &&
+      user.displayIdUpdatedAt &&
+      !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
+    )
+      throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
+
+    if (body.castcleId) {
+      const userExisting = await this.authService.getExistedUserFromCastcleId(
+        body.castcleId
+      );
+      if (userExisting && userExisting.id !== user.id)
+        throw CastcleException.USER_ID_IS_EXIST;
+    }
+
+    const prepareUser = await this.userService.uploadUserInfo(
+      body,
+      $credential.account._id
+    );
+    const updateUser = await this.userService.updateUser(user, prepareUser);
+    const response = await updateUser.toUserResponse();
+    return response;
   }
 }

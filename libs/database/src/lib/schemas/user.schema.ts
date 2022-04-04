@@ -9,6 +9,7 @@ import {
   Author,
   PageResponseDto,
   UserResponseDto,
+  UserContact,
 } from '../dtos';
 import { PageVerified, UserType, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
@@ -21,7 +22,7 @@ type ProfileImage = {
 };
 
 export interface UserProfile {
-  birthdate?: string;
+  birthdate?: Date | null;
   overview?: string;
   works?: string[];
   educations?: string[];
@@ -77,6 +78,9 @@ class UserDocument extends CastcleBase {
 
   @Prop()
   displayIdUpdatedAt?: Date;
+
+  @Prop({ type: Object })
+  contact?: UserContact;
 }
 
 type UserResponseOption = {
@@ -148,6 +152,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     canUpdateCastcleId: self.displayIdUpdatedAt
       ? _verifyUpdateCastcleId(self.displayIdUpdatedAt)
       : true,
+    contact: self.contact,
   } as UserResponseDto;
 };
 
