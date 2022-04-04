@@ -26,6 +26,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 export class TargetCastcleDto {
   @ApiProperty()
+  @IsString()
   targetCastcleId: string;
 }
 
