@@ -21,9 +21,10 @@
  * or have any questions.
  */
 
-import { SocialProvider } from '@castcle-api/database';
-import { SocialSync, User, UserType } from '@castcle-api/database/schemas';
+import { QueueName, SocialProvider, UserType } from '@castcle-api/database';
+import { SocialSync, User } from '@castcle-api/database/schemas';
 import { Image } from '@castcle-api/utils/aws';
+import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -50,13 +51,19 @@ describe('FacebookController', () => {
     ownerAccount: Types.ObjectId(),
     displayName: 'Tester',
     displayId: 'tester',
-    type: UserType.People,
+    type: UserType.PEOPLE,
   };
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
     const module = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongo.getUri()), FacebookModule],
+      providers: [
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     controller = module.get(FacebookController);
@@ -177,6 +184,36 @@ describe('FacebookController', () => {
       expect(logger.error).lastCalledWith(
         `postId: ${post[0].changes[0].value.post_id}`,
         'handleWebhook:verb-mismatched'
+      );
+    });
+
+    it('should not create any content when item !== photo|status|video', async () => {
+      const post = [
+        {
+          id: socialId.valid,
+          time: 1645161222,
+          changes: [
+            {
+              value: {
+                from: { id: socialId.valid, name: 'Castcle' },
+                message: 'status post',
+                post_id: '100776219104570_137039418811583',
+                created_time: 1644917973,
+                item: 'reaction',
+                parent_id: '103289818986235_113129651335585',
+                reaction_type: 'like',
+                verb: 'add',
+              },
+              field: 'feed',
+            },
+          ],
+        },
+      ] as unknown as SubscriptionEntry<FeedEntryChange>[];
+
+      await expect(controller.handleWebhook(post)).resolves.not.toThrow();
+      expect(logger.error).lastCalledWith(
+        `postId: ${post[0].changes[0].value.post_id}`,
+        'handleWebhook:item-mismatched'
       );
     });
 

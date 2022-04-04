@@ -34,8 +34,9 @@ import {
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UxEngagementService } from './uxengagement.service';
 import { HashtagService } from './hashtag.service';
-import { UserProducer } from '@castcle-api/utils/queue';
 import { CacheModule } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bull';
+import { QueueName } from '../models';
 
 describe('UxEngagement Service', () => {
   let mongod: MongoMemoryServer;
@@ -62,7 +63,14 @@ describe('UxEngagement Service', () => {
         ContentService,
         HashtagService,
         UserService,
-        UserProducer,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
     service = app.get<UxEngagementService>(UxEngagementService);

@@ -21,12 +21,14 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
@@ -47,18 +49,23 @@ export class UserModelImage {
 
 class Link {
   @ApiProperty()
+  @IsString()
   facebook?: string;
 
   @ApiProperty()
+  @IsString()
   twitter?: string;
 
   @ApiProperty()
+  @IsString()
   youtube?: string;
 
   @ApiProperty()
+  @IsString()
   medium?: string;
 
   @ApiProperty()
+  @IsString()
   website?: string | null;
 }
 
@@ -138,6 +145,9 @@ export class UserResponseDto {
 
   @ApiProperty()
   casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
 }
 
 export class linkSocialDetail {
@@ -157,19 +167,37 @@ export class syncSocialDetail {
 }
 export class UpdateUserDto {
   @ApiProperty()
+  @IsString()
+  @IsOptional()
+  castcleId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   overview?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   dob?: string;
 
   @ApiProperty()
+  @IsOptional()
   images?: UserImage;
 
   @ApiProperty()
+  @IsOptional()
   links?: Link;
 }
 
 export class UpdateModelUserDto {
+  castcleId?: string;
+  displayName?: string;
   overview?: string;
   dob?: string;
   links?: Link;
@@ -249,6 +277,9 @@ export class PageResponseDto {
 
   @ApiProperty()
   casts: number;
+
+  @ApiProperty()
+  canUpdateCastcleId: boolean;
 }
 
 export class UpdatePageDto {
@@ -358,6 +389,12 @@ export class SocialSyncDto {
   authToken?: string;
 }
 
+export class CreatePageSocialDto {
+  @Type(() => SocialSyncDto)
+  @ValidateNested({ each: true })
+  payload: SocialSyncDto[];
+}
+
 export class SocialSyncDeleteDto {
   @ApiProperty()
   @IsString()
@@ -396,4 +433,14 @@ export class SocialPageDto {
     medium?: string | null;
     website?: string | null;
   };
+}
+
+export class GetUserParam {
+  @ApiProperty()
+  @IsString()
+  userId: string;
+
+  @Expose()
+  @Transform(({ obj }) => obj.userId === 'me')
+  isMe = () => this.userId === 'me';
 }

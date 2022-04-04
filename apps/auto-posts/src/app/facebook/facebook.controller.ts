@@ -35,6 +35,7 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { isEnum } from 'class-validator';
 import { ValidateWebhookQuery } from '../youtube/dto';
 import {
   FeedEntryChange,
@@ -124,6 +125,14 @@ export class FacebookController {
           this.logger.error(
             `postId: ${feed.post_id}`,
             'handleWebhook:verb-mismatched'
+          );
+          continue;
+        }
+
+        if (!isEnum(feed.item, FeedEntryItem)) {
+          this.logger.error(
+            `postId: ${feed.post_id}`,
+            'handleWebhook:item-mismatched'
           );
           continue;
         }

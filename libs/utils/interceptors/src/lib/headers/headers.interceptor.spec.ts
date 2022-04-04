@@ -20,35 +20,33 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ExecutionContext } from '@nestjs/common';
+
 import { createMock } from '@golevelup/ts-jest';
+import { ExecutionContext } from '@nestjs/common';
 import { HeadersInterceptor } from './headers.interceptor';
 
-const callHandler = {
-  handle: jest.fn(),
-};
+describe('HeadersInterceptor', () => {
+  const handler = { handle: jest.fn() };
 
-describe('TokenInterceptor', () => {
   it('should be defined', () => {
     expect(new HeadersInterceptor()).toBeDefined();
   });
-  it('should modify request header to have token if the request contain Accept-language: {langage}', () => {
+
+  it('should modify request header to have token if the request contain Accept-language: {language}', () => {
     const interceptor = new HeadersInterceptor();
     const mockExecutionContext = createMock<ExecutionContext>({
       switchToHttp: () => ({
         getRequest: () => ({
-          headers: {
-            'accept-language': 'th',
-          },
+          headers: { 'accept-language': 'th' },
         }),
       }),
     });
+
     expect(mockExecutionContext.switchToHttp().getRequest()).toEqual({
-      headers: {
-        'accept-language': 'th',
-      },
+      headers: { 'accept-language': 'th' },
     });
-    interceptor.intercept(mockExecutionContext, callHandler);
-    expect(callHandler.handle).toBeCalled();
+
+    interceptor.intercept(mockExecutionContext, handler);
+    expect(handler.handle).toBeCalled();
   });
 });

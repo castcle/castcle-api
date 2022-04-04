@@ -26,7 +26,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { CreateAccountDto, CreateCredentialDto } from '../dtos/account.dto';
+import {
+  CreateAccountDeviceDto,
+  CreateAccountDto,
+  CreateCredentialDto,
+  SocialContentDto,
+} from '../dtos/account.dto';
 import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
@@ -34,7 +39,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { EventName } from '../models';
+import { EventName, UserType } from '../models';
 import {
   Account,
   AccountActivation,
@@ -49,8 +54,8 @@ import {
   OtpModel,
   OtpObjective,
   User,
-  UserType,
 } from '../schemas';
+import { AccountDevice } from './../schemas/account-device.schema';
 import { UserService } from './user.service';
 
 export interface AccountRequirements {
@@ -107,6 +112,8 @@ export class AuthenticationService {
     public _accountAuthenId: Model<AccountAuthenId>,
     @InjectModel('AccountReferral')
     public _accountReferral: Model<AccountReferral>,
+    @InjectModel('AccountDevice')
+    private _accountDeviceModel: Model<AccountDevice>,
     private userService: UserService
   ) {}
 
@@ -351,6 +358,21 @@ export class AuthenticationService {
       .exec();
     account.isGuest = false;
     account.activateDate = now;
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: account._id,
+          'activations.verifyToken': accountActivation.verifyToken,
+        },
+        {
+          $set: {
+            'activations.$.activationDate': new Date(),
+          },
+        }
+      )
+      .exec();
+
     const savedAccount = await account.save();
     return savedAccount;
   }
@@ -363,7 +385,7 @@ export class AuthenticationService {
       ownerAccount: account._id,
       displayName: requirements.displayName,
       displayId: requirements.displayId,
-      type: UserType.People,
+      type: UserType.PEOPLE,
     }).save();
 
     const updateAccount = await this.createAccountActivation(account, 'email');
@@ -376,11 +398,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(
@@ -398,6 +432,24 @@ export class AuthenticationService {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: account._id,
     });
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: account._id,
+        },
+        {
+          $addToSet: {
+            activations: {
+              type: type,
+              verifyToken: emailTokenResult.verifyToken,
+              verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate,
+            },
+          },
+        }
+      )
+      .exec();
+
     const accountActivation = new this._accountActivationModel({
       account: account._id,
       type: type,
@@ -411,6 +463,21 @@ export class AuthenticationService {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: accountActivation.account as unknown as string,
     });
+
+    this._accountModel
+      .updateOne(
+        {
+          _id: accountActivation.account,
+          'activations.verifyToken': emailTokenResult.verifyToken,
+        },
+        {
+          $set: {
+            'activations.$.revocationDate': new Date(),
+          },
+        }
+      )
+      .exec();
+
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = emailTokenResult.verifyToken;
     accountActivation.verifyTokenExpireDate =
@@ -565,7 +632,7 @@ export class AuthenticationService {
       const user = await this._userModel
         .findOne({
           ownerAccount: credential.account._id,
-          type: UserType.People,
+          type: UserType.PEOPLE,
           visibility: EntityVisibility.Publish,
         })
         .exec();
@@ -580,7 +647,31 @@ export class AuthenticationService {
       return payload;
     }
   }
+  async embedAuthentication(account: Account, socialConnect: SocialContentDto) {
+    this.logger.log(`Embed : ${socialConnect.provider}`);
+    if (
+      account.authentications &&
+      account.authentications[socialConnect.provider]
+    ) {
+      account.authentications[socialConnect.provider] = {
+        socialId: socialConnect.socialId,
+        socialToken: socialConnect.socialToken,
+        avatar: socialConnect.avatar,
+      };
+    } else {
+      account.authentications = {
+        [socialConnect.provider]: {
+          socialId: socialConnect.socialId,
+          socialToken: socialConnect.socialToken,
+          avatar: socialConnect.avatar,
+        },
+      };
+    }
 
+    account.markModified('authentications');
+    await account.save();
+    return;
+  }
   /**
    * create new account from social
    * @param {Account} account
@@ -592,16 +683,24 @@ export class AuthenticationService {
   ) {
     account.isGuest = false;
     await account.save();
+    this.logger.log('Embed Authentication');
+    await this.embedAuthentication(account, {
+      provider: requirements.provider,
+      socialId: requirements.socialId,
+      socialToken: requirements.socialToken,
+      avatar: requirements.avatar?.original,
+    });
 
     const suggestDisplayId = await this.suggestCastcleId(
       requirements.displayName
     );
 
+    this.logger.log('Create User.');
     await new this._userModel({
       ownerAccount: account._id,
       displayId: suggestDisplayId,
       displayName: requirements.displayName,
-      type: UserType.People,
+      type: UserType.PEOPLE,
       profile: {
         images: {
           avatar: requirements.avatar,
@@ -618,11 +717,23 @@ export class AuthenticationService {
       (await this.getReferrerByRequestMetadata(requirements.ip));
 
     if (referrer) {
-      await new this._accountReferral({
-        referrerAccount: referrer.ownerAccount,
-        referrerDisplayId: referrer.displayId,
-        referringAccount: account._id,
-      }).save();
+      account.referralBy = referrer.ownerAccount._id;
+      await Promise.all([
+        new this._accountReferral({
+          referrerAccount: referrer.ownerAccount,
+          referrerDisplayId: referrer.displayId,
+          referringAccount: account._id,
+        }).save(),
+        account.save(),
+        this._accountModel.updateOne(
+          {
+            _id: referrer.ownerAccount._id,
+          },
+          {
+            $inc: { referralCount: 1 },
+          }
+        ),
+      ]);
     }
 
     this.logger.log(
@@ -649,7 +760,7 @@ export class AuthenticationService {
       .updateOne(
         {
           ownerAccount: account._id,
-          type: UserType.People,
+          type: UserType.PEOPLE,
           visibility: EntityVisibility.Publish,
         },
         {
@@ -702,5 +813,100 @@ export class AuthenticationService {
     );
 
     return this.userService.getByIdOrCastcleId(analytic?.data);
+  }
+
+  async createAccountDevice({
+    accountId,
+    uuid,
+    platform,
+    firebaseToken,
+  }: CreateAccountDeviceDto) {
+    await this._accountDeviceModel
+      .updateOne(
+        {
+          account: accountId,
+          uuid,
+          platform,
+        },
+        {
+          $set: {
+            firebaseToken,
+          },
+          $setOnInsert: {
+            account: accountId,
+            uuid,
+            platform,
+          },
+        },
+        {
+          upsert: true,
+        }
+      )
+      .exec();
+
+    const account = await this._accountModel
+      .findOne({
+        _id: accountId,
+        'devices.uuid': uuid,
+        'devices.platform': platform,
+      })
+      .exec();
+
+    return await this._accountModel
+      .updateOne(
+        account
+          ? {
+              _id: accountId,
+              'devices.uuid': uuid,
+              'devices.platform': platform,
+            }
+          : {
+              _id: accountId,
+            },
+        account
+          ? {
+              $set: {
+                'devices.$.firebaseToken': firebaseToken,
+              },
+            }
+          : {
+              $addToSet: {
+                devices: {
+                  uuid,
+                  platform,
+                  firebaseToken,
+                },
+              },
+            }
+      )
+      .exec();
+  }
+
+  async deleteAccountDevice({
+    accountId,
+    uuid,
+    platform,
+  }: CreateAccountDeviceDto) {
+    return await Promise.all([
+      this._accountModel
+        .updateOne(
+          {
+            _id: accountId,
+            'devices.uuid': uuid,
+            'devices.platform': platform,
+          },
+          {
+            $pull: { devices: { uuid: uuid, platform: platform } },
+          }
+        )
+        .exec(),
+      this._accountDeviceModel
+        .deleteOne({
+          uuid,
+          platform,
+          account: accountId,
+        })
+        .exec(),
+    ]);
   }
 }

@@ -1,4 +1,3 @@
-import { FilterInterval } from './../models/ads.enum';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,16 +20,35 @@ import { FilterInterval } from './../models/ads.enum';
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleDate } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
-import { mockPipe2AdsAuctionAggregate } from '../aggregations/ads.aggregation';
+import {
+  GetAdsPriceResponse,
+  pipe2AdsAuctionPrice,
+} from '../aggregations/ads.aggregation';
+import {
+  ContentPayloadItem,
+  FeedItemPayloadItem,
+  FeedItemResponse,
+  PageResponseDto,
+} from '../dtos';
 import {
   AdsCampaignResponseDto,
   AdsQuery,
   AdsRequestDto,
 } from '../dtos/ads.dto';
+import {
+  AdsBoostStatus,
+  AdsPaymentMethod,
+  AdsStatus,
+  CACCOUNT_NO,
+  DefaultAdsStatistic,
+  WalletType,
+} from '../models';
 import {
   Account,
   AdsCampaign,
@@ -39,14 +57,18 @@ import {
   toSignedContentPayloadItem,
   User,
 } from '../schemas';
-import * as mongoose from 'mongoose';
 import { AdsDetail } from '../schemas/ads-detail.schema';
-import { AdsBoostStatus, AdsStatus, DefaultAdsStatistic } from '../models';
-import { ContentPayloadItem, PageResponseDto } from '../dtos';
 import { createCastcleFilter } from '../utils/common';
-import { CastcleDate } from '@castcle-api/utils/commons';
+import { FilterInterval } from './../models/ads.enum';
+import { TAccountService } from './taccount.service';
 
-const CAST_PRICE = 0.1;
+/**
+ * TODO
+ * !!! need to use from oracle instead
+ */
+const mockOracleService = {
+  getCastPrice: () => 0.001,
+};
 
 @Injectable()
 export class AdsService {
@@ -57,25 +79,105 @@ export class AdsService {
     @InjectModel('Content')
     public _contentModel: Model<Content>,
     @InjectModel('User')
-    public _userModel: Model<User>
+    public _userModel: Model<User>,
+    public taccountService: TAccountService
   ) {}
+
+  private logger = new CastLogger(AdsService.name);
 
   getAdsPlacementFromAuction = async (
     contentIds: string[],
-    viewer: Account
+    viewerAccountId: string
   ) => {
-    const aggrResult = mockPipe2AdsAuctionAggregate();
+    const session = await this._adsPlacementModel.startSession();
+    try {
+      session.startTransaction();
+      const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
+        pipe2AdsAuctionPrice()
+      );
+      const selectAds =
+        price[0].ads[Math.floor(Math.random() * price[0].ads.length)];
+      const adsPlacement = new this._adsPlacementModel({
+        campaign: selectAds,
+        contents: contentIds,
+        cost: {
+          UST: price[0].price,
+        },
+        viewer: mongoose.Types.ObjectId(viewerAccountId),
+      });
+      this.logger.log('##Creating ads placement');
+      this.logger.log(adsPlacement);
+      const afterSave = adsPlacement.save();
+      await session.commitTransaction();
+      return afterSave;
+    } catch (error: unknown) {
+      this.logger.log('cant create ads placement');
+      this.logger.log(error);
+    }
+  };
 
-    const adsPlacement = new this._adsPlacementModel({
-      campaign: aggrResult.campaign,
-      contents: contentIds,
-      cost: {
-        CAST: aggrResult.auctionPrice / CAST_PRICE,
-        USDC: aggrResult.auctionPrice,
-      },
-      viewer: viewer._id,
-    });
-    return adsPlacement.save();
+  addAdsToFeeds = async (viewerAccountId: string, feeds: FeedItemResponse) => {
+    const contentIds = feeds.payload
+      .filter((item) => item.type === 'content')
+      .map((item) => (item.payload as ContentPayloadItem).id);
+    const adsplacement = await this.getAdsPlacementFromAuction(
+      contentIds,
+      viewerAccountId
+    );
+    const campaign = await this._adsCampaignModel.findById(
+      adsplacement.campaign
+    );
+    let adsItem: FeedItemPayloadItem;
+    if (
+      campaign.adsRef.$ref === 'content' ||
+      campaign.adsRef.namespace === 'content'
+    ) {
+      const content = await this._contentModel.findById(
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+      );
+      adsItem = {
+        id: adsplacement.id,
+        type: 'ads-content',
+        payload: content.toContentPayloadItem(),
+        feature: {
+          slug: 'feed',
+          key: 'feature.feed',
+          name: 'Feed',
+        },
+        circle: {
+          id: 'for-you',
+          key: 'circle.forYou',
+          name: 'For You',
+          slug: 'forYou',
+        },
+        campaignName: campaign.detail.name,
+        campaignMessage: campaign.detail.message,
+      };
+    } else {
+      const page = await this._userModel.findById(
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+      );
+      adsItem = {
+        id: adsplacement.id,
+        type: 'ads-page',
+        payload: [page.toPageResponse()],
+        feature: {
+          slug: 'feed',
+          key: 'feature.feed',
+          name: 'Feed',
+        },
+        circle: {
+          id: 'for-you',
+          key: 'circle.forYou',
+          name: 'For You',
+          slug: 'forYou',
+        },
+        campaignName: campaign.detail.name,
+        campaignMessage: campaign.detail.message,
+      };
+    }
+    feeds.payload = [...feeds.payload, adsItem];
+    return feeds;
   };
 
   getCode = (account: Account) =>
@@ -97,7 +199,6 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    console.log(adsRef);
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
@@ -109,6 +210,7 @@ export class AdsService {
         code: this.getCode(account), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
+        paymentMethod: adsRequest.paymentMethod,
       } as AdsDetail,
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,
@@ -223,4 +325,84 @@ export class AdsService {
       status: AdsStatus.Processing,
     });
   }
+
+  async updateAdsBoostStatus(adsId: string, adsBoostStatus: AdsBoostStatus) {
+    return this._adsCampaignModel.updateOne(
+      { _id: adsId, status: AdsStatus.Approved },
+      {
+        $set: {
+          boostStatus: adsBoostStatus,
+        },
+      }
+    );
+  }
+
+  seenAds = async (adsPlacementId: string, seenByCredentialId: string) => {
+    const adsPlacement = await this._adsPlacementModel.findById(adsPlacementId);
+    const session = await this._adsPlacementModel.startSession();
+    let tx;
+    await session.withTransaction(async () => {
+      try {
+        if (adsPlacement && !adsPlacement.seenAt) {
+          adsPlacement.seenAt = new Date();
+          adsPlacement.seenCredential = mongoose.Types.ObjectId(
+            seenByCredentialId
+          ) as any;
+          const adsCampaign = await this._adsCampaignModel.findById(
+            adsPlacement.campaign
+          );
+          const estAdsCostCAST =
+            adsPlacement.cost.UST / mockOracleService.getCastPrice();
+          //transferFrom ads owner to locked account
+          //debit personal account or ads_credit account of adsowner
+          //credit ads ownner locked_for ads
+          tx = await this.taccountService.transfers({
+            from: {
+              account: adsCampaign.owner as unknown as string,
+              type:
+                adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+                  ? WalletType.ADS
+                  : WalletType.PERSONAL,
+              value: estAdsCostCAST,
+            },
+            to: [
+              {
+                type: WalletType.CASTCLE_ADS_LOCKED,
+                value: estAdsCostCAST,
+              },
+            ],
+            ledgers: [
+              {
+                debit: {
+                  caccountNo:
+                    adsCampaign.detail.paymentMethod ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.LIABILITY.USER_WALLET.ADS
+                      : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: estAdsCostCAST,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                  value: estAdsCostCAST,
+                },
+              },
+            ],
+          });
+          await adsPlacement.save();
+        }
+        await session.endSession();
+      } catch (error: unknown) {
+        await session.abortTransaction();
+        this.logger.error(error);
+      }
+    });
+    return tx
+      ? {
+          adsPlacement: adsPlacement,
+          txId: tx.id,
+        }
+      : {
+          adsPlacement: adsPlacement,
+        };
+  };
 }

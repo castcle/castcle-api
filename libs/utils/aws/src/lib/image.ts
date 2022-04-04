@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Environment as env } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
 import * as sharp from 'sharp';
 import * as Configs from '../config';
@@ -166,7 +167,8 @@ export class Image {
   }
 
   static async upload(base64: string, options?: ImageUploadOptions) {
-    console.debug('original upload()', options);
+    const logger = new CastLogger(Image.name);
+    logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
       Configs.IMAGE_BUCKET_FOLDER
@@ -174,8 +176,6 @@ export class Image {
     const contentType = Uploader.getImageContentType(base64);
     const fileType = Uploader.getFileTypeFromBase64(base64);
     const buffer = Uploader.getBufferFromBase64(base64);
-    //{ ...options, contentType: contentType }
-    //console.debug(`${options.filename}-${OriginalSuffix}`);
     const image: {
       original: string;
       [key: string]: string;
@@ -189,9 +189,7 @@ export class Image {
         .then((data) => data.Key),
     };
 
-    //Multisize opton
-    if (options.sizes && options.sizes.length > 0) {
-      console.debug('options', options);
+    if (options.sizes?.length > 0) {
       for (let i = 0; i < options.sizes.length; i++) {
         image[options.sizes[i].name] = await Image.uploadSpecificSizeImage(
           buffer,

@@ -44,10 +44,13 @@ import {
 import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
 import { Password } from '@castcle-api/utils/commons';
 import { RequestMetadata } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { lastValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
 import { getSignupHtml } from './configs/signupEmail';
 import {
@@ -55,11 +58,8 @@ import {
   RequestOtpDto,
   SocialConnectDto,
   TokenResponse,
-  verificationOtpDto,
-} from './dtos/dto';
-import { HttpService } from '@nestjs/axios';
-import { map } from 'rxjs/operators';
-import { lastValueFrom } from 'rxjs';
+  VerificationOtpDto,
+} from './dtos';
 
 /*
  * TODO: !!!
@@ -125,10 +125,10 @@ export class AppService {
    * @param languages en is default
    * @returns {boolean}
    */
-  validatePassword(password: string, languages?: string) {
+  validatePassword(password: string) {
     if (Password.validate(password)) return true;
     else {
-      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, languages);
+      throw CastcleException.INVALID_PASSWORD;
     }
   }
 
@@ -184,6 +184,9 @@ export class AppService {
       const account = await this.authService.getAccountFromCredential(
         req.$credential
       );
+
+      if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+
       let avatar: Image;
       if (body.avatar) {
         this.logger.log(`download avatar from ${body.provider}`);
@@ -198,9 +201,9 @@ export class AppService {
         });
       }
 
-      this.logger.log('Update Email to Account.');
+      this.logger.log(`Update Email to Account : ${body.email}`);
       account.email = body.email ? body.email : account.email;
-      this.logger.log('signup by Social');
+      this.logger.log(`signup by Social : ${body.provider}`);
       await this.authService.signupBySocial(account, {
         displayName: body.displayName
           ? body.displayName
@@ -268,11 +271,10 @@ export class AppService {
    * @param {string} lang
    * @returns account document
    */
-  async getAccountFromEmail(email: string, lang: string) {
+  async getAccountFromEmail(email: string) {
     this.logger.log('Get Account from email');
     const account = await this.authService.getAccountFromEmail(email);
-    if (!account)
-      throw new CastcleException(CastcleStatus.EMAIL_OR_PHONE_NOTFOUND, lang);
+    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
 
     return account;
   }
@@ -324,18 +326,12 @@ export class AppService {
       this.logger.error(
         'Can not get Account from mobile : ' + countryCode + mobileNumber
       );
-      throw new CastcleException(
-        CastcleStatus.EMAIL_OR_PHONE_NOTFOUND,
-        credential.$language
-      );
+      throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
     }
 
     if (account && objective === OtpObjective.VerifyMobile) {
       this.logger.error('Duplicate mobile : ' + countryCode + mobileNumber);
-      throw new CastcleException(
-        CastcleStatus.MOBILE_NUMBER_IS_EXIST,
-        credential.$language
-      );
+      throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
     }
 
     if (!account && objective === OtpObjective.VerifyMobile) {
@@ -345,10 +341,7 @@ export class AppService {
 
       if (account.isGuest) {
         this.logger.error('Can not verify mobile from guest account');
-        throw new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credential.$language
-        );
+        throw CastcleException.FORBIDDEN;
       }
     }
 
@@ -371,8 +364,8 @@ export class AppService {
   ) {
     let account: Account = null;
     let otp: Otp = null;
-    const objective: OtpObjective = <OtpObjective>request.objective;
-    // recapchaToken mobile only
+    const objective = request.objective;
+    // recaptchaToken mobile only
     if (request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
@@ -385,20 +378,12 @@ export class AppService {
           `[requestOtpCode] captchaResponse: ${JSON.stringify(captchaResponse)}`
         );
         if (captchaResponse && captchaResponse.success == false) {
-          throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
+          throw CastcleException.RECAPTCHA_FAILED;
         }
       } else {
         //throw error
-        throw new CastcleException(CastcleStatus.RECAPTCHA_FAILED);
+        throw CastcleException.RECAPTCHA_FAILED;
       }
-    }
-
-    if (!objective || !Object.values(OtpObjective).includes(objective)) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        credential.$language
-      );
     }
 
     switch (request.channel) {
@@ -414,10 +399,7 @@ export class AppService {
           return exOtp;
         }
 
-        account = await this.getAccountFromEmail(
-          request.payload.email,
-          credential.$language
-        );
+        account = await this.getAccountFromEmail(request.payload.email);
 
         this.logger.log('Create Otp');
         otp = await this.generateAndSendOtp(
@@ -468,10 +450,7 @@ export class AppService {
       }
       default: {
         this.logger.error(`Forgot password channel mismatch.`);
-        throw new CastcleException(
-          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-          credential.$language
-        );
+        throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
       }
     }
     return otp;
@@ -513,15 +492,9 @@ export class AppService {
     } catch (ex) {
       this.logger.error('Twillio Error : ' + ex.message, ex);
       if (ex.message == 'Error: Too many requests') {
-        throw new CastcleException(
-          CastcleStatus.TWILLIO_TOO_MANY_REQUESTS,
-          credential.$language
-        );
+        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
       } else {
-        throw new CastcleException(
-          CastcleStatus.TWILLIO_MAX_LIMIT,
-          credential.$language
-        );
+        throw CastcleException.TWILIO_MAX_LIMIT;
       }
     }
 
@@ -562,33 +535,22 @@ export class AppService {
   }
   /**
    * forgot password verify Otp
-   * @param {verificationOtpDto} request
+   * @param {VerificationOtpDto} request
    * @param {CredentialRequest} credential
    * @returns {Otp} Opt data
    */
   async verificationOTP(
-    request: verificationOtpDto,
+    request: VerificationOtpDto,
     credential: CredentialRequest
   ) {
     const limitRetry = 3;
     let account: Account = null;
     let receiver = '';
-
-    const objective: OtpObjective = <OtpObjective>request.objective;
-    if (!objective || !Object.values(OtpObjective).includes(objective)) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        credential.$language
-      );
-    }
+    const objective = request.objective;
 
     switch (request.channel) {
       case 'email': {
-        account = await this.getAccountFromEmail(
-          request.payload.email,
-          credential.$language
-        );
+        account = await this.getAccountFromEmail(request.payload.email);
         receiver = request.payload.email;
         break;
       }
@@ -605,10 +567,7 @@ export class AppService {
       }
       default: {
         this.logger.error(`Verify password channel mismatch.`);
-        throw new CastcleException(
-          CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-          credential.$language
-        );
+        throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
       }
     }
 
@@ -623,16 +582,10 @@ export class AppService {
       throw CastcleException.INVALID_REF_CODE;
     } else if (otp.action !== objective) {
       this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        credential.$language
-      );
+      throw CastcleException.PAYLOAD_TYPE_MISMATCH;
     } else if (otp.channel !== request.channel) {
       this.logger.error(`Verify password channel mismatch.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-        credential.$language
-      );
+      throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
     }
 
     const retryCount = otp.retry ? otp.retry : 0;
@@ -640,10 +593,7 @@ export class AppService {
       this.logger.error(`Otp over limit retry : ${limitRetry}`);
       await this.cancelOtp(otp);
       await otp.delete();
-      throw new CastcleException(
-        CastcleStatus.LOCKED_OTP,
-        credential.$language
-      );
+      throw CastcleException.LOCKED_OTP;
     }
 
     if (otp && otp.isValid()) {
@@ -658,20 +608,14 @@ export class AppService {
         this.logger.error(ex.message, ex);
         await this.cancelOtp(otp);
         await otp.delete();
-        throw new CastcleException(
-          CastcleStatus.EXPIRED_OTP,
-          credential.$language
-        );
+        throw CastcleException.EXPIRED_OTP;
       }
 
       this.logger.log('Twillio result : ' + verifyOtpResult.status);
       if (!verifyOtpResult || verifyOtpResult.status !== 'approved') {
         await this.authService.updateRetryOtp(otp);
         this.logger.error(`Invalid Otp.`);
-        throw new CastcleException(
-          CastcleStatus.INVALID_OTP,
-          credential.$language
-        );
+        throw CastcleException.INVALID_OTP;
       }
 
       const tokenResult = await this.getTokenMergeAccount(
@@ -698,10 +642,7 @@ export class AppService {
       // await this.cancelOtp(otp);
       this.logger.log('Delete OTP refCode: ' + otp.refCode);
       await otp.delete();
-      throw new CastcleException(
-        CastcleStatus.EXPIRED_OTP,
-        credential.$language
-      );
+      throw CastcleException.EXPIRED_OTP;
     }
   }
 
@@ -726,7 +667,7 @@ export class AppService {
       otp.isVerify
     ) {
       this.logger.log('Validate password');
-      this.validatePassword(data.newPassword, credential.$language);
+      this.validatePassword(data.newPassword);
       this.logger.log('Get Account');
       const account = await this.authService.getAccountFromId(otp.account._id);
       this.logger.log('Change password');

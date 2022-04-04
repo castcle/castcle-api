@@ -46,7 +46,7 @@ export class AdsPlacement extends CastcleBase {
   @Prop()
   seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
 
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Credential' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
   seenCredential?: Credential;
 }
 

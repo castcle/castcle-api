@@ -24,9 +24,10 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { getLinkPreview } from 'link-preview-js';
+import { Queue } from 'bull';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createTransport } from 'nodemailer';
 import {
@@ -41,19 +42,21 @@ import {
   createFilterQuery,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
-  GetLinkPreview,
   GetSearchRecentDto,
-  GuestFeedItemDto,
   IncludeUser,
-  Link,
-  LinkType,
   Meta,
   SaveContentDto,
   ShortPayload,
   SortDirection,
   UpdateCommentDto,
 } from '../dtos';
-import { EngagementType } from '../models/engagement.enum';
+import {
+  ContentMessage,
+  ContentMessageEvent,
+  EngagementType,
+  QueueName,
+  UserType,
+} from '../models';
 import {
   Account,
   Comment,
@@ -62,12 +65,10 @@ import {
   Engagement,
   FeedItem,
   GuestFeedItem,
-  GuestFeedItemType,
   Relationship,
   Revision,
   toSignedContentPayloadItem,
   User,
-  UserType,
 } from '../schemas';
 import {
   createCastcleFilter,
@@ -90,7 +91,8 @@ export class ContentService {
   });
 
   constructor(
-    @InjectModel('Account') public _accountModel: Model<Account>,
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('Credential')
     public _credentialModel: Model<Credential>,
     @InjectModel('User')
@@ -109,7 +111,9 @@ export class ContentService {
     @InjectModel('GuestFeedItem')
     public _guestFeedItemModel: Model<GuestFeedItem>,
     @InjectModel('Relationship')
-    private relationshipModel: Model<Relationship>
+    private relationshipModel: Model<Relationship>,
+    @InjectQueue(QueueName.CONTENT)
+    private contentQueue: Queue<ContentMessage>
   ) {}
 
   /**
@@ -138,23 +142,21 @@ export class ContentService {
     );
 
     await this.hashtagService.createFromTags(hashtags);
-    try {
-      await this.updatePayloadMessage(contentDto.payload);
-    } catch (ex) {
-      this.logger.warn(ex);
-    }
-
-    const newContent = {
+    const content = await new this._contentModel({
       author: author,
       payload: contentDto.payload,
       revisionCount: 0,
       type: contentDto.type,
       visibility: EntityVisibility.Publish,
       hashtags: hashtags,
-    } as Content;
-    const content = new this._contentModel(newContent);
+    }).save();
 
-    return content.save();
+    this.contentQueue.add({
+      event: ContentMessageEvent.NEW_CONTENT,
+      contentId: content.id,
+    });
+
+    return content;
   }
 
   /**
@@ -167,26 +169,33 @@ export class ContentService {
     author: Author,
     contentsDtos: SaveContentDto[]
   ): Promise<Content[]> {
-    const contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
+    const $contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
         this.hashtagService.extractHashtagFromContentPayload(payload);
 
       await this.hashtagService.createFromTags(hashtags);
-      await this.updatePayloadMessage(payload);
 
       return {
         author,
         payload,
         revisionCount: 0,
         type,
-        visibility: EntityVisibility.Publish,
+        visibility: EntityVisibility.Hidden,
         hashtags: hashtags,
       } as Content;
     });
 
-    const contents = await Promise.all(contentsToCreate);
+    const contentsToCreate = await Promise.all($contentsToCreate);
+    const contents = await this._contentModel.insertMany(contentsToCreate);
 
-    return this._contentModel.create(contents);
+    contents.forEach((content) => {
+      this.contentQueue.add({
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      });
+    });
+
+    return contents;
   }
 
   async getAuthorFromId(authorId: string) {
@@ -194,28 +203,6 @@ export class ContentService {
 
     return this._getAuthorFromUser(user);
   }
-
-  updatePayloadMessage = async (shortPayload: ShortPayload) => {
-    const LAST_LINK_PATTERN = / https?:\/\/[0-9A-Za-z-.@:%_+~#=/]+$/;
-    const linkIndex = shortPayload.message?.search(LAST_LINK_PATTERN);
-
-    if (linkIndex >= 0) {
-      const twitterLink = shortPayload.message.slice(linkIndex);
-      const linkPreview = (await getLinkPreview(twitterLink)) as GetLinkPreview;
-      const link = {
-        type: LinkType.Other,
-        url: linkPreview.url,
-        title: linkPreview.title,
-        description: linkPreview.description,
-        imagePreview: linkPreview.images?.[0],
-      } as Link;
-
-      shortPayload.message = shortPayload.message.slice(0, linkIndex);
-      shortPayload.link = shortPayload.link
-        ? [...shortPayload.link, link]
-        : [link];
-    }
-  };
 
   /**
    *
@@ -416,16 +403,18 @@ export class ContentService {
       },
       type: EngagementType.Like,
     });
-    if (!engagement)
-      engagement = new this._engagementModel({
-        type: EngagementType.Like,
-        user: user._id,
-        targetRef: {
-          $ref: 'content',
-          $id: content._id,
-        },
-        visibility: EntityVisibility.Publish,
-      });
+
+    if (engagement) return null;
+
+    engagement = new this._engagementModel({
+      type: EngagementType.Like,
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: content._id,
+      },
+      visibility: EntityVisibility.Publish,
+    });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
     return engagement.save();
@@ -524,7 +513,7 @@ export class ContentService {
       avatar: user.profile?.images?.avatar || null,
       castcleId: user.displayId,
       displayName: user.displayName,
-      type: user.type === UserType.Page ? UserType.Page : UserType.People,
+      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
       verified: user.verified,
     });
   };
@@ -788,16 +777,16 @@ export class ContentService {
       },
       type: EngagementType.Like,
     });
-    if (!engagement)
-      engagement = new this._engagementModel({
-        type: EngagementType.Like,
-        user: user._id,
-        targetRef: {
-          $ref: 'comment',
-          $id: comment._id,
-        },
-        visibility: EntityVisibility.Publish,
-      });
+    if (engagement) return null;
+    engagement = new this._engagementModel({
+      type: EngagementType.Like,
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id,
+      },
+      visibility: EntityVisibility.Publish,
+    });
     engagement.type = EngagementType.Like;
     engagement.visibility = EntityVisibility.Publish;
     return engagement.save();
@@ -899,21 +888,6 @@ export class ContentService {
         user: user._id,
       })
       .exec();
-
-  /**
-   *
-   * @param contentId
-   * @returns {GuestFeedItem}
-   */
-  createGuestFeedItemFromAuthorId = async (contentId: any) => {
-    const newGuestFeedItem = new this._guestFeedItemModel({
-      score: 0,
-      type: GuestFeedItemType.Content,
-      content: contentId,
-    } as GuestFeedItemDto);
-    newGuestFeedItem.__v = 2;
-    return newGuestFeedItem.save();
-  };
 
   async reportContent(user: User, content: Content, message: string) {
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
@@ -1265,4 +1239,14 @@ Message: ${message}`,
     };
     return this._contentModel.find(filter).sort({ createdAt: -1 });
   };
+
+  publishContent(contentId: string, isIllegal: boolean) {
+    return this._contentModel
+      .findByIdAndUpdate(contentId, {
+        visibility: isIllegal
+          ? EntityVisibility.Illegal
+          : EntityVisibility.Publish,
+      })
+      .exec();
+  }
 }

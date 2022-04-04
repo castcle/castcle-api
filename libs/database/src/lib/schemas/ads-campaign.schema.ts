@@ -48,8 +48,8 @@ export class AdsCampaign extends CastcleBase {
   @Prop()
   startAt?: Date;
 
-  @Prop()
-  statusReason?: string;
+  @Prop({ type: Object })
+  statusReason?: any;
 
   @Prop({ type: Object }) // cant use adsDetailSchema dk why
   detail: AdsDetail;

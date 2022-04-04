@@ -30,10 +30,11 @@ import { AuthenticationService } from './authentication.service';
 import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
-import { UserProducer } from '@castcle-api/utils/queue';
 import { HashtagService } from './hashtag.service';
 import { CacheModule } from '@nestjs/common';
 import { DataService } from './data.service';
+import { getQueueToken } from '@nestjs/bull';
+import { QueueName } from '../models';
 
 describe('Ranker Service', () => {
   let mongod: MongoMemoryServer;
@@ -65,9 +66,16 @@ describe('Ranker Service', () => {
         UserService,
         AuthenticationService,
         RankerService,
-        UserProducer,
         HashtagService,
         { provide: DataService, useValue: {} },
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 

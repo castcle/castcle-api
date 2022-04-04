@@ -22,32 +22,49 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleMeta } from './common.dto';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { Types } from 'mongoose';
+import { Account } from '../schemas';
+import { CastcleImage, CastcleMeta, DEFAULT_QUERY_OPTIONS } from './common.dto';
+import { CastcleBase } from './../schemas/base.schema';
 
 export enum NotificationType {
-  Comment = 'comment',
-  Content = 'content',
   Like = 'like',
+  Comment = 'comment',
+  Quote = 'quote',
+  Recast = 'recast',
+  Tag = 'tag',
+  Farm = 'farm',
+  Reply = 'reply',
   System = 'system',
+  AdsApprove = 'ad-approve',
+  AdsDecline = 'ad-decline',
+  Follow = 'follow',
 }
 
 export enum NotificationSource {
-  Profile = 'PROFILE',
-  Page = 'PAGE',
-  System = 'SYSTEM',
+  Profile = 'profile',
+  Page = 'page',
+  System = 'system',
 }
 
-class ObjectRef {
-  @ApiProperty()
-  id: string;
+export enum NotificationRef {
+  Comment = 'comment',
+  Content = 'content',
 }
-
-export class NotificationPayloadDto {
+export enum AndroidMessagePriority {
+  NORMAL = 'normal',
+  HIGH = 'high',
+}
+export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
 
   @ApiProperty()
-  avatar: string;
+  notifyId?: string;
+
+  @ApiProperty()
+  avatar?: CastcleImage;
 
   @ApiProperty()
   message: string;
@@ -59,13 +76,19 @@ export class NotificationPayloadDto {
   type: string;
 
   @ApiProperty()
-  content?: ObjectRef;
+  contentId?: Types.ObjectId;
 
   @ApiProperty()
-  comment?: ObjectRef;
+  commentId?: Types.ObjectId;
 
   @ApiProperty()
-  system?: ObjectRef;
+  replyId?: Types.ObjectId;
+
+  @ApiProperty()
+  adsId?: Types.ObjectId;
+
+  @ApiProperty()
+  profileId?: Types.ObjectId;
 
   @ApiProperty()
   read: boolean;
@@ -81,7 +104,7 @@ export class NotificationResponse {
 
 export class NotificationQueryOptions {
   source?: NotificationSource;
-  maxResults?: number;
+  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
   sinceId?: string;
   untilId?: string;
 }
@@ -91,26 +114,26 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
 } as NotificationQueryOptions;
 
 export interface CreateNotification {
-  message: string;
   source: NotificationSource;
-  sourceUserId?: {
-    _id: string;
-  };
+  sourceUserId?: Types.ObjectId;
   type: NotificationType;
-  targetRef: {
-    _id: string;
-  };
+  contentRef?: Types.ObjectId;
+  profileRef?: Types.ObjectId;
+  commentRef?: Types.ObjectId;
+  replyRef?: Types.ObjectId;
+  account: Account;
   read: boolean;
-  account: {
-    _id: string;
-  };
 }
 
 export class RegisterTokenDto {
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   deviceUUID: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   firebaseToken: string;
 }
 

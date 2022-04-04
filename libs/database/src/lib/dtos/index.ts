@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+export * from './account.dto';
+export * from './ads.dto';
 export * from './comment.dto';
 export * from './common.dto';
 export * from './content.dto';
@@ -35,7 +37,7 @@ export * from './pagination.dto';
 export * from './query.dto';
 export * from './response.dto';
 export * from './search.dto';
+export * from './sync-social.dto';
 export * from './token.dto';
 export * from './user.dto';
 export * from './ux.engagement.dto';
-export * from './ads.dto';

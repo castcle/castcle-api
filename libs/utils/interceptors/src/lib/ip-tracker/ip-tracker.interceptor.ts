@@ -22,74 +22,83 @@
  */
 
 import { AuthenticationService } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import { HttpService } from '@nestjs/axios';
-import { Environment as env } from '@castcle-api/environments';
 import {
-  CallHandler,
-  ExecutionContext,
   Injectable,
   NestInterceptor,
+  ExecutionContext,
+  CallHandler,
 } from '@nestjs/common';
-import { CredentialRequest } from '../..';
-import * as util from '../util';
+import { getClientIp } from 'request-ip';
 import { lastValueFrom, map } from 'rxjs';
-import { Credential } from '@castcle-api/database/schemas';
-
-type CheckIp = {
-  countryCode: string;
-  continentCode: string;
-};
-
-const getIPUrl = (ip: string) =>
-  env.IP_API_KEY
-    ? `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode&key=${env.IP_API_KEY}`
-    : `${env.IP_API_URL}/${ip}?fields=continentCode,countryCode`;
+import { getTokenFromRequest } from '../util';
+import { CredentialRequest } from '../utils-interceptors.module';
 
 @Injectable()
 export class IpTrackerInterceptor implements NestInterceptor {
+  #logger = new CastLogger(IpTrackerInterceptor.name);
+  #getIPUrl = (ip: string) =>
+    Environment.IP_API_KEY
+      ? `${Environment.IP_API_URL}/${ip}?fields=continentCode,countryCode&key=${Environment.IP_API_KEY}`
+      : `${Environment.IP_API_URL}/${ip}?fields=continentCode,countryCode`;
+
   constructor(
     private authService: AuthenticationService,
     private httpService: HttpService
   ) {}
+
   async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    let credential: Credential;
-    if (request.$credential)
-      credential = (request as CredentialRequest).$credential;
-    else if (request.body && request.body.deviceUUID) {
-      credential = await this.authService.getGuestCredentialFromDeviceUUID(
-        request.body.deviceUUID
-      );
-    } else {
-      const token = util.getTokenFromRequest(request);
-      credential = await this.authService.getCredentialFromAccessToken(token);
-    }
 
-    request.$ip = util.getIpFromRequest(request);
     try {
+      request.$ip = getClientIp(request);
       request.$geolocation = await lastValueFrom(
-        this.httpService.get<CheckIp>(getIPUrl(request.$ip)).pipe(
-          map(
-            ({ data }) =>
-              ({
+        this.httpService
+          .get<{ countryCode: string; continentCode: string }>(
+            this.#getIPUrl(request.$ip)
+          )
+          .pipe(
+            map(({ data }) => {
+              this.#logger.log(
+                JSON.stringify(data),
+                `${request.$ip}:get-geolocation`
+              );
+
+              return {
                 continentCode: data.continentCode.toLowerCase(),
                 countryCode: data.countryCode.toLowerCase(),
-              } as CheckIp)
+              };
+            })
           )
-        )
       );
-    } catch (error) {
-      console.debug('wrong ip', request.$ip);
+    } catch (error: unknown) {
+      this.#logger.error(error, `${request.$ip}:get-geolocation`);
     }
+
     try {
-      console.log('update ip ', credential.accessToken);
+      const credential = request.$credential
+        ? (request as CredentialRequest).$credential
+        : request.body && request.body.deviceUUID
+        ? await this.authService.getGuestCredentialFromDeviceUUID(
+            request.body.deviceUUID
+          )
+        : await this.authService.getCredentialFromAccessToken(
+            getTokenFromRequest(request)
+          );
+
       const account = await this.authService.getAccountFromCredential(
         credential
       );
-      account.geolocation = request.$geolocation;
-      account.save();
-    } catch (error) {
-      console.debug('wrong credential');
+
+      await account.set({ geolocation: request.$geolocation }).save();
+      this.#logger.log(
+        JSON.stringify(account),
+        `${request.$ip}:update-geolocation`
+      );
+    } catch (error: unknown) {
+      this.#logger.error(error, `${request.$ip}:update-geolocation`);
     }
 
     return next.handle();

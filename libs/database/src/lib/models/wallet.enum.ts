@@ -25,6 +25,7 @@ export enum WalletType {
   ADS = 'ads',
   LOCKING = 'locking',
   PERSONAL = 'personal',
+  CASTCLE_MINT_CONTRACT = 'castcle.mintcontract',
   CASTCLE_TREASURY = 'castcle.treasury',
   CASTCLE_SOCIAL = 'castcle.social',
   CASTCLE_AIRDROP = 'castcle.airdrop',

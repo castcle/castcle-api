@@ -22,14 +22,16 @@
  */
 
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import {
-  NotificationProducer,
-  UtilsQueueModule,
-} from '@castcle-api/utils/queue';
+import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
+import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { getMongooseModuleOptions } from './database.config';
+import {
+  getBullModuleOptions,
+  getMongooseModuleOptions,
+} from './database.config';
+import { QueueName } from './models';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -58,7 +60,9 @@ import {
   UserSchemaFactory,
   UxEngagementSchema,
 } from './schemas';
+import { AccountDeviceSchema } from './schemas/account-device.schema';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
+import { CAccountSchema } from './schemas/caccount.schema';
 import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
@@ -74,6 +78,8 @@ import { NotificationService } from './services/notification.service';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
+import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
+import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
 import { UxEngagementService } from './services/uxengagement.service';
 import {
@@ -85,10 +91,12 @@ import {
 export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'AccountActivation', schema: AccountActivationSchema },
   { name: 'AccountAuthenId', schema: AccountAuthenIdSchema },
+  { name: 'AccountDevice', schema: AccountDeviceSchema },
   { name: 'AccountReferral', schema: AccountReferralSchema },
   { name: 'AdsCampaign', schema: AdsCampaignSchema },
   { name: 'AdsPlacement', schema: AdsPlacementSchema },
   { name: 'Analytic', schema: AnalyticSchema },
+  { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
@@ -148,6 +156,15 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
+    BullModule.forRootAsync({
+      useFactory: () => getBullModuleOptions(),
+    }),
+    BullModule.registerQueue(
+      { name: QueueName.CAMPAIGN },
+      { name: QueueName.CONTENT },
+      { name: QueueName.NOTIFICATION },
+      { name: QueueName.USER }
+    ),
     HttpModule,
     MongooseModule.forRootAsync({
       useFactory: () => getMongooseModuleOptions(),
@@ -155,9 +172,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     MongooseAsyncFeatures,
     MongooseForFeatures,
     UtilsCacheModule,
-    UtilsQueueModule,
+    UtilsClientsModule,
   ],
-  controllers: [],
   providers: [
     AuthenticationService,
     UserService,
@@ -166,7 +182,6 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UxEngagementService,
     NotificationService,
     RankerService,
-    NotificationProducer,
     LanguageService,
     HashtagService,
     SearchService,
@@ -176,8 +191,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AdsService,
     AnalyticService,
     DataService,
+    TAccountService,
+    SocialSyncServiceV2,
   ],
   exports: [
+    BullModule,
     AuthenticationService,
     UserService,
     CampaignService,
@@ -194,6 +212,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     AdsService,
     AnalyticService,
     DataService,
+    TAccountService,
+    SocialSyncServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -218,4 +238,6 @@ export {
   AdsService,
   AnalyticService,
   DataService,
+  TAccountService,
+  SocialSyncServiceV2,
 };

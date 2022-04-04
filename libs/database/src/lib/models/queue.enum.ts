@@ -21,6 +21,13 @@
  * or have any questions.
  */
 
+export enum QueueName {
+  CAMPAIGN = 'campaign',
+  CONTENT = 'content',
+  NOTIFICATION = 'notification',
+  USER = 'user',
+}
+
 export enum QueueStatus {
   DONE = 'done',
   FAILED = 'failed',

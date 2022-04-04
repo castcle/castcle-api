@@ -21,8 +21,7 @@
  * or have any questions.
  */
 
-import { TopicName } from '@castcle-api/utils/queue';
-import { BullModule } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -32,8 +31,9 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { CampaignType } from '../models';
+import { CampaignType, QueueName } from '../models';
 import { Campaign, CampaignSchema } from '../schemas';
+import { TAccountService } from './taccount.service';
 
 describe('Campaign Service', () => {
   let mongo: MongoMemoryServer;
@@ -46,13 +46,18 @@ describe('Campaign Service', () => {
     connect(mongo.getUri('test'));
     const moduleRef = await Test.createTestingModule({
       imports: [
-        BullModule.forRoot({}),
-        BullModule.registerQueue({ name: TopicName.Campaigns }),
         MongooseModule.forRoot(mongo.getUri(), { useCreateIndex: true }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
-      providers: [CampaignService],
+      providers: [
+        CampaignService,
+        TAccountService,
+        {
+          provide: getQueueToken(QueueName.CAMPAIGN),
+          useValue: { add: jest.fn() },
+        },
+      ],
     }).compile();
 
     campaignService = moduleRef.get(CampaignService);

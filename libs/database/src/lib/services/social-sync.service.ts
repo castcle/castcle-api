@@ -20,14 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isBoolean } from 'class-validator';
 import { Model } from 'mongoose';
+import { EntityVisibility, SocialSyncDeleteDto, SocialSyncDto } from '../dtos';
 import { SocialProvider } from '../models';
 import { SocialSync, User } from '../schemas';
-import { SocialSyncDeleteDto, SocialSyncDto } from './../dtos/user.dto';
 
 @Injectable()
 export class SocialSyncService {
@@ -84,7 +85,16 @@ export class SocialSyncService {
     socialId: string
   ): Promise<SocialSync[]> => {
     return this.socialSyncModel
-      .find({ provider: socialProvider, socialId })
+      .find()
+      .and([
+        { provider: socialProvider, socialId: socialId },
+        {
+          $or: [
+            { visibility: { $exists: false } },
+            { visibility: EntityVisibility.Publish },
+          ],
+        },
+      ])
       .exec();
   };
 
@@ -106,6 +116,7 @@ export class SocialSyncService {
       active: (socialSync.active ??= true),
       autoPost: (socialSync.autoPost ??= true),
       authToken: socialSync.authToken,
+      visibility: EntityVisibility.Publish,
     });
     return newSocialSync.save();
   };
@@ -118,7 +129,16 @@ export class SocialSyncService {
    * */
   getSocialSyncByUser = (...users: User[]) => {
     return this.socialSyncModel
-      .find({ 'author.id': { $in: users.map((user) => user.id) } })
+      .find()
+      .and([
+        { 'author.id': { $in: users.map((user) => user.id) } },
+        {
+          $or: [
+            { visibility: { $exists: false } },
+            { visibility: EntityVisibility.Publish },
+          ],
+        },
+      ])
       .exec();
   };
 
@@ -129,7 +149,18 @@ export class SocialSyncService {
    * @returns return all social sync Document
    * */
   getSocialSyncByPageId = (id: string) => {
-    return this.socialSyncModel.find({ 'author.id': id as any }).exec();
+    return this.socialSyncModel
+      .find()
+      .and([
+        { 'author.id': id as any },
+        {
+          $or: [
+            { visibility: { $exists: false } },
+            { visibility: EntityVisibility.Publish },
+          ],
+        },
+      ])
+      .exec();
   };
 
   /**
@@ -151,7 +182,18 @@ export class SocialSyncService {
    * @returns {SocialSync} social sync Document
    */
   getSocialSyncBySocialId = (id: string): Promise<SocialSync> => {
-    return this.socialSyncModel.findOne({ _id: id }).exec();
+    return this.socialSyncModel
+      .findOne()
+      .and([
+        { _id: id },
+        {
+          $or: [
+            { visibility: { $exists: false } },
+            { visibility: EntityVisibility.Publish },
+          ],
+        },
+      ])
+      .exec();
   };
 
   /**
@@ -208,17 +250,11 @@ export class SocialSyncService {
     return socialSync.save();
   };
 
-  /**
-   * delete social sync
-   * @param {SocialSyncDeleteDto} socialSyncDeleteDto payload
-   * @param {User} user
-   * @returns {SocialSync} return update social sync document
-   * */
-  delete = async (
+  private async getDeleteSync(
     socialSyncDeleteDto: SocialSyncDeleteDto,
     user: User,
     unsubscribe = false
-  ): Promise<SocialSync> => {
+  ) {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
     const deleteSocialSync = socialSyncDoc.find(
@@ -230,6 +266,52 @@ export class SocialSyncService {
       this.logger.log('delete social sync.');
       deleteSocialSync.active = false;
       if (unsubscribe) deleteSocialSync.autoPost = false;
+    }
+    return deleteSocialSync;
+  }
+
+  /**
+   * delete social sync
+   * @param {SocialSyncDeleteDto} socialSyncDeleteDto payload
+   * @param {User} user
+   * @returns {SocialSync} return update social sync document
+   * */
+  delete = async (
+    socialSyncDeleteDto: SocialSyncDeleteDto,
+    user: User,
+    unsubscribe = false
+  ): Promise<SocialSync> => {
+    const deleteSocialSync = await this.getDeleteSync(
+      socialSyncDeleteDto,
+      user,
+      unsubscribe
+    );
+    if (deleteSocialSync) {
+      deleteSocialSync.visibility = EntityVisibility.Deleted;
+      return deleteSocialSync.save();
+    } else {
+      this.logger.warn('Can not found social sync');
+      return null;
+    }
+  };
+
+  /**
+   * delete social sync
+   * @param {SocialSyncDeleteDto} socialSyncDeleteDto payload
+   * @param {User} user
+   * @returns {SocialSync} return update social sync document
+   * */
+  disconnect = async (
+    socialSyncDeleteDto: SocialSyncDeleteDto,
+    user: User,
+    unsubscribe = false
+  ): Promise<SocialSync> => {
+    const deleteSocialSync = await this.getDeleteSync(
+      socialSyncDeleteDto,
+      user,
+      unsubscribe
+    );
+    if (deleteSocialSync) {
       return deleteSocialSync.save();
     } else {
       this.logger.warn('Can not found social sync');

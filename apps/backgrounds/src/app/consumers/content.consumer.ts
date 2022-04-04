@@ -21,40 +21,41 @@
  * or have any questions.
  */
 
+import {
+  ContentMessage,
+  ContentMessageEvent,
+  ContentService,
+  DataService,
+  QueueName,
+} from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { ContentMessage, TopicName } from '@castcle-api/utils/queue';
-import { ContentService } from '@castcle-api/database';
-import { Process, Processor } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
+import { Processor, Process } from '@nestjs/bull';
 import { Job } from 'bull';
-import { CastcleQueueAction } from '@castcle-api/database/dtos';
-import { Environment } from '@castcle-api/environments';
-@Injectable()
-@Processor(TopicName.Contents)
-export class ContentConsumer {
-  constructor(private contentService: ContentService) {}
 
-  private logger = new CastLogger(ContentConsumer.name);
+@Processor(QueueName.CONTENT)
+export class ContentConsumer {
+  #logger = new CastLogger(ContentConsumer.name);
+
+  constructor(
+    private contentService: ContentService,
+    private dataService: DataService
+  ) {}
 
   @Process()
-  readOperationJob(job: Job<{ content: ContentMessage }>) {
+  async handleContentMessage({ data, id }: Job<ContentMessage>) {
     try {
-      this.logger.log(
-        `consume content message '${JSON.stringify(job.data.content)}}' `
-      );
-      //this.userService.deactiveQueue();
-      switch (job.data.content.action) {
-        case CastcleQueueAction.CreateFeedItemToEveryOne:
-          if (Environment.AUTO_CREATE_GUEST_FEED) {
-            this.contentService.createGuestFeedItemFromAuthorId(
-              job.data.content.id
-            );
-            this.logger.log(`Creating Feedd Item for all guests`);
-          }
-          break;
+      this.#logger.log(JSON.stringify(data), `handleContentMessage:${id}`);
+
+      if (data.event === ContentMessageEvent.NEW_CONTENT) {
+        await this.#detectContent(data.contentId);
       }
     } catch (error) {
-      this.logger.error(error);
+      this.#logger.error(error, `handleContentMessage:${id}`);
     }
   }
+
+  #detectContent = async (contentId: string) => {
+    const isIllegal = await this.dataService.detectContent(contentId);
+    await this.contentService.publishContent(contentId, isIllegal);
+  };
 }

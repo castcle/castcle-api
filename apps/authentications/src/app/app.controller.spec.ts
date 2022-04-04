@@ -27,8 +27,10 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  QueueName,
   UserService,
 } from '@castcle-api/database';
+import { AcceptPlatform } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import {
   AccountAuthenIdType,
@@ -44,9 +46,9 @@ import {
   TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import { UserProducer, UtilsQueueModule } from '@castcle-api/utils/queue';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -62,7 +64,7 @@ import {
   TwillioClientMock,
   TwitterClientMock,
 } from './client.mock';
-import { LoginResponse, TokenResponse } from './dtos/dto';
+import { LoginResponse, TokenResponse } from './dtos';
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -164,7 +166,6 @@ describe('AppController', () => {
         MongooseAsyncFeatures,
         MongooseForFeatures,
         HttpModule,
-        UtilsQueueModule,
       ],
       controllers: [AuthenticationController],
       providers: [
@@ -180,8 +181,15 @@ describe('AppController', () => {
         UserService,
         ContentService,
         HashtagService,
-        UserProducer,
         AnalyticService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -200,6 +208,10 @@ describe('AppController', () => {
     jest
       .spyOn(appService, 'sendRegistrationEmail')
       .mockImplementation(async () => console.log('send email from mock'));
+
+    jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
+      console.log('embed authentication.');
+    });
   });
 
   afterAll(async () => {
@@ -311,9 +323,7 @@ describe('AppController', () => {
           $token: '123',
           $language: language,
         } as any)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_REFRESH_TOKEN, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_REFRESH_TOKEN);
     });
   });
 
@@ -593,9 +603,7 @@ describe('AppController', () => {
             username: 'error',
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
     it('should get Exception when wrong password', async () => {
@@ -619,9 +627,7 @@ describe('AppController', () => {
             username: registerEmail,
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD, language)
-      );
+      ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
     it('should be able to login and return all pages', async () => {
@@ -778,26 +784,6 @@ describe('AppController', () => {
         genRefCode = response.refCode;
         expect(response.expiresTime).toBeDefined();
       });
-
-      it('should return exception when wrong objective', async () => {
-        const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
-        );
-        await expect(
-          appController.verificationPassword(
-            {
-              objective: OtpObjective.ForgotPassword,
-              password: '2@HelloWorld',
-            },
-            {
-              $credential: credential,
-              $language: 'th',
-            } as any
-          )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
-        );
-      });
     });
 
     describe('changePasswordSubmit', () => {
@@ -817,27 +803,6 @@ describe('AppController', () => {
           } as any
         );
         expect(response).toEqual('');
-      });
-
-      it('should return exception when wrong objective', async () => {
-        const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
-        );
-        await expect(
-          appController.changePasswordSubmit(
-            {
-              objective: OtpObjective.VerifyMobile,
-              newPassword: '2@BlaBlaBla',
-              refCode: genRefCode,
-            },
-            {
-              $credential: credential,
-              $language: 'th',
-            } as any
-          )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.PAYLOAD_TYPE_MISMATCH, 'th')
-        );
       });
     });
   });
@@ -970,7 +935,7 @@ describe('AppController', () => {
           },
           { ip: '127.0.0.1', userAgent: 'castcle-app' }
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.DUPLICATE_EMAIL));
+      ).rejects.toEqual(CastcleException.DUPLICATE_EMAIL);
     });
   });
 
@@ -1026,9 +991,7 @@ describe('AppController', () => {
           email: mockUsers[0].account.email,
           authToken: '',
         })
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
     it('should return Exception when use guest account', async () => {
@@ -1048,6 +1011,51 @@ describe('AppController', () => {
           authToken: '',
         })
       ).rejects.toEqual(CastcleException.FORBIDDEN);
+    });
+  });
+  describe('registerToken', () => {
+    let credential = null;
+    let mockUsers: MockUserDetail[] = [];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(1, 0, {
+        userService: userService,
+        accountService: service,
+      });
+
+      credential = {
+        $credential: mockUsers[0].credential,
+        $language: 'th',
+      } as any;
+    });
+    it('should create or update account device is exists', async () => {
+      const registerTokenBody = {
+        uuid: 'testmockuuid',
+        firebaseToken: 'testmockfirebasetoken',
+        platform: AcceptPlatform.IOS,
+      };
+      await appController.registerToken(credential, registerTokenBody);
+      const registerToken = await (service as any)._accountDeviceModel
+        .findOne(registerTokenBody)
+        .exec();
+
+      expect(registerToken.uuid).toEqual(registerTokenBody.uuid);
+      expect(registerToken.platform).toEqual(registerTokenBody.platform);
+      expect(registerToken.firebaseToken).toEqual(
+        registerTokenBody.firebaseToken
+      );
+    });
+    it('should delete account device is empty', async () => {
+      const registerTokenBody = {
+        uuid: 'testmockuuid',
+        firebaseToken: 'testmockfirebasetoken',
+        platform: AcceptPlatform.IOS,
+      };
+      await appController.unregisterToken(credential, registerTokenBody);
+      const registerToken = await (service as any)._accountDeviceModel
+        .findOne(registerTokenBody)
+        .exec();
+
+      expect(registerToken).toBeNull();
     });
   });
   /*
@@ -1306,7 +1314,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), credentialGuest, {} as any)
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.MOBILE_NUMBER_IS_EXIST)
+        CastcleException.MOBILE_NUMBER_IS_EXIST
       );
     });
 
@@ -1339,7 +1347,7 @@ describe('AppController', () => {
       await expect(
         appController.requestOTP(request(), guest, {} as any)
       ).rejects.toEqual(
-        new CastcleException(CastcleStatus.FORBIDDEN_REQUEST, guest.$language)
+        CastcleException.FORBIDDEN
       );
     });
   });

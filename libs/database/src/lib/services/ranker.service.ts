@@ -40,7 +40,7 @@ import {
   FeedQuery,
   Meta,
 } from '../dtos';
-import { FeedAggregatorName, FeedAnalyticSource } from '../models';
+import { FeedAggregatorName, FeedAnalyticSource, UserType } from '../models';
 import {
   Account,
   Content,
@@ -54,7 +54,6 @@ import {
   toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
   User,
-  UserType,
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { DataService } from './data.service';
@@ -324,7 +323,7 @@ export class RankerService {
 
     const user = await this.userModel.findOne({
       ownerAccount: viewer._id,
-      type: UserType.People,
+      type: UserType.PEOPLE,
     });
 
     const pipeline = pipelineOfGetFeedContents({
@@ -333,7 +332,7 @@ export class RankerService {
       decayDays: Environment.FEED_DECAY_DAYS,
       duplicateContentMax: Environment.FEED_DUPLICATE_MAX,
       geolocation: viewer.geolocation?.countryCode,
-      maxResult: query.maxResults,
+      maxResult: Number(query.maxResults),
       userId: user._id,
       preferLanguages: viewer.preferences.languages,
     });
@@ -343,6 +342,7 @@ export class RankerService {
     const [userFeed] = await this.userModel.aggregate<GetFeedContentsResponse>(
       pipeline
     );
+    this.logger.log('DONE AGGREGATE');
 
     const followingContentIds = userFeed?.followingContents.map(String) ?? [];
     const globalContentIds = userFeed?.globalContents.map(String) ?? [];
@@ -369,6 +369,7 @@ export class RankerService {
     }
 
     const feedDtos = contents.map<DocumentDefinition<FeedItem>>((content) => ({
+      author: content.author.id,
       content: content._id,
       viewer,
       calledAt: new Date(),

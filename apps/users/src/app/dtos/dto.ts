@@ -23,9 +23,12 @@
 import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
 import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+
 export class TargetCastcleDto {
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   targetCastcleId: string;
 }
 

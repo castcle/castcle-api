@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
 import { AdsAuctionAggregateDto } from '../dtos/ads.dto';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 
@@ -57,6 +58,41 @@ export const mockPipe2AdsAuctionAggregate = () => {
     } as any,
   };
   return temp;
+};
+
+export type GetAdsPriceResponse = {
+  _id: number;
+  total: number;
+  price: number;
+  ads: any[]; //objectId
+};
+
+export const pipe2AdsAuctionPrice = () => {
+  return [
+    {
+      $match: {
+        boostStatus: 'running',
+      },
+    },
+    {
+      $group: {
+        _id: 1,
+        total: {
+          $sum: 1,
+        },
+        ads: {
+          $push: '$_id',
+        },
+      },
+    },
+    {
+      $addFields: {
+        price: {
+          $multiply: ['$total', Environment.ADS_MINIMUM_CPM],
+        },
+      },
+    },
+  ];
 };
 
 export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate

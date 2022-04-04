@@ -29,13 +29,21 @@ import {
 } from '@castcle-api/utils/aws';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { UserProducer } from '@castcle-api/utils/queue';
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
-import { FilterQuery, Model, UpdateWriteOpResult } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { FilterQuery, Model, Types, UpdateWriteOpResult } from 'mongoose';
 import { createTransport } from 'nodemailer';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
+import {
+  GetBalanceResponse,
+  GetUserRelationResponse,
+  pipelineOfGetBalance,
+  pipelineOfUserRelationFollowers,
+  pipelineOfUserRelationMentions,
+} from '../aggregations';
 import {
   Author,
   CastcleQueryOptions,
@@ -55,7 +63,7 @@ import {
   UserField,
   UserModelImage,
 } from '../dtos';
-import { CastcleNumber } from '../models';
+import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -70,9 +78,15 @@ import {
   SocialSync,
   Transaction,
   User,
-  UserType,
 } from '../schemas';
 import { createCastcleFilter, createPagination } from '../utils/common';
+import {
+  GetUserRelationParams,
+  GetUserRelationResponseCount,
+  pipelineOfUserRelationFollowersCount,
+  pipelineOfUserRelationFollowing,
+  pipelineOfUserRelationFollowingCount,
+} from './../aggregations/get-users-relation.aggregation';
 import { ContentService } from './content.service';
 
 @Injectable()
@@ -115,15 +129,16 @@ export class UserService {
     private transactionModel: Model<Transaction>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    private contentService: ContentService,
-    private userProducer: UserProducer
+    @InjectQueue(QueueName.USER)
+    private userQueue: Queue<UserMessage>,
+    private contentService: ContentService
   ) {}
 
   getUserFromCredential = (credential: Credential) =>
     this._userModel
       .findOne({
         ownerAccount: credential?.account?._id,
-        type: UserType.People,
+        type: UserType.PEOPLE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -132,7 +147,7 @@ export class UserService {
     this._userModel
       .find({
         ownerAccount: credential.account._id,
-        type: UserType.Page,
+        type: UserType.PAGE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -141,7 +156,7 @@ export class UserService {
     this._userModel
       .find({
         ownerAccount: accountId as any,
-        type: UserType.Page,
+        type: UserType.PAGE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -166,7 +181,7 @@ export class UserService {
     const user = await this._userModel
       .findOne({
         ownerAccount: accountId as any,
-        type: UserType.People,
+        type: UserType.PEOPLE,
         visibility: EntityVisibility.Publish,
       })
       .exec();
@@ -234,7 +249,7 @@ export class UserService {
     if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
         users.map(async (user) => {
-          return user.type === UserType.Page
+          return user.type === UserType.PAGE
             ? user.toPageResponse()
             : await user.toUserResponse();
         })
@@ -263,7 +278,7 @@ export class UserService {
           : undefined;
 
         const userResponse =
-          u.type === UserType.Page
+          u.type === UserType.PAGE
             ? u.toPageResponse(
                 undefined,
                 undefined,
@@ -377,7 +392,7 @@ export class UserService {
   }
 
   getByCriteria = async (
-    user: User,
+    viewer: User,
     query: FilterQuery<User>,
     queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false,
@@ -390,7 +405,7 @@ export class UserService {
     } = await this.getAllByCriteria(query, queryOptions);
 
     const users = await this.convertUsersToUserResponses(
-      user,
+      viewer,
       targetUsers,
       hasRelationshipExpansion,
       userFields
@@ -428,6 +443,10 @@ export class UserService {
 
   updateUser = (user: User, updateUserDto: UpdateModelUserDto) => {
     if (!user.profile) user.profile = {};
+    if (updateUserDto.castcleId) user.displayId = updateUserDto.castcleId;
+    if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
+    if (updateUserDto.displayName || updateUserDto.castcleId)
+      user.displayIdUpdatedAt = new Date();
     if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
     if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
     if (updateUserDto.images) {
@@ -456,7 +475,7 @@ export class UserService {
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
-    this.userProducer.sendMessage({
+    this.userQueue.add({
       id: user._id,
       action: CastcleQueueAction.UpdateProfile,
     });
@@ -497,7 +516,7 @@ export class UserService {
   createPageFromUser = (user: User, pageDto: PageDto) => {
     const newPage = new this._userModel({
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       displayId: pageDto.castcleId,
       displayName: pageDto.displayName,
     });
@@ -536,7 +555,7 @@ export class UserService {
   };
 
   getAllPages = (queryOptions: CastcleQueryOptions) => {
-    return this.getAllByCriteria({ type: UserType.Page }, queryOptions);
+    return this.getAllByCriteria({ type: UserType.PAGE }, queryOptions);
   };
 
   /**
@@ -548,7 +567,7 @@ export class UserService {
   getUserPages = async (user: User, queryOptions: CastcleQueryOptions) => {
     const filter = {
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       visibility: EntityVisibility.Publish,
     };
     const pages = this._userModel.find(filter).skip(queryOptions.page - 1);
@@ -565,19 +584,10 @@ export class UserService {
   };
 
   /**
-   *
    * @param {User} user
    * @param {User} followedUser
-   * @returns {Promise<void>}
    */
   follow = async (user: User, followedUser: User) => {
-    this.userProducer.sendMessage({
-      id: user._id,
-      action: CastcleQueueAction.CreateFollowFeedItem,
-      options: {
-        followedId: followedUser._id,
-      },
-    });
     return user.follow(followedUser);
   };
 
@@ -598,19 +608,39 @@ export class UserService {
     userType?: string
   ) => {
     this.logger.log('Build followers query.');
-    const query: FilterQuery<Relationship> = {
-      followedUser: targetUser.id as any,
-      visibility: EntityVisibility.Publish,
-      following: true,
+    const params: GetUserRelationParams = {
+      userId: targetUser._id,
+      limit: followQuery.maxResults,
+      sinceId: followQuery.sinceId,
+      untilId: followQuery.untilId,
+      userType: userType,
+      sortBy: sortBy,
     };
+    const pipeline = pipelineOfUserRelationFollowers(params);
+    const pipelineCount = pipelineOfUserRelationFollowersCount(params);
+    this.logger.log(
+      JSON.stringify(pipeline),
+      ' pipelineOfUserRelationFollowers:aggregate'
+    );
+    this.logger.log(
+      JSON.stringify(pipelineCount),
+      ' pipelineOfUserRelationFollowersCount:aggregate'
+    );
+    const userRelation =
+      await this._relationshipModel.aggregate<GetUserRelationResponse>(
+        pipeline
+      );
 
-    return this.searchRelation(
-      query,
-      viewer,
-      'user',
+    const userRelationCount =
+      await this._relationshipModel.aggregate<GetUserRelationResponseCount>(
+        pipelineCount
+      );
+
+    return this.buildRelationResponse(
+      userRelation,
+      userRelationCount,
       followQuery,
-      sortBy,
-      userType
+      viewer
     );
   };
 
@@ -622,77 +652,76 @@ export class UserService {
     userType?: string
   ) => {
     this.logger.log('Build following query.');
-    const query: FilterQuery<Relationship> = {
-      user: targetUser.id as any,
-      visibility: EntityVisibility.Publish,
-      following: true,
+    const params: GetUserRelationParams = {
+      userId: targetUser._id,
+      limit: followQuery.maxResults,
+      sinceId: followQuery.sinceId,
+      untilId: followQuery.untilId,
+      userType: userType,
+      sortBy: sortBy,
     };
+    const pipeline = pipelineOfUserRelationFollowing(params);
+    const pipelineCount = pipelineOfUserRelationFollowingCount(params);
+    this.logger.log(
+      JSON.stringify(pipeline),
+      ' pipelineOfUserRelationFollowing:aggregate'
+    );
+    this.logger.log(
+      JSON.stringify(pipelineCount),
+      ' pipelineOfUserRelationFollowingCount:aggregate'
+    );
+    const userRelation =
+      await this._relationshipModel.aggregate<GetUserRelationResponse>(
+        pipeline
+      );
 
-    return this.searchRelation(
-      query,
-      viewer,
-      'followedUser',
+    const userRelationCount =
+      await this._relationshipModel.aggregate<GetUserRelationResponseCount>(
+        pipelineCount
+      );
+
+    return this.buildRelationResponse(
+      userRelation,
+      userRelationCount,
       followQuery,
-      sortBy,
-      userType
+      viewer
     );
   };
 
-  private async searchRelation(
-    query: FilterQuery<Relationship>,
-    viewer: User,
-    populate: string,
-    paginationQuery: PaginationQuery,
-    sortBy?: SortBy,
-    userType?: string
+  private async buildRelationResponse(
+    userRelation: GetUserRelationResponse[],
+    userRelationCount: GetUserRelationResponseCount[],
+    followQuery: PaginationQuery,
+    viewer: User
   ) {
-    const direction = sortBy?.type === 'asc' ? '' : '-';
-    this.logger.log('Filter Since & Until');
-    query = await createCastcleFilter(query, {
-      sinceId: paginationQuery?.sinceId,
-      untilId: paginationQuery?.untilId,
-    });
+    const followingUsersId = userRelation.flatMap((u) =>
+      u.user_relation.flatMap((r) => {
+        return {
+          userId: mongoose.Types.ObjectId(r._id),
+          id: u._id,
+        };
+      })
+    );
 
-    this.logger.log('FIlter Type');
-    if (userType) {
-      query.isFollowPage = userType === UserType.Page;
-    }
-
-    const total = await this._relationshipModel.countDocuments(query).exec();
-    const relationships = total
-      ? await this._relationshipModel
-          .find(query)
-          .limit(+paginationQuery.maxResults)
-          .populate(populate)
-          .sort(`${direction}${sortBy?.field}, ${direction}_id`)
-          .exec()
-      : [];
-
-    const followingIds =
-      populate === 'user'
-        ? relationships.map(({ user, id }) => {
-            return { userId: user?._id, id: id };
-          })
-        : relationships.map(({ followedUser, id }) => {
-            return { userId: followedUser?._id, id: id };
-          });
-
-    const hasRelationship = paginationQuery.userFields?.includes(
+    const hasRelationship = followQuery.userFields?.includes(
       UserField.Relationships
     );
+
+    this.logger.log('get user from following list');
 
     const { users } = await this.getByCriteria(
       viewer,
       {
-        _id: { $in: followingIds.map((f) => f.userId) },
+        _id: { $in: followingUsersId.map((f) => f.userId) },
       },
       undefined,
       hasRelationship
     );
 
+    const resultTotal = userRelationCount[0]?.total ?? 0;
     return {
-      users: this.mergeRelationUser(followingIds, users),
-      meta: Meta.fromDocuments(relationships, total),
+      users: this.mergeRelationUser(followingUsersId, users),
+      meta: Meta.fromDocuments(userRelation, resultTotal),
     };
   }
 
@@ -729,6 +758,7 @@ export class UserService {
         this.removeAllEngagementsFromUsers(users),
         this.removeAllPagesAndUsersFromAccount(account),
         this.removeAllRelationshipsFromUsers(users),
+        this.removeReferralCountParentAccountFromAccount(account),
       ]);
 
       this.logger.log(
@@ -736,7 +766,7 @@ export class UserService {
         `deactivate:success:account-${account._id}`
       );
 
-      this.userProducer.sendMessage({
+      this.userQueue.add({
         id: account,
         action: CastcleQueueAction.Deleting,
       });
@@ -746,6 +776,13 @@ export class UserService {
     }
   };
 
+  removeReferralCountParentAccountFromAccount = (account: Account) => {
+    return this._accountModel.updateOne(
+      { _id: account.referralBy },
+      { $inc: { referralCount: -1 } }
+    );
+  };
+
   removeAllAccountAuthenIdsFromAccount = (account: Account) => {
     return this._accountAuthenId.updateMany(
       { account: account._id },
@@ -753,11 +790,17 @@ export class UserService {
     );
   };
 
-  removeAllAccountActivationsFromAccount = (account: Account) => {
-    return this.activationModel.updateMany(
-      { account: account._id },
-      { visibility: EntityVisibility.Deleted }
-    );
+  removeAllAccountActivationsFromAccount = async (account: Account) => {
+    return await Promise.all([
+      this.activationModel.updateMany(
+        { account: account._id },
+        { visibility: EntityVisibility.Deleted }
+      ),
+      this._accountModel.updateMany(
+        { account: account._id },
+        { 'activations.$.visibility': EntityVisibility.Deleted }
+      ),
+    ]);
   };
 
   removeAllAccountReferralFromAccount = (account: Account) => {
@@ -836,7 +879,7 @@ export class UserService {
    * Deactivate one account by id
    * @param id
    */
-  deactiveBackground = async (accountId: any) => {
+  deactivateBackground = async (accountId: any) => {
     const account = await this._accountModel.findById(accountId).exec();
     await this.deactivate(account);
   };
@@ -844,11 +887,11 @@ export class UserService {
   reactivate = async (user: User) => {
     user.visibility = EntityVisibility.Publish;
 
-    if (user.type === UserType.Page) return user.save();
+    if (user.type === UserType.PAGE) return user.save();
 
     await this._userModel.updateMany({
       ownerAccount: user.ownerAccount,
-      type: UserType.Page,
+      type: UserType.PAGE,
       visibility: EntityVisibility.Publish,
     });
 
@@ -862,17 +905,22 @@ export class UserService {
 
   /**
    * Get all user,pages that could get from the system sort by followerCount
+   * @param {User} user
    * @param {string} keyword
    * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
    * @returns {Promise<{users:User[], pagination:Pagination}>}
    */
   getMentionsFromPublic = async (
     user: User,
     keyword: string,
-    queryOption: CastcleQueryOptions
+    queryOption: CastcleQueryOptions,
+    hasRelationshipExpansion = false,
+    excludeUserId?: Types.ObjectId[]
   ) => {
     const query = {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
+      _id: { $nin: excludeUserId },
     };
 
     queryOption.sortBy = {
@@ -880,7 +928,62 @@ export class UserService {
       type: SortDirection.DESC,
     };
 
-    return this.getByCriteria(user, query, queryOption);
+    return this.getByCriteria(
+      user,
+      query,
+      queryOption,
+      hasRelationshipExpansion
+    );
+  };
+
+  /**
+   * Get user,pages from following user with filter
+   * @param {User} user
+   * @param {string} keyword
+   * @param {CastcleQueryOptions} queryOption
+   * @param {boolean} hasRelationshipExpansion
+   * @returns {Promise<{users:User[], pagination:Pagination}>}
+   */
+  getMentionsFollowing = async (
+    user: User,
+    keyword: string,
+    queryOption: CastcleQueryOptions,
+    hasRelationshipExpansion = false
+  ) => {
+    const pipeline = pipelineOfUserRelationMentions({
+      userId: user._id,
+      keyword: keyword,
+      limit: queryOption.limit,
+    });
+
+    this.logger.log(
+      JSON.stringify(pipeline),
+      ' getUserRelationSearch:aggregate'
+    );
+    const userRelation =
+      await this._relationshipModel.aggregate<GetUserRelationResponse>(
+        pipeline
+      );
+
+    const followingUsersId = userRelation.flatMap((u) =>
+      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id))
+    );
+
+    const query = {
+      _id: { $in: followingUsersId },
+    };
+
+    this.logger.log('get user from following list');
+    const userData = await this.getByCriteria(
+      user,
+      query,
+      queryOption,
+      hasRelationshipExpansion
+    );
+    return {
+      followingUserId: followingUsersId,
+      userData: userData,
+    };
   };
 
   async blockUser(user: User, blockedUser?: User) {
@@ -1080,7 +1183,7 @@ Message: ${message}`,
     if (accountRef) {
       const userRef = this.getByIdOrCastcleId(
         accountRef.referrerDisplayId,
-        UserType.People
+        UserType.PEOPLE
       );
       this.logger.log('Success get referrer.');
       return userRef;
@@ -1181,7 +1284,7 @@ Message: ${message}`,
   createPageFromSocial = (account: Account, socialPageDto: SocialPageDto) => {
     return new this._userModel({
       ownerAccount: account._id,
-      type: UserType.Page,
+      type: UserType.PAGE,
       displayId: socialPageDto.castcleId,
       displayName: socialPageDto.displayName,
       profile: {
