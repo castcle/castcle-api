@@ -36,4 +36,8 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/verificationPassword`);
   static changePasswordSubmit = () =>
     AuthenticationsRequest.post(`/authentications/changePasswordSubmit`);
+  static registerToken = () =>
+    AuthenticationsRequest.post(`/authentications/register-token`);
+  static unregisterToken = () =>
+    AuthenticationsRequest.delete(`/authentications/register-token`);
 }

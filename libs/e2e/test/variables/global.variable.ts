@@ -1,5 +1,6 @@
 import {
   AccountActivationSchema,
+  AccountDeviceSchema,
   CampaignSchema,
   CredentialSchema,
   OtpSchema,
@@ -17,6 +18,7 @@ export const accountActivationModel = model(
   AccountActivationSchema
 );
 export const credentialModel = model('Credential', CredentialSchema);
+export const accountDeviceModel = model('AccountDevice', AccountDeviceSchema);
 
 /** verified: `mobile` */
 export const userAlpha = new User({ name: 'alpha' });

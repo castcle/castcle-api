@@ -1,7 +1,11 @@
 import * as mongoose from 'mongoose';
 import { User } from '../../models/user.model';
 import { AuthenticationsRequest } from '../../requests';
-import { accountActivationModel, userModel } from '../../variables';
+import {
+  accountActivationModel,
+  accountDeviceModel,
+  userModel,
+} from '../../variables';
 export const testAuthenticationsFlow = () => {
   const userRegister = new User({ name: 'castcleE2E' });
   describe('#register member flow', () => {
@@ -118,6 +122,37 @@ export const testAuthenticationsFlow = () => {
           userRegister.id = body.profile.id;
           userRegister.refreshToken = body.refreshToken;
         });
+    });
+  });
+
+  describe('#register & unregister firebase token flow', () => {
+    const requestBody = {
+      uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+      platform: 'ios',
+      firebaseToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+    };
+    it('should register firebase token successful', async () => {
+      await AuthenticationsRequest.registerToken()
+        .auth(userRegister.accessToken, { type: 'bearer' })
+        .send(requestBody);
+      const accountDevice = await accountDeviceModel
+        .findOne(requestBody)
+        .exec();
+      expect(requestBody).toBeTruthy();
+      expect(requestBody.uuid).toEqual(accountDevice.uuid);
+      expect(requestBody.platform).toEqual(accountDevice.platform);
+      expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
+    });
+
+    it('should unregister firebase token successful', async () => {
+      await AuthenticationsRequest.unregisterToken()
+        .auth(userRegister.accessToken, { type: 'bearer' })
+        .send(requestBody);
+      const accountDevice = await accountDeviceModel
+        .findOne(requestBody)
+        .exec();
+
+      expect(accountDevice).toBeNull();
     });
   });
 };

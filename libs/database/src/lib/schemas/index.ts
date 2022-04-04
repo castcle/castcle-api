@@ -24,6 +24,7 @@
 export * from './account-activation.schema';
 export * from './account-authen-id.schema';
 export * from './account-referral.schema';
+export * from './account-device.schema';
 export * from './account.schema-factory';
 export * from './account.schema';
 export * from './analytic.schema';
