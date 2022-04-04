@@ -20,15 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Request, Response } from 'express';
+
+import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
-  ExceptionFilter as NestExceptionFilter,
   Catch,
   ArgumentsHost,
+  ExceptionFilter as NestExceptionFilter,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { getLanguageFromRequest } from '../util';
-import { Environment } from '@castcle-api/environments';
 
 @Catch(CastcleException)
 export class ExceptionFilter implements NestExceptionFilter {
@@ -36,14 +37,12 @@ export class ExceptionFilter implements NestExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
-    const language = getLanguageFromRequest(request);
+    const language = ['development', 'localhost'].includes(Environment.NODE_ENV)
+      ? 'dev'
+      : getLanguageFromRequest(request);
 
     response
       .status(exception.getStatus())
-      .json(
-        ['development', 'localhost'].includes(Environment?.NODE_ENV)
-          ? exception.getLocalStatus('dev')
-          : exception.getLocalStatus(language)
-      );
+      .json(exception.getLocalStatus(language));
   }
 }

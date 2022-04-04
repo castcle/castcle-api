@@ -42,7 +42,7 @@ import {
 } from '@castcle-api/database/dtos';
 import { Content, Credential } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -357,9 +357,7 @@ describe('PageController', () => {
             ],
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
     it('should return Exception when use guest account', async () => {
@@ -394,7 +392,7 @@ describe('PageController', () => {
             },
           ],
         })
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 });

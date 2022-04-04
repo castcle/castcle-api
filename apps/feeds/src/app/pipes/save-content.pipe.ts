@@ -22,7 +22,7 @@
  */
 
 import { SaveContentDto, ShortPayload } from '@castcle-api/database/dtos';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable, PipeTransform } from '@nestjs/common';
 
 @Injectable()
@@ -32,7 +32,7 @@ export class SaveContentPipe implements PipeTransform<SaveContentDto> {
       (value.payload as ShortPayload).message &&
       (value.payload as ShortPayload).message.trim().length === 0
     ) {
-      throw new CastcleException(CastcleStatus.SOMETHING_WRONG);
+      throw CastcleException.SOMETHING_WRONG;
     } else return value;
   }
 }

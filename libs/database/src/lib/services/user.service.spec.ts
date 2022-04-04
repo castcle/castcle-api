@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -1091,9 +1092,7 @@ describe('User Service', () => {
     it('should return exception when can not find user', async () => {
       await expect(
         service.getUserFromAccountId(result.accountDocument.id)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.USER_OR_PAGE_NOT_FOUND)
-      );
+      ).rejects.toEqual(CastcleException.USER_OR_PAGE_NOT_FOUND);
     });
   });
 
