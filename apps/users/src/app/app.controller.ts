@@ -587,7 +587,10 @@ export class UserController {
     @Body() body: TargetCastcleDto
   ) {
     const { user } = await this._getUserAndViewer(id, req.$credential);
-    const followedUser = await this.userService.findUser(body.targetCastcleId);
+    console.log(body);
+    const followedUser = await this.userService.findUser(
+      req?.body?.targetCastcleId
+    );
 
     if (!user.ownerAccount === req.$credential.account._id)
       throw new CastcleException(
