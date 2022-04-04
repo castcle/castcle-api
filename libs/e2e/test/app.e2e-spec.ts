@@ -4,6 +4,7 @@ import { connect, disconnect } from 'mongoose';
 import {
   initializeUsers,
   testAuthenticationsFlow,
+  testAuthenticationsSocialFlow,
 } from './modules/authentications';
 import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
 import {
@@ -39,6 +40,10 @@ describe('Castcle E2E Tests', () => {
   describe('# Authentication Microservice', () => {
     describe('- Register Member Flow', () => {
       testAuthenticationsFlow();
+    });
+
+    describe('- Register Social Flow', () => {
+      testAuthenticationsSocialFlow();
     });
   });
 
