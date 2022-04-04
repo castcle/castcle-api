@@ -131,7 +131,7 @@ export const ThErrorMessages = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'Invalid ref code. Please try again.',
+    message: 'The request exceeded the time limit.',
   },
   '3013': {
     statusCode: '400',
