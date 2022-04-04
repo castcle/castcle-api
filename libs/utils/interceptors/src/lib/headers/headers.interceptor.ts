@@ -27,8 +27,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
-import * as util from '../util';
+import { getLanguageFromRequest } from '../util';
 
 export interface HeadersRequest extends Request {
   $language: string;
@@ -38,11 +37,9 @@ export interface HeadersRequest extends Request {
 export class HeadersInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
-    request.$language = util.getLanguageFromRequest(request);
-    if (request.$language) {
-      return next.handle();
-    } else {
-      throw new CastcleException(CastcleStatus.MISSING_AUTHORIZATION_HEADER);
-    }
+
+    request.$language = getLanguageFromRequest(request);
+
+    return next.handle();
   }
 }

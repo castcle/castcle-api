@@ -47,7 +47,7 @@ import {
   NotificationType,
 } from '@castcle-api/database/dtos';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
 import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
 import {
@@ -127,9 +127,6 @@ export class CommentController {
     );
 
     return { payload };
-    // } catch (error) {
-    //   throw new CastcleException(CastcleStatus.INVALID_ACCESS_TOKEN);
-    // }
   }
 
   @CastcleAuth(CacheKeyName.Comments)
@@ -251,7 +248,6 @@ export class CommentController {
   @CastcleBasicAuth()
   @Delete(':id/comments/:commentId')
   async deleteComment(@Param('commentId') commentId: string) {
-    //const content = await this._getContentIfExist(contentId, req);
     const comment = await this.contentService.getCommentById(commentId);
     await this.contentService.deleteComment(comment);
     return '';
@@ -277,8 +273,8 @@ export class CommentController {
     ]);
 
     const likeComment = await this.contentService.likeComment(user, comment);
-    if (!likeComment)
-      throw new CastcleException(CastcleStatus.LIKE_IS_EXIST, req.$language);
+
+    if (!likeComment) throw CastcleException.LIKE_IS_EXIST;
 
     if (String(authorizedUser._id) !== String(comment.author.id)) {
       const userOwner = await this.userService.getByIdOrCastcleId(

@@ -72,7 +72,7 @@ import { Configs } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -328,7 +328,7 @@ describe('AppController', () => {
           'me',
           updateDto
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.USER_ID_IS_EXIST));
+      ).rejects.toEqual(CastcleException.USER_ID_IS_EXIST);
     });
 
     it('should update castcleid and dispalyname from UpdateUserDto', async () => {
@@ -393,9 +393,7 @@ describe('AppController', () => {
           'me',
           updateDto
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.CHANGE_CASTCLE_ID_FAILED)
-      );
+      ).rejects.toEqual(CastcleException.CHANGE_CASTCLE_ID_FAILED);
     });
   });
 
@@ -641,15 +639,13 @@ describe('AppController', () => {
 
       await expect(
         appController.syncSocial(credentialGuest, defaultRequest)
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
     it('should return exception when get duplicate social sync', async () => {
       await expect(
         appController.syncSocial(credential, defaultRequest)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
 
       const mocksNewUsers = await generateMockUsers(1, 1, {
         userService: service,
@@ -673,9 +669,7 @@ describe('AppController', () => {
       };
       await expect(
         appController.syncSocial(newCredential, newRequest)
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
     it('should return exception when socail sync with user people', async () => {
@@ -690,7 +684,7 @@ describe('AppController', () => {
       };
       await expect(
         appController.syncSocial(credential, userRequest)
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
     it('should get all sync social from user', async () => {
@@ -806,12 +800,7 @@ describe('AppController', () => {
 
       await expect(
         appController.updateUserSettings(credentialGuest, req)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-          credentialGuest.$language
-        )
-      );
+      ).rejects.toEqual(CastcleException.PAYLOAD_TYPE_MISMATCH);
     });
 
     it('should return Exception when get guest account', async () => {
@@ -837,12 +826,7 @@ describe('AppController', () => {
 
       await expect(
         appController.updateUserSettings(credentialGuest, req)
-      ).rejects.toEqual(
-        new CastcleException(
-          CastcleStatus.FORBIDDEN_REQUEST,
-          credentialGuest.$language
-        )
-      );
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 
@@ -1025,7 +1009,7 @@ describe('AppController', () => {
           contentA._id,
           newCredential
         )
-      ).rejects.toEqual(new CastcleException(CastcleStatus.RECAST_IS_EXIST));
+      ).rejects.toEqual(CastcleException.RECAST_IS_EXIST);
     });
   });
 
@@ -1444,9 +1428,7 @@ describe('AppController', () => {
             ],
           }
         )
-      ).rejects.toEqual(
-        new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST)
-      );
+      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
     it('should return Exception when use guest account', async () => {
@@ -1481,7 +1463,7 @@ describe('AppController', () => {
             },
           ],
         })
-      ).rejects.toEqual(new CastcleException(CastcleStatus.FORBIDDEN_REQUEST));
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
 
@@ -1601,9 +1583,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential } as any,
             ads._id
           )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
-        );
+        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads Pause.', async () => {
         await appController.adsPause(
@@ -1623,9 +1603,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential } as any,
             ads._id
           )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
-        );
+        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads End.', async () => {
         await appController.adsEnd(
@@ -1645,9 +1623,7 @@ describe('AppController', () => {
             { credential: mocks[0].credential } as any,
             ads._id
           )
-        ).rejects.toEqual(
-          new CastcleException(CastcleStatus.ADS_BOOST_STATUS_MISMATCH)
-        );
+        ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
     });
 

@@ -40,7 +40,7 @@ import {
   CastcleBasicAuth,
   CastcleController,
 } from '@castcle-api/utils/decorators';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { NotificationSourcePipe } from '@castcle-api/utils/pipes';
 import {
@@ -66,13 +66,9 @@ export class NotificationsController {
     private userService: UserService
   ) {}
 
-  async _getNotificationIfExist(id: string, req: CredentialRequest) {
+  async _getNotificationIfExist(id: string) {
     const notification = await this.notificationService.getFromId(id);
-    if (!notification)
-      throw new CastcleException(
-        CastcleStatus.NOTIFICATION_NOT_FOUND,
-        req.$language
-      );
+    if (!notification) throw CastcleException.NOTIFICATION_NOT_FOUND;
     return notification;
   }
 
@@ -110,10 +106,7 @@ export class NotificationsController {
   ) {
     if (query?.maxResults) {
       if (+query.maxResults < 5 || +query.maxResults > 100) {
-        throw new CastcleException(
-          CastcleStatus.INVALID_MAX_RESULT,
-          req.$language
-        );
+        throw CastcleException.INVALID_MAX_RESULT;
       }
     }
     const notifications = await this.notificationService.getNotificationAll(
@@ -147,13 +140,9 @@ export class NotificationsController {
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     }
-    const notification = await this._getNotificationIfExist(id, req);
-    if (!notification) return;
+    const notification = await this._getNotificationIfExist(id);
 
     await this.notificationService.flagRead(notification);
   }
@@ -168,10 +157,7 @@ export class NotificationsController {
     this.#logger.log('Notification mark read all.');
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+      throw CastcleException.FORBIDDEN;
     }
     await this.notificationService.flagReadAll(req.$credential);
     this.#logger.log('Success mark read all notification');
@@ -195,11 +181,7 @@ export class NotificationsController {
       JSON.stringify(body.deviceUUID)
     );
     const user = await this.userService.getUserFromCredential(req.$credential);
-    if (!user)
-      throw new CastcleException(
-        CastcleStatus.FORBIDDEN_REQUEST,
-        req.$language
-      );
+    if (!user) throw CastcleException.FORBIDDEN;
 
     await this.notificationService.registerToken(body);
   }
