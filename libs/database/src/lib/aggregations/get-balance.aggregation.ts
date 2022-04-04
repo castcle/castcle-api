@@ -22,6 +22,7 @@
  */
 
 import { Types } from 'mongoose';
+import { WalletType } from '../models';
 
 export class GetBalanceResponse {
   total: Types.Decimal128;
@@ -33,6 +34,43 @@ export const pipelineOfGetBalance = (accountId: string) => [
     $facet: {
       inflows: [{ $match: { 'to.account': Types.ObjectId(accountId) } }],
       outflows: [{ $match: { 'from.account': Types.ObjectId(accountId) } }],
+    },
+  },
+  {
+    $project: {
+      total: {
+        $subtract: [
+          { $sum: '$inflows.to.value' },
+          { $sum: '$outflows.to.value' },
+        ],
+      },
+    },
+  },
+];
+
+export const pipelineOfGetBalanceFromWalletType = (
+  accountId: string,
+  walletType: WalletType
+) => [
+  { $unwind: { path: '$to' } },
+  {
+    $facet: {
+      inflows: [
+        {
+          $match: {
+            'to.account': Types.ObjectId(accountId),
+            'to.type': walletType,
+          },
+        },
+      ],
+      outflows: [
+        {
+          $match: {
+            'from.account': Types.ObjectId(accountId),
+            'from.type': walletType,
+          },
+        },
+      ],
     },
   },
   {

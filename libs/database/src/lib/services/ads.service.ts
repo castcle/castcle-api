@@ -389,6 +389,25 @@ export class AdsService {
             ],
           });
           await adsPlacement.save();
+          adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
+          const adsOwnerBalance = await this.taccountService.getAccountBalance(
+            String(adsCampaign.owner),
+            adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+              ? WalletType.ADS
+              : WalletType.PERSONAL
+          );
+          //if balance < 1 CAST THen pause ads
+          if (
+            adsOwnerBalance - adsPlacement.cost.UST <=
+            mockOracleService.getCastPrice()
+          )
+            adsCampaign.boostStatus = AdsBoostStatus.Pause;
+          adsCampaign.markModified('statistics');
+          await adsCampaign.save();
+          // adsCampaign.owner
+          //if(adsCampaign.statistics.budgetSpent >=  )
+          //stop campaign if adsBalance = 0;
+          //if(adsCampaign.statistics.budgetSpent)
         }
         await session.endSession();
       } catch (error: unknown) {
