@@ -149,7 +149,7 @@ export const testUsersUpdateMobile = () => {
         mobileNumber: tempUser.randomPhone(),
       })
       .expect(({ body }) => {
-        expect(body.message).toEqual('Invalid ref code. Please try again.');
+        expect(body.message).toEqual('The request exceeded the time limit.');
       })
       .expect(HttpStatus.BAD_REQUEST);
   });

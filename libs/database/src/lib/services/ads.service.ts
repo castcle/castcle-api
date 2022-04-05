@@ -22,6 +22,7 @@
  */
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -184,6 +185,25 @@ export class AdsService {
     `${String(account._id).toUpperCase().slice(19)}${new Date().getTime()}`;
 
   /**
+   * Validate if ads owner can create ads or not
+   * @param account
+   * @param adsRequest
+   * @returns
+   */
+  validateAds = async (account: Account, adsRequest: AdsRequestDto) => {
+    const balance = await this.taccountService.getAccountBalance(
+      String(account._id),
+      adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+        ? WalletType.ADS
+        : WalletType.PERSONAL
+    );
+    //invalid balance
+    if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
+      return false;
+    return true;
+  };
+
+  /**
    * Create a ads campaign
    * @param account
    * @param adsRequest
@@ -199,6 +219,8 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
+    if (!(await this.validateAds(account, adsRequest)))
+      throw CastcleException.INVALID_TRANSACTIONS_DATA;
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
@@ -389,6 +411,22 @@ export class AdsService {
             ],
           });
           await adsPlacement.save();
+          adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
+          adsCampaign.statistics.cpm = mockOracleService.getCastPrice();
+          const adsOwnerBalance = await this.taccountService.getAccountBalance(
+            String(adsCampaign.owner),
+            adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+              ? WalletType.ADS
+              : WalletType.PERSONAL
+          );
+          //if balance < 1 CAST THen pause ads
+          if (
+            adsOwnerBalance - adsPlacement.cost.UST <=
+            mockOracleService.getCastPrice()
+          )
+            adsCampaign.boostStatus = AdsBoostStatus.Pause;
+          adsCampaign.markModified('statistics');
+          await adsCampaign.save();
         }
         await session.endSession();
       } catch (error: unknown) {
