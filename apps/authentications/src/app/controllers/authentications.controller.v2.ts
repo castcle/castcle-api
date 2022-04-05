@@ -21,24 +21,31 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './ux.engagement.dto';
+import { AuthenticationServiceV2 } from '@castcle-api/database';
+import { LoginWithEmailDto } from '@castcle-api/database/dtos';
+import {
+  CastcleBasicAuth,
+  CastcleControllerV2,
+  CastcleTrack,
+} from '@castcle-api/utils/decorators';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { Body, Post, Req } from '@nestjs/common';
+
+@CastcleControllerV2({ path: 'authentications' })
+export class AuthenticationControllerV2 {
+  constructor(private authenticationService: AuthenticationServiceV2) {}
+
+  @Post('login-with-email')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  loginWithEmail(
+    @Body() { email, password }: LoginWithEmailDto,
+    @Req() { $credential }: CredentialRequest
+  ) {
+    return this.authenticationService.loginWithEmail(
+      $credential,
+      email,
+      password
+    );
+  }
+}

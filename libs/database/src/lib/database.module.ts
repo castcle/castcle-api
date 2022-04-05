@@ -67,6 +67,7 @@ import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
+import { AuthenticationServiceV2 } from './services/authentication.service.v2';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { ContentService } from './services/content.service';
@@ -176,6 +177,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   ],
   providers: [
     AuthenticationService,
+    AuthenticationServiceV2,
     UserService,
     CampaignService,
     ContentService,
@@ -197,6 +199,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   exports: [
     BullModule,
     AuthenticationService,
+    AuthenticationServiceV2,
     UserService,
     CampaignService,
     ContentService,
@@ -220,6 +223,7 @@ export class DatabaseModule {}
 
 export {
   AuthenticationService,
+  AuthenticationServiceV2,
   UserService,
   CampaignService,
   ContentService,
