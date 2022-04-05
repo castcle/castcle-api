@@ -56,14 +56,18 @@ export const RequestMeta: (
     const ip = getClientIp(req);
     const userAgent = req.get('User-Agent');
     const api_metadata = req.get('API-Metadata') as string;
-    const metadata = api_metadata.split(',').reduce((obj, data) => {
-      const [k, v] = data.split('=');
-      obj[k] = v;
-      return obj;
-    }, {});
-    const source = metadata['src'] as string;
-    const requestMetadata = new RequestMetadata(ip, userAgent, source);
+    if (api_metadata) {
+      const metadata = api_metadata.split(',').reduce((obj, data) => {
+        const [k, v] = data.split('=');
+        obj[k] = v;
+        return obj;
+      }, {});
+      const source = metadata['src'] as string;
+      const requestMetadata = new RequestMetadata(ip, userAgent, source);
+      return property ? requestMetadata[property] : requestMetadata;
+    }
 
+    const requestMetadata = new RequestMetadata(ip, userAgent);
     return property ? requestMetadata[property] : requestMetadata;
   }
 );
