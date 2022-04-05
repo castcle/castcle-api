@@ -37,8 +37,8 @@ import { FilterQuery, Model } from 'mongoose';
 import {
   CastcleQueueAction,
   EntityVisibility,
-  UpdateDataDto,
-  UpdateModelUserDto,
+  UpdateUserDtoV2,
+  UpdateUserModelDtoV2,
   UserField,
   UserModelImage,
 } from '../dtos';
@@ -185,7 +185,7 @@ export class UserServiceV2 {
 
   updateUser = (
     user: User,
-    { images, ...updateUserDto }: UpdateModelUserDto
+    { images, ...updateUserDto }: UpdateUserModelDtoV2
   ) => {
     if (images) {
       if (!user.profile.images) user.profile.images = {};
@@ -202,7 +202,7 @@ export class UserServiceV2 {
     return user.save();
   };
 
-  async uploadUserInfo(body: UpdateDataDto, accountId: string) {
+  async uploadUserInfo(body: UpdateUserDtoV2, accountId: string) {
     const images: UserModelImage = {};
     if (body.images?.avatar) {
       const avatar = await Image.upload(body.images.avatar, {

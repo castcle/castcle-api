@@ -465,7 +465,7 @@ export class LinkSocialDetail {
   [key: string]: string;
 }
 
-export class UpdateUserModelDtoV2 {
+export class UpdateDataDto {
   @IsOptional()
   @IsString()
   castcleId?: string;
@@ -492,21 +492,11 @@ export class UpdateUserModelDtoV2 {
 
   @IsOptional()
   @IsObject()
-  images?: UserModelImage;
+  images?: ImageBaseDto;
 }
 export interface UserContact {
   phone?: string;
   email?: string;
-}
-
-export class UpdateModelUserDto {
-  castcleId?: string;
-  displayName?: string;
-  overview?: string;
-  dob?: string;
-  links?: Link;
-  contact?: ContactDto;
-  images?: UserModelImage;
 }
 
 export class UpdateUserDtoV2 {
@@ -514,7 +504,7 @@ export class UpdateUserDtoV2 {
   displayName?: string;
   overview?: string;
   dob?: string;
-  links?: LinkSocialDetail;
+  links?: Link;
   contact?: ContactDto;
-  images?: ImageBaseDto;
+  images?: UserModelImage;
 }

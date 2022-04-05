@@ -29,7 +29,7 @@ import {
 import {
   GetUserParam,
   SyncSocialDtoV2,
-  UpdateDataDto,
+  UpdateUserDtoV2,
 } from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
@@ -96,7 +96,7 @@ export class UsersControllerV2 {
   async updateMyData(
     @Req() { $credential }: CredentialRequest,
     @Param('id') id: string,
-    @Body() body: UpdateDataDto
+    @Body() body: UpdateUserDtoV2
   ) {
     const user = await this._getUser(id, $credential);
     if (!user) throw CastcleException.FORBIDDEN;
