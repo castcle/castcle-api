@@ -40,9 +40,7 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, Param, Post, Put, Req } from '@nestjs/common';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Credential } from '@castcle-api/database/schemas';
+import { Body, Param, Post, Put } from '@nestjs/common';
 import { Environment } from '@castcle-api/environments';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -52,26 +50,15 @@ export class UsersControllerV2 {
     private userService: UserServiceV2
   ) {}
 
-  _getUser = async (id: string, credential: Credential) => {
-    if (id.toLocaleLowerCase() === 'me') {
-      const me = await this.userService.getUserFromCredential(credential);
-      if (!me) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-      return me;
-    } else {
-      const user = await this.userService.getByIdOrCastcleId(id);
-      if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-      return user;
-    }
-  };
-
   _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+    if (!displayIdUpdateAt) return false;
     displayIdUpdateAt.setDate(
       displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
     );
 
     const now = new Date().getTime();
     const blockUpdate = displayIdUpdateAt.getTime();
-    return now - blockUpdate >= 0;
+    return now - blockUpdate >= 0 ? true : false;
   };
 
   @CastcleBasicAuth()
@@ -92,39 +79,37 @@ export class UsersControllerV2 {
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @CastcleBasicAuth()
-  @Put(':id')
+  @Put(':userId')
   async updateMyData(
-    @Req() { $credential }: CredentialRequest,
-    @Param('id') id: string,
-    @Body() body: UpdateUserDtoV2
+    @Auth() authorizer: Authorizer,
+    @Body() body: UpdateUserDtoV2,
+    @Param() { isMe, userId }: GetUserParam
   ) {
-    const user = await this._getUser(id, $credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
 
-    if (String(user.ownerAccount) !== String($credential.account._id))
+    if (String(user.ownerAccount) !== String(authorizer.account._id))
       throw CastcleException.FORBIDDEN;
 
-    if (
-      body.castcleId &&
-      user.displayIdUpdatedAt &&
-      !this._verifyUpdateCastcleId(user.displayIdUpdatedAt)
-    )
-      throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
-
     if (body.castcleId) {
+      if (!this._verifyUpdateCastcleId(user.displayIdUpdatedAt))
+        throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
+
       const userExisting = await this.authService.getExistedUserFromCastcleId(
         body.castcleId
       );
-      if (userExisting && userExisting.id !== user.id)
+
+      if (String(userExisting?.id) !== String(user?.id))
         throw CastcleException.USER_ID_IS_EXIST;
     }
 
     const prepareUser = await this.userService.uploadUserInfo(
       body,
-      $credential.account._id
+      authorizer.account._id
     );
+
     const updateUser = await this.userService.updateUser(user, prepareUser);
-    const response = await updateUser.toUserResponse();
-    return response;
+    return updateUser.toUserResponse();
   }
 }

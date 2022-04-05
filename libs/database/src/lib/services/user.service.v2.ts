@@ -38,7 +38,7 @@ import {
   CastcleQueueAction,
   EntityVisibility,
   UpdateUserDtoV2,
-  UpdateUserModelDtoV2,
+  UpdateModelUserDto,
   UserField,
   UserModelImage,
 } from '../dtos';
@@ -185,15 +185,33 @@ export class UserServiceV2 {
 
   updateUser = (
     user: User,
-    { images, ...updateUserDto }: UpdateUserModelDtoV2
+    { images, links, ...updateUserDto }: UpdateModelUserDto
   ) => {
+    user.displayIdUpdatedAt = new Date();
+
     if (images) {
       if (!user.profile.images) user.profile.images = {};
       if (images.avatar) user.profile.images.avatar = images.avatar;
       if (images.cover) user.profile.images.cover = images.cover;
     }
-    user.markModified('profile');
+
+    if (links) {
+      if (!user.profile.socials) user.profile.socials = {};
+      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
+      socialNetworks.forEach((social) => {
+        if (links[social]) user.profile.socials[social] = links[social];
+        if (links.website)
+          user.profile.websites = [
+            {
+              website: links.website,
+              detail: links.website,
+            },
+          ];
+      });
+    }
+
     user.set(updateUserDto);
+    user.markModified('profile');
     this.userQueue.add({
       id: user._id,
       action: CastcleQueueAction.UpdateProfile,
