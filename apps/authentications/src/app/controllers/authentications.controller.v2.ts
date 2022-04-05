@@ -21,34 +21,31 @@
  * or have any questions.
  */
 
-export class SubscriptionEntry<T> {
-  id: string;
-  time: number;
-  changes: T[];
-}
+import { AuthenticationServiceV2 } from '@castcle-api/database';
+import { LoginWithEmailDto } from '@castcle-api/database/dtos';
+import {
+  CastcleBasicAuth,
+  CastcleControllerV2,
+  CastcleTrack,
+} from '@castcle-api/utils/decorators';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { Body, Post, Req } from '@nestjs/common';
 
-export class FeedEntryChange {
-  value: FeedEntryValue;
-}
+@CastcleControllerV2({ path: 'authentications' })
+export class AuthenticationControllerV2 {
+  constructor(private authenticationService: AuthenticationServiceV2) {}
 
-export enum FeedEntryType {
-  ADD = 'add',
-  EDITED = 'edited',
-}
-
-export enum FeedEntryItem {
-  PHOTO = 'photo',
-  SHARE = 'share',
-  STATUS = 'status',
-  VIDEO = 'video',
-}
-
-export class FeedEntryValue {
-  verb: FeedEntryType;
-  message: string;
-  item?: FeedEntryItem;
-  link?: string;
-  photos?: string[];
-  post_id: string;
-  video_id: string;
+  @Post('login-with-email')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  loginWithEmail(
+    @Body() { email, password }: LoginWithEmailDto,
+    @Req() { $credential }: CredentialRequest
+  ) {
+    return this.authenticationService.loginWithEmail(
+      $credential,
+      email,
+      password
+    );
+  }
 }

@@ -28,6 +28,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
+import { getLinkPreview } from 'link-preview-js';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
 import { ValidateWebhookQuery } from '../youtube/dto';
@@ -71,7 +72,7 @@ describe('FacebookController', () => {
 
     jest
       .spyOn(Image, 'upload')
-      .mockResolvedValue({ toSignUrl: () => 'uploaded-image-url' } as any);
+      .mockResolvedValue({ image: { original: 'uploaded-image-url' } } as any);
 
     const userModel = module.get<Model<User>>(getModelToken('User'));
     const socialSyncModel = module.get<Model<SocialSync>>(
@@ -420,5 +421,113 @@ describe('FacebookController', () => {
         'handleWebhook:contents-created'
       );
     });
+
+    it('should create short content from facebook share', async () => {
+      (getLinkPreview as jest.Mock).mockResolvedValueOnce({
+        url: 'https://www.facebook.com/permalink.php?story_fbid=139572695224922&id=100776219104570',
+        title: 'Test',
+        description: 'Facebook Share',
+        mediaType: 'website',
+        images: [
+          'https://scontent.fbkk12-4.fna.fbcdn.net/v/t39.30808-1/257382132_100776269104565_5345001410806291244_n.png?_nc_cat=110&ccb=1-5&_nc_sid=baafbc&_nc_ohc=VlkK08pa4vkAX8D61gA&_nc_ht=scontent.fbkk12-4.fna&oh=00_AT_0Wvk5Tmj-3Gmo6b7cJ8uFgluujDHro9oBiPlXsnqGnA&oe=625185C0',
+        ],
+      });
+
+      const post = [
+        {
+          id: socialId.valid,
+          time: 1649148511,
+          changes: [
+            {
+              value: {
+                from: { id: socialId.valid, name: 'Castcle' },
+                link: '/permalink.php?story_fbid=139572695224922&id=100776219104570',
+                message: 'Facebook Share',
+                post_id: '100776219104570_150101544172037',
+                created_time: 1649148508,
+                item: 'share',
+                published: 1,
+                share_id: '150101547505370',
+                verb: 'add',
+              },
+              field: 'feed',
+            },
+          ],
+        },
+      ] as unknown as SubscriptionEntry<FeedEntryChange>[];
+
+      await expect(controller.handleWebhook(post)).resolves.not.toThrow();
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(post[0].changes[0].value.message),
+        'handleWebhook:contents-created'
+      );
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(`"type":"short"`),
+        'handleWebhook:contents-created'
+      );
+      expect(logger.log).lastCalledWith(
+        expect.stringContaining(
+          JSON.stringify({
+            message: 'Facebook Share',
+            link: [
+              {
+                url: 'https://www.facebook.com/permalink.php?story_fbid=139572695224922&id=100776219104570',
+                type: 'other',
+                title: 'Test',
+                description: 'Facebook Share',
+                imagePreview:
+                  'https://scontent.fbkk12-4.fna.fbcdn.net/v/t39.30808-1/257382132_100776269104565_5345001410806291244_n.png?_nc_cat=110&ccb=1-5&_nc_sid=baafbc&_nc_ohc=VlkK08pa4vkAX8D61gA&_nc_ht=scontent.fbkk12-4.fna&oh=00_AT_0Wvk5Tmj-3Gmo6b7cJ8uFgluujDHro9oBiPlXsnqGnA&oe=625185C0',
+              },
+            ],
+          })
+        ),
+        'handleWebhook:contents-created'
+      );
+    });
+  });
+
+  it('should create short content from link share', async () => {
+    (getLinkPreview as jest.Mock).mockResolvedValueOnce({
+      url: 'https://www.castcle.com/icon',
+      mediaType: 'image',
+    });
+
+    const post = [
+      {
+        id: socialId.valid,
+        time: 1649148511,
+        changes: [
+          {
+            value: {
+              from: { id: socialId.valid, name: 'Castcle' },
+              link: 'https://www.castcle.com',
+              message: 'Decentralized Social Media',
+              post_id: '100776219104570_150101544172037',
+              created_time: 1649148508,
+              item: 'share',
+              published: 1,
+              share_id: '150101547505370',
+              verb: 'add',
+            },
+            field: 'feed',
+          },
+        ],
+      },
+    ] as unknown as SubscriptionEntry<FeedEntryChange>[];
+
+    await expect(controller.handleWebhook(post)).resolves.not.toThrow();
+    expect(logger.log).lastCalledWith(
+      expect.stringContaining(post[0].changes[0].value.message),
+      'handleWebhook:contents-created'
+    );
+    expect(logger.log).lastCalledWith(
+      expect.stringContaining(
+        JSON.stringify({
+          message: 'Decentralized Social Media',
+          photo: { contents: [{ original: 'uploaded-image-url' }] },
+        })
+      ),
+      'handleWebhook:contents-created'
+    );
   });
 });

@@ -21,34 +21,13 @@
  * or have any questions.
  */
 
-export class SubscriptionEntry<T> {
-  id: string;
-  time: number;
-  changes: T[];
-}
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
-export class FeedEntryChange {
-  value: FeedEntryValue;
-}
+export class LoginWithEmailDto {
+  @IsEmail()
+  email: string;
 
-export enum FeedEntryType {
-  ADD = 'add',
-  EDITED = 'edited',
-}
-
-export enum FeedEntryItem {
-  PHOTO = 'photo',
-  SHARE = 'share',
-  STATUS = 'status',
-  VIDEO = 'video',
-}
-
-export class FeedEntryValue {
-  verb: FeedEntryType;
-  message: string;
-  item?: FeedEntryItem;
-  link?: string;
-  photos?: string[];
-  post_id: string;
-  video_id: string;
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }
