@@ -37,8 +37,8 @@ const validate = (password: string) => {
 const create = async (password: string) =>
   validate(password) ? generate(password) : null;
 
-const verify = async (password: string, encryptPassword: string) =>
-  bcrypt.compare(password, encryptPassword);
+const verify = (password: string, encryptPassword: string) =>
+  bcrypt.compareSync(password, encryptPassword);
 
 /**
  * random a number 0 - 9

@@ -80,7 +80,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
     try {
       const credential = request.$credential
         ? (request as CredentialRequest).$credential
-        : request.body && request.body.deviceUUID
+        : request.body?.deviceUUID
         ? await this.authService.getGuestCredentialFromDeviceUUID(
             request.body.deviceUUID
           )
@@ -93,6 +93,10 @@ export class IpTrackerInterceptor implements NestInterceptor {
       );
 
       await account.set({ geolocation: request.$geolocation }).save();
+      await credential
+        .set({ 'account.geolocation': request.$geolocation })
+        .save();
+
       this.#logger.log(
         JSON.stringify(account),
         `${request.$ip}:update-geolocation`

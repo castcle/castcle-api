@@ -21,24 +21,13 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto';
-export * from './common.dto';
-export * from './content.dto';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './ux.engagement.dto';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+
+export class LoginWithEmailDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}

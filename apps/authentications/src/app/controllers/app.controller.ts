@@ -61,8 +61,8 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
-import { AppService } from './app.service';
-import { getEmailVerificationHtml } from './configs';
+import { AppService } from '../app.service';
+import { getEmailVerificationHtml } from '../configs';
 import {
   ChangePasswordBody,
   CheckEmailExistDto,
@@ -82,11 +82,11 @@ import {
   TokenResponse,
   VerificationOtpDto,
   VerificationPasswordBody,
-} from './dtos';
+} from '../dtos';
 import {
   GuestInterceptor,
   GuestRequest,
-} from './interceptors/guest.interceptor';
+} from '../interceptors/guest.interceptor';
 
 @CastcleController({ path: 'authentications', version: '1.0' })
 export class AuthenticationController {

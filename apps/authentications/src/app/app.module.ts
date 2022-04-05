@@ -20,21 +20,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
 import { TracingModule } from '@narando/nest-xray';
-import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { AuthenticationController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthenticationController } from './controllers/app.controller';
+import { AuthenticationControllerV2 } from './controllers/authentications.controller.v2';
 
 @Module({
   imports: [
@@ -53,7 +54,7 @@ import { AppService } from './app.service';
       daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
     }),
   ],
-  controllers: [AuthenticationController],
+  controllers: [AuthenticationController, AuthenticationControllerV2],
   providers: [
     AppService,
     {
