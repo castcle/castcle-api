@@ -41,6 +41,7 @@ import {
   TAccountService,
   UserService,
   UserType,
+  WalletType,
 } from '@castcle-api/database';
 import {
   AdsQuery,
@@ -108,6 +109,7 @@ describe('AppController', () => {
   let socialSyncService: SocialSyncService;
   let notifyService: NotificationService;
   let adsService: AdsService;
+  let taccountService: TAccountService;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -170,6 +172,7 @@ describe('AppController', () => {
     socialSyncService = app.get<SocialSyncService>(SocialSyncService);
     notifyService = app.get<NotificationService>(NotificationService);
     adsService = app.get<AdsService>(AdsService);
+    taccountService = app.get<TAccountService>(TAccountService);
 
     const result = await authService.createAccount({
       device: 'iPhone',
@@ -1280,6 +1283,19 @@ describe('AppController', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
+      await new taccountService._transactionModel({
+        from: {
+          type: WalletType.CASTCLE_TREASURY,
+          value: 999999,
+        },
+        to: [
+          {
+            account: mocks[0].account,
+            type: WalletType.ADS,
+            value: 999999,
+          },
+        ],
+      }).save();
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
     it('should be able to get list ads exist.', async () => {
@@ -1337,6 +1353,19 @@ describe('AppController', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
+      await new taccountService._transactionModel({
+        from: {
+          type: WalletType.CASTCLE_TREASURY,
+          value: 999999,
+        },
+        to: [
+          {
+            account: mocks[0].account,
+            type: WalletType.ADS,
+            value: 999999,
+          },
+        ],
+      }).save();
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
     it('should be able to lookup ads detail exist.', async () => {
@@ -1519,6 +1548,19 @@ describe('AppController', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
+      await new taccountService._transactionModel({
+        from: {
+          type: WalletType.CASTCLE_TREASURY,
+          value: 999999,
+        },
+        to: [
+          {
+            account: mocks[0].account,
+            type: WalletType.ADS,
+            value: 999999,
+          },
+        ],
+      }).save();
       mockAds = await adsService.createAds(mocks[0].account, adsInput);
     });
     describe('#updateAds', () => {
