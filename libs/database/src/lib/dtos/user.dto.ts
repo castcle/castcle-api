@@ -161,7 +161,7 @@ export class linkSocialDetail {
 }
 
 export class syncSocialDetail {
-  id: string;
+  id?: string;
   provider: string;
   socialId: string;
   userName: string;
@@ -507,4 +507,18 @@ export class UpdateModelUserDto {
   links?: Link;
   contact?: ContactDto;
   images?: UserModelImage;
+}
+
+export class SyncSocialModelV2 {
+  @IsOptional()
+  facebook?: syncSocialDetail;
+
+  @IsOptional()
+  twitter?: syncSocialDetail;
+
+  @IsOptional()
+  youtube?: syncSocialDetail;
+
+  @IsOptional()
+  medium?: syncSocialDetail;
 }

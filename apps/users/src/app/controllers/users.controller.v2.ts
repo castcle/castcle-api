@@ -27,6 +27,7 @@ import {
   UserServiceV2,
 } from '@castcle-api/database';
 import {
+  ExpansionQuery,
   GetUserParam,
   SyncSocialDtoV2,
   UpdateUserDtoV2,
@@ -35,12 +36,13 @@ import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   Auth,
   Authorizer,
+  CastcleAuth,
   CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, Param, Post, Put } from '@nestjs/common';
+import { Body, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { Environment } from '@castcle-api/environments';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -75,6 +77,26 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.socialSyncService.sync(user, syncSocialDto);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId')
+  async getUserById(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() userQuery?: ExpansionQuery
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.userService.getById(
+      user,
+      userId,
+      undefined,
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
+    );
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)

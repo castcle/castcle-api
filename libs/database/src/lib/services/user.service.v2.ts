@@ -34,54 +34,43 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { isMongoId } from 'class-validator';
 import { FilterQuery, Model } from 'mongoose';
+import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
 import {
   CastcleQueueAction,
   EntityVisibility,
   UpdateUserDtoV2,
+  SyncSocialModelV2,
   UpdateModelUserDto,
   UserField,
   UserModelImage,
 } from '../dtos';
-import { QueueName, UserMessage, UserType } from '../models';
+import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
 import {
-  Comment,
-  Content,
   Credential,
   Relationship,
   SocialSync,
+  Transaction,
   User,
 } from '../schemas';
 import { ContentService } from './content.service';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger(UserServiceV2.name);
+  private = new CastLogger(UserServiceV2.name);
 
   constructor(
-    @InjectModel('Comment')
-    private commentModel: Model<Comment>,
-    @InjectModel('Content')
-    private contentModel: Model<Content>,
     @InjectModel('Relationship')
     private _relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
     private _socialSyncModel: Model<SocialSync>,
-
+    @InjectModel('Transaction')
+    private transactionModel: Model<Transaction>,
     @InjectModel('User')
     private _userModel: Model<User>,
     @InjectQueue(QueueName.USER)
     private userQueue: Queue<UserMessage>,
     private contentService: ContentService
   ) {}
-
-  getUserFromCredential = (credential: Credential) =>
-    this._userModel
-      .findOne({
-        ownerAccount: credential?.account?._id,
-        type: UserType.PEOPLE,
-        visibility: EntityVisibility.Publish,
-      })
-      .exec();
 
   private async convertUsersToUserResponses(
     viewer: User | null,
@@ -93,13 +82,14 @@ export class UserServiceV2 {
       return Promise.all(
         users.map(async (user) => {
           return user.type === UserType.PAGE
-            ? user.toPageResponse()
-            : await user.toUserResponse();
+            ? user.toPageResponseV2()
+            : await user.toUserResponseV2();
         })
       );
     }
 
-    const userIds: any[] = users.map((user) => user.id);
+    const userIds = users.map((user) => user.id);
+
     const relationships = viewer
       ? await this._relationshipModel.find({
           $or: [
@@ -111,30 +101,55 @@ export class UserServiceV2 {
       : [];
 
     return Promise.all(
-      users.map(async (u) => {
-        const syncSocial = userFields?.includes(UserField.SyncSocial)
-          ? await this._socialSyncModel.findOne({ 'author.id': u.id }).exec()
+      users.map(async (user) => {
+        const syncSocials = userFields?.includes(UserField.SyncSocial)
+          ? await this._socialSyncModel.find({ 'author.id': user.id }).exec()
+          : undefined;
+
+        let syncSocial = new SyncSocialModelV2();
+        syncSocials
+          ? syncSocials.forEach((item) => {
+              String(user.ownerAccount) === String(viewer.ownerAccount)
+                ? (syncSocial[item.provider] = {
+                    provider: item.provider,
+                    socialId: item.socialId,
+                    userName: item.userName,
+                    displayName: item.displayName,
+                    avatar: item.avatar,
+                    active: item.active,
+                    autoPost: item.autoPost,
+                  })
+                : (syncSocial = undefined);
+            })
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(u.id)
+          ? await this.contentService.getContentsFromUser(user.id)
+          : undefined;
+
+        const balance = userFields?.includes(UserField.Wallet)
+          ? await this.getBalance(user)
           : undefined;
 
         const userResponse =
-          u.type === UserType.PAGE
-            ? u.toPageResponse(
+          user.type === UserType.PAGE
+            ? user.toPageResponseV2(
                 undefined,
                 undefined,
                 undefined,
                 syncSocial,
                 content?.total
               )
-            : await u.toUserResponse({ casts: content?.total });
+            : await user.toUserResponseV2({
+                casts: content?.total,
+                syncSocial,
+                balance,
+              });
 
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(user) === String(u.id) &&
+                String(user) === String(user.id) &&
                 String(followedUser) === String(viewer?.id)
             )
           : undefined;
@@ -142,7 +157,7 @@ export class UserServiceV2 {
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(followedUser) === String(u.id) &&
+                String(followedUser) === String(user.id) &&
                 String(user) === String(viewer?.id)
             )
           : undefined;
@@ -155,6 +170,49 @@ export class UserServiceV2 {
       })
     );
   }
+  /**
+   * Get user's balance
+   * @param {User} user
+   */
+  getBalance = async (user: User) => {
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(String(user.ownerAccount))
+    );
+
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
+
+  getUserFromCredential = (credential: Credential) =>
+    this._userModel
+      .findOne({
+        ownerAccount: credential?.account?._id,
+        type: UserType.PEOPLE,
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
+  getById = async (
+    user: User,
+    id: string,
+    type?: UserType,
+    hasRelationshipExpansion = false,
+    userFields?: UserField[]
+  ) => {
+    let targetUser = await this.getByIdOrCastcleId(id, type);
+
+    if (id === 'me') targetUser = user;
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const [userResponse] = await this.convertUsersToUserResponses(
+      user,
+      [targetUser],
+      hasRelationshipExpansion,
+      userFields
+    );
+
+    return userResponse;
+  };
 
   getByIdOrCastcleId = (id: string, type?: UserType) => {
     if (!id) return null;
