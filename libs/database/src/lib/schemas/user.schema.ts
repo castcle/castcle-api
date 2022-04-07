@@ -10,7 +10,7 @@ import {
   PageResponseDto,
   UserResponseDto,
   UserContact,
-  SyncSocialModel,
+  SyncSocialModelV2,
 } from '../dtos';
 import { PageVerified, UserType, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
@@ -104,7 +104,7 @@ type UserResponseOptionV2 = {
   balance?: number;
   mobile?: { countryCode: string; number: string };
   linkSocial?: AccountAuthenId[];
-  syncSocial?: SyncSocialModel;
+  syncSocial?: SyncSocialModelV2;
   casts?: number;
 };
 
@@ -133,7 +133,7 @@ export class User extends UserDocument {
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean,
-    syncSocial?: SyncSocialModel,
+    syncSocial?: SyncSocialModelV2,
     casts?: number
   ) => PageResponseDto;
 }
