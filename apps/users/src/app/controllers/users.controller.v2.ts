@@ -111,8 +111,7 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
-    if (String(user.ownerAccount) !== String(authorizer.account._id))
-      throw CastcleException.FORBIDDEN;
+    authorizer.requestAccessForAccount(user.ownerAccount);
 
     if (body.castcleId) {
       if (!this._verifyUpdateCastcleId(user.displayIdUpdatedAt))
