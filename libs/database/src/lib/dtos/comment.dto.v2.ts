@@ -23,60 +23,57 @@
 
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
-import { CommentType } from '../schemas';
-import { CastcleMeta, CastcleMetric, CastcleParticipate } from './common.dto';
-import { IncludeUser } from './content.dto';
+import { CommentPayload } from './comment.dto';
+import { CastcleMeta } from './common.dto';
+import { Author, IncludeUser } from './content.dto';
 
-export class CommentDto {
-  author: any; //mongooseId
-  message: string;
-  type: CommentType;
-  targetRef: {
-    $id: any;
-    $ref: string;
-  };
+export class CommentIncludes {
+  users: IncludeUser[];
+  comments?: CommentPayload[];
+
+  constructor({ comments, users }: CommentIncludes) {
+    this.comments = comments;
+    this.users = CommentIncludes.filterAuthors(users);
+  }
+
+  static filterAuthors(rawAuthors: IncludeUser[]) {
+    const authors: Author[] = [];
+
+    rawAuthors.forEach((author) => {
+      const authorIndex = authors.findIndex(
+        ({ id }) => String(author.id) == String(id)
+      );
+
+      if (authorIndex >= 0) return;
+
+      authors.push(author);
+    });
+
+    return authors;
+  }
 }
 
-export class UpdateCommentDto {
+export class CreateCommentDto {
   @ApiProperty()
   @IsString()
   message: string;
+  @ApiProperty()
+  @IsString()
+  contentId: string;
 }
 
-export class CommentPayload {
+export class CommentResponse {
   @ApiProperty()
-  id: string; //commentId
+  payload: CommentPayload;
   @ApiProperty()
-  message: string;
-
-  @ApiProperty()
-  metrics: CastcleMetric;
-
-  @ApiProperty()
-  author: IncludeUser;
-
-  @ApiProperty()
-  participate: CastcleParticipate;
-
-  @ApiProperty()
-  reply: {
-    id: string;
-    message: string;
-    createdAt: string;
-    author: IncludeUser;
-    metrics: CastcleMetric;
-    participate: CastcleParticipate;
-  }[];
-  @ApiProperty()
-  hasHistory: boolean;
-  @ApiProperty()
-  createdAt: string;
-  @ApiProperty()
-  updatedAt: string;
+  includes: CommentIncludes;
 }
 
-export class CommentsResponse {
-  message?: string;
+export class CommentsResponseV2 {
+  @ApiProperty()
   payload: CommentPayload[];
+  @ApiProperty()
+  includes: CommentIncludes;
+  @ApiProperty()
   meta: CastcleMeta;
 }
