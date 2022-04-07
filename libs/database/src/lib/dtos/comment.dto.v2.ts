@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { CommentPayload } from './comment.dto';
@@ -60,7 +61,6 @@ export class CreateCommentDto {
   @IsString()
   contentId: string;
 }
-
 export class CommentParam extends GetUserParam {
   @IsString()
   @ApiProperty()

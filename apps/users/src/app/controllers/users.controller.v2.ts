@@ -51,6 +51,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -234,7 +235,6 @@ export class UsersControllerV2 {
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
-
     await this.commentService.deleteComment(comment);
   }
 }
