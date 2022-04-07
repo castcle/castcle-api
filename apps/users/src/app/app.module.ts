@@ -37,10 +37,10 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { NotificationsController } from './controllers/notifications.controller';
+import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
-import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
 
 @Module({
