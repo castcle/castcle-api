@@ -32,7 +32,7 @@ import {
   CommentIncludes,
   CommentPayload,
   CommentResponse,
-  CommentsResponse,
+  CommentsResponseV2,
   EntityVisibility,
   ExpansionQuery,
   IncludeUser,
@@ -330,7 +330,7 @@ export class CommentServiceV2 {
     viewer: User,
     contentId: string,
     paginationQuery: PaginationQuery
-  ): Promise<CommentsResponse> => {
+  ): Promise<CommentsResponseV2> => {
     let query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
       visibility: EntityVisibility.Publish,
@@ -368,6 +368,6 @@ export class CommentServiceV2 {
       payload: response.payload,
       includes: response.includes,
       meta: createCastcleMeta(comments, total),
-    } as CommentsResponse;
+    } as CommentsResponseV2;
   };
 }
