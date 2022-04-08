@@ -495,4 +495,16 @@ export class RankerService {
         }
       )
       .exec();
+
+  getFeedItem = async (account: Account, contentId: Content) => {
+    return this._feedItemModel
+      .findOne({
+        viewer: account._id,
+        content: contentId,
+        seenAt: {
+          $exists: false,
+        },
+      })
+      .exec();
+  };
 }

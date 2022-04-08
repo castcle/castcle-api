@@ -1,5 +1,8 @@
 import {
+  AccountActivationSchema,
+  AccountDeviceSchema,
   CampaignSchema,
+  CredentialSchema,
   OtpSchema,
   User as UserDocument,
   UserSchema,
@@ -10,6 +13,12 @@ import { User } from '../models';
 export const campaignModel = model('Campaign', CampaignSchema);
 export const otpModel = model('Otp', OtpSchema);
 export const userModel = model<UserDocument>('User', UserSchema);
+export const accountActivationModel = model(
+  'AccountActivation',
+  AccountActivationSchema
+);
+export const credentialModel = model('Credential', CredentialSchema);
+export const accountDeviceModel = model('AccountDevice', AccountDeviceSchema);
 
 /** verified: `mobile` */
 export const userAlpha = new User({ name: 'alpha' });

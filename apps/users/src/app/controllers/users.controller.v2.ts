@@ -21,22 +21,47 @@
  * or have any questions.
  */
 
-import { SocialSyncServiceV2, UserService } from '@castcle-api/database';
-import { GetUserParam, SyncSocialDtoV2 } from '@castcle-api/database/dtos';
+import {
+  SocialSyncServiceV2,
+  AuthenticationService,
+  UserServiceV2,
+} from '@castcle-api/database';
+import {
+  ExpansionQuery,
+  GetUserParam,
+  SyncSocialDtoV2,
+  UpdateUserDtoV2,
+} from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   Auth,
   Authorizer,
+  CastcleAuth,
   CastcleBasicAuth,
+  CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Body, Param, Post } from '@nestjs/common';
-
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Body, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Environment } from '@castcle-api/environments';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   constructor(
     private socialSyncService: SocialSyncServiceV2,
-    private userService: UserService
+    private authService: AuthenticationService,
+    private userService: UserServiceV2
   ) {}
+
+  _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+    if (!displayIdUpdateAt) return false;
+    displayIdUpdateAt.setDate(
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+    );
+
+    const now = new Date().getTime();
+    const blockUpdate = displayIdUpdateAt.getTime();
+    return now - blockUpdate >= 0 ? true : false;
+  };
 
   @CastcleBasicAuth()
   @Post(':userId/sync-social')
@@ -52,5 +77,60 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.socialSyncService.sync(user, syncSocialDto);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId')
+  async getUserById(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() userQuery?: ExpansionQuery
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.userService.getById(
+      user,
+      userId,
+      undefined,
+      userQuery?.hasRelationshipExpansion,
+      userQuery?.userFields
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @CastcleBasicAuth()
+  @Put(':userId')
+  async updateMyData(
+    @Auth() authorizer: Authorizer,
+    @Body() body: UpdateUserDtoV2,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    if (body.castcleId) {
+      if (!this._verifyUpdateCastcleId(user.displayIdUpdatedAt))
+        throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
+
+      const userExisting = await this.authService.getExistedUserFromCastcleId(
+        body.castcleId
+      );
+
+      if (String(userExisting?.id) !== String(user?.id))
+        throw CastcleException.USER_ID_IS_EXIST;
+    }
+
+    const prepareUser = await this.userService.uploadUserInfo(
+      body,
+      authorizer.account._id
+    );
+
+    const updateUser = await this.userService.updateUser(user, prepareUser);
+    return updateUser.toUserResponse();
   }
 }

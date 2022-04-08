@@ -131,6 +131,10 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         from: 'guestfeeditems',
         let: {
           duplicateContents: '$duplicateContents',
+          dateNow: new Date(),
+          dateDiff: new Date(
+            new Date().getTime() - params.decayDays * 1000 * 86400
+          ),
         },
         pipeline: [
           { $sort: { score: -1 } },
@@ -141,6 +145,12 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   params.geolocation
                     ? { $eq: ['$countryCode', params.geolocation] }
                     : {},
+                  {
+                    $and: [
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
+                    ],
+                  },
                   {
                     $not: { $in: ['$content', '$$duplicateContents.content'] },
                   },
@@ -180,6 +190,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           blockings: '$blockings',
           followings: '$followings',
           globalContents: '$globalContents',
+          duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
@@ -194,12 +205,15 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   { $in: ['$author.id', '$$followings.followedUser'] },
                   {
                     $and: [
-                      { $lte: ['$updatedAt', '$$dateNow'] },
-                      { $gte: ['$updatedAt', '$$dateDiff'] },
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
                     ],
                   },
                   { $not: { $in: ['$_id', '$$globalContents.content'] } },
                   { $not: { $in: ['$author.id', '$$blockings.followedUser'] } },
+                  {
+                    $not: { $in: ['$_id', '$$duplicateContents.content'] },
+                  },
                 ],
               },
             },

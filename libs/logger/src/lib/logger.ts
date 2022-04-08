@@ -22,7 +22,7 @@
  */
 
 import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
-import { Environment as env } from '@castcle-api/environments';
+import { Environment } from '@castcle-api/environments';
 
 export class CastLogger extends ConsoleLogger {
   timer: Record<string, number> = {};
@@ -92,9 +92,10 @@ export class CastLogger extends ConsoleLogger {
   }
 }
 
-export const CastLoggerLevel: LogLevel[] = env.PRODUCTION
+export const CastLoggerLevel: LogLevel[] = Environment.PRODUCTION
   ? ['log', 'error', 'warn']
   : ['log', 'error', 'warn', 'debug', 'verbose'];
+
 export const CastLoggerOptions: ConsoleLoggerOptions = {
   logLevels: CastLoggerLevel,
   timestamp: true,
