@@ -142,6 +142,12 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                     ? { $eq: ['$countryCode', params.geolocation] }
                     : {},
                   {
+                    $and: [
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
+                    ],
+                  },
+                  {
                     $not: { $in: ['$content', '$$duplicateContents.content'] },
                   },
                 ],
@@ -194,12 +200,15 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   { $in: ['$author.id', '$$followings.followedUser'] },
                   {
                     $and: [
-                      { $lte: ['$updatedAt', '$$dateNow'] },
-                      { $gte: ['$updatedAt', '$$dateDiff'] },
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
                     ],
                   },
                   { $not: { $in: ['$_id', '$$globalContents.content'] } },
                   { $not: { $in: ['$author.id', '$$blockings.followedUser'] } },
+                  {
+                    $not: { $in: ['$content', '$$duplicateContents.content'] },
+                  },
                 ],
               },
             },
