@@ -20,9 +20,51 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { HttpModule } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GoogleClient } from './google.client';
+
+export class GoogleClientMock {
+  async verifyToken(token: string) {
+    if (token === '1') {
+      return null;
+    } else {
+      return {
+        aud: 'com.sarunw.google',
+        user_id: 'mock_user_google',
+        scopes: ['name', 'email'],
+        expiry_date: 1577943013,
+        sub: '111.222.333',
+        azp: '',
+        access_type: '',
+        email: 'test@gmail.com',
+        email_verified: true,
+      };
+    }
+  }
+
+  async getGoogleUserInfo(token: string) {
+    let result;
+    if (token === '1' || token === '3') {
+      result = null;
+    } else if (token === '2') {
+      result = {
+        email: 'test@gmail.com',
+        id: 'mock_user_google_2',
+        name: 'John Dow',
+      };
+    } else {
+      result = {
+        email: 'test@gmail.com',
+        id: 'mock_user_google',
+        name: 'John Dow',
+      };
+    }
+
+    return result;
+  }
+}
 
 describe('GoogleClient', () => {
   let service: GoogleClient;
