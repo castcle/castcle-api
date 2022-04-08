@@ -131,6 +131,10 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         from: 'guestfeeditems',
         let: {
           duplicateContents: '$duplicateContents',
+          dateNow: new Date(),
+          dateDiff: new Date(
+            new Date().getTime() - params.decayDays * 1000 * 86400
+          ),
         },
         pipeline: [
           { $sort: { score: -1 } },
@@ -186,6 +190,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           blockings: '$blockings',
           followings: '$followings',
           globalContents: '$globalContents',
+          duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
@@ -207,7 +212,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   { $not: { $in: ['$_id', '$$globalContents.content'] } },
                   { $not: { $in: ['$author.id', '$$blockings.followedUser'] } },
                   {
-                    $not: { $in: ['$content', '$$duplicateContents.content'] },
+                    $not: { $in: ['$_id', '$$duplicateContents.content'] },
                   },
                 ],
               },
