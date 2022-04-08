@@ -21,11 +21,8 @@
  * or have any questions.
  */
 
-import { config } from 'dotenv';
 import { MongooseOptions } from 'mongoose';
 import { Configs } from './configs';
-
-if (config().error) throw new Error('Env not found!');
 
 export class Environment {
   static PRODUCTION = process.env.NODE_ENV === 'production';
