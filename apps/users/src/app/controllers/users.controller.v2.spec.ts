@@ -38,6 +38,7 @@ import {
   UserService,
 } from '@castcle-api/database';
 import {
+  CommentParam,
   ContentType,
   GetUserParam,
   ShortPayload,
@@ -218,9 +219,11 @@ describe('CommentControllerV2', () => {
       );
       const updateComment = await appController.updateComment(
         authorizer,
-        comment.payload.id,
         { message: 'zup' },
-        { userId: user.displayId } as GetUserParam
+        {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+        } as CommentParam
       );
       expect(updateComment.payload).toBeDefined();
     });
@@ -233,12 +236,10 @@ describe('CommentControllerV2', () => {
         mocksUsers[2].credential
       );
       await expect(
-        appController.updateComment(
-          authorizer,
-          comment.payload.id,
-          { message: 'zup edit' },
-          { userId: user.displayId } as GetUserParam
-        )
+        appController.updateComment(authorizer, { message: 'zup edit' }, {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+        } as CommentParam)
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -250,9 +251,10 @@ describe('CommentControllerV2', () => {
         mocksUsers[2].credential
       );
       await expect(
-        appController.deleteComment(authorizer, comment.payload.id, {
+        appController.deleteComment(authorizer, {
           userId: user.displayId,
-        } as GetUserParam)
+          sourceCommentId: comment.payload.id,
+        } as CommentParam)
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -263,9 +265,10 @@ describe('CommentControllerV2', () => {
         user,
         mocksUsers[1].credential
       );
-      appController.deleteComment(authorizer, comment.payload.id, {
+      appController.deleteComment(authorizer, {
         userId: user.displayId,
-      } as GetUserParam);
+        sourceCommentId: comment.payload.id,
+      } as CommentParam);
       const result = await commentService.getCommentsByContentId(
         user,
         comment.payload.id,

@@ -20,12 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { CommentPayload } from './comment.dto';
 import { CastcleMeta } from './common.dto';
 import { Author, IncludeUser } from './content.dto';
+import { GetUserParam } from './user.dto';
 
 export class CommentIncludes {
   users: IncludeUser[];
@@ -62,6 +62,11 @@ export class CreateCommentDto {
   contentId: string;
 }
 
+export class CommentParam extends GetUserParam {
+  @IsString()
+  @ApiProperty()
+  sourceCommentId: string;
+}
 export class CommentResponse {
   @ApiProperty()
   payload: CommentPayload;
