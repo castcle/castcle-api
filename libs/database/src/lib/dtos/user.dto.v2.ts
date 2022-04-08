@@ -161,7 +161,7 @@ export class linkSocialDetail {
 }
 
 export class syncSocialDetail {
-  id?: string;
+  id: string;
   provider: string;
   socialId: string;
   userName: string;
@@ -465,7 +465,7 @@ export class LinkSocialDetail {
   [key: string]: string;
 }
 
-export class UpdateUserDtoV2 {
+export class UpdateDataDto {
   @IsOptional()
   @IsString()
   castcleId?: string;
@@ -499,7 +499,7 @@ export interface UserContact {
   email?: string;
 }
 
-export class UpdateModelUserDto {
+export class UpdateUserDtoV2 {
   castcleId?: string;
   displayName?: string;
   overview?: string;
@@ -507,18 +507,4 @@ export class UpdateModelUserDto {
   links?: Link;
   contact?: ContactDto;
   images?: UserModelImage;
-}
-
-export class SyncSocialModelV2 {
-  @IsOptional()
-  facebook?: syncSocialDetail;
-
-  @IsOptional()
-  twitter?: syncSocialDetail;
-
-  @IsOptional()
-  youtube?: syncSocialDetail;
-
-  @IsOptional()
-  medium?: syncSocialDetail;
 }

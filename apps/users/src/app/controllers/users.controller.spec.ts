@@ -274,7 +274,7 @@ describe('AppController', () => {
       expect((await user.toUserResponse()).dob).toBeNull();
       //check full response
       const updateDto = {
-        dob: '1990-12-10',
+        dob: '1990-12-10T00:00:00.000Z',
         links: {
           facebook: 'http://facebook.com/abc',
           medium: 'https://medium.com/abc',
@@ -293,7 +293,7 @@ describe('AppController', () => {
         'me',
         updateDto
       );
-      expect(responseFull.dob).toEqual(updateDto.dob);
+      expect(responseFull.dob.toISOString()).toEqual(updateDto.dob);
       expect(responseFull.links).toEqual(updateDto.links);
       expect(responseFull.images).toBeDefined();
       expect(responseFull.overview).toEqual(updateDto.overview);
@@ -313,7 +313,7 @@ describe('AppController', () => {
       const updateDto = {
         castcleId: mocks[0].user.displayId,
         displayName: 'testDisplay01',
-        dob: '1990-12-10',
+        dob: '1990-12-10T00:00:00.000Z',
         links: {
           facebook: 'http://facebook.com/abc',
           medium: 'https://medium.com/abc',

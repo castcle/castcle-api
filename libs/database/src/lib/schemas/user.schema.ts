@@ -9,6 +9,8 @@ import {
   Author,
   PageResponseDto,
   UserResponseDto,
+  UserContact,
+  SyncSocialModelV2,
 } from '../dtos';
 import { PageVerified, UserType, UserVerified } from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
@@ -21,7 +23,7 @@ type ProfileImage = {
 };
 
 export interface UserProfile {
-  birthdate?: string;
+  birthdate?: Date | null;
   overview?: string;
   works?: string[];
   educations?: string[];
@@ -77,6 +79,9 @@ class UserDocument extends CastcleBase {
 
   @Prop()
   displayIdUpdatedAt?: Date;
+
+  @Prop({ type: Object })
+  contact?: UserContact;
 }
 
 type UserResponseOption = {
@@ -88,6 +93,18 @@ type UserResponseOption = {
   mobile?: { countryCode: string; number: string };
   linkSocial?: AccountAuthenId[];
   syncSocial?: SocialSync[];
+  casts?: number;
+};
+
+type UserResponseOptionV2 = {
+  passwordNotSet?: boolean;
+  blocked?: boolean;
+  blocking?: boolean;
+  followed?: boolean;
+  balance?: number;
+  mobile?: { countryCode: string; number: string };
+  linkSocial?: AccountAuthenId[];
+  syncSocial?: SyncSocialModelV2;
   casts?: number;
 };
 
@@ -104,11 +121,19 @@ export class User extends UserDocument {
   toSearchResponse: () => SearchFollowsResponseDto;
   toAuthor: (user?: User | User) => Author;
   toUserResponse: (option?: UserResponseOption) => Promise<UserResponseDto>;
+  toUserResponseV2: (option?: UserResponseOptionV2) => Promise<UserResponseDto>;
   toPageResponse: (
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean,
     syncSocial?: SocialSync,
+    casts?: number
+  ) => PageResponseDto;
+  toPageResponseV2: (
+    blocked?: boolean,
+    blocking?: boolean,
+    followed?: boolean,
+    syncSocial?: SyncSocialModelV2,
     casts?: number
   ) => PageResponseDto;
 }
@@ -148,6 +173,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     canUpdateCastcleId: self.displayIdUpdatedAt
       ? _verifyUpdateCastcleId(self.displayIdUpdatedAt)
       : true,
+    contact: self.contact,
   } as UserResponseDto;
 };
 
@@ -223,6 +249,53 @@ UserSchema.methods.toUserResponse = async function (
       autoPost: social.autoPost,
     };
   });
+  response.casts = casts;
+  return response;
+};
+
+UserSchema.methods.toUserResponseV2 = async function (
+  {
+    passwordNotSet = false,
+    blocked,
+    blocking,
+    followed,
+    balance,
+    mobile,
+    linkSocial,
+    syncSocial,
+    casts,
+  } = {} as UserResponseOption
+) {
+  const self = await (this as User).populate('ownerAccount').execPopulate();
+  const response = _covertToUserResponse(self, followed);
+  response.email = self.ownerAccount?.email ?? null;
+  response.blocking = blocking;
+  response.blocked = blocked;
+  response.passwordNotSet = passwordNotSet;
+  response.wallet = {
+    balance: balance,
+  };
+  response.mobile = mobile;
+  if (linkSocial) {
+    response.linkSocial = Object.assign(
+      {},
+      ...linkSocial.map((social: AccountAuthenId) => {
+        return {
+          [social.type]: {
+            socialId: social.socialId,
+            displayName: social.displayName,
+          },
+        };
+      })
+    );
+
+    response.linkSocial.facebook = response.linkSocial.facebook ?? null;
+    response.linkSocial.twitter = response.linkSocial.twitter ?? null;
+    response.linkSocial.google = response.linkSocial.google ?? null;
+    response.linkSocial.apple = response.linkSocial.apple ?? null;
+  }
+
+  response.syncSocial = syncSocial || undefined;
   response.casts = casts;
   return response;
 };
@@ -313,6 +386,88 @@ UserSchema.methods.toPageResponse = function (
           autoPost: syncSocial.autoPost,
         }
       : undefined,
+    casts: casts,
+    canUpdateCastcleId: (this as User).displayIdUpdatedAt
+      ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
+      : true,
+  } as PageResponseDto;
+};
+
+UserSchema.methods.toPageResponseV2 = function (
+  blocked?: boolean,
+  blocking?: boolean,
+  followed?: boolean,
+  syncSocial?: SocialSync,
+  casts?: number
+) {
+  return {
+    id: (this as User)._id,
+    castcleId: (this as User).displayId,
+    displayName: (this as User).displayName,
+    type: (this as User).type,
+    images: {
+      avatar:
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.avatar
+          ? new Image((this as User).profile.images.avatar).toSignUrls()
+          : Configs.DefaultAvatarImages,
+      cover:
+        (this as User).profile &&
+        (this as User).profile.images &&
+        (this as User).profile.images.cover
+          ? new Image((this as User).profile.images.cover).toSignUrls()
+          : Configs.DefaultAvatarCovers,
+    },
+    followers: {
+      count: (this as User).followerCount,
+    },
+    following: {
+      count: (this as User).followedCount,
+    },
+    overview:
+      (this as User).profile && (this as User).profile.overview
+        ? (this as User).profile.overview
+        : null,
+    links: {
+      facebook:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.facebook
+          ? (this as User).profile.socials.facebook
+          : null,
+      medium:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.medium
+          ? (this as User).profile.socials.medium
+          : null,
+      twitter:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.twitter
+          ? (this as User).profile.socials.twitter
+          : null,
+      youtube:
+        (this as User).profile &&
+        (this as User).profile.socials &&
+        (this as User).profile.socials.youtube
+          ? (this as User).profile.socials.youtube
+          : null,
+      website:
+        (this as User).profile && (this as User).profile.websites
+          ? (this as User).profile.websites[0].website
+          : null,
+    },
+    verified: {
+      official: (this as User).verified.official,
+    } as PageVerified,
+    blocked,
+    blocking,
+    followed,
+    updatedAt: (this as User).updatedAt.toISOString(),
+    createdAt: (this as User).createdAt.toISOString(),
+    syncSocial: syncSocial || undefined,
     casts: casts,
     canUpdateCastcleId: (this as User).displayIdUpdatedAt
       ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
