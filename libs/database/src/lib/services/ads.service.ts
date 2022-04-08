@@ -61,6 +61,7 @@ import {
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { FilterInterval } from './../models/ads.enum';
+import { DataService } from './data.service';
 import { TAccountService } from './taccount.service';
 
 /**
@@ -81,10 +82,53 @@ export class AdsService {
     public _contentModel: Model<Content>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    public taccountService: TAccountService
+    public taccountService: TAccountService,
+    public dataService: DataService
   ) {}
 
   private logger = new CastLogger(AdsService.name);
+
+  selectContentAds = async (
+    adsPrice: GetAdsPriceResponse,
+    viewerAccountId: string,
+    allContentAdsIds: string[]
+  ) => {
+    const contentScore = await this.dataService.personalizeContents(
+      viewerAccountId,
+      allContentAdsIds
+    );
+    if (!(contentScore && Object.keys(contentScore).length > 0)) return null;
+    const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
+      contentScore[a] > contentScore[b] ? -1 : 1
+    );
+    const adsIndex = adsPrice.adsRef.findIndex(
+      (item) => String(item.$id || item.oid) === sortedContentIds[0]
+    );
+    return adsPrice.ads[adsIndex];
+  };
+
+  selectAdsFromActiveAds = async (
+    adsPrice: GetAdsPriceResponse,
+    viewerAccountId: string
+  ) => {
+    const allContentAdsIds = adsPrice.adsRef
+      .filter((item) => item.$ref === 'content' || item.namespace === 'content')
+      .map((item) => String(item.$id ? item.$id : item.oid));
+    const allUserAdsIds = adsPrice.adsRef
+      .filter((item) => item.$ref === 'user' || item.namespace === 'user')
+      .map((item) => String(item.$id ? item.$id : item.oid));
+    if (allContentAdsIds.length > 0 && allUserAdsIds.length > 0) {
+      const selectedContentAds = await this.selectContentAds(
+        adsPrice,
+        viewerAccountId,
+        allContentAdsIds
+      );
+      return selectedContentAds
+        ? selectedContentAds
+        : adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
+    }
+    return adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
+  };
 
   getAdsPlacementFromAuction = async (
     contentIds: string[],
@@ -96,8 +140,10 @@ export class AdsService {
       const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
         pipe2AdsAuctionPrice()
       );
-      const selectAds =
-        price[0].ads[Math.floor(Math.random() * price[0].ads.length)];
+      const selectAds = await this.selectAdsFromActiveAds(
+        price[0],
+        viewerAccountId
+      );
       const adsPlacement = new this._adsPlacementModel({
         campaign: selectAds,
         contents: contentIds,
@@ -412,7 +458,7 @@ export class AdsService {
           });
           await adsPlacement.save();
           adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
-          adsCampaign.statistics.cpm = mockOracleService.getCastPrice();
+          adsCampaign.statistics.dailySpent += adsPlacement.cost.UST;
           const adsOwnerBalance = await this.taccountService.getAccountBalance(
             String(adsCampaign.owner),
             adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
