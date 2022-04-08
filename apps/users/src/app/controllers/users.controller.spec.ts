@@ -36,6 +36,7 @@ import {
   MongooseForFeatures,
   NotificationService,
   QueueName,
+  RankerService,
   SocialProvider,
   SocialSyncService,
   TAccountService,
@@ -146,6 +147,7 @@ describe('AppController', () => {
         NotificationService,
         DownloaderProvider,
         FacebookClientProvider,
+        RankerService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

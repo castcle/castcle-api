@@ -21,15 +21,31 @@
  * or have any questions.
  */
 
-import { DataService, UserService, UserType } from '@castcle-api/database';
+import {
+  AdsService,
+  DataService,
+  RankerService,
+  UserService,
+  UserType,
+} from '@castcle-api/database';
 import { SuggestToFollowResponseDto } from '@castcle-api/database/dtos';
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Cache } from 'cache-manager';
+import { Account, Credential } from '@castcle-api/database/schemas';
 
+type SeenState = {
+  seenCount: number;
+  lastSeen?: Date;
+  lastSuggestion?: Date;
+};
 @Injectable()
 export class SuggestionService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private dataService: DataService,
-    private userService: UserService
+    private userService: UserService,
+    private adsService: AdsService,
+    private rankerService: RankerService
   ) {}
 
   /**
@@ -57,4 +73,75 @@ export class SuggestionService {
       },
     };
   };
+
+  _seenKey = (accountId: string) => `${accountId}-seen`;
+  _seenAdsKey = (accountId: string) => `${accountId}-ads-seen`;
+
+  _resetSeen = (setting: SeenState, seenKey: string) =>
+    this.cacheManager.set(
+      seenKey,
+      JSON.stringify({
+        ...setting,
+        seenCount: 0,
+        lastSeen: new Date(),
+        lastSuggestion: new Date(),
+      } as SeenState)
+    );
+
+  /**
+   * Mark Cache that this content have been seen
+   * @param accountId
+   */
+  async seen(account: Account, id: string, credential: Credential) {
+    //accountId: string
+    await Promise.all([
+      this.rankerService.seenFeedItem(account, id, credential),
+      this.adsService.seenAds(id, credential.id),
+    ]);
+    const accountId = account.id;
+    const currentSetting: string = await this.cacheManager.get(
+      this._seenKey(accountId)
+    );
+    if (!currentSetting) {
+      this.cacheManager.set(
+        this._seenKey(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    } else {
+      const setting: SeenState = JSON.parse(currentSetting);
+      this.cacheManager.set(
+        this._seenKey(accountId),
+        JSON.stringify({
+          ...setting,
+          seenCount: setting.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    }
+    const adsSetting: string = await this.cacheManager.get(
+      this._seenAdsKey(accountId)
+    );
+    if (!adsSetting) {
+      this.cacheManager.set(
+        this._seenAdsKey(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    } else {
+      const setting: SeenState = JSON.parse(adsSetting);
+      this.cacheManager.set(
+        this._seenAdsKey(accountId),
+        JSON.stringify({
+          ...setting,
+          seenCount: setting.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState)
+      );
+    }
+  }
 }
