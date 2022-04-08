@@ -28,6 +28,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   ContentService,
+  DataService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -75,6 +76,17 @@ describe('AdsService', () => {
         ContentService,
         TAccountService,
         HashtagService,
+        {
+          provide: DataService,
+          useValue: {
+            personalizeContents: async (
+              accountId: string,
+              contentIds: string[]
+            ) => ({
+              [contentIds[0]]: 4,
+            }),
+          },
+        },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
