@@ -124,7 +124,7 @@ export class ContentService {
       .findOne({ _id: contentId, visibility: EntityVisibility.Publish })
       .exec();
 
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
     return content;
   };
