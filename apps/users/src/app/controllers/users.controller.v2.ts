@@ -51,7 +51,6 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
