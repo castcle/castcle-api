@@ -39,10 +39,13 @@ import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
 
 class UserImage {
-  @ApiProperty()
-  avatar: string | CastcleImage;
-  @ApiProperty()
-  cover: string | CastcleImage;
+  @IsOptional()
+  @IsString()
+  avatar?: string | CastcleImage;
+
+  @IsOptional()
+  @IsString()
+  cover?: string | CastcleImage;
 }
 
 export class UserModelImage {
@@ -440,17 +443,6 @@ export class GetUserParam {
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
 }
-
-export class ImageBaseDto {
-  @IsOptional()
-  @IsString()
-  avatar?: string;
-
-  @IsOptional()
-  @IsString()
-  cover?: string;
-}
-
 export class ContactDto {
   @IsOptional()
   @IsString()
@@ -492,7 +484,7 @@ export class UpdateUserDtoV2 {
 
   @IsOptional()
   @IsObject()
-  images?: ImageBaseDto;
+  images?: UserImage;
 }
 export interface UserContact {
   phone?: string;
