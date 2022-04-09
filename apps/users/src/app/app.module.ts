@@ -39,6 +39,7 @@ import { NotificationsController } from './controllers/notifications.controller'
 import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
+import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { UsersControllerV2 } from './controllers/users.controller.v2';
   ],
   controllers: [
     NotificationsController,
+    NotificationsControllerV2,
     PagesController,
     UsersController,
     UsersControllerV2,

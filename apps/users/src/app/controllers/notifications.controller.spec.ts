@@ -195,7 +195,13 @@ describe('NotificationsController', () => {
       expect(responseResult.payload).toHaveLength(3);
       expect(
         responseResult.payload.filter(
-          (x) => !x.commentId || !x.contentId || !x.replyId || !x.adsId
+          (x) =>
+            !x.commentId ||
+            !x.contentId ||
+            !x.replyId ||
+            !x.advertiseId ||
+            !x.systemId ||
+            !x.profileId
         ).length
       ).toEqual(3);
     });
@@ -212,9 +218,12 @@ describe('NotificationsController', () => {
       const expectResult = {
         payload: [
           {
-            adsId: undefined,
+            advertiseId: undefined,
             commentId: undefined,
             contentId: undefined,
+            profileId: undefined,
+            systemId: undefined,
+            read: false,
             id: 'test',
             message: 'test commented on your cast',
             notifyId: 'test',
