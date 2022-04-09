@@ -49,7 +49,7 @@ export class Link {
   url: string;
 
   @ApiProperty()
-  image: string | CastcleImage;
+  image?: string | CastcleImage;
 
   @ApiProperty()
   title?: string;

@@ -5,7 +5,6 @@ export class AuthenticationsRequest {
   static headers = {
     'Accept-Language': 'en',
     'Accept-Version': '1.0',
-    'API-Metadata': 'ip=127.0.0.1,src=CastcleOS,dest=castcle',
     Device: 'CastclePhone',
     Platform: 'CastcleOS',
   };
@@ -22,7 +21,9 @@ export class AuthenticationsRequest {
   static post = (url: string) => AuthenticationsRequest.request('post', url);
   static put = (url: string) => AuthenticationsRequest.request('put', url);
 
-  static checkHealth = () => AuthenticationsRequest.get(`/`);
-  static guestLogin = () => AuthenticationsRequest.post(`/guestLogin`);
-  static register = () => AuthenticationsRequest.post(`/register`);
+  static checkHealth = () => AuthenticationsRequest.get(`/authentications`);
+  static guestLogin = () =>
+    AuthenticationsRequest.post(`/authentications/guestLogin`);
+  static register = () =>
+    AuthenticationsRequest.post(`/authentications/register`);
 }

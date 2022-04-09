@@ -25,7 +25,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { CreateHashtag } from '../dtos/hashtag.dto';
-import { UserType } from '../schemas';
+import { UserType } from '../models';
 import { DEFAULT_TOP_TREND_QUERY_OPTIONS } from './../dtos/search.dto';
 import { HashtagService } from './hashtag.service';
 import { SearchService } from './search.service';
@@ -80,7 +80,7 @@ describe('SearchService', () => {
     for (let i = 0; i < 15; i++) {
       await mockUser(
         `User ${i}`,
-        UserType.People,
+        UserType.PEOPLE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -88,7 +88,7 @@ describe('SearchService', () => {
     for (let i = 0; i < 15; i++) {
       await mockUser(
         `Page ${i}`,
-        UserType.Page,
+        UserType.PAGE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -96,7 +96,7 @@ describe('SearchService', () => {
     for (let i = 0; i < 5; i++) {
       await mockUser(
         `cPage ${i}`,
-        UserType.Page,
+        UserType.PAGE,
         Math.floor(Math.random() * 99999)
       );
     }
@@ -104,7 +104,7 @@ describe('SearchService', () => {
     for (let i = 0; i < 5; i++) {
       await mockUser(
         `cUser ${i}`,
-        UserType.People,
+        UserType.PEOPLE,
         Math.floor(Math.random() * 99999)
       );
     }

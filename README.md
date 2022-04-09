@@ -55,14 +55,14 @@ For **_Tokenomics, Key Features, Key Ideas,_** and more **_Technical Issues_**, 
 - To **run ALL** unit tests:
 
   ```
-    > npm run test
+    > npm run test:all
   ```
 
 - To **run EACH** micro service's unit tests:
   ```
-    > npm run test:<service-name>
+    > npm run test <service-name>
   ```
-  For example, `npm run test:feeds` for _'feeds'_ service. You can see all available `test:<service-name>`s in `package.json`.
+  For example, `npm run test feeds` for _'feeds'_ service. You can see all available `test <service-name>`s in `package.json`.
 
 #### Building
 
@@ -74,9 +74,9 @@ For **_Tokenomics, Key Features, Key Ideas,_** and more **_Technical Issues_**, 
 
 - To **build EACH** micro service:
   ```
-    > npm run build:<service-name>
+    > npm run build <service-name>
   ```
-  For example, `npm run build:authentications` for _'authentications'_ service. You can see all available `build:<service-name>`s in `package.json`.
+  For example, `npm run build authentications` for _'authentications'_ service. You can see all available `build <service-name>`s in `package.json`.
 
 #### Running DB scripts
 

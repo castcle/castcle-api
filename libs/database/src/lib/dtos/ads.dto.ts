@@ -43,27 +43,41 @@ export class AdsRequestDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  'campaignName': string;
+  campaignName: string;
+
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  'campaignMessage': string;
+  campaignMessage: string;
+
   @IsEnum([AdsObjective.Engagement, AdsObjective.Reach])
   @IsNotEmpty()
   @ApiProperty()
-  'objective': AdsObjective;
+  objective: AdsObjective;
+
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty()
-  'dailyBudget': number;
+  dailyBudget: number;
+
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty()
-  'duration': number;
+  duration: number;
+
+  @IsString()
   @ApiProperty()
-  'contentId'?: string;
+  @IsOptional()
+  contentId?: string;
+
+  @IsString()
   @ApiProperty()
-  'userId'?: string;
+  @IsOptional()
+  paymentMethod: string;
+
+  @ApiProperty()
+  @IsOptional()
+  userId?: string;
 }
 
 export class AdsCampaignResponseDto {

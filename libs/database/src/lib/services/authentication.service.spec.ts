@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -34,6 +34,7 @@ import {
   UserService,
 } from '../database.module';
 import { EntityVisibility } from '../dtos/common.dto';
+import { QueueName } from '../models';
 import {
   Account,
   AccountActivation,
@@ -69,13 +70,24 @@ describe('Authentication Service', () => {
         AuthenticationService,
         UserService,
         ContentService,
-        UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
     service = app.get(AuthenticationService);
     userService = app.get(UserService);
+
+    jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
+      console.log('embed authentication.');
+    });
   });
 
   afterAll(async () => {
@@ -707,6 +719,110 @@ describe('Authentication Service', () => {
         );
         expect(result).toBeDefined();
       });
+    });
+  });
+  describe('Account Device', () => {
+    describe('#createAccountDevice', () => {
+      let account: Account;
+      beforeAll(async () => {
+        account = await new service._accountModel({
+          email: 'test@gmail.com',
+          password: '11223344a',
+          isGuest: true,
+          preferences: {
+            languages: ['en', 'en'],
+          },
+        }).save();
+      });
+      it('should create firebase token on platform ios is exits.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'ios',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).createAccountDevice({
+          accountId: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(requestBody).toBeTruthy();
+        expect(requestBody.uuid).toEqual(accountDevice.uuid);
+        expect(requestBody.platform).toEqual(accountDevice.platform);
+        expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
+      });
+      it('should create firebase token on platform android is exits.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'android',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).createAccountDevice({
+          accountId: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(requestBody).toBeTruthy();
+        expect(requestBody.uuid).toEqual(accountDevice.uuid);
+        expect(requestBody.platform).toEqual(accountDevice.platform);
+        expect(requestBody.firebaseToken).toEqual(accountDevice.firebaseToken);
+      });
+    });
+    describe('#deleteAccountDevice', () => {
+      let account: Account;
+      beforeAll(async () => {
+        account = await service._accountModel.findOne({
+          email: 'test@gmail.com',
+        });
+      });
+
+      it('should delete firebase token on platform ios.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'ios',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).deleteAccountDevice({
+          accountId: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(accountDevice).toBeNull();
+      });
+      it('should delete firebase token on platform android.', async () => {
+        const requestBody = {
+          uuid: '196c10cd-2d1d-47a5-9700-3b57e7e34386',
+          platform: 'android',
+          firebaseToken: 'testfirebasetokenismock',
+        };
+        await (service as any).deleteAccountDevice({
+          accountId: account._id,
+          ...requestBody,
+        });
+        const accountDevice = await (service as any)._accountDeviceModel
+          .findOne(requestBody)
+          .exec();
+
+        expect(accountDevice).toBeNull();
+      });
+      it('should get account device is not exits.', async () => {
+        const accountDevice = await (service as any)._accountDeviceModel
+          .find()
+          .exec();
+
+        expect(accountDevice).toHaveLength(0);
+      });
+    });
+    afterAll(() => {
+      (service as any)._accountDeviceModel.deleteMany({});
     });
   });
 });

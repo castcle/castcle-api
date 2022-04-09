@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Module } from '@nestjs/common';
-import { CastcleException, CastcleStatus } from './castcle.exception';
+import { CastcleException } from './castcle.exception';
 import { CastcleThrottlerGuard } from './guards/castcle.throttler.guard';
 import { LocalErrorMessage } from './messages';
 import { ErrorMessages } from './messages/default';
@@ -35,7 +35,6 @@ export class UtilsExceptionModule {}
 
 export {
   CastcleException,
-  CastcleStatus,
   LocalErrorMessage,
   ErrorMessages,
   CastcleThrottlerGuard,

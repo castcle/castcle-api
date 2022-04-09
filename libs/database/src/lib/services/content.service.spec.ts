@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -34,7 +34,7 @@ import {
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
-import { UserVerified } from '../models';
+import { QueueName, UserVerified } from '../models';
 import { Comment, User, Account, Content, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -123,8 +123,15 @@ describe('ContentService', () => {
         ContentService,
         CommentService,
         HashtagService,
-        UserProducer,
         UserService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -666,13 +673,13 @@ describe('ContentService', () => {
   });
 
   describe('#createContentsFromTweets', () => {
-    const message = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
-    const expectedMessage = 'Sign Up Now 👉';
+    const message = 'Sign Up Now 👉 https://www.castcle.com';
+    const expectedMessage = 'Sign Up Now 👉 https://www.castcle.com';
 
     it('should not create any content', async () => {
       const contents = await service.createContentsFromAuthor(author, []);
 
-      expect(contents).toBeUndefined();
+      expect(contents).toEqual([]);
     });
 
     it('should create a short content from timeline', async () => {
@@ -688,29 +695,6 @@ describe('ContentService', () => {
       expect(contents.length).toEqual(1);
       expect(content.type).toEqual(ContentType.Short);
       expect(content.payload).toMatchObject({ message: expectedMessage });
-    });
-  });
-
-  describe('#updatePayloadMessage', () => {
-    const messageWithoutLink = 'Sign Up Now';
-    const expectedMessage = 'Sign Up Now 👉 https://t.co/tcMAgbWlxI';
-    const messageWithLink =
-      'Sign Up Now 👉 https://t.co/tcMAgbWlxI https://t.co/SgZHBvUKUt';
-
-    it('should trim last URL and create link in payload', async () => {
-      const payload = { message: messageWithLink };
-
-      await service.updatePayloadMessage(payload);
-
-      expect(payload.message).toEqual(expectedMessage);
-    });
-
-    it('should not update payload if there is no link in message', async () => {
-      const payload = { message: messageWithoutLink };
-
-      await service.updatePayloadMessage(payload);
-
-      expect(payload.message).toEqual(messageWithoutLink);
     });
   });
 

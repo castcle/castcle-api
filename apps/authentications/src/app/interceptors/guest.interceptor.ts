@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import {
   HeadersInterceptor,
   HeadersRequest,
@@ -55,10 +55,7 @@ export class GuestInterceptor extends HeadersInterceptor {
     if (request.$device) {
       return superResult;
     } else {
-      throw new CastcleException(
-        CastcleStatus.MISSING_AUTHORIZATION_HEADER,
-        request.$language
-      );
+      throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
     }
   }
 }

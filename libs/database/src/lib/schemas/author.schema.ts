@@ -16,7 +16,7 @@ export class Author {
   @Prop()
   displayName: string;
 
-  @Prop()
+  @Prop({ type: Object })
   avatar: CastcleImage | null;
 
   @Prop({ type: Object })

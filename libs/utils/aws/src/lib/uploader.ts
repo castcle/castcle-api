@@ -23,7 +23,7 @@
 
 import * as AWS from 'aws-sdk';
 
-import { CastcleException, CastcleStatus } from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 
 export type UploadOptions = {
   filename?: string;
@@ -157,9 +157,7 @@ export class Uploader {
         })
         .promise();
     } catch (error) {
-      const errorLanguage =
-        options && options.language ? options.language : 'en';
-      throw new CastcleException(CastcleStatus.UPLOAD_FAILED, errorLanguage);
+      throw CastcleException.UPLOAD_FAILED;
     }
   };
 

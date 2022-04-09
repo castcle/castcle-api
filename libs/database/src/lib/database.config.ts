@@ -23,8 +23,17 @@
 
 import { Environment } from '@castcle-api/environments';
 import { MongooseModuleOptions } from '@nestjs/mongoose';
+import { QueueOptions } from 'bull';
 
 export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
   ...Environment.DB_OPTIONS,
   uri: Environment.DB_URI,
+});
+
+export const getBullModuleOptions = (): QueueOptions => ({
+  redis: {
+    host: Environment.REDIS_HOST,
+    port: Environment.REDIS_PORT,
+    password: Environment.REDIS_PASSWORD,
+  },
 });

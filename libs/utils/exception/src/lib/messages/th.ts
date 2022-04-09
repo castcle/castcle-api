@@ -185,6 +185,11 @@ export const ThErrorMessages = {
     code: '3022',
     message: 'Please wait a few minutes before you try again.',
   },
+  '3023': {
+    statusCode: '400',
+    code: '3023',
+    message: 'Sorry, Boost Status not match. Please try again.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
@@ -210,6 +215,11 @@ export const ThErrorMessages = {
     code: '4005',
     message: 'The reward is not enough',
   },
+  '4006': {
+    statusCode: '400',
+    code: '4006',
+    message: 'You cannot change your Castcle Id.',
+  },
   '5001': {
     statusCode: '400',
     code: '5001',
@@ -230,6 +240,11 @@ export const ThErrorMessages = {
     code: '5004',
     message: 'You already recast this cast',
   },
+  '5005': {
+    statusCode: '404',
+    code: '5005',
+    message: 'You already like this cast',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',
@@ -239,5 +254,10 @@ export const ThErrorMessages = {
     statusCode: '400',
     code: '7001',
     message: 'Sorry, Something went wrong. Please try again.',
+  },
+  '8001': {
+    statusCode: '400',
+    code: '8001',
+    message: 'Invalid transaction data',
   },
 };

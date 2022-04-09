@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import { AnalyticService, AuthenticationService } from '@castcle-api/database';
-import { OtpObjective } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';
@@ -32,11 +31,7 @@ import {
   RequestMeta,
   RequestMetadata,
 } from '@castcle-api/utils/decorators';
-import {
-  CastcleException,
-  CastcleStatus,
-  ErrorMessages,
-} from '@castcle-api/utils/exception';
+import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -46,6 +41,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
   Get,
   HttpCode,
   HttpException,
@@ -79,18 +75,20 @@ import {
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
+  RequestTokenDeviceDto,
   SocialConnectDto,
-  SuggestCastcleIdReponse,
+  SuggestCastcleIdDto,
+  SuggestCastcleIdResponse,
   TokenResponse,
-  verificationOtpDto,
+  VerificationOtpDto,
   VerificationPasswordBody,
-} from './dtos/dto';
+} from './dtos';
 import {
   GuestInterceptor,
   GuestRequest,
 } from './interceptors/guest.interceptor';
 
-@CastcleController('1.0')
+@CastcleController({ path: 'authentications', version: '1.0' })
 export class AuthenticationController {
   constructor(
     private analyticService: AnalyticService,
@@ -118,7 +116,7 @@ export class AuthenticationController {
     @Body() { email }: CheckEmailExistDto
   ) {
     if (!this.authService.validateEmail(email))
-      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      throw CastcleException.INVALID_EMAIL;
     try {
       const account = await this.authService.getAccountFromEmail(email);
       return {
@@ -128,7 +126,7 @@ export class AuthenticationController {
         },
       };
     } catch (error) {
-      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      throw CastcleException.INVALID_EMAIL;
     }
   }
 
@@ -150,8 +148,7 @@ export class AuthenticationController {
   ) {
     try {
       const account = await this.authService.getAccountFromEmail(username);
-      if (!account)
-        throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+      if (!account) throw CastcleException.INVALID_EMAIL;
       if (await account.verifyPassword(password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
           (item) => item.deviceUUID === req.$credential.deviceUUID
@@ -197,11 +194,10 @@ export class AuthenticationController {
           : null;
 
         return result;
-      } else
-        throw new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD);
+      } else throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
     } catch (error) {
       this.logger.error('Login error', error.stack);
-      throw new CastcleException(CastcleStatus.INVALID_EMAIL_OR_PASSWORD);
+      throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
     }
   }
 
@@ -295,27 +291,21 @@ export class AuthenticationController {
         currentAccount.email &&
         currentAccount.email === body.payload.email
       )
-        throw new CastcleException(
-          CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
-          req.$language
-        );
+        throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
       //check if account already activate
       //check if email exist and not the same
       if (await this.authService.getAccountFromEmail(body.payload.email))
-        throw new CastcleException(
-          CastcleStatus.EMAIL_OR_PHONE_IS_EXIST,
-          req.$language
-        );
+        throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
       if (!this.authService.validateEmail(body.payload.email))
-        throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+        throw CastcleException.INVALID_EMAIL;
       //check if castcleId Exist
       const user = await this.authService.getExistedUserFromCastcleId(
         body.payload.castcleId
       );
       //validate password
-      this.appService.validatePassword(body.payload.password, req.$language);
+      this.appService.validatePassword(body.payload.password);
 
-      if (user) throw new CastcleException(CastcleStatus.USER_ID_IS_EXIST);
+      if (user) throw CastcleException.USER_ID_IS_EXIST;
 
       const accountActivation = await this.authService.signupByEmail(
         currentAccount,
@@ -362,10 +352,7 @@ export class AuthenticationController {
         : null;
       return result;
     }
-    throw new CastcleException(
-      CastcleStatus.PAYLOAD_CHANNEL_MISMATCH,
-      req.$language
-    );
+    throw CastcleException.PAYLOAD_CHANNEL_MISMATCH;
   }
 
   @ApiResponse({
@@ -393,10 +380,7 @@ export class AuthenticationController {
       this.logger.log('Validate profile member.');
       if (!userProfile.profile && !credential.account.isGuest) {
         this.logger.warn('Member Profile is empty.');
-        throw new CastcleException(
-          CastcleStatus.INVALID_REFRESH_TOKEN,
-          req.$language
-        );
+        throw CastcleException.INVALID_REFRESH_TOKEN;
       }
 
       const accessTokenPayload =
@@ -422,10 +406,7 @@ export class AuthenticationController {
         accessToken: newAccessToken,
       } as RefreshTokenResponse;
     }
-    throw new CastcleException(
-      CastcleStatus.INVALID_REFRESH_TOKEN,
-      req.$language
-    );
+    throw CastcleException.INVALID_REFRESH_TOKEN;
   }
 
   @ApiBearerAuth()
@@ -445,17 +426,10 @@ export class AuthenticationController {
     if (accountActivation && accountActivation.isVerifyTokenValid()) {
       //verify email
       const account = await this.authService.verifyAccount(accountActivation);
-      if (!account)
-        throw new CastcleException(
-          CastcleStatus.INVALID_REFRESH_TOKEN,
-          req.$language
-        );
+      if (!account) throw CastcleException.INVALID_REFRESH_TOKEN;
       return '';
     }
-    throw new CastcleException(
-      CastcleStatus.INVALID_REFRESH_TOKEN,
-      req.$language
-    );
+    throw CastcleException.INVALID_REFRESH_TOKEN;
   }
 
   @ApiBearerAuth()
@@ -476,19 +450,11 @@ export class AuthenticationController {
       await this.authService.getAccountActivationFromCredential(
         req.$credential
       );
-    if (!accountActivation)
-      throw new CastcleException(
-        CastcleStatus.INVALID_REFRESH_TOKEN,
-        req.$language
-      );
+    if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
     const newAccountActivation = await this.authService.revokeAccountActivation(
       accountActivation
     );
-    if (!accountActivation)
-      throw new CastcleException(
-        CastcleStatus.INVALID_REFRESH_TOKEN,
-        req.$language
-      );
+    if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
     if (accountActivation.activationDate) {
       const returnObj = {
         message: 'This email has been verified.',
@@ -499,8 +465,7 @@ export class AuthenticationController {
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
-    if (!(account && account.email))
-      throw new CastcleException(CastcleStatus.INVALID_EMAIL, req.$language);
+    if (!(account && account.email)) throw CastcleException.INVALID_EMAIL;
     this.appService.sendRegistrationEmail(
       Host.getHostname(req),
       account.email,
@@ -537,7 +502,7 @@ export class AuthenticationController {
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
-    @Body() body: verificationOtpDto,
+    @Body() body: VerificationOtpDto,
     @Req() req: CredentialRequest
   ) {
     this.logger.log(
@@ -553,7 +518,7 @@ export class AuthenticationController {
       };
       return response;
     } else {
-      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+      throw CastcleException.EXPIRED_OTP;
     }
   }
 
@@ -583,7 +548,7 @@ export class AuthenticationController {
       };
       return response;
     } else {
-      throw new CastcleException(CastcleStatus.EXPIRED_OTP, req.$language);
+      throw CastcleException.EXPIRED_OTP;
     }
   }
   /*
@@ -593,7 +558,7 @@ export class AuthenticationController {
   @Get('verify')
   async verify(@Req() req: CredentialRequest) {
     if (!req.query.code) {
-      throw new CastcleException(CastcleStatus.REQUEST_URL_NOT_FOUND);
+      throw CastcleException.REQUEST_URL_NOT_FOUND;
     }
 
     const token = req.query.code as string;
@@ -612,14 +577,12 @@ export class AuthenticationController {
     );
   }
 
-  @ApiOkResponse({
-    type: SuggestCastcleIdReponse,
-  })
+  @ApiOkResponse({ type: SuggestCastcleIdResponse })
   @Post('suggestCastcleId')
   @HttpCode(200)
   async suggestCastcleId(
-    @Body('displayName') displayName: string
-  ): Promise<SuggestCastcleIdReponse> {
+    @Body() { displayName }: SuggestCastcleIdDto
+  ): Promise<SuggestCastcleIdResponse> {
     const suggestId = await this.authService.suggestCastcleId(displayName);
     return {
       payload: {
@@ -641,28 +604,15 @@ export class AuthenticationController {
     @Body() payload: VerificationPasswordBody,
     @Req() req: CredentialRequest
   ): Promise<otpResponse> {
-    const objective: OtpObjective = <OtpObjective>payload.objective;
-    if (
-      !objective ||
-      !Object.values(OtpObjective).includes(objective) ||
-      objective !== OtpObjective.ChangePassword
-    ) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        req.$language
-      );
-    }
-
     const account = await this.authService.getAccountFromCredential(
       req.$credential
     );
     //add password checker
-    this.appService.validatePassword(payload.password, req.$language);
+    this.appService.validatePassword(payload.password);
     if (await account.verifyPassword(payload.password)) {
       const otp = await this.authService.generateOtp(
         account,
-        objective,
+        payload.objective,
         req.$credential.account._id,
         '',
         true
@@ -672,8 +622,7 @@ export class AuthenticationController {
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
       };
-    } else
-      throw new CastcleException(CastcleStatus.INVALID_PASSWORD, req.$language);
+    } else throw CastcleException.INVALID_PASSWORD;
   }
 
   @CastcleBasicAuth()
@@ -689,28 +638,17 @@ export class AuthenticationController {
     @Body() payload: ChangePasswordBody,
     @Req() req: CredentialRequest
   ) {
-    const objective: OtpObjective = <OtpObjective>payload.objective;
-    if (
-      !objective ||
-      !Object.values(OtpObjective).includes(objective) ||
-      (objective !== OtpObjective.ChangePassword &&
-        objective !== OtpObjective.ForgotPassword)
-    ) {
-      this.logger.error(`Invalid objective.`);
-      throw new CastcleException(
-        CastcleStatus.PAYLOAD_TYPE_MISMATCH,
-        req.$language
-      );
-    }
-
     this.logger.log(`Start change password refCode: ${payload.refCode}`);
     return this.appService.resetPassword(payload, req);
   }
 
   @CastcleBasicAuth()
-  @ApiBody({
-    type: SocialConnectDto,
-  })
+  @ApiBody(
+    /* Creating a type alias for a function that takes a string and returns a string. */
+    {
+      type: SocialConnectDto,
+    }
+  )
   @ApiOkResponse({
     status: 200,
     type: LoginResponse,
@@ -735,7 +673,7 @@ export class AuthenticationController {
 
     if (!token) {
       this.logger.log(`response merge account.`);
-      const error = ErrorMessages[CastcleStatus.DUPLICATE_EMAIL];
+      const error = CastcleException.DUPLICATE_EMAIL.error;
       throw new HttpException(
         {
           ...error,
@@ -796,7 +734,7 @@ export class AuthenticationController {
     );
     if (socialAccount) {
       this.logger.error(`already connect social: ${body.provider}.`);
-      throw new CastcleException(CastcleStatus.SOCIAL_PROVIDER_IS_EXIST);
+      throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
     }
 
     this.logger.log(`connect account with social`);
@@ -809,6 +747,13 @@ export class AuthenticationController {
       body.avatar ? body.avatar : undefined,
       body.displayName ? body.displayName : undefined
     );
+
+    await this.authService.embedAuthentication(currentAccount, {
+      provider: body.provider,
+      socialId: body.socialId,
+      avatar: body.avatar ? body.avatar : undefined,
+      socialToken: body.authToken ? body.authToken : undefined,
+    });
 
     const { token, users, account } = await this.appService.socialLogin(
       body,
@@ -828,5 +773,31 @@ export class AuthenticationController {
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
     } as LoginResponse;
+  }
+
+  @UseInterceptors(CredentialInterceptor)
+  @Post('register-token')
+  @HttpCode(200)
+  async registerToken(
+    @Req() { $credential }: CredentialRequest,
+    @Body() body: RequestTokenDeviceDto
+  ) {
+    await this.authService.createAccountDevice({
+      accountId: $credential.account._id,
+      ...body,
+    });
+  }
+
+  @UseInterceptors(CredentialInterceptor)
+  @Delete('register-token')
+  @HttpCode(200)
+  async unregisterToken(
+    @Req() { $credential }: CredentialRequest,
+    @Body() body: RequestTokenDeviceDto
+  ) {
+    await this.authService.deleteAccountDevice({
+      accountId: $credential.account._id,
+      ...body,
+    });
   }
 }

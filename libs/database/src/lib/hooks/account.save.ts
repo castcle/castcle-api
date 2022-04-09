@@ -23,7 +23,8 @@
 
 import { Model } from 'mongoose';
 import { EntityVisibility } from '../dtos/common.dto';
-import { Account, Credential, User, UserType } from '../schemas';
+import { UserType } from '../models';
+import { Account, Credential, User } from '../schemas';
 
 type HookModels = {
   credentialModel: Model<Credential>;
@@ -50,7 +51,7 @@ export const postAccountSave = async (doc: Account, models: HookModels) => {
     if (doc.activateDate)
       await models.userModel
         .updateOne(
-          { ownerAccount: doc._id, type: UserType.People },
+          { ownerAccount: doc._id, type: UserType.PEOPLE },
           { 'verified.email': true }
         )
         .exec();

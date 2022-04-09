@@ -33,8 +33,8 @@ export const CacheKeyName = {
     Name: 'LANGUAGES_GET',
     Ttl: 3600,
   },
-  HashtagsGet: {
-    Name: 'HASHTAGS_GET',
+  Hashtags: {
+    Name: 'HASHTAGS',
     Ttl: 10,
   },
   TopTrends: {

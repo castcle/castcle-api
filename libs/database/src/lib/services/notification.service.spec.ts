@@ -20,11 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationProducer, UserProducer } from '@castcle-api/utils/queue';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import {
   CreateNotification,
@@ -32,6 +33,7 @@ import {
   NotificationType,
   RegisterTokenDto,
 } from '../dtos/notification.dto';
+import { QueueName } from '../models';
 import { User, Account, Credential } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -71,9 +73,19 @@ describe('NotificationService', () => {
         UserService,
         AuthenticationService,
         NotificationService,
-        NotificationProducer,
-        UserProducer,
         HashtagService,
+        {
+          provide: getQueueToken(QueueName.CONTENT),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.USER),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: getQueueToken(QueueName.NOTIFICATION),
+          useValue: { add: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -97,57 +109,48 @@ describe('NotificationService', () => {
     });
     user = await userService.getUserFromCredential(result.credentialDocument);
 
-    const newNoti = new service._notificationModel({
-      avatar: '',
+    const newNoti = new (service as any)._notificationModel({
       message: 'sample profile1',
       source: NotificationSource.Profile,
-      sourceUserId: {
-        _id: user._id,
-      },
+      sourceUserId: user._id,
+
       type: NotificationType.Comment,
       targetRef: {
         _id: '6138afa4f616a467b5c4eb72',
+        ref: 'content',
       },
       read: false,
-      account: {
-        _id: result.accountDocument.id,
-      },
+      account: result.accountDocument.id,
     });
     await newNoti.save();
 
-    const newNoti2 = new service._notificationModel({
-      avatar: '',
+    const newNoti2 = new (service as any)._notificationModel({
       message: 'sample page2',
       source: NotificationSource.Page,
-      sourceUserId: {
-        _id: user._id,
-      },
-      type: NotificationType.Comment,
+      sourceUserId: user._id,
+
+      type: NotificationType.Like,
       targetRef: {
         _id: '6138afa4f616a467b5c4eb72',
+        ref: 'content',
       },
       read: false,
-      account: {
-        _id: result.accountDocument.id,
-      },
+      account: result.accountDocument.id,
     });
     await newNoti2.save();
 
-    const newNoti3 = new service._notificationModel({
+    const newNoti3 = new (service as any)._notificationModel({
       avatar: '',
       message: 'sample page3',
       source: NotificationSource.Profile,
-      sourceUserId: {
-        _id: user._id,
-      },
+      sourceUserId: user._id,
       type: NotificationType.System,
       targetRef: {
         _id: '6138afa4f616a467b5c4eb72',
+        ref: 'system',
       },
       read: false,
-      account: {
-        _id: result.accountDocument.id,
-      },
+      account: result.accountDocument.id,
     });
     await newNoti3.save();
 
@@ -159,53 +162,127 @@ describe('NotificationService', () => {
       },
       device: 'iPhone',
     });
+    // jest
+    //   .spyOn(service, 'generateNotificationToMessage')
+    //   .mockImplementation(async (userOwner, notify, language): Promise<any> => {
+    //     const userIds = notify.sourceUserId.reverse().slice(0, 2);
+
+    //     const users: User[] = await (service as any)._userModel
+    //       .find({
+    //         _id: { $in: userIds },
+    //       })
+    //       .exec();
+
+    //     if (!notify && !users.length) return;
+
+    //     const userSort: User[] = [];
+
+    //     users.forEach((user) => {
+    //       const index = userIds.indexOf(user._id);
+    //       if (index > -1) userSort[index] = user;
+    //     });
+
+    //     let countOther: number;
+    //     if (notify.sourceUserId.length > 2)
+    //       countOther = await (service as any)._userModel.countDocuments({
+    //         $and: [
+    //           { _id: { $in: notify.sourceUserId } },
+    //           { _id: { $nin: users } },
+    //         ],
+    //       });
+
+    //     let message: string[] = [
+    //       users
+    //         .map((user) => user.displayName)
+    //         .join(',')
+    //         .replace(/,/g, ':'),
+    //     ];
+
+    //     message = [
+    //       ...message,
+    //       countOther
+    //         ? await notifyService.translate('and 2 people', language)
+    //         : '',
+    //       await notifyService.translate(
+    //         `like ${
+    //           userOwner.type === NotificationSource.Page ? 'page' : 'you'
+    //         }`,
+    //         language
+    //       ),
+    //     ].filter((item) => item);
+
+    //     return message.join(',').replace(/,/g, ' ').replace(/:/g, ', ');
+    //   });
   });
+
   afterAll(async () => {
     await app.close();
     await mongod.stop();
   });
 
-  describe('#getAll', () => {
+  describe('#getNotificationAll', () => {
     it('should get all notification in db with source as default option', async () => {
-      const notification = await service.getAll(result.credentialDocument);
-      expect(notification.items.length).toEqual(3);
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      expect(notification).toHaveLength(3);
     });
 
     it('should get all notification in db with source as page', async () => {
-      const notification = await service.getAll(result.credentialDocument, {
-        source: NotificationSource.Page,
-      });
-      expect(notification.items.length).toEqual(1);
-      expect(notification.items[0].source).toEqual(NotificationSource.Page);
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {
+          source: NotificationSource.Page,
+        }
+      );
+      expect(notification).toHaveLength(1);
+      expect(notification[0].source).toEqual(NotificationSource.Page);
     });
 
     it('should get notification filter with sinceId in db', async () => {
-      const notification = await service.getAll(result.credentialDocument);
-      const filterId = notification.items[1].id;
-      const notiResult = await service.getAll(result.credentialDocument, {
-        sinceId: filterId,
-      });
-      expect(notiResult.items.length).toEqual(1);
-      expect(notiResult.items[0].message).toEqual('sample page3');
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const filterId = notification[1].id;
+      const notiResult = await service.getNotificationAll(
+        result.credentialDocument,
+        {
+          sinceId: filterId,
+          source: NotificationSource.System,
+        }
+      );
+      expect(notiResult).toHaveLength(0);
     });
 
     it('should get notification filter with untilId in db', async () => {
-      const notification = await service.getAll(result.credentialDocument);
-      const filterId = notification.items[1].id;
-      const notiResult = await service.getAll(result.credentialDocument, {
-        untilId: filterId,
-      });
-      expect(notiResult.items.length).toEqual(1);
-      expect(notiResult.items[0].message).toEqual('sample profile1');
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const filterId = notification[1].id;
+      const notiResult = await service.getNotificationAll(
+        result.credentialDocument,
+        {
+          untilId: filterId,
+          source: NotificationSource.Profile,
+        }
+      );
+
+      expect(notiResult).toHaveLength(1);
     });
   });
 
   describe('#getFromId', () => {
     it('should get notification in db with id', async () => {
-      const allNotification = await service.getAll(result.credentialDocument);
-      const notification = await service.getFromId(allNotification.items[0].id);
-      expect(notification).toEqual(allNotification.items[0]);
-      expect(notification).not.toEqual(allNotification.items[1]);
+      const allNotification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const notification = await service.getFromId(allNotification[0].id);
+      expect(notification).toEqual(allNotification[0]);
+      expect(notification).not.toEqual(allNotification[1]);
     });
 
     it('should get empty notification in db with wrong id', async () => {
@@ -220,33 +297,41 @@ describe('NotificationService', () => {
 
   describe('#flagRead', () => {
     it('should update read flag notification in db', async () => {
-      const allNotification = await service.getAll(result.credentialDocument);
-      const updateRead = allNotification.items[0];
+      const allNotification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const updateRead = allNotification[0];
       const notificationId = updateRead.id;
 
       await service.flagRead(updateRead);
       const noti = await service.getFromId(notificationId);
+
       expect(noti.read).toEqual(true);
     });
     it('should get empty notification with empty data', async () => {
       const noti = await service.getFromId(null);
-      expect(noti).toBeNull;
+      expect(noti).toBeNull();
     });
   });
 
   describe('#flagReadAll', () => {
     it('should update read flag all notification in db', async () => {
       const resultUpdate = await service.flagReadAll(result.credentialDocument);
-      const profileNoti = await service.getAll(result.credentialDocument);
-      const pageNoti = await service.getAll(result.credentialDocument);
+      const profileNoti = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const pageNoti = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
 
       expect(resultUpdate.n).toEqual(3);
-      expect(profileNoti.items.filter((x) => x.read).length).toEqual(
-        profileNoti.items.length
+      expect(profileNoti.filter((x) => x.read).length).toEqual(
+        profileNoti.length
       );
-      expect(pageNoti.items.filter((x) => x.read).length).toEqual(
-        pageNoti.items.length
-      );
+      expect(pageNoti.filter((x) => x.read).length).toEqual(pageNoti.length);
     });
 
     it('should not update read flag notification in db with wrong credential', async () => {
@@ -267,68 +352,59 @@ describe('NotificationService', () => {
   describe('#notifyToUser', () => {
     it('should create new notification with type comment in db', async () => {
       const newNoti: CreateNotification = {
-        message: 'sample page',
         source: NotificationSource.Profile,
-        sourceUserId: {
-          _id: user._id,
-        },
+        sourceUserId: user._id,
         type: NotificationType.Comment,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-        },
+        contentRef: Types.ObjectId('6138afa4f616a467b5c4eb72'),
         read: false,
-        account: {
-          _id: result.accountDocument.id,
-        },
+        account: result.accountDocument.id,
       };
+      const userOwner = await userService.getUserAndPagesFromAccountId(
+        result.accountDocument.id
+      );
 
-      const resultData = await service.notifyToUser(newNoti);
-      await service.getAll(result.credentialDocument);
+      await service.notifyToUser(newNoti, userOwner[0], 'th');
 
-      expect(resultData).toBeDefined();
-      expect(resultData.message).toEqual(newNoti.message);
-      expect(resultData.source).toEqual(newNoti.source);
-      expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
-      expect(resultData.type).toEqual(newNoti.type);
-      expect(resultData.targetRef.$ref).toEqual(NotificationType.Comment);
-      expect(resultData.targetRef.$id).toEqual(newNoti.targetRef._id);
-      expect(resultData.read).toEqual(newNoti.read);
-      expect(resultData.account._id.toString()).toEqual(newNoti.account._id);
+      const notifyData = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+
+      expect(notifyData).toBeDefined();
+      expect(notifyData[0].source).toEqual(newNoti.source);
+      expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
+      expect(notifyData[0].type).toEqual(newNoti.type);
+      expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
 
     it('should create new notification with type system in db', async () => {
       const newNoti: CreateNotification = {
-        message: 'sample page',
         source: NotificationSource.Profile,
-        sourceUserId: {
-          _id: user._id,
-        },
+        sourceUserId: user._id,
         type: NotificationType.System,
-        targetRef: {
-          _id: '6138afa4f616a467b5c4eb72',
-        },
         read: false,
-        account: {
-          _id: result.accountDocument.id,
-        },
+        account: result.accountDocument.id,
       };
+      const userOwner = await userService.getUserAndPagesFromAccountId(
+        result.accountDocument.id
+      );
 
-      const resultData = await service.notifyToUser(newNoti);
-      await service.getAll(result.credentialDocument);
+      await service.notifyToUser(newNoti, userOwner[0], 'th');
 
-      expect(resultData).toBeDefined();
-      expect(resultData.message).toEqual(newNoti.message);
-      expect(resultData.source).toEqual(newNoti.source);
-      expect(resultData.sourceUserId._id).toEqual(newNoti.sourceUserId._id);
-      expect(resultData.type).toEqual(newNoti.type);
-      expect(resultData.targetRef.$ref).toBeNull();
-      expect(resultData.read).toEqual(newNoti.read);
-      expect(resultData.account._id.toString()).toEqual(newNoti.account._id);
+      const notifyData = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+
+      expect(notifyData).toBeDefined();
+      expect(notifyData[0].source).toEqual(newNoti.source);
+      expect(notifyData[0].sourceUserId[0]).toEqual(newNoti.sourceUserId);
+      expect(notifyData[0].account.toString()).toEqual(newNoti.account);
     });
   });
 
   describe('#registerToken', () => {
-    it('should update firebase token fron device uuid in db', async () => {
+    it('should update firebase token from device uuid in db', async () => {
       const deviceID = '9999999999';
       const firebaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
@@ -345,25 +421,29 @@ describe('NotificationService', () => {
       registerData.deviceUUID = deviceID;
       registerData.firebaseToken = firebaseToken;
 
-      const updateToken = await service.registerToken(registerData);
-      console.log(updateToken);
-      const credentailUpdate = await service._credentialModel
+      await service.registerToken(registerData);
+      const credentailUpdate = await (service as any)._credentialModel
         .findOne({ deviceUUID: deviceID })
         .exec();
 
       expect(credentailUpdate.firebaseNotificationToken).toEqual(firebaseToken);
     });
-
-    it('should get empty result with empty data', async () => {
-      const updateToken = await service.registerToken(null);
-      expect(updateToken).toBeNull();
-    });
   });
 
   describe('#badges', () => {
     it('should return total notification number when lower than 99', async () => {
-      const badges = await service.getBadges(result.credentialDocument);
-      expect(badges).toEqual('2');
+      await new (service as any)._notificationModel({
+        account: result.credentialDocument.account._id,
+        source: 'profile',
+        type: 'like',
+        read: false,
+      }).save();
+
+      const badges = await (service as any).getBadges(
+        result.credentialDocument
+      );
+
+      expect(badges).toEqual('1');
     });
 
     it('should return expty notification when get empty notification', async () => {
@@ -375,33 +455,111 @@ describe('NotificationService', () => {
         },
         device: 'iPhone13',
       });
-      const badges = await service.getBadges(credentialData.credentialDocument);
-      expect(badges).toBeNull;
+      const badges = await (service as any).getBadges(
+        credentialData.credentialDocument
+      );
+      console.log(badges);
+
+      expect(badges).toBeDefined();
     });
 
     it('should return total notification number when more than 99', async () => {
-      for (let i = 0; i < 99; i++) {
-        const newNoti = new service._notificationModel({
-          avatar: '',
+      for (let i = 0; i < 101; i++) {
+        const newNoti = new (service as any)._notificationModel({
           message: 'sample profile' + i,
           source: NotificationSource.Profile,
-          sourceUserId: {
-            _id: user._id,
-          },
+          sourceUserId: user._id,
           type: NotificationType.Comment,
           targetRef: {
             id: '6138afa4f616a467b5c4eb72',
           },
           read: false,
-          account: {
-            _id: result.accountDocument.id,
-          },
+          account: result.accountDocument.id,
         });
         await newNoti.save();
       }
 
-      const badges = await service.getBadges(result.credentialDocument);
+      const badges = await (service as any).getBadges(
+        result.credentialDocument
+      );
       expect(badges).toEqual('+99');
+    });
+  });
+
+  describe('#generateNotificationToMessage', () => {
+    it('should create notification message in db', async () => {
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const userOwner = await userService.getUserAndPagesFromAccountId(
+        result.accountDocument.id
+      );
+
+      const message = await (service as any).generateMessage(
+        userOwner,
+        notification[0],
+        'th'
+      );
+
+      expect(message).toEqual('sp002 แสดงความคิดเห็นบน cast ของคุณ');
+    });
+  });
+  describe('#generateMessagesToNotifications', () => {
+    it('should create notification messages in db', async () => {
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+
+      const message = await (service as any).generateMessagesToNotifications(
+        notification,
+        'th'
+      );
+
+      expect(message).toHaveLength(105);
+    });
+  });
+  describe('#generateNotification', () => {
+    it('should create notification messages in db', async () => {
+      const notification = await service.getNotificationAll(
+        result.credentialDocument,
+        {}
+      );
+      const userOwner = await userService.getUserAndPagesFromAccountId(
+        result.accountDocument.id
+      );
+      const message = await (service as any).generateMessage(
+        userOwner,
+        notification[0],
+        'th'
+      );
+      const deviceID = '9999999999';
+      const firebaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYxNDQ5';
+      await (service as any)
+        ._accountDeviceModel({
+          uuid: deviceID,
+          firebaseToken: firebaseToken,
+          platform: 'ios',
+          account: result.accountDocument.id,
+        })
+        .save();
+      const firebaseTokens = await (service as any)._accountDeviceModel.find({
+        uuid: deviceID,
+      });
+
+      const payloadNotify = await (service as any).generateNotification(
+        message,
+        notification[0],
+        firebaseTokens
+      );
+
+      expect(payloadNotify.firebaseTokens[0]).toEqual(firebaseToken);
+      expect(payloadNotify.aps.alert).toEqual(message);
+      expect(String(payloadNotify.payload.id)).toEqual(
+        String(notification[0].id)
+      );
     });
   });
 });

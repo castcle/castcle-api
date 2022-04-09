@@ -82,6 +82,7 @@ export class Environment {
   // Redis
   static REDIS_HOST = process.env.REDIS_HOST;
   static REDIS_PORT = Number(process.env.REDIS_PORT);
+  static REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
   // Assets
   static ASSETS_BUCKET_NAME = process.env.ASSETS_BUCKET_NAME;
@@ -148,7 +149,6 @@ export class Environment {
   static GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 
   // Feed Setting
-  static AUTO_CREATE_GUEST_FEED = process.env.AUTO_CREATE_GUEST_FEED === '1';
   static FEED_FOLLOW_MAX = Number(
     process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax
   );
@@ -187,4 +187,25 @@ export class Environment {
   static RECAPTCHA_API_KEY = process.env.RECAPTCHA_API_KEY || 'asdsd';
   static RECAPTCHA_PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || 'asdasd';
   static RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '1asdasd';
+
+  // Castcle ID Update
+  static CASTCLE_ID_ALLOW_UPDATE_DAYS =
+    Number(process.env.CASTCLE_ID_ALLOW_UPDATE_DAYS) || 60;
+
+  // ADS
+  static ADS_MINIMUM_CPM = process.env.ADS_MINIMUM_CPM || 0.01;
+  static ADS_MINIMUM_FEED_VIEW = process.env.ADS_MINIMUM_FEED_VIEW || 6;
+  static ADS_MINIMUM_FEED_COOL_DOWN =
+    process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;
+
+  static NOTIFY_LIKE = process.env.NOTIFY_LIKE || 0;
+  static NOTIFY_RECAST = process.env.NOTIFY_RECAST || 0;
+  static NOTIFY_QUOTE = process.env.NOTIFY_QUOTE || 0;
+  static NOTIFY_COMMENT = process.env.NOTIFY_COMMENT || 0;
+  static NOTIFY_TAG = process.env.NOTIFY_TAG || 0;
+  static NOTIFY_FARM = process.env.NOTIFY_FARM || 0;
+  static NOTIFY_REPLY = process.env.NOTIFY_REPLY || 0;
+  static NOTIFY_ADS = process.env.NOTIFY_ADS || 0;
+  static NOTIFY_FOLLOW = process.env.NOTIFY_FOLLOW || 0;
+  static NOTIFY_SYSTEM = process.env.NOTIFY_SYSTEM || 0;
 }

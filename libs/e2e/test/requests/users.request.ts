@@ -5,7 +5,6 @@ export class UsersRequest {
   static headers = {
     'Accept-Language': 'en',
     'Accept-Version': '1.0',
-    'API-Metadata': 'ip=127.0.0.1,src=CastcleOS,dest=castcle',
     Device: 'CastclePhone',
     Platform: 'CastcleOS',
   };
@@ -19,7 +18,8 @@ export class UsersRequest {
   static post = (url: string) => UsersRequest.request('post', url);
   static put = (url: string) => UsersRequest.request('put', url);
 
-  static checkHealth = () => UsersRequest.get('/healthy');
-  static updateMobile = () => UsersRequest.put('/me/mobile');
-  static report = (userId: string) => UsersRequest.post(`/${userId}/reporting`);
+  static checkHealth = () => UsersRequest.get('/users/healthy');
+  static updateMobile = () => UsersRequest.put('/users/me/mobile');
+  static report = (userId: string) =>
+    UsersRequest.post(`/users/${userId}/reporting`);
 }
