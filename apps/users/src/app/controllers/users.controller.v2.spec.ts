@@ -129,7 +129,6 @@ describe('CommentControllerV2', () => {
         },
       ],
     }).compile();
-
     service = app.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
