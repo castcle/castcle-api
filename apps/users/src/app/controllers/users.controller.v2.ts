@@ -24,6 +24,7 @@
 import {
   SocialSyncServiceV2,
   AuthenticationService,
+  UserService,
   UserServiceV2,
 } from '@castcle-api/database';
 import {
@@ -43,25 +44,15 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { Environment } from '@castcle-api/environments';
+import { CastcleDate } from '@castcle-api/utils/commons';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   constructor(
     private socialSyncService: SocialSyncServiceV2,
     private authService: AuthenticationService,
-    private userService: UserServiceV2
+    private userService: UserService,
+    private userServiceV2: UserServiceV2
   ) {}
-
-  _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
-    if (!displayIdUpdateAt) return false;
-    displayIdUpdateAt.setDate(
-      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
-    );
-
-    const now = new Date().getTime();
-    const blockUpdate = displayIdUpdateAt.getTime();
-    return now - blockUpdate >= 0 ? true : false;
-  };
 
   @CastcleBasicAuth()
   @Post(':userId/sync-social')
@@ -90,7 +81,7 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
-    return this.userService.getById(
+    return this.userServiceV2.getById(
       user,
       userId,
       undefined,
@@ -114,7 +105,7 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     if (body.castcleId) {
-      if (!this._verifyUpdateCastcleId(user.displayIdUpdatedAt))
+      if (!CastcleDate.verifyUpdateCastcleId(user.displayIdUpdatedAt))
         throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
       const userExisting = await this.authService.getExistedUserFromCastcleId(
