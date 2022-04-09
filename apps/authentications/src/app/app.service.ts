@@ -358,13 +358,14 @@ export class AppService {
     request: RequestOtpDto,
     credential: CredentialRequest,
     ip: string,
-    userAgent: string
+    userAgent: string,
+    source: string
   ) {
     let account: Account = null;
     let otp: Otp = null;
     const objective = request.objective;
-    // recaptchaToken mobile only
-    if (request.channel == 'mobile') {
+    // recapchaToken mobile and on web only
+    if (source.toLowerCase() == 'web' && request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
         const url = `https://www.google.com/recaptcha/api/siteverify?secret=${Environment.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
