@@ -76,6 +76,7 @@ import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
+import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
@@ -197,6 +198,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     TAccountService,
     SocialSyncServiceV2,
     UserServiceV2,
+    NotificationServiceV2,
   ],
   exports: [
     BullModule,
@@ -220,6 +222,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     TAccountService,
     SocialSyncServiceV2,
     UserServiceV2,
+    NotificationServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -248,4 +251,5 @@ export {
   TAccountService,
   SocialSyncServiceV2,
   UserServiceV2,
+  NotificationServiceV2,
 };

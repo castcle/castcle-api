@@ -28,7 +28,7 @@ import {
 type Aps = {
   alert: string;
   sound: string;
-  category: 'CONTENTS' | 'COMMENTS';
+  category?: 'CONTENTS' | 'COMMENTS';
   badge: number;
   'mutable-content': number;
 };

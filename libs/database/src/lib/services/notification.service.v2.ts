@@ -20,111 +20,85 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { Model, FilterQuery, Types } from 'mongoose';
+import { User, Notification, Credential, Account } from '../schemas';
+import { createCastcleFilter } from '../utils/common';
+import { QueueName, NotificationMessage, UserType } from '../models';
 import {
   CreateNotification,
-  NotificationQuery,
   NotificationType,
-  RegisterTokenDto,
-} from '../dtos';
-import { NotificationMessage, QueueName, UserType } from '../models';
-import { Credential, Notification, User } from '../schemas';
-import { CastcleLocalization } from '@castcle-api/utils/commons';
-import { AccountDevice } from '../schemas/account-device.schema';
-import { Environment } from '@castcle-api/environments';
-import {
-  AndroidMessagePriority,
   NotificationSource,
-} from './../dtos/notification.dto';
+  AndroidMessagePriority,
+  NotificationQuery,
+} from '../dtos';
 
 @Injectable()
-export class NotificationService {
-  #logger = new CastLogger(NotificationService.name);
+export class NotificationServiceV2 {
+  #logger = new CastLogger(NotificationServiceV2.name);
 
   constructor(
-    @InjectModel('Notification')
-    private _notificationModel: Model<Notification>,
     @InjectModel('User')
     private _userModel: Model<User>,
-    @InjectModel('Credential')
-    private _credentialModel: Model<Credential>,
-    @InjectModel('AccountDevice')
-    private _accountDeviceModel: Model<AccountDevice>,
+    @InjectModel('Notification')
+    private _notificationModel: Model<Notification>,
+    @InjectModel('Account')
+    private _accountModel: Model<Account>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>
   ) {}
 
-  /**
-   * get all notifications
-   * @param {Credential} credential
-   * @param {NotificationQuery} options contain option for sorting page,
-   * @returns
-   */
-  getNotificationAll = async (
-    credential: Credential,
-    { source, sinceId, untilId, maxResults }: NotificationQuery
-  ) => {
-    const filter: FilterQuery<Notification> = {
-      account: credential.account._id,
-    };
+  getFromId = async (id: string) => {
+    return this._notificationModel.findById(Types.ObjectId(id)).exec();
+  };
 
-    if (source) filter.source = source;
-    if (sinceId)
-      filter._id = {
-        $gt: Types.ObjectId(sinceId),
-      };
-
-    if (untilId)
-      filter._id = {
-        $lt: Types.ObjectId(untilId),
-      };
-
+  getAllNotify = async (credential: Credential, query: NotificationQuery) => {
+    const filters: FilterQuery<Notification> = createCastcleFilter(
+      { account: credential.account._id },
+      query
+    );
+    if (query?.source) filters.source = query?.source;
     return this._notificationModel
-      .find(filter)
-      .limit(+maxResults)
-      .sort({ updatedAt: -1 })
+      .find(filters)
+      .limit(query.maxResults)
+      .sort({ createdAt: -1, updatedAt: -1 })
       .exec();
   };
 
-  /**
-   * get notification from notification's id
-   * @param {string} id notification's id
-   * @returns
-   */
-  getFromId = async (id: string) => {
-    return this._notificationModel.findById(id ? id : null).exec();
-  };
-
-  /**
-   * update read flag from notification
-   * @param {Notification} notification notification document
-   * @returns
-   */
-  flagRead = async (notification: Notification) => {
+  readNotify = async (notification: Notification) => {
     notification.read = true;
-    return await notification.save();
+    return notification.save();
   };
 
-  /**
-   * update read flag all notification
-   * @param {Credential} credential
-   * @returns {UpdateWriteOpResult} update result status
-   */
-  flagReadAll = async ({ account }: Credential) => {
+  readAllNotify = async ({ account }: Credential) => {
     return this._notificationModel
       .updateMany({ account: account._id }, { read: true })
       .exec();
   };
-  /**
-   * create notification and push to queue
-   * @param {CreateNotification} notificationData notification document
-   * @returns
-   */
+
+  deleteNotify = async (notification: Notification) => {
+    return notification.remove();
+  };
+
+  getBadges = async (credential: Credential) => {
+    const totalNotification = await this._notificationModel.countDocuments({
+      account: credential.account._id,
+      read: false,
+    });
+    return totalNotification
+      ? totalNotification > 99
+        ? '+99'
+        : String(totalNotification)
+      : '';
+  };
+
   notifyToUser = async (
     { sourceUserId, read, ...notificationData }: CreateNotification,
     userOwner: User,
@@ -132,12 +106,12 @@ export class NotificationService {
   ) => {
     this.#logger.log('Check configuration notify to user.');
 
-    console.log(this.checkNotify(notificationData));
-
     if (!this.checkNotify(notificationData)) return;
+
     this.#logger.log('Notification to user.');
 
     this.#logger.log('Prepare data into notification.');
+
     if (
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
@@ -172,13 +146,15 @@ export class NotificationService {
       JSON.stringify(notify)
     );
 
-    this.#logger.log('Get credentials by account.');
+    this.#logger.log('Get devices by account.');
 
-    const firebaseToken = await this._accountDeviceModel
-      .find({
-        account: Types.ObjectId(notificationData.account._id),
+    const account = await this._accountModel
+      .findOne({
+        _id: Types.ObjectId(notificationData.account._id),
       })
       .exec();
+
+    if (!account.devices) return;
 
     this.#logger.log('Generate notification message.');
 
@@ -195,44 +171,10 @@ export class NotificationService {
       .exec();
 
     this.notificationQueue.add(
-      this.generateNotification(message, notify, firebaseToken, badgeCounts)
+      this.generateNotification(message, notify, account, badgeCounts)
     );
 
     return notify;
-  };
-
-  /**
-   * update firebase token to credential
-   * @param {RegisterTokenDto} registerTokenDto register request
-   * @returns {UpdateWriteOpResult} update result status
-   */
-  registerToken = async (registerTokenDto: RegisterTokenDto) => {
-    return this._credentialModel
-      .updateOne(
-        { deviceUUID: registerTokenDto?.deviceUUID },
-        {
-          firebaseNotificationToken: registerTokenDto?.firebaseToken,
-        }
-      )
-      .exec();
-  };
-
-  /**
-   * get total badges from user
-   * @param {Credential} credential
-   * @returns {string} total number notification
-   */
-  getBadges = async (credential: Credential) => {
-    const totalNotification = await this._notificationModel.countDocuments({
-      account: credential.account._id,
-      read: false,
-    });
-
-    this.#logger.log(`Total notification badges : ${totalNotification}`);
-
-    if (!totalNotification) return '';
-    if (totalNotification > 99) return '+99';
-    if (totalNotification <= 99) return String(totalNotification);
   };
 
   generateMessage = async (
@@ -241,7 +183,6 @@ export class NotificationService {
     language: string
   ) => {
     this.#logger.log('Reverse latest user.');
-    console.log(notify);
 
     const userIds = notify.sourceUserId?.reverse();
 
@@ -332,6 +273,7 @@ export class NotificationService {
     this.#logger.log('Prepare message show display name.', message);
     return message;
   };
+
   generateMessagesToNotifications = async (
     notifies: Notification[],
     language: string
@@ -466,7 +408,7 @@ export class NotificationService {
   generateNotification = (
     message: string,
     notify: Notification,
-    firebaseToken: AccountDevice[],
+    account: Account,
     badgeCounts: number
   ) => {
     return {
@@ -485,13 +427,11 @@ export class NotificationService {
       aps: {
         alert: message,
         badge: badgeCounts,
-        category:
-          notify.type === NotificationType.Comment ? 'COMMENTS' : 'CONTENTS',
         sound: 'default',
         'mutable-content': 1,
       },
       payload: notify.toNotificationPayload({ message }),
-      firebaseTokens: firebaseToken.map((item) => String(item.firebaseToken)),
+      firebaseTokens: account.devices.map((item) => item.firebaseToken),
     } as NotificationMessage;
   };
 
