@@ -61,15 +61,18 @@ export class NotificationConsumer {
   readOperationJob(job: Job<NotificationMessage>) {
     try {
       this.logger.log(JSON.stringify(job));
-      this.firebase.messaging.sendMulticast({
-        data: job.data.payload,
-        notification: job.data.notification,
-        android: job.data.android,
-        tokens: job.data.firebaseTokens,
-        apns: {
-          payload: { aps: job.data.aps },
-        },
-      });
+      this.logger.log(`firebaseTokens: ${job.data.firebaseTokens}`);
+      if (job.data.firebaseTokens?.length > 0) {
+        this.firebase.messaging.sendMulticast({
+          data: job.data.payload,
+          notification: job.data.notification,
+          android: job.data.android,
+          tokens: job.data.firebaseTokens,
+          apns: {
+            payload: { aps: job.data.aps },
+          },
+        });
+      }
     } catch (error) {
       this.logger.error(error);
     }
