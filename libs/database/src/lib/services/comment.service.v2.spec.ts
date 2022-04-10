@@ -5,8 +5,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType } from '../dtos';
+import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { QueueName } from '../models';
-import { Comment, Content, User } from '../schemas';
+import { Comment, Content } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentServiceV2 } from './comment.service.v2';
 import { ContentService } from './content.service';
@@ -22,7 +23,7 @@ describe('CommentServiceV2', () => {
   let userService: UserService;
   let comment: Comment;
   let content: Content;
-  let user: User;
+  let mocksUsers: MockUserDetail[];
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -55,21 +56,12 @@ describe('CommentServiceV2', () => {
     service = app.get(CommentServiceV2);
     userService = app.get(UserService);
 
-    const result = await authService.createAccount({
-      deviceUUID: 'test-uuid',
-      languagesPreferences: ['th', 'th'],
-      header: { platform: 'ios' },
-      device: 'test',
+    mocksUsers = await generateMockUsers(2, 0, {
+      userService: userService,
+      accountService: authService,
     });
 
-    await authService.signupByEmail(result.accountDocument, {
-      displayId: 'sp',
-      displayName: 'sp002',
-      email: 'sompop.kulapalanontv2@gmail.com',
-      password: 'test1234567',
-    });
-
-    user = await userService.getUserFromCredential(result.credentialDocument);
+    const user = mocksUsers[0].user;
     content = await contentService.createContentFromUser(user, {
       payload: { message: 'hi v2' },
       type: ContentType.Short,
@@ -78,6 +70,10 @@ describe('CommentServiceV2', () => {
 
     comment = await contentService.createCommentForContent(user, content, {
       message: 'Hello #hello v2',
+    });
+
+    await contentService.replyComment(user, comment, {
+      message: 'nice #baby',
     });
   });
 
@@ -88,6 +84,7 @@ describe('CommentServiceV2', () => {
 
   describe('#convertCommentToCommentResponse', () => {
     it('should return comment in type of CommentResponse', async () => {
+      const user = mocksUsers[0].user;
       const response = await service.convertCommentToCommentResponse(
         user,
         comment,
@@ -102,6 +99,7 @@ describe('CommentServiceV2', () => {
     });
 
     it('should return comment in type of CommentResponse with relationships', async () => {
+      const user = mocksUsers[0].user;
       const response = await service.convertCommentToCommentResponse(
         user,
         comment,
@@ -114,12 +112,17 @@ describe('CommentServiceV2', () => {
 
   describe('#getCommentsByContentId()', () => {
     it('should get comment and reply from content', async () => {
-      const comments = await service.getCommentsByContentId(user, content._id, {
-        maxResults: 5,
-        hasRelationshipExpansion: false,
-      });
+      const user = mocksUsers[0].user;
+      const commentsResult = await service.getCommentsByContentId(
+        user,
+        content._id,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
+      );
 
-      expect(comments.meta.resultCount).toEqual(1);
+      expect(commentsResult.meta.resultCount).toEqual(1);
     });
   });
 });
