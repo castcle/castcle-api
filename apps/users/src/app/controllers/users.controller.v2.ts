@@ -356,6 +356,6 @@ export class UsersControllerV2 {
     )
       throw CastcleException.FORBIDDEN;
 
-    await this.contentService.deleteComment(replyComment);
+    await this.commentService.deleteComment(replyComment);
   }
 }

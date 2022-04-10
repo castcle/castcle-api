@@ -126,6 +126,21 @@ describe('CommentServiceV2', () => {
     });
   });
 
+  describe('#getReplyCommentsByCommentId()', () => {
+    it('should get reply comment from content', async () => {
+      const user = mocksUsers[0].user;
+      const replyComments = await service.getReplyCommentsByCommentId(
+        user,
+        comment._id,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
+      );
+      expect(replyComments.meta.resultCount).toEqual(1);
+    });
+  });
+
   describe('#deleteComment()', () => {
     it('should remove a reply from comment', async () => {
       const user = mocksUsers[0].user;
@@ -141,22 +156,6 @@ describe('CommentServiceV2', () => {
         hasRelationshipExpansion: false,
       });
       expect(comments.meta.resultCount).toEqual(0);
-    });
-  });
-
-  describe('#getReplyCommentsByCommentId()', () => {
-    it('should get reply comment from content', async () => {
-      const user = mocksUsers[0].user;
-      const replyComments = await service.getReplyCommentsByCommentId(
-        user,
-        comment._id,
-        {
-          maxResults: 5,
-          hasRelationshipExpansion: false,
-        }
-      );
-
-      expect(replyComments.meta.resultCount).toEqual(1);
     });
   });
 });

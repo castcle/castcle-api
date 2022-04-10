@@ -68,7 +68,6 @@ describe('CommentControllerV2', () => {
   let service: UserServiceV2;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let commentService: CommentServiceV2;
   let userServiceV1: UserService;
 
   beforeAll(async () => {
@@ -134,7 +133,6 @@ describe('CommentControllerV2', () => {
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
-    commentService = app.get<CommentServiceV2>(CommentServiceV2);
     appController = app.get<UsersControllerV2>(UsersControllerV2);
   });
 
@@ -277,23 +275,19 @@ describe('CommentControllerV2', () => {
         user,
         mocksUsers[1].credential
       );
-      appController.deleteComment(authorizer, {
+      await appController.deleteComment(authorizer, {
         userId: user.displayId,
         sourceCommentId: comment.payload.id,
       } as CommentParam);
-      const resultComment = await commentService.getCommentsByContentId(
-        user,
-        comment.payload.id,
-        { maxResults: 5, hasRelationshipExpansion: false }
+      const resultComment = await contentService.getCommentById(
+        comment.payload.id
       );
 
-      const resultReply = await commentService.getCommentsByContentId(
-        user,
-        replyComment.payload.id,
-        { maxResults: 5, hasRelationshipExpansion: false }
+      const resultReply = await contentService.getCommentById(
+        replyComment.payload.id
       );
-      expect(resultComment.payload.length).toEqual(0);
-      expect(resultReply.payload.length).toEqual(0);
+      expect(resultComment).toBeNull();
+      expect(resultReply).toBeNull();
     });
   });
 
@@ -437,24 +431,20 @@ describe('CommentControllerV2', () => {
         user,
         mocksUsers[2].credential
       );
-      appController.deleteReplyComment(authorizer, {
+      await appController.deleteReplyComment(authorizer, {
         userId: user.displayId,
         sourceCommentId: comment.payload.id,
         replyCommentId: replyComment.payload.id,
       } as ReplyCommentParam);
-      const resultComment = await commentService.getCommentsByContentId(
-        user,
-        comment.payload.id,
-        { maxResults: 5, hasRelationshipExpansion: false }
+      const resultComment = await contentService.getCommentById(
+        comment.payload.id
       );
 
-      const resultReply = await commentService.getCommentsByContentId(
-        user,
-        replyComment.payload.id,
-        { maxResults: 5, hasRelationshipExpansion: false }
+      const resultReply = await contentService.getCommentById(
+        replyComment.payload.id
       );
-      expect(resultComment.payload.length).toEqual(1);
-      expect(resultReply.payload.length).toEqual(0);
+      expect(resultComment).toBeDefined();
+      expect(resultReply).toBeNull();
     });
   });
 });
