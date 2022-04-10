@@ -68,6 +68,7 @@ describe('CommentControllerV2', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let commentService: CommentServiceV2;
+  let userServiceV1: UserService;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -129,6 +130,7 @@ describe('CommentControllerV2', () => {
       ],
     }).compile();
     service = app.get<UserServiceV2>(UserServiceV2);
+    userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     commentService = app.get<CommentServiceV2>(CommentServiceV2);
@@ -146,7 +148,7 @@ describe('CommentControllerV2', () => {
     let comment;
     beforeAll(async () => {
       mocksUsers = await generateMockUsers(3, 0, {
-        userService: service,
+        userService: userServiceV1,
         accountService: authService,
       });
 
