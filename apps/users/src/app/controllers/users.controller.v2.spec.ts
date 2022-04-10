@@ -263,12 +263,13 @@ describe('CommentControllerV2', () => {
         userId: user.displayId,
         sourceCommentId: comment.payload.id,
       } as CommentParam);
-      const result = await commentService.getCommentsByContentId(
+      const resultComment = await commentService.getCommentsByContentId(
         user,
         comment.payload.id,
         { maxResults: 5, hasRelationshipExpansion: false }
       );
-      expect(result.payload.length).toEqual(0);
+
+      expect(resultComment.payload.length).toEqual(0);
     });
   });
 });

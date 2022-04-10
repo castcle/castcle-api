@@ -125,4 +125,22 @@ describe('CommentServiceV2', () => {
       expect(commentsResult.meta.resultCount).toEqual(1);
     });
   });
+
+  describe('#deleteComment()', () => {
+    it('should remove a reply from comment', async () => {
+      const user = mocksUsers[0].user;
+      const preComment = await service.commentModel
+        .findById(comment._id)
+        .exec();
+      expect(preComment.engagements.comment.count).toEqual(1);
+      await service.deleteComment(comment);
+      const postReply = await service.commentModel.findById(comment._id).exec();
+      expect(postReply).toBeNull();
+      const comments = await service.getCommentsByContentId(user, content._id, {
+        maxResults: 5,
+        hasRelationshipExpansion: false,
+      });
+      expect(comments.meta.resultCount).toEqual(0);
+    });
+  });
 });

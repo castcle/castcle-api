@@ -235,6 +235,6 @@ export class UsersControllerV2 {
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
 
-    await this.contentService.deleteComment(comment);
+    await this.commentService.deleteComment(comment);
   }
 }

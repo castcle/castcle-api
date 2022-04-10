@@ -20,10 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Image } from '@castcle-api/utils/aws';
+import { CastcleName } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
@@ -43,6 +43,7 @@ import {
   CommentType,
   Engagement,
   EngagementType,
+  Hashtag,
   Relationship,
   Revision,
   User,
@@ -54,14 +55,86 @@ export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
   constructor(
     @InjectModel('Comment')
-    private commentModel: Model<Comment>,
+    public commentModel: Model<Comment>,
     @InjectModel('Engagement')
     private engagementModel: Model<Engagement>,
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectModel('Revision')
-    private revisionModel: Model<Revision>
+    private revisionModel: Model<Revision>,
+    @InjectModel('Hashtag')
+    private hashtagModel: Model<Hashtag>,
+    @InjectModel('Revision')
+    public _revisionModel: Model<Revision>,
+    @InjectModel('Engagement')
+    public _engagementModel: Model<Engagement>
   ) {}
+
+  /**
+   * Delete all Comment Engagement from Content or Comment
+   * @param {Comment} comment
+   */
+  private removeEngagementComment = async (comment: Comment) => {
+    if (![CommentType.Comment, CommentType.Reply].includes(comment.type)) {
+      return true;
+    }
+
+    const query: FilterQuery<Engagement> = {
+      targetRef: {
+        $ref: 'comment',
+        $id: comment.targetRef.$id ?? comment.targetRef.oid,
+      },
+    };
+
+    const engagements = await this._engagementModel.find(query).exec();
+    await Promise.all(engagements.map((engagement) => engagement.remove()));
+    return true;
+  };
+
+  private removeRevision = async (comment: Comment) => {
+    const query: FilterQuery<Revision> = {
+      targetRef: {
+        $ref: 'comment',
+        $id: comment.targetRef.$id ?? comment.targetRef.oid,
+      },
+    };
+
+    const revisions = await this._revisionModel.find(query).exec();
+    await Promise.all(revisions.map((revision) => revision.remove()));
+    return true;
+  };
+
+  /**
+   * Remove score from tag
+   * @param {string} tag
+   * @returns
+   */
+  private removeFromTag = async (tag: string) => {
+    const name = new CastcleName(tag);
+    return this.hashtagModel
+      .updateOne(
+        {
+          tag: name.slug,
+          score: {
+            $gt: 0,
+          },
+        },
+        {
+          $inc: {
+            score: -1,
+          },
+        }
+      )
+      .exec();
+  };
+
+  /**
+   * Remove multiple tags
+   * @param {string[]} tags
+   * @returns
+   */
+  private removeFromTags = async (tags: string[]) =>
+    Promise.all(tags.map((tag) => this.removeFromTag(tag)));
 
   private convertUserToAuthor(
     user: User,
@@ -369,5 +442,38 @@ export class CommentServiceV2 {
       includes: response.includes,
       meta: createCastcleMeta(comments, total),
     } as CommentsResponseV2;
+  };
+
+  /**
+   *
+   * @param {Comment} rootComment
+   * @returns {Comment}
+   */
+  deleteComment = async (rootComment: Comment) => {
+    const comment = await this.commentModel.findById(rootComment._id);
+    const replies = await this.commentModel
+      .find({
+        type: CommentType.Reply,
+        targetRef: { $id: comment._id, $ref: 'comment' },
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+
+    if (comment.hashtags) await this.removeFromTags(comment.hashtags);
+    await this.removeEngagementComment(comment);
+    await this.removeRevision(comment);
+
+    this.logger.log('Delete reply comment.');
+    await Promise.all(
+      replies.map((reply) => {
+        if (reply.hashtags) this.removeFromTags(reply.hashtags);
+        this.removeEngagementComment(reply);
+        this.removeRevision(reply);
+        reply.remove();
+      })
+    );
+
+    this.logger.log('Delete comment.');
+    await comment.remove();
   };
 }
