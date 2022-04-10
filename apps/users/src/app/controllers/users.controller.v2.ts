@@ -34,6 +34,7 @@ import {
   CreateCommentDto,
   ExpansionQuery,
   GetUserParam,
+  ReplyCommentParam,
   SyncSocialDtoV2,
   UpdateCommentDto,
   UpdateUserDtoV2,
@@ -195,7 +196,7 @@ export class UsersControllerV2 {
     @Param() { sourceCommentId, isMe, userId }: CommentParam
   ) {
     this.logger.log(
-      `Start update comment id: ${sourceCommentId} :${JSON.stringify(
+      `Start update comment id: ${sourceCommentId}, body: ${JSON.stringify(
         updateCommentDto
       )}`
     );
@@ -236,5 +237,125 @@ export class UsersControllerV2 {
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
     await this.commentService.deleteComment(comment);
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/comments/:sourceCommentId/reply')
+  async replyComment(
+    @Auth() authorizer: Authorizer,
+    @Body() replyCommentBody: UpdateCommentDto,
+    @Param() { sourceCommentId, isMe, userId }: CommentParam
+  ) {
+    this.logger.log(
+      `Start reply comment id: ${sourceCommentId}, body: ${JSON.stringify(
+        replyCommentBody
+      )}`
+    );
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const comment = await this.contentService.getCommentById(sourceCommentId);
+    if (!comment) throw CastcleException.FORBIDDEN;
+
+    const replyComment = await this.contentService.replyComment(user, comment, {
+      message: replyCommentBody.message,
+    });
+    // this.notifyService.notifyToUser(
+    //   {
+    //     source:
+    //       authorizedUser.type === UserType.People
+    //         ? NotificationSource.Profile
+    //         : NotificationSource.Page,
+    //     sourceUserId: authorizedUser._id,
+    //     type: NotificationType.Reply,
+    //     targetRef: { _id: comment._id, ref: NotificationRef.Comment },
+    //     account: authorizedUser.ownerAccount,
+    //     read: false,
+    //   },
+    //   authorizedUser,
+    //   req.$language
+    // );
+    return await this.commentService.convertCommentToCommentResponse(
+      user,
+      replyComment,
+      [],
+      { hasRelationshipExpansion: false }
+    );
+  }
+
+  @CastcleBasicAuth()
+  @Put(':userId/comments/:sourceCommentIdreply/:replyCommentId')
+  async updateReplyComment(
+    @Auth() authorizer: Authorizer,
+    @Body() updateCommentDto: UpdateCommentDto,
+    @Param()
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+  ) {
+    this.logger.log(
+      `Start update reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId} ,body: ${JSON.stringify(
+        updateCommentDto
+      )}`
+    );
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const comment = await this.contentService.getCommentById(sourceCommentId);
+    const replyComment = await this.contentService.getCommentById(
+      replyCommentId
+    );
+    if (
+      !comment ||
+      !replyComment ||
+      String(replyComment.author._id) !== String(user.id)
+    )
+      throw CastcleException.FORBIDDEN;
+
+    const updatedComment = await this.contentService.updateComment(
+      replyComment,
+      {
+        message: updateCommentDto.message,
+      }
+    );
+
+    return await this.commentService.convertCommentToCommentResponse(
+      user,
+      updatedComment,
+      [],
+      { hasRelationshipExpansion: false }
+    );
+  }
+
+  @CastcleBasicAuth()
+  @Delete(':userId/comments/:sourceCommentId/reply/:replyCommentId')
+  async deleteReplyComment(
+    @Auth() authorizer: Authorizer,
+    @Param()
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+  ) {
+    this.logger.log(
+      `Start delete reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId}`
+    );
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const comment = await this.contentService.getCommentById(sourceCommentId);
+    const replyComment = await this.contentService.getCommentById(
+      replyCommentId
+    );
+    if (
+      !comment ||
+      !replyComment ||
+      String(replyComment.author._id) !== String(user.id)
+    )
+      throw CastcleException.FORBIDDEN;
+
+    await this.contentService.deleteComment(replyComment);
   }
 }

@@ -57,4 +57,22 @@ export class CommentControllerV2 {
       query
     );
   }
+
+  @CastcleAuth(CacheKeyName.Comments)
+  @Get(':contentId/comments/:sourceCommentId/reply')
+  async getAllReplyComment(
+    @Param('contentId') contentId: string,
+    @Param('sourceCommentId') commentId: string,
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery
+  ) {
+    this.logger.log(`Start get all comment from content: ${contentId}`);
+    const content = await this.contentService.getContentById(contentId);
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    return this.commentService.getReplyCommentsByCommentId(
+      authorizer.user,
+      commentId,
+      query
+    );
+  }
 }

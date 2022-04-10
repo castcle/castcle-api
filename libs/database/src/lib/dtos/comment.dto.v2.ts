@@ -66,6 +66,16 @@ export class CommentParam extends GetUserParam {
   @ApiProperty()
   sourceCommentId: string;
 }
+
+export class ReplyCommentParam extends GetUserParam {
+  @IsString()
+  @ApiProperty()
+  sourceCommentId: string;
+
+  @IsString()
+  @ApiProperty()
+  replyCommentId: string;
+}
 export class CommentResponse {
   @ApiProperty()
   payload: CommentPayload;

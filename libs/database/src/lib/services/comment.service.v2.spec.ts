@@ -143,4 +143,20 @@ describe('CommentServiceV2', () => {
       expect(comments.meta.resultCount).toEqual(0);
     });
   });
+
+  describe('#getReplyCommentsByCommentId()', () => {
+    it('should get reply comment from content', async () => {
+      const user = mocksUsers[0].user;
+      const replyComments = await service.getReplyCommentsByCommentId(
+        user,
+        comment._id,
+        {
+          maxResults: 5,
+          hasRelationshipExpansion: false,
+        }
+      );
+
+      expect(replyComments.meta.resultCount).toEqual(1);
+    });
+  });
 });

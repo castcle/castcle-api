@@ -395,6 +395,7 @@ export class CommentServiceV2 {
 
   /**
    * Get Total Comment from content
+   * @param {User} viewer
    * @param {Content} content
    * @param {CastcleQueryOptions} options
    * @returns {total:number, items:CommentPayload[], pagination:Pagination}
@@ -404,8 +405,32 @@ export class CommentServiceV2 {
     contentId: string,
     paginationQuery: PaginationQuery
   ) => {
+    return this.getComments(viewer, contentId, 'content', paginationQuery);
+  };
+
+  /**
+   * Get Total reply Comment from Comment
+   * @param {User} viewer
+   * @param {Content} content
+   * @param {CastcleQueryOptions} options
+   * @returns {total:number, items:CommentPayload[], pagination:Pagination}
+   */
+  getReplyCommentsByCommentId = async (
+    viewer: User,
+    commentId: string,
+    paginationQuery: PaginationQuery
+  ) => {
+    return this.getComments(viewer, commentId, 'comment', paginationQuery);
+  };
+
+  private getComments = async (
+    viewer: User,
+    refId: string,
+    refType: string,
+    paginationQuery: PaginationQuery
+  ) => {
     let query: FilterQuery<Comment> = {
-      targetRef: { $id: contentId, $ref: 'content' },
+      targetRef: { $id: refId, $ref: refType },
       visibility: EntityVisibility.Publish,
     };
 
