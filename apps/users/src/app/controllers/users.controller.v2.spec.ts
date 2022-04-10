@@ -129,17 +129,13 @@ describe('CommentControllerV2', () => {
         },
       ],
     }).compile();
+
     service = app.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
     commentService = app.get<CommentServiceV2>(CommentServiceV2);
     appController = app.get<UsersControllerV2>(UsersControllerV2);
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 
   describe('#Comment()', () => {
@@ -164,7 +160,6 @@ describe('CommentControllerV2', () => {
     afterAll(async () => {
       await service._userModel.deleteMany({});
     });
-
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
       const authorizer = new Authorizer(
