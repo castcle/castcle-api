@@ -83,6 +83,8 @@ export class Environment {
   static REDIS_HOST = process.env.REDIS_HOST;
   static REDIS_PORT = Number(process.env.REDIS_PORT);
   static REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+  // Redis-queue
+  static REDIS_QUEUE = process.env.REDIS_QUEUE;
 
   // Assets
   static ASSETS_BUCKET_NAME = process.env.ASSETS_BUCKET_NAME;

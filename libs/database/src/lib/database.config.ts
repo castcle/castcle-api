@@ -32,7 +32,7 @@ export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
 
 export const getBullModuleOptions = (): QueueOptions => ({
   redis: {
-    host: Environment.REDIS_HOST,
+    host: Environment.REDIS_QUEUE,
     port: Environment.REDIS_PORT,
     password: Environment.REDIS_PASSWORD,
   },
