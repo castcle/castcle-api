@@ -171,7 +171,10 @@ export class NotificationServiceV2 {
       .exec();
 
     this.notificationQueue.add(
-      this.generateNotification(message, notify, account, badgeCounts)
+      this.generateNotification(message, notify, account, badgeCounts),
+      {
+        removeOnComplete: true,
+      }
     );
 
     return notify;
