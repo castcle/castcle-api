@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -146,4 +147,30 @@ export class AuthenticationServiceV2 {
       pages: pages.map((page) => page.toPageResponse()),
     };
   }
+
+  getAccountFromEmail = (email: string) => {
+    return this.accountModel
+      .findOne({
+        email: CastcleRegExp.fromString(email),
+        visibility: EntityVisibility.Publish,
+      })
+      .exec();
+  };
+
+  /**
+   *  For check if account is existed
+   * @param {string} id
+   * @returns {User}
+   */
+  getExistedUserFromCastcleId = (id: string) => {
+    return this.userModel
+      .findOne({ displayId: CastcleRegExp.fromString(id) })
+      .exec();
+  };
+
+  validateEmail = (email: string) => {
+    const re =
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
+    return re.test(email);
+  };
 }
