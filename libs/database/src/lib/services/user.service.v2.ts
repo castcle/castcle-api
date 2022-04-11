@@ -21,38 +21,17 @@
  * or have any questions.
  */
 import { CastLogger } from '@castcle-api/logger';
-import {
-  AVATAR_SIZE_CONFIGS,
-  COMMON_SIZE_CONFIGS,
-  Image,
-} from '@castcle-api/utils/aws';
-import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
-import { isMongoId } from 'class-validator';
-import { FilterQuery, Model } from 'mongoose';
-import { GetBalanceResponse, pipelineOfGetBalance } from '../aggregations';
-import {
-  CastcleQueueAction,
-  EntityVisibility,
-  UpdateUserDtoV2,
-  SyncSocialModelV2,
-  UpdateModelUserDto,
-  UserField,
-  UserModelImage,
-} from '../dtos';
-import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
-import {
-  Credential,
-  Relationship,
-  SocialSync,
-  Transaction,
-  User,
-} from '../schemas';
+import { Model } from 'mongoose';
+import { EntityVisibility, SyncSocialModelV2, UserField } from '../dtos';
+import { QueueName, UserMessage, UserType } from '../models';
+import { Relationship, SocialSync, Transaction, User } from '../schemas';
 import { ContentService } from './content.service';
+import { UserService } from './user.service';
 
 @Injectable()
 export class UserServiceV2 {
@@ -66,13 +45,14 @@ export class UserServiceV2 {
     @InjectModel('Transaction')
     private transactionModel: Model<Transaction>,
     @InjectModel('User')
-    private _userModel: Model<User>,
+    public _userModel: Model<User>,
     @InjectQueue(QueueName.USER)
     private userQueue: Queue<UserMessage>,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private userService: UserService
   ) {}
 
-  private async convertUsersToUserResponses(
+  private async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
@@ -128,7 +108,7 @@ export class UserServiceV2 {
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
-          ? await this.getBalance(user)
+          ? await this.userService.getBalance(user)
           : undefined;
 
         const userResponse =
@@ -170,27 +150,6 @@ export class UserServiceV2 {
       })
     );
   }
-  /**
-   * Get user's balance
-   * @param {User} user
-   */
-  getBalance = async (user: User) => {
-    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(String(user.ownerAccount))
-    );
-
-    return CastcleNumber.from(balance?.total?.toString()).toNumber();
-  };
-
-  getUserFromCredential = (credential: Credential) =>
-    this._userModel
-      .findOne({
-        ownerAccount: credential?.account?._id,
-        type: UserType.PEOPLE,
-        visibility: EntityVisibility.Publish,
-      })
-      .exec();
-
   getById = async (
     user: User,
     id: string,
@@ -198,13 +157,11 @@ export class UserServiceV2 {
     hasRelationshipExpansion = false,
     userFields?: UserField[]
   ) => {
-    let targetUser = await this.getByIdOrCastcleId(id, type);
-
-    if (id === 'me') targetUser = user;
+    const targetUser = await this.userService.getByIdOrCastcleId(id, type);
 
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const [userResponse] = await this.convertUsersToUserResponses(
+    const [userResponse] = await this.convertUsersToUserResponsesV2(
       user,
       [targetUser],
       hasRelationshipExpansion,
@@ -213,95 +170,4 @@ export class UserServiceV2 {
 
     return userResponse;
   };
-
-  getByIdOrCastcleId = (id: string, type?: UserType) => {
-    if (!id) return null;
-
-    const query: FilterQuery<User> = {
-      visibility: EntityVisibility.Publish,
-    };
-
-    if (type) query.type = type;
-    if (isMongoId(String(id))) query._id = id;
-    else query.displayId = CastcleRegExp.fromString(id);
-
-    return this._userModel.findOne(query).exec();
-  };
-
-  /**
-   * @param {string} id user ID or Castcle ID
-   * @param {UserType} type user type: `people` or `page`
-   * @throws {CastcleException} with CastcleStatus.REQUEST_URL_NOT_FOUND
-   */
-  findUser = async (id: string, type?: UserType) => {
-    const user = await this.getByIdOrCastcleId(id, type);
-
-    if (!user) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    return user;
-  };
-
-  updateUser = (
-    user: User,
-    { images, links, ...updateUserDto }: UpdateModelUserDto
-  ) => {
-    user.displayIdUpdatedAt = new Date();
-
-    if (images) {
-      if (!user.profile.images) user.profile.images = {};
-      if (images.avatar) user.profile.images.avatar = images.avatar;
-      if (images.cover) user.profile.images.cover = images.cover;
-    }
-
-    if (links) {
-      if (!user.profile.socials) user.profile.socials = {};
-      const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
-      socialNetworks.forEach((social) => {
-        if (links[social]) user.profile.socials[social] = links[social];
-        if (links.website)
-          user.profile.websites = [
-            {
-              website: links.website,
-              detail: links.website,
-            },
-          ];
-      });
-    }
-
-    user.set(updateUserDto);
-    user.markModified('profile');
-    this.userQueue.add({
-      id: user._id,
-      action: CastcleQueueAction.UpdateProfile,
-    });
-
-    return user.save();
-  };
-
-  async uploadUserInfo(body: UpdateUserDtoV2, accountId: string) {
-    const images: UserModelImage = {};
-    if (body.images?.avatar) {
-      const avatar = await Image.upload(body.images.avatar, {
-        filename: `avatar-${accountId}`,
-        addTime: true,
-        sizes: AVATAR_SIZE_CONFIGS,
-        subpath: `account_${accountId}`,
-      });
-
-      images.avatar = avatar.image;
-    }
-
-    if (body.images?.cover) {
-      const cover = await Image.upload(body.images.cover, {
-        filename: `cover-${accountId}`,
-        addTime: true,
-        sizes: COMMON_SIZE_CONFIGS,
-        subpath: `account_${accountId}`,
-      });
-
-      images.cover = cover.image;
-    }
-
-    return { ...body, images };
-  }
 }

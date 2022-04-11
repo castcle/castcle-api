@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
@@ -70,12 +69,14 @@ import { AuthenticationService } from './services/authentication.service';
 import { AuthenticationServiceV2 } from './services/authentication.service.v2';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
+import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
+import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
@@ -197,6 +198,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     TAccountService,
     SocialSyncServiceV2,
     UserServiceV2,
+    NotificationServiceV2,
+    CommentServiceV2,
   ],
   exports: [
     BullModule,
@@ -220,6 +223,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     TAccountService,
     SocialSyncServiceV2,
     UserServiceV2,
+    NotificationServiceV2,
+    CommentServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -248,4 +253,6 @@ export {
   TAccountService,
   SocialSyncServiceV2,
   UserServiceV2,
+  NotificationServiceV2,
+  CommentServiceV2,
 };

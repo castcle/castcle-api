@@ -213,11 +213,6 @@ describe('AppController', () => {
     });
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
-  });
-
   describe('guestLogin', () => {
     it('should always return {accessToken, refreshToken} if it pass the interceptor', async () => {
       const response = await appController.guestLogin(

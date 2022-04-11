@@ -124,7 +124,7 @@ export class ContentService {
       .findOne({ _id: contentId, visibility: EntityVisibility.Publish })
       .exec();
 
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
     return content;
   };
@@ -151,10 +151,15 @@ export class ContentService {
       hashtags: hashtags,
     }).save();
 
-    this.contentQueue.add({
-      event: ContentMessageEvent.NEW_CONTENT,
-      contentId: content.id,
-    });
+    this.contentQueue.add(
+      {
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      },
+      {
+        removeOnComplete: true,
+      }
+    );
 
     return content;
   }
@@ -189,10 +194,15 @@ export class ContentService {
     const contents = await this._contentModel.insertMany(contentsToCreate);
 
     contents.forEach((content) => {
-      this.contentQueue.add({
-        event: ContentMessageEvent.NEW_CONTENT,
-        contentId: content.id,
-      });
+      this.contentQueue.add(
+        {
+          event: ContentMessageEvent.NEW_CONTENT,
+          contentId: content.id,
+        },
+        {
+          removeOnComplete: true,
+        }
+      );
     });
 
     return contents;
