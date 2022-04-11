@@ -1297,7 +1297,7 @@ export class UsersController {
 
     if (feedItem) {
       this.suggestionService.seen(
-        req.$credential.account.id,
+        req.$credential.account,
         feedItem._id,
         req.$credential
       );
@@ -1362,7 +1362,7 @@ export class UsersController {
 
     if (feedItem) {
       this.suggestionService.seen(
-        req.$credential.account.id,
+        req.$credential.account,
         feedItem._id,
         req.$credential
       );
@@ -1508,7 +1508,7 @@ export class UsersController {
 
     if (feedItem) {
       this.suggestionService.seen(
-        req.$credential.account.id,
+        req.$credential.account,
         feedItem._id,
         req.$credential
       );

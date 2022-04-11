@@ -108,7 +108,7 @@ export class CommentController {
 
     if (feedItem) {
       this.suggestionService.seen(
-        $credential.account.id,
+        $credential.account,
         feedItem._id,
         $credential
       );
