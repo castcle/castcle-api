@@ -39,6 +39,7 @@ import {
   RankerService,
   SocialProvider,
   SocialSyncService,
+  SocialSyncServiceV2,
   TAccountService,
   UserService,
   UserType,
@@ -136,6 +137,7 @@ describe('AppController', () => {
         DownloaderProvider,
         FacebookClientProvider,
         RankerService,
+        SocialSyncServiceV2,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -1428,26 +1430,52 @@ describe('AppController', () => {
       expect(syncSocial2[0].author.id).toEqual(page2.id);
     });
 
-    it('should return Exception when use duplicate social id', async () => {
-      await expect(
-        appController.createPageSocial(
-          { $credential: userCredential, $language: 'th' } as any,
-          {
-            payload: [
-              {
-                provider: SocialProvider.Facebook,
-                socialId: 'fb001',
-                userName: 'fb_test1',
-                displayName: 'test1',
-                overview: 'facebook sync 1',
-                avatar: '',
-                cover: '',
-                link: 'http://www.facebook.com/test1',
-              },
-            ],
-          }
-        )
-      ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
+    it('should generate new user that has the duplicate info from SocialPageDto', async () => {
+      const newPageResponse = await appController.createPageSocial(
+        { $credential: userCredential, $language: 'th' } as any,
+        {
+          payload: [
+            {
+              provider: SocialProvider.Facebook,
+              socialId: 'fb001',
+              userName: 'fb_test1',
+              displayName: 'test1',
+              overview: 'facebook sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.facebook.com/test1',
+            },
+            {
+              provider: SocialProvider.Twitter,
+              socialId: 'tw001',
+              userName: 'tw_test1',
+              displayName: 'test2',
+              overview: 'twitter sync 1',
+              avatar: '',
+              cover: '',
+              link: 'http://www.twitter.com/test2',
+            },
+          ],
+        }
+      );
+
+      const page1 = await service.getByIdOrCastcleId(
+        newPageResponse.payload[0].castcleId
+      );
+      const page2 = await service.getByIdOrCastcleId(
+        newPageResponse.payload[1].castcleId
+      );
+      const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
+      const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
+      expect(newPageResponse.payload.length).toEqual(2);
+      expect(newPageResponse.payload[0].links.facebook).toBeDefined();
+      expect(newPageResponse.payload[0].socialSyncs).toBeDefined();
+      expect(newPageResponse.payload[1].links.twitter).toBeDefined();
+      expect(newPageResponse.payload[1].socialSyncs).toBeDefined();
+      expect(syncSocial1.length).toEqual(1);
+      expect(syncSocial2.length).toEqual(1);
+      expect(syncSocial1[0].author.id).toEqual(page1.id);
+      expect(syncSocial2[0].author.id).toEqual(page2.id);
     });
 
     it('should return Exception when use guest account', async () => {
