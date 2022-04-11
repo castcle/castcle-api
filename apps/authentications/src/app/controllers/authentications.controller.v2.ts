@@ -28,8 +28,14 @@ import {
   CastcleControllerV2,
   CastcleTrack,
 } from '@castcle-api/utils/decorators';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Body, Post, Req } from '@nestjs/common';
+import { CastcleException } from '@castcle-api/utils/exception';
+import {
+  CredentialRequest,
+  HeadersRequest,
+} from '@castcle-api/utils/interceptors';
+import { Body, HttpCode, Post, Req } from '@nestjs/common';
+import { ApiOkResponse, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { CheckingResponse, CheckIdExistDto, CheckEmailExistDto } from '../dtos';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
@@ -47,5 +53,68 @@ export class AuthenticationControllerV2 {
       email,
       password
     );
+  }
+
+  /**
+   *
+   * @param req
+   * @param param1 id exists
+   * @returns status castcle id is Exist true | false
+   */
+  @ApiOkResponse({
+    type: CheckingResponse,
+  })
+  @Post('exists/castcle-id')
+  @HttpCode(200)
+  async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
+    const user = await this.authenticationService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
+    return {
+      message: 'success message',
+      payload: {
+        exist: user ? true : false, // true=มีในระบบ, false=ไม่มีในระบบ
+      },
+    } as CheckingResponse;
+  }
+
+  /**
+   *
+   * @param req
+   * @param param1 body email
+   * @returns status email is Exist true | false
+   */
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing',
+  })
+  @ApiOkResponse({
+    status: 201,
+    type: CheckingResponse,
+  })
+  @ApiBody({
+    type: CheckEmailExistDto,
+  })
+  @Post('exists/email')
+  @HttpCode(200)
+  async checkEmailExists(
+    @Req() req: HeadersRequest,
+    @Body() { email }: CheckEmailExistDto
+  ) {
+    if (!this.authenticationService.validateEmail(email))
+      throw CastcleException.INVALID_EMAIL;
+    try {
+      const account = await this.authenticationService.getAccountFromEmail(
+        email
+      );
+      return {
+        message: 'success message',
+        payload: {
+          exist: account ? true : false,
+        },
+      };
+    } catch (error) {
+      throw CastcleException.INVALID_EMAIL;
+    }
   }
 }
