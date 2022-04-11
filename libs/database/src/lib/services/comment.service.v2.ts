@@ -32,11 +32,11 @@ import {
   CommentIncludes,
   CommentPayload,
   CommentResponse,
-  CommentsResponseV2,
   EntityVisibility,
   ExpansionQuery,
   IncludeUser,
   PaginationQuery,
+  ResponseDto,
 } from '../dtos';
 import {
   Comment,
@@ -403,7 +403,7 @@ export class CommentServiceV2 {
     viewer: User,
     contentId: string,
     paginationQuery: PaginationQuery
-  ): Promise<CommentsResponseV2> => {
+  ) => {
     let query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
       visibility: EntityVisibility.Publish,
@@ -437,11 +437,11 @@ export class CommentServiceV2 {
       { hasRelationshipExpansion: false }
     );
 
-    return {
-      payload: response.payload,
+    return ResponseDto.ok<CommentPayload[], CommentIncludes>({
       includes: response.includes,
+      payload: response.payload,
       meta: createCastcleMeta(comments, total),
-    } as CommentsResponseV2;
+    });
   };
 
   /**
