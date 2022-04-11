@@ -29,7 +29,7 @@ import { Queue } from 'bull';
 import { Model } from 'mongoose';
 import { EntityVisibility, SyncSocialModelV2, UserField } from '../dtos';
 import { QueueName, UserMessage, UserType } from '../models';
-import { Relationship, SocialSync, User } from '../schemas';
+import { Relationship, SocialSync, Transaction, User } from '../schemas';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 
@@ -43,6 +43,9 @@ export class UserServiceV2 {
     @InjectModel('SocialSync')
     private _socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction')
+    private transactionModel: Model<Transaction>,
+    @InjectModel('User')
+    public _userModel: Model<User>,
     @InjectQueue(QueueName.USER)
     private userQueue: Queue<UserMessage>,
     private contentService: ContentService,

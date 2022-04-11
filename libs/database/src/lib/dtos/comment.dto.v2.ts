@@ -20,49 +20,55 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { ApiProperty } from '@nestjs/swagger';
-import { Document } from 'mongoose';
-import { CastcleIncludes } from './content.dto';
+import { IsString } from 'class-validator';
+import { CommentPayload } from './comment.dto';
+import { Author, IncludeUser } from './content.dto';
+import { GetUserParam } from './user.dto';
 
-export class Meta {
-  oldestId?: string;
-  newestId?: string;
-  resultCount: number;
-  resultTotal?: number;
+export class CommentIncludes {
+  users: IncludeUser[];
+  comments?: CommentPayload[];
 
-  static fromDocuments = (
-    documents: Document[],
-    resultTotal?: number
-  ): Meta => {
-    return {
-      oldestId: documents[documents.length - 1]?.id
-        ? documents[documents.length - 1]?.id
-        : documents[documents.length - 1]?._id,
-      newestId: documents[0]?.id ? documents[0]?.id : documents[0]?._id,
-      resultCount: documents.length,
-      resultTotal,
-    };
-  };
+  constructor({ comments, users }: CommentIncludes) {
+    this.comments = comments;
+    this.users = CommentIncludes.filterAuthors(users);
+  }
+
+  static filterAuthors(rawAuthors: IncludeUser[]) {
+    const authors: Author[] = [];
+
+    rawAuthors.forEach((author) => {
+      const authorIndex = authors.findIndex(
+        ({ id }) => String(author.id) == String(id)
+      );
+
+      if (authorIndex >= 0) return;
+
+      authors.push(author);
+    });
+
+    return authors;
+  }
 }
 
-export class ResponseDto<T1 = any, T2 = CastcleIncludes> {
+export class CreateCommentDto {
   @ApiProperty()
-  payload: T1;
-
+  @IsString()
+  message: string;
   @ApiProperty()
-  includes?: T2;
+  @IsString()
+  contentId: string;
+}
 
+export class CommentParam extends GetUserParam {
+  @IsString()
   @ApiProperty()
-  meta?: Meta;
-
-  static ok = <U1, U2>({ includes, meta, payload }: ResponseDto<U1, U2>) => {
-    const responseDto = new ResponseDto<U1, U2>();
-
-    responseDto.payload = payload;
-    responseDto.includes ??= includes;
-    responseDto.meta ??= meta;
-
-    return responseDto;
-  };
+  sourceCommentId: string;
+}
+export class CommentResponse {
+  @ApiProperty()
+  payload: CommentPayload;
+  @ApiProperty()
+  includes: CommentIncludes;
 }
