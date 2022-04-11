@@ -116,7 +116,12 @@ export class CampaignService {
         payload: new ClaimAirdropPayload(campaign.id, to),
       }).save();
 
-      await this.campaignQueue.add({ queueId: queue.id });
+      await this.campaignQueue.add(
+        { queueId: queue.id },
+        {
+          removeOnComplete: true,
+        }
+      );
       this.logger.log(
         JSON.stringify({ campaign, queue }),
         `claimContentReachAirdrops:submit:queueId-${queue.id}`
@@ -193,7 +198,12 @@ export class CampaignService {
       ),
     }).save();
 
-    await this.campaignQueue.add({ queueId: queue.id });
+    await this.campaignQueue.add(
+      { queueId: queue.id },
+      {
+        removeOnComplete: true,
+      }
+    );
 
     this.logger.log(
       JSON.stringify({

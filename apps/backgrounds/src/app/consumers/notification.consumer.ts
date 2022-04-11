@@ -58,7 +58,7 @@ export class NotificationConsumer {
   constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) {}
 
   @Process()
-  readOperationJob(job: Job<NotificationMessage>) {
+  async readOperationJob(job: Job<NotificationMessage>) {
     try {
       this.logger.log(JSON.stringify(job));
       this.firebase.messaging.sendMulticast({
