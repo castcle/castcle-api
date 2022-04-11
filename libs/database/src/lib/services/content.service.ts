@@ -151,10 +151,13 @@ export class ContentService {
       hashtags: hashtags,
     }).save();
 
-    this.contentQueue.add({
-      event: ContentMessageEvent.NEW_CONTENT,
-      contentId: content.id,
-    });
+    this.contentQueue.add(
+      {
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      },
+      { removeOnComplete: true }
+    );
 
     return content;
   }
@@ -189,10 +192,13 @@ export class ContentService {
     const contents = await this._contentModel.insertMany(contentsToCreate);
 
     contents.forEach((content) => {
-      this.contentQueue.add({
-        event: ContentMessageEvent.NEW_CONTENT,
-        contentId: content.id,
-      });
+      this.contentQueue.add(
+        {
+          event: ContentMessageEvent.NEW_CONTENT,
+          contentId: content.id,
+        },
+        { removeOnComplete: true }
+      );
     });
 
     return contents;

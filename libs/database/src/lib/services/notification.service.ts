@@ -195,7 +195,8 @@ export class NotificationService {
       .exec();
 
     this.notificationQueue.add(
-      this.generateNotification(message, notify, firebaseToken, badgeCounts)
+      this.generateNotification(message, notify, firebaseToken, badgeCounts),
+      { removeOnComplete: true }
     );
 
     return notify;

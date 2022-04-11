@@ -36,7 +36,7 @@ export class UserConsumer {
   constructor(private userService: UserService) {}
 
   @Process()
-  readOperationJob(job: Job<UserMessage>) {
+  async readOperationJob(job: Job<UserMessage>) {
     try {
       this.logger.log(`consume user message '${JSON.stringify(job.data)}' `);
 
