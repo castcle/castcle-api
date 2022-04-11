@@ -152,13 +152,10 @@ export class UserServiceV2 {
   }
   getById = async (
     user: User,
-    id: string,
-    type?: UserType,
+    targetUser: User,
     hasRelationshipExpansion = false,
     userFields?: UserField[]
   ) => {
-    const targetUser = await this.userService.getByIdOrCastcleId(id, type);
-
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     const [userResponse] = await this.convertUsersToUserResponsesV2(
