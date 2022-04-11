@@ -68,10 +68,6 @@ export class AuthenticationServiceV2 {
     credential: Credential,
     account: Account
   ) {
-    if (String(account._id) === String(credential.account._id)) {
-      return credential;
-    }
-
     await this.accountModel.findByIdAndDelete(credential.account._id);
     await this.accountModel.updateOne(
       { _id: account._id },
@@ -114,11 +110,12 @@ export class AuthenticationServiceV2 {
       throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
     }
 
-    const isLinkedCredential = account.credentials?.find(
+    const isSameAccount = credential.account.id === account.id;
+    const isLinkedCredential = account.credentials?.some(
       ({ deviceUUID }) => deviceUUID === credential.deviceUUID
     );
 
-    if (!isLinkedCredential) {
+    if (!isLinkedCredential || !isSameAccount) {
       await this.linkCredentialToAccount(credential, account);
     }
 
