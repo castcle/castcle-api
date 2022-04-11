@@ -89,12 +89,12 @@ export class UsersControllerV2 {
     @Query() userQuery?: ExpansionQuery
   ) {
     const user = isMe
-      ? authorizer.user
+      ? await authorizer.user
       : await this.userService.findUser(userId);
 
     return this.userServiceV2.getById(
       user,
-      userId,
+      user._id,
       undefined,
       userQuery?.hasRelationshipExpansion,
       userQuery?.userFields
