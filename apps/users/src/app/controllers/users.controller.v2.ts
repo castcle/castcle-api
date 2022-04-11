@@ -161,23 +161,10 @@ export class UsersControllerV2 {
       { message: commentDto.message }
     );
 
-    // Need new version notification
-    // this.notifyService.notifyToUser(
-    //   {
-    //     source:
-    //       authorizedUser.type === UserType.People
-    //         ? NotificationSource.Profile
-    //         : NotificationSource.Page,
-    //     sourceUserId: authorizedUser._id,
-    //     type: NotificationType.Comment,
-    //     targetRef: { _id: content._id, ref: NotificationRef.Content },
-    //     account: authorizedUser.ownerAccount,
-    //     read: false,
-    //   },
-    //   authorizedUser,
-    //   req.$language
-    // );
-
+    /*
+     * TODO: !!!
+     *  Need new version notification
+     */
     const payload = await this.commentService.convertCommentToCommentResponse(
       user,
       comment,
@@ -263,21 +250,10 @@ export class UsersControllerV2 {
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
     });
-    // this.notifyService.notifyToUser(
-    //   {
-    //     source:
-    //       authorizedUser.type === UserType.People
-    //         ? NotificationSource.Profile
-    //         : NotificationSource.Page,
-    //     sourceUserId: authorizedUser._id,
-    //     type: NotificationType.Reply,
-    //     targetRef: { _id: comment._id, ref: NotificationRef.Comment },
-    //     account: authorizedUser.ownerAccount,
-    //     read: false,
-    //   },
-    //   authorizedUser,
-    //   req.$language
-    // );
+    /*
+     * TODO: !!!
+     *  Need new version notification
+     */
     return await this.commentService.convertCommentToCommentResponse(
       user,
       replyComment,
