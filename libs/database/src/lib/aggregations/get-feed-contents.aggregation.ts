@@ -169,7 +169,9 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           {
             $sort: { localized: -1 },
           },
-          { $limit: params.maxResult * (1 - params.followFeedRatio) },
+          {
+            $limit: Math.ceil(params.maxResult * (1 - params.followFeedRatio)),
+          },
         ],
         as: 'globalContents',
       },
@@ -210,7 +212,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 1 } },
-          { $limit: params.maxResult * params.followFeedRatio },
+          { $limit: Math.ceil(params.maxResult * params.followFeedRatio) },
         ],
         as: 'followingContents',
       },
