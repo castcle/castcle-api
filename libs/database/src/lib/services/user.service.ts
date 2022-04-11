@@ -481,10 +481,15 @@ export class UserService {
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
-    this.userQueue.add({
-      id: user._id,
-      action: CastcleQueueAction.UpdateProfile,
-    });
+    this.userQueue.add(
+      {
+        id: user._id,
+        action: CastcleQueueAction.UpdateProfile,
+      },
+      {
+        removeOnComplete: true,
+      }
+    );
 
     return user.save();
   };
@@ -772,10 +777,15 @@ export class UserService {
         `deactivate:success:account-${account._id}`
       );
 
-      this.userQueue.add({
-        id: account,
-        action: CastcleQueueAction.Deleting,
-      });
+      this.userQueue.add(
+        {
+          id: account,
+          action: CastcleQueueAction.Deleting,
+        },
+        {
+          removeOnComplete: true,
+        }
+      );
     } catch (error: unknown) {
       this.logger.error(error, `deactivate:error:account-${account._id}`);
       throw error;
