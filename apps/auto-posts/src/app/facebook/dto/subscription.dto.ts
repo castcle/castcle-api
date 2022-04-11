@@ -38,6 +38,7 @@ export enum FeedEntryType {
 
 export enum FeedEntryItem {
   PHOTO = 'photo',
+  SHARE = 'share',
   STATUS = 'status',
   VIDEO = 'video',
 }

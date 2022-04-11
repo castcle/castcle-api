@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import {
   AnalyticService,
   AuthenticationService,
@@ -52,19 +53,17 @@ import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
+import { AppleClientMock } from 'libs/utils/clients/src/lib/apple/apple.client.spec';
+import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
+import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
+import { TelegramClientMock } from 'libs/utils/clients/src/lib/telegram/telegram.client.spec';
+import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
+import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
-import { AppService } from './app.service';
-import {
-  AppleClientMock,
-  DownloaderMock,
-  FacebookClientMock,
-  GoogleClientMock,
-  TelegramClientMock,
-  TwillioClientMock,
-  TwitterClientMock,
-} from './client.mock';
-import { LoginResponse, TokenResponse } from './dtos';
+import { AppService } from '../app.service';
+import { LoginResponse, TokenResponse } from '../dtos';
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -145,9 +144,9 @@ describe('AppController', () => {
       provide: TwitterClient,
       useClass: TwitterClientMock,
     };
-    const TwillioClientProvider = {
+    const TwilioClientProvider = {
       provide: TwilioClient,
-      useClass: TwillioClientMock,
+      useClass: TwilioClientMock,
     };
     const AppleClientProvider = {
       provide: AppleClient,
@@ -175,7 +174,7 @@ describe('AppController', () => {
         DownloaderProvider,
         TelegramClientProvider,
         TwitterClientProvider,
-        TwillioClientProvider,
+        TwilioClientProvider,
         AppleClientProvider,
         GoogleClientProvider,
         UserService,
@@ -212,11 +211,6 @@ describe('AppController', () => {
     jest.spyOn(service, 'embedAuthentication').mockImplementation(async () => {
       console.log('embed authentication.');
     });
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 
   describe('guestLogin', () => {

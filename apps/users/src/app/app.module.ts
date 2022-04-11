@@ -22,23 +22,26 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
-import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { SuggestionService } from './services/suggestion.service';
-import { TracingModule } from '@narando/nest-xray';
-import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
-import { Environment } from '@castcle-api/environments';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
+import {
+  AwsXRayInterceptor,
+  UtilsInterceptorsModule,
+} from '@castcle-api/utils/interceptors';
+import { TracingModule } from '@narando/nest-xray';
+import { Module } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { NotificationsController } from './controllers/notifications.controller';
 import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
+import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
+import { SuggestionService } from './services/suggestion.service';
 
 @Module({
   imports: [
@@ -60,6 +63,7 @@ import { UsersControllerV2 } from './controllers/users.controller.v2';
   ],
   controllers: [
     NotificationsController,
+    NotificationsControllerV2,
     PagesController,
     UsersController,
     UsersControllerV2,

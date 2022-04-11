@@ -12,6 +12,7 @@ export class User {
   accountId: string;
   accessToken: string;
   guestToken: string;
+  refreshToken: string;
 
   constructor({ name, referrer }: { name: string; referrer?: string }) {
     this.castcleId = `${name}.castcle`;
@@ -30,6 +31,16 @@ export class User {
       email: this.email,
       password: this.password,
     },
+  });
+
+  toMemberLoginPayload = () => ({
+    username: this.email,
+    password: this.password,
+  });
+
+  toVerificationPasswordPayload = () => ({
+    objective: 'change_password',
+    password: this.password,
   });
 
   randomPhone = () => Date.now().toString().slice(-8);

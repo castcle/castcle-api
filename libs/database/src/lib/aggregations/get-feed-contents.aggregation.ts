@@ -64,7 +64,6 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
-          { $limit: params.followFeedMax },
         ],
         as: 'followings',
       },
@@ -82,7 +81,6 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
-          { $limit: params.followFeedMax },
         ],
         as: 'blockings',
       },
@@ -110,18 +108,11 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                       { $gte: ['$seenAt', '$$dateDiff'] },
                     ],
                   },
-                  {
-                    $and: [
-                      { $lte: ['$calledAt', '$$dateNow'] },
-                      { $gte: ['$calledAt', '$$dateDiff'] },
-                    ],
-                  },
                 ],
               },
             },
           },
           { $project: { _id: 0, content: 1 } },
-          { $limit: params.duplicateContentMax },
         ],
         as: 'duplicateContents',
       },
@@ -131,6 +122,10 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         from: 'guestfeeditems',
         let: {
           duplicateContents: '$duplicateContents',
+          dateNow: new Date(),
+          dateDiff: new Date(
+            new Date().getTime() - params.decayDays * 1000 * 86400
+          ),
         },
         pipeline: [
           { $sort: { score: -1 } },
@@ -141,6 +136,12 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   params.geolocation
                     ? { $eq: ['$countryCode', params.geolocation] }
                     : {},
+                  {
+                    $and: [
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
+                    ],
+                  },
                   {
                     $not: { $in: ['$content', '$$duplicateContents.content'] },
                   },
@@ -168,7 +169,9 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           {
             $sort: { localized: -1 },
           },
-          { $limit: params.maxResult },
+          {
+            $limit: Math.ceil(params.maxResult * (1 - params.followFeedRatio)),
+          },
         ],
         as: 'globalContents',
       },
@@ -180,6 +183,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           blockings: '$blockings',
           followings: '$followings',
           globalContents: '$globalContents',
+          duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
@@ -194,18 +198,21 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                   { $in: ['$author.id', '$$followings.followedUser'] },
                   {
                     $and: [
-                      { $lte: ['$updatedAt', '$$dateNow'] },
-                      { $gte: ['$updatedAt', '$$dateDiff'] },
+                      { $lte: ['$createdAt', '$$dateNow'] },
+                      { $gte: ['$createdAt', '$$dateDiff'] },
                     ],
                   },
                   { $not: { $in: ['$_id', '$$globalContents.content'] } },
                   { $not: { $in: ['$author.id', '$$blockings.followedUser'] } },
+                  {
+                    $not: { $in: ['$_id', '$$duplicateContents.content'] },
+                  },
                 ],
               },
             },
           },
           { $project: { _id: 1 } },
-          { $limit: params.maxResult },
+          { $limit: Math.ceil(params.maxResult * params.followFeedRatio) },
         ],
         as: 'followingContents',
       },

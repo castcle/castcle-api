@@ -53,21 +53,21 @@ describe('Password', () => {
     it('should return true if password is correct', async () => {
       const passPassword = 'verify123456';
       const encryptPassword = await Password.generate(passPassword);
-      expect(await Password.verify(passPassword, encryptPassword)).toBe(true);
+      expect(Password.verify(passPassword, encryptPassword)).toBe(true);
     });
     it('should return false if password is incorrect', async () => {
       const passPassword = 'verify654321';
       const encryptPassword = await Password.generate(passPassword);
-      expect(
-        await Password.verify('thisisawrongpassword', encryptPassword)
-      ).toBe(false);
+      expect(Password.verify('thisisawrongpassword', encryptPassword)).toBe(
+        false
+      );
     });
     it('should return true to P jul password Abcd1@34$ ', async () => {
       const encryptPassword =
         '$2a$10$LF1C5E//QPPvPMQTdAlBqO.r/3DyOvdwHLZMuVMzb3PToLf227J8m';
       const testPasswordPJul = await Password.create('Abcd1@34$');
       console.log(testPasswordPJul);
-      expect(await Password.verify('Abcd1@34$', encryptPassword)).toBe(true);
+      expect(Password.verify('Abcd1@34$', encryptPassword)).toBe(true);
     });
   });
   describe('#validate()', () => {

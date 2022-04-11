@@ -28,6 +28,8 @@ import {
 } from '@castcle-api/database';
 import {
   ContentType,
+  GetLinkPreview,
+  Link,
   LinkType,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
@@ -36,6 +38,7 @@ import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { isEnum } from 'class-validator';
+import { getLinkPreview } from 'link-preview-js';
 import { ValidateWebhookQuery } from '../youtube/dto';
 import {
   FeedEntryChange,
@@ -153,7 +156,35 @@ export class FacebookController {
           continue;
         }
 
-        const photoUrls = feed.photos || [feed.link].filter(Boolean);
+        const getPreviewFromLink = async () => {
+          try {
+            const link = feed.link.startsWith('/')
+              ? `https://www.facebook.com/${feed.link}`
+              : feed.link;
+
+            const linkPreview = (await getLinkPreview(link)) as GetLinkPreview;
+
+            return linkPreview.mediaType === 'image'
+              ? { photoUrl: linkPreview.url }
+              : {
+                  link: [
+                    {
+                      url: linkPreview.url,
+                      type: LinkType.Other,
+                      title: linkPreview.title,
+                      description: linkPreview.description,
+                      imagePreview: linkPreview.images?.[0],
+                    } as Link,
+                  ],
+                };
+          } catch (error) {
+            this.logger.error(error);
+            return {};
+          }
+        };
+
+        const { photoUrl, link } = await getPreviewFromLink();
+        const photoUrls = [...(feed.photos || []), photoUrl].filter(Boolean);
         const $photos = photoUrls.map(async (url, index) => {
           const base64Photo = await this.downloader.getImageFromUrl(url);
           const uploaded = await Image.upload(base64Photo, {
@@ -176,7 +207,7 @@ export class FacebookController {
 
         contents.push({
           type,
-          payload: { message, photo },
+          payload: { message, photo, link },
         } as SaveContentDto);
       }
 

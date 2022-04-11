@@ -65,6 +65,7 @@ export type GetAdsPriceResponse = {
   total: number;
   price: number;
   ads: any[]; //objectId
+  adsRef: any[]; //dbRefs
 };
 
 export const pipe2AdsAuctionPrice = () => {
@@ -82,6 +83,9 @@ export const pipe2AdsAuctionPrice = () => {
         },
         ads: {
           $push: '$_id',
+        },
+        adsRef: {
+          $push: '$adsRef',
         },
       },
     },

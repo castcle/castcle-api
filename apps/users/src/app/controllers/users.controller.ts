@@ -33,6 +33,7 @@ import {
   getRelationship,
   getSocialPrefix,
   NotificationService,
+  RankerService,
   SocialProvider,
   SocialSyncService,
   UserService,
@@ -144,7 +145,8 @@ export class UsersController {
     private userService: UserService,
     private notifyService: NotificationService,
     private download: Downloader,
-    private facebookClient: FacebookClient
+    private facebookClient: FacebookClient,
+    private rankerService: RankerService
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -1288,6 +1290,18 @@ export class UsersController {
       content,
       userRecast
     );
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
+
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
     if (id === content.author.id || id === content.author.castcleId) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
@@ -1341,8 +1355,20 @@ export class UsersController {
       message
     );
 
-    if (id === content.author.id || id === content.author.castcleId) return;
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
 
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
+
+    if (id === content.author.id || id === content.author.castcleId) return;
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
     );
@@ -1474,6 +1500,19 @@ export class UsersController {
 
     const likeContent = await this.contentService.likeContent(content, user);
     if (!likeContent) throw CastcleException.LIKE_IS_EXIST;
+
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
+
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
 
     if (id === content.author.id || id === content.author.castcleId) return;
 

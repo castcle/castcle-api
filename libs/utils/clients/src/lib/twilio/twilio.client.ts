@@ -25,29 +25,14 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import * as Twilio from 'twilio';
-import { TwilioChannel } from './twillio.message';
+import { TwilioChannel } from './twilio.message';
+
 @Injectable()
 export class TwilioClient {
-  private readonly env = {
-    twilioAccountSid: Environment.TWILIO_ACCOUNT_SID
-      ? Environment.TWILIO_ACCOUNT_SID
-      : 'ACd501e',
-    twilioAuthToken: Environment.TWILIO_AUTH_TOKEN
-      ? Environment.TWILIO_AUTH_TOKEN
-      : 'secrect',
-    twilioOtpSid: Environment.TWILIO_OTP_SID
-      ? Environment.TWILIO_OTP_SID
-      : 'VA356353',
-    twilioCountryCode: Environment.TWILIO_COUNTRY_CODE
-      ? Environment.TWILIO_COUNTRY_CODE
-      : '+62,+91,+880',
-  };
-
   private logger = new CastLogger(TwilioClient.name);
-
-  private readonly client = new Twilio.Twilio(
-    this.env.twilioAccountSid,
-    this.env.twilioAuthToken
+  private client = new Twilio.Twilio(
+    Environment.TWILIO_ACCOUNT_SID,
+    Environment.TWILIO_AUTH_TOKEN
   );
 
   async getRateLimitsOTP(
@@ -64,7 +49,7 @@ export class TwilioClient {
         user_agent: userAgent,
       };
     } else if (channel == TwilioChannel.Mobile) {
-      const countries = this.env.twilioCountryCode.split(',');
+      const countries = Environment.TWILIO_COUNTRY_CODE.split(',');
       const indexOfCountry = countries.indexOf(countryCode);
       if (indexOfCountry != -1) {
         return {
@@ -110,7 +95,7 @@ export class TwilioClient {
     this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
     this.logger.log(`* [PROCESS] requestOtp: ${JSON.stringify(rateLimits)} *`);
     return this.client.verify
-      .services(this.env.twilioOtpSid)
+      .services(Environment.TWILIO_OTP_SID)
       .verifications.create({
         rateLimits: rateLimits,
         channelConfiguration: {
@@ -135,7 +120,7 @@ export class TwilioClient {
   async verifyOtp(receiver: string, otp: string) {
     this.logger.log(`Verify otp receiver: ${receiver}`);
     return this.client.verify
-      .services(this.env.twilioOtpSid)
+      .services(Environment.TWILIO_OTP_SID)
       .verificationChecks.create({ to: receiver, code: otp })
       .then((verification) => {
         return verification;
@@ -148,7 +133,7 @@ export class TwilioClient {
   async canceledOtp(sid: string) {
     this.logger.log(`Cancel otp sid: ${sid}`);
     return this.client.verify
-      .services(this.env.twilioOtpSid)
+      .services(Environment.TWILIO_OTP_SID)
       .verifications(sid)
       .update({ status: 'canceled' })
       .then((verification) => {

@@ -21,13 +21,8 @@
  * or have any questions.
  */
 
-import * as dotenv from 'dotenv';
 import { MongooseOptions } from 'mongoose';
 import { Configs } from './configs';
-
-const env = dotenv.config();
-
-if (!env) throw new Error('Env not found!');
 
 export class Environment {
   static PRODUCTION = process.env.NODE_ENV === 'production';
@@ -131,10 +126,11 @@ export class Environment {
   static APPLE_PRIVATE_KEY = process.env.APPLE_PRIVATE_KEY;
 
   // Twilio
-  static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-  static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-  static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID;
-  static TWILIO_COUNTRY_CODE = process.env.TWILIO_COUNTRY_CODE;
+  static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || 'ACd501e';
+  static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || 'secret';
+  static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID || 'VA356353';
+  static TWILIO_COUNTRY_CODE =
+    process.env.TWILIO_COUNTRY_CODE || '+62,+91,+880';
 
   // Youtube
   static YOUTUBE_VERIFY_TOKEN = process.env.YOUTUBE_VERIFY_TOKEN;
@@ -178,15 +174,15 @@ export class Environment {
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 300;
   static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 200;
   static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 300;
-  static RATE_LIMIT_OTP_LIMT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 200;
+  static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 200;
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;
 
-  //RECAPCHA
-  static RECAPTCHA_API_KEY = process.env.RECAPTCHA_API_KEY || 'asdsd';
-  static RECAPTCHA_PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || 'asdasd';
-  static RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '1asdasd';
+  // RECAPTCHA
+  static RECAPTCHA_API_KEY = process.env.RECAPTCHA_API_KEY || 'api-key';
+  static RECAPTCHA_PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || 'pid';
+  static RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY || 'site-key';
 
   // Castcle ID Update
   static CASTCLE_ID_ALLOW_UPDATE_DAYS =

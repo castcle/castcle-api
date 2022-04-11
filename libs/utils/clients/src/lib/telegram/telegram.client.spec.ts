@@ -25,6 +25,14 @@ import { HttpModule } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TelegramClient } from './telegram.client';
 
+export class TelegramClientMock {
+  verifyUserToken(info: TelegramUserInfo) {
+    if (info.hash === '87e5a7e644d0ee362334d92bc8ecc981ca11ffc11eca809505')
+      return true;
+    else return false;
+  }
+}
+
 describe('TelegramClient', () => {
   let service: TelegramClient;
 

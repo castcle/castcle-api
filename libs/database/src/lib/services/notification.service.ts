@@ -28,7 +28,7 @@ import { Queue } from 'bull';
 import { FilterQuery, Model, Types } from 'mongoose';
 import {
   CreateNotification,
-  NotificationQueryOptions,
+  NotificationQuery,
   NotificationType,
   RegisterTokenDto,
 } from '../dtos';
@@ -62,12 +62,12 @@ export class NotificationService {
   /**
    * get all notifications
    * @param {Credential} credential
-   * @param {NotificationQueryOptions} options contain option for sorting page,
+   * @param {NotificationQuery} options contain option for sorting page,
    * @returns
    */
   getNotificationAll = async (
     credential: Credential,
-    { source, sinceId, untilId, maxResults }: NotificationQueryOptions
+    { source, sinceId, untilId, maxResults }: NotificationQuery
   ) => {
     const filter: FilterQuery<Notification> = {
       account: credential.account._id,
@@ -195,7 +195,10 @@ export class NotificationService {
       .exec();
 
     this.notificationQueue.add(
-      this.generateNotification(message, notify, firebaseToken, badgeCounts)
+      this.generateNotification(message, notify, firebaseToken, badgeCounts),
+      {
+        removeOnComplete: true,
+      }
     );
 
     return notify;

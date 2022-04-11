@@ -23,7 +23,9 @@
 
 export * from './account.dto';
 export * from './ads.dto';
+export * from './authentications.dto.v2';
 export * from './comment.dto';
+export * from './comment.dto.v2';
 export * from './common.dto';
 export * from './content.dto';
 export * from './country.dto';

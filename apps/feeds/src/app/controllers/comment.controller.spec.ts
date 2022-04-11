@@ -30,6 +30,7 @@ import {
   MongooseForFeatures,
   NotificationService,
   QueueName,
+  RankerService,
 } from '@castcle-api/database';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserService, AuthenticationService } from '@castcle-api/database';
@@ -39,7 +40,11 @@ import { Content, Credential, User } from '@castcle-api/database/schemas';
 import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
 import { CacheModule } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
+import { SuggestionService } from '../services/suggestion.service';
 
+export class RankingMock {}
+
+export class SuggestionMock {}
 describe('CommentController', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
@@ -73,6 +78,14 @@ describe('CommentController', () => {
         CommentService,
         NotificationService,
         HashtagService,
+        {
+          provide: RankerService,
+          useValue: { getFeedItem: jest.fn(), seenFeedItem: jest.fn() },
+        },
+        {
+          provide: SuggestionService,
+          useValue: { seen: jest.fn() },
+        },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

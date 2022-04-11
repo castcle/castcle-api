@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Environment as env } from '@castcle-api/environments';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger, CastLoggerLevel } from '@castcle-api/logger';
 import { NestFactory } from '@nestjs/core';
 import { BackgroundModule } from './app/app.module';
@@ -34,8 +34,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3341;
 
   await app.listen(port, () => {
-    logger.log('Listening at http://localhost:' + port);
-    logger.log(`Environment at ${env.NODE_ENV}`);
+    logger.log(`Listening at http://localhost:${port}`);
+    logger.log(`Environment at ${Environment.NODE_ENV}`);
   });
 }
 
