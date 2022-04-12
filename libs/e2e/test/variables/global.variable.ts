@@ -4,6 +4,7 @@ import {
   CampaignSchema,
   CredentialSchema,
   OtpSchema,
+  SocialSyncSchema,
   User as UserDocument,
   UserSchema,
 } from '@castcle-api/database/schemas';
@@ -19,7 +20,7 @@ export const accountActivationModel = model(
 );
 export const credentialModel = model('Credential', CredentialSchema);
 export const accountDeviceModel = model('AccountDevice', AccountDeviceSchema);
-
+export const socialSyncModel = model('SocialSync', SocialSyncSchema);
 /** verified: `mobile` */
 export const userAlpha = new User({ name: 'alpha' });
 

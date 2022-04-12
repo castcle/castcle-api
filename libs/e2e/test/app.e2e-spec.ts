@@ -5,7 +5,11 @@ import {
   testAuthenticationsFlow,
   testAuthenticationsSocialFlow,
 } from './modules/authentications';
-import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
+import {
+  testSyncSocialFlow,
+  testUsersReporting,
+  testUsersUpdateMobile,
+} from './modules/users';
 import {
   closeAuthenticationsModule,
   closeUsersModule,
@@ -56,6 +60,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Update Mobile', () => {
       testUsersUpdateMobile();
+    });
+
+    describe('- Social Sync Flow', () => {
+      testSyncSocialFlow();
     });
   });
 });

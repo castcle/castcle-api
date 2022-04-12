@@ -22,4 +22,16 @@ export class UsersRequest {
   static updateMobile = () => UsersRequest.put('/users/me/mobile');
   static report = (userId: string) =>
     UsersRequest.post(`/users/${userId}/reporting`);
+  static createPage = () => UsersRequest.post('/users/me/pages');
+  static syncSocial = () => UsersRequest.post('/users/me/pages/sync-social');
+  static syncSocialLookup = () =>
+    UsersRequest.get('/users/me/pages/sync-social');
+  static setAutoPost = (socialId: string) =>
+    UsersRequest.post(`/users/me/pages/sync-social/${socialId}/auto-post`);
+  static cancelAutoPost = (socialId: string) =>
+    UsersRequest.delete(`/users/me/pages/sync-social/${socialId}/auto-post`);
+  static reconnectSocial = (socialId: string) =>
+    UsersRequest.post(`/users/me/pages/sync-social/${socialId}/connect`);
+  static disconnectSocial = (socialId: string) =>
+    UsersRequest.delete(`/users/me/pages/sync-social/${socialId}/connect`);
 }
