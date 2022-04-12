@@ -646,23 +646,6 @@ export class UsersController {
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw CastcleException.FORBIDDEN;
     await this.userService.follow(currentUser, followedUser);
-
-    this.notifyService.notifyToUser(
-      {
-        source:
-          followedUser.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: currentUser._id,
-        type: NotificationType.Follow,
-        profileRef: followedUser._id,
-        account: followedUser.ownerAccount,
-        read: false,
-      },
-      followedUser,
-      req.$language
-    );
-    return '';
   }
 
   /**
@@ -690,6 +673,7 @@ export class UsersController {
 
     if (!user.ownerAccount === req.$credential.account._id)
       throw CastcleException.FORBIDDEN;
+
     await this.userService.follow(user, followedUser);
 
     this.notifyService.notifyToUser(
@@ -1514,7 +1498,7 @@ export class UsersController {
       );
     }
 
-    if (id === content.author.id || id === content.author.castcleId) return;
+    if (String(user._id) === String(content.author.id)) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id

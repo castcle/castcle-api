@@ -82,6 +82,7 @@ type NotifyResponseOption = {
   message: string;
   user?: User;
   isDate?: boolean;
+  read?: boolean;
 };
 
 export const NotificationSchema =
@@ -97,18 +98,17 @@ NotificationSchema.methods.toNotificationPayload = function ({
   message,
   user,
   isDate = false,
+  read,
 }: NotifyResponseOption) {
   return {
     id: this._id,
     notifyId: this._id,
     source: this.source,
     message,
-    read: this.read,
-    avatar: user
-      ? user?.profile && user?.profile?.images && user?.profile?.images?.avatar
-        ? new Image(user.profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages
-      : undefined,
+    read,
+    avatar: user?.profile?.images?.avatar
+      ? new Image(user.profile.images.avatar).toSignUrls()
+      : Configs.DefaultAvatarImages,
     commentId: this.commentRef,
     contentId: this.contentRef,
     replyId: this.replyRef,
