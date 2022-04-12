@@ -35,6 +35,10 @@ import {
 } from 'class-validator';
 import { DEFAULT_QUERY_OPTIONS } from './common.dto';
 
+export enum CampaignField {
+  ESTIMATE_REWARDS = 'estimate-rewards',
+}
+
 export enum UserField {
   Relationships = 'relationships',
   LinkSocial = 'link-social',

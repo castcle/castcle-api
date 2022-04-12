@@ -21,7 +21,9 @@
  * or have any questions.
  */
 
-import { IsEnum } from 'class-validator';
+import { CampaignField } from '@castcle-api/database/dtos';
+import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
+import { IsEnum, IsOptional } from 'class-validator';
 
 export enum GetAirdropBalancesStatus {
   ACTIVE = 'active',
@@ -31,4 +33,9 @@ export enum GetAirdropBalancesStatus {
 export class GetAirdropBalancesQuery {
   @IsEnum(GetAirdropBalancesStatus)
   status = GetAirdropBalancesStatus.ACTIVE;
+
+  @TransformStringToArrayOfStrings()
+  @IsOptional()
+  @IsEnum(CampaignField, { each: true })
+  campaignFields: CampaignField[] = [];
 }
