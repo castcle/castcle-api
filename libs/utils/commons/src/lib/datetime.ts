@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { DateTime, DateTimeUnit } from 'luxon';
 
 export class CastcleDate {
@@ -55,4 +56,23 @@ export class CastcleDate {
         .toJSDate(),
     };
   }
+  static verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
+    if (!displayIdUpdateAt) return false;
+    displayIdUpdateAt.setDate(
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+    );
+
+    const now = new Date().getTime();
+    const blockUpdate = displayIdUpdateAt.getTime();
+    return now - blockUpdate >= 0 ? true : false;
+  };
+  static checkIntervalFollowed = (dateBefore: Date, unitTime: number) => {
+    if (!dateBefore || unitTime === 0) return true;
+    return (
+      new Date().getTime() >
+      new Date(
+        DateTime.fromJSDate(dateBefore).plus({ hours: unitTime }).toISO()
+      ).getTime()
+    );
+  };
 }

@@ -138,7 +138,7 @@ describe('User Service', () => {
   describe('#updateUser()', () => {
     it('should update a user with specific fields', async () => {
       const partialDTO = {
-        dob: '1987-12-01',
+        dob: '1987-12-01T00:00:00.000Z',
         overview: 'this is short overview',
         images: {
           avatar: {
@@ -157,7 +157,7 @@ describe('User Service', () => {
         },
       } as UpdateModelUserDto;
       const FullDTO = {
-        dob: '1987-01-01',
+        dob: '1987-12-01T00:00:00.000Z',
         overview: 'long overview',
         images: {
           avatar: {
@@ -182,8 +182,12 @@ describe('User Service', () => {
       let updatingUser = await service.updateUser(userFromCredential, {
         dob: partialDTO.dob,
       });
-      expect(updatingUser.profile.birthdate).toEqual(partialDTO.dob);
-      expect((await updatingUser.toUserResponse()).dob).toEqual(partialDTO.dob);
+      expect(updatingUser.profile.birthdate.toISOString()).toEqual(
+        partialDTO.dob
+      );
+      expect((await updatingUser.toUserResponse()).dob.toISOString()).toEqual(
+        partialDTO.dob
+      );
       updatingUser = await service.updateUser(userFromCredential, {
         overview: partialDTO.overview,
       });
@@ -211,7 +215,7 @@ describe('User Service', () => {
       updatingUser = await service.updateUser(userFromCredential, FullDTO);
       const fullResponse = await updatingUser.toUserResponse();
       Object.keys(FullDTO).forEach((field) => {
-        if (field != 'images')
+        if (field != 'images' && field != 'dob')
           expect(fullResponse[field]).toEqual(FullDTO[field]);
       });
     });

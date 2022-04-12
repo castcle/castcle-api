@@ -28,7 +28,7 @@ import {
 } from '@castcle-api/database';
 import {
   NotificationBadgesResponse,
-  NotificationQueryOptions,
+  NotificationQuery,
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto,
@@ -100,7 +100,7 @@ export class NotificationsController {
   @Get()
   async getAll(
     @Req() req: CredentialRequest,
-    @Query() query?: NotificationQueryOptions,
+    @Query() query?: NotificationQuery,
     @Query('source', NotificationSourcePipe)
     sourceOption?: NotificationSource
   ) {

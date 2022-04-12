@@ -28,6 +28,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   ContentService,
+  DataService,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -41,6 +42,7 @@ import {
   AdsPaymentMethod,
   AdsStatus,
   QueueName,
+  WalletType,
 } from '../models';
 import { Content } from '../schemas';
 import { AdsService } from './ads.service';
@@ -55,6 +57,7 @@ describe('AdsService', () => {
   let userService: UserService;
   let contentService: ContentService;
   let mocks: MockUserDetail[];
+  let taccountService: TAccountService;
   let promoteContent: Content;
 
   beforeAll(async () => {
@@ -74,6 +77,17 @@ describe('AdsService', () => {
         TAccountService,
         HashtagService,
         {
+          provide: DataService,
+          useValue: {
+            personalizeContents: async (
+              accountId: string,
+              contentIds: string[]
+            ) => ({
+              [contentIds[0]]: 4,
+            }),
+          },
+        },
+        {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
         },
@@ -87,6 +101,7 @@ describe('AdsService', () => {
     authService = app.get<AuthenticationService>(AuthenticationService);
     userService = app.get<UserService>(UserService);
     contentService = app.get<ContentService>(ContentService);
+    taccountService = app.get<TAccountService>(TAccountService);
     mocks = await generateMockUsers(2, 1, {
       accountService: authService,
       userService: userService,
@@ -106,6 +121,19 @@ describe('AdsService', () => {
   });
   describe('#createAds', () => {
     it('should be able to create ads for promote Page', async () => {
+      await new taccountService._transactionModel({
+        from: {
+          type: WalletType.CASTCLE_TREASURY,
+          value: 999999,
+        },
+        to: [
+          {
+            account: mocks[0].account,
+            type: WalletType.ADS,
+            value: 999999,
+          },
+        ],
+      }).save();
       const adsIput = {
         campaignName: 'Ads1',
         campaignMessage: 'This is ads',

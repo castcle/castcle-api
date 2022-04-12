@@ -33,8 +33,10 @@ import {
   getRelationship,
   getSocialPrefix,
   NotificationService,
+  RankerService,
   SocialProvider,
   SocialSyncService,
+  SocialSyncServiceV2,
   UserService,
   UserType,
 } from '@castcle-api/database';
@@ -144,7 +146,9 @@ export class UsersController {
     private userService: UserService,
     private notifyService: NotificationService,
     private download: Downloader,
-    private facebookClient: FacebookClient
+    private facebookClient: FacebookClient,
+    private rankerService: RankerService,
+    private socialSyncServiceV2: SocialSyncServiceV2
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -644,23 +648,6 @@ export class UsersController {
     if (!currentUser.ownerAccount === req.$credential.account._id)
       throw CastcleException.FORBIDDEN;
     await this.userService.follow(currentUser, followedUser);
-
-    this.notifyService.notifyToUser(
-      {
-        source:
-          followedUser.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: currentUser._id,
-        type: NotificationType.Follow,
-        profileRef: followedUser._id,
-        account: followedUser.ownerAccount,
-        read: false,
-      },
-      followedUser,
-      req.$language
-    );
-    return '';
   }
 
   /**
@@ -688,6 +675,7 @@ export class UsersController {
 
     if (!user.ownerAccount === req.$credential.account._id)
       throw CastcleException.FORBIDDEN;
+
     await this.userService.follow(user, followedUser);
 
     this.notifyService.notifyToUser(
@@ -1288,6 +1276,18 @@ export class UsersController {
       content,
       userRecast
     );
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
+
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
     if (id === content.author.id || id === content.author.castcleId) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
@@ -1341,8 +1341,20 @@ export class UsersController {
       message
     );
 
-    if (id === content.author.id || id === content.author.castcleId) return;
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
 
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
+
+    if (id === content.author.id || id === content.author.castcleId) return;
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
     );
@@ -1399,19 +1411,20 @@ export class UsersController {
   @CastcleBasicAuth()
   async getMyAirdropBalances(
     @Auth() { account }: Authorizer,
-    @Query() { status }: GetAirdropBalancesQuery
+    @Query() { campaignFields, status }: GetAirdropBalancesQuery
   ) {
-    const campaigns = await this.campaignService.getAirdropBalances(
-      account._id,
-      status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
-    );
-
-    const totalBalance = await this.userService.getBalance({
-      ownerAccount: account._id,
-    } as unknown as User);
+    const [campaigns, totalBalance] = await Promise.all([
+      this.campaignService.getAirdropBalances(
+        account._id,
+        status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null,
+        campaignFields
+      ),
+      this.userService.getBalance({ ownerAccount: account._id } as User),
+    ]);
 
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });
   }
+
   /**
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {PageDto} body PageDto
@@ -1475,7 +1488,20 @@ export class UsersController {
     const likeContent = await this.contentService.likeContent(content, user);
     if (!likeContent) throw CastcleException.LIKE_IS_EXIST;
 
-    if (id === content.author.id || id === content.author.castcleId) return;
+    const feedItem = await this.rankerService.getFeedItem(
+      req.$credential.account,
+      content
+    );
+
+    if (feedItem) {
+      this.suggestionService.seen(
+        req.$credential.account,
+        feedItem._id,
+        req.$credential
+      );
+    }
+
+    if (String(user._id) === String(content.author.id)) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
@@ -1664,24 +1690,6 @@ export class UsersController {
     this.logger.log('Validate guest');
     await this.validateGuestAccount(req.$credential);
 
-    this.logger.log('Validate dupplicate social');
-    await Promise.all(
-      body.payload.map(async (socialSync) => {
-        const dupSocialSync =
-          await this.socialSyncService.getAllSocialSyncBySocial(
-            socialSync.provider,
-            socialSync.socialId
-          );
-
-        if (dupSocialSync?.length) {
-          this.logger.error(
-            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
-          );
-          throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
-        }
-      })
-    );
-
     const social: string[] = [];
     await Promise.all(
       body.payload.map(async (syncBody) => {
@@ -1753,18 +1761,17 @@ export class UsersController {
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
-        await this.socialSyncService.create(page, syncBody);
 
-        if (
-          syncBody.provider === SocialProvider.Facebook &&
-          syncBody.authToken
-        ) {
-          this.logger.log('Subscribed facebook page');
-          await this.facebookClient.subscribed(
-            syncBody.authToken,
-            syncBody.socialId
-          );
-        }
+        await this.socialSyncServiceV2.sync(page, {
+          socialId: syncBody.socialId,
+          provider: syncBody.provider,
+          userName: syncBody.userName,
+          displayName: syncBody.displayName,
+          avatar: syncBody.avatar,
+          active: syncBody.active,
+          autoPost: syncBody.autoPost,
+          authToken: syncBody.authToken,
+        });
       })
     );
 

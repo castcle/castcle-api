@@ -24,8 +24,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   ValidateNested,
@@ -36,10 +39,13 @@ import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
 
 class UserImage {
-  @ApiProperty()
-  avatar: string | CastcleImage;
-  @ApiProperty()
-  cover: string | CastcleImage;
+  @IsOptional()
+  @IsString()
+  avatar?: string | CastcleImage;
+
+  @IsOptional()
+  @IsString()
+  cover?: string | CastcleImage;
 }
 
 export class UserModelImage {
@@ -94,7 +100,7 @@ export class UserResponseDto {
   overview: string | null;
 
   @ApiProperty()
-  dob: string | null;
+  dob: Date | null;
 
   @ApiProperty()
   images: UserImage;
@@ -148,6 +154,8 @@ export class UserResponseDto {
 
   @ApiProperty()
   canUpdateCastcleId: boolean;
+
+  contact?: ContactDto;
 }
 
 export class linkSocialDetail {
@@ -156,7 +164,7 @@ export class linkSocialDetail {
 }
 
 export class syncSocialDetail {
-  id: string;
+  id?: string;
   provider: string;
   socialId: string;
   userName: string;
@@ -193,15 +201,6 @@ export class UpdateUserDto {
   @ApiProperty()
   @IsOptional()
   links?: Link;
-}
-
-export class UpdateModelUserDto {
-  castcleId?: string;
-  displayName?: string;
-  overview?: string;
-  dob?: string;
-  links?: Link;
-  images?: UserModelImage;
 }
 
 export class PageDto {
@@ -443,4 +442,75 @@ export class GetUserParam {
   @Expose()
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
+}
+export class ContactDto {
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class LinkSocialDetail {
+  [key: string]: string;
+}
+
+export class UpdateUserDtoV2 {
+  @IsOptional()
+  @IsString()
+  castcleId?: string;
+
+  @IsOptional()
+  @IsString()
+  displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dob?: string;
+
+  @IsOptional()
+  @IsObject()
+  contact?: ContactDto;
+
+  @IsOptional()
+  @IsObject()
+  links?: LinkSocialDetail;
+
+  @IsOptional()
+  @IsObject()
+  images?: UserImage;
+}
+export interface UserContact {
+  phone?: string;
+  email?: string;
+}
+
+export class UpdateModelUserDto {
+  castcleId?: string;
+  displayName?: string;
+  overview?: string;
+  dob?: string;
+  links?: Link;
+  contact?: ContactDto;
+  images?: UserModelImage;
+}
+
+export class SyncSocialModelV2 {
+  @IsOptional()
+  facebook?: syncSocialDetail;
+
+  @IsOptional()
+  twitter?: syncSocialDetail;
+
+  @IsOptional()
+  youtube?: syncSocialDetail;
+
+  @IsOptional()
+  medium?: syncSocialDetail;
 }

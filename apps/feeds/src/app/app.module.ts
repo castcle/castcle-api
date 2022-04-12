@@ -21,30 +21,30 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
-import { CommentController } from './controllers/comment.controller';
-import { ContentController } from './controllers/content.controller';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { HealthyModule } from '@castcle-api/healthy';
+import { UtilsCacheModule } from '@castcle-api/utils/cache';
+import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
 } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { CaslModule } from '@castcle-api/casl';
-import { HealthyModule } from '@castcle-api/healthy';
-import { Environment } from '@castcle-api/environments';
 import { TracingModule } from '@narando/nest-xray';
-import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { APP_GUARD } from '@nestjs/core';
-import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
+import { Module } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CommentController } from './controllers/comment.controller';
+import { CommentControllerV2 } from './controllers/comment.controller.v2';
+import { ContentController } from './controllers/content.controller';
+import { CountryController } from './controllers/country.controller';
 import { FeedsController } from './controllers/feeds.controller';
+import { HashtagsController } from './controllers/hashtags.controller';
+import { LanguagesController } from './controllers/languages.controller';
 import { SearchesController } from './controllers/searches.controller';
 import { AppService, SuggestionService } from './services';
-import { LanguagesController } from './controllers/languages.controller';
-import { HashtagsController } from './controllers/hashtags.controller';
-import { CountryController } from './controllers/country.controller';
 
 @Module({
   imports: [
@@ -72,6 +72,7 @@ import { CountryController } from './controllers/country.controller';
     HashtagsController,
     LanguagesController,
     SearchesController,
+    CommentControllerV2,
   ],
   providers: [
     AppService,

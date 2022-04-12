@@ -111,7 +111,7 @@ export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
 
 export class Account extends AccountDocument {
   changePassword: (password: string, email?: string) => Promise<Account | null>;
-  verifyPassword: (password: string) => Promise<boolean>;
+  verifyPassword: (password: string) => boolean;
 }
 
 AccountSchema.methods.changePassword = async function (

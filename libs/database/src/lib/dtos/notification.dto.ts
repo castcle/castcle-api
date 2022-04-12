@@ -22,11 +22,13 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
-import { CastcleImage, CastcleMeta, DEFAULT_QUERY_OPTIONS } from './common.dto';
+import { CastcleImage, CastcleMeta } from './common.dto';
 import { CastcleBase } from './../schemas/base.schema';
+import { TransformStringToEnum } from '@castcle-api/utils/commons';
+import { PaginationQuery } from './pagination.dto';
 
 export enum NotificationType {
   Like = 'like',
@@ -56,6 +58,7 @@ export enum AndroidMessagePriority {
   NORMAL = 'normal',
   HIGH = 'high',
 }
+
 export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
@@ -85,10 +88,13 @@ export class NotificationPayloadDto extends CastcleBase {
   replyId?: Types.ObjectId;
 
   @ApiProperty()
-  adsId?: Types.ObjectId;
+  advertiseId?: Types.ObjectId;
 
   @ApiProperty()
   profileId?: Types.ObjectId;
+
+  @ApiProperty()
+  systemId?: Types.ObjectId;
 
   @ApiProperty()
   read: boolean;
@@ -102,27 +108,27 @@ export class NotificationResponse {
   meta: CastcleMeta;
 }
 
-export class NotificationQueryOptions {
+export class NotificationQuery extends PaginationQuery {
+  @TransformStringToEnum(NotificationSource)
+  @IsString()
+  @IsOptional()
   source?: NotificationSource;
-  maxResults? = DEFAULT_QUERY_OPTIONS.limit;
-  sinceId?: string;
-  untilId?: string;
 }
 
 export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
   maxResults: 25,
-} as NotificationQueryOptions;
+} as NotificationQuery;
 
 export interface CreateNotification {
   source: NotificationSource;
-  sourceUserId?: Types.ObjectId;
+  account: Account;
   type: NotificationType;
+  sourceUserId?: Types.ObjectId;
   contentRef?: Types.ObjectId;
   profileRef?: Types.ObjectId;
   commentRef?: Types.ObjectId;
   replyRef?: Types.ObjectId;
-  account: Account;
-  read: boolean;
+  read?: boolean;
 }
 
 export class RegisterTokenDto {

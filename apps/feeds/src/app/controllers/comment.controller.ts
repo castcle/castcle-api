@@ -39,6 +39,7 @@ import {
   CommentService,
   UserService,
   UserType,
+  RankerService,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
@@ -62,6 +63,7 @@ import {
   CastcleAuth,
   CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
+import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class CommentController {
@@ -70,7 +72,9 @@ export class CommentController {
     private commentService: CommentService,
     private contentService: ContentService,
     private notifyService: NotificationService,
-    private userService: UserService
+    private userService: UserService,
+    private rankerService: RankerService,
+    private suggestionService: SuggestionService
   ) {}
 
   @ApiBody({
@@ -96,6 +100,19 @@ export class CommentController {
       content,
       { message: commentBody.message }
     );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      $credential.account,
+      content._id
+    );
+
+    if (feedItem) {
+      this.suggestionService.seen(
+        $credential.account,
+        feedItem._id,
+        $credential
+      );
+    }
 
     if (String(authorizedUser._id) !== String(content.author.id)) {
       const userOwner = await this.userService.getByIdOrCastcleId(

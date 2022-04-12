@@ -26,4 +26,22 @@ export class AuthenticationsRequest {
     AuthenticationsRequest.post(`/authentications/guestLogin`);
   static register = () =>
     AuthenticationsRequest.post(`/authentications/register`);
+  static memberLogin = () =>
+    AuthenticationsRequest.post(`/authentications/login`);
+  static verificationEmail = () =>
+    AuthenticationsRequest.post(`/authentications/verificationEmail`);
+  static refreshToken = () =>
+    AuthenticationsRequest.post(`/authentications/refreshToken`);
+  static verificationPassword = () =>
+    AuthenticationsRequest.post(`/authentications/verificationPassword`);
+  static changePasswordSubmit = () =>
+    AuthenticationsRequest.post(`/authentications/changePasswordSubmit`);
+  static registerToken = () =>
+    AuthenticationsRequest.post(`/authentications/register-token`);
+  static unregisterToken = () =>
+    AuthenticationsRequest.delete(`/authentications/register-token`);
+  static loginWithSocial = () =>
+    AuthenticationsRequest.post(`/authentications/login-with-social`);
+  static connectWithSocial = () =>
+    AuthenticationsRequest.post(`/authentications/connect-with-social`);
 }

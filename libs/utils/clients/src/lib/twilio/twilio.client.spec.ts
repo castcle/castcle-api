@@ -24,7 +24,54 @@ import { HttpModule } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TwilioClient } from './twilio.client';
 
-describe('TwillioClient', () => {
+export class TwilioClientMock {
+  async requestOtp() {
+    return {
+      sid: 'VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      service_sid: 'VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      account_sid: 'ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      to: '+15017122661',
+      channel: 'sms',
+      status: 'pending',
+      valid: false,
+      date_created: '2015-07-30T20:00:00Z',
+      date_updated: '2015-07-30T20:00:00Z',
+      lookup: {
+        carrier: {
+          error_code: null,
+          name: 'Carrier Name',
+          mobile_country_code: '310',
+          mobile_network_code: '150',
+          type: 'mobile',
+        },
+      },
+      amount: null,
+      payee: null,
+      send_code_attempts: [
+        {
+          time: '2015-07-30T20:00:00Z',
+          channel: 'SMS',
+          channel_id: null,
+        },
+      ],
+      url: 'https://verify.twilio.com/v2/Services/VAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Verifications/VEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    };
+  }
+
+  async verifyOtp(receiver: string, otp: string) {
+    if (otp === '123456') {
+      return { status: 'approved' };
+    } else {
+      return { status: 'pending' };
+    }
+  }
+
+  async canceledOtp() {
+    return true;
+  }
+}
+
+describe('TwilioClient', () => {
   let service: TwilioClient;
 
   beforeEach(async () => {
@@ -36,7 +83,7 @@ describe('TwillioClient', () => {
     service = module.get<TwilioClient>(TwilioClient);
   });
 
-  it('TwillioClient - should be defined', () => {
+  it('TwilioClient - should be defined', () => {
     expect(service).toBeDefined();
   });
 });

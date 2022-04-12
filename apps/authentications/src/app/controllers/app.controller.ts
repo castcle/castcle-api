@@ -61,8 +61,8 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
-import { AppService } from './app.service';
-import { getEmailVerificationHtml } from './configs';
+import { AppService } from '../app.service';
+import { getEmailVerificationHtml } from '../configs';
 import {
   ChangePasswordBody,
   CheckEmailExistDto,
@@ -82,11 +82,11 @@ import {
   TokenResponse,
   VerificationOtpDto,
   VerificationPasswordBody,
-} from './dtos';
+} from '../dtos';
 import {
   GuestInterceptor,
   GuestRequest,
-} from './interceptors/guest.interceptor';
+} from '../interceptors/guest.interceptor';
 
 @CastcleController({ path: 'authentications', version: '1.0' })
 export class AuthenticationController {
@@ -498,7 +498,7 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
-  @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 secs
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 secs
   @Post('verificationOTP')
   @HttpCode(200)
   async verificationOTP(
@@ -528,18 +528,24 @@ export class AuthenticationController {
     type: otpResponse,
   })
   @CastcleBasicAuth()
-  @Throttle(Environment.RATE_LIMIT_OTP_LIMT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
   @Post('requestOTP')
   @HttpCode(200)
   async requestOTP(
     @Body() body: RequestOtpDto,
     @Req() req: CredentialRequest,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip, userAgent, source }: RequestMetadata
   ) {
     this.logger.log(
       `Start request OPT channel: ${body.channel} objective: ${body.objective}`
     );
-    const otp = await this.appService.requestOtpCode(body, req, ip, userAgent);
+    const otp = await this.appService.requestOtpCode(
+      body,
+      req,
+      ip,
+      userAgent,
+      source
+    );
     if (otp && otp.isValid()) {
       const response: otpResponse = {
         objective: body.objective,

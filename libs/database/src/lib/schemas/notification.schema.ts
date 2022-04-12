@@ -63,6 +63,9 @@ class NotificationDocument extends CastcleBase {
   @Prop({ type: SchemaTypes.ObjectId, index: true })
   profileRef: Types.ObjectId;
 
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  systemRef: Types.ObjectId;
+
   @Prop({ index: true })
   read: boolean;
 
@@ -79,6 +82,7 @@ type NotifyResponseOption = {
   message: string;
   user?: User;
   isDate?: boolean;
+  read?: boolean;
 };
 
 export const NotificationSchema =
@@ -94,22 +98,23 @@ NotificationSchema.methods.toNotificationPayload = function ({
   message,
   user,
   isDate = false,
+  read,
 }: NotifyResponseOption) {
   return {
     id: this._id,
     notifyId: this._id,
     source: this.source,
     message,
-    avatar: user
-      ? user?.profile && user?.profile?.images && user?.profile?.images?.avatar
-        ? new Image(user.profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages
-      : undefined,
+    read,
+    avatar: user?.profile?.images?.avatar
+      ? new Image(user.profile.images.avatar).toSignUrls()
+      : Configs.DefaultAvatarImages,
     commentId: this.commentRef,
     contentId: this.contentRef,
     replyId: this.replyRef,
-    adsId: this.adsRef,
+    advertiseId: this.adsRef,
     profileId: this.profileRef,
+    systemId: this.systemRef,
     createdAt: isDate ? this.createdAt : undefined,
     updatedAt: isDate ? this.updatedAt : undefined,
   } as NotificationPayloadDto;

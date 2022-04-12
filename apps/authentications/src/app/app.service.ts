@@ -33,7 +33,7 @@ import {
   OtpObjective,
   User,
 } from '@castcle-api/database/schemas';
-import { Environment as env } from '@castcle-api/environments';
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -48,7 +48,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import { lastValueFrom } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck';
@@ -61,30 +61,26 @@ import {
   VerificationOtpDto,
 } from './dtos';
 
-/*
- * TODO: !!!
- */
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST ? env.SMTP_HOST : 'http://localhost:3334',
-  port: env.SMTP_PORT ? env.SMTP_PORT : 465,
-  secure: true, // true for 465, false for other ports
-  auth: {
-    user: env.SMTP_USERNAME ? env.SMTP_USERNAME : 'username', // generated ethereal user
-    pass: env.SMTP_PASSWORD ? env.SMTP_PASSWORD : 'password', // generated ethereal password
-  },
-});
-
 @Injectable()
 export class AppService {
   constructor(
     private authService: AuthenticationService,
     private download: Downloader,
     private userService: UserService,
-    private twillioClient: TwilioClient,
+    private twilioClient: TwilioClient,
     private httpService: HttpService
   ) {}
 
   private logger = new CastLogger(AppService.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD,
+    },
+  });
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
@@ -98,14 +94,15 @@ export class AppService {
    * @returns {string}
    */
   getCastcleMobileLink = () => {
-    return env && env.LINK_VERIFIED_EMAIL
-      ? env.LINK_VERIFIED_EMAIL
-      : 'https://links.castcle.com/verified-email';
+    return (
+      Environment.LINK_VERIFIED_EMAIL ||
+      'https://links.castcle.com/verified-email'
+    );
   };
 
   async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
     const verifyLink = `${hostname}/authentications/verify`;
-    const info = await transporter.sendMail({
+    const info = await this.transporter.sendMail({
       from: 'castcle-noreply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
       to: toEmail,
@@ -113,10 +110,11 @@ export class AppService {
       html: getSignupHtml(
         toEmail,
         `${verifyLink}?code=${code}`,
-        env && env.SMTP_ADMIN_EMAIL ? env.SMTP_ADMIN_EMAIL : 'admin@castcle.com'
+        Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com'
       ),
     });
-    console.log(`Email is send `, info.messageId, info);
+
+    this.logger.log(`Email is send ${info.messageId} ${info}`);
   }
 
   /**
@@ -360,16 +358,17 @@ export class AppService {
     request: RequestOtpDto,
     credential: CredentialRequest,
     ip: string,
-    userAgent: string
+    userAgent: string,
+    source: string
   ) {
     let account: Account = null;
     let otp: Otp = null;
     const objective = request.objective;
-    // recaptchaToken mobile only
-    if (request.channel == 'mobile') {
+    // recapchaToken mobile and on web only
+    if (source.toLowerCase() == 'web' && request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
-        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${env.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
+        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${Environment.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
         this.logger.log(`[requestOtpCode] url: ${url}`);
         const captchaResponse = await lastValueFrom(
           this.httpService.post(url).pipe(map(({ data }) => data))
@@ -460,7 +459,7 @@ export class AppService {
    * generate and send Otp
    * @param {string} receiver
    * @param {Account} account
-   * @param {TwillioChannel} account
+   * @param {TwilioChannel} account
    * @returns {Otp} Opt data
    */
   async generateAndSendOtp(
@@ -469,7 +468,7 @@ export class AppService {
     countryCode: string,
     receiver: string,
     account: Account,
-    twillioChannel: TwilioChannel,
+    twilioChannel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
     otpChannel: string
@@ -479,18 +478,18 @@ export class AppService {
     try {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
-      const result = await this.twillioClient.requestOtp(
+      const result = await this.twilioClient.requestOtp(
         ip,
         userAgent,
         countryCode,
         receiver,
-        twillioChannel,
+        twilioChannel,
         this.buildTemplateMessage(objective, user),
         account.id
       );
       sid = result.sid;
     } catch (ex) {
-      this.logger.error('Twillio Error : ' + ex.message, ex);
+      this.logger.error('Twilio Error : ' + ex.message, ex);
       if (ex.message == 'Error: Too many requests') {
         throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
       } else {
@@ -597,10 +596,10 @@ export class AppService {
     }
 
     if (otp && otp.isValid()) {
-      this.logger.log('Verify otp with twillio');
+      this.logger.log('Verify otp with twilio');
       let verifyOtpResult: VerificationCheckInstance;
       try {
-        verifyOtpResult = await this.twillioClient.verifyOtp(
+        verifyOtpResult = await this.twilioClient.verifyOtp(
           receiver,
           request.otp
         );
@@ -611,7 +610,7 @@ export class AppService {
         throw CastcleException.EXPIRED_OTP;
       }
 
-      this.logger.log('Twillio result : ' + verifyOtpResult.status);
+      this.logger.log('Twilio result : ' + verifyOtpResult.status);
       if (!verifyOtpResult || verifyOtpResult.status !== 'approved') {
         await this.authService.updateRetryOtp(otp);
         this.logger.error(`Invalid Otp.`);
@@ -680,9 +679,9 @@ export class AppService {
   }
 
   private async cancelOtp(otp: Otp) {
-    this.logger.log('Cancel Twillio Otp.');
+    this.logger.log('Cancel Twilio Otp.');
     try {
-      if (otp.sid) await this.twillioClient.canceledOtp(otp.sid);
+      if (otp.sid) await this.twilioClient.canceledOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
     }

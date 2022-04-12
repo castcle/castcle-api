@@ -48,6 +48,7 @@ import {
 import { WalletType } from '../models/wallet.enum';
 import { Account, Campaign, Queue } from '../schemas';
 import { TAccountService } from './taccount.service';
+import { CampaignField } from '../dtos';
 
 @Injectable()
 export class CampaignService {
@@ -116,7 +117,12 @@ export class CampaignService {
         payload: new ClaimAirdropPayload(campaign.id, to),
       }).save();
 
-      await this.campaignQueue.add({ queueId: queue.id });
+      await this.campaignQueue.add(
+        { queueId: queue.id },
+        {
+          removeOnComplete: true,
+        }
+      );
       this.logger.log(
         JSON.stringify({ campaign, queue }),
         `claimContentReachAirdrops:submit:queueId-${queue.id}`
@@ -193,7 +199,12 @@ export class CampaignService {
       ),
     }).save();
 
-    await this.campaignQueue.add({ queueId: queue.id });
+    await this.campaignQueue.add(
+      { queueId: queue.id },
+      {
+        removeOnComplete: true,
+      }
+    );
 
     this.logger.log(
       JSON.stringify({
@@ -332,7 +343,11 @@ export class CampaignService {
     return transaction;
   }
 
-  async getAirdropBalances(accountId: string, dateRange: Date) {
+  async getAirdropBalances(
+    accountId: string,
+    dateRange: Date,
+    campaignFields: CampaignField[]
+  ) {
     const campaignQuery: FilterQuery<Campaign> = dateRange
       ? {
           startDate: { $lte: dateRange },
@@ -344,6 +359,10 @@ export class CampaignService {
       await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
+
+    if (!campaignFields.includes(CampaignField.ESTIMATE_REWARDS)) {
+      return campaigns;
+    }
 
     const $balances = campaigns.map(async (campaign) => {
       if (campaign.type !== CampaignType.CONTENT_REACH) return campaign;

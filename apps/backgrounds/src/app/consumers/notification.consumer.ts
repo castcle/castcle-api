@@ -58,10 +58,10 @@ export class NotificationConsumer {
   constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) {}
 
   @Process()
-  readOperationJob(job: Job<NotificationMessage>) {
-    try {
-      this.logger.log(JSON.stringify(job));
-      this.firebase.messaging.sendMulticast({
+  async readOperationJob(job: Job<NotificationMessage>) {
+    this.logger.log(JSON.stringify(job));
+    await this.firebase.messaging
+      .sendMulticast({
         data: job.data.payload,
         notification: job.data.notification,
         android: job.data.android,
@@ -69,9 +69,7 @@ export class NotificationConsumer {
         apns: {
           payload: { aps: job.data.aps },
         },
-      });
-    } catch (error) {
-      this.logger.error(error);
-    }
+      })
+      .catch((error) => this.logger.error(error));
   }
 }

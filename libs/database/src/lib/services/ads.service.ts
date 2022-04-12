@@ -22,6 +22,7 @@
  */
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
@@ -60,6 +61,7 @@ import {
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
 import { FilterInterval } from './../models/ads.enum';
+import { DataService } from './data.service';
 import { TAccountService } from './taccount.service';
 
 /**
@@ -80,10 +82,53 @@ export class AdsService {
     public _contentModel: Model<Content>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    public taccountService: TAccountService
+    public taccountService: TAccountService,
+    public dataService: DataService
   ) {}
 
   private logger = new CastLogger(AdsService.name);
+
+  selectContentAds = async (
+    adsPrice: GetAdsPriceResponse,
+    viewerAccountId: string,
+    allContentAdsIds: string[]
+  ) => {
+    const contentScore = await this.dataService.personalizeContents(
+      viewerAccountId,
+      allContentAdsIds
+    );
+    if (!(contentScore && Object.keys(contentScore).length > 0)) return null;
+    const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
+      contentScore[a] > contentScore[b] ? -1 : 1
+    );
+    const adsIndex = adsPrice.adsRef.findIndex(
+      (item) => String(item.$id || item.oid) === sortedContentIds[0]
+    );
+    return adsPrice.ads[adsIndex];
+  };
+
+  selectAdsFromActiveAds = async (
+    adsPrice: GetAdsPriceResponse,
+    viewerAccountId: string
+  ) => {
+    const allContentAdsIds = adsPrice.adsRef
+      .filter((item) => item.$ref === 'content' || item.namespace === 'content')
+      .map((item) => String(item.$id ? item.$id : item.oid));
+    const allUserAdsIds = adsPrice.adsRef
+      .filter((item) => item.$ref === 'user' || item.namespace === 'user')
+      .map((item) => String(item.$id ? item.$id : item.oid));
+    if (allContentAdsIds.length > 0 && allUserAdsIds.length > 0) {
+      const selectedContentAds = await this.selectContentAds(
+        adsPrice,
+        viewerAccountId,
+        allContentAdsIds
+      );
+      return selectedContentAds
+        ? selectedContentAds
+        : adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
+    }
+    return adsPrice.ads[Math.floor(Math.random() * adsPrice.ads.length)];
+  };
 
   getAdsPlacementFromAuction = async (
     contentIds: string[],
@@ -95,8 +140,10 @@ export class AdsService {
       const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
         pipe2AdsAuctionPrice()
       );
-      const selectAds =
-        price[0].ads[Math.floor(Math.random() * price[0].ads.length)];
+      const selectAds = await this.selectAdsFromActiveAds(
+        price[0],
+        viewerAccountId
+      );
       const adsPlacement = new this._adsPlacementModel({
         campaign: selectAds,
         contents: contentIds,
@@ -184,6 +231,25 @@ export class AdsService {
     `${String(account._id).toUpperCase().slice(19)}${new Date().getTime()}`;
 
   /**
+   * Validate if ads owner can create ads or not
+   * @param account
+   * @param adsRequest
+   * @returns
+   */
+  validateAds = async (account: Account, adsRequest: AdsRequestDto) => {
+    const balance = await this.taccountService.getAccountBalance(
+      String(account._id),
+      adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+        ? WalletType.ADS
+        : WalletType.PERSONAL
+    );
+    //invalid balance
+    if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
+      return false;
+    return true;
+  };
+
+  /**
    * Create a ads campaign
    * @param account
    * @param adsRequest
@@ -199,6 +265,8 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
+    if (!(await this.validateAds(account, adsRequest)))
+      throw CastcleException.INVALID_TRANSACTIONS_DATA;
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
@@ -389,6 +457,22 @@ export class AdsService {
             ],
           });
           await adsPlacement.save();
+          adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
+          adsCampaign.statistics.dailySpent += adsPlacement.cost.UST;
+          const adsOwnerBalance = await this.taccountService.getAccountBalance(
+            String(adsCampaign.owner),
+            adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
+              ? WalletType.ADS
+              : WalletType.PERSONAL
+          );
+          //if balance < 1 CAST THen pause ads
+          if (
+            adsOwnerBalance - adsPlacement.cost.UST <=
+            mockOracleService.getCastPrice()
+          )
+            adsCampaign.boostStatus = AdsBoostStatus.Pause;
+          adsCampaign.markModified('statistics');
+          await adsCampaign.save();
         }
         await session.endSession();
       } catch (error: unknown) {

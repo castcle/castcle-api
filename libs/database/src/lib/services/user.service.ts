@@ -441,44 +441,56 @@ export class UserService {
     return user;
   };
 
-  updateUser = (user: User, updateUserDto: UpdateModelUserDto) => {
+  updateUser = (
+    user: User,
+    { images, links, contact, ...updateUserDto }: UpdateModelUserDto
+  ) => {
     if (!user.profile) user.profile = {};
     if (updateUserDto.castcleId) user.displayId = updateUserDto.castcleId;
     if (updateUserDto.displayName) user.displayName = updateUserDto.displayName;
     if (updateUserDto.displayName || updateUserDto.castcleId)
       user.displayIdUpdatedAt = new Date();
     if (updateUserDto.overview) user.profile.overview = updateUserDto.overview;
-    if (updateUserDto.dob) user.profile.birthdate = updateUserDto.dob;
-    if (updateUserDto.images) {
+    if (updateUserDto.dob) user.profile.birthdate = new Date(updateUserDto.dob);
+
+    if (images) {
       if (!user.profile.images) user.profile.images = {};
-      if (updateUserDto.images.avatar)
-        user.profile.images.avatar = updateUserDto.images.avatar;
-      if (updateUserDto.images.cover)
-        user.profile.images.cover = updateUserDto.images.cover;
+      if (images.avatar) user.profile.images.avatar = images.avatar;
+      if (images.cover) user.profile.images.cover = images.cover;
     }
-    if (updateUserDto.links) {
+
+    if (links) {
       if (!user.profile.socials) user.profile.socials = {};
       const socialNetworks = ['facebook', 'medium', 'twitter', 'youtube'];
       socialNetworks.forEach((social) => {
-        if (updateUserDto.links[social])
-          user.profile.socials[social] = updateUserDto.links[social];
-        if (updateUserDto.links.website)
+        if (links[social]) user.profile.socials[social] = links[social];
+        if (links.website)
           user.profile.websites = [
             {
-              website: updateUserDto.links.website,
-              detail: updateUserDto.links.website,
+              website: links.website,
+              detail: links.website,
             },
           ];
       });
     }
+    if (!user.contact) user.contact = {};
+    if (contact?.email) user.contact.email = contact?.email;
+    if (contact?.phone) user.contact.phone = contact?.phone;
+    user.set(updateUserDto);
     user.markModified('profile');
+    user.markModified('contact');
     console.debug('saving dto', updateUserDto);
     console.debug('saving website', user.profile.websites);
     console.debug('saving user', user);
-    this.userQueue.add({
-      id: user._id,
-      action: CastcleQueueAction.UpdateProfile,
-    });
+    this.userQueue.add(
+      {
+        id: user._id,
+        action: CastcleQueueAction.UpdateProfile,
+      },
+      {
+        removeOnComplete: true,
+      }
+    );
 
     return user.save();
   };
@@ -766,10 +778,15 @@ export class UserService {
         `deactivate:success:account-${account._id}`
       );
 
-      this.userQueue.add({
-        id: account,
-        action: CastcleQueueAction.Deleting,
-      });
+      this.userQueue.add(
+        {
+          id: account,
+          action: CastcleQueueAction.Deleting,
+        },
+        {
+          removeOnComplete: true,
+        }
+      );
     } catch (error: unknown) {
       this.logger.error(error, `deactivate:error:account-${account._id}`);
       throw error;

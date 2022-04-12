@@ -28,7 +28,7 @@ import {
 type Aps = {
   alert: string;
   sound: string;
-  category: 'CONTENTS' | 'COMMENTS';
+  category?: 'CONTENTS' | 'COMMENTS';
   badge: number;
   'mutable-content': number;
 };
@@ -44,7 +44,6 @@ type NotificationPayload = {
 
 type AndroidConfigs = {
   priority: AndroidMessagePriority;
-  data: any;
   notification: {
     body: string;
     default_sound: boolean;

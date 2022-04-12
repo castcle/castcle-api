@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
@@ -67,20 +66,24 @@ import { DefaultContentSchema } from './schemas/default-content.schema';
 import { AdsService } from './services/ads.service';
 import { AnalyticService } from './services/analytic.service';
 import { AuthenticationService } from './services/authentication.service';
+import { AuthenticationServiceV2 } from './services/authentication.service.v2';
 import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
+import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
 import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
+import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
+import { UserServiceV2 } from './services/user.service.v2';
 import { UxEngagementService } from './services/uxengagement.service';
 import {
   createCastcleMeta,
@@ -176,6 +179,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   ],
   providers: [
     AuthenticationService,
+    AuthenticationServiceV2,
     UserService,
     CampaignService,
     ContentService,
@@ -193,10 +197,14 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     TAccountService,
     SocialSyncServiceV2,
+    UserServiceV2,
+    NotificationServiceV2,
+    CommentServiceV2,
   ],
   exports: [
     BullModule,
     AuthenticationService,
+    AuthenticationServiceV2,
     UserService,
     CampaignService,
     ContentService,
@@ -214,12 +222,16 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     TAccountService,
     SocialSyncServiceV2,
+    UserServiceV2,
+    NotificationServiceV2,
+    CommentServiceV2,
   ],
 })
 export class DatabaseModule {}
 
 export {
   AuthenticationService,
+  AuthenticationServiceV2,
   UserService,
   CampaignService,
   ContentService,
@@ -240,4 +252,7 @@ export {
   DataService,
   TAccountService,
   SocialSyncServiceV2,
+  UserServiceV2,
+  NotificationServiceV2,
+  CommentServiceV2,
 };

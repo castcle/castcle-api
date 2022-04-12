@@ -25,6 +25,11 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import {
+  GetBalanceResponse,
+  pipelineOfGetBalanceFromWalletType,
+} from '../aggregations';
+import { CastcleNumber, WalletType } from '../models';
 import { TransactionDto } from '../models/caccount.model';
 import { CAccount, CAccountNature } from '../schemas/caccount.schema';
 import { Transaction } from '../schemas/transaction.schema';
@@ -70,6 +75,18 @@ export class TAccountService {
     return this._getLedgers(caccount);
   }
 
+  /**
+   * Get user's balance
+   * @param {string} accountId
+   */
+  getAccountBalance = async (accountId: string, walletType: WalletType) => {
+    const [balance] =
+      await this._transactionModel.aggregate<GetBalanceResponse>(
+        pipelineOfGetBalanceFromWalletType(accountId, walletType)
+      );
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
+
   async validateTransfer(transferDTO: TransactionDto) {
     //value from equal value to
     if (
@@ -94,7 +111,15 @@ export class TAccountService {
     ) {
       return false;
     }
-
+    //validate source balance
+    if (transferDTO.from.account && transferDTO.from.value) {
+      const accountBalance = await this.getAccountBalance(
+        transferDTO.from.account,
+        transferDTO.from.type
+      );
+      if (!(accountBalance > 0 && accountBalance - transferDTO.from.value > 0))
+        return false;
+    }
     //simulate after transfer there is no minus balance
     //get all CAccount balance from ledgers
     //add the ledgers info and check if they all 0
