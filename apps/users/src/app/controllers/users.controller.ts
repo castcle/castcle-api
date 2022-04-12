@@ -1427,19 +1427,20 @@ export class UsersController {
   @CastcleBasicAuth()
   async getMyAirdropBalances(
     @Auth() { account }: Authorizer,
-    @Query() { status }: GetAirdropBalancesQuery
+    @Query() { campaignFields, status }: GetAirdropBalancesQuery
   ) {
-    const campaigns = await this.campaignService.getAirdropBalances(
-      account._id,
-      status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null
-    );
-
-    const totalBalance = await this.userService.getBalance({
-      ownerAccount: account._id,
-    } as unknown as User);
+    const [campaigns, totalBalance] = await Promise.all([
+      this.campaignService.getAirdropBalances(
+        account._id,
+        status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null,
+        campaignFields
+      ),
+      this.userService.getBalance({ ownerAccount: account._id } as User),
+    ]);
 
     return ResponseDto.ok({ payload: { totalBalance, campaigns } });
   }
+
   /**
    * @param {CredentialRequest} req Request that has credential from interceptor or passport
    * @param {PageDto} body PageDto
