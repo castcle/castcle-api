@@ -60,7 +60,7 @@ export class NotificationConsumer {
   @Process()
   async readOperationJob(job: Job<NotificationMessage>) {
     this.logger.log(JSON.stringify(job));
-    this.firebase.messaging
+    await this.firebase.messaging
       .sendMulticast({
         data: job.data.payload,
         notification: job.data.notification,
