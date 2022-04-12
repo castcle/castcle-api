@@ -21,19 +21,38 @@
  * or have any questions.
  */
 
-import { AuthenticationServiceV2 } from '@castcle-api/database';
+import {
+  AuthenticationService,
+  AuthenticationServiceV2,
+} from '@castcle-api/database';
 import { LoginWithEmailDto } from '@castcle-api/database/dtos';
+import { CastLogger } from '@castcle-api/logger';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
 } from '@castcle-api/utils/decorators';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Body, Post, Req } from '@nestjs/common';
+import { CastcleException } from '@castcle-api/utils/exception';
+import {
+  CredentialRequest,
+  TokenInterceptor,
+  TokenRequest,
+} from '@castcle-api/utils/interceptors';
+import { Body, Post, Req, UseInterceptors } from '@nestjs/common';
+import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { AppService } from '../app.service';
+import { RefreshTokenResponse } from '../dtos';
+import { AuthenticationController } from './app.controller';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
-  constructor(private authenticationService: AuthenticationServiceV2) {}
+  private logger = new CastLogger(AuthenticationController.name);
+
+  constructor(
+    private authenticationService: AuthenticationServiceV2,
+    private authenticationServiceV1: AuthenticationService,
+    private appService: AppService
+  ) {}
 
   @Post('login-with-email')
   @CastcleBasicAuth()
@@ -47,5 +66,62 @@ export class AuthenticationControllerV2 {
       email,
       password
     );
+  }
+
+  @ApiResponse({
+    status: 201,
+    type: RefreshTokenResponse,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'will show if some of header is missing or invalid refresh token',
+  })
+  @ApiBearerAuth()
+  @UseInterceptors(TokenInterceptor)
+  @Post('refresh-token')
+  async refreshToken(@Req() req: TokenRequest) {
+    /*
+     * TODO: !!!
+     * should embed  account and user for better performance
+     */
+    const credential =
+      await this.authenticationServiceV1.getCredentialFromRefreshToken(
+        req.$token
+      );
+    if (credential && credential.isRefreshTokenValid()) {
+      const userProfile = await this.appService.getUserProfile(credential);
+      this.logger.log('Validate profile member.');
+      if (!userProfile.profile && !credential.account.isGuest) {
+        this.logger.warn('Member Profile is empty.');
+        throw CastcleException.INVALID_REFRESH_TOKEN;
+      }
+
+      const accessTokenPayload =
+        await this.authenticationServiceV1.getAccessTokenPayloadFromCredential(
+          credential
+        );
+
+      const newAccessToken = await credential.renewAccessToken(
+        accessTokenPayload
+      );
+
+      const account = await this.authenticationServiceV1.getAccountFromId(
+        credential.account._id
+      );
+      return {
+        profile: userProfile.profile
+          ? await userProfile.profile.toUserResponse({
+              passwordNotSet: account.password ? false : true,
+              mobile: account.mobile,
+            })
+          : null,
+        pages: userProfile.pages
+          ? userProfile.pages.items.map((item) => item.toPageResponse())
+          : null,
+        accessToken: newAccessToken,
+      } as RefreshTokenResponse;
+    }
+    throw CastcleException.INVALID_REFRESH_TOKEN;
   }
 }
