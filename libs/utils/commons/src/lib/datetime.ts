@@ -68,14 +68,11 @@ export class CastcleDate {
   };
   static checkIntervalFollowed = (dateBefore: Date, unitTime: number) => {
     if (!dateBefore || unitTime === 0) return true;
-
-    if (
+    return (
       new Date().getTime() >
       new Date(
         DateTime.fromJSDate(dateBefore).plus({ hours: unitTime }).toISO()
       ).getTime()
-    )
-      return true;
-    return false;
+    );
   };
 }
