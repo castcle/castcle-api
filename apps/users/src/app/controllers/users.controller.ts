@@ -36,6 +36,7 @@ import {
   RankerService,
   SocialProvider,
   SocialSyncService,
+  SocialSyncServiceV2,
   UserService,
   UserType,
 } from '@castcle-api/database';
@@ -146,7 +147,8 @@ export class UsersController {
     private notifyService: NotificationService,
     private download: Downloader,
     private facebookClient: FacebookClient,
-    private rankerService: RankerService
+    private rankerService: RankerService,
+    private socialSyncServiceV2: SocialSyncServiceV2
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -1703,24 +1705,6 @@ export class UsersController {
     this.logger.log('Validate guest');
     await this.validateGuestAccount(req.$credential);
 
-    this.logger.log('Validate dupplicate social');
-    await Promise.all(
-      body.payload.map(async (socialSync) => {
-        const dupSocialSync =
-          await this.socialSyncService.getAllSocialSyncBySocial(
-            socialSync.provider,
-            socialSync.socialId
-          );
-
-        if (dupSocialSync?.length) {
-          this.logger.error(
-            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
-          );
-          throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
-        }
-      })
-    );
-
     const social: string[] = [];
     await Promise.all(
       body.payload.map(async (syncBody) => {
@@ -1792,18 +1776,17 @@ export class UsersController {
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
-        await this.socialSyncService.create(page, syncBody);
 
-        if (
-          syncBody.provider === SocialProvider.Facebook &&
-          syncBody.authToken
-        ) {
-          this.logger.log('Subscribed facebook page');
-          await this.facebookClient.subscribed(
-            syncBody.authToken,
-            syncBody.socialId
-          );
-        }
+        await this.socialSyncServiceV2.sync(page, {
+          socialId: syncBody.socialId,
+          provider: syncBody.provider,
+          userName: syncBody.userName,
+          displayName: syncBody.displayName,
+          avatar: syncBody.avatar,
+          active: syncBody.active,
+          autoPost: syncBody.autoPost,
+          authToken: syncBody.authToken,
+        });
       })
     );
 
