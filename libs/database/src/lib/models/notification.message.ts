@@ -44,7 +44,6 @@ type NotificationPayload = {
 
 type AndroidConfigs = {
   priority: AndroidMessagePriority;
-  data: any;
   notification: {
     body: string;
     default_sound: boolean;

@@ -66,4 +66,13 @@ export class CastcleDate {
     const blockUpdate = displayIdUpdateAt.getTime();
     return now - blockUpdate >= 0 ? true : false;
   };
+  static checkIntervalFollowed = (dateBefore: Date, unitTime: number) => {
+    if (!dateBefore || unitTime === 0) return true;
+    return (
+      new Date().getTime() >
+      new Date(
+        DateTime.fromJSDate(dateBefore).plus({ hours: unitTime }).toISO()
+      ).getTime()
+    );
+  };
 }

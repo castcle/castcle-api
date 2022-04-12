@@ -121,14 +121,14 @@ export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
 
 export interface CreateNotification {
   source: NotificationSource;
-  sourceUserId?: Types.ObjectId;
+  account: Account;
   type: NotificationType;
+  sourceUserId?: Types.ObjectId;
   contentRef?: Types.ObjectId;
   profileRef?: Types.ObjectId;
   commentRef?: Types.ObjectId;
   replyRef?: Types.ObjectId;
-  account: Account;
-  read: boolean;
+  read?: boolean;
 }
 
 export class RegisterTokenDto {
