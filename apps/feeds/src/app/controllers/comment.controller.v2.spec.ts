@@ -133,4 +133,36 @@ describe('CommentControllerV2', () => {
       expect(comments.meta).toBeDefined();
     });
   });
+
+  describe('#getAllReplyComment()', () => {
+    it('should display all reply comments', async () => {
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi reply v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+
+      const comment = await contentService.createCommentForContent(
+        user,
+        content,
+        {
+          message: 'Hello #hello v2',
+        }
+      );
+
+      await contentService.replyComment(user, comment, {
+        message: 'Reply #hello v2 #2',
+      });
+
+      const replyComments = await commentController.getAllReplyComment(
+        content._id,
+        comment._id,
+        credential,
+        { hasRelationshipExpansion: false }
+      );
+      expect(replyComments.payload.length).toEqual(1);
+      expect(replyComments.includes).toBeDefined();
+      expect(replyComments.meta).toBeDefined();
+    });
+  });
 });
