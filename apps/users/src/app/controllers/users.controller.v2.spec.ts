@@ -43,6 +43,7 @@ import {
   CommentParam,
   ContentType,
   GetUserParam,
+  ReplyCommentParam,
   ShortPayload,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
@@ -67,7 +68,6 @@ describe('CommentControllerV2', () => {
   let service: UserServiceV2;
   let authService: AuthenticationService;
   let contentService: ContentService;
-  let commentService: CommentServiceV2;
   let userServiceV1: UserService;
 
   beforeAll(async () => {
@@ -129,12 +129,10 @@ describe('CommentControllerV2', () => {
         },
       ],
     }).compile();
-
     service = app.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
     contentService = app.get<ContentService>(ContentService);
-    commentService = app.get<CommentServiceV2>(CommentServiceV2);
     appController = app.get<UsersControllerV2>(UsersControllerV2);
   });
 
@@ -142,6 +140,7 @@ describe('CommentControllerV2', () => {
     let mocksUsers: MockUserDetail[];
     let content;
     let comment;
+    let replyComment;
     beforeAll(async () => {
       mocksUsers = await generateMockUsers(3, 0, {
         userService: userServiceV1,
@@ -232,6 +231,28 @@ describe('CommentControllerV2', () => {
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
+    it('replyComment() should be able create a comment in comment(reply)', async () => {
+      const user = mocksUsers[2].user;
+      const authorizer = new Authorizer(
+        mocksUsers[2].account,
+        user,
+        mocksUsers[2].credential
+      );
+      replyComment = await appController.replyComment(
+        authorizer,
+        {
+          message: 'hello reply',
+        },
+        {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+        } as CommentParam
+      );
+
+      expect(replyComment.payload).toBeDefined();
+      expect(replyComment.includes).toBeDefined();
+    });
+
     it('deleteComment() return Exception when use wrong account', async () => {
       const user = mocksUsers[2].user;
       const authorizer = new Authorizer(
@@ -254,17 +275,176 @@ describe('CommentControllerV2', () => {
         user,
         mocksUsers[1].credential
       );
-      appController.deleteComment(authorizer, {
+      await appController.deleteComment(authorizer, {
         userId: user.displayId,
         sourceCommentId: comment.payload.id,
       } as CommentParam);
-      const resultComment = await commentService.getCommentsByContentId(
-        user,
-        comment.payload.id,
-        { maxResults: 5, hasRelationshipExpansion: false }
+      const resultComment = await contentService.getCommentById(
+        comment.payload.id
       );
 
-      expect(resultComment.payload.length).toEqual(0);
+      const resultReply = await contentService.getCommentById(
+        replyComment.payload.id
+      );
+      expect(resultComment).toBeNull();
+      expect(resultReply).toBeNull();
+    });
+  });
+
+  describe('#ReplyComment()', () => {
+    let mocksUsers: MockUserDetail[];
+    let content;
+    let comment;
+    let replyComment;
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(3, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      content = await contentService.createContentFromUser(mocksUsers[0].user, {
+        type: ContentType.Short,
+        payload: {
+          message: 'Hi Jack',
+        } as ShortPayload,
+        castcleId: mocksUsers[0].user.displayId,
+      });
+
+      const user = mocksUsers[1].user;
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        user,
+        mocksUsers[1].credential
+      );
+      comment = await appController.createComment(
+        authorizer,
+        {
+          message: 'hello',
+          contentId: content._id,
+        },
+        { userId: user.id } as GetUserParam
+      );
+    });
+
+    afterAll(async () => {
+      await service._userModel.deleteMany({});
+    });
+
+    it('replyComment() should be able to reply a comment', async () => {
+      const user = mocksUsers[2].user;
+      const authorizer = new Authorizer(
+        mocksUsers[2].account,
+        user,
+        mocksUsers[2].credential
+      );
+      replyComment = await appController.replyComment(
+        authorizer,
+        {
+          message: 'Yo hello',
+        },
+        {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+        } as CommentParam
+      );
+
+      expect(replyComment.payload).toBeDefined();
+      expect(replyComment.includes).toBeDefined();
+    });
+
+    it('replyComment() return Exception when use wrong comment id', async () => {
+      const user = mocksUsers[2].user;
+      const authorizer = new Authorizer(
+        mocksUsers[2].account,
+        user,
+        mocksUsers[2].credential
+      );
+      await expect(
+        appController.replyComment(
+          authorizer,
+          {
+            message: 'hello',
+          },
+          {
+            userId: user.displayId,
+            sourceCommentId: '624a7c01df5d0069d04655da',
+          } as CommentParam
+        )
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
+    });
+
+    it('updateReplyComment() should update a message of reply comment', async () => {
+      const user = mocksUsers[2].user;
+      const authorizer = new Authorizer(
+        mocksUsers[2].account,
+        user,
+        mocksUsers[2].credential
+      );
+      const updateReplyComment = await appController.updateReplyComment(
+        authorizer,
+        { message: 'Yo zup' },
+        {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+          replyCommentId: replyComment.payload.id,
+        } as ReplyCommentParam
+      );
+      expect(updateReplyComment.payload).toBeDefined();
+    });
+
+    it('updateReplyComment() return Exception when use wrong account', async () => {
+      const user = mocksUsers[1].user;
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        user,
+        mocksUsers[1].credential
+      );
+      await expect(
+        appController.updateReplyComment(authorizer, { message: 'zup edit' }, {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+          replyCommentId: replyComment.payload.id,
+        } as ReplyCommentParam)
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
+    });
+
+    it('deleteReplyComment() return Exception when use wrong account', async () => {
+      const user = mocksUsers[1].user;
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        user,
+        mocksUsers[1].credential
+      );
+      await expect(
+        appController.deleteReplyComment(authorizer, {
+          userId: user.displayId,
+          sourceCommentId: comment.payload.id,
+          replyCommentId: replyComment.payload.id,
+        } as ReplyCommentParam)
+      ).rejects.toEqual(CastcleException.FORBIDDEN);
+    });
+
+    it('deleteReplyComment() should delete a comment', async () => {
+      const user = mocksUsers[2].user;
+      const authorizer = new Authorizer(
+        mocksUsers[2].account,
+        user,
+        mocksUsers[2].credential
+      );
+      await appController.deleteReplyComment(authorizer, {
+        userId: user.displayId,
+        sourceCommentId: comment.payload.id,
+        replyCommentId: replyComment.payload.id,
+      } as ReplyCommentParam);
+      const resultComment = await contentService.getCommentById(
+        comment.payload.id
+      );
+
+      const resultReply = await contentService.getCommentById(
+        replyComment.payload.id
+      );
+      expect(resultComment).toBeDefined();
+      expect(resultReply).toBeNull();
     });
   });
 });
