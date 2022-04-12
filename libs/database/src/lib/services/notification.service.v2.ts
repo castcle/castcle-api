@@ -23,7 +23,7 @@
 
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleLocalization } from '@castcle-api/utils/commons';
+import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -116,6 +116,23 @@ export class NotificationServiceV2 {
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     ) {
+      const notifyModel = await this._notificationModel
+        .findOne({
+          ...notificationData,
+          ...{ sourceUserId: { $in: [sourceUserId] } },
+        })
+        .sort({ _id: -1, createdAt: -1 })
+        .exec();
+
+      this.#logger.log(`Check follow interval time.`);
+      if (
+        !CastcleDate.checkIntervalFollowed(
+          notifyModel?.createdAt,
+          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+        )
+      )
+        return;
+
       await new this._notificationModel({
         ...notificationData,
         read,
@@ -138,8 +155,18 @@ export class NotificationServiceV2 {
     }
     this.#logger.log('Insert data into notification is done.');
 
+    if (
+      notificationData.type === NotificationType.Tag ||
+      notificationData.type === NotificationType.Follow
+    )
+      notificationData = {
+        ...notificationData,
+        ...{ sourceUserId: { $in: [sourceUserId] } },
+      };
+
     const notify = await this._notificationModel
       .findOne(notificationData)
+      .sort({ createdAt: -1 })
       .exec();
     this.#logger.log(
       'Insert data into notification is done.',
@@ -209,69 +236,92 @@ export class NotificationServiceV2 {
     });
     let message = '';
     const displayNames = userSort.map((user) => user.displayName);
-    if (notify.type === NotificationType.Like)
-      if (notify.commentRef) {
-        message = CastcleLocalization.getTemplateLikeComment(
+
+    switch (notify.type) {
+      case NotificationType.Like:
+        if (notify.commentRef) {
+          message = CastcleLocalization.getTemplateLikeComment(
+            language,
+            displayNames,
+            userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+          );
+        } else {
+          message = CastcleLocalization.getTemplateLike(
+            language,
+            displayNames,
+            userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+          );
+        }
+        break;
+
+      case NotificationType.Comment:
+        message = CastcleLocalization.getTemplateComment(
           language,
           displayNames,
           userOwner.type === UserType.PAGE ? userOwner.displayName : ''
         );
-      } else {
-        message = CastcleLocalization.getTemplateLike(
+        break;
+
+      case NotificationType.Farm:
+        message = CastcleLocalization.getTemplateFarm(
           language,
           displayNames,
           userOwner.type === UserType.PAGE ? userOwner.displayName : ''
         );
-      }
-    if (notify.type === NotificationType.Comment)
-      message = CastcleLocalization.getTemplateComment(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
-    if (notify.type === NotificationType.Farm)
-      message = CastcleLocalization.getTemplateFarm(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
-    if (notify.type === NotificationType.Quote)
-      message = CastcleLocalization.getTemplateQuote(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
-    if (notify.type === NotificationType.Recast)
-      message = CastcleLocalization.getTemplateRecast(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
-    if (notify.type === NotificationType.Reply)
-      message = CastcleLocalization.getTemplateReply(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
+        break;
 
-    if (notify.type === NotificationType.Tag)
-      message = CastcleLocalization.getTemplateTag(
-        language,
-        displayNames,
-        userOwner.type === UserType.PAGE ? userOwner.displayName : ''
-      );
+      case NotificationType.Quote:
+        message = CastcleLocalization.getTemplateQuote(
+          language,
+          displayNames,
+          userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+        );
+        break;
 
-    if (notify.type === NotificationType.System)
-      message = CastcleLocalization.getTemplateSystem(language, displayNames);
+      case NotificationType.Recast:
+        message = CastcleLocalization.getTemplateRecast(
+          language,
+          displayNames,
+          userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+        );
+        break;
 
-    if (notify.type === NotificationType.AdsApprove)
-      message = CastcleLocalization.getTemplateAdsApprove(language);
+      case NotificationType.Reply:
+        message = CastcleLocalization.getTemplateReply(
+          language,
+          displayNames,
+          userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+        );
+        break;
 
-    if (notify.type === NotificationType.AdsDecline)
-      message = CastcleLocalization.getTemplateAdsDecline(language);
+      case NotificationType.Tag:
+        message = CastcleLocalization.getTemplateTag(
+          language,
+          displayNames,
+          userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+        );
+        break;
 
-    if (notify.type === NotificationType.Follow)
-      message = CastcleLocalization.getTemplateFollow(language, displayNames);
+      case NotificationType.System:
+        message = CastcleLocalization.getTemplateSystem(language, displayNames);
+        break;
+
+      case NotificationType.AdsApprove:
+        message = CastcleLocalization.getTemplateAdsApprove(language);
+        break;
+
+      case NotificationType.AdsDecline:
+        message = CastcleLocalization.getTemplateAdsDecline(language);
+        break;
+
+      default:
+        message = CastcleLocalization.getTemplateFollow(
+          language,
+          displayNames,
+          userOwner.type === UserType.PAGE ? userOwner.displayName : ''
+        );
+        break;
+    }
 
     this.#logger.log('Prepare message show display name.', message);
     return message;
@@ -313,96 +363,120 @@ export class NotificationServiceV2 {
         let message = '';
         const displayNames = userSort.map((user) => user.displayName);
 
-        if (notify.type === NotificationType.Like)
-          if (notify.commentRef) {
-            message = CastcleLocalization.getTemplateLikeComment(
+        switch (notify.type) {
+          case NotificationType.Like:
+            if (notify.commentRef) {
+              message = CastcleLocalization.getTemplateLikeComment(
+                language,
+                displayNames,
+                userSource[0]?.type === UserType.PAGE
+                  ? userSource[0]?.displayName
+                  : ''
+              );
+            } else {
+              message = CastcleLocalization.getTemplateLike(
+                language,
+                displayNames,
+                userSource[0]?.type === UserType.PAGE
+                  ? userSource[0]?.displayName
+                  : ''
+              );
+            }
+            break;
+
+          case NotificationType.Comment:
+            message = CastcleLocalization.getTemplateComment(
               language,
               displayNames,
               userSource[0]?.type === UserType.PAGE
                 ? userSource[0]?.displayName
                 : ''
             );
-          } else {
-            message = CastcleLocalization.getTemplateLike(
+            break;
+
+          case NotificationType.Farm:
+            message = CastcleLocalization.getTemplateFarm(
               language,
               displayNames,
               userSource[0]?.type === UserType.PAGE
                 ? userSource[0]?.displayName
                 : ''
             );
-          }
-        if (notify.type === NotificationType.Comment)
-          message = CastcleLocalization.getTemplateComment(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
-        if (notify.type === NotificationType.Farm)
-          message = CastcleLocalization.getTemplateFarm(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
-        if (notify.type === NotificationType.Quote)
-          message = CastcleLocalization.getTemplateQuote(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
-        if (notify.type === NotificationType.Recast)
-          message = CastcleLocalization.getTemplateRecast(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
-        if (notify.type === NotificationType.Reply)
-          message = CastcleLocalization.getTemplateReply(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
+            break;
 
-        if (notify.type === NotificationType.Tag)
-          message = CastcleLocalization.getTemplateTag(
-            language,
-            displayNames,
-            userSource[0]?.type === UserType.PAGE
-              ? userSource[0]?.displayName
-              : ''
-          );
+          case NotificationType.Quote:
+            message = CastcleLocalization.getTemplateQuote(
+              language,
+              displayNames,
+              userSource[0]?.type === UserType.PAGE
+                ? userSource[0]?.displayName
+                : ''
+            );
+            break;
 
-        if (notify.type === NotificationType.System)
-          message = CastcleLocalization.getTemplateSystem(
-            language,
-            displayNames
-          );
-        if (notify.type === NotificationType.AdsApprove)
-          message = CastcleLocalization.getTemplateAdsApprove(language);
+          case NotificationType.Recast:
+            message = CastcleLocalization.getTemplateRecast(
+              language,
+              displayNames,
+              userSource[0]?.type === UserType.PAGE
+                ? userSource[0]?.displayName
+                : ''
+            );
+            break;
 
-        if (notify.type === NotificationType.AdsDecline)
-          message = CastcleLocalization.getTemplateAdsDecline(language);
+          case NotificationType.Reply:
+            message = CastcleLocalization.getTemplateReply(
+              language,
+              displayNames,
+              userSource[0]?.type === UserType.PAGE
+                ? userSource[0]?.displayName
+                : ''
+            );
+            break;
 
-        if (notify.type === NotificationType.Follow)
-          message = CastcleLocalization.getTemplateFollow(
-            language,
-            displayNames
-          );
+          case NotificationType.Tag:
+            message = CastcleLocalization.getTemplateTag(
+              language,
+              displayNames,
+              userSource[0]?.type === UserType.PAGE
+                ? userSource[0]?.displayName
+                : ''
+            );
+            break;
+
+          case NotificationType.System:
+            message = CastcleLocalization.getTemplateSystem(
+              language,
+              displayNames
+            );
+            break;
+
+          case NotificationType.AdsApprove:
+            message = CastcleLocalization.getTemplateAdsApprove(language);
+            break;
+
+          case NotificationType.AdsDecline:
+            message = CastcleLocalization.getTemplateAdsDecline(language);
+            break;
+
+          default:
+            message = CastcleLocalization.getTemplateFollow(
+              language,
+              displayNames,
+              userSource[0]?.type === UserType.PAGE
+                ? userSource[0]?.displayName
+                : ''
+            );
+            break;
+        }
+
         this.#logger.log('Prepare message show display name.', message);
 
         return notify.toNotificationPayload({
           message: message,
           user: userSort[0],
           isDate: true,
+          read: notify.read,
         });
       })
     );
@@ -419,8 +493,7 @@ export class NotificationServiceV2 {
         body: message,
       },
       android: {
-        priority: AndroidMessagePriority.NORMAL,
-        data: notify.toNotificationPayload({ message }),
+        priority: AndroidMessagePriority.HIGH,
         notification: {
           body: message,
           default_sound: true,
@@ -439,22 +512,40 @@ export class NotificationServiceV2 {
   };
 
   checkNotify = (notify) => {
-    if (notify.type === NotificationType.Like) {
-      return Environment.NOTIFY_LIKE == '1' ? true : false;
-    } else if (notify.type === NotificationType.Recast) {
-      return Environment.NOTIFY_RECAST == '1' ? true : false;
-    } else if (notify.type === NotificationType.Quote) {
-      return Environment.NOTIFY_QUOTE == '1' ? true : false;
-    } else if (notify.type === NotificationType.Comment) {
-      return Environment.NOTIFY_COMMENT == '1' ? true : false;
-    } else if (notify.type === NotificationType.Farm) {
-      return Environment.NOTIFY_FARM == '1' ? true : false;
-    } else if (notify.type === NotificationType.Reply) {
-      return Environment.NOTIFY_REPLY == '1' ? true : false;
-    } else if (notify.type === NotificationType.Tag) {
-      return Environment.NOTIFY_TAG == '1' ? true : false;
-    } else {
-      return Environment.NOTIFY_SYSTEM == '1' ? true : false;
+    let isNotify = false;
+    switch (notify.type) {
+      case NotificationType.Like:
+        isNotify = Environment.NOTIFY_LIKE == '1' ? true : false;
+        break;
+
+      case NotificationType.Recast:
+        isNotify = Environment.NOTIFY_RECAST == '1' ? true : false;
+        break;
+
+      case NotificationType.Quote:
+        isNotify = Environment.NOTIFY_QUOTE == '1' ? true : false;
+        break;
+
+      case NotificationType.Comment:
+        isNotify = Environment.NOTIFY_COMMENT == '1' ? true : false;
+        break;
+
+      case NotificationType.Farm:
+        isNotify = Environment.NOTIFY_FARM == '1' ? true : false;
+        break;
+
+      case NotificationType.Reply:
+        isNotify = Environment.NOTIFY_REPLY == '1' ? true : false;
+        break;
+
+      case NotificationType.Tag:
+        isNotify = Environment.NOTIFY_TAG == '1' ? true : false;
+        break;
+
+      default:
+        isNotify = Environment.NOTIFY_SYSTEM == '1' ? true : false;
+        break;
     }
+    return isNotify;
   };
 }

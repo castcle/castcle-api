@@ -194,6 +194,7 @@ export class Environment {
   static ADS_MINIMUM_FEED_COOL_DOWN =
     process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;
 
+  //  Notify
   static NOTIFY_LIKE = process.env.NOTIFY_LIKE || 0;
   static NOTIFY_RECAST = process.env.NOTIFY_RECAST || 0;
   static NOTIFY_QUOTE = process.env.NOTIFY_QUOTE || 0;
@@ -204,4 +205,10 @@ export class Environment {
   static NOTIFY_ADS = process.env.NOTIFY_ADS || 0;
   static NOTIFY_FOLLOW = process.env.NOTIFY_FOLLOW || 0;
   static NOTIFY_SYSTEM = process.env.NOTIFY_SYSTEM || 0;
+
+  /**
+   * Notify follow interval: value of hour ex. 1
+   * @default 0 hour
+   */
+  static NOTIFY_FOLLOW_INTERVAL = process.env.NOTIFY_FOLLOW_INTERVAL || 0;
 }
