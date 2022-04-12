@@ -1,6 +1,10 @@
 import { SocialProvider } from '@castcle-api/database';
 import { User } from '../../models';
-import { AuthenticationsRequest, UsersRequest } from '../../requests';
+import {
+  AuthenticationsRequest,
+  PageRequest,
+  UsersRequest,
+} from '../../requests';
 import { userAlpha } from '../../variables';
 
 export const testSyncSocialFlow = () => {
@@ -170,6 +174,31 @@ export const testSyncSocialFlow = () => {
         expect(
           body.payload.find((x) => x.id === socialSyncId).autoPost
         ).toEqual(true);
+      });
+  });
+
+  it('STEP 7: Delete page successful', async () => {
+    let allPages;
+    await UsersRequest.getMyPages()
+      .auth(user.accessToken, { type: 'bearer' })
+      .expect(async ({ body }) => {
+        allPages = body.payload;
+      });
+
+    await PageRequest.deletePage(allPages[0].id)
+      .auth(user.accessToken, { type: 'bearer' })
+      .send({ password: user.password });
+
+    await PageRequest.getPage(allPages[0].id)
+      .auth(user.accessToken, { type: 'bearer' })
+      .expect(async ({ body }) => {
+        expect(body.castcleId).toBeUndefined();
+      });
+
+    await PageRequest.getPage(allPages[1].id)
+      .auth(user.accessToken, { type: 'bearer' })
+      .expect(async ({ body }) => {
+        expect(body.castcleId).toBeDefined();
       });
   });
 };

@@ -19,5 +19,6 @@ export class PageRequest {
   static put = (url: string) => PageRequest.request('put', url);
 
   static checkHealth = () => PageRequest.get('/users/healthy');
+  static getPage = (id: string) => PageRequest.get(`/pages/${id}`);
   static deletePage = (id: string) => PageRequest.delete(`/pages/${id}`);
 }

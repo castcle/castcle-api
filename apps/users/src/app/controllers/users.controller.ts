@@ -1811,7 +1811,6 @@ export class UsersController {
    * @param {string} socialId - The id of the social sync to update.
    */
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @CastcleBasicAuth()
   @Post('me/pages/sync-social/:id/auto-post')
   async updateAutoPost(
     @Auth() { credential }: Authorizer,
@@ -1833,7 +1832,6 @@ export class UsersController {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @CastcleBasicAuth()
   @Delete('me/pages/sync-social/:id/auto-post')
   async deleteAutoPost(
     @Auth() { credential }: Authorizer,
