@@ -96,31 +96,37 @@ export class AuthenticationControllerV2 {
         this.logger.warn('Member Profile is empty.');
         throw CastcleException.INVALID_REFRESH_TOKEN;
       }
-
       const accessTokenPayload =
         await this.authenticationServiceV1.getAccessTokenPayloadFromCredential(
           credential
         );
-
-      const newAccessToken = await credential.renewAccessToken(
-        accessTokenPayload
-      );
-
-      const account = await this.authenticationServiceV1.getAccountFromId(
+      const renewAccessToken = credential.renewAccessToken(accessTokenPayload);
+      const getAccount = this.authenticationServiceV1.getAccountFromId(
         credential.account._id
       );
-      return {
-        profile: userProfile.profile
-          ? await userProfile.profile.toUserResponse({
-              passwordNotSet: account.password ? false : true,
-              mobile: account.mobile,
-            })
-          : null,
-        pages: userProfile.pages
-          ? userProfile.pages.items.map((item) => item.toPageResponse())
-          : null,
-        accessToken: newAccessToken,
-      } as RefreshTokenResponse;
+
+      const [accessToken, account] = await Promise.all([
+        renewAccessToken,
+        getAccount,
+      ]);
+
+      const profile = userProfile.profile
+        ? await userProfile.profile.toUserResponse({
+            passwordNotSet: account.password ? false : true,
+            mobile: account.mobile,
+          })
+        : null;
+
+      const pages = userProfile.pages
+        ? userProfile.pages.items.map((item) => item.toPageResponse())
+        : null;
+
+      const response: RefreshTokenResponse = {
+        profile,
+        pages,
+        accessToken,
+      };
+      return response;
     }
     throw CastcleException.INVALID_REFRESH_TOKEN;
   }
