@@ -473,6 +473,7 @@ export class UserService {
           ];
       });
     }
+    if (!user.contact) user.contact = {};
     if (contact?.email) user.contact.email = contact?.email;
     if (contact?.phone) user.contact.phone = contact?.phone;
     user.set(updateUserDto);
