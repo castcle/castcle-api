@@ -21,19 +21,61 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { QueueOptions } from 'bull';
-
-export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
-  ...Environment.DB_OPTIONS,
-  uri: Environment.DB_URI,
-});
-
-export const getBullModuleOptions = (): QueueOptions => ({
-  redis: {
-    host: Environment.REDIS_HOST,
-    port: Environment.REDIS_PORT,
-    password: Environment.REDIS_PASSWORD,
+export const CacheKeyName = {
+  NotificationsGet: {
+    Name: 'NOTIFICATIONS_GET',
+    Ttl: 1,
   },
-});
+  NotificationsBadges: {
+    Name: 'NOTIFICATIONS_BADGES',
+    Ttl: 1,
+  },
+  LanguagesGet: {
+    Name: 'LANGUAGES_GET',
+    Ttl: 3600,
+  },
+  Hashtags: {
+    Name: 'HASHTAGS',
+    Ttl: 10,
+  },
+  TopTrends: {
+    Name: 'TOP_TRENDS',
+    Ttl: 10,
+  },
+  Searches: {
+    Name: 'SEARCHES',
+    Ttl: 10,
+  },
+  Pages: {
+    Name: 'PAGES',
+    Ttl: 10,
+  },
+  Feeds: {
+    Name: 'FEEDS',
+    Ttl: 10,
+  },
+  Contents: {
+    Name: 'CONTENTS',
+    Ttl: 10,
+  },
+  Comments: {
+    Name: 'COMMENTS',
+    Ttl: 10,
+  },
+  Users: {
+    Name: 'USERS',
+    Ttl: 10,
+  },
+  Country: {
+    Name: 'COUNTRY',
+    Ttl: 10,
+  },
+  SyncSocial: {
+    Name: 'SYNC_SOCIAL',
+    Ttl: 10,
+  },
+  Referrer: {
+    Name: 'REFERRER',
+    Ttl: 10,
+  },
+};

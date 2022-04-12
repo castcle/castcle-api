@@ -20,9 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
+import { CastcleCacheModule } from '@castcle-api/environments';
 import { Module } from '@nestjs/common';
+import { AwsXRayInterceptor } from './aws-xray/aws-xray.interceptor';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
@@ -33,18 +36,16 @@ import {
   CredentialInterceptor,
   CredentialRequest,
 } from './credential/credential.interceptor';
+import { ExceptionFilter } from './exception/exception.interceptor';
 import {
   HeadersInterceptor,
   HeadersRequest,
 } from './headers/headers.interceptor';
-import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
-import { ExceptionFilter } from './exception/exception.interceptor';
 import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
-import { AwsXRayInterceptor } from './aws-xray/aws-xray.interceptor';
+import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 
 @Module({
-  imports: [DatabaseModule, CaslModule, UtilsCacheModule],
+  imports: [DatabaseModule, CaslModule, CastcleCacheModule],
   controllers: [],
   providers: [],
   exports: [],

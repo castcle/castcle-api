@@ -20,16 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
+
+import {
+  CastcleBullModule,
+  CastcleCacheModule,
+  CastcleMongooseModule,
+} from '@castcle-api/environments';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import {
-  getBullModuleOptions,
-  getMongooseModuleOptions,
-} from './database.config';
 import { QueueName } from './models';
 import {
   AccountActivationSchema,
@@ -159,9 +160,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
-    BullModule.forRootAsync({
-      useFactory: () => getBullModuleOptions(),
-    }),
+    CastcleBullModule,
+    CastcleCacheModule,
+    CastcleMongooseModule,
     BullModule.registerQueue(
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
@@ -169,12 +170,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.USER }
     ),
     HttpModule,
-    MongooseModule.forRootAsync({
-      useFactory: () => getMongooseModuleOptions(),
-    }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
-    UtilsCacheModule,
     UtilsClientsModule,
   ],
   providers: [
@@ -202,7 +199,6 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     CommentServiceV2,
   ],
   exports: [
-    BullModule,
     AuthenticationService,
     AuthenticationServiceV2,
     UserService,

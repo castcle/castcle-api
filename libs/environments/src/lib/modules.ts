@@ -20,4 +20,42 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export * from './lib/utils-cache.module';
+
+import { BullModule } from '@nestjs/bull';
+import { CacheModule, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  getBullModuleOptions,
+  getCacheModuleOptions,
+  getMongooseModuleOptions,
+} from './factories';
+
+@Module({
+  imports: [
+    BullModule.forRootAsync({
+      useFactory: () => getBullModuleOptions(),
+    }),
+  ],
+  exports: [BullModule],
+})
+export class CastcleBullModule {}
+
+@Module({
+  imports: [
+    CacheModule.registerAsync({
+      useFactory: () => getCacheModuleOptions(),
+    }),
+  ],
+  exports: [CacheModule],
+})
+export class CastcleCacheModule {}
+
+@Module({
+  imports: [
+    MongooseModule.forRootAsync({
+      useFactory: () => getMongooseModuleOptions(),
+    }),
+  ],
+  exports: [MongooseModule],
+})
+export class CastcleMongooseModule {}
