@@ -48,6 +48,7 @@ import {
 import { WalletType } from '../models/wallet.enum';
 import { Account, Campaign, Queue } from '../schemas';
 import { TAccountService } from './taccount.service';
+import { CampaignField } from '../dtos';
 
 @Injectable()
 export class CampaignService {
@@ -342,7 +343,11 @@ export class CampaignService {
     return transaction;
   }
 
-  async getAirdropBalances(accountId: string, dateRange: Date) {
+  async getAirdropBalances(
+    accountId: string,
+    dateRange: Date,
+    campaignFields: CampaignField[]
+  ) {
     const campaignQuery: FilterQuery<Campaign> = dateRange
       ? {
           startDate: { $lte: dateRange },
@@ -354,6 +359,10 @@ export class CampaignService {
       await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
         pipelineOfGetCampaignClaims(campaignQuery, accountId)
       );
+
+    if (!campaignFields.includes(CampaignField.ESTIMATE_REWARDS)) {
+      return campaigns;
+    }
 
     const $balances = campaigns.map(async (campaign) => {
       if (campaign.type !== CampaignType.CONTENT_REACH) return campaign;
