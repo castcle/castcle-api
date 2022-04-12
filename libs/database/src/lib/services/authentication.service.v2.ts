@@ -157,17 +157,6 @@ export class AuthenticationServiceV2 {
       .exec();
   };
 
-  /**
-   *  For check if account is existed
-   * @param {string} id
-   * @returns {User}
-   */
-  getExistedUserFromCastcleId = (id: string) => {
-    return this.userModel
-      .findOne({ displayId: CastcleRegExp.fromString(id) })
-      .exec();
-  };
-
   validateEmail = (email: string) => {
     const re =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;

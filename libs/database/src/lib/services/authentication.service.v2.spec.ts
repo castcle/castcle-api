@@ -59,16 +59,6 @@ describe('Authentication Service', () => {
     expect(userService).toBeDefined();
   });
 
-  describe('#getExistedUserFromCastcleId', () => {
-    it('should return exist user', async () => {
-      const displayId = 'testUndefindDisplayId';
-
-      const findUser = await service.getExistedUserFromCastcleId(displayId);
-
-      expect(findUser).toBeNull();
-    });
-  });
-
   describe('#getAccountFromEmail', () => {
     it('should return exist email', async () => {
       const email = 'testundefinedEmail';
