@@ -507,29 +507,6 @@ describe('Authentication Service', () => {
       });
     });
 
-    describe('#getExistedUserFromCastcleId', () => {
-      it('should return exist user', async () => {
-        const findUser = 1;
-        expect(findUser).toEqual(1);
-      });
-      it('should return exist castcleId status', async () => {
-        const findUser = 1;
-        expect(findUser).toEqual(1);
-      });
-    });
-
-    // describe('#getAccountFromEmail()', () => {
-    //   it('should suggest a name', async () => {
-    //     const suggestName = await service.suggestCastcleId('Hello Friend');
-    //     expect(suggestName).toEqual('hellofriend');
-    //   });
-    //   it('should suggest a name + totalUser if the id is already exist', async () => {
-    //     const totalUser = await service._userModel.countDocuments();
-    //     const suggestName = await service.suggestCastcleId('Dude this is new');
-    //     expect(suggestName).toEqual(`dudethisisnew${totalUser}`);
-    //   });
-    // });
-
     describe('#signupBySocial()', () => {
       let signupResult: AccountAuthenId;
       let mockAccountResult: {
