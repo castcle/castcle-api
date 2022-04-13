@@ -35,4 +35,12 @@ export class UsersRequest {
     UsersRequest.post(`/users/me/pages/sync-social/${socialId}/connect`);
   static disconnectSocial = (socialId: string) =>
     UsersRequest.delete(`/users/me/pages/sync-social/${socialId}/connect`);
+  static followUser = (userId: string) =>
+    UsersRequest.post(`/users/${userId}/following`);
+  static getFollowing = (userId: string) =>
+    UsersRequest.get(`/users/${userId}/following`);
+  static getFollowers = (userId: string) =>
+    UsersRequest.get(`/users/${userId}/followers`);
+  static unfollow = (userId: string, targetCastcleId: string) =>
+    UsersRequest.delete(`/users/${userId}/following/${targetCastcleId}`);
 }
