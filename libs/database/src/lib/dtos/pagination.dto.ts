@@ -23,7 +23,7 @@
 
 import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
@@ -65,9 +65,11 @@ export class ExpansionQuery {
   @IsEnum(UserField, { each: true })
   userFields?: UserField[];
 
-  hasRelationshipExpansion = (() => {
-    return Boolean(this.userFields?.includes(UserField.Relationships));
-  }) as unknown as boolean;
+  @Expose()
+  @Transform(({ obj }) =>
+    Boolean(obj.userFields?.includes(UserField.Relationships))
+  )
+  hasRelationshipExpansion: boolean;
 }
 
 export class PaginationQuery extends ExpansionQuery {
