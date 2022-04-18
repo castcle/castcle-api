@@ -12,7 +12,13 @@ import {
   UserContact,
   SyncSocialModelV2,
 } from '../dtos';
-import { PageVerified, UserType, UserVerified } from '../models';
+import {
+  AccountAuthentication,
+  PageVerified,
+  SocialProvider,
+  UserType,
+  UserVerified,
+} from '../models';
 import { Account, AccountAuthenId, SocialSync } from '../schemas';
 import { CastcleBase } from './base.schema';
 import { Relationship } from './relationship.schema';
@@ -103,7 +109,7 @@ type UserResponseOptionV2 = {
   followed?: boolean;
   balance?: number;
   mobile?: { countryCode: string; number: string };
-  linkSocial?: AccountAuthenId[];
+  linkSocial?: AccountAuthentication;
   syncSocial?: SyncSocialModelV2;
   casts?: number;
 };
@@ -276,26 +282,16 @@ UserSchema.methods.toUserResponseV2 = async function (
     balance: balance,
   };
   response.mobile = mobile;
-  if (linkSocial) {
-    response.linkSocial = Object.assign(
-      {},
-      ...linkSocial.map((social: AccountAuthenId) => {
-        return {
-          [social.type]: {
-            socialId: social.socialId,
-            displayName: social.displayName,
-          },
-        };
-      })
-    );
+  response.linkSocial = {};
+  Object.values(SocialProvider).forEach((provider) => {
+    response.linkSocial[provider] = linkSocial[provider]
+      ? {
+          socialId: linkSocial[provider].socialId,
+        }
+      : null;
+  });
 
-    response.linkSocial.facebook = response.linkSocial.facebook ?? null;
-    response.linkSocial.twitter = response.linkSocial.twitter ?? null;
-    response.linkSocial.google = response.linkSocial.google ?? null;
-    response.linkSocial.apple = response.linkSocial.apple ?? null;
-  }
-
-  response.syncSocial = syncSocial || undefined;
+  response.syncSocial = syncSocial;
   response.casts = casts;
   return response;
 };

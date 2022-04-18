@@ -22,14 +22,12 @@
  */
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Queue } from 'bull';
 import { Model } from 'mongoose';
 import { EntityVisibility, SyncSocialModelV2, UserField } from '../dtos';
-import { QueueName, UserMessage, UserType } from '../models';
-import { Relationship, SocialSync, Transaction, User } from '../schemas';
+import { UserType } from '../models';
+import { Account, Relationship, SocialSync, User } from '../schemas';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
 
@@ -38,16 +36,14 @@ export class UserServiceV2 {
   private = new CastLogger(UserServiceV2.name);
 
   constructor(
+    @InjectModel('Account')
+    public _accountModel: Model<Account>,
     @InjectModel('Relationship')
     private _relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
     private _socialSyncModel: Model<SocialSync>,
-    @InjectModel('Transaction')
-    private transactionModel: Model<Transaction>,
     @InjectModel('User')
     public _userModel: Model<User>,
-    @InjectQueue(QueueName.USER)
-    private userQueue: Queue<UserMessage>,
     private contentService: ContentService,
     private userService: UserService
   ) {}
@@ -86,21 +82,28 @@ export class UserServiceV2 {
           ? await this._socialSyncModel.find({ 'author.id': user.id }).exec()
           : undefined;
 
-        let syncSocial = new SyncSocialModelV2();
-        syncSocials
-          ? syncSocials.forEach((item) => {
-              String(user.ownerAccount) === String(viewer.ownerAccount)
-                ? (syncSocial[item.provider] = {
-                    provider: item.provider,
-                    socialId: item.socialId,
-                    userName: item.userName,
-                    displayName: item.displayName,
-                    avatar: item.avatar,
-                    active: item.active,
-                    autoPost: item.autoPost,
-                  })
-                : (syncSocial = undefined);
-            })
+        let syncSocial: SyncSocialModelV2 = {};
+        if (String(user.ownerAccount) === String(viewer.ownerAccount)) {
+          if (!syncSocials.length) syncSocial = undefined;
+          syncSocials.forEach((item) => {
+            syncSocial[item.provider] = {
+              id: item._id,
+              provider: item.provider,
+              socialId: item.socialId,
+              userName: item.userName,
+              displayName: item.displayName,
+              avatar: item.avatar,
+              active: item.active,
+              autoPost: item.autoPost,
+            };
+          });
+        }
+        const linkSocial = userFields?.includes(UserField.LinkSocial)
+          ? String(user.ownerAccount) === String(viewer.ownerAccount)
+            ? await this._accountModel
+                .findOne({ _id: user.ownerAccount })
+                .exec()
+            : undefined
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
@@ -122,6 +125,7 @@ export class UserServiceV2 {
               )
             : await user.toUserResponseV2({
                 casts: content?.total,
+                linkSocial: linkSocial?.authentications,
                 syncSocial,
                 balance,
               });
