@@ -283,12 +283,14 @@ UserSchema.methods.toUserResponseV2 = async function (
   };
   response.mobile = mobile;
   response.linkSocial = {};
+
   Object.values(SocialProvider).forEach((provider) => {
-    response.linkSocial[provider] = linkSocial[provider]
-      ? {
-          socialId: linkSocial[provider].socialId,
-        }
-      : null;
+    response.linkSocial[provider] =
+      linkSocial && linkSocial[provider]
+        ? {
+            socialId: linkSocial[provider].socialId,
+          }
+        : null;
   });
 
   response.syncSocial = syncSocial;
