@@ -157,6 +157,9 @@ export class Environment {
   static FEED_DUPLICATE_MAX = Number(
     process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax
   );
+  static FEED_CALLED_AT_DELAY = Number(
+    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay
+  );
 
   // Links
   static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
