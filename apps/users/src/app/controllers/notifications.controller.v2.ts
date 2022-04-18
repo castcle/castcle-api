@@ -50,7 +50,7 @@ export class NotificationsControllerV2 {
     return notification;
   }
 
-  @CastcleBasicAuth()
+  @CastcleAuth(CacheKeyName.NotificationsGet)
   @Get()
   async getAllNotify(
     @Req() { $credential, $language }: CredentialRequest,
@@ -96,7 +96,7 @@ export class NotificationsControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Delete(':id/reads')
+  @Delete(':id')
   @HttpCode(204)
   async deleteNotify(
     @Req() { $credential }: CredentialRequest,
