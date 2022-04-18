@@ -40,6 +40,7 @@ export class GetFeedContentsParams {
   maxResult: number;
   preferLanguages: string[];
   userId: Types.ObjectId;
+  calledAtDelay: number;
 }
 
 export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
@@ -95,6 +96,9 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
           ),
+          calledDiff: new Date(
+            new Date().getTime() - params.calledAtDelay * 1000
+          ),
         },
         pipeline: [
           { $sort: { createdAt: -1 } },
@@ -107,6 +111,9 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                       { $lte: ['$seenAt', '$$dateNow'] },
                       { $gte: ['$seenAt', '$$dateDiff'] },
                     ],
+                  },
+                  {
+                    $gte: ['$calledAt', '$$calledDiff'],
                   },
                 ],
               },
