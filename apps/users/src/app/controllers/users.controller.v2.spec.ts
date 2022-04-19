@@ -32,6 +32,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  NotificationServiceV2,
   QueueName,
   RankerService,
   SocialSyncServiceV2,
@@ -111,6 +112,7 @@ describe('CommentControllerV2', () => {
         CommentServiceV2,
         UserService,
         RankerService,
+        NotificationServiceV2,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

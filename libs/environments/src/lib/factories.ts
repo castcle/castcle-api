@@ -20,25 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
-import { CacheModule, Module } from '@nestjs/common';
+
+import { CacheModuleOptions } from '@nestjs/common';
+import { MongooseModuleOptions } from '@nestjs/mongoose';
+import { QueueOptions } from 'bull';
 import * as redisStore from 'cache-manager-redis-store';
-import { CacheKeyName } from './enum/cache.key.name';
+import { Environment } from './environments';
 
-@Module({
-  controllers: [],
-  providers: [],
-  imports: [
-    CacheModule.register({
-      store: redisStore,
-      host: Environment.REDIS_HOST,
-      port: Environment.REDIS_PORT,
-      password: Environment.REDIS_PASSWORD,
-      ttl: 1000,
-    }),
-  ],
-  exports: [CacheModule],
-})
-export class UtilsCacheModule {}
+export const getBullModuleOptions = (): QueueOptions => ({
+  redis: {
+    host: Environment.REDIS_QUEUE_HOST,
+    port: Environment.REDIS_QUEUE_PORT,
+    password: Environment.REDIS_QUEUE_PASSWORD,
+  },
+});
 
-export { CacheKeyName };
+export const getCacheModuleOptions = (): CacheModuleOptions => ({
+  store: redisStore,
+  host: Environment.REDIS_CACHE_HOST,
+  port: Environment.REDIS_CACHE_PORT,
+  password: Environment.REDIS_CACHE_PASSWORD,
+  ttl: 1000,
+});
+
+export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
+  uri: Environment.DB_URI,
+  useCreateIndex: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});

@@ -22,8 +22,8 @@
  */
 import { CommentServiceV2, ContentService } from '@castcle-api/database';
 import { PaginationQuery } from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   Auth,
   Authorizer,

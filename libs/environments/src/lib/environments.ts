@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { MongooseOptions } from 'mongoose';
 import { Configs } from './configs';
 
 export class Environment {
@@ -41,11 +40,6 @@ export class Environment {
   private static DB_FORMAT = `mongodb${Environment.DB_USE_LOCAL ? '' : '+srv'}`;
   private static DB_DATABASE_NAME = process.env.DB_DATABASE_NAME || '';
   static DB_URI = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME}?retryWrites=true&w=majority`;
-  static DB_OPTIONS: MongooseOptions = {
-    useCreateIndex: true,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  };
 
   // Mail Service
   static SMTP_ADMIN_EMAIL = process.env.SMTP_ADMIN_EMAIL;
@@ -75,9 +69,12 @@ export class Environment {
   static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY;
 
   // Redis
-  static REDIS_HOST = process.env.REDIS_HOST;
-  static REDIS_PORT = Number(process.env.REDIS_PORT);
-  static REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+  static REDIS_CACHE_HOST = process.env.REDIS_CACHE_HOST;
+  static REDIS_CACHE_PORT = Number(process.env.REDIS_CACHE_PORT);
+  static REDIS_CACHE_PASSWORD = process.env.REDIS_CACHE_PASSWORD;
+  static REDIS_QUEUE_HOST = process.env.REDIS_QUEUE_HOST;
+  static REDIS_QUEUE_PORT = Number(process.env.REDIS_QUEUE_PORT);
+  static REDIS_QUEUE_PASSWORD = process.env.REDIS_QUEUE_PASSWORD;
 
   // Assets
   static ASSETS_BUCKET_NAME = process.env.ASSETS_BUCKET_NAME;
@@ -156,6 +153,9 @@ export class Environment {
   );
   static FEED_DUPLICATE_MAX = Number(
     process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax
+  );
+  static FEED_CALLED_AT_DELAY = Number(
+    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay
   );
 
   // Links
