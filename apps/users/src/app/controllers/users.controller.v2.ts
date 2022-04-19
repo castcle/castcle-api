@@ -25,15 +25,19 @@ import {
   AuthenticationService,
   CommentServiceV2,
   ContentService,
+  NotificationServiceV2,
   SocialSyncServiceV2,
   UserService,
   UserServiceV2,
+  UserType,
 } from '@castcle-api/database';
 import {
   CommentParam,
   CreateCommentDto,
   ExpansionQuery,
   GetUserParam,
+  NotificationSource,
+  NotificationType,
   ReplyCommentParam,
   SyncSocialDtoV2,
   UpdateCommentDto,
@@ -62,7 +66,8 @@ export class UsersControllerV2 {
     private userService: UserService,
     private userServiceV2: UserServiceV2,
     private commentService: CommentServiceV2,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private notificationServiceV2: NotificationServiceV2
   ) {}
 
   @CastcleBasicAuth()
@@ -160,10 +165,27 @@ export class UsersControllerV2 {
       { message: commentDto.message }
     );
 
-    /*
-     * TODO: !!!
-     *  Need new version notification
-     */
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Comment,
+        contentRef: content._id,
+        commentRef: comment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      authorizer.account.preferences.languages[0]
+    );
+
     const payload = await this.commentService.convertCommentToCommentResponse(
       user,
       comment,
@@ -249,10 +271,29 @@ export class UsersControllerV2 {
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
     });
-    /*
-     * TODO: !!!
-     *  Need new version notification
-     */
+
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      comment.author._id
+    );
+
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Reply,
+        contentRef: comment.targetRef.oid,
+        commentRef: comment._id,
+        replyRef: replyComment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      authorizer.account.preferences.languages[0]
+    );
+
     return await this.commentService.convertCommentToCommentResponse(
       user,
       replyComment,

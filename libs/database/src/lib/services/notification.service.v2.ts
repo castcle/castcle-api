@@ -106,8 +106,10 @@ export class NotificationServiceV2 {
     userOwner: User,
     language: string
   ) => {
-    this.#logger.log('Check configuration notify to user.');
+    this.#logger.log('Check user action.');
+    if (String(sourceUserId) === String(userOwner._id)) return;
 
+    this.#logger.log('Check configuration notify to user.');
     if (!this.notificationService.checkNotify(notificationData)) return;
 
     this.#logger.log('Notification to user.');
