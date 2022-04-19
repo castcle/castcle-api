@@ -27,6 +27,7 @@ import {
   CampaignService,
   CommentServiceV2,
   ContentService,
+  ContentServiceV2,
   DataService,
   HashtagService,
   MongooseAsyncFeatures,
@@ -112,6 +113,7 @@ describe('CommentControllerV2', () => {
         CommentServiceV2,
         UserService,
         RankerService,
+        ContentServiceV2,
         NotificationServiceV2,
         {
           provide: getQueueToken(QueueName.CONTENT),

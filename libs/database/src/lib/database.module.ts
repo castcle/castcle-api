@@ -72,6 +72,7 @@ import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
+import { ContentServiceV2 } from './services/content.service.v2';
 import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
@@ -197,6 +198,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserServiceV2,
     NotificationServiceV2,
     CommentServiceV2,
+    ContentServiceV2,
   ],
   exports: [
     AuthenticationService,
@@ -221,6 +223,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserServiceV2,
     NotificationServiceV2,
     CommentServiceV2,
+    ContentServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -251,4 +254,5 @@ export {
   UserServiceV2,
   NotificationServiceV2,
   CommentServiceV2,
+  ContentServiceV2,
 };

@@ -24,6 +24,7 @@ import { Configs } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Image } from '@castcle-api/utils/aws';
 import { CastcleName } from '@castcle-api/utils/commons';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
@@ -35,12 +36,17 @@ import {
   EntityVisibility,
   ExpansionQuery,
   IncludeUser,
+  NotificationSource,
+  NotificationType,
   PaginationQuery,
   ResponseDto,
 } from '../dtos';
+import { UserType } from '../models';
 import {
+  Account,
   Comment,
   CommentType,
+  Content,
   Engagement,
   EngagementType,
   Hashtag,
@@ -49,6 +55,8 @@ import {
   User,
 } from '../schemas';
 import { createCastcleFilter, getRelationship } from '../utils/common';
+import { UserService } from './user.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 
 @Injectable()
 export class CommentServiceV2 {
@@ -67,7 +75,9 @@ export class CommentServiceV2 {
     @InjectModel('Revision')
     public _revisionModel: Model<Revision>,
     @InjectModel('Engagement')
-    public _engagementModel: Model<Engagement>
+    public _engagementModel: Model<Engagement>,
+    private userService: UserService,
+    private notificationServiceV2: NotificationServiceV2
   ) {}
 
   /**
@@ -500,5 +510,56 @@ export class CommentServiceV2 {
 
     this.logger.log('Delete comment.');
     await comment.remove();
+  };
+
+  likeCommentCast = async (
+    comment: Comment,
+    content: Content,
+    user: User,
+    account: Account
+  ) => {
+    const engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id,
+      },
+      type: EngagementType.Like,
+    });
+
+    if (engagement) throw CastcleException.LIKE_IS_EXIST;
+
+    await new this._engagementModel({
+      type: EngagementType.Like,
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: comment._id,
+      },
+      visibility: EntityVisibility.Publish,
+    }).save();
+
+    if (String(user._id) === String(comment.author._id)) return;
+
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      comment.author.id
+    );
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      account.preferences.languages[0]
+    );
+    return comment;
   };
 }
