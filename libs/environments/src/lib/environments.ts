@@ -157,6 +157,7 @@ export class Environment {
   static FEED_CALLED_AT_DELAY = Number(
     process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay
   );
+  static FEED_PRE_CALLED = Number(process.env.FEED_PRE_CALLED || 1000);
 
   // Links
   static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;

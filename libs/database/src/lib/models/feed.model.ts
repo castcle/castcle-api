@@ -27,6 +27,7 @@ import { FeedAggregatorName, FeedAnalyticSource } from './feed.enum';
 export class FeedAggregator {
   name?: FeedAggregatorName;
   createTime?: Date;
+  score?: number;
 }
 
 export class FeedAnalytics {

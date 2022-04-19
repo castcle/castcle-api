@@ -40,4 +40,7 @@ export class CastcleBase extends Document {
 
   @Prop({ type: String })
   queueAction?: CastcleQueueAction;
+
+  @Prop()
+  __v: number;
 }

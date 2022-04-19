@@ -306,21 +306,85 @@ export class RankerService {
     } as FeedItemResponse;
   };
 
-  /**
-   * add member feed item that use data from DS
-   * @param viewer
-   * @param query
-   */
-  getFeeds = async (viewer: Account, query: FeedQuery) => {
-    this.logger.log(
-      JSON.stringify({ viewer: viewer.id, query }),
-      'getFeeds:init'
+  _getSortedMemberFeedItems = async (viewer: Account, query: FeedQuery) => {
+    const filter = createCastcleFilter(
+      {
+        viewer: viewer._id,
+        calledAt: { $exists: false },
+        'aggregator.score': { $exists: true },
+      },
+      { ...query, sinceId: query.untilId, untilId: query.sinceId }
     );
-
-    if (query.mode === 'history') {
-      return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
+    const documents = await this._feedItemModel
+      .find(filter)
+      .limit(query.maxResults)
+      .populate('content')
+      .sort('-aggregator.score')
+      .exec();
+    if (documents.length > 0) {
+      console.log(
+        'update',
+        {
+          _id: {
+            $in: documents.map((doc) => doc._id),
+          },
+        },
+        {
+          calledAt: new Date(),
+        }
+      );
+      await this._feedItemModel
+        .updateMany(
+          {
+            _id: {
+              $in: documents.map((doc) => doc._id),
+            },
+          },
+          {
+            calledAt: new Date(),
+          }
+        )
+        .exec();
     }
 
+    const payload = await this._feedItemsToPayloadItems(documents, viewer);
+    const { includes, meta } = await this._getCastcleInclude(
+      documents,
+      viewer,
+      query
+    );
+    return {
+      payload: payload,
+      includes: new CastcleIncludes(includes),
+      meta: meta,
+    } as FeedItemResponse;
+  };
+
+  private contentsToFeedItemsDtos = (
+    viewer: Account,
+    contents: Content[],
+    contentScore: any,
+    followingContentIds: string[]
+  ) =>
+    contents.map<DocumentDefinition<FeedItem>>((content) => ({
+      author: content.author.id,
+      content: content._id,
+      viewer,
+      aggregator: {
+        name: FeedAggregatorName.DEFAULT,
+        createTime: new Date(),
+        score: contentScore[String(content._id)],
+      },
+      analytics: {
+        score: contentScore[content.id] ?? 0,
+        source: followingContentIds.includes(content.id)
+          ? FeedAnalyticSource.PERSONAL
+          : FeedAnalyticSource.GLOBAL,
+      },
+      __v: 4,
+    }));
+
+  generateFeeds = async (viewer: Account, query: FeedQuery) => {
     const user = await this.userModel.findOne({
       ownerAccount: viewer._id,
       type: UserType.PEOPLE,
@@ -332,7 +396,7 @@ export class RankerService {
       decayDays: Environment.FEED_DECAY_DAYS,
       duplicateContentMax: Environment.FEED_DUPLICATE_MAX,
       geolocation: viewer.geolocation?.countryCode,
-      maxResult: Number(query.maxResults),
+      maxResult: Environment.FEED_PRE_CALLED,
       userId: user._id,
       preferLanguages: viewer.preferences.languages,
       calledAtDelay: Environment.FEED_CALLED_AT_DELAY,
@@ -344,10 +408,16 @@ export class RankerService {
       pipeline
     );
     this.logger.log('DONE AGGREGATE');
+    this.logger.log(JSON.stringify(userFeed));
 
     const followingContentIds = userFeed?.followingContents.map(String) ?? [];
     const globalContentIds = userFeed?.globalContents.map(String) ?? [];
     const feedsContentIds = [...followingContentIds, ...globalContentIds];
+    if (feedsContentIds.length == 0)
+      return {
+        feeds: null,
+        contents: null,
+      };
     const contentScore = await this.dataService.personalizeContents(
       String(viewer._id),
       feedsContentIds
@@ -363,32 +433,66 @@ export class RankerService {
 
     if (!sortedContentIds.length) {
       return {
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      } as FeedItemResponse;
+        feeds: null,
+        contents: null,
+      };
     }
 
-    const feedDtos = contents.map<DocumentDefinition<FeedItem>>((content) => ({
-      author: content.author.id,
-      content: content._id,
+    const feedDtos = this.contentsToFeedItemsDtos(
       viewer,
-      calledAt: new Date(),
-      aggregator: {
-        name: FeedAggregatorName.DEFAULT,
-        createTime: new Date(),
-      },
-      analytics: {
-        score: contentScore[content.id] ?? 0,
-        source: followingContentIds.includes(content.id)
-          ? FeedAnalyticSource.PERSONAL
-          : FeedAnalyticSource.GLOBAL,
-      },
-      __v: 3,
-    }));
-
+      contents,
+      contentScore,
+      followingContentIds
+    );
     const feeds = await this._feedItemModel.insertMany(feedDtos);
+    console.log('inserting', feedDtos.length, 'result', feeds.length);
+    const queryContents = sortedContentIds
+      .filter((id, index) => index < query.maxResults)
+      .map((contentId) => contents.find((c) => String(c._id) === contentId));
+    const queryFeeds = queryContents.map((c) =>
+      feeds.find((f) => String(f.content as any) === String(c._id))
+    );
+    return { feeds: queryFeeds, contents: queryContents };
+  };
 
+  /**
+   * add member feed item that use data from DS
+   * @param viewer
+   * @param query
+   */
+  getFeeds = async (viewer: Account, query: FeedQuery) => {
+    this.logger.log(
+      JSON.stringify({ viewer: viewer.id, query }),
+      'getFeeds:init'
+    );
+
+    if (query.mode === 'history') {
+      return this._getMemberFeedHistoryItemsFromViewer(viewer, query);
+    }
+    const preparedFeedItems = await this._getSortedMemberFeedItems(
+      viewer,
+      query
+    );
+    if (preparedFeedItems.payload.length > 0) {
+      console.log('----> get prepared');
+      return preparedFeedItems;
+    }
+    console.log(
+      '-------NOPE',
+      preparedFeedItems.payload.length,
+      query.maxResults
+    );
+    const { feeds, contents } = await this.generateFeeds(viewer, query);
+    if (!feeds) {
+      return {
+        payload: [],
+        includes: new CastcleIncludes({
+          casts: [],
+          users: [],
+        }),
+        meta: {},
+      } as FeedItemResponse;
+    }
     feeds.forEach((feed) => {
       feed.content = contents.find(
         (content) => String(content._id) === String(feed.content)
