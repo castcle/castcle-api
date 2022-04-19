@@ -27,7 +27,6 @@
       "@castcle-api/healthy": ["libs/healthy/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
       "@castcle-api/utils/aws": ["libs/utils/aws/src/index.ts"],
-      "@castcle-api/utils/cache": ["libs/utils/cache/src/index.ts"],
       "@castcle-api/utils/clients": ["libs/utils/clients/src/index.ts"],
       "@castcle-api/utils/commons": ["libs/utils/commons/src/index.ts"],
       "@castcle-api/utils/decorators": ["libs/utils/decorators/src/index.ts"],

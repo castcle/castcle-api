@@ -21,5 +21,7 @@
  * or have any questions.
  */
 
+export * from './lib/cache-keys';
 export * from './lib/environments';
 export * from './lib/configs';
+export * from './lib/modules';

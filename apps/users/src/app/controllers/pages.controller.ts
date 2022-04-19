@@ -44,6 +44,7 @@ import {
   UpdatePageDto,
 } from '@castcle-api/database/dtos';
 import { Credential } from '@castcle-api/database/schemas';
+import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -52,7 +53,6 @@ import {
   Image,
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleBasicAuth,

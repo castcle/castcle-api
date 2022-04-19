@@ -57,13 +57,13 @@ import {
   LikeCommentBody,
   ReplyCommentBody,
 } from '../dtos/comment.dto';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleController,
   CastcleAuth,
   CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
 import { SuggestionService } from '../services/suggestion.service';
+import { CacheKeyName } from '@castcle-api/environments';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class CommentController {
