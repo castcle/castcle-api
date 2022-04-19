@@ -79,7 +79,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -95,7 +95,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     return this.userServiceV2.getById(
       authorizer.user,
@@ -115,7 +115,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
