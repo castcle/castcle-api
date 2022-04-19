@@ -140,10 +140,10 @@ export class UserResponseDto {
 
   @ApiProperty()
   linkSocial: {
-    facebook: linkSocialDetail | null;
-    twitter: linkSocialDetail | null;
-    google: linkSocialDetail | null;
-    apple: linkSocialDetail | null;
+    facebook?: linkSocialDetail | null;
+    twitter?: linkSocialDetail | null;
+    google?: linkSocialDetail | null;
+    apple?: linkSocialDetail | null;
   };
 
   @ApiProperty()
