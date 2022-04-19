@@ -85,7 +85,7 @@ export class CommentController {
   async createComment(
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
-    @Req() { $credential, $language }: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     // try {
@@ -133,7 +133,7 @@ export class CommentController {
           read: false,
         },
         user,
-        $language
+        $credential.account.preferences.languages[0]
       );
     }
     const payload = await this.commentService.convertCommentToCommentResponse(
@@ -187,7 +187,7 @@ export class CommentController {
   async replyComment(
     @Param('commentId') commentId: string,
     @Body() replyCommentBody: ReplyCommentBody,
-    @Req() { $credential, $language }: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     const [authorizedUser, comment, user] = await Promise.all([
@@ -219,7 +219,7 @@ export class CommentController {
           read: false,
         },
         user,
-        $language
+        $credential.account.preferences.languages[0]
       );
     }
     return {
@@ -312,7 +312,7 @@ export class CommentController {
           read: false,
         },
         user,
-        req.$language
+        req.$credential.account.preferences.languages[0]
       );
     }
     return '';

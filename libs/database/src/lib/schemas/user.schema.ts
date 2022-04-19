@@ -470,6 +470,7 @@ UserSchema.methods.toPageResponseV2 = function (
     canUpdateCastcleId: (this as User).displayIdUpdatedAt
       ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
       : true,
+    contact: (this as User).contact,
   } as PageResponseDto;
 };
 
