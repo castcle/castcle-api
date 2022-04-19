@@ -29,7 +29,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { Model, FilterQuery, Types } from 'mongoose';
-import { User, Notification, Credential, Account } from '../schemas';
+import { User, Notification, Account } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import { QueueName, NotificationMessage, UserType } from '../models';
 import {
@@ -61,9 +61,9 @@ export class NotificationServiceV2 {
     return this._notificationModel.findById(Types.ObjectId(id)).exec();
   };
 
-  getAllNotify = async (credential: Credential, query: NotificationQuery) => {
+  getAllNotify = async (account: Account, query: NotificationQuery) => {
     const filters: FilterQuery<Notification> = createCastcleFilter(
-      { account: credential.account._id },
+      { account: account._id },
       query
     );
     if (query?.source) filters.source = query?.source;
@@ -79,7 +79,7 @@ export class NotificationServiceV2 {
     return notification.save();
   };
 
-  readAllNotify = async ({ account }: Credential) => {
+  readAllNotify = async (account: Account) => {
     return this._notificationModel
       .updateMany({ account: account._id }, { read: true })
       .exec();
@@ -89,9 +89,9 @@ export class NotificationServiceV2 {
     return notification.remove();
   };
 
-  getBadges = async (credential: Credential) => {
+  getBadges = async (account: Account) => {
     const totalNotification = await this._notificationModel.countDocuments({
-      account: credential.account._id,
+      account: account._id,
       read: false,
     });
     return totalNotification
