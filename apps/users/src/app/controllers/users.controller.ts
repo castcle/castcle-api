@@ -690,7 +690,7 @@ export class UsersController {
         read: false,
       },
       followedUser,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
     return '';
   }
@@ -1305,7 +1305,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
 
     return this.contentService.convertContentToContentResponse(
@@ -1370,7 +1370,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
 
     return this.contentService.convertContentToContentResponse(
@@ -1518,7 +1518,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
   }
 
