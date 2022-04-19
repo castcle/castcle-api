@@ -279,6 +279,8 @@ export class PageResponseDto {
 
   @ApiProperty()
   canUpdateCastcleId: boolean;
+
+  contact?: UserContact;
 }
 
 export class UpdatePageDto {
@@ -315,7 +317,7 @@ export class PagesResponse {
   payload: PageResponseDto[];
 
   @ApiProperty()
-  pagination: Pagination;
+  pagination?: Pagination;
 }
 
 export class PageResponse {
@@ -517,4 +519,9 @@ export class SyncSocialModelV2 {
 
   @IsOptional()
   medium?: syncSocialDetail;
+}
+
+export class PagesResponseV2 {
+  @ApiProperty()
+  payload: PageResponseDto[];
 }

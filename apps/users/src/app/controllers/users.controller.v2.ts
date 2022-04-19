@@ -39,7 +39,10 @@ import {
   GetUserParam,
   NotificationSource,
   NotificationType,
+  PageResponseDto,
+  PagesResponse,
   ReplyCommentParam,
+  ResponseDto,
   SyncSocialDtoV2,
   UnlikeCastParam,
   UnlikeCommentCastParam,
@@ -60,7 +63,8 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import * as mongoose from 'mongoose';
+import { ApiOkResponse } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
@@ -81,7 +85,7 @@ export class UsersControllerV2 {
 
   private validateObjectId(id: string) {
     this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = mongoose.Types.ObjectId;
+    const ObjectId = Types.ObjectId;
     if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
   }
 
@@ -508,5 +512,17 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
     this.validateObjectId(sourceCommentId);
     await this.commentService.unlikeCommentCast(sourceCommentId, user);
+  }
+
+  @ApiOkResponse({
+    type: PagesResponse,
+  })
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/pages')
+  async getMyPages(@Auth() authorizer: Authorizer) {
+    const pages = await this.userServiceV2.getMyPages(authorizer.user);
+    return ResponseDto.ok<PageResponseDto[]>({
+      payload: pages,
+    });
   }
 }
