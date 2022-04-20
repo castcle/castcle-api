@@ -25,27 +25,21 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EngagementType, UserType } from '../models';
-import { Account, Comment, Content, Engagement, User } from '../schemas';
+import { Account, Content, Engagement, User } from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { NotificationServiceV2 } from './notification.service.v2';
 import {
   EntityVisibility,
   NotificationSource,
   NotificationType,
 } from '../dtos';
 import { Types } from 'mongoose';
-import { ContentService } from './content.service';
-import { NotificationServiceV2 } from './notification.service.v2';
 
 @Injectable()
 export class ContentServiceV2 {
   constructor(
     @InjectModel('Engagement')
     private _engagementModel: Model<Engagement>,
-    @InjectModel('Comment')
-    private _commentModel: Model<Comment>,
-    @InjectModel('Content')
-    private _contentModel: Model<Content>,
-    private contentService: ContentService,
     private notificationServiceV2: NotificationServiceV2,
     private userService: UserService
   ) {}
@@ -94,21 +88,18 @@ export class ContentServiceV2 {
     return content;
   };
   unlikeCast = async (contentId: string, user: User) => {
-    const [content, engagement] = await Promise.all([
-      this.contentService.getContentById(contentId),
-      this._engagementModel.findOne({
-        user: user._id,
-        targetRef: {
-          $ref: 'content',
-          $id: Types.ObjectId(contentId),
-        },
-        type: EngagementType.Like,
-      }),
-    ]);
+    const engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: Types.ObjectId(contentId),
+      },
+      type: EngagementType.Like,
+    });
 
     if (!engagement) return;
 
-    if (String(engagement.user) === String(content.author.id)) return;
+    if (String(engagement.user) !== String(user._id)) return;
 
     return engagement.remove();
   };

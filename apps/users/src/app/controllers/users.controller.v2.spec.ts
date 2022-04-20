@@ -45,10 +45,14 @@ import {
   CommentParam,
   ContentType,
   GetUserParam,
+  NotificationType,
   ReplyCommentParam,
   ShortPayload,
+  UnlikeCastParam,
+  UnlikeCommentCastParam,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
+import { Content, Comment } from '@castcle-api/database/schemas';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
@@ -449,6 +453,207 @@ describe('CommentControllerV2', () => {
       );
       expect(resultComment).toBeDefined();
       expect(resultReply).toBeNull();
+    });
+  });
+  describe('#like', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
+    let comment: Comment;
+    let reply: Comment;
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+
+      comment = await contentService.createCommentForContent(user, content, {
+        message: 'Hello #hello v2',
+      });
+
+      reply = await contentService.replyComment(user, comment, {
+        message: 'nice #baby',
+      });
+    });
+    describe('#likeCast()', () => {
+      it('should create like cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[1].account,
+          mocksUsers[1].user,
+          mocksUsers[1].credential
+        );
+        await appController.likeCast(authorizer, content._id, {
+          userId: mocksUsers[1].user._id,
+        } as GetUserParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[1].user._id,
+          targetRef: {
+            $ref: 'content',
+            $id: content._id,
+          },
+        });
+        expect(engagement).toBeTruthy();
+        expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
+        expect(String(engagement.targetRef.oid)).toEqual(String(content._id));
+        expect(engagement.type).toEqual(NotificationType.Like);
+      });
+    });
+    describe('#likeCommentCast()', () => {
+      it('should create like comment cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[2].account,
+          mocksUsers[2].user,
+          mocksUsers[2].credential
+        );
+        await appController.likeCommentCast(authorizer, comment._id, {
+          userId: mocksUsers[2].user._id,
+        } as GetUserParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[2].user._id,
+          targetRef: {
+            $ref: 'comment',
+            $id: comment._id,
+          },
+        });
+
+        expect(engagement).toBeTruthy();
+        expect(String(engagement.user)).toEqual(String(mocksUsers[2].user._id));
+        expect(String(engagement.targetRef.oid)).toEqual(String(comment._id));
+        expect(engagement.type).toEqual(NotificationType.Like);
+      });
+      it('should create like reply comment cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[3].account,
+          mocksUsers[3].user,
+          mocksUsers[3].credential
+        );
+
+        await appController.likeCommentCast(authorizer, reply._id, {
+          userId: mocksUsers[3].user._id,
+        } as GetUserParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[3].user._id,
+          targetRef: {
+            $ref: 'comment',
+            $id: reply._id,
+          },
+        });
+
+        expect(engagement).toBeTruthy();
+        expect(String(engagement.user)).toEqual(String(mocksUsers[3].user._id));
+        expect(String(engagement.targetRef.oid)).toEqual(String(reply._id));
+        expect(engagement.type).toEqual(NotificationType.Like);
+      });
+    });
+    afterAll(async () => {
+      await contentService._engagementModel.deleteMany({});
+      await contentService._contentModel.deleteMany({});
+      await contentService._commentModel.deleteMany({});
+    });
+  });
+  describe('#unlike', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
+    let comment: Comment;
+    let reply: Comment;
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+
+      comment = await contentService.createCommentForContent(user, content, {
+        message: 'Hello #hello v2',
+      });
+
+      reply = await contentService.replyComment(user, comment, {
+        message: 'nice #baby',
+      });
+    });
+    describe('#unlikeCast()', () => {
+      it('should delete like comment cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[1].account,
+          mocksUsers[1].user,
+          mocksUsers[1].credential
+        );
+        await appController.unlikeCast(authorizer, {
+          userId: mocksUsers[1].user._id,
+          sourceContentId: content._id,
+        } as UnlikeCastParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[1].user._id,
+          targetRef: {
+            $ref: 'content',
+            $id: content._id,
+          },
+        });
+
+        expect(engagement).toBeNull();
+      });
+    });
+    describe('#unlikeCommentCast()', () => {
+      it('should delete unlike comment cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[2].account,
+          mocksUsers[2].user,
+          mocksUsers[2].credential
+        );
+        await appController.unlikeCommentCast(authorizer, {
+          userId: mocksUsers[2].user._id,
+          sourceCommentId: content._id,
+        } as UnlikeCommentCastParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[2].user._id,
+          targetRef: {
+            $ref: 'content',
+            $id: content._id,
+          },
+        });
+
+        expect(engagement).toBeNull();
+      });
+      it('should delete unlike reply comment cast.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[3].account,
+          mocksUsers[3].user,
+          mocksUsers[3].credential
+        );
+        await appController.unlikeCommentCast(authorizer, {
+          userId: mocksUsers[3].user._id,
+          sourceCommentId: content._id,
+        } as UnlikeCommentCastParam);
+
+        const engagement = await contentService._engagementModel.findOne({
+          user: mocksUsers[2].user._id,
+          targetRef: {
+            $ref: 'comment',
+            $id: reply._id,
+          },
+        });
+
+        expect(engagement).toBeNull();
+      });
     });
   });
 });

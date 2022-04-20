@@ -33,6 +33,7 @@ import {
   UserServiceV2,
   UserType,
 } from '@castcle-api/database';
+import { Comment } from '@castcle-api/database/schemas';
 import {
   CommentParam,
   CreateCommentDto,
@@ -43,9 +44,11 @@ import {
   ReplyCommentParam,
   SyncSocialDtoV2,
   UnlikeCastParam,
+  UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
 } from '@castcle-api/database/dtos';
+import { CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
@@ -407,12 +410,12 @@ export class UsersControllerV2 {
 
     if (!feedItem) return;
 
-    // await this.suggestionService.seen(
-    //   authorizer.account,
-    //   feedItem._id,
-    //   authorizer.credential
-    // );
-    // return;
+    await this.suggestionService.seen(
+      authorizer.account,
+      feedItem._id,
+      authorizer.credential
+    );
+    return;
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':userId/likes-casts/:sourceContentId')
@@ -429,7 +432,8 @@ export class UsersControllerV2 {
     await this.contentServiceV2.unlikeCast(sourceContentId, user);
   }
 
-  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
+  @CastcleBasicAuth()
   @Post(':userId/likes-comments')
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
@@ -445,12 +449,21 @@ export class UsersControllerV2 {
     const comment = await this.contentService.getCommentById(commentId);
     if (!comment) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
+    let originalComment: Comment;
+    if (comment.type === CommentType.Reply) {
+      originalComment = await this.contentService.getCommentById(
+        comment.targetRef.oid
+      );
+      if (!originalComment) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    }
     const content = await this.contentService.getContentById(
-      comment.targetRef.oid
+      comment.type === CommentType.Reply
+        ? originalComment.targetRef.oid
+        : comment.targetRef.oid
     );
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
 
     await this.commentService.likeCommentCast(
+      originalComment,
       comment,
       content,
       user,
@@ -470,5 +483,21 @@ export class UsersControllerV2 {
       authorizer.credential
     );
     return;
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
+  @CastcleBasicAuth()
+  @Delete(':userId/likes-comments/:sourceCommentId')
+  async unlikeCommentCast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 }

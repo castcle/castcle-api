@@ -27,7 +27,7 @@ import { CastcleName } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { createCastcleMeta } from '../database.module';
 import {
   CommentIncludes,
@@ -513,6 +513,7 @@ export class CommentServiceV2 {
   };
 
   likeCommentCast = async (
+    commentOriginal: Comment,
     comment: Comment,
     content: Content,
     user: User,
@@ -527,7 +528,7 @@ export class CommentServiceV2 {
       type: EngagementType.Like,
     });
 
-    if (engagement) throw CastcleException.LIKE_IS_EXIST;
+    if (engagement) throw CastcleException.LIKE_COMMENT_IS_EXIST;
 
     await new this._engagementModel({
       type: EngagementType.Like,
@@ -539,10 +540,16 @@ export class CommentServiceV2 {
       visibility: EntityVisibility.Publish,
     }).save();
 
-    if (String(user._id) === String(comment.author._id)) return;
+    if (
+      String(user._id) === String(comment.author._id) ||
+      String(user._id) === String(commentOriginal?.author?._id)
+    )
+      return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author.id
+      comment.type === CommentType.Reply
+        ? commentOriginal?.author._id
+        : comment.author._id
     );
     await this.notificationServiceV2.notifyToUser(
       {
@@ -553,13 +560,35 @@ export class CommentServiceV2 {
         sourceUserId: user._id,
         type: NotificationType.Like,
         contentRef: content._id,
-        commentRef: comment._id,
+        commentRef:
+          comment.type === CommentType.Reply
+            ? commentOriginal?._id
+            : comment._id,
+        replyRef: comment.type === CommentType.Reply ? comment._id : undefined,
         account: userOwner.ownerAccount,
         read: false,
       },
       userOwner,
       account.preferences.languages[0]
     );
+
     return comment;
+  };
+
+  unlikeCommentCast = async (commentId: string, user: User) => {
+    const engagement = await this._engagementModel.findOne({
+      user: user._id,
+      targetRef: {
+        $ref: 'comment',
+        $id: Types.ObjectId(commentId),
+      },
+      type: EngagementType.Like,
+    });
+
+    if (!engagement) return;
+
+    if (String(engagement.user) !== String(user._id)) return;
+
+    return engagement.remove();
   };
 }
