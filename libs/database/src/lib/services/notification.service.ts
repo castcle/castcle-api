@@ -370,7 +370,6 @@ export class NotificationService {
       },
       android: {
         priority: AndroidMessagePriority.NORMAL,
-        data: notify.toNotificationPayload({ message }),
         notification: {
           body: message,
           default_sound: true,
