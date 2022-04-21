@@ -250,7 +250,8 @@ export class CommentServiceV2 {
           reply,
           engagementsReply,
           revisionReplyCount,
-          []
+          [],
+          viewer
         );
       })
     );
@@ -260,15 +261,21 @@ export class CommentServiceV2 {
         comment,
         engagements,
         revisionCount,
-        replies
+        replies,
+        viewer
       ),
       includes: new CommentIncludes({ comments: replyPayload, users }),
     } as CommentResponse;
   }
 
-  private getLike(engagements: Engagement[], id: string) {
-    return engagements.some(({ targetRef, type }) => {
-      return type === EngagementType.Like && String(targetRef.$id) === id;
+  private getLike(engagements: Engagement[], id: string, viewer?: User) {
+    return engagements.some(({ targetRef, type, user }) => {
+      return (
+        type === EngagementType.Like &&
+        String(user) === String(viewer?._id) &&
+        (String(targetRef.oid) === String(id) ||
+          String(targetRef.$id) === String(id))
+      );
     });
   }
 
@@ -276,13 +283,14 @@ export class CommentServiceV2 {
     comment: Comment,
     engagements: Engagement[],
     revisionCount: number,
-    replies: Comment[]
+    replies: Comment[],
+    viewer: User
   ) {
     return {
       id: comment._id,
       message: comment.message,
       metrics: { likeCount: comment.engagements.like.count },
-      participate: { liked: this.getLike(engagements, comment.id) },
+      participate: { liked: this.getLike(engagements, comment.id, viewer) },
       author: comment.author._id,
       hasHistory: revisionCount > 1,
       reply: replies.map((reply) => reply._id),
@@ -364,7 +372,8 @@ export class CommentServiceV2 {
           reply,
           engagementsReply,
           revisionReplyCount,
-          []
+          [],
+          viewer
         );
       })
     );
@@ -393,7 +402,8 @@ export class CommentServiceV2 {
         comment,
         engagements,
         revisionCount,
-        commentReplies
+        commentReplies,
+        viewer
       );
     });
 
