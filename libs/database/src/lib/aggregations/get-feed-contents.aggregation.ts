@@ -21,7 +21,15 @@
  * or have any questions.
  */
 
-import { Types } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
+import { CastcleMetric } from '../dtos';
+import {
+  DefaultContent,
+  GuestFeedItem,
+  FeedItem,
+  Content,
+  Author,
+} from '../schemas';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;
@@ -29,6 +37,14 @@ export class GetFeedContentsResponse {
   displayId: string;
   followingContents: Types.ObjectId[];
   globalContents: Types.ObjectId[];
+}
+
+export class GetGuestFeedContentsResponse {
+  defaultFeeds: FeedItem[];
+  guestFeeds: FeedItem[];
+  casts: Content[];
+  engagements: CastcleMetric[];
+  authors: Author[];
 }
 
 export class GetFeedContentsParams {
@@ -43,6 +59,227 @@ export class GetFeedContentsParams {
   calledAtDelay: number;
 }
 
+export class GetGuestFeedContentsParams {
+  filtersDefault: FilterQuery<DefaultContent>;
+  filtersGuest: FilterQuery<GuestFeedItem>;
+  maxResults: number;
+}
+export const pipelineOfGetGuestFeedContents = ({
+  filtersDefault,
+  filtersGuest,
+  maxResults,
+}: GetGuestFeedContentsParams) => {
+  return [
+    {
+      $sort: {
+        index: 1,
+      },
+    },
+    {
+      $match: filtersDefault,
+    },
+    {
+      $unionWith: {
+        coll: 'guestfeeditems',
+        pipeline: [
+          { $match: filtersGuest },
+          { $sort: { score: -1, createdAt: -1 } },
+        ],
+      },
+    },
+    { $limit: maxResults },
+    {
+      $facet: {
+        defaultFeeds: [
+          {
+            $match: { index: { $exists: true } },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'content',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          // { $replaceWith: { $arrayElemAt: ['$content', 0] } },
+          {
+            $addFields: { content: { $arrayElemAt: ['$content', 0] } },
+          },
+        ],
+        guestFeeds: [
+          {
+            $match: { index: { $exists: false } },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'content',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$content' }, 0] },
+            },
+          },
+          {
+            $addFields: { content: { $arrayElemAt: ['$content', 0] } },
+          },
+          // { $replaceWith: { $arrayElemAt: ['$content', 0] } },
+        ],
+        casts: [
+          {
+            $match: {
+              $and: [
+                { originalContent: { $ne: null } },
+                { originalContent: { $exists: true } },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'originalContent',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$content', 0] } },
+        ],
+        engagements: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: { contentId: '$content' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                      ],
+                    },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$targetRef.$id',
+                    likeCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'like'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    commentCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'comment'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    quotedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'quoted'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    recastedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'recasted'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    // reportedCount: {
+                    //   $sum: {
+                    //     $cond: {
+                    //       if: { $eq: ['$type', 'reported'] },
+                    //       then: 1,
+                    //       else: 0,
+                    //     },
+                    //   },
+                    // },
+                  },
+                },
+              ],
+              as: 'engagements',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+        ],
+        authors: [
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'author',
+              foreignField: '_id',
+              as: 'author',
+            },
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'originalAuthor',
+              foreignField: '_id',
+              as: 'originalAuthor',
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              authors: { $addToSet: { $arrayElemAt: ['$author', 0] } },
+              originalAuthors: {
+                $addToSet: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$originalAuthor' }, 0] },
+                    then: { $arrayElemAt: ['$originalAuthor', 0] },
+                    else: '$$REMOVE',
+                  },
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              authors: { $concatArrays: ['$authors', '$originalAuthors'] },
+            },
+          },
+          { $unwind: '$authors' },
+          { $replaceWith: '$authors' },
+          {
+            $project: {
+              id: '$_id',
+              avatar: '$avatar',
+              castcleId: '$displayId',
+              displayName: '$displayName',
+              type: '$type',
+              verified: '$verified',
+            },
+          },
+        ],
+      },
+    },
+  ];
+};
 export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
   return [
     {
