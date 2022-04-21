@@ -102,7 +102,6 @@ export const pipelineOfGetGuestFeedContents = ({
               as: 'content',
             },
           },
-          // { $replaceWith: { $arrayElemAt: ['$content', 0] } },
           {
             $addFields: { content: { $arrayElemAt: ['$content', 0] } },
           },
@@ -127,7 +126,6 @@ export const pipelineOfGetGuestFeedContents = ({
           {
             $addFields: { content: { $arrayElemAt: ['$content', 0] } },
           },
-          // { $replaceWith: { $arrayElemAt: ['$content', 0] } },
         ],
         casts: [
           {
@@ -203,6 +201,7 @@ export const pipelineOfGetGuestFeedContents = ({
                         },
                       },
                     },
+                    // TODO: feature add metric reports
                     // reportedCount: {
                     //   $sum: {
                     //     $cond: {
