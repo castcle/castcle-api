@@ -152,7 +152,10 @@ export class AuthenticationServiceV2 {
    */
   getExistedUserFromCastcleId = (id: string) => {
     return this.userModel
-      .findOne({ displayId: CastcleRegExp.fromString(id) })
+      .findOne({
+        displayId: CastcleRegExp.fromString(id),
+        visibility: EntityVisibility.Publish,
+      })
       .exec();
   };
 }

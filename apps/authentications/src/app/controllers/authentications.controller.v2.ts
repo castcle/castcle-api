@@ -60,7 +60,7 @@ export class AuthenticationControllerV2 {
     const user = await this.authenticationService.getExistedUserFromCastcleId(
       body.castcleId
     );
-    return ResponseDto.ok<CheckingResponseV2, void>({
+    return ResponseDto.ok<CheckingResponseV2>({
       payload: {
         exist: user ? true : false,
       },
