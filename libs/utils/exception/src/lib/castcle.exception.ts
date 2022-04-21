@@ -93,6 +93,7 @@ export class CastcleException extends HttpException {
   static CONTENT_NOT_FOUND = new CastcleException('5003');
   static RECAST_IS_EXIST = new CastcleException('5004');
   static LIKE_IS_EXIST = new CastcleException('5005');
+  static LIKE_COMMENT_IS_EXIST = new CastcleException('5006');
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');
