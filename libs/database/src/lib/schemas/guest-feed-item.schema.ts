@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
 import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
+import { SchemaTypes, Types } from 'mongoose';
 
 export enum GuestFeedItemType {
   Content = 'content',
@@ -35,11 +35,18 @@ export enum GuestFeedItemType {
 @Schema({ timestamps: true })
 export class GuestFeedItem extends CastcleBase {
   @Prop({
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'Content',
     index: true,
   })
   content?: Content;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  author?: Types.ObjectId;
 
   @Prop({
     required: true,
@@ -62,6 +69,7 @@ export class GuestFeedItem extends CastcleBase {
 export const GuestFeedItemSchema = SchemaFactory.createForClass(GuestFeedItem);
 
 GuestFeedItemSchema.index({ score: -1, createdAt: -1 });
+GuestFeedItemSchema.index({ countryCode: -1, content: -1 });
 GuestFeedItemSchema.index({
   score: 1,
   countryCode: 1,
