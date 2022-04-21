@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { CommentPayload } from './comment.dto';
 import { Author, IncludeUser } from './content.dto';
 import { GetUserParam } from './user.dto';
@@ -81,4 +81,10 @@ export class CommentResponse {
   payload: CommentPayload;
   @ApiProperty()
   includes: CommentIncludes;
+}
+
+export class UnlikeCommentCastParam extends GetUserParam {
+  @IsString()
+  @IsNotEmpty()
+  sourceCommentId: string;
 }

@@ -250,6 +250,11 @@ export const ErrorMessages = {
     code: '5005',
     message: 'You already like this cast',
   },
+  '5006': {
+    statusCode: '404',
+    code: '5005',
+    message: 'You already like this comment cast',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',
