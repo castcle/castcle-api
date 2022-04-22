@@ -183,13 +183,21 @@ describe('CommentController', () => {
 
   describe('#likeComment()', () => {
     it('should be able to like a comment', async () => {
-      const result = await commentController.likeComment(
+      await commentController.likeComment(
         userCredentialRequest,
         content._id,
         rootCommentId,
         { castcleId: user.displayId, feedItemId: 'test' }
       );
-      expect(result).toEqual('');
+      const engagement = await contentService._engagementModel.findOne({
+        targetRef: {
+          $ref: 'comment',
+          $id: rootCommentId,
+        },
+      });
+
+      expect(String(engagement.targetRef.oid)).toEqual(String(rootCommentId));
+      expect(String(engagement.targetRef.namespace)).toEqual('comment');
     });
     it('should update like engagement', async () => {
       const comments = await commentController.getAllComment(
