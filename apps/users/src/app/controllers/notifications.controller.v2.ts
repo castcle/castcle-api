@@ -53,7 +53,7 @@ export class NotificationsControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query?: NotificationQuery
   ) {
-    authorizer.requestAccessForUser(authorizer.user._id);
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notifications = await this.notificationServiceV2.getAllNotify(
       authorizer.account,
@@ -72,17 +72,16 @@ export class NotificationsControllerV2 {
   @Post(':id/reads')
   @HttpCode(204)
   async readNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
-    authorizer.requestAccessForUser(authorizer.user._id);
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notification = await this._getNotificationIfExist(id);
     await this.notificationServiceV2.readNotify(notification);
   }
-
   @CastcleBasicAuth()
   @Post('reads')
   @HttpCode(204)
   async readAllNotify(@Auth() authorizer: Authorizer) {
-    authorizer.requestAccessForUser(authorizer.user._id);
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     await this.notificationServiceV2.readAllNotify(authorizer.account);
   }
@@ -91,7 +90,7 @@ export class NotificationsControllerV2 {
   @Delete(':id')
   @HttpCode(204)
   async deleteNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
-    authorizer.requestAccessForUser(authorizer.user._id);
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notification = await this._getNotificationIfExist(id);
     await this.notificationServiceV2.deleteNotify(notification);
@@ -100,7 +99,7 @@ export class NotificationsControllerV2 {
   @CastcleAuth(CacheKeyName.NotificationsBadges)
   @Get('badges')
   async badgesNotify(@Auth() authorizer: Authorizer) {
-    authorizer.requestAccessForUser(authorizer.user._id);
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const badgeNotify = await this.notificationServiceV2.getBadges(
       authorizer.account
