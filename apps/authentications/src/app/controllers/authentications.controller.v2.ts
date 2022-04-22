@@ -28,8 +28,11 @@ import {
   CastcleControllerV2,
   CastcleTrack,
 } from '@castcle-api/utils/decorators';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Body, HttpCode, Post, Req } from '@nestjs/common';
+import {
+  CredentialRequest,
+  HeadersInterceptor,
+} from '@castcle-api/utils/interceptors';
+import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import {
   CheckEmailExistDto,
@@ -58,6 +61,7 @@ export class AuthenticationControllerV2 {
   @ApiOkResponse({
     type: CheckingResponseV2,
   })
+  @UseInterceptors(HeadersInterceptor)
   @Post('exists/castcle-id')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
