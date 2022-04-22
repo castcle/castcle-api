@@ -59,3 +59,4 @@ export * from './data-statistic.schema';
 export * from './ads-campaign.schema';
 export * from './ads-placement.schema';
 export * from './caccount.schema';
+export * from './content-farming.schema';
