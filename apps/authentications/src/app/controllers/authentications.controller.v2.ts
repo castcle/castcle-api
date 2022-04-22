@@ -22,11 +22,17 @@
  */
 
 import { AuthenticationServiceV2 } from '@castcle-api/database';
-import { LoginWithEmailDto, ResponseDto } from '@castcle-api/database/dtos';
+import {
+  LoginWithEmailDto,
+  ResponseDto,
+  SocialConnectDto,
+} from '@castcle-api/database/dtos';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import {
   CredentialRequest,
@@ -56,6 +62,21 @@ export class AuthenticationControllerV2 {
       email,
       password
     );
+  }
+
+  @Post('login-with-social')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  loginWithSocial(
+    @Body() socialConnectDto: SocialConnectDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() { ip, userAgent }: RequestMetadata
+  ) {
+    return this.authenticationService.loginWithSocial($credential, {
+      ...socialConnectDto,
+      ip,
+      userAgent,
+    });
   }
 
   @ApiOkResponse({

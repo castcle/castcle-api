@@ -64,6 +64,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthenticationController } from './app.controller';
 import { AppService } from '../app.service';
 import { LoginResponse, TokenResponse } from '../dtos';
+import { Repository } from 'libs/database/src/lib/repositories';
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -181,6 +182,7 @@ describe('AppController', () => {
         ContentService,
         HashtagService,
         AnalyticService,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -867,6 +869,7 @@ describe('AppController', () => {
         {
           provider: AccountAuthenIdType.Google,
           socialId: '109364223777',
+          authToken: 'auth-token',
         },
         { ip: '127.0.0.1', userAgent: 'castcle-app' }
       );
