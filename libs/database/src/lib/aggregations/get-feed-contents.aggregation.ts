@@ -40,7 +40,6 @@ export class GetFeedContentsParams {
   maxResult: number;
   preferLanguages: string[];
   userId: Types.ObjectId;
-  calledAtDelay: number;
 }
 
 export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
@@ -65,6 +64,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
+          { $limit: params.followFeedMax },
         ],
         as: 'followings',
       },
@@ -82,6 +82,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
+          { $limit: params.followFeedMax },
         ],
         as: 'blockings',
       },
@@ -95,9 +96,6 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           dateNow: new Date(),
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
-          ),
-          calledDiff: new Date(
-            new Date().getTime() - params.calledAtDelay * 1000
           ),
         },
         pipeline: [
@@ -113,13 +111,17 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                     ],
                   },
                   {
-                    $gte: ['$calledAt', '$$calledDiff'],
+                    $and: [
+                      { $lte: ['$calledAt', '$$dateNow'] },
+                      { $gte: ['$calledAt', '$$dateDiff'] },
+                    ],
                   },
                 ],
               },
             },
           },
           { $project: { _id: 0, content: 1 } },
+          { $limit: params.duplicateContentMax },
         ],
         as: 'duplicateContents',
       },
@@ -176,9 +178,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           {
             $sort: { localized: -1 },
           },
-          {
-            $limit: Math.ceil(params.maxResult * (1 - params.followFeedRatio)),
-          },
+          { $limit: params.maxResult },
         ],
         as: 'globalContents',
       },
@@ -219,7 +219,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 1 } },
-          { $limit: Math.ceil(params.maxResult * params.followFeedRatio) },
+          { $limit: params.maxResult },
         ],
         as: 'followingContents',
       },

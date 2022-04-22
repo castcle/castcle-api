@@ -73,6 +73,5 @@ export const Configs = {
     FollowFeedRatio: 0.7,
     DecayDays: 7,
     DuplicateContentMax: 200,
-    CalledAtDelay: 5,
   },
 };
