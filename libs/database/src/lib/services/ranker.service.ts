@@ -335,7 +335,6 @@ export class RankerService {
       maxResult: Number(query.maxResults),
       userId: user._id,
       preferLanguages: viewer.preferences.languages,
-      calledAtDelay: Environment.FEED_CALLED_AT_DELAY,
     });
 
     this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');
