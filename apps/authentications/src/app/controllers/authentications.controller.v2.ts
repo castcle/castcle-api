@@ -30,8 +30,12 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Body, HttpCode, Post, Req } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
-import { CheckIdExistDto, CheckingResponseV2 } from '../dtos';
+import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
+import {
+  CheckEmailExistDto,
+  CheckIdExistDto,
+  CheckingResponseV2,
+} from '../dtos';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
@@ -63,6 +67,28 @@ export class AuthenticationControllerV2 {
     return ResponseDto.ok<CheckingResponseV2>({
       payload: {
         exist: user ? true : false,
+      },
+    });
+  }
+
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing',
+  })
+  @ApiOkResponse({
+    status: 201,
+    type: CheckingResponseV2,
+  })
+  @ApiBody({
+    type: CheckEmailExistDto,
+  })
+  @Post('exists/email')
+  @HttpCode(200)
+  async checkEmailExists(@Body() { email }: CheckEmailExistDto) {
+    const account = await this.authenticationService.getAccountFromEmail(email);
+    return ResponseDto.ok<CheckingResponseV2>({
+      payload: {
+        exist: account ? true : false,
       },
     });
   }

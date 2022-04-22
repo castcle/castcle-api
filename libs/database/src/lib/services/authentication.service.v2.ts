@@ -151,9 +151,20 @@ export class AuthenticationServiceV2 {
    * @returns {User}
    */
   getExistedUserFromCastcleId = (id: string) => {
-    return this.userModel
+    return this.userModel.findOne({
+      displayId: CastcleRegExp.fromString(id),
+    });
+  };
+
+  /**
+   *  For check if email is existed
+   * @param {email} id
+   * @returns {Account}
+   */
+  getAccountFromEmail = (email: string) => {
+    return this.accountModel
       .findOne({
-        displayId: CastcleRegExp.fromString(id),
+        email: CastcleRegExp.fromString(email),
         visibility: EntityVisibility.Publish,
       })
       .exec();
