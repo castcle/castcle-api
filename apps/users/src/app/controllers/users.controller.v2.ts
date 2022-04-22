@@ -319,7 +319,7 @@ export class UsersControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Put(':userId/comments/:sourceCommentIdreply/:replyCommentId')
+  @Put(':userId/comments/:sourceCommentId/reply/:replyCommentId')
   async updateReplyComment(
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
