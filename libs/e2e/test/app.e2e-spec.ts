@@ -13,9 +13,11 @@ import {
 } from './modules/users';
 import {
   closeAuthenticationsModule,
+  closeContentsModule,
   closePagesModule,
   closeUsersModule,
   setupAuthenticationsModule,
+  setupContentsModule,
   setupPagesModule,
   setupUsersModule,
 } from './setups';
@@ -52,11 +54,13 @@ describe('Castcle E2E Tests', () => {
     beforeAll(async () => {
       await setupUsersModule();
       await setupPagesModule();
+      await setupContentsModule();
     });
 
     afterAll(async () => {
       await closeUsersModule();
       await closePagesModule();
+      await closeContentsModule();
     });
 
     describe('- Report User or Content', () => {
