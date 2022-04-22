@@ -116,13 +116,23 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Prepare data into notification.');
 
+    let filters = {
+      ...notificationData,
+      ...{
+        contentRef: notificationData.contentRef || { $exists: false },
+        commentRef: notificationData.commentRef || { $exists: false },
+        replyRef: notificationData.replyRef || { $exists: false },
+        profileRef: notificationData.profileRef || { $exists: false },
+      },
+    };
+
     if (
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     ) {
       const notifyModel = await this._notificationModel
         .findOne({
-          ...notificationData,
+          ...filters,
           ...{ sourceUserId: { $in: [sourceUserId] } },
         })
         .sort({ _id: -1, createdAt: -1 })
@@ -144,7 +154,7 @@ export class NotificationServiceV2 {
       }).save();
     } else {
       const updateNotify = await this._notificationModel.updateOne(
-        notificationData,
+        filters,
         {
           $set: { read },
           $setOnInsert: notificationData,
@@ -163,13 +173,13 @@ export class NotificationServiceV2 {
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     )
-      notificationData = {
-        ...notificationData,
+      filters = {
+        ...filters,
         ...{ sourceUserId: { $in: [sourceUserId] } },
       };
 
     const notify = await this._notificationModel
-      .findOne(notificationData)
+      .findOne(filters)
       .sort({ createdAt: -1 })
       .exec();
     this.#logger.log(
