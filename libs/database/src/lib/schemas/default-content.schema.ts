@@ -21,19 +21,26 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
+import { SchemaTypes, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class DefaultContent extends CastcleBase {
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'Content',
     index: true,
   })
   content: Content;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  author?: Types.ObjectId;
 
   @Prop({ required: true, index: true })
   index: number;

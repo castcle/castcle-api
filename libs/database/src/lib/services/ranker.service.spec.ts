@@ -197,11 +197,23 @@ describe('Ranker Service', () => {
         },
         result.accountDocument
       );
-      expect(guestFeeds.payload[0].id).toEqual('default');
-      expect(guestFeeds.payload[1].id).toEqual('default');
-      expect(guestFeeds.payload[2].id).toEqual('default');
-      expect(guestFeeds.payload[3].id).toEqual('default');
-      expect(guestFeeds.payload[4].id).toEqual('default');
+
+      expect(guestFeeds.payload).toHaveLength(5);
+      expect(guestFeeds.payload[0].payload['message']).toEqual(
+        'this is test status'
+      );
+      expect(guestFeeds.payload[1].payload['message']).toEqual(
+        'this is test status2'
+      );
+      expect(guestFeeds.payload[2].payload['message']).toEqual(
+        'this is test status3'
+      );
+      expect(guestFeeds.payload[3].payload['message']).toEqual(
+        'this is test status4'
+      );
+      expect(guestFeeds.payload[4].payload['message']).toEqual(
+        'this is test status5'
+      );
     });
   });
   //TODO !!! Have to add test later on
