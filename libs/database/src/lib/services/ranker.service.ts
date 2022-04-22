@@ -204,7 +204,7 @@ export class RankerService {
           toUnsignedContentPayloadItem(
             item.content,
             engagements,
-            metrics.find(
+            metrics?.find(
               (metric) => String(metric.id) === String(item.content._id)
             )
           )
