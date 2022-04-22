@@ -20,20 +20,18 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import {
   AuthenticationService,
   CommentServiceV2,
   ContentService,
-  NotificationServiceV2,
   ContentServiceV2,
+  NotificationServiceV2,
   RankerService,
   SocialSyncServiceV2,
   UserService,
   UserServiceV2,
   UserType,
 } from '@castcle-api/database';
-import { Comment } from '@castcle-api/database/schemas';
 import {
   CommentParam,
   CreateCommentDto,
@@ -48,7 +46,7 @@ import {
   UpdateCommentDto,
   UpdateUserDtoV2,
 } from '@castcle-api/database/dtos';
-import { CommentType } from '@castcle-api/database/schemas';
+import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
@@ -62,6 +60,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import * as mongoose from 'mongoose';
 import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
@@ -79,6 +78,12 @@ export class UsersControllerV2 {
     private rankerService: RankerService,
     private suggestionService: SuggestionService
   ) {}
+
+  private validateObjectId(id: string) {
+    this.logger.log(`Validate is object id: ${id}`);
+    const ObjectId = mongoose.Types.ObjectId;
+    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
 
   @CastcleBasicAuth()
   @Post(':userId/sync-social')
@@ -223,10 +228,10 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-
+    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
-      throw CastcleException.FORBIDDEN;
+      throw CastcleException.CONTENT_NOT_FOUND;
 
     const updatedComment = await this.contentService.updateComment(comment, {
       message: updateCommentDto.message,
@@ -250,7 +255,7 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.findUser(userId);
-
+    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
@@ -274,9 +279,10 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
+    this.validateObjectId(sourceCommentId);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
-    if (!comment) throw CastcleException.FORBIDDEN;
+    if (!comment) throw CastcleException.CONTENT_NOT_FOUND;
 
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
@@ -313,7 +319,7 @@ export class UsersControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Put(':userId/comments/:sourceCommentIdreply/:replyCommentId')
+  @Put(':userId/comments/:sourceCommentId/reply/:replyCommentId')
   async updateReplyComment(
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
@@ -330,7 +336,8 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-
+    this.validateObjectId(sourceCommentId);
+    this.validateObjectId(replyCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
       replyCommentId
@@ -370,6 +377,8 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.findUser(userId);
+
+    this.validateObjectId(sourceCommentId);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
@@ -497,7 +506,7 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-
+    this.validateObjectId(sourceCommentId);
     await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 }

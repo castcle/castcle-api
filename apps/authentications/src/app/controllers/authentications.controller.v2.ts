@@ -22,14 +22,20 @@
  */
 
 import { AuthenticationServiceV2 } from '@castcle-api/database';
-import { LoginWithEmailDto } from '@castcle-api/database/dtos';
+import { LoginWithEmailDto, ResponseDto } from '@castcle-api/database/dtos';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
 } from '@castcle-api/utils/decorators';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Body, Post, Req } from '@nestjs/common';
+import { Body, HttpCode, Post, Req } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
+import {
+  CheckEmailExistDto,
+  CheckIdExistDto,
+  CheckingResponseV2,
+} from '../dtos';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
@@ -47,5 +53,43 @@ export class AuthenticationControllerV2 {
       email,
       password
     );
+  }
+
+  @ApiOkResponse({
+    type: CheckingResponseV2,
+  })
+  @Post('exists/castcle-id')
+  @HttpCode(200)
+  async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
+    const user = await this.authenticationService.getExistedUserFromCastcleId(
+      body.castcleId
+    );
+    return ResponseDto.ok<CheckingResponseV2>({
+      payload: {
+        exist: user ? true : false,
+      },
+    });
+  }
+
+  @ApiResponse({
+    status: 400,
+    description: 'will show if some of header is missing',
+  })
+  @ApiOkResponse({
+    status: 201,
+    type: CheckingResponseV2,
+  })
+  @ApiBody({
+    type: CheckEmailExistDto,
+  })
+  @Post('exists/email')
+  @HttpCode(200)
+  async checkEmailExists(@Body() { email }: CheckEmailExistDto) {
+    const account = await this.authenticationService.getAccountFromEmail(email);
+    return ResponseDto.ok<CheckingResponseV2>({
+      payload: {
+        exist: account ? true : false,
+      },
+    });
   }
 }

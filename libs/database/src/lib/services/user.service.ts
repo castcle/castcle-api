@@ -474,6 +474,7 @@ export class UserService {
       });
     }
     if (!user.contact) user.contact = {};
+    if (contact?.countryCode) user.contact.countryCode = contact?.countryCode;
     if (contact?.email) user.contact.email = contact?.email;
     if (contact?.phone) user.contact.phone = contact?.phone;
     user.set(updateUserDto);

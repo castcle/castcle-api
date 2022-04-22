@@ -314,3 +314,8 @@ export class SuggestCastcleIdDto {
   @IsString()
   displayName: string;
 }
+
+export class CheckingResponseV2 {
+  @ApiProperty()
+  exist: boolean;
+}

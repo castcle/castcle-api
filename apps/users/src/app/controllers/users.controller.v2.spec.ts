@@ -52,7 +52,7 @@ import {
   UnlikeCommentCastParam,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import { Content, Comment } from '@castcle-api/database/schemas';
+import { Comment, Content } from '@castcle-api/database/schemas';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
@@ -236,7 +236,7 @@ describe('CommentControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
         } as CommentParam)
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
     });
 
     it('replyComment() should be able create a comment in comment(reply)', async () => {
@@ -378,7 +378,7 @@ describe('CommentControllerV2', () => {
             sourceCommentId: '624a7c01df5d0069d04655da',
           } as CommentParam
         )
-      ).rejects.toEqual(CastcleException.FORBIDDEN);
+      ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
     });
 
     it('updateReplyComment() should update a message of reply comment', async () => {
