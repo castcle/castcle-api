@@ -27,6 +27,7 @@ import { CastcleName } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { createCastcleMeta } from '../database.module';
 import {
@@ -55,9 +56,8 @@ import {
   User,
 } from '../schemas';
 import { createCastcleFilter, getRelationship } from '../utils/common';
-import { UserService } from './user.service';
 import { NotificationServiceV2 } from './notification.service.v2';
-
+import { UserService } from './user.service';
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
@@ -450,9 +450,12 @@ export class CommentServiceV2 {
     paginationQuery: PaginationQuery
   ) => {
     let query: FilterQuery<Comment> = {
-      targetRef: { $id: refId, $ref: refType },
+      targetRef: { $id: mongoose.Types.ObjectId(refId), $ref: refType },
       visibility: EntityVisibility.Publish,
     };
+
+    this.logger.log('Get total rows');
+    const total = await this.commentModel.countDocuments(query).exec();
 
     this.logger.log('Filter Since & Until');
     query = await createCastcleFilter(query, {
@@ -460,7 +463,7 @@ export class CommentServiceV2 {
       untilId: paginationQuery?.untilId,
     });
 
-    const total = await this.commentModel.countDocuments(query).exec();
+    this.logger.log(`Query: ${JSON.stringify(query)}`);
     const comments = total
       ? await this.commentModel
           .find(query)
