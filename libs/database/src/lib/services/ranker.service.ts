@@ -28,7 +28,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { DocumentDefinition, Model } from 'mongoose';
 import {
   GetFeedContentsResponse,
+  GetGuestFeedContentsResponse,
   pipelineOfGetFeedContents,
+  pipelineOfGetGuestFeedContents,
 } from '../aggregations';
 import {
   Author,
@@ -39,6 +41,7 @@ import {
   CastcleMeta,
   FeedQuery,
   Meta,
+  CastcleMetric,
 } from '../dtos';
 import { FeedAggregatorName, FeedAnalyticSource, UserType } from '../models';
 import {
@@ -51,7 +54,6 @@ import {
   GuestFeedItem,
   Relationship,
   signedContentPayloadItem,
-  toSignedContentPayloadItem,
   toUnsignedContentPayloadItem,
   User,
 } from '../schemas';
@@ -115,121 +117,78 @@ export class RankerService {
   getGuestFeedItems = async (
     query: PaginationQuery,
     viewer: Account,
-    excludeContents?: any[]
+    excludeContents = []
   ) => {
-    console.log('exclude', excludeContents);
-    let prefix_feeds_payload: FeedItemPayloadItem[] = [];
-    let prefix_feeds: DefaultContent[];
-    //if no pagination = add default
-    if (!(query.untilId || query.sinceId)) {
-      prefix_feeds = await this._defaultContentModel
-        .find({ index: { $gte: 0 } })
-        .populate('content')
-        .sort({ index: 1 });
-      prefix_feeds_payload = prefix_feeds.map(
-        (item) =>
-          ({
-            id: 'default',
-            feature: {
-              slug: 'feed',
-              key: 'feature.feed',
-              name: 'Feed',
-            },
-            circle: {
-              id: 'for-you',
-              key: 'circle.forYou',
-              name: 'For You',
-              slug: 'forYou',
-            },
-            payload: toSignedContentPayloadItem(item.content),
-            type: 'content',
-          } as FeedItemPayloadItem)
-      );
-    }
-    const filter = createCastcleFilter(
-      {
-        countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
-        content: { $nin: excludeContents },
-      },
-      { ...query, sinceId: query.untilId, untilId: query.sinceId }
-    );
-    const feedItems = await this._guestFeedItemModel
-      .find(filter)
-      .populate('content')
-      .limit(query.maxResults)
-      .sort({ score: -1, createdAt: -1 })
-      .exec();
-
-    let authors = feedItems.map((feedItem) => feedItem.content.author);
-    authors = authors.concat(
-      feedItems
-        .filter((feedItem) => feedItem.content.originalPost)
-        .map((feedItem) => feedItem.content.originalPost.author)
-    );
-    //add authors fro default
-    if (prefix_feeds_payload.length > 0) {
-      authors = authors.concat(prefix_feeds.map((p) => p.content.author));
-      authors = authors.concat(
-        prefix_feeds
-          .filter((f) => f.content.originalPost)
-          .map((f) => f.content.originalPost.author)
-      );
-    }
-    const casts = feedItems
-      .map((feedItem) => {
-        if (!feedItem.content?.originalPost) return;
-
-        return toSignedContentPayloadItem(feedItem.content.originalPost);
-      })
-      .filter(Boolean);
-
-    const includes = {
-      casts,
-      users: await this.userService.getIncludesUsers(
-        viewer,
-        authors,
-        query.hasRelationshipExpansion
-      ),
+    const filtersGuest = {
+      countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
+      content: { $nin: excludeContents },
     };
 
-    console.log('PREFIX', prefix_feeds_payload);
+    const filterDefault = createCastcleFilter({ index: { $gte: 0 } }, query);
+    if (query.untilId || query.sinceId) filterDefault._id = { $exists: false };
+
+    const pipeline = pipelineOfGetGuestFeedContents({
+      filtersDefault: filterDefault,
+      filtersGuest: filtersGuest,
+      maxResults: query.maxResults,
+    });
+
+    this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');
+
+    const [feedResponses] =
+      await this._defaultContentModel.aggregate<GetGuestFeedContentsResponse>(
+        pipeline
+      );
+
+    if (!feedResponses.defaultFeeds.length && !feedResponses.guestFeeds.length)
+      return {
+        payload: [],
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      } as FeedItemResponse;
+
+    const mergeFeeds = [
+      ...feedResponses.defaultFeeds,
+      ...feedResponses.guestFeeds,
+    ];
+
+    const payloadFeeds = await this._feedItemsToPayloadItems(
+      mergeFeeds,
+      undefined,
+      feedResponses.engagements
+    );
+
+    const includesUsers = feedResponses.authors.map((author) =>
+      new Author(author).toIncludeUser()
+    );
+
+    const payloadCasts = feedResponses.casts.map((cast) =>
+      signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+    );
+
     return {
-      payload: prefix_feeds_payload.concat(
-        feedItems.map(
-          (item) =>
-            ({
-              id: item.id,
-              feature: {
-                slug: 'feed',
-                key: 'feature.feed',
-                name: 'Feed',
-              },
-              circle: {
-                id: 'for-you',
-                key: 'circle.forYou',
-                name: 'For You',
-                slug: 'forYou',
-              },
-              payload: toSignedContentPayloadItem(item.content),
-              type: 'content',
-            } as FeedItemPayloadItem)
-        )
-      ),
-      includes: new CastcleIncludes(includes),
-      meta: createCastcleMeta(feedItems),
+      payload: payloadFeeds,
+      includes: new CastcleIncludes({
+        casts: payloadCasts,
+        users: includesUsers,
+      }),
+      meta: Meta.fromDocuments(mergeFeeds),
     } as FeedItemResponse;
   };
 
   _feedItemsToPayloadItems = async (
     feedDocuments: FeedItem[],
-    viewer: Account
+    viewer?: Account,
+    metrics?: CastcleMetric[]
   ) => {
     const contentIds = feedDocuments.map((feed) => feed.content._id);
-    const engagements = await this.getAllEngagement(contentIds, viewer);
+    const engagements = viewer
+      ? await this.getAllEngagement(contentIds, viewer)
+      : [];
 
     return feedDocuments.map((item) => {
       return {
-        id: item.id,
+        id: item._id,
         feature: {
           slug: 'feed',
           key: 'feature.feed',
@@ -242,7 +201,13 @@ export class RankerService {
           slug: 'forYou',
         },
         payload: signedContentPayloadItem(
-          toUnsignedContentPayloadItem(item.content, engagements)
+          toUnsignedContentPayloadItem(
+            item.content,
+            engagements,
+            metrics?.find(
+              (metric) => String(metric.id) === String(item.content._id)
+            )
+          )
         ),
         type: 'content',
       } as FeedItemPayloadItem;
@@ -335,6 +300,7 @@ export class RankerService {
       maxResult: Number(query.maxResults),
       userId: user._id,
       preferLanguages: viewer.preferences.languages,
+      calledAtDelay: Environment.FEED_CALLED_AT_DELAY,
     });
 
     this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');

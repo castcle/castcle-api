@@ -23,13 +23,13 @@
 
 import {
   ContentService,
-  getBullModuleOptions,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   QueueName,
   SocialSyncService,
 } from '@castcle-api/database';
+import { CastcleBullModule } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
@@ -38,9 +38,7 @@ import { FacebookController } from './facebook.controller';
 
 @Module({
   imports: [
-    BullModule.forRootAsync({
-      useFactory: () => getBullModuleOptions(),
-    }),
+    CastcleBullModule,
     BullModule.registerQueue({ name: QueueName.CONTENT }),
     HttpModule,
     MongooseAsyncFeatures,

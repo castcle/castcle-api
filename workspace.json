@@ -325,29 +325,6 @@
       },
       "tags": []
     },
-    "utils-cache": {
-      "root": "libs/utils/cache",
-      "sourceRoot": "libs/utils/cache/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/utils/cache/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/utils/cache"],
-          "options": {
-            "jestConfig": "libs/utils/cache/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
     "utils-clients": {
       "root": "libs/utils/clients",
       "sourceRoot": "libs/utils/clients/src",

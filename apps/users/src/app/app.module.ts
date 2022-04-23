@@ -22,10 +22,9 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import { CastcleCacheModule, Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import {
@@ -45,10 +44,10 @@ import { SuggestionService } from './services/suggestion.service';
 
 @Module({
   imports: [
+    CastcleCacheModule,
     DatabaseModule,
     HealthyModule,
     RouterModule.register([{ path: 'users', module: HealthyModule }]),
-    UtilsCacheModule,
     UtilsInterceptorsModule,
     UtilsAwsModule,
     UtilsClientsModule,

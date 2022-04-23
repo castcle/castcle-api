@@ -34,7 +34,7 @@ import {
   GetSearchRecentDto,
   ResponseDto,
 } from '@castcle-api/database/dtos';
-import { CacheKeyName } from '@castcle-api/utils/cache';
+import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,

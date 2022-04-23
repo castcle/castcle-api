@@ -22,8 +22,8 @@
  */
 import { CommentServiceV2, ContentService } from '@castcle-api/database';
 import { PaginationQuery } from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   Auth,
   Authorizer,
@@ -32,6 +32,7 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
+import * as mongoose from 'mongoose';
 
 @CastcleControllerV2({ path: 'contents' })
 export class CommentControllerV2 {
@@ -41,6 +42,12 @@ export class CommentControllerV2 {
     private contentService: ContentService
   ) {}
 
+  private validateObjectId(id: string) {
+    this.logger.log(`Validate is object id: ${id}`);
+    const ObjectId = mongoose.Types.ObjectId;
+    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
+
   @CastcleAuth(CacheKeyName.Comments)
   @Get(':contentId/comments')
   async getAllComment(
@@ -49,6 +56,7 @@ export class CommentControllerV2 {
     @Query() query: PaginationQuery
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
+    this.validateObjectId(contentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
     return this.commentService.getCommentsByContentId(
@@ -67,6 +75,8 @@ export class CommentControllerV2 {
     @Query() query: PaginationQuery
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
+    this.validateObjectId(contentId);
+    this.validateObjectId(commentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
     return this.commentService.getReplyCommentsByCommentId(

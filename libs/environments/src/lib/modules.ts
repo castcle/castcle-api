@@ -21,19 +21,41 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
-import { MongooseModuleOptions } from '@nestjs/mongoose';
-import { QueueOptions } from 'bull';
+import { BullModule } from '@nestjs/bull';
+import { CacheModule, Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  getBullModuleOptions,
+  getCacheModuleOptions,
+  getMongooseModuleOptions,
+} from './factories';
 
-export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
-  ...Environment.DB_OPTIONS,
-  uri: Environment.DB_URI,
-});
+@Module({
+  imports: [
+    BullModule.forRootAsync({
+      useFactory: () => getBullModuleOptions(),
+    }),
+  ],
+  exports: [BullModule],
+})
+export class CastcleBullModule {}
 
-export const getBullModuleOptions = (): QueueOptions => ({
-  redis: {
-    host: Environment.REDIS_HOST,
-    port: Environment.REDIS_PORT,
-    password: Environment.REDIS_PASSWORD,
-  },
-});
+@Module({
+  imports: [
+    CacheModule.registerAsync({
+      useFactory: () => getCacheModuleOptions(),
+    }),
+  ],
+  exports: [CacheModule],
+})
+export class CastcleCacheModule {}
+
+@Module({
+  imports: [
+    MongooseModule.forRootAsync({
+      useFactory: () => getMongooseModuleOptions(),
+    }),
+  ],
+  exports: [MongooseModule],
+})
+export class CastcleMongooseModule {}

@@ -56,7 +56,11 @@ export class ResponseDto<T1 = any, T2 = CastcleIncludes> {
   @ApiProperty()
   meta?: Meta;
 
-  static ok = <U1, U2>({ includes, meta, payload }: ResponseDto<U1, U2>) => {
+  static ok = <U1, U2 = CastcleIncludes>({
+    includes,
+    meta,
+    payload,
+  }: ResponseDto<U1, U2>) => {
     const responseDto = new ResponseDto<U1, U2>();
 
     responseDto.payload = payload;

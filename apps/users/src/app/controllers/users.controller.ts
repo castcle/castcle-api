@@ -72,7 +72,7 @@ import {
   SocialSync,
   User,
 } from '@castcle-api/database/schemas';
-import { Environment } from '@castcle-api/environments';
+import { CacheKeyName, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   AVATAR_SIZE_CONFIGS,
@@ -81,7 +81,6 @@ import {
   Image,
   ImageUploadOptions,
 } from '@castcle-api/utils/aws';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import {
   Auth,
@@ -691,7 +690,7 @@ export class UsersController {
         read: false,
       },
       followedUser,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
     return '';
   }
@@ -1306,7 +1305,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
 
     return this.contentService.convertContentToContentResponse(
@@ -1371,7 +1370,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
 
     return this.contentService.convertContentToContentResponse(
@@ -1519,7 +1518,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$credential.account.preferences.languages[0]
     );
   }
 

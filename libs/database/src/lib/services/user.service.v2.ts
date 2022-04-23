@@ -48,6 +48,12 @@ export class UserServiceV2 {
     private userService: UserService
   ) {}
 
+  getUser = async (userId: string) => {
+    const user = await this.userService.getByIdOrCastcleId(userId);
+    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    return user;
+  };
+
   private async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
@@ -80,23 +86,23 @@ export class UserServiceV2 {
       users.map(async (user) => {
         const syncSocials = userFields?.includes(UserField.SyncSocial)
           ? await this._socialSyncModel.find({ 'author.id': user.id }).exec()
-          : undefined;
+          : [];
 
-        let syncSocial: SyncSocialModelV2 = {};
+        const syncSocial: SyncSocialModelV2 = {};
         if (String(user.ownerAccount) === String(viewer.ownerAccount)) {
-          if (!syncSocials.length) syncSocial = undefined;
-          syncSocials.forEach((item) => {
-            syncSocial[item.provider] = {
-              id: item._id,
-              provider: item.provider,
-              socialId: item.socialId,
-              userName: item.userName,
-              displayName: item.displayName,
-              avatar: item.avatar,
-              active: item.active,
-              autoPost: item.autoPost,
-            };
-          });
+          if (syncSocials)
+            syncSocials.forEach((item) => {
+              syncSocial[item.provider] = {
+                id: item._id,
+                provider: item.provider,
+                socialId: item.socialId,
+                userName: item.userName,
+                displayName: item.displayName,
+                avatar: item.avatar,
+                active: item.active,
+                autoPost: item.autoPost,
+              };
+            });
         }
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(user.ownerAccount) === String(viewer.ownerAccount)

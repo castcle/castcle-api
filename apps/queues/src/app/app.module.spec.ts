@@ -21,14 +21,13 @@
  * or have any questions.
  */
 
-import { getMongooseModuleOptions } from '@castcle-api/database';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppModule } from './app.module';
 import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
 
-jest.mock('libs/database/src/lib/database.config');
+jest.mock('libs/environments/src/lib/factories');
 
 describe('App Module', () => {
   let mongo: MongoMemoryReplSet;
@@ -37,9 +36,7 @@ describe('App Module', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
-    (getMongooseModuleOptions as jest.Mock).mockReturnValue({
-      uri: mongo.getUri(),
-    });
+    (global as any).mongoUri = mongo.getUri();
 
     const module = await Test.createTestingModule({
       imports: [AppModule],
