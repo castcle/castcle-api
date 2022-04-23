@@ -469,8 +469,34 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         _id: 1,
         ownerAccount: 1,
         displayId: 1,
-        followingContents: '$followingContents._id',
-        globalContents: '$globalContents.content',
+        followingContents: {
+          $let: {
+            vars: {
+              total: Math.ceil(params.maxResult * params.followFeedRatio),
+            },
+            in: { $slice: ['$followingContents._id', '$$total'] },
+          },
+        },
+        globalContents: {
+          $let: {
+            vars: {
+              total: {
+                $subtract: [
+                  25,
+                  {
+                    $size: {
+                      $slice: [
+                        '$followingContents._id',
+                        Math.ceil(params.maxResult * params.followFeedRatio),
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            in: { $slice: ['$globalContents.content', '$$total'] },
+          },
+        },
       },
     },
   ];
