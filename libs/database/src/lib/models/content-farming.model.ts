@@ -21,33 +21,32 @@
  * or have any questions.
  */
 
-export const CACCOUNT_NO = {
-  VAULT: {
-    NO: '0000',
-    AIRDROP: '0500',
-  },
-  ASSET: {
-    NO: '1000',
-    CASTCLE_WALLET: '1100',
-    CASTCLE_DEPOSIT: '1200',
-  },
-  LIABILITY: {
-    NO: '2000',
-    USER_WALLET: {
-      NO: '2100',
-      PERSONAL: '2110',
-      ADS: '2120',
-    },
-    LOCKED_TOKEN: {
-      NO: '2200',
-      PERSONAL: {
-        NO: '2210',
-        ADS: '2211',
-        FARM: '2212',
-      },
-      ADS_CREDIT: {
-        NO: '2220',
-      },
-    },
-  },
-};
+import { ContentFarming } from '../schemas';
+
+export class ContentFarmingReponse {
+  'number': number;
+  'balance': {
+    farmed: number;
+    available: number;
+    total: number;
+    farming: number;
+  } = {
+    farmed: 0,
+    available: 0,
+    total: 0,
+    farming: 0,
+  };
+  'status': string;
+  constructor(
+    contentFarming: ContentFarming,
+    currentBalance: number,
+    lockedBalance: number,
+    farmNo: number
+  ) {
+    //this.number
+    this.number = farmNo;
+    this.balance.available = currentBalance;
+    this.balance.total = currentBalance + lockedBalance;
+    this.status = contentFarming.status;
+  }
+}

@@ -89,6 +89,10 @@ export class NotificationServiceV2 {
     return notification.remove();
   };
 
+  deleteAllSourceNotify = async (source: NotificationSource) => {
+    return this._notificationModel.deleteMany({ source: source });
+  };
+
   getBadges = async (account: Account) => {
     const totalNotification = await this._notificationModel.countDocuments({
       account: account._id,

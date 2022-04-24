@@ -115,6 +115,13 @@ export class NotificationQuery extends PaginationQuery {
   source?: NotificationSource;
 }
 
+export class NotificationSourceQuery {
+  @IsString()
+  @IsNotEmpty()
+  @TransformStringToEnum(NotificationSource)
+  source: NotificationSource;
+}
+
 export const DEFAULT_NOTIFICATION_QUERY_OPTIONS = {
   maxResults: 25,
 } as NotificationQuery;

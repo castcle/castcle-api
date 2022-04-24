@@ -623,7 +623,7 @@ export class UserService {
     this.logger.log('Build followers query.');
     const params: GetUserRelationParams = {
       userId: targetUser._id,
-      limit: followQuery.maxResults,
+      limit: followQuery.maxResults ?? DEFAULT_QUERY_OPTIONS.limit,
       sinceId: followQuery.sinceId,
       untilId: followQuery.untilId,
       userType: userType,
@@ -667,7 +667,7 @@ export class UserService {
     this.logger.log('Build following query.');
     const params: GetUserRelationParams = {
       userId: targetUser._id,
-      limit: followQuery.maxResults,
+      limit: followQuery.maxResults ?? DEFAULT_QUERY_OPTIONS.limit,
       sinceId: followQuery.sinceId,
       untilId: followQuery.untilId,
       userType: userType,

@@ -30,6 +30,18 @@ export class FacebookClientMock {
     return true;
   }
 
+  subscribeApps() {
+    return true;
+  }
+
+  unsubscribeApps() {
+    return true;
+  }
+
+  unsubscribed() {
+    return true;
+  }
+
   getAccessToken() {
     return {
       access_token: '210058044|uBgVr1NhacSzS7UtJ387yI',
