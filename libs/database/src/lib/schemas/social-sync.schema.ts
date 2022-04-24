@@ -68,12 +68,14 @@ class SocialSyncDocument extends CastcleBase {
   authToken?: string;
 }
 
-export const SocialSyncSchema =
-  SchemaFactory.createForClass(SocialSyncDocument);
-
 export class SocialSync extends SocialSyncDocument {
   toSocialSyncPayload: () => SocialSyncDto;
 }
+
+export const SocialSyncSchema = SchemaFactory.createForClass<
+  SocialSyncDocument,
+  SocialSync
+>(SocialSyncDocument);
 
 SocialSyncSchema.methods.toSocialSyncPayload = function () {
   return {

@@ -1,4 +1,5 @@
 import { Configs } from '@castcle-api/environments';
+import { FacebookClient } from '@castcle-api/utils/clients';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -6,9 +7,26 @@ import { AppModule } from '../../../../apps/users/src/app/app.module';
 import { usersApp } from '../variables';
 
 export const setupUsersModule = async () => {
+  const facebookClient = {
+    subscribeApps: () => {
+      return true;
+    },
+    unsubscribeApps: () => {
+      return true;
+    },
+    subscribed: () => {
+      return true;
+    },
+    unsubscribed: () => {
+      return true;
+    },
+  };
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(FacebookClient)
+    .useValue(facebookClient)
+    .compile();
 
   (usersApp as any) = moduleFixture.createNestApplication();
 
