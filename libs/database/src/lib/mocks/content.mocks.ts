@@ -21,33 +21,34 @@
  * or have any questions.
  */
 
-export const CACCOUNT_NO = {
-  VAULT: {
-    NO: '0000',
-    AIRDROP: '0500',
-  },
-  ASSET: {
-    NO: '1000',
-    CASTCLE_WALLET: '1100',
-    CASTCLE_DEPOSIT: '1200',
-  },
-  LIABILITY: {
-    NO: '2000',
-    USER_WALLET: {
-      NO: '2100',
-      PERSONAL: '2110',
-      ADS: '2120',
-    },
-    LOCKED_TOKEN: {
-      NO: '2200',
-      PERSONAL: {
-        NO: '2210',
-        ADS: '2211',
-        FARM: '2212',
-      },
-      ADS_CREDIT: {
-        NO: '2220',
-      },
-    },
-  },
+import { Model } from 'mongoose';
+import { ContentType, ShortPayload } from '../dtos';
+import { Content, User } from '../schemas';
+
+type MockContentOption = {
+  amount?: number;
+  type?: ContentType;
+};
+
+export const mockContents = async (
+  user: User,
+  contentModel: Model<Content>,
+  option?: MockContentOption
+) => {
+  const amount = option.amount ? option.amount : 1;
+  const type = option.type ? option.type : ContentType.Short;
+  const contents: Content[] = [];
+  for (let i = 0; i < amount; i++) {
+    const payload: ShortPayload = {
+      message: 'this is short ' + i,
+    };
+    const content = new contentModel({
+      type,
+      author: user.toAuthor(),
+      payload,
+      revisionCount: 1,
+    });
+    contents.push(await content.save());
+  }
+  return contents;
 };

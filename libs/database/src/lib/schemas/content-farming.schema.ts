@@ -21,33 +21,33 @@
  * or have any questions.
  */
 
-export const CACCOUNT_NO = {
-  VAULT: {
-    NO: '0000',
-    AIRDROP: '0500',
-  },
-  ASSET: {
-    NO: '1000',
-    CASTCLE_WALLET: '1100',
-    CASTCLE_DEPOSIT: '1200',
-  },
-  LIABILITY: {
-    NO: '2000',
-    USER_WALLET: {
-      NO: '2100',
-      PERSONAL: '2110',
-      ADS: '2120',
-    },
-    LOCKED_TOKEN: {
-      NO: '2200',
-      PERSONAL: {
-        NO: '2210',
-        ADS: '2211',
-        FARM: '2212',
-      },
-      ADS_CREDIT: {
-        NO: '2220',
-      },
-    },
-  },
-};
+import { Content } from './content.schema';
+import { CastcleBase } from './base.schema';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
+import { Account } from './account.schema';
+import { ContentFarmingStatus } from '../models/content-farming.enum';
+
+@Schema({ timestamps: true })
+export class ContentFarming extends CastcleBase {
+  @Prop({ index: true, required: true, type: Types.ObjectId })
+  content: Content | Types.ObjectId;
+
+  @Prop({ index: true, required: true, type: Types.ObjectId })
+  account: Account | Types.ObjectId;
+
+  @Prop({ required: true, type: Object })
+  startAt: Date;
+
+  @Prop({ type: Object })
+  endedAt?: Date;
+
+  @Prop({ required: true })
+  farmAmount: number;
+
+  @Prop({ required: true, type: String })
+  status: ContentFarmingStatus;
+}
+
+export const ContentFarmingSchema =
+  SchemaFactory.createForClass(ContentFarming);

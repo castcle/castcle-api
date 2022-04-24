@@ -24,8 +24,14 @@ import { UserService } from './user.service';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EngagementType, UserType } from '../models';
-import { Account, Content, Engagement, User } from '../schemas';
+import {
+  CACCOUNT_NO,
+  ContentFarmingStatus,
+  EngagementType,
+  UserType,
+  WalletType,
+} from '../models';
+import { Account, Content, ContentFarming, Engagement, User } from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { NotificationServiceV2 } from './notification.service.v2';
 import {
@@ -34,6 +40,8 @@ import {
   NotificationType,
 } from '../dtos';
 import { Types } from 'mongoose';
+import { TAccountService } from './taccount.service';
+import { ContentFarmingReponse } from '../models/content-farming.model';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -41,7 +49,12 @@ export class ContentServiceV2 {
     @InjectModel('Engagement')
     private _engagementModel: Model<Engagement>,
     private notificationServiceV2: NotificationServiceV2,
-    private userService: UserService
+    private userService: UserService,
+    private taccountService: TAccountService,
+    @InjectModel('ContentFarming')
+    private contentFarmingModel: Model<ContentFarming>,
+    @InjectModel('Content')
+    private contentModel: Model<Content>
   ) {}
 
   likeCast = async (content: Content, user: User, account: Account) => {
@@ -102,5 +115,272 @@ export class ContentServiceV2 {
     if (String(engagement.user) !== String(user._id)) return;
 
     return engagement.remove();
+  };
+
+  createContentFarming = async (contentId: string, accountId: string) => {
+    const balance = await this.taccountService.getAccountBalance(
+      accountId,
+      WalletType.PERSONAL
+    );
+    const lockBalance = await this.taccountService.getAccountBalance(
+      accountId,
+      WalletType.FARM_LOCKED
+    );
+
+    if (balance >= (lockBalance + balance) * 0.05) {
+      //can farm
+      const farmAmount = (lockBalance + balance) * 0.05;
+      const session = await this.contentFarmingModel.startSession();
+      const contentFarming = await new this.contentFarmingModel({
+        content: contentId,
+        account: accountId,
+        status: ContentFarmingStatus.Farming,
+        farmAmount: farmAmount,
+        startAt: new Date(),
+      });
+
+      await session.withTransaction(async () => {
+        await contentFarming.save();
+        await this.taccountService.transfers({
+          from: {
+            type: WalletType.PERSONAL,
+            account: accountId,
+            value: farmAmount,
+          },
+          to: [
+            {
+              type: WalletType.FARM_LOCKED,
+              account: accountId,
+              value: farmAmount,
+            },
+          ],
+          ledgers: [
+            {
+              debit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: farmAmount,
+              },
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                value: farmAmount,
+              },
+            },
+          ],
+        });
+      });
+      session.endSession();
+      return contentFarming;
+    } else {
+      //throw error
+      throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
+    }
+  };
+
+  updateContentFarming = async (contentFarming: ContentFarming) => {
+    contentFarming.status = ContentFarmingStatus.Farming;
+    contentFarming.startAt = new Date();
+    const balance = await this.taccountService.getAccountBalance(
+      String(contentFarming.account),
+      WalletType.PERSONAL
+    );
+    const lockBalance = await this.taccountService.getAccountBalance(
+      String(contentFarming.account),
+      WalletType.FARM_LOCKED
+    );
+    if (balance >= (lockBalance + balance) * 0.05) {
+      const farmAmount = (lockBalance + balance) * 0.05;
+      const session = await this.contentFarmingModel.startSession();
+      contentFarming.farmAmount = farmAmount;
+      await session.withTransaction(async () => {
+        await contentFarming.save();
+        await this.taccountService.transfers({
+          from: {
+            type: WalletType.PERSONAL,
+            account: String(contentFarming.account),
+            value: farmAmount,
+          },
+          to: [
+            {
+              type: WalletType.FARM_LOCKED,
+              account: String(contentFarming.account),
+              value: farmAmount,
+            },
+          ],
+          ledgers: [
+            {
+              debit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: farmAmount,
+              },
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                value: farmAmount,
+              },
+            },
+          ],
+        });
+      });
+      session.endSession();
+      return contentFarming;
+    } else {
+      //thorw error
+      throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
+    }
+  };
+
+  checkFarming = (contentFarming: ContentFarming) => {
+    if (
+      contentFarming &&
+      contentFarming.status === ContentFarmingStatus.Farmed &&
+      contentFarming.endedAt &&
+      contentFarming.endedAt.getTime() - contentFarming.startAt.getTime() >=
+        24 * 60 * 60 * 1000
+    )
+      return true;
+    else if (
+      contentFarming &&
+      contentFarming.status === ContentFarmingStatus.Farmed
+    )
+      throw CastcleException.CONTENT_FARMING_ALREDY_FARM;
+    else if (!contentFarming) return false;
+    else throw CastcleException.CONTENT_FARMING_LIMIT;
+  };
+
+  getContentFarming = async (contentId: string, accountId: string) =>
+    this.contentFarmingModel.findOne({
+      content: contentId,
+      account: accountId,
+    });
+
+  farm = async (contentId: string, accountId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, accountId);
+    if (this.checkFarming(contentFarming)) {
+      return this.updateContentFarming(contentFarming);
+    } else return this.createContentFarming(contentId, accountId);
+  };
+
+  unfarm = async (contentId: string, accountId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, accountId);
+    if (
+      contentFarming &&
+      contentFarming.status === ContentFarmingStatus.Farming
+    ) {
+      contentFarming.status = ContentFarmingStatus.Farmed;
+      contentFarming.endedAt = new Date();
+      const session = await this.contentFarmingModel.startSession();
+      await session.withTransaction(async () => {
+        await contentFarming.save();
+        await this.contentModel.updateOne(
+          { _id: contentFarming.content },
+          {
+            $push: {
+              farming: contentFarming,
+            },
+          }
+        );
+        await this.taccountService.transfers({
+          from: {
+            type: WalletType.FARM_LOCKED,
+            account: String(contentFarming.account),
+            value: contentFarming.farmAmount,
+          },
+          to: [
+            {
+              type: WalletType.PERSONAL,
+              account: String(contentFarming.account),
+              value: contentFarming.farmAmount,
+            },
+          ],
+          ledgers: [
+            {
+              debit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+                value: contentFarming.farmAmount,
+              },
+              credit: {
+                caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                value: contentFarming.farmAmount,
+              },
+            },
+          ],
+        });
+      });
+      session.endSession();
+      return contentFarming;
+    } else {
+      throw CastcleException.CONTENT_FARMING_NOT_FOUND;
+    }
+  };
+
+  //for system only
+  expireFarm = async (contentId: string, accountId: string) => {
+    //change status
+    //move token from lock to personal
+    const contentFarming = await this.getContentFarming(contentId, accountId);
+    const session = await this.contentFarmingModel.startSession();
+    contentFarming.status = ContentFarmingStatus.Farmed;
+    contentFarming.endedAt = new Date();
+    await session.withTransaction(async () => {
+      await contentFarming.save();
+      await this.contentModel.updateOne(
+        { _id: contentFarming.content },
+        {
+          $push: {
+            farming: contentFarming,
+          },
+        }
+      );
+      await this.taccountService.transfers({
+        from: {
+          type: WalletType.FARM_LOCKED,
+          account: String(contentFarming.account),
+          value: contentFarming.farmAmount,
+        },
+        to: [
+          {
+            type: WalletType.PERSONAL,
+            account: String(contentFarming.account),
+            value: contentFarming.farmAmount,
+          },
+        ],
+        ledgers: [
+          {
+            debit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.FARM,
+              value: contentFarming.farmAmount,
+            },
+            credit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              value: contentFarming.farmAmount,
+            },
+          },
+        ],
+      });
+    });
+    session.endSession();
+    return contentFarming;
+  };
+
+  pipeContentFarming = async (
+    contentFarming: ContentFarming,
+    accountId: string
+  ) => {
+    const balance = await this.taccountService.getAccountBalance(
+      accountId,
+      WalletType.PERSONAL
+    );
+    const lockBalance = await this.taccountService.getAccountBalance(
+      accountId,
+      WalletType.FARM_LOCKED
+    );
+    const totalContentFarming = await this.contentFarmingModel.count({
+      account: accountId,
+    });
+    return new ContentFarmingReponse(
+      contentFarming,
+      balance,
+      lockBalance,
+      totalContentFarming
+    );
   };
 }

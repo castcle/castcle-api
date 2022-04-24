@@ -21,33 +21,39 @@
  * or have any questions.
  */
 
-export const CACCOUNT_NO = {
-  VAULT: {
-    NO: '0000',
-    AIRDROP: '0500',
-  },
-  ASSET: {
-    NO: '1000',
-    CASTCLE_WALLET: '1100',
-    CASTCLE_DEPOSIT: '1200',
-  },
-  LIABILITY: {
-    NO: '2000',
-    USER_WALLET: {
-      NO: '2100',
-      PERSONAL: '2110',
-      ADS: '2120',
+import { Model } from 'mongoose';
+import { CACCOUNT_NO, WalletType } from '../models';
+import { Account, Transaction } from '../schemas';
+
+export const mockDeposit = (
+  account: Account,
+  value: number,
+  transactionModel: Model<Transaction>
+) => {
+  console.log('mockDeposit', account._id);
+  return new transactionModel({
+    from: {
+      type: WalletType.EXTERNAL_DEPOSIT,
+      value: value,
     },
-    LOCKED_TOKEN: {
-      NO: '2200',
-      PERSONAL: {
-        NO: '2210',
-        ADS: '2211',
-        FARM: '2212',
+    to: [
+      {
+        account: account._id,
+        type: WalletType.PERSONAL,
+        value: value,
       },
-      ADS_CREDIT: {
-        NO: '2220',
+    ],
+    ledgers: [
+      {
+        credit: {
+          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          value: value,
+        },
+        debit: {
+          caccountNo: CACCOUNT_NO.ASSET.CASTCLE_DEPOSIT,
+          value: value,
+        },
       },
-    },
-  },
+    ],
+  }).save();
 };

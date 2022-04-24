@@ -94,6 +94,10 @@ export class CastcleException extends HttpException {
   static RECAST_IS_EXIST = new CastcleException('5004');
   static LIKE_IS_EXIST = new CastcleException('5005');
   static LIKE_COMMENT_IS_EXIST = new CastcleException('5006');
+  static CONTENT_FARMING_ALREDY_FARM = new CastcleException('5007');
+  static CONTENT_FARMING_NOT_FOUND = new CastcleException('5008');
+  static CONTENT_FARMING_NOT_AVAIABLE_BALANCE = new CastcleException('5009');
+  static CONTENT_FARMING_LIMIT = new CastcleException('5010');
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');
