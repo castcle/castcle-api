@@ -61,6 +61,7 @@ export class AuthenticationControllerV2 {
   @ApiOkResponse({
     type: CheckingResponseV2,
   })
+  @UseInterceptors(HeadersInterceptor)
   @Post('exists/castcle-id')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
