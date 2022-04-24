@@ -140,10 +140,10 @@ export class UserResponseDto {
 
   @ApiProperty()
   linkSocial: {
-    facebook: linkSocialDetail | null;
-    twitter: linkSocialDetail | null;
-    google: linkSocialDetail | null;
-    apple: linkSocialDetail | null;
+    facebook?: linkSocialDetail | null;
+    twitter?: linkSocialDetail | null;
+    google?: linkSocialDetail | null;
+    apple?: linkSocialDetail | null;
   };
 
   @ApiProperty()
@@ -446,6 +446,9 @@ export class GetUserParam {
 export class ContactDto {
   @IsOptional()
   @IsString()
+  countryCode?: string;
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()
@@ -487,6 +490,7 @@ export class UpdateUserDtoV2 {
   images?: UserImage;
 }
 export interface UserContact {
+  countryCode?: string;
   phone?: string;
   email?: string;
 }

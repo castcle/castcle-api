@@ -20,27 +20,35 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import {
   AuthenticationService,
   CommentServiceV2,
   ContentService,
+  ContentServiceV2,
+  NotificationServiceV2,
+  RankerService,
   SocialSyncServiceV2,
   UserService,
   UserServiceV2,
+  UserType,
 } from '@castcle-api/database';
 import {
   CommentParam,
   CreateCommentDto,
   ExpansionQuery,
   GetUserParam,
+  NotificationSource,
+  NotificationType,
   ReplyCommentParam,
   SyncSocialDtoV2,
+  UnlikeCastParam,
+  UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
 } from '@castcle-api/database/dtos';
+import { Comment, CommentType } from '@castcle-api/database/schemas';
+import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import { CastcleDate } from '@castcle-api/utils/commons';
 import {
   Auth,
@@ -52,6 +60,8 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import * as mongoose from 'mongoose';
+import { SuggestionService } from '../services/suggestion.service';
 
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -62,8 +72,18 @@ export class UsersControllerV2 {
     private userService: UserService,
     private userServiceV2: UserServiceV2,
     private commentService: CommentServiceV2,
-    private contentService: ContentService
+    private contentService: ContentService,
+    private contentServiceV2: ContentServiceV2,
+    private notificationServiceV2: NotificationServiceV2,
+    private rankerService: RankerService,
+    private suggestionService: SuggestionService
   ) {}
+
+  private validateObjectId(id: string) {
+    this.logger.log(`Validate is object id: ${id}`);
+    const ObjectId = mongoose.Types.ObjectId;
+    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
 
   @CastcleBasicAuth()
   @Post(':userId/sync-social')
@@ -74,7 +94,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -90,7 +110,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     return this.userServiceV2.getById(
       authorizer.user,
@@ -110,7 +130,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userServiceV2.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -160,10 +180,27 @@ export class UsersControllerV2 {
       { message: commentDto.message }
     );
 
-    /*
-     * TODO: !!!
-     *  Need new version notification
-     */
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      content.author.id
+    );
+
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Comment,
+        contentRef: content._id,
+        commentRef: comment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      authorizer.account.preferences.languages[0]
+    );
+
     const payload = await this.commentService.convertCommentToCommentResponse(
       user,
       comment,
@@ -191,10 +228,10 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-
+    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
-      throw CastcleException.FORBIDDEN;
+      throw CastcleException.CONTENT_NOT_FOUND;
 
     const updatedComment = await this.contentService.updateComment(comment, {
       message: updateCommentDto.message,
@@ -218,7 +255,7 @@ export class UsersControllerV2 {
     const user = isMe
       ? authorizer.user
       : await this.userService.findUser(userId);
-
+    this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
       throw CastcleException.FORBIDDEN;
@@ -242,17 +279,37 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
+    this.validateObjectId(sourceCommentId);
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
-    if (!comment) throw CastcleException.FORBIDDEN;
+    if (!comment) throw CastcleException.CONTENT_NOT_FOUND;
 
     const replyComment = await this.contentService.replyComment(user, comment, {
       message: replyCommentBody.message,
     });
-    /*
-     * TODO: !!!
-     *  Need new version notification
-     */
+
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      comment.author._id
+    );
+
+    await this.notificationServiceV2.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Reply,
+        contentRef: comment.targetRef.oid,
+        commentRef: comment._id,
+        replyRef: replyComment._id,
+        account: userOwner.ownerAccount,
+        read: false,
+      },
+      userOwner,
+      authorizer.account.preferences.languages[0]
+    );
+
     return await this.commentService.convertCommentToCommentResponse(
       user,
       replyComment,
@@ -262,7 +319,7 @@ export class UsersControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Put(':userId/comments/:sourceCommentIdreply/:replyCommentId')
+  @Put(':userId/comments/:sourceCommentId/reply/:replyCommentId')
   async updateReplyComment(
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
@@ -279,7 +336,8 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-
+    this.validateObjectId(sourceCommentId);
+    this.validateObjectId(replyCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
       replyCommentId
@@ -320,6 +378,8 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
+    this.validateObjectId(sourceCommentId);
+
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
       replyCommentId
@@ -332,5 +392,121 @@ export class UsersControllerV2 {
       throw CastcleException.FORBIDDEN;
 
     await this.commentService.deleteComment(replyComment);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Post(':userId/likes-casts')
+  async likeCast(
+    @Auth() authorizer: Authorizer,
+    @Body('contentId') contentId: string,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    const content = await this.contentService.getContentById(contentId);
+
+    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    await this.contentServiceV2.likeCast(content, user, authorizer.account);
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      content
+    );
+
+    if (!feedItem) return;
+
+    await this.suggestionService.seen(
+      authorizer.account,
+      feedItem._id,
+      authorizer.credential
+    );
+    return;
+  }
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @Delete(':userId/likes-casts/:sourceContentId')
+  async unlikeCast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, sourceContentId }: UnlikeCastParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.contentServiceV2.unlikeCast(sourceContentId, user);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
+  @CastcleBasicAuth()
+  @Post(':userId/likes-comments')
+  async likeCommentCast(
+    @Auth() authorizer: Authorizer,
+    @Body('commentId') commentId: string,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const comment = await this.contentService.getCommentById(commentId);
+    if (!comment) throw CastcleException.REQUEST_URL_NOT_FOUND;
+
+    let originalComment: Comment;
+    if (comment.type === CommentType.Reply) {
+      originalComment = await this.contentService.getCommentById(
+        comment.targetRef.oid
+      );
+      if (!originalComment) throw CastcleException.REQUEST_URL_NOT_FOUND;
+    }
+    const content = await this.contentService.getContentById(
+      comment.type === CommentType.Reply
+        ? originalComment.targetRef.oid
+        : comment.targetRef.oid
+    );
+
+    await this.commentService.likeCommentCast(
+      originalComment,
+      comment,
+      content,
+      user,
+      authorizer.account
+    );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      content
+    );
+
+    if (!feedItem) return;
+
+    await this.suggestionService.seen(
+      authorizer.account,
+      feedItem._id,
+      authorizer.credential
+    );
+    return;
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Comments)
+  @CastcleBasicAuth()
+  @Delete(':userId/likes-comments/:sourceCommentId')
+  async unlikeCommentCast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    this.validateObjectId(sourceCommentId);
+    await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 }

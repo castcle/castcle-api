@@ -62,7 +62,6 @@ export class NotificationConsumer {
     this.logger.log(JSON.stringify(job));
     await this.firebase.messaging
       .sendMulticast({
-        data: job.data.payload,
         notification: job.data.notification,
         android: job.data.android,
         tokens: job.data.firebaseTokens,

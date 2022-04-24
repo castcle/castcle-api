@@ -98,6 +98,7 @@ export class QueryOption {
 }
 
 export class CastcleMetric {
+  id?: string;
   likeCount: number;
   commentCount?: number;
   quoteCount?: number;

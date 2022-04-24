@@ -136,13 +136,22 @@ export class NotificationService {
     this.#logger.log('Notification to user.');
 
     this.#logger.log('Prepare data into notification.');
+    let filters = {
+      ...notificationData,
+      ...{
+        contentRef: notificationData.contentRef || { $exists: false },
+        commentRef: notificationData.commentRef || { $exists: false },
+        replyRef: notificationData.replyRef || { $exists: false },
+        profileRef: notificationData.profileRef || { $exists: false },
+      },
+    };
     if (
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     ) {
       const notifyModel = await this._notificationModel
         .findOne({
-          ...notificationData,
+          ...filters,
           ...{ sourceUserId: { $in: [sourceUserId] } },
         })
         .sort({ _id: -1, createdAt: -1 })
@@ -164,7 +173,7 @@ export class NotificationService {
       }).save();
     } else {
       const updateNotify = await this._notificationModel.updateOne(
-        notificationData,
+        filters,
         {
           $set: { read },
           $setOnInsert: notificationData,
@@ -183,13 +192,13 @@ export class NotificationService {
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     )
-      notificationData = {
-        ...notificationData,
+      filters = {
+        ...filters,
         ...{ sourceUserId: { $in: [sourceUserId] } },
       };
 
     const notify = await this._notificationModel
-      .findOne(notificationData)
+      .findOne(filters)
       .sort({ createdAt: -1 })
       .exec();
 
@@ -270,7 +279,6 @@ export class NotificationService {
     language: string
   ) => {
     this.#logger.log('Reverse latest user.');
-    console.log(notify);
 
     const userIds = notify.sourceUserId?.reverse();
 
@@ -370,7 +378,6 @@ export class NotificationService {
       },
       android: {
         priority: AndroidMessagePriority.NORMAL,
-        data: notify.toNotificationPayload({ message }),
         notification: {
           body: message,
           default_sound: true,

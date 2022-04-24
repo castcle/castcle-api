@@ -20,16 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
+
+import {
+  CastcleBullModule,
+  CastcleCacheModule,
+  CastcleMongooseModule,
+} from '@castcle-api/environments';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import {
-  getBullModuleOptions,
-  getMongooseModuleOptions,
-} from './database.config';
 import { QueueName } from './models';
 import {
   AccountActivationSchema,
@@ -71,6 +72,7 @@ import { CampaignService } from './services/campaign.service';
 import { CommentService } from './services/comment.service';
 import { CommentServiceV2 } from './services/comment.service.v2';
 import { ContentService } from './services/content.service';
+import { ContentServiceV2 } from './services/content.service.v2';
 import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
@@ -159,9 +161,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
 @Global()
 @Module({
   imports: [
-    BullModule.forRootAsync({
-      useFactory: () => getBullModuleOptions(),
-    }),
+    CastcleBullModule,
+    CastcleCacheModule,
+    CastcleMongooseModule,
     BullModule.registerQueue(
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
@@ -169,12 +171,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.USER }
     ),
     HttpModule,
-    MongooseModule.forRootAsync({
-      useFactory: () => getMongooseModuleOptions(),
-    }),
     MongooseAsyncFeatures,
     MongooseForFeatures,
-    UtilsCacheModule,
     UtilsClientsModule,
   ],
   providers: [
@@ -200,9 +198,9 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserServiceV2,
     NotificationServiceV2,
     CommentServiceV2,
+    ContentServiceV2,
   ],
   exports: [
-    BullModule,
     AuthenticationService,
     AuthenticationServiceV2,
     UserService,
@@ -225,6 +223,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserServiceV2,
     NotificationServiceV2,
     CommentServiceV2,
+    ContentServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -255,4 +254,5 @@ export {
   UserServiceV2,
   NotificationServiceV2,
   CommentServiceV2,
+  ContentServiceV2,
 };

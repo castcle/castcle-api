@@ -58,14 +58,24 @@ export class DataService {
   }
 
   async personalizeContents(accountId: string, contentIds: string[]) {
-    const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/personalize_content_predict`;
-    const body = { accountId, contents: contentIds };
-    const personalizedContents = await this.post<Record<string, number>>(
-      url,
-      body,
-      'personalizeContents'
-    );
-
+    let personalizedContents = {};
+    if (Environment.FEED_IGNORE_PERSONALIZED_CONTENTS == '1') {
+      contentIds.forEach((item) => {
+        personalizedContents[item] = 0;
+      });
+      this.logger.log(
+        JSON.stringify(personalizedContents),
+        `personalizeContents:success`
+      );
+    } else {
+      const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/personalize_content_predict`;
+      const body = { accountId, contents: contentIds };
+      personalizedContents = await this.post<Record<string, number>>(
+        url,
+        body,
+        'personalizeContents'
+      );
+    }
     return personalizedContents ?? {};
   }
 

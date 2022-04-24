@@ -29,7 +29,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
 import { Model, FilterQuery, Types } from 'mongoose';
-import { User, Notification, Credential, Account } from '../schemas';
+import { User, Notification, Account } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import { QueueName, NotificationMessage, UserType } from '../models';
 import {
@@ -61,9 +61,9 @@ export class NotificationServiceV2 {
     return this._notificationModel.findById(Types.ObjectId(id)).exec();
   };
 
-  getAllNotify = async (credential: Credential, query: NotificationQuery) => {
+  getAllNotify = async (account: Account, query: NotificationQuery) => {
     const filters: FilterQuery<Notification> = createCastcleFilter(
-      { account: credential.account._id },
+      { account: account._id },
       query
     );
     if (query?.source) filters.source = query?.source;
@@ -79,7 +79,7 @@ export class NotificationServiceV2 {
     return notification.save();
   };
 
-  readAllNotify = async ({ account }: Credential) => {
+  readAllNotify = async (account: Account) => {
     return this._notificationModel
       .updateMany({ account: account._id }, { read: true })
       .exec();
@@ -89,9 +89,9 @@ export class NotificationServiceV2 {
     return notification.remove();
   };
 
-  getBadges = async (credential: Credential) => {
+  getBadges = async (account: Account) => {
     const totalNotification = await this._notificationModel.countDocuments({
-      account: credential.account._id,
+      account: account._id,
       read: false,
     });
     return totalNotification
@@ -106,13 +106,25 @@ export class NotificationServiceV2 {
     userOwner: User,
     language: string
   ) => {
-    this.#logger.log('Check configuration notify to user.');
+    this.#logger.log('Check user action.');
+    if (String(sourceUserId) === String(userOwner._id)) return;
 
+    this.#logger.log('Check configuration notify to user.');
     if (!this.notificationService.checkNotify(notificationData)) return;
 
     this.#logger.log('Notification to user.');
 
     this.#logger.log('Prepare data into notification.');
+
+    let filters = {
+      ...notificationData,
+      ...{
+        contentRef: notificationData.contentRef || { $exists: false },
+        commentRef: notificationData.commentRef || { $exists: false },
+        replyRef: notificationData.replyRef || { $exists: false },
+        profileRef: notificationData.profileRef || { $exists: false },
+      },
+    };
 
     if (
       notificationData.type === NotificationType.Tag ||
@@ -120,7 +132,7 @@ export class NotificationServiceV2 {
     ) {
       const notifyModel = await this._notificationModel
         .findOne({
-          ...notificationData,
+          ...filters,
           ...{ sourceUserId: { $in: [sourceUserId] } },
         })
         .sort({ _id: -1, createdAt: -1 })
@@ -142,7 +154,7 @@ export class NotificationServiceV2 {
       }).save();
     } else {
       const updateNotify = await this._notificationModel.updateOne(
-        notificationData,
+        filters,
         {
           $set: { read },
           $setOnInsert: notificationData,
@@ -161,13 +173,13 @@ export class NotificationServiceV2 {
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     )
-      notificationData = {
-        ...notificationData,
+      filters = {
+        ...filters,
         ...{ sourceUserId: { $in: [sourceUserId] } },
       };
 
     const notify = await this._notificationModel
-      .findOne(notificationData)
+      .findOne(filters)
       .sort({ createdAt: -1 })
       .exec();
     this.#logger.log(

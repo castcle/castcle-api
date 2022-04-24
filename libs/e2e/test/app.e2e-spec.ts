@@ -1,4 +1,3 @@
-import { getMongooseModuleOptions } from 'libs/database/src/lib/database.config';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { connect, disconnect } from 'mongoose';
 import {
@@ -19,12 +18,7 @@ describe('Castcle E2E Tests', () => {
 
   beforeAll(async () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
-    (getMongooseModuleOptions as jest.Mock).mockReturnValue({
-      uri: mongoMemoryReplSet.getUri(),
-      useCreateIndex: true,
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    (global as any).mongoUri = mongoMemoryReplSet.getUri();
 
     await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();

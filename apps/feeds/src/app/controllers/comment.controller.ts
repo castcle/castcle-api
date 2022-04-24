@@ -57,13 +57,13 @@ import {
   LikeCommentBody,
   ReplyCommentBody,
 } from '../dtos/comment.dto';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleController,
   CastcleAuth,
   CastcleBasicAuth,
 } from '@castcle-api/utils/decorators';
 import { SuggestionService } from '../services/suggestion.service';
+import { CacheKeyName } from '@castcle-api/environments';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class CommentController {
@@ -85,7 +85,7 @@ export class CommentController {
   async createComment(
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
-    @Req() { $credential, $language }: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     // try {
@@ -133,7 +133,7 @@ export class CommentController {
           read: false,
         },
         user,
-        $language
+        $credential.account.preferences.languages[0]
       );
     }
     const payload = await this.commentService.convertCommentToCommentResponse(
@@ -187,7 +187,7 @@ export class CommentController {
   async replyComment(
     @Param('commentId') commentId: string,
     @Body() replyCommentBody: ReplyCommentBody,
-    @Req() { $credential, $language }: CredentialRequest,
+    @Req() { $credential }: CredentialRequest,
     @Query() expansionQuery: ExpansionQuery
   ) {
     const [authorizedUser, comment, user] = await Promise.all([
@@ -199,7 +199,7 @@ export class CommentController {
       message: replyCommentBody.message,
     });
 
-    if (String(authorizedUser._id) !== String(comment.author.id)) {
+    if (String(authorizedUser._id) !== String(comment.author._id)) {
       const userOwner = await this.userService.getByIdOrCastcleId(
         comment.author._id
       );
@@ -219,7 +219,7 @@ export class CommentController {
           read: false,
         },
         user,
-        $language
+        $credential.account.preferences.languages[0]
       );
     }
     return {
@@ -293,29 +293,27 @@ export class CommentController {
 
     if (!likeComment) throw CastcleException.LIKE_IS_EXIST;
 
-    if (String(authorizedUser._id) !== String(comment.author.id)) {
-      const userOwner = await this.userService.getByIdOrCastcleId(
-        comment.author._id
-      );
+    if (String(authorizedUser._id) === String(comment.author._id)) return;
+    const userOwner = await this.userService.getByIdOrCastcleId(
+      comment.author._id
+    );
 
-      this.notifyService.notifyToUser(
-        {
-          source:
-            userOwner.type === UserType.PEOPLE
-              ? NotificationSource.Profile
-              : NotificationSource.Page,
-          sourceUserId: authorizedUser._id,
-          type: NotificationType.Like,
-          contentRef: content._id,
-          commentRef: comment._id,
-          account: user.ownerAccount,
-          read: false,
-        },
-        user,
-        req.$language
-      );
-    }
-    return '';
+    this.notifyService.notifyToUser(
+      {
+        source:
+          userOwner.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: authorizedUser._id,
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        account: user.ownerAccount,
+        read: false,
+      },
+      user,
+      req.$credential.account.preferences.languages[0]
+    );
   }
 
   @ApiBody({

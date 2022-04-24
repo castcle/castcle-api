@@ -23,9 +23,8 @@
 
 import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
+import { CastcleCacheModule, Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
-import { UtilsCacheModule } from '@castcle-api/utils/cache';
 import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
 import {
   AwsXRayInterceptor,
@@ -48,12 +47,12 @@ import { AppService, SuggestionService } from './services';
 
 @Module({
   imports: [
+    CastcleCacheModule,
     DatabaseModule,
     CaslModule,
     HealthyModule,
     RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,
-    UtilsCacheModule,
     UtilsPipesModule,
     ThrottlerModule.forRoot({
       ttl: Environment.RATE_LIMIT_TTL,

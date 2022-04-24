@@ -22,27 +22,24 @@
  */
 
 import { NotificationQuery } from '@castcle-api/database/dtos';
-import { CacheKeyName } from '@castcle-api/utils/cache';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
+import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import {
   createCastcleMeta,
   NotificationServiceV2,
-  UserService,
 } from '@castcle-api/database';
 import {
+  Auth,
+  Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
+import { CacheKeyName } from '@castcle-api/environments';
 
 @CastcleControllerV2({ path: 'notifications' })
 export class NotificationsControllerV2 {
-  constructor(
-    private notificationServiceV2: NotificationServiceV2,
-    private userService: UserService
-  ) {}
+  constructor(private notificationServiceV2: NotificationServiceV2) {}
 
   async _getNotificationIfExist(id: string) {
     const notification = await this.notificationServiceV2.getFromId(id);
@@ -50,23 +47,22 @@ export class NotificationsControllerV2 {
     return notification;
   }
 
-  @CastcleBasicAuth()
+  @CastcleAuth(CacheKeyName.NotificationsGet)
   @Get()
   async getAllNotify(
-    @Req() { $credential, $language }: CredentialRequest,
+    @Auth() authorizer: Authorizer,
     @Query() query?: NotificationQuery
   ) {
-    const user = await this.userService.getUserFromCredential($credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notifications = await this.notificationServiceV2.getAllNotify(
-      $credential,
+      authorizer.account,
       query
     );
     return {
       payload: await this.notificationServiceV2.generateMessagesToNotifications(
         notifications,
-        $language
+        authorizer.account.preferences.languages[0]
       ),
       meta: createCastcleMeta(notifications),
     };
@@ -75,35 +71,26 @@ export class NotificationsControllerV2 {
   @CastcleBasicAuth()
   @Post(':id/reads')
   @HttpCode(204)
-  async readNotify(
-    @Req() { $credential }: CredentialRequest,
-    @Param('id') id: string
-  ) {
-    const user = await this.userService.getUserFromCredential($credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+  async readNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notification = await this._getNotificationIfExist(id);
     await this.notificationServiceV2.readNotify(notification);
   }
-
   @CastcleBasicAuth()
   @Post('reads')
   @HttpCode(204)
-  async readAllNotify(@Req() { $credential }: CredentialRequest) {
-    const user = await this.userService.getUserFromCredential($credential);
-    if (!user) throw CastcleException.FORBIDDEN;
-    await this.notificationServiceV2.readAllNotify($credential);
+  async readAllNotify(@Auth() authorizer: Authorizer) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
+
+    await this.notificationServiceV2.readAllNotify(authorizer.account);
   }
 
   @CastcleBasicAuth()
-  @Delete(':id/reads')
+  @Delete(':id')
   @HttpCode(204)
-  async deleteNotify(
-    @Req() { $credential }: CredentialRequest,
-    @Param('id') id: string
-  ) {
-    const user = await this.userService.getUserFromCredential($credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+  async deleteNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notification = await this._getNotificationIfExist(id);
     await this.notificationServiceV2.deleteNotify(notification);
@@ -111,11 +98,12 @@ export class NotificationsControllerV2 {
 
   @CastcleAuth(CacheKeyName.NotificationsBadges)
   @Get('badges')
-  async badgesNotify(@Req() { $credential }: CredentialRequest) {
-    const user = await this.userService.getUserFromCredential($credential);
-    if (!user) throw CastcleException.FORBIDDEN;
+  async badgesNotify(@Auth() authorizer: Authorizer) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
 
-    const badgeNotify = await this.notificationServiceV2.getBadges($credential);
+    const badgeNotify = await this.notificationServiceV2.getBadges(
+      authorizer.account
+    );
     return {
       payload: {
         badges: badgeNotify,

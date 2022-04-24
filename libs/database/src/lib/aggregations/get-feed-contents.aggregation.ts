@@ -21,7 +21,15 @@
  * or have any questions.
  */
 
-import { Types } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
+import { CastcleMetric } from '../dtos';
+import {
+  DefaultContent,
+  GuestFeedItem,
+  FeedItem,
+  Content,
+  Author,
+} from '../schemas';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;
@@ -29,6 +37,14 @@ export class GetFeedContentsResponse {
   displayId: string;
   followingContents: Types.ObjectId[];
   globalContents: Types.ObjectId[];
+}
+
+export class GetGuestFeedContentsResponse {
+  defaultFeeds: FeedItem[];
+  guestFeeds: FeedItem[];
+  casts: Content[];
+  engagements: CastcleMetric[];
+  authors: Author[];
 }
 
 export class GetFeedContentsParams {
@@ -40,8 +56,229 @@ export class GetFeedContentsParams {
   maxResult: number;
   preferLanguages: string[];
   userId: Types.ObjectId;
+  calledAtDelay: number;
 }
 
+export class GetGuestFeedContentsParams {
+  filtersDefault: FilterQuery<DefaultContent>;
+  filtersGuest: FilterQuery<GuestFeedItem>;
+  maxResults: number;
+}
+export const pipelineOfGetGuestFeedContents = ({
+  filtersDefault,
+  filtersGuest,
+  maxResults,
+}: GetGuestFeedContentsParams) => {
+  return [
+    {
+      $sort: {
+        index: 1,
+      },
+    },
+    {
+      $match: filtersDefault,
+    },
+    {
+      $unionWith: {
+        coll: 'guestfeeditems',
+        pipeline: [
+          { $match: filtersGuest },
+          { $sort: { score: -1, createdAt: -1 } },
+        ],
+      },
+    },
+    { $limit: maxResults },
+    {
+      $facet: {
+        defaultFeeds: [
+          {
+            $match: { index: { $exists: true } },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'content',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          {
+            $addFields: { content: { $arrayElemAt: ['$content', 0] } },
+          },
+        ],
+        guestFeeds: [
+          {
+            $match: { index: { $exists: false } },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'content',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$content' }, 0] },
+            },
+          },
+          {
+            $addFields: { content: { $arrayElemAt: ['$content', 0] } },
+          },
+        ],
+        casts: [
+          {
+            $match: {
+              $and: [
+                { originalContent: { $ne: null } },
+                { originalContent: { $exists: true } },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: 'contents',
+              localField: 'originalContent',
+              foreignField: '_id',
+              as: 'content',
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$content', 0] } },
+        ],
+        engagements: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: { contentId: '$content' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                      ],
+                    },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$targetRef.$id',
+                    likeCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'like'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    commentCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'comment'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    quotedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'quoted'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    recastedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', 'recasted'] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    // TODO: feature add metric reports
+                    // reportedCount: {
+                    //   $sum: {
+                    //     $cond: {
+                    //       if: { $eq: ['$type', 'reported'] },
+                    //       then: 1,
+                    //       else: 0,
+                    //     },
+                    //   },
+                    // },
+                  },
+                },
+              ],
+              as: 'engagements',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+        ],
+        authors: [
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'author',
+              foreignField: '_id',
+              as: 'author',
+            },
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'originalAuthor',
+              foreignField: '_id',
+              as: 'originalAuthor',
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              authors: { $addToSet: { $arrayElemAt: ['$author', 0] } },
+              originalAuthors: {
+                $addToSet: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$originalAuthor' }, 0] },
+                    then: { $arrayElemAt: ['$originalAuthor', 0] },
+                    else: '$$REMOVE',
+                  },
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              authors: { $concatArrays: ['$authors', '$originalAuthors'] },
+            },
+          },
+          { $unwind: '$authors' },
+          { $replaceWith: '$authors' },
+          {
+            $project: {
+              id: '$_id',
+              avatar: '$avatar',
+              castcleId: '$displayId',
+              displayName: '$displayName',
+              type: '$type',
+              verified: '$verified',
+            },
+          },
+        ],
+      },
+    },
+  ];
+};
 export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
   return [
     {
@@ -64,6 +301,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
+          { $limit: params.followFeedMax },
         ],
         as: 'followings',
       },
@@ -81,6 +319,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 0, followedUser: 1 } },
+          { $limit: params.followFeedMax },
         ],
         as: 'blockings',
       },
@@ -95,6 +334,9 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           dateDiff: new Date(
             new Date().getTime() - params.decayDays * 1000 * 86400
           ),
+          dateDiffCalled: new Date(
+            new Date().getTime() - params.calledAtDelay * 1000
+          ),
         },
         pipeline: [
           { $sort: { createdAt: -1 } },
@@ -108,11 +350,18 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
                       { $gte: ['$seenAt', '$$dateDiff'] },
                     ],
                   },
+                  {
+                    $and: [
+                      { $lte: ['$calledAt', '$$dateNow'] },
+                      { $gte: ['$calledAt', '$$dateDiffCalled'] },
+                    ],
+                  },
                 ],
               },
             },
           },
           { $project: { _id: 0, content: 1 } },
+          { $limit: params.duplicateContentMax },
         ],
         as: 'duplicateContents',
       },
@@ -169,9 +418,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           {
             $sort: { localized: -1 },
           },
-          {
-            $limit: Math.ceil(params.maxResult * (1 - params.followFeedRatio)),
-          },
+          { $limit: params.maxResult },
         ],
         as: 'globalContents',
       },
@@ -212,7 +459,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
             },
           },
           { $project: { _id: 1 } },
-          { $limit: Math.ceil(params.maxResult * params.followFeedRatio) },
+          { $limit: params.maxResult },
         ],
         as: 'followingContents',
       },
@@ -222,8 +469,34 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         _id: 1,
         ownerAccount: 1,
         displayId: 1,
-        followingContents: '$followingContents._id',
-        globalContents: '$globalContents.content',
+        followingContents: {
+          $let: {
+            vars: {
+              total: Math.ceil(params.maxResult * params.followFeedRatio),
+            },
+            in: { $slice: ['$followingContents._id', '$$total'] },
+          },
+        },
+        globalContents: {
+          $let: {
+            vars: {
+              total: {
+                $subtract: [
+                  25,
+                  {
+                    $size: {
+                      $slice: [
+                        '$followingContents._id',
+                        Math.ceil(params.maxResult * params.followFeedRatio),
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            in: { $slice: ['$globalContents.content', '$$total'] },
+          },
+        },
       },
     },
   ];

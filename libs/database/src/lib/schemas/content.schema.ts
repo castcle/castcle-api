@@ -25,7 +25,7 @@ import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { CastcleImage } from '../dtos/common.dto';
+import { CastcleImage, CastcleMetric } from '../dtos/common.dto';
 import {
   Author,
   BlogPayload,
@@ -228,7 +228,8 @@ export const transformContentPayloadToV2 = (
 
 export const toUnsignedContentPayloadItem = (
   content: Content | ContentDocument,
-  engagements: Engagement[] = []
+  engagements: Engagement[] = [],
+  metrics?: CastcleMetric
 ) => {
   const engage = engagements.filter(
     (engagement) =>
@@ -244,12 +245,14 @@ export const toUnsignedContentPayloadItem = (
     link: (content.payload as ShortPayload)?.link,
     photo: (content.payload as ShortPayload)?.photo,
 
-    metrics: {
-      likeCount: content.engagements?.like?.count | 0,
-      commentCount: content.engagements?.comment?.count | 0,
-      quoteCount: content.engagements?.quote?.count | 0,
-      recastCount: content.engagements?.recast?.count | 0,
-    },
+    metrics: metrics
+      ? metrics
+      : {
+          likeCount: content.engagements?.like?.count | 0,
+          commentCount: content.engagements?.comment?.count | 0,
+          quoteCount: content.engagements?.quote?.count | 0,
+          recastCount: content.engagements?.recast?.count | 0,
+        },
     participate: {
       liked: engage.some(({ type }) => type === EngagementType.Like),
       commented: engage.some(({ type }) => type === EngagementType.Comment),

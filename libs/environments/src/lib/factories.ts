@@ -20,61 +20,32 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const CacheKeyName = {
-  NotificationsGet: {
-    Name: 'NOTIFICATIONS_GET',
-    Ttl: 1,
+
+import { CacheModuleOptions } from '@nestjs/common';
+import { MongooseModuleOptions } from '@nestjs/mongoose';
+import { QueueOptions } from 'bull';
+import * as redisStore from 'cache-manager-redis-store';
+import { Environment } from './environments';
+
+export const getBullModuleOptions = (): QueueOptions => ({
+  redis: {
+    host: Environment.REDIS_QUEUE_HOST,
+    port: Environment.REDIS_QUEUE_PORT,
+    password: Environment.REDIS_QUEUE_PASSWORD,
   },
-  NotificationsBadges: {
-    Name: 'NOTIFICATIONS_BADGES',
-    Ttl: 1,
-  },
-  LanguagesGet: {
-    Name: 'LANGUAGES_GET',
-    Ttl: 3600,
-  },
-  Hashtags: {
-    Name: 'HASHTAGS',
-    Ttl: 10,
-  },
-  TopTrends: {
-    Name: 'TOPTRENDS',
-    Ttl: 10,
-  },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 10,
-  },
-  Pages: {
-    Name: 'PAGES',
-    Ttl: 10,
-  },
-  Feeds: {
-    Name: 'FEEDS',
-    Ttl: 10,
-  },
-  Contents: {
-    Name: 'CONTENTS',
-    Ttl: 10,
-  },
-  Comments: {
-    Name: 'COMMENTS',
-    Ttl: 10,
-  },
-  Users: {
-    Name: 'USERS',
-    Ttl: 10,
-  },
-  Country: {
-    Name: 'COUNTRY',
-    Ttl: 10,
-  },
-  SyncSocial: {
-    Name: 'SYNC_SOCIAL',
-    Ttl: 10,
-  },
-  Referrer: {
-    Name: 'REFERRER',
-    Ttl: 10,
-  },
-};
+});
+
+export const getCacheModuleOptions = (): CacheModuleOptions => ({
+  store: redisStore,
+  host: Environment.REDIS_CACHE_HOST,
+  port: Environment.REDIS_CACHE_PORT,
+  password: Environment.REDIS_CACHE_PASSWORD,
+  ttl: 1000,
+});
+
+export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
+  uri: Environment.DB_URI,
+  useCreateIndex: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});

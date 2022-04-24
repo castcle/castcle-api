@@ -33,8 +33,8 @@ import {
   NotificationSource,
   RegisterTokenDto,
 } from '@castcle-api/database/dtos';
+import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CacheKeyName } from '@castcle-api/utils/cache';
 import {
   CastcleAuth,
   CastcleBasicAuth,

@@ -28,6 +28,7 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  NotificationServiceV2,
   QueueName,
   UserService,
 } from '@castcle-api/database';
@@ -71,6 +72,7 @@ describe('CommentControllerV2', () => {
         ContentService,
         CommentServiceV2,
         NotificationService,
+        NotificationServiceV2,
         HashtagService,
         {
           provide: getQueueToken(QueueName.CONTENT),
