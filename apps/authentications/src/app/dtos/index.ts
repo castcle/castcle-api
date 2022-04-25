@@ -65,36 +65,6 @@ export class LoginDto {
   password: string;
 }
 
-export class SocialConnectDto {
-  @IsNotEmpty()
-  @IsEnum(AccountAuthenIdType)
-  @ApiProperty()
-  provider: AccountAuthenIdType;
-  @IsString()
-  @ApiProperty()
-  socialId: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  displayName?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  avatar?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  email?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  authToken?: string;
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional()
-  referral?: string;
-}
-
 class RegisterPayload {
   @ApiProperty()
   email: string;

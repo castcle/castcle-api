@@ -32,6 +32,7 @@ import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { QueueName } from './models';
+import { Repository } from './repositories';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -178,6 +179,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UtilsClientsModule,
   ],
   providers: [
+    Repository,
     AuthenticationService,
     AuthenticationServiceV2,
     UserService,

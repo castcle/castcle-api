@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { AnalyticService, AuthenticationService } from '@castcle-api/database';
+import { SocialConnectDto } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';
@@ -76,7 +77,6 @@ import {
   RegisterByEmailDto,
   RequestOtpDto,
   RequestTokenDeviceDto,
-  SocialConnectDto,
   SuggestCastcleIdDto,
   SuggestCastcleIdResponse,
   TokenResponse,
@@ -200,15 +200,6 @@ export class AuthenticationController {
       throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
     }
   }
-
-  // PLAN : !!!
-  /*@Post('loginWithSocial')
-  loginWithSocial() {
-    return {
-      accessToken: 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-      refreshToken: 'dmInNOX3-Pj_52rubA56xY37Na4EW3TPvwsj5SHiPF8'
-    };
-  }*/
 
   @ApiHeader({
     name: 'Device',
