@@ -40,6 +40,7 @@ import {
   NotificationQuery,
 } from '../dtos';
 import { NotificationService } from './notification.service';
+import { pipelineNotificationBadge } from '../aggregations';
 
 @Injectable()
 export class NotificationServiceV2 {
@@ -94,15 +95,17 @@ export class NotificationServiceV2 {
   };
 
   getBadges = async (account: Account) => {
-    const totalNotification = await this._notificationModel.countDocuments({
-      account: account._id,
-      read: false,
-    });
-    return totalNotification
-      ? totalNotification > 99
-        ? '+99'
-        : String(totalNotification)
-      : '';
+    const pipeline = pipelineNotificationBadge(account._id);
+    const [totalNotification] =
+      await this._notificationModel.aggregate<Notification>(pipeline);
+    if (!totalNotification)
+      return {
+        profile: 0,
+        page: 0,
+        system: 0,
+      };
+
+    return totalNotification;
   };
 
   notifyToUser = async (
