@@ -66,9 +66,6 @@ class CredentialDocument extends CastcleBase {
   firebaseNotificationToken?: string;
 }
 
-export const CredentialSchema =
-  SchemaFactory.createForClass(CredentialDocument);
-
 export class Credential extends CredentialDocument {
   renewTokens: (
     accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
@@ -95,6 +92,11 @@ export interface CredentialModel extends mongoose.Model<Credential> {
     refreshTokenExpireDate: Date;
   };
 }
+
+export const CredentialSchema = SchemaFactory.createForClass<
+  CredentialDocument,
+  Credential
+>(CredentialDocument);
 
 CredentialSchema.statics.generateAccessToken = (
   payload: AccessTokenPayload | MemberAccessTokenPayload

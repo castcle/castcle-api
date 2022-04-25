@@ -255,6 +255,26 @@ export const ErrorMessages = {
     code: '5005',
     message: 'You already like this comment cast',
   },
+  '5007': {
+    statusCode: '400',
+    code: '5007',
+    message: 'You already farm this cast',
+  },
+  '5008': {
+    statusCode: '404',
+    code: '5008',
+    message: 'Farming not found',
+  },
+  '5009': {
+    statusCode: '400',
+    code: '5009',
+    message: "You don't have enough $CAST to farm",
+  },
+  '5010': {
+    statusCode: '400',
+    code: '5010',
+    message: 'You have reach your farming limit, please wait 24hrs',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',

@@ -41,6 +41,7 @@ import {
   AnalyticSchema,
   CampaignSchema,
   CommentSchemaFactory,
+  ContentFarmingSchema,
   ContentSchemaFactory,
   CountrySchema,
   CredentialSchema,
@@ -115,6 +116,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

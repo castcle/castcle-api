@@ -97,6 +97,7 @@ export class TAccountService {
     ) {
       return false;
     }
+
     //debit credit is balance
     const totalDebit = transferDTO.ledgers.reduce(
       (prev, now) => prev + now.debit.value,
@@ -117,7 +118,9 @@ export class TAccountService {
         transferDTO.from.account,
         transferDTO.from.type
       );
-      if (!(accountBalance > 0 && accountBalance - transferDTO.from.value > 0))
+      if (
+        !(accountBalance >= 0 && accountBalance - transferDTO.from.value >= 0)
+      )
         return false;
     }
     //simulate after transfer there is no minus balance

@@ -22,4 +22,25 @@ export class UsersRequest {
   static updateMobile = () => UsersRequest.put('/users/me/mobile');
   static report = (userId: string) =>
     UsersRequest.post(`/users/${userId}/reporting`);
+  static createPage = () => UsersRequest.post('/users/me/pages');
+  static getMyPages = () => UsersRequest.get('/users/me/pages');
+  static syncSocial = () => UsersRequest.post('/users/me/pages/sync-social');
+  static syncSocialLookup = () =>
+    UsersRequest.get('/users/me/pages/sync-social');
+  static setAutoPost = (socialId: string) =>
+    UsersRequest.post(`/users/me/pages/sync-social/${socialId}/auto-post`);
+  static cancelAutoPost = (socialId: string) =>
+    UsersRequest.delete(`/users/me/pages/sync-social/${socialId}/auto-post`);
+  static reconnectSocial = (socialId: string) =>
+    UsersRequest.post(`/users/me/pages/sync-social/${socialId}/connect`);
+  static disconnectSocial = (socialId: string) =>
+    UsersRequest.delete(`/users/me/pages/sync-social/${socialId}/connect`);
+  static followUser = (userId: string) =>
+    UsersRequest.post(`/users/${userId}/following`);
+  static getFollowing = (userId: string) =>
+    UsersRequest.get(`/users/${userId}/following`);
+  static getFollowers = (userId: string) =>
+    UsersRequest.get(`/users/${userId}/followers`);
+  static unfollow = (userId: string, targetCastcleId: string) =>
+    UsersRequest.delete(`/users/${userId}/following/${targetCastcleId}`);
 }

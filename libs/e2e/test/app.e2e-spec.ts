@@ -5,11 +5,18 @@ import {
   testAuthenticationsFlow,
   testAuthenticationsSocialFlow,
 } from './modules/authentications';
-import { testUsersReporting, testUsersUpdateMobile } from './modules/users';
+import {
+  testFollowsFlow,
+  testSyncSocialFlow,
+  testUsersReporting,
+  testUsersUpdateMobile,
+} from './modules/users';
 import {
   closeAuthenticationsModule,
+  closePagesModule,
   closeUsersModule,
   setupAuthenticationsModule,
+  setupPagesModule,
   setupUsersModule,
 } from './setups';
 
@@ -44,10 +51,12 @@ describe('Castcle E2E Tests', () => {
   describe('# Users Microservice', () => {
     beforeAll(async () => {
       await setupUsersModule();
+      await setupPagesModule();
     });
 
     afterAll(async () => {
       await closeUsersModule();
+      await closePagesModule();
     });
 
     describe('- Report User or Content', () => {
@@ -56,6 +65,14 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Update Mobile', () => {
       testUsersUpdateMobile();
+    });
+
+    describe('- Social Sync Flow', () => {
+      testSyncSocialFlow();
+    });
+
+    describe('- Follows Flow', () => {
+      testFollowsFlow();
     });
   });
 });

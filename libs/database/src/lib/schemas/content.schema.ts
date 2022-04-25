@@ -37,6 +37,7 @@ import {
 import { postContentSave, preContentSave } from '../hooks/content.save';
 import { EngagementType } from '../models/engagement.enum';
 import { CastcleBase } from './base.schema';
+import { ContentFarming } from './content-farming.schema';
 import { Engagement } from './engagement.schema';
 import { FeedItem } from './feed-item.schema';
 import { Relationship } from './relationship.schema';
@@ -107,6 +108,9 @@ class ContentDocument extends CastcleBase {
 
   @Prop({ type: Object })
   originalPost?: ContentDocument;
+
+  @Prop({ type: Array })
+  farming?: ContentFarming[];
 }
 
 export class Content extends ContentDocument {

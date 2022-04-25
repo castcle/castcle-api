@@ -1,5 +1,6 @@
 import { AuthenticationsRequest } from '../../requests';
 import { guest, userAlpha, userBeta, userModel } from '../../variables';
+import { userGamma } from './../../variables/global.variable';
 
 export const initializeUsers = async () => {
   await AuthenticationsRequest.guestLogin()
@@ -27,6 +28,15 @@ export const initializeUsers = async () => {
       expect(body.refreshToken).toBeDefined();
 
       guest.guestToken = body.accessToken;
+    });
+
+  await AuthenticationsRequest.guestLogin()
+    .send({ deviceUUID: userGamma.deviceUUID })
+    .expect(({ body }) => {
+      expect(body.accessToken).toBeDefined();
+      expect(body.refreshToken).toBeDefined();
+
+      userGamma.guestToken = body.accessToken;
     });
 
   await AuthenticationsRequest.register()
@@ -62,5 +72,20 @@ export const initializeUsers = async () => {
 
       userBeta.accessToken = body.accessToken;
       userBeta.id = body.profile.id;
+    });
+
+  await AuthenticationsRequest.register()
+    .auth(userGamma.guestToken, { type: 'bearer' })
+    .send(userGamma.toRegisterPayload())
+    .expect(({ body }) => {
+      expect(body.message).toBeUndefined();
+      expect(body.accessToken).toBeDefined();
+      expect(body.profile.id).toBeDefined();
+      expect(body.profile.castcleId).toEqual(userGamma.castcleId);
+      expect(body.profile.displayName).toEqual(userGamma.displayName);
+      expect(body.profile.email).toEqual(userGamma.email);
+
+      userGamma.accessToken = body.accessToken;
+      userGamma.id = body.profile.id;
     });
 };

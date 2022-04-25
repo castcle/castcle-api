@@ -21,7 +21,10 @@
  * or have any questions.
  */
 
-import { NotificationQuery } from '@castcle-api/database/dtos';
+import {
+  NotificationQuery,
+  NotificationSourceQuery,
+} from '@castcle-api/database/dtos';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import {
@@ -94,6 +97,18 @@ export class NotificationsControllerV2 {
 
     const notification = await this._getNotificationIfExist(id);
     await this.notificationServiceV2.deleteNotify(notification);
+  }
+
+  @CastcleBasicAuth()
+  @Delete()
+  @HttpCode(204)
+  async deleteAllSourceNotify(
+    @Auth() authorizer: Authorizer,
+    @Query() { source }: NotificationSourceQuery
+  ) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
+
+    await this.notificationServiceV2.deleteAllSourceNotify(source);
   }
 
   @CastcleAuth(CacheKeyName.NotificationsBadges)

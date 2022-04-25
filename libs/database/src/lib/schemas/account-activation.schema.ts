@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { Environment } from '@castcle-api/environments';
+import { Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { EmailVerifyToken } from '../dtos/token.dto';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
-import { EmailVerifyToken } from '../dtos/token.dto';
-import { Token } from '@castcle-api/utils/commons';
-import { Environment } from '@castcle-api/environments';
 
 export enum AccountActivationType {
   Email = 'email',
@@ -60,10 +60,6 @@ class AccountActivationDocument extends CastcleBase {
   revocationDate: Date;
 }
 
-export const AccountActivationSchema = SchemaFactory.createForClass(
-  AccountActivationDocument
-);
-
 export interface AccountActivation extends AccountActivationDocument {
   isVerifyTokenValid(): boolean;
 }
@@ -75,6 +71,11 @@ export interface AccountActivationModel
     verifyTokenExpireDate: Date;
   };
 }
+
+export const AccountActivationSchema = SchemaFactory.createForClass<
+  AccountActivationDocument,
+  AccountActivation
+>(AccountActivationDocument);
 
 AccountActivationSchema.methods.isVerifyTokenValid = function () {
   return Token.isTokenValid(this.verifyToken, Environment.JWT_VERIFY_SECRET);

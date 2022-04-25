@@ -34,4 +34,5 @@ export enum WalletType {
   EXTERNAL_DEPOSIT = 'external.deposit',
   EXTERNAL_WITHDRAW = 'external.withdraw',
   EXTERNAL_MINT = 'external.mint',
+  FARM_LOCKED = 'farm.locked',
 }
