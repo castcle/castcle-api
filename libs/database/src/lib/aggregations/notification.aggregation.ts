@@ -21,9 +21,44 @@
  * or have any questions.
  */
 
-export * from './estimate-content-reaches.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-users-relation.aggregation';
-export * from './notification.aggregation';
+import { Types } from 'mongoose';
+import { NotificationSource } from '../dtos';
+
+export const pipelineNotificationBadge = (accountId: Types.ObjectId) => {
+  return [
+    {
+      $match: {
+        account: accountId,
+        read: false,
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        profile: {
+          $sum: {
+            $cond: [{ $eq: ['$source', NotificationSource.Profile] }, 1, 0],
+          },
+        },
+        page: {
+          $sum: {
+            $cond: [{ $eq: ['$source', NotificationSource.Page] }, 1, 0],
+          },
+        },
+        system: {
+          $sum: {
+            $cond: [{ $eq: ['$source', NotificationSource.System] }, 1, 0],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        profile: { $ifNull: ['$profile', 0] },
+        page: { $ifNull: ['$page', 0] },
+        system: { $ifNull: ['$system', 0] },
+      },
+    },
+  ];
+};
