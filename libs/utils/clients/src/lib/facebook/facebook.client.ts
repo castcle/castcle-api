@@ -168,4 +168,23 @@ export class FacebookClient {
       throw CastcleException.UNABLE_TO_SYNC;
     }
   }
+
+  async getFacebookProfile(authToken: string) {
+    const url = `${Environment.FACEBOOK_HOST}/v13.0/me?access_token=${authToken}`;
+
+    try {
+      const profile = await lastValueFrom(
+        this.httpService.get<{ id: string }>(url).pipe(map(({ data }) => data))
+      );
+
+      this.logger.log(
+        JSON.stringify({ profile }),
+        `getFacebookProfile:${profile.id}`
+      );
+
+      return profile.id;
+    } catch (error) {
+      this.logger.error(error, `getFacebookProfile`);
+    }
+  }
 }

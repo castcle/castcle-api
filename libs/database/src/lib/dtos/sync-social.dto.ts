@@ -21,9 +21,16 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { SocialProvider } from '../models';
+import { AccountAuthenIdType } from '../schemas';
 
 export class SyncSocialDtoV2 {
   @ApiProperty()
@@ -63,4 +70,39 @@ export class SyncSocialDtoV2 {
   @IsOptional()
   @IsString()
   authToken?: string;
+}
+
+export class SocialConnectDto {
+  @IsEnum(AccountAuthenIdType)
+  @ApiProperty()
+  provider: AccountAuthenIdType;
+
+  @IsString()
+  @ApiProperty()
+  socialId: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  email?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty()
+  authToken: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  referral?: string;
 }

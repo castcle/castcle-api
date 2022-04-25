@@ -29,11 +29,6 @@ import { EmailVerifyToken } from '../dtos/token.dto';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
-export enum AccountActivationType {
-  Email = 'email',
-  Mobile = 'mobile',
-}
-
 @Schema({ timestamps: true })
 class AccountActivationDocument extends CastcleBase {
   @Prop({
@@ -61,11 +56,13 @@ class AccountActivationDocument extends CastcleBase {
 }
 
 export interface AccountActivation extends AccountActivationDocument {
+  /** @deprecated */
   isVerifyTokenValid(): boolean;
 }
 
 export interface AccountActivationModel
   extends mongoose.Model<AccountActivation> {
+  /** @deprecated */
   generateVerifyToken(payload: EmailVerifyToken): {
     verifyToken: string;
     verifyTokenExpireDate: Date;
