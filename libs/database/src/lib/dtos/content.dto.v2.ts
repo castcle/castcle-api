@@ -1,3 +1,4 @@
+import { UserResponseDto, PageResponseDto } from './user.dto';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -21,27 +22,13 @@
  * or have any questions.
  */
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto';
-export * from './comment.dto.v2';
-export * from './common.dto';
-export * from './content.dto';
-export * from './content.dto.v2';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './user.dto.v2';
-export * from './ux.engagement.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { CastcleMeta } from './common.dto';
+
+export class LikingUserResponse {
+  @ApiProperty()
+  payload: (UserResponseDto | PageResponseDto)[];
+
+  @ApiProperty()
+  meta: CastcleMeta;
+}

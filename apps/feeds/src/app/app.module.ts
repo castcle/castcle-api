@@ -38,6 +38,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { CommentController } from './controllers/comment.controller';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
+import { ContentControllerV2 } from './controllers/content.controller.v2';
 import { CountryController } from './controllers/country.controller';
 import { FeedsController } from './controllers/feeds.controller';
 import { HashtagsController } from './controllers/hashtags.controller';
@@ -66,6 +67,7 @@ import { AppService, SuggestionService } from './services';
   controllers: [
     CommentController,
     ContentController,
+    ContentControllerV2,
     CountryController,
     FeedsController,
     HashtagsController,

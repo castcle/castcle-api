@@ -1,4 +1,3 @@
-import { UserService } from './user.service';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -31,17 +30,31 @@ import {
   UserType,
   WalletType,
 } from '../models';
-import { Account, Content, ContentFarming, Engagement, User } from '../schemas';
+import {
+  Account,
+  Content,
+  ContentFarming,
+  Engagement,
+  Relationship,
+  User,
+} from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { NotificationServiceV2 } from './notification.service.v2';
 import {
   EntityVisibility,
   NotificationSource,
   NotificationType,
+  PaginationQuery,
 } from '../dtos';
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
 import { ContentFarmingReponse } from '../models/content-farming.model';
+import { createCastcleFilter } from '../utils/common';
+import { Repository } from '../repositories';
+
+import { Meta, ResponseDto } from './../dtos/response.dto';
+import { LikingUserResponse } from './../dtos/content.dto.v2';
+import { UserService } from './user.service';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -51,6 +64,7 @@ export class ContentServiceV2 {
     private notificationServiceV2: NotificationServiceV2,
     private userService: UserService,
     private taccountService: TAccountService,
+    private repository: Repository,
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,
     @InjectModel('Content')
@@ -98,7 +112,6 @@ export class ContentServiceV2 {
       userOwner,
       account.preferences.languages[0]
     );
-    return content;
   };
   unlikeCast = async (contentId: string, user: User) => {
     const engagement = await this._engagementModel.findOne({
@@ -382,5 +395,72 @@ export class ContentServiceV2 {
       lockBalance,
       totalContentFarming
     );
+  };
+
+  getLikingCast = async (
+    contentId: string,
+    viewer: User,
+    { sinceId, untilId, maxResults, hasRelationshipExpansion }: PaginationQuery
+  ) => {
+    let filter = {
+      type: EngagementType.Like,
+      targetRef: {
+        $ref: 'content',
+        $id: Types.ObjectId(contentId),
+      },
+    };
+    const likingCounts = await this.repository.findEngagementCount(filter);
+
+    filter = createCastcleFilter(filter, {
+      sinceId,
+      untilId,
+    });
+
+    const likingDocuments = await this.repository.findEngagement(filter, {
+      limit: maxResults,
+      sort: { createdAt: -1 },
+      populate: 'user',
+    });
+
+    if (!likingDocuments.length)
+      return {
+        payload: [],
+        meta: { resultCount: 0, resultTotal: 0 },
+      } as LikingUserResponse;
+
+    let findRelationship: Relationship;
+    if (hasRelationshipExpansion) {
+      const relationshipUser = likingDocuments.map((item) => item.user._id);
+      const filterRelationship = {
+        user: { $in: relationshipUser },
+      };
+
+      const relationships = await this.repository.findRelationships(
+        filterRelationship
+      );
+      findRelationship = relationships.find(
+        (relationship) => String(relationship.user) === String(viewer._id)
+      );
+    }
+
+    const usersPayload = await Promise.all(
+      likingDocuments.map(async (engagement) => {
+        return engagement.user.type === UserType.PAGE
+          ? engagement.user.toPageResponseV2(
+              findRelationship?.blocking,
+              findRelationship?.blocking,
+              findRelationship?.following
+            )
+          : await engagement.user.toUserResponseV2({
+              blocked: findRelationship?.blocking,
+              blocking: findRelationship?.blocking,
+              followed: findRelationship?.following,
+            });
+      })
+    );
+    return ResponseDto.ok({
+      payload: usersPayload,
+      meta: Meta.fromDocuments(usersPayload as any, likingCounts),
+    } as LikingUserResponse);
   };
 }

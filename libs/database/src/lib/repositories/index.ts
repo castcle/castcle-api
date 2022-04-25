@@ -32,12 +32,13 @@ import {
   FilterQuery,
   Model,
   QueryOptions,
+  Types,
   UpdateQuery,
 } from 'mongoose';
 import { lastValueFrom, map } from 'rxjs';
 import { EntityVisibility } from '../dtos';
-import { UserType } from '../models';
-import { Account, User } from '../schemas';
+import { EngagementType, UserType } from '../models';
+import { Account, Engagement, Relationship, User } from '../schemas';
 
 type AccountQuery = {
   _id?: string;
@@ -53,11 +54,26 @@ type UserQuery = {
   type?: UserType;
 };
 
+type EngagementQuery = {
+  targetRef: {
+    $id: Types.ObjectId;
+    $ref: string;
+  };
+  type: EngagementType;
+};
+
+type RelationshipQuery = {
+  user: any;
+};
+
 @Injectable()
 export class Repository {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Engagement') private engagementModel: Model<Engagement>,
+    @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+
     private httpService: HttpService
   ) {}
 
@@ -148,5 +164,16 @@ export class Repository {
 
   findUsers(filter: UserQuery, queryOptions?: QueryOptions) {
     return this.userModel.find(this.getUserQuery(filter), {}, queryOptions);
+  }
+
+  findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
+    return this.engagementModel.find(filter, {}, queryOptions).exec();
+  }
+
+  findEngagementCount(filter: EngagementQuery) {
+    return this.engagementModel.countDocuments(filter).exec();
+  }
+  findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
+    return this.relationshipModel.find(filter, {}, queryOptions).exec();
   }
 }

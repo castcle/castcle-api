@@ -46,6 +46,8 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 import { TAccountService } from './taccount.service';
+import { Repository } from '../repositories';
+import { HttpModule } from '@nestjs/axios';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -63,6 +65,7 @@ describe('ContentServiceV2', () => {
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -76,6 +79,7 @@ describe('ContentServiceV2', () => {
         NotificationService,
         NotificationServiceV2,
         TAccountService,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

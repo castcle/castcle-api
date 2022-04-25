@@ -21,15 +21,17 @@
  * or have any questions.
  */
 import { ContentServiceV2 } from '@castcle-api/database';
+import { PaginationQuery } from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Delete, Get, Param, Post } from '@nestjs/common';
+import { Delete, Get, Param, Post, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'contents' })
 export class ContentControllerV2 {
@@ -75,6 +77,22 @@ export class ContentControllerV2 {
     return this.contentService.pipeContentFarming(
       await this.contentService.unfarm(contentId, authorizer.account.id),
       authorizer.account.id
+    );
+  }
+
+  @CastcleBasicAuth()
+  @Get(':contentId/liking-users')
+  async getLikingCast(
+    @Auth() authorizer: Authorizer,
+    @Param('contentId') contentId: string,
+    @Query() query: PaginationQuery
+  ) {
+    this.logger.log(`Get Liking from content : ${contentId}`);
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return await this.contentService.getLikingCast(
+      contentId,
+      authorizer.user,
+      query
     );
   }
 }
