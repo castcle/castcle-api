@@ -96,7 +96,8 @@ export class AuthenticationServiceV2 {
           },
         })
         .save(),
-      this.repository.deleteAccount({ _id: credential.account._id }),
+      // TODO: !! Why delete account ???
+      // this.repository.deleteAccount({ _id: credential.account._id }),
       this.repository.updateAccount(
         { _id: account._id },
         {
