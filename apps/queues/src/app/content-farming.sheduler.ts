@@ -21,36 +21,16 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { AppModule } from './app.module';
-import { CampaignConsumer } from './campaign.consumer';
-import { CampaignScheduler } from './campaign.scheduler';
+import { ContentServiceV2 } from '@castcle-api/database';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
-jest.mock('libs/environments/src/lib/factories');
-describe('App Module', () => {
-  let mongo: MongoMemoryReplSet;
-  let campaignConsumer: CampaignConsumer;
-  let campaignScheduler: CampaignScheduler;
+@Injectable()
+export class ContentFarmingScheduler {
+  constructor(private contentService: ContentServiceV2) {}
 
-  beforeAll(async () => {
-    mongo = await MongoMemoryReplSet.create();
-    (global as any).mongoUri = mongo.getUri();
-
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    campaignConsumer = module.get(CampaignConsumer);
-    campaignScheduler = module.get(CampaignScheduler);
-  });
-
-  afterAll(async () => {
-    await mongo.stop();
-  });
-
-  it('should be defined', () => {
-    expect(campaignConsumer).toBeDefined();
-    expect(campaignScheduler).toBeDefined();
-  });
-});
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async expireFarmedToken() {
+    await this.contentService.expireAllFarmedToken();
+  }
+}
