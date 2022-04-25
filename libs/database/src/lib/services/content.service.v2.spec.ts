@@ -329,6 +329,18 @@ describe('ContentServiceV2', () => {
         expect(recentBalance).toEqual(0);
       });
     });
+    describe('#expire', () => {
+      it('should return all token after wait for 2 seconds(default is 1 secs)', async () => {
+        await new Promise((r) => setTimeout(r, 2000));
+        await service.expireAllFarmedToken();
+        const recentBalance = await taccountService.getAccountBalance(
+          mockFarmingUsers[1].account.id,
+          WalletType.PERSONAL
+        );
+
+        expect(recentBalance).toEqual(initialBalance);
+      });
+    });
   });
 
   describe('#getLikingCast()', () => {

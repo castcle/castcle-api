@@ -23,10 +23,10 @@
 
 import {
   CampaignService,
+  DatabaseModule,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   QueueName,
-  TAccountService,
 } from '@castcle-api/database';
 import {
   CastcleBullModule,
@@ -37,14 +37,17 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
+import { ContentFarmingScheduler } from './content-farming.sheduler';
 
 @Module({
   imports: [
     CastcleBullModule,
+    DatabaseModule,
     CastcleMongooseModule,
     BullModule.registerQueue(
       { name: QueueName.CONTENT },
-      { name: QueueName.CAMPAIGN }
+      { name: QueueName.CAMPAIGN },
+      { name: QueueName.NOTIFICATION }
     ),
     MongooseAsyncFeatures,
     MongooseForFeatures,
@@ -55,7 +58,7 @@ import { CampaignScheduler } from './campaign.scheduler';
     CampaignConsumer,
     CampaignScheduler,
     CampaignService,
-    TAccountService,
+    ContentFarmingScheduler,
   ],
 })
 export class AppModule {}
