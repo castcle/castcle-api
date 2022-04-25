@@ -119,10 +119,6 @@ export class NotificationsControllerV2 {
     const badgeNotify = await this.notificationServiceV2.getBadges(
       authorizer.account
     );
-    return {
-      payload: {
-        badges: badgeNotify,
-      },
-    };
+    return badgeNotify;
   }
 }
