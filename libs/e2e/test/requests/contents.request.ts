@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { contentsApp } from './../variables/applications.variable';
+import { contentsApp } from '../variables';
 
 export class ContentsRequest {
   static headers = {
@@ -22,4 +22,10 @@ export class ContentsRequest {
 
   static checkHealth = () => ContentsRequest.get('/contents/healthy');
   static createContent = () => ContentsRequest.post('/contents/feed');
+  static getContent = (contentId: string) =>
+    ContentsRequest.get(`/contents/${contentId}`);
+  static updateContent = (contentId: string) =>
+    ContentsRequest.put(`/contents/${contentId}`);
+  static deleteContent = (contentId: string) =>
+    ContentsRequest.delete(`/contents/${contentId}`);
 }

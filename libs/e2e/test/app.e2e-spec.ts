@@ -6,11 +6,12 @@ import {
   testAuthenticationsSocialFlow,
 } from './modules/authentications';
 import {
-  testFollowsFlow,
+  testContentsFlow,
   testSyncSocialFlow,
-  testUsersReporting,
   testUsersUpdateMobile,
 } from './modules/users';
+import { testFollowsFlow } from './modules/users/follows-flow.spec';
+import { testUsersReporting } from './modules/users/reporting.spec';
 import {
   closeAuthenticationsModule,
   closeContentsModule,
@@ -32,10 +33,16 @@ describe('Castcle E2E Tests', () => {
     await connect(mongoMemoryReplSet.getUri('test'));
     await setupAuthenticationsModule();
     await initializeUsers();
+    await setupUsersModule();
+    await setupPagesModule();
+    await setupContentsModule();
   });
 
   afterAll(async () => {
     await closeAuthenticationsModule();
+    await closeUsersModule();
+    await closePagesModule();
+    await closeContentsModule();
     await mongoMemoryReplSet.stop();
     await disconnect();
   });
@@ -51,18 +58,6 @@ describe('Castcle E2E Tests', () => {
   });
 
   describe('# Users Microservice', () => {
-    beforeAll(async () => {
-      await setupUsersModule();
-      await setupPagesModule();
-      await setupContentsModule();
-    });
-
-    afterAll(async () => {
-      await closeUsersModule();
-      await closePagesModule();
-      await closeContentsModule();
-    });
-
     describe('- Report User or Content', () => {
       testUsersReporting();
     });
@@ -77,6 +72,12 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Follows Flow', () => {
       testFollowsFlow();
+    });
+  });
+
+  describe('# Feeds Microservice', () => {
+    describe('- Content Flow', () => {
+      testContentsFlow();
     });
   });
 });

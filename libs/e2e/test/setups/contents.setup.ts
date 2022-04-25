@@ -2,7 +2,7 @@ import { Configs } from '@castcle-api/environments';
 import { ExceptionFilter } from '@castcle-api/utils/interceptors';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { AppModule } from '../../../../apps/users/src/app/app.module';
+import { AppModule } from '../../../../apps/feeds/src/app/app.module';
 import { contentsApp } from '../variables';
 
 export const setupContentsModule = async () => {
