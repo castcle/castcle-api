@@ -83,10 +83,16 @@ export class NotificationsControllerV2 {
   @CastcleBasicAuth()
   @Post('reads')
   @HttpCode(204)
-  async readAllNotify(@Auth() authorizer: Authorizer) {
+  async readAllSourceNotify(
+    @Auth() authorizer: Authorizer,
+    @Query() { source }: NotificationSourceQuery
+  ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
-    await this.notificationServiceV2.readAllNotify(authorizer.account);
+    await this.notificationServiceV2.readAllSourceNotify(
+      authorizer.account,
+      source
+    );
   }
 
   @CastcleBasicAuth()
@@ -108,7 +114,10 @@ export class NotificationsControllerV2 {
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
-    await this.notificationServiceV2.deleteAllSourceNotify(source);
+    await this.notificationServiceV2.deleteAllSourceNotify(
+      authorizer.account,
+      source
+    );
   }
 
   @CastcleAuth(CacheKeyName.NotificationsBadges)
