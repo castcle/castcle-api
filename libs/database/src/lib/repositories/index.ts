@@ -37,8 +37,9 @@ import {
 } from 'mongoose';
 import { lastValueFrom, map } from 'rxjs';
 import { EntityVisibility } from '../dtos';
-import { EngagementType, UserType } from '../models';
+import { UserType } from '../models';
 import { Account, Engagement, Relationship, User } from '../schemas';
+import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
   _id?: string;
@@ -55,15 +56,14 @@ type UserQuery = {
 };
 
 type EngagementQuery = {
-  targetRef: {
-    $id: Types.ObjectId;
-    $ref: string;
-  };
-  type: EngagementType;
+  contentId: string;
+  type: string;
+  sinceId?: string;
+  untilId?: string;
 };
 
 type RelationshipQuery = {
-  user: any;
+  userId: User[];
 };
 
 @Injectable()
@@ -97,9 +97,29 @@ export class Repository {
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
-
     return query;
   }
+
+  private getRelationshipsQuery = (filter: RelationshipQuery) => {
+    return { user: { $in: filter.userId } };
+  };
+
+  private getEngagementsQuery = (filter: EngagementQuery) => {
+    const query: FilterQuery<Engagement> = {
+      type: filter.type,
+      targetRef: {
+        $ref: 'content',
+        $id: Types.ObjectId(filter.contentId),
+      },
+    };
+    if (filter.sinceId && filter.untilId)
+      return createCastcleFilter(query, {
+        sinceId: filter.sinceId,
+        untilId: filter.untilId,
+      });
+
+    return query;
+  };
 
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
@@ -167,13 +187,19 @@ export class Repository {
   }
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
-    return this.engagementModel.find(filter, {}, queryOptions).exec();
+    return this.engagementModel
+      .find(this.getEngagementsQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   findEngagementCount(filter: EngagementQuery) {
-    return this.engagementModel.countDocuments(filter).exec();
+    return this.engagementModel
+      .countDocuments(this.getEngagementsQuery(filter))
+      .exec();
   }
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
-    return this.relationshipModel.find(filter, {}, queryOptions).exec();
+    return this.relationshipModel
+      .find(this.getRelationshipsQuery(filter), {}, queryOptions)
+      .exec();
   }
 }

@@ -42,7 +42,6 @@ import {
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
 import { ContentFarmingReponse } from '../models/content-farming.model';
-import { createCastcleFilter } from '../utils/common';
 import { Repository } from '../repositories';
 
 import { UserService } from './user.service';
@@ -394,25 +393,20 @@ export class ContentServiceV2 {
     query: PaginationQuery,
     viewer?: User
   ) => {
-    let filter = {
+    const filter = {
+      contentId,
       type: EngagementType.Like,
-      targetRef: {
-        $ref: 'content',
-        $id: Types.ObjectId(contentId),
-      },
     };
     const likingCounts = await this.repository.findEngagementCount(filter);
 
-    filter = createCastcleFilter(filter, {
-      sinceId: query.sinceId,
-      untilId: query.untilId,
-    });
-
-    const likingDocuments = await this.repository.findEngagement(filter, {
-      limit: query.maxResults,
-      sort: { createdAt: -1 },
-      populate: 'user',
-    });
+    const likingDocuments = await this.repository.findEngagement(
+      { ...query, ...filter },
+      {
+        limit: query.maxResults,
+        sort: { createdAt: -1 },
+        populate: 'user',
+      }
+    );
 
     if (!likingDocuments.length)
       return {
@@ -434,13 +428,10 @@ export class ContentServiceV2 {
       };
     }
     const relationshipUser = likingDocuments.map((item) => item.user._id);
-    const filterRelationship = {
-      user: { $in: relationshipUser },
-    };
 
-    const relationships = await this.repository.findRelationships(
-      filterRelationship
-    );
+    const relationships = await this.repository.findRelationships({
+      userId: relationshipUser,
+    });
     const relationship = relationships?.find(
       (relationship) => String(relationship.user) === String(viewer?._id)
     );

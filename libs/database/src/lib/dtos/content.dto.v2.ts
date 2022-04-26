@@ -1,4 +1,3 @@
-import { UserResponseDto, PageResponseDto } from './user.dto';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -24,6 +23,7 @@ import { UserResponseDto, PageResponseDto } from './user.dto';
 
 import { ApiProperty } from '@nestjs/swagger';
 import { CastcleMeta } from './common.dto';
+import { UserResponseDto, PageResponseDto } from './user.dto';
 
 export class LikingUserResponse {
   @ApiProperty()

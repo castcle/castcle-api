@@ -61,7 +61,7 @@ export class UserServiceV2 {
     return user;
   };
 
-  async convertUsersToUserResponsesV2(
+  private async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
