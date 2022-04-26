@@ -30,14 +30,7 @@ import {
   UserType,
   WalletType,
 } from '../models';
-import {
-  Account,
-  Content,
-  ContentFarming,
-  Engagement,
-  Relationship,
-  User,
-} from '../schemas';
+import { Account, Content, ContentFarming, Engagement, User } from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { NotificationServiceV2 } from './notification.service.v2';
 import {
@@ -52,8 +45,6 @@ import { ContentFarmingReponse } from '../models/content-farming.model';
 import { createCastcleFilter } from '../utils/common';
 import { Repository } from '../repositories';
 
-import { Meta, ResponseDto } from './../dtos/response.dto';
-import { LikingUserResponse } from './../dtos/content.dto.v2';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -399,8 +390,9 @@ export class ContentServiceV2 {
 
   getLikingCast = async (
     contentId: string,
-    viewer: User,
-    { sinceId, untilId, maxResults, hasRelationshipExpansion }: PaginationQuery
+    account: Account,
+    query: PaginationQuery,
+    viewer?: User
   ) => {
     let filter = {
       type: EngagementType.Like,
@@ -412,55 +404,65 @@ export class ContentServiceV2 {
     const likingCounts = await this.repository.findEngagementCount(filter);
 
     filter = createCastcleFilter(filter, {
-      sinceId,
-      untilId,
+      sinceId: query.sinceId,
+      untilId: query.untilId,
     });
 
     const likingDocuments = await this.repository.findEngagement(filter, {
-      limit: maxResults,
+      limit: query.maxResults,
       sort: { createdAt: -1 },
       populate: 'user',
     });
 
     if (!likingDocuments.length)
       return {
-        payload: [],
-        meta: { resultCount: 0, resultTotal: 0 },
-      } as LikingUserResponse;
-
-    let findRelationship: Relationship;
-    if (hasRelationshipExpansion) {
-      const relationshipUser = likingDocuments.map((item) => item.user._id);
-      const filterRelationship = {
-        user: { $in: relationshipUser },
+        items: [],
+        count: 0,
       };
 
-      const relationships = await this.repository.findRelationships(
-        filterRelationship
+    if (!query.hasRelationshipExpansion || account.isGuest) {
+      const likingResponse = await Promise.all(
+        likingDocuments.map(async (engagement) => {
+          return engagement.user.type === UserType.PAGE
+            ? engagement.user.toPageResponseV2()
+            : await engagement.user.toUserResponseV2();
+        })
       );
-      findRelationship = relationships.find(
-        (relationship) => String(relationship.user) === String(viewer._id)
-      );
+      return {
+        items: likingResponse,
+        count: likingCounts,
+      };
     }
+    const relationshipUser = likingDocuments.map((item) => item.user._id);
+    const filterRelationship = {
+      user: { $in: relationshipUser },
+    };
 
-    const usersPayload = await Promise.all(
+    const relationships = await this.repository.findRelationships(
+      filterRelationship
+    );
+    const relationship = relationships?.find(
+      (relationship) => String(relationship.user) === String(viewer?._id)
+    );
+
+    const likingResponse = await Promise.all(
       likingDocuments.map(async (engagement) => {
         return engagement.user.type === UserType.PAGE
           ? engagement.user.toPageResponseV2(
-              findRelationship?.blocking,
-              findRelationship?.blocking,
-              findRelationship?.following
+              relationship?.blocking ?? false,
+              relationship?.blocking ?? false,
+              relationship?.following ?? false
             )
           : await engagement.user.toUserResponseV2({
-              blocked: findRelationship?.blocking,
-              blocking: findRelationship?.blocking,
-              followed: findRelationship?.following,
+              blocked: relationship?.blocking ?? false,
+              blocking: relationship?.blocking ?? false,
+              followed: relationship?.following ?? false,
             });
       })
     );
-    return ResponseDto.ok({
-      payload: usersPayload,
-      meta: Meta.fromDocuments(usersPayload as any, likingCounts),
-    } as LikingUserResponse);
+    return {
+      items: likingResponse,
+      count: likingCounts,
+    };
   };
 }

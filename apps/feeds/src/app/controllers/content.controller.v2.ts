@@ -21,7 +21,12 @@
  * or have any questions.
  */
 import { ContentServiceV2 } from '@castcle-api/database';
-import { PaginationQuery } from '@castcle-api/database/dtos';
+import {
+  LikingUserResponse,
+  Meta,
+  PaginationQuery,
+  ResponseDto,
+} from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -89,10 +94,18 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentService.getLikingCast(
+    const likingResponse = await this.contentService.getLikingCast(
       contentId,
-      authorizer.user,
-      query
+      authorizer.account,
+      query,
+      authorizer.user
     );
+    return ResponseDto.ok({
+      payload: likingResponse.items,
+      meta: Meta.fromDocuments(
+        likingResponse.items as any,
+        likingResponse.count
+      ),
+    } as LikingUserResponse);
   }
 }
