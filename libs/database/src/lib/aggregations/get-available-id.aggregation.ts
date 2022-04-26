@@ -21,11 +21,46 @@
  * or have any questions.
  */
 
-export * from './ads.aggregation';
-export * from './estimate-content-reaches.aggregation';
-export * from './get-available-id.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-users-relation.aggregation';
-export * from './notification.aggregation';
+export class GetAvailableIdResponse {
+  count: number;
+  number: number;
+}
+
+export const pipelineOfGetAvailableId = (castcleId: string) => [
+  {
+    $match: {
+      displayId: RegExp(`^${castcleId}\\d*$`, 'i'),
+    },
+  },
+  {
+    $group: {
+      _id: null,
+      count: { $count: {} },
+      existingNumbers: {
+        $addToSet: {
+          $toInt: {
+            $cond: [
+              { $eq: [{ $substr: ['$displayId', castcleId.length, -1] }, ''] },
+              '0',
+              { $substr: ['$displayId', castcleId.length, -1] },
+            ],
+          },
+        },
+      },
+    },
+  },
+  {
+    $addFields: {
+      availableNumbers: {
+        $setDifference: [{ $range: [1, '$count'] }, '$existingNumbers'],
+      },
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      count: 1,
+      number: { $arrayElemAt: ['$availableNumbers', 0] },
+    },
+  },
+];
