@@ -26,13 +26,12 @@ import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import * as OAuth from 'oauth';
 import { TwitterAccessToken, TwitterUserData } from './twitter.message';
+
 @Injectable()
 export class TwitterClient {
   private logger = new CastLogger(TwitterClient.name);
-
   private readonly requestTokenUrl = `${Environment.TWITTER_HOST}/oauth/request_token`;
   private readonly accessTokenUrl = `${Environment.TWITTER_HOST}/oauth/access_token `;
-  private readonly verifyToken = `${Environment.TWITTER_HOST}/1.1/account/verify_credentials.json?include_email=true`;
 
   private readonly oauth = new OAuth.OAuth(
     this.requestTokenUrl,
@@ -64,7 +63,7 @@ export class TwitterClient {
   }
 
   /**
-   * Acces Twitter API from user token
+   * Access Twitter API from user token
    * @param {string} accessToken access token from twitter
    * @param {string} tokenSecret secret token from twitter
    * @param {string} oauthVerifier verify token from twitter
@@ -97,30 +96,18 @@ export class TwitterClient {
   }
 
   /**
-   * Get User Data from user token
+   * Verify credentials and return user profile ID
    * @param {string} accessToken access token from twitter
    * @param {string} tokenSecret secret token from twitter
-   * @returns {TwitterAccessToken} token data
    */
-  async requestVerifyToken(
-    accessToken: string,
-    tokenSecret: string
-  ): Promise<TwitterUserData> {
-    this.logger.log('call twitter api for request verify token');
-    return new Promise((resolve, reject) => {
+  verifyCredentials(accessToken: string, tokenSecret: string) {
+    return new Promise<TwitterUserData>((resolve) => {
       this.oauth.getProtectedResource(
-        this.verifyToken,
+        `${Environment.TWITTER_HOST}/1.1/account/verify_credentials.json?include_email=true`,
         'GET',
         accessToken,
         tokenSecret,
-        (error, data) => {
-          if (error) {
-            reject(error);
-          } else {
-            const result = JSON.parse(data);
-            resolve(result);
-          }
-        }
+        (error, data) => resolve(error ? null : JSON.parse(data.toString()))
       );
     });
   }

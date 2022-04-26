@@ -21,9 +21,17 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { SocialProvider } from '../models';
+import { AccountAuthenIdType } from '../schemas';
 
 export class SyncSocialDtoV2 {
   @ApiProperty()
@@ -63,4 +71,59 @@ export class SyncSocialDtoV2 {
   @IsOptional()
   @IsString()
   authToken?: string;
+}
+
+export class SocialConnectDto {
+  @Transform(({ obj }) => {
+    return /apple id/.test(obj.provider)
+      ? AccountAuthenIdType.Apple
+      : obj.provider;
+  })
+  @IsEnum(AccountAuthenIdType)
+  @ApiProperty()
+  provider: AccountAuthenIdType;
+
+  @IsString()
+  @ApiProperty()
+  socialId: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  email?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty()
+  authToken: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  referral?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  overview?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  cover?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  link?: string;
 }

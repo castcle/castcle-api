@@ -1,8 +1,9 @@
 import { HttpStatus } from '@nestjs/common';
 import { User } from '../../models/user.model';
 import { AuthenticationsRequest } from '../../requests';
+
 export const testAuthenticationsSocialFlow = () => {
-  describe('#register with socail flow', () => {
+  describe('#register with social flow', () => {
     it('should login social successful', async () => {
       const userRegister = new User({ name: 'castcleE2ESocial' });
       const request = {
@@ -11,7 +12,7 @@ export const testAuthenticationsSocialFlow = () => {
         displayName: 'test facebook',
         avatar: '',
         email: 'testfb@gmail.com',
-        authToken: '',
+        authToken: 'auth-token',
       };
       await AuthenticationsRequest.guestLogin()
         .send({ deviceUUID: userRegister.deviceUUID })
@@ -41,7 +42,7 @@ export const testAuthenticationsSocialFlow = () => {
         displayName: 'test twitter',
         avatar: '',
         email: userRegister.email,
-        authToken: '',
+        authToken: 'auth-token',
       };
       await AuthenticationsRequest.guestLogin()
         .send({ deviceUUID: userRegister.deviceUUID })
@@ -84,7 +85,7 @@ export const testAuthenticationsSocialFlow = () => {
         displayName: 'test2 facebook',
         avatar: '',
         email: userRegister.email,
-        authToken: '',
+        authToken: 'auth-token',
       };
       await AuthenticationsRequest.guestLogin()
         .send({ deviceUUID: userRegister.deviceUUID })

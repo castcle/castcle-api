@@ -25,7 +25,10 @@ import {
   getSocialPrefix,
   UserService,
 } from '@castcle-api/database';
-import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import {
+  DEFAULT_QUERY_OPTIONS,
+  SocialConnectDto,
+} from '@castcle-api/database/dtos';
 import {
   Account,
   Credential,
@@ -56,7 +59,6 @@ import { getSignupHtml } from './configs/signupEmail';
 import {
   ChangePasswordBody,
   RequestOtpDto,
-  SocialConnectDto,
   TokenResponse,
   VerificationOtpDto,
 } from './dtos';
