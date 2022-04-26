@@ -21,7 +21,11 @@
  * or have any questions.
  */
 
-import { AVATAR_SIZE_CONFIGS, Image } from '@castcle-api/utils/aws';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  Image,
+} from '@castcle-api/utils/aws';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
@@ -35,6 +39,10 @@ import {
   UpdateQuery,
 } from 'mongoose';
 import { lastValueFrom, map } from 'rxjs';
+import {
+  GetAvailableIdResponse,
+  pipelineOfGetAvailableId,
+} from '../aggregations';
 import { EntityVisibility } from '../dtos';
 import { UserType } from '../models';
 import { Account, User } from '../schemas';
@@ -116,15 +124,30 @@ export class Repository {
     return image;
   }
 
+  async createCoverImage(accountId: string, imageUrl: string) {
+    const base64 = await this.getBase64FromUrl(imageUrl);
+    const { image } = await Image.upload(base64, {
+      filename: `cover-${accountId}`,
+      addTime: true,
+      sizes: COMMON_SIZE_CONFIGS,
+      subpath: `account_${accountId}`,
+    });
+
+    return image;
+  }
+
   async createUser(user: AnyKeys<User>) {
-    if (user.displayId) {
-      const { suggestCastcleId } = new CastcleName(user.displayName);
-      const query = this.getUserQuery({ _id: suggestCastcleId });
-      const totalUser = await this.userModel.countDocuments(query);
-      user.displayName = totalUser
-        ? user.displayName + totalUser
-        : suggestCastcleId;
-    }
+    const { suggestCastcleId } = new CastcleName(
+      user.displayId || user.displayName
+    );
+    const [availableId] =
+      await this.userModel.aggregate<GetAvailableIdResponse>(
+        pipelineOfGetAvailableId(suggestCastcleId)
+      );
+
+    user.displayId = availableId?.count
+      ? suggestCastcleId + (availableId.number || Date.now().toString())
+      : suggestCastcleId;
 
     return new this.userModel(user).save();
   }

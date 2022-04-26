@@ -99,13 +99,9 @@ export class TwitterClient {
    * Verify credentials and return user profile ID
    * @param {string} accessToken access token from twitter
    * @param {string} tokenSecret secret token from twitter
-   * @returns {TwitterAccessToken} token data
    */
-  async verifyCredentials(
-    accessToken: string,
-    tokenSecret: string
-  ): Promise<string> {
-    const profile = await new Promise<TwitterUserData>((resolve) => {
+  verifyCredentials(accessToken: string, tokenSecret: string) {
+    return new Promise<TwitterUserData>((resolve) => {
       this.oauth.getProtectedResource(
         `${Environment.TWITTER_HOST}/1.1/account/verify_credentials.json?include_email=true`,
         'GET',
@@ -114,7 +110,5 @@ export class TwitterClient {
         (error, data) => resolve(error ? null : JSON.parse(data.toString()))
       );
     });
-
-    return profile?.id_str;
   }
 }

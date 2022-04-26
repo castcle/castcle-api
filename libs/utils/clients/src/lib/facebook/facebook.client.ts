@@ -174,7 +174,9 @@ export class FacebookClient {
 
     try {
       const profile = await lastValueFrom(
-        this.httpService.get<{ id: string }>(url).pipe(map(({ data }) => data))
+        this.httpService
+          .get<{ id: string; name: string }>(url)
+          .pipe(map(({ data }) => data))
       );
 
       this.logger.log(
@@ -182,7 +184,7 @@ export class FacebookClient {
         `getFacebookProfile:${profile.id}`
       );
 
-      return profile.id;
+      return profile;
     } catch (error) {
       this.logger.error(error, `getFacebookProfile`);
     }
