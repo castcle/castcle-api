@@ -1,4 +1,3 @@
-import { UserService } from './user.service';
 /*
  * Copyright (c) 2021, Castcle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -38,10 +37,14 @@ import {
   EntityVisibility,
   NotificationSource,
   NotificationType,
+  PaginationQuery,
 } from '../dtos';
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
 import { ContentFarmingReponse } from '../models/content-farming.model';
+import { Repository } from '../repositories';
+
+import { UserService } from './user.service';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -51,6 +54,7 @@ export class ContentServiceV2 {
     private notificationServiceV2: NotificationServiceV2,
     private userService: UserService,
     private taccountService: TAccountService,
+    private repository: Repository,
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,
     @InjectModel('Content')
@@ -98,7 +102,6 @@ export class ContentServiceV2 {
       userOwner,
       account.preferences.languages[0]
     );
-    return content;
   };
   unlikeCast = async (contentId: string, user: User) => {
     const engagement = await this._engagementModel.findOne({
@@ -382,5 +385,75 @@ export class ContentServiceV2 {
       lockBalance,
       totalContentFarming
     );
+  };
+
+  getLikingCast = async (
+    contentId: string,
+    account: Account,
+    query: PaginationQuery,
+    viewer?: User
+  ) => {
+    const filter = {
+      contentId,
+      type: EngagementType.Like,
+    };
+    const likingCounts = await this.repository.findEngagementCount(filter);
+
+    const likingDocuments = await this.repository.findEngagement(
+      { ...query, ...filter },
+      {
+        limit: query.maxResults,
+        sort: { createdAt: -1 },
+        populate: 'user',
+      }
+    );
+
+    if (!likingDocuments.length)
+      return {
+        items: [],
+        count: 0,
+      };
+
+    if (!query.hasRelationshipExpansion || account.isGuest) {
+      const likingResponse = await Promise.all(
+        likingDocuments.map(async (engagement) => {
+          return engagement.user.type === UserType.PAGE
+            ? engagement.user.toPageResponseV2()
+            : await engagement.user.toUserResponseV2();
+        })
+      );
+      return {
+        items: likingResponse,
+        count: likingCounts,
+      };
+    }
+    const relationshipUser = likingDocuments.map((item) => item.user._id);
+
+    const relationships = await this.repository.findRelationships({
+      userId: relationshipUser,
+    });
+    const relationship = relationships?.find(
+      (relationship) => String(relationship.user) === String(viewer?._id)
+    );
+
+    const likingResponse = await Promise.all(
+      likingDocuments.map(async (engagement) => {
+        return engagement.user.type === UserType.PAGE
+          ? engagement.user.toPageResponseV2(
+              relationship?.blocking ?? false,
+              relationship?.blocking ?? false,
+              relationship?.following ?? false
+            )
+          : await engagement.user.toUserResponseV2({
+              blocked: relationship?.blocking ?? false,
+              blocking: relationship?.blocking ?? false,
+              followed: relationship?.following ?? false,
+            });
+      })
+    );
+    return {
+      items: likingResponse,
+      count: likingCounts,
+    };
   };
 }

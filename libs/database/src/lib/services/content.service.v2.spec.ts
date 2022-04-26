@@ -46,6 +46,8 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 import { TAccountService } from './taccount.service';
+import { Repository } from '../repositories';
+import { HttpModule } from '@nestjs/axios';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -63,6 +65,7 @@ describe('ContentServiceV2', () => {
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -76,6 +79,7 @@ describe('ContentServiceV2', () => {
         NotificationService,
         NotificationServiceV2,
         TAccountService,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -97,7 +101,7 @@ describe('ContentServiceV2', () => {
     userService = app.get(UserService);
     taccountService = app.get(TAccountService);
 
-    mocksUsers = await generateMockUsers(3, 0, {
+    mocksUsers = await generateMockUsers(5, 0, {
       userService: userService,
       accountService: authService,
     });
@@ -324,6 +328,39 @@ describe('ContentServiceV2', () => {
         );
         expect(recentBalance).toEqual(0);
       });
+    });
+  });
+
+  describe('#getLikingCast()', () => {
+    it('should create liking user on cast.', async () => {
+      await service.likeCast(
+        content,
+        mocksUsers[1].user,
+        mocksUsers[1].account
+      );
+      await service.likeCast(
+        content,
+        mocksUsers[2].user,
+        mocksUsers[2].account
+      );
+      await service.likeCast(
+        content,
+        mocksUsers[3].user,
+        mocksUsers[3].account
+      );
+      const likingResponse = await service.getLikingCast(
+        content._id,
+        mocksUsers[4].account,
+        {
+          maxResults: 25,
+          hasRelationshipExpansion: true,
+        },
+        mocksUsers[4].user
+      );
+
+      expect(likingResponse).toBeTruthy();
+      expect(likingResponse.items).toHaveLength(3);
+      expect(likingResponse.count).toEqual(3);
     });
   });
   afterAll(async () => {
