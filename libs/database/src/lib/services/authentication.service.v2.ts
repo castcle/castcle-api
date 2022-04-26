@@ -74,17 +74,14 @@ export class AuthenticationServiceV2 {
     credential: Credential,
     account: Account
   ) {
-    const isSameAccount = credential.account.id === account.id;
+    const isSameAccount = String(credential.account._id) === account.id;
     const isLinkedCredential = account.credentials?.some(
       ({ deviceUUID }) => deviceUUID === credential.deviceUUID
     );
 
-    if (isLinkedCredential && isSameAccount) {
-      return credential;
-    }
-
-    const [linkedCredential] = await Promise.all([
-      credential
+    if (!isSameAccount) {
+      await this.repository.deleteAccount({ _id: credential.account._id });
+      await credential
         .set({
           account: {
             _id: account._id,
@@ -95,10 +92,11 @@ export class AuthenticationServiceV2 {
             geolocation: account.geolocation,
           },
         })
-        .save(),
-      // TODO: !! Why delete account ???
-      // this.repository.deleteAccount({ _id: credential.account._id }),
-      this.repository.updateAccount(
+        .save();
+    }
+
+    if (!isLinkedCredential) {
+      await this.repository.updateAccount(
         { _id: account._id },
         {
           $push: {
@@ -108,10 +106,10 @@ export class AuthenticationServiceV2 {
             },
           },
         }
-      ),
-    ]);
+      );
+    }
 
-    return linkedCredential;
+    return credential;
   }
 
   private async login(credential: Credential, account: Account) {
@@ -159,10 +157,17 @@ export class AuthenticationServiceV2 {
     const { email, socialId, provider, ip, userAgent, authToken } =
       socialConnectDto;
 
-    const socialIdFromCredential = await this.getSocialId(provider, authToken);
-
-    if (socialId !== socialIdFromCredential) {
-      throw CastcleException.INVALID_AUTH_TOKEN;
+    if (provider === AccountAuthenIdType.Facebook) {
+      const profile = await this.facebookClient.getFacebookProfile(authToken);
+      if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
+      socialConnectDto.displayName ||= profile.name;
+    } else if (provider === AccountAuthenIdType.Twitter) {
+      const [token, secret] = authToken.split('|');
+      const profile = await this.twitterClient.verifyCredentials(token, secret);
+      if (socialId !== profile.id_str) {
+        throw CastcleException.INVALID_AUTH_TOKEN;
+      }
+      socialConnectDto.displayName ||= profile.name;
     }
 
     const accountFromSocial = await this.repository.findAccount({
@@ -172,7 +177,8 @@ export class AuthenticationServiceV2 {
 
     if (accountFromSocial) {
       await this.linkCredentialToAccount(credential, accountFromSocial);
-      return this.login(credential, accountFromSocial);
+      const login = await this.login(credential, accountFromSocial);
+      return { registered: true, ...login };
     }
 
     if (email) {
@@ -185,19 +191,7 @@ export class AuthenticationServiceV2 {
       socialConnectDto
     );
     await this.analyticService.trackRegistration(ip, userAgent);
-    return registration;
-  }
-
-  private async getSocialId(provider: AccountAuthenIdType, authToken: string) {
-    switch (provider) {
-      case AccountAuthenIdType.Facebook: {
-        return this.facebookClient.getFacebookProfile(authToken);
-      }
-      case AccountAuthenIdType.Twitter: {
-        const [token, secret] = authToken.split('|');
-        return this.twitterClient.verifyCredentials(token, secret);
-      }
-    }
+    return { registered: false, ...registration };
   }
 
   async registerWithSocial(
@@ -225,15 +219,27 @@ export class AuthenticationServiceV2 {
     await account.save();
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId: registerDto.displayName,
-      displayName: registerDto.displayName,
+      displayId:
+        registerDto.displayName ||
+        `${registerDto.provider}${registerDto.socialId}`,
+      displayName:
+        registerDto.displayName ||
+        `${registerDto.provider}${registerDto.socialId}`,
       type: UserType.PEOPLE,
       profile: {
+        overview: registerDto.overview,
+        socials: { [registerDto.provider]: registerDto.link },
         images: {
           avatar: registerDto.avatar
             ? await this.repository.createProfileImage(
                 account._id,
                 registerDto.avatar
+              )
+            : null,
+          cover: registerDto.cover
+            ? await this.repository.createCoverImage(
+                account._id,
+                registerDto.cover
               )
             : null,
         },

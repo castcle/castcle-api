@@ -22,6 +22,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -73,6 +74,11 @@ export class SyncSocialDtoV2 {
 }
 
 export class SocialConnectDto {
+  @Transform(({ obj }) => {
+    return /apple id/.test(obj.provider)
+      ? AccountAuthenIdType.Apple
+      : obj.provider;
+  })
   @IsEnum(AccountAuthenIdType)
   @ApiProperty()
   provider: AccountAuthenIdType;
@@ -105,4 +111,19 @@ export class SocialConnectDto {
   @IsOptional()
   @ApiPropertyOptional()
   referral?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  overview?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  cover?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  link?: string;
 }
