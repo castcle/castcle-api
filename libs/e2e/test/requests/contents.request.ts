@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { contentsApp } from '../variables';
+import { feedsApp } from '../variables';
 
 export class ContentsRequest {
   static headers = {
@@ -10,9 +10,7 @@ export class ContentsRequest {
   };
 
   static request = (method: string, url: string): request.Test =>
-    request(contentsApp.getHttpServer())
-      [method](url)
-      .set(ContentsRequest.headers);
+    request(feedsApp.getHttpServer())[method](url).set(ContentsRequest.headers);
 
   static delete = (url: string) => ContentsRequest.request('delete', url);
   static get = (url: string) => ContentsRequest.request('get', url);
