@@ -80,18 +80,28 @@ export class NotificationServiceV2 {
     return notification.save();
   };
 
-  readAllNotify = async (account: Account) => {
-    return this._notificationModel
-      .updateMany({ account: account._id }, { read: true })
-      .exec();
+  readAllSourceNotify = async (
+    account: Account,
+    source: NotificationSource
+  ) => {
+    return this._notificationModel.updateMany(
+      { account: account._id, source },
+      { read: true }
+    );
   };
 
   deleteNotify = async (notification: Notification) => {
     return notification.remove();
   };
 
-  deleteAllSourceNotify = async (source: NotificationSource) => {
-    return this._notificationModel.deleteMany({ source: source });
+  deleteAllSourceNotify = async (
+    account: Account,
+    source: NotificationSource
+  ) => {
+    return this._notificationModel.deleteMany({
+      account: account._id,
+      source: source,
+    });
   };
 
   getBadges = async (account: Account) => {
