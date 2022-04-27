@@ -87,10 +87,6 @@ export class AppService {
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
-  getData(): { message: string } {
-    return { message: 'Welcome to authentications!' };
-  }
-
   /**
    * Get ENV and return castcle mobile deep link url
    * @returns {string}

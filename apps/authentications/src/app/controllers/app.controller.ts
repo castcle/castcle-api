@@ -277,11 +277,8 @@ export class AuthenticationController {
       const currentAccount = await this.authService.getAccountFromCredential(
         req.$credential
       );
-      if (
-        currentAccount &&
-        currentAccount.email &&
-        currentAccount.email === body.payload.email
-      )
+      if (!currentAccount?.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+      if (currentAccount?.email === body.payload.email)
         throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
       //check if account already activate
       //check if email exist and not the same

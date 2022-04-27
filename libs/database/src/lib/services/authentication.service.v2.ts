@@ -22,12 +22,13 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { Token } from '@castcle-api/utils/commons';
+import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
+  RegisterWithEmailDto,
   SocialConnectDto,
   UserAccessTokenPayload,
 } from '../dtos';
@@ -35,7 +36,11 @@ import { AccountActivationType, UserType } from '../models';
 import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 import { Repository } from '../repositories';
-import { FacebookClient, TwitterClient } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 
 @Injectable()
 export class AuthenticationServiceV2 {
@@ -43,6 +48,7 @@ export class AuthenticationServiceV2 {
     private analyticService: AnalyticService,
     private facebookClient: FacebookClient,
     private twitterClient: TwitterClient,
+    private mailer: Mailer,
     private repository: Repository
   ) {}
 
@@ -194,6 +200,48 @@ export class AuthenticationServiceV2 {
     return { registered: false, ...registration };
   }
 
+  async registerWithEmail(
+    credential: Credential,
+    dto: RegisterWithEmailDto & { hostname: string; ip: string }
+  ) {
+    const [account, emailAlreadyExists, castcleIdAlreadyExists] =
+      await Promise.all([
+        this.repository.findAccount({ _id: credential.account._id }),
+        this.repository.findAccount({ email: dto.payload.email }),
+        this.repository.findUser({ _id: dto.payload.castcleId }),
+      ]);
+
+    if (!account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (emailAlreadyExists) throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
+    if (castcleIdAlreadyExists) throw CastcleException.USER_ID_IS_EXIST;
+
+    await this.repository.updateCredentials(
+      { 'account._id': account._id },
+      { isGuest: false }
+    );
+
+    account.isGuest = false;
+    account.email = dto.payload.email;
+    account.password = Password.hash(dto.payload.password);
+    const activation = account.createActivation(AccountActivationType.EMAIL);
+    await this.updateReferral(account, dto.referral, dto.ip);
+    await account.save();
+    await this.repository.createUser({
+      ownerAccount: account._id,
+      displayId: dto.payload.castcleId,
+      displayName: dto.payload.displayName,
+      type: UserType.PEOPLE,
+    });
+    await this.analyticService.trackRegistration(dto.ip, account._id);
+    await this.mailer.sendRegistrationEmail(
+      dto.hostname,
+      account.email,
+      activation.verifyToken
+    );
+
+    return this.login(credential, account);
+  }
+
   async registerWithSocial(
     credential: Credential,
     { ip, referral, ...registerDto }: SocialConnectDto & { ip: string }
@@ -213,10 +261,9 @@ export class AuthenticationServiceV2 {
       socialId: registerDto.socialId,
       avatar: registerDto.avatar,
     };
-    account.isGuest = false;
 
     await this.updateReferral(account, referral, ip);
-    await account.save();
+    await account.set({ isGuest: false }).save();
     await this.repository.createUser({
       ownerAccount: account._id,
       displayId:

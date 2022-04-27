@@ -22,6 +22,10 @@
  */
 
 export class CastcleRegExp {
+  /** Minimum 8 characters, at least one letter, one number and one special character */
+  static PASSWORD_PATTERN =
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/;
+
   static replaceEscapeStrings = (str: string) => {
     return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
   };
