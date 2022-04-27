@@ -393,6 +393,9 @@ export class ContentServiceV2 {
     query: PaginationQuery,
     viewer?: User
   ) => {
+    const content = await this.repository.findContentById(contentId);
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
     const filter = {
       contentId,
       type: EngagementType.Like,
