@@ -46,7 +46,14 @@ import {
 } from '../aggregations';
 import { EntityVisibility } from '../dtos';
 import { UserType } from '../models';
-import { Account, Content, Engagement, Relationship, User } from '../schemas';
+import {
+  Account,
+  Content,
+  Credential,
+  Engagement,
+  Relationship,
+  User,
+} from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
@@ -78,10 +85,11 @@ type RelationshipQuery = {
 export class Repository {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
-    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('Credential') private credentialModel: Model<Credential>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
-    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('User') private userModel: Model<User>,
     private httpService: HttpService
   ) {}
 
@@ -146,6 +154,13 @@ export class Repository {
       this.getAccountQuery(filter),
       updateQuery
     );
+  }
+
+  updateCredentials(
+    filter: FilterQuery<Credential>,
+    updateQuery: UpdateQuery<Credential>
+  ) {
+    return this.credentialModel.updateMany(filter, updateQuery);
   }
 
   async createProfileImage(accountId: string, imageUrl: string) {
