@@ -46,6 +46,7 @@ import { Repository } from '../repositories';
 import { Environment } from '@castcle-api/environments';
 
 import { UserService } from './user.service';
+import { isMongoId } from 'class-validator';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -409,6 +410,8 @@ export class ContentServiceV2 {
     query: PaginationQuery,
     viewer?: User
   ) => {
+    if (!isMongoId(String(contentId))) throw CastcleException.CONTENT_NOT_FOUND;
+
     const content = await this.repository.findContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
