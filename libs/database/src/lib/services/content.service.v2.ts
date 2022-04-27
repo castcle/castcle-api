@@ -43,6 +43,7 @@ import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
 import { ContentFarmingReponse } from '../models/content-farming.model';
 import { Repository } from '../repositories';
+import { Environment } from '@castcle-api/environments';
 
 import { UserService } from './user.service';
 
@@ -364,6 +365,21 @@ export class ContentServiceV2 {
     return contentFarming;
   };
 
+  expireAllFarmedToken = async () => {
+    const cutOffDate = new Date(
+      new Date().getTime() - Environment.CONTENT_FARMING_COOLDOWN_HR * 60 * 1000
+    );
+    const expiresFarmings = await this.contentFarmingModel.find({
+      status: ContentFarmingStatus.Farming,
+      startAt: { $lte: cutOffDate },
+    });
+    return Promise.all(
+      expiresFarmings.map((cf) =>
+        this.expireFarm(String(cf.content), String(cf.account))
+      )
+    );
+  };
+
   pipeContentFarming = async (
     contentFarming: ContentFarming,
     accountId: string
@@ -393,6 +409,9 @@ export class ContentServiceV2 {
     query: PaginationQuery,
     viewer?: User
   ) => {
+    const content = await this.repository.findContentById(contentId);
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
     const filter = {
       contentId,
       type: EngagementType.Like,
