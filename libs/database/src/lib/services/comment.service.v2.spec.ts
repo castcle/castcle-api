@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationServiceV2 } from './notification.service.v2';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -39,6 +38,7 @@ import { AuthenticationService } from './authentication.service';
 import { CommentServiceV2 } from './comment.service.v2';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
 
 describe('CommentServiceV2', () => {
@@ -157,6 +157,15 @@ describe('CommentServiceV2', () => {
       );
 
       expect(commentsResult.meta.resultCount).toEqual(1);
+    });
+  });
+
+  describe('#getCommentById()', () => {
+    it('should get comment and reply from comment id', async () => {
+      const user = mocksUsers[0].user;
+      const commentsResult = await service.getCommentsById(user, comment._id);
+
+      expect(commentsResult.payload.length).toEqual(1);
     });
   });
 

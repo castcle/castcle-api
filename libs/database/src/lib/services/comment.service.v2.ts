@@ -493,6 +493,34 @@ export class CommentServiceV2 {
   };
 
   /**
+   * Get Comment from id
+   * @param {User} viewer
+   * @param {string} commentId
+   * @returns {payload:CommentPayload[], includes:CommentIncludes}
+   */
+  getCommentsById = async (viewer: User, commentId: string) => {
+    const query: FilterQuery<Comment> = {
+      _id: mongoose.Types.ObjectId(commentId),
+      visibility: EntityVisibility.Publish,
+    };
+    this.logger.log(`Query: ${JSON.stringify(query)}`);
+    const comments = await this.commentModel.find(query).exec();
+
+    const engagements = await this.engagementModel.find({
+      targetRef: {
+        $in: comments.map((comment) => ({ $ref: 'comment', $id: comment._id })),
+      },
+    });
+
+    return this.convertCommentsToCommentResponse(
+      viewer,
+      comments,
+      engagements,
+      { hasRelationshipExpansion: false }
+    );
+  };
+
+  /**
    *
    * @param {Comment} rootComment
    * @returns {Comment}
