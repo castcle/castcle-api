@@ -74,7 +74,9 @@ export class CommentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery
   ) {
-    this.logger.log(`Start get all comment from content: ${contentId}`);
+    this.logger.log(
+      `Start get all reply comment from content: ${contentId} and comment: ${commentId}`
+    );
     this.validateObjectId(contentId);
     this.validateObjectId(commentId);
     const content = await this.contentService.getContentById(contentId);
@@ -84,5 +86,38 @@ export class CommentControllerV2 {
       commentId,
       query
     );
+  }
+
+  @CastcleAuth(CacheKeyName.Comments)
+  @Get(':contentId/comments/:sourceCommentId')
+  async getCommentLookup(
+    @Param('contentId') contentId: string,
+    @Param('sourceCommentId') commentId: string,
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery
+  ) {
+    this.logger.log(
+      `Start lookup comment from content: ${contentId} and comment: ${commentId}`
+    );
+    this.validateObjectId(contentId);
+    this.validateObjectId(commentId);
+    const content = await this.contentService.getContentById(contentId);
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    const commentResult = await this.commentService.getCommentsById(
+      authorizer.user,
+      commentId
+    );
+    const replyResult = await this.commentService.getReplyCommentsByCommentId(
+      authorizer.user,
+      commentId,
+      query
+    );
+
+    return {
+      payload: commentResult.payload,
+      reply: replyResult.payload,
+      includes: { users: replyResult.includes.users },
+      meta: replyResult.meta,
+    };
   }
 }

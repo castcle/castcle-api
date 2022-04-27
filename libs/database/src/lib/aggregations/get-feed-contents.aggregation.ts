@@ -267,7 +267,7 @@ export const pipelineOfGetGuestFeedContents = ({
           {
             $project: {
               id: '$_id',
-              avatar: '$avatar',
+              avatar: '$profile.images.avatar',
               castcleId: '$displayId',
               displayName: '$displayName',
               type: '$type',
