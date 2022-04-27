@@ -213,4 +213,8 @@ export class Environment {
    * @default 0 hour
    */
   static NOTIFY_FOLLOW_INTERVAL = process.env.NOTIFY_FOLLOW_INTERVAL || 0;
+
+  static CONTENT_FARMING_COOLDOWN_HR = Number(
+    process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000
+  ); //hours
 }

@@ -21,36 +21,14 @@
  * or have any questions.
  */
 
-import { Test } from '@nestjs/testing';
-import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { AppModule } from './app.module';
-import { CampaignConsumer } from './campaign.consumer';
-import { CampaignScheduler } from './campaign.scheduler';
+import { ApiProperty } from '@nestjs/swagger';
+import { CastcleMeta } from './common.dto';
+import { UserResponseDto, PageResponseDto } from './user.dto';
 
-jest.mock('libs/environments/src/lib/factories');
-describe('App Module', () => {
-  let mongo: MongoMemoryReplSet;
-  let campaignConsumer: CampaignConsumer;
-  let campaignScheduler: CampaignScheduler;
+export class LikingUserResponse {
+  @ApiProperty()
+  payload: (UserResponseDto | PageResponseDto)[];
 
-  beforeAll(async () => {
-    mongo = await MongoMemoryReplSet.create();
-    (global as any).mongoUri = mongo.getUri();
-
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    campaignConsumer = module.get(CampaignConsumer);
-    campaignScheduler = module.get(CampaignScheduler);
-  });
-
-  afterAll(async () => {
-    await mongo.stop();
-  });
-
-  it('should be defined', () => {
-    expect(campaignConsumer).toBeDefined();
-    expect(campaignScheduler).toBeDefined();
-  });
-});
+  @ApiProperty()
+  meta: CastcleMeta;
+}
