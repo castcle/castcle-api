@@ -46,7 +46,7 @@ import {
 } from '../aggregations';
 import { EntityVisibility } from '../dtos';
 import { UserType } from '../models';
-import { Account, Engagement, Relationship, User } from '../schemas';
+import { Account, Content, Engagement, Relationship, User } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
@@ -81,7 +81,7 @@ export class Repository {
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
-
+    @InjectModel('Content') private contentModel: Model<Content>,
     private httpService: HttpService
   ) {}
 
@@ -224,5 +224,8 @@ export class Repository {
     return this.relationshipModel
       .find(this.getRelationshipsQuery(filter), {}, queryOptions)
       .exec();
+  }
+  findContentById(contentId: string) {
+    return this.contentModel.findById(contentId).exec();
   }
 }
