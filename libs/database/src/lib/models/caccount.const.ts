@@ -26,6 +26,11 @@ export const CACCOUNT_NO = {
     NO: '0000',
     AIRDROP: '0500',
   },
+  ASSET: {
+    NO: '1000',
+    CASTCLE_WALLET: '1100',
+    CASTCLE_DEPOSIT: '1200',
+  },
   LIABILITY: {
     NO: '2000',
     USER_WALLET: {

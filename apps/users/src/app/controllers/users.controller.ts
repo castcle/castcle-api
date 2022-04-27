@@ -400,7 +400,6 @@ export class UsersController {
       req.$credential
     );
     const socials = await this.socialSyncService.getSocialSyncByUser(...pages);
-
     if (!socials.length) return { payload: null };
 
     const socialResponse = socials.map((social) =>
@@ -1760,15 +1759,14 @@ export class UsersController {
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
-
         await this.socialSyncServiceV2.sync(page, {
           socialId: syncBody.socialId,
           provider: syncBody.provider,
           userName: syncBody.userName,
           displayName: syncBody.displayName,
           avatar: syncBody.avatar,
-          active: syncBody.active,
-          autoPost: syncBody.autoPost,
+          active: (syncBody.active ??= true),
+          autoPost: (syncBody.autoPost ??= true),
           authToken: syncBody.authToken,
         });
       })
@@ -1813,7 +1811,6 @@ export class UsersController {
    * @param {string} socialId - The id of the social sync to update.
    */
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @CastcleBasicAuth()
   @Post('me/pages/sync-social/:id/auto-post')
   async updateAutoPost(
     @Auth() { credential }: Authorizer,
@@ -1835,7 +1832,6 @@ export class UsersController {
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
-  @CastcleBasicAuth()
   @Delete('me/pages/sync-social/:id/auto-post')
   async deleteAutoPost(
     @Auth() { credential }: Authorizer,
@@ -1863,10 +1859,7 @@ export class UsersController {
    * @param {SocialSyncDto} body social sync payload
    * @returns
    */
-  @ApiBody({
-    type: SocialSyncDto,
-  })
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Post('me/pages/sync-social/:id/connect')
   async connectSyncSocial(
     @Auth() { credential, user }: Authorizer,
@@ -1874,7 +1867,6 @@ export class UsersController {
     @Body('payload') syncBody: SocialSyncDto
   ) {
     this.logger.log(`Start reconnect sync social.`);
-
     await this.validateGuestAccount(credential);
 
     const social = await this.socialSyncService.getSocialSyncBySocialId(id);
@@ -1940,7 +1932,7 @@ export class UsersController {
    * @param {string} id social sync _id
    * @returns
    */
-  @CastcleBasicAuth()
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
   @Delete('me/pages/sync-social/:id/connect')
   async disconnectSyncSocial(
     @Auth() { credential, user }: Authorizer,

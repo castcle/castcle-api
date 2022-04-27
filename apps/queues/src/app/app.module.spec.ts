@@ -28,7 +28,6 @@ import { CampaignConsumer } from './campaign.consumer';
 import { CampaignScheduler } from './campaign.scheduler';
 
 jest.mock('libs/environments/src/lib/factories');
-
 describe('App Module', () => {
   let mongo: MongoMemoryReplSet;
   let campaignConsumer: CampaignConsumer;

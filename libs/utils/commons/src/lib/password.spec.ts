@@ -20,56 +20,60 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Password } from './password';
+
 describe('Password', () => {
-  describe('#generate()', () => {
+  describe('#hash()', () => {
     it('should return encrypt password', async () => {
-      const newPassword = await Password.generate('12345');
+      const newPassword = Password.hash('12345');
       expect(newPassword).toBeDefined();
       expect(Password).not.toEqual(newPassword);
     });
     it('should return encrypt password differently even the same password', async () => {
-      const newPassword = await Password.generate('12345');
-      const newPassword2 = await Password.generate('12345');
+      const newPassword = Password.hash('12345');
+      const newPassword2 = Password.hash('12345');
       expect(newPassword2 !== newPassword).toBe(true);
     });
   });
+
   describe('#create()', () => {
-    it('should create and return encryptpassword if it pass the validation', async () => {
+    it('should create and return encrypted password if it pass the validation', async () => {
       const passPassword = '123456';
       console.log('before call #create()');
-      const encryptPassword = await Password.create(passPassword);
+      const encryptPassword = Password.create(passPassword);
       console.log('after call #create()');
       expect(encryptPassword).toBeDefined();
-      //expect(typeof encryptPassword).toBe('string');
     });
     it('should be null if password is not pass validation', async () => {
       const notPassPassword = '123';
-      const encryptPassword = await Password.create(notPassPassword);
+      const encryptPassword = Password.create(notPassPassword);
       expect(encryptPassword).toBeNull();
     });
   });
+
   describe('#verify()', () => {
     it('should return true if password is correct', async () => {
       const passPassword = 'verify123456';
-      const encryptPassword = await Password.generate(passPassword);
+      const encryptPassword = Password.hash(passPassword);
       expect(Password.verify(passPassword, encryptPassword)).toBe(true);
     });
     it('should return false if password is incorrect', async () => {
       const passPassword = 'verify654321';
-      const encryptPassword = await Password.generate(passPassword);
-      expect(Password.verify('thisisawrongpassword', encryptPassword)).toBe(
+      const encryptPassword = Password.hash(passPassword);
+      expect(Password.verify('this-is-a-wrong-password', encryptPassword)).toBe(
         false
       );
     });
     it('should return true to P jul password Abcd1@34$ ', async () => {
       const encryptPassword =
         '$2a$10$LF1C5E//QPPvPMQTdAlBqO.r/3DyOvdwHLZMuVMzb3PToLf227J8m';
-      const testPasswordPJul = await Password.create('Abcd1@34$');
+      const testPasswordPJul = Password.create('Abcd1@34$');
       console.log(testPasswordPJul);
       expect(Password.verify('Abcd1@34$', encryptPassword)).toBe(true);
     });
   });
+
   describe('#validate()', () => {
     it('should return true if password has at least 6 length', () => {
       const passPassword = '2@HelloWorld';

@@ -32,6 +32,7 @@ import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { QueueName } from './models';
+import { Repository } from './repositories';
 import {
   AccountActivationSchema,
   AccountAuthenIdSchema,
@@ -41,6 +42,7 @@ import {
   AnalyticSchema,
   CampaignSchema,
   CommentSchemaFactory,
+  ContentFarmingSchema,
   ContentSchemaFactory,
   CountrySchema,
   CredentialSchema,
@@ -115,6 +117,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'SocialSync', schema: SocialSyncSchema },
   { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -176,6 +179,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UtilsClientsModule,
   ],
   providers: [
+    Repository,
     AuthenticationService,
     AuthenticationServiceV2,
     UserService,

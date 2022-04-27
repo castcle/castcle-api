@@ -25,8 +25,14 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EntityVisibility, SyncSocialModelV2, UserField } from '../dtos';
+import {
+  EntityVisibility,
+  PageResponseDto,
+  SyncSocialModelV2,
+  UserField,
+} from '../dtos';
 import { UserType } from '../models';
+import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
 import { ContentService } from './content.service';
 import { UserService } from './user.service';
@@ -45,6 +51,7 @@ export class UserServiceV2 {
     @InjectModel('User')
     public _userModel: Model<User>,
     private contentService: ContentService,
+    private repositoryService: Repository,
     private userService: UserService
   ) {}
 
@@ -88,21 +95,25 @@ export class UserServiceV2 {
           ? await this._socialSyncModel.find({ 'author.id': user.id }).exec()
           : [];
 
-        const syncSocial: SyncSocialModelV2 = {};
-        if (String(user.ownerAccount) === String(viewer.ownerAccount)) {
-          if (syncSocials)
-            syncSocials.forEach((item) => {
-              syncSocial[item.provider] = {
-                id: item._id,
-                provider: item.provider,
-                socialId: item.socialId,
-                userName: item.userName,
-                displayName: item.displayName,
-                avatar: item.avatar,
-                active: item.active,
-                autoPost: item.autoPost,
-              };
-            });
+        let syncSocial: SyncSocialModelV2 = {};
+        if (
+          String(user.ownerAccount) === String(viewer.ownerAccount) &&
+          syncSocials.length > 0
+        ) {
+          syncSocials.forEach((item) => {
+            syncSocial[item.provider] = {
+              id: item._id,
+              provider: item.provider,
+              socialId: item.socialId,
+              userName: item.userName,
+              displayName: item.displayName,
+              avatar: item.avatar,
+              active: item.active,
+              autoPost: item.autoPost,
+            };
+          });
+        } else {
+          syncSocial = undefined;
         }
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(user.ownerAccount) === String(viewer.ownerAccount)
@@ -160,6 +171,7 @@ export class UserServiceV2 {
       })
     );
   }
+
   getById = async (
     user: User,
     targetUser: User,
@@ -167,7 +179,6 @@ export class UserServiceV2 {
     userFields?: UserField[]
   ) => {
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
     const [userResponse] = await this.convertUsersToUserResponsesV2(
       user,
       [targetUser],
@@ -177,4 +188,25 @@ export class UserServiceV2 {
 
     return userResponse;
   };
+
+  /**
+   * get all page it's own by user
+   * @param user credential from request typeof Credential
+   * @returns payload of result from user pages array typeof PageResponseDto[]
+   */
+  async getMyPages(user: User) {
+    const filterQuery = {
+      accountId: user.ownerAccount._id,
+      type: UserType.PAGE,
+    };
+    const findUser = await this.repositoryService.findUsers(filterQuery);
+    const pages = await this.convertUsersToUserResponsesV2(
+      user,
+      findUser,
+      false,
+      [UserField.SyncSocial]
+    );
+
+    return pages as PageResponseDto[];
+  }
 }

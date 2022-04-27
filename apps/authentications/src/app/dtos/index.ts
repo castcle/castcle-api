@@ -23,13 +23,14 @@
 import {
   AcceptPlatform,
   PageResponseDto,
+  RegisterWithEmailDto as RegisterWithEmailDtoV2,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
   AccountAuthenIdType,
   OtpObjective,
 } from '@castcle-api/database/schemas';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
@@ -65,59 +66,10 @@ export class LoginDto {
   password: string;
 }
 
-export class SocialConnectDto {
-  @IsNotEmpty()
-  @IsEnum(AccountAuthenIdType)
-  @ApiProperty()
-  provider: AccountAuthenIdType;
-  @IsString()
-  @ApiProperty()
-  socialId: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  displayName?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  avatar?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  email?: string;
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  authToken?: string;
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional()
-  referral?: string;
-}
-
-class RegisterPayload {
-  @ApiProperty()
-  email: string;
-  @ApiProperty()
-  password: string;
-  @ApiProperty()
-  displayName: string;
-  @ApiProperty()
-  castcleId: string;
-}
-
-export class RegisterByEmailDto {
+export class RegisterByEmailDto extends RegisterWithEmailDtoV2 {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty()
-  channel: 'email';
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional()
-  referral?: string;
-  @IsNotEmpty()
-  @ApiProperty()
-  payload: RegisterPayload;
+  channel: string;
 }
 
 export class CheckIdExistDto {

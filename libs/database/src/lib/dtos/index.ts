@@ -28,6 +28,7 @@ export * from './comment.dto';
 export * from './comment.dto.v2';
 export * from './common.dto';
 export * from './content.dto';
+export * from './content.dto.v2';
 export * from './country.dto';
 export * from './feed.dto';
 export * from './guest-feed-item.dto';

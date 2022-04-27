@@ -57,10 +57,12 @@ import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -97,6 +99,7 @@ describe('CommentControllerV2', () => {
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
+        HttpModule,
       ],
       controllers: [UsersControllerV2],
       providers: [
@@ -119,6 +122,7 @@ describe('CommentControllerV2', () => {
         RankerService,
         ContentServiceV2,
         NotificationServiceV2,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

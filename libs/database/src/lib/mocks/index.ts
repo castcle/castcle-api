@@ -21,6 +21,6 @@
  * or have any questions.
  */
 
-import { MockUserDetail, generateMockUsers } from './user.mocks';
-
-export { MockUserDetail, generateMockUsers };
+export * from './user.mocks';
+export * from './content.mocks';
+export * from './taccount.mocks';

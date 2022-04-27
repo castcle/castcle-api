@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
+  AnalyticService,
   AuthenticationService,
   AuthenticationServiceV2,
   MongooseAsyncFeatures,
@@ -16,6 +17,15 @@ import { QueueName } from '../models';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
+import { Repository } from '../repositories';
+import { HttpModule } from '@nestjs/axios';
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
+import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
+import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 
 describe('Authentication Service', () => {
   let mongod: MongoMemoryServer;
@@ -29,16 +39,22 @@ describe('Authentication Service', () => {
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
       ],
       providers: [
+        AnalyticService,
         AuthenticationServiceV2,
         AuthenticationService,
         UserService,
         ContentService,
         HashtagService,
+        Repository,
+        { provide: FacebookClient, useValue: FacebookClientMock },
+        { provide: TwitterClient, useValue: TwitterClientMock },
+        { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -118,11 +134,12 @@ describe('Authentication Service', () => {
         const result = await service.getAccountFromEmail(testEmail);
         expect(result).toBeNull();
       });
+
       it('should found an account that have email match', async () => {
         const newlyInsertEmail = `${Math.ceil(
           Math.random() * 1000
         )}@testinsert.com`;
-        const newAccount = new (service as any).accountModel({
+        const newAccount = new (service as any).repository.accountModel({
           email: newlyInsertEmail,
           password: 'sompop2@Hello',
           isGuest: true,

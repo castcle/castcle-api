@@ -40,6 +40,7 @@ import {
   NotificationQuery,
 } from '../dtos';
 import { NotificationService } from './notification.service';
+import { pipelineNotificationBadge } from '../aggregations';
 
 @Injectable()
 export class NotificationServiceV2 {
@@ -79,26 +80,42 @@ export class NotificationServiceV2 {
     return notification.save();
   };
 
-  readAllNotify = async (account: Account) => {
-    return this._notificationModel
-      .updateMany({ account: account._id }, { read: true })
-      .exec();
+  readAllSourceNotify = async (
+    account: Account,
+    source: NotificationSource
+  ) => {
+    return this._notificationModel.updateMany(
+      { account: account._id, source },
+      { read: true }
+    );
   };
 
   deleteNotify = async (notification: Notification) => {
     return notification.remove();
   };
 
-  getBadges = async (account: Account) => {
-    const totalNotification = await this._notificationModel.countDocuments({
+  deleteAllSourceNotify = async (
+    account: Account,
+    source: NotificationSource
+  ) => {
+    return this._notificationModel.deleteMany({
       account: account._id,
-      read: false,
+      source: source,
     });
-    return totalNotification
-      ? totalNotification > 99
-        ? '+99'
-        : String(totalNotification)
-      : '';
+  };
+
+  getBadges = async (account: Account) => {
+    const pipeline = pipelineNotificationBadge(account._id);
+    const [totalNotification] =
+      await this._notificationModel.aggregate<Notification>(pipeline);
+    if (!totalNotification)
+      return {
+        profile: 0,
+        page: 0,
+        system: 0,
+      };
+
+    return totalNotification;
   };
 
   notifyToUser = async (

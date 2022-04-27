@@ -25,12 +25,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EventName } from '../models';
+import { Repository } from '../repositories';
 import { Analytic } from '../schemas';
 
 @Injectable()
 export class AnalyticService {
   constructor(
-    @InjectModel('Analytic') private analyticModel: Model<Analytic>
+    @InjectModel('Analytic') private analyticModel: Model<Analytic>,
+    private repository: Repository
   ) {}
 
   async track(payload: Analytic) {
@@ -73,5 +75,15 @@ export class AnalyticService {
       { ip, registered: { $exists: false } },
       { registered: { account: accountId } }
     );
+  }
+
+  async getReferrer(ip: string) {
+    const analytic = await this.analyticModel.findOne(
+      { ip, name: EventName.INVITE_FRIENDS },
+      {},
+      { sort: { createdAt: -1 } }
+    );
+
+    return this.repository.findUser({ _id: analytic?.data });
   }
 }

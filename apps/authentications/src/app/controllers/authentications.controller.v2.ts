@@ -22,14 +22,24 @@
  */
 
 import { AuthenticationServiceV2 } from '@castcle-api/database';
-import { LoginWithEmailDto, ResponseDto } from '@castcle-api/database/dtos';
+import {
+  LoginWithEmailDto,
+  RegisterWithEmailDto,
+  ResponseDto,
+  SocialConnectDto,
+} from '@castcle-api/database/dtos';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Body, HttpCode, Post, Req } from '@nestjs/common';
+import {
+  CredentialRequest,
+  HeadersInterceptor,
+} from '@castcle-api/utils/interceptors';
+import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import {
   CheckEmailExistDto,
@@ -40,6 +50,20 @@ import {
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
   constructor(private authenticationService: AuthenticationServiceV2) {}
+
+  @CastcleBasicAuth()
+  @Post('register')
+  async requestEmailOtp(
+    @Body() dto: RegisterWithEmailDto,
+    @RequestMeta() { ip }: RequestMetadata,
+    @Req() { $credential, hostname }: CredentialRequest
+  ) {
+    return this.authenticationService.registerWithEmail($credential, {
+      ...dto,
+      hostname,
+      ip,
+    });
+  }
 
   @Post('login-with-email')
   @CastcleBasicAuth()
@@ -55,9 +79,25 @@ export class AuthenticationControllerV2 {
     );
   }
 
+  @Post('login-with-social')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  loginWithSocial(
+    @Body() socialConnectDto: SocialConnectDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() { ip, userAgent }: RequestMetadata
+  ) {
+    return this.authenticationService.loginWithSocial($credential, {
+      ...socialConnectDto,
+      ip,
+      userAgent,
+    });
+  }
+
   @ApiOkResponse({
     type: CheckingResponseV2,
   })
+  @UseInterceptors(HeadersInterceptor)
   @Post('exists/castcle-id')
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
@@ -82,6 +122,7 @@ export class AuthenticationControllerV2 {
   @ApiBody({
     type: CheckEmailExistDto,
   })
+  @UseInterceptors(HeadersInterceptor)
   @Post('exists/email')
   @HttpCode(200)
   async checkEmailExists(@Body() { email }: CheckEmailExistDto) {
