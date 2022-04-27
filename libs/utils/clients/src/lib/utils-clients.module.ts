@@ -31,6 +31,7 @@ import {
   FacebookUserInfo,
 } from './facebook/facebook.message';
 import { GoogleClient } from './google/google.client';
+import { Mailer } from './mailer/mailer';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
 import { TwilioClient } from './twilio/twilio.client';
@@ -52,6 +53,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     TwilioClient,
     AppleClient,
     GoogleClient,
+    Mailer,
   ],
   exports: [
     HttpModule,
@@ -61,6 +63,7 @@ import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
     AppleClient,
     TwilioClient,
     GoogleClient,
+    Mailer,
   ],
 })
 export class UtilsClientsModule {}
@@ -79,4 +82,5 @@ export {
   TwilioClient,
   TwilioChannel,
   GoogleClient,
+  Mailer,
 };

@@ -24,6 +24,7 @@
 import { AuthenticationServiceV2 } from '@castcle-api/database';
 import {
   LoginWithEmailDto,
+  RegisterWithEmailDto,
   ResponseDto,
   SocialConnectDto,
 } from '@castcle-api/database/dtos';
@@ -49,6 +50,20 @@ import {
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
   constructor(private authenticationService: AuthenticationServiceV2) {}
+
+  @CastcleBasicAuth()
+  @Post('register')
+  async requestEmailOtp(
+    @Body() dto: RegisterWithEmailDto,
+    @RequestMeta() { ip }: RequestMetadata,
+    @Req() { $credential, hostname }: CredentialRequest
+  ) {
+    return this.authenticationService.registerWithEmail($credential, {
+      ...dto,
+      hostname,
+      ip,
+    });
+  }
 
   @Post('login-with-email')
   @CastcleBasicAuth()

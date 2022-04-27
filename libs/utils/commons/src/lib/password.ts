@@ -22,20 +22,18 @@
  */
 
 import * as bcrypt from 'bcryptjs';
+import { CastcleRegExp } from './regexp';
 
 const saltRounds = 10;
 
-const generate = async (password: string) => bcrypt.hash(password, saltRounds);
+const hash = (password: string) => bcrypt.hashSync(password, saltRounds);
 
 const validate = (password: string) => {
-  //Minimum eight characters, at least one letter, one number and one special character
-  return password.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/)
-    ? true
-    : false;
+  return CastcleRegExp.PASSWORD_PATTERN.test(password);
 };
 
-const create = async (password: string) =>
-  validate(password) ? generate(password) : null;
+const create = (password: string) =>
+  validate(password) ? hash(password) : null;
 
 const verify = (password: string, encryptPassword: string) =>
   bcrypt.compareSync(password, encryptPassword);
@@ -62,9 +60,9 @@ const generateRandomDigits = (digit: number) => {
 };
 
 export const Password = {
-  generate,
   create,
-  verify,
-  validate,
   generateRandomDigits,
+  hash,
+  validate,
+  verify,
 };
