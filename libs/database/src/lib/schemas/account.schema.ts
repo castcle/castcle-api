@@ -23,15 +23,17 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
-import { Password } from '@castcle-api/utils/commons';
+import { Password, Token } from '@castcle-api/utils/commons';
 import {
   AccountActivation,
+  AccountActivationType,
   AccountAuthentication,
   AccountCampaigns,
   AccountDevice,
 } from '../models';
 
 import { SchemaTypes, Types } from 'mongoose';
+import { Environment } from '@castcle-api/environments';
 
 export enum AccountRole {
   Member = 'member',
@@ -112,20 +114,43 @@ export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
 export class Account extends AccountDocument {
   changePassword: (password: string, email?: string) => Promise<Account | null>;
   verifyPassword: (password: string) => boolean;
+  createActivation: (type: AccountActivationType) => AccountActivation;
 }
 
-AccountSchema.methods.changePassword = async function (
+AccountSchema.methods.changePassword = function (
   password: string,
   email?: string
 ) {
-  const encryptPassword = await Password.create(password);
-  if (encryptPassword) {
-    this.password = encryptPassword;
-    if (email) this.email = email;
-    return this.save();
-  } else return null;
+  const encryptPassword = Password.create(password);
+  if (!encryptPassword) return null;
+
+  this.password = encryptPassword;
+  if (email) this.email = email;
+  return this.save();
 };
 
 AccountSchema.methods.verifyPassword = function (password: string) {
   return Password.verify(password, this.password);
+};
+
+AccountSchema.methods.createActivation = function (
+  type: AccountActivationType
+) {
+  const verifyTokenExpireDate = new Date(
+    Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+  );
+  const activation = {
+    type,
+    verifyTokenExpireDate,
+    verifyToken: Token.generateToken(
+      {
+        id: this._id,
+        verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
+      },
+      Environment.JWT_VERIFY_SECRET,
+      Environment.JWT_VERIFY_EXPIRES_IN
+    ),
+  };
+  (this.activations ||= []).push(activation);
+  return activation;
 };

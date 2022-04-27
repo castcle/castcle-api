@@ -19,7 +19,11 @@ import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
 import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
-import { FacebookClient, TwitterClient } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 
@@ -50,6 +54,7 @@ describe('Authentication Service', () => {
         Repository,
         { provide: FacebookClient, useValue: FacebookClientMock },
         { provide: TwitterClient, useValue: TwitterClientMock },
+        { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
