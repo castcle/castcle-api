@@ -43,4 +43,28 @@ export class UsersRequest {
     UsersRequest.get(`/users/${userId}/followers`);
   static unfollow = (userId: string, targetCastcleId: string) =>
     UsersRequest.delete(`/users/${userId}/following/${targetCastcleId}`);
+  static comment = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/comments`);
+  static updateComment = (userId: string, sourceCommentId: string) =>
+    UsersRequest.put(`/v2/users/${userId}/comments/${sourceCommentId}`);
+  static deleteComment = (userId: string, sourceCommentId: string) =>
+    UsersRequest.delete(`/v2/users/${userId}/comments/${sourceCommentId}`);
+  static replyComment = (userId: string, sourceCommentId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/comments/${sourceCommentId}/reply`);
+  static updateReplyComment = (
+    userId: string,
+    sourceCommentId: string,
+    replyCommentId: string
+  ) =>
+    UsersRequest.put(
+      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`
+    );
+  static deleteReplyComment = (
+    userId: string,
+    sourceCommentId: string,
+    replyCommentId: string
+  ) =>
+    UsersRequest.delete(
+      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`
+    );
 }
