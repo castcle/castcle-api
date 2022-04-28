@@ -163,9 +163,9 @@ describe('CommentServiceV2', () => {
   describe('#getCommentById()', () => {
     it('should get comment and reply from comment id', async () => {
       const user = mocksUsers[0].user;
-      const commentsResult = await service.getCommentsById(user, comment._id);
+      const commentsResult = await service.getCommentById(user, comment._id);
 
-      expect(commentsResult.payload.length).toEqual(1);
+      expect(commentsResult.payload.id).toBeDefined();
     });
   });
 
