@@ -20,7 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CommentServiceV2, ContentService } from '@castcle-api/database';
+import {
+  CommentServiceV2,
+  ContentService,
+  validateObjectId,
+} from '@castcle-api/database';
 import { PaginationQuery } from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -32,7 +36,6 @@ import {
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
-import * as mongoose from 'mongoose';
 
 @CastcleControllerV2({ path: 'contents' })
 export class CommentControllerV2 {
@@ -42,10 +45,9 @@ export class CommentControllerV2 {
     private contentService: ContentService
   ) {}
 
-  private validateObjectId(id: string) {
+  private validateId(id: string) {
     this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = mongoose.Types.ObjectId;
-    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+    if (!validateObjectId(id)) throw CastcleException.CONTENT_NOT_FOUND;
   }
 
   @CastcleAuth(CacheKeyName.Comments)
@@ -56,7 +58,7 @@ export class CommentControllerV2 {
     @Query() query: PaginationQuery
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
-    this.validateObjectId(contentId);
+    this.validateId(contentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
     return this.commentService.getCommentsByContentId(
@@ -77,8 +79,8 @@ export class CommentControllerV2 {
     this.logger.log(
       `Start get all reply comment from content: ${contentId} and comment: ${commentId}`
     );
-    this.validateObjectId(contentId);
-    this.validateObjectId(commentId);
+    this.validateId(contentId);
+    this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
     return this.commentService.getReplyCommentsByCommentId(
@@ -99,8 +101,8 @@ export class CommentControllerV2 {
     this.logger.log(
       `Start lookup comment from content: ${contentId} and comment: ${commentId}`
     );
-    this.validateObjectId(contentId);
-    this.validateObjectId(commentId);
+    this.validateId(contentId);
+    this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
     const commentResult = await this.commentService.getCommentById(
       authorizer.user,

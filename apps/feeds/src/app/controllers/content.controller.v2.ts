@@ -20,7 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ContentService, ContentServiceV2 } from '@castcle-api/database';
+import {
+  ContentService,
+  ContentServiceV2,
+  validateObjectId,
+} from '@castcle-api/database';
 import {
   LikingUserResponse,
   Meta,
@@ -48,6 +52,11 @@ export class ContentControllerV2 {
     private contentService: ContentService
   ) {}
 
+  private validateId(id: string) {
+    this.logger.log(`Validate is object id: ${id}`);
+    if (!validateObjectId(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
+
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId')
   async getContentFromId(
@@ -55,6 +64,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery
   ) {
+    this.validateId(contentId);
     const content = await this.contentService.getContentById(contentId);
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
     const engagements = authorizer.user
