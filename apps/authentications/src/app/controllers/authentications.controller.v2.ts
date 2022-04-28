@@ -38,9 +38,10 @@ import {
 import {
   CredentialRequest,
   HeadersInterceptor,
+  TokenInterceptor,
+  TokenRequest,
 } from '@castcle-api/utils/interceptors';
 import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiResponse } from '@nestjs/swagger';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
@@ -94,9 +95,12 @@ export class AuthenticationControllerV2 {
     });
   }
 
-  @ApiOkResponse({
-    type: CheckingResponseV2,
-  })
+  @UseInterceptors(TokenInterceptor)
+  @Post('refresh-token')
+  async refreshToken(@Req() req: TokenRequest) {
+    return this.authenticationService.getRefreshToken(req.$token);
+  }
+
   @UseInterceptors(HeadersInterceptor)
   @Post('exists/castcle-id')
   @HttpCode(200)
@@ -111,17 +115,6 @@ export class AuthenticationControllerV2 {
     });
   }
 
-  @ApiResponse({
-    status: 400,
-    description: 'will show if some of header is missing',
-  })
-  @ApiOkResponse({
-    status: 201,
-    type: CheckingResponseV2,
-  })
-  @ApiBody({
-    type: CheckEmailExistDto,
-  })
   @UseInterceptors(HeadersInterceptor)
   @Post('exists/email')
   @HttpCode(200)
