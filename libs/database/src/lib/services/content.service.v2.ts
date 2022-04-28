@@ -61,7 +61,10 @@ import {
 } from '../dtos';
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
-import { ContentFarmingReponse } from '../models/content-farming.model';
+import {
+  ContentFarmingCDF,
+  ContentFarmingReponse,
+} from '../models/content-farming.model';
 import { Repository } from '../repositories';
 import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
@@ -71,6 +74,10 @@ import { HashtagService } from './hashtag.service';
 import { DataService } from './data.service';
 import { Cache } from 'cache-manager';
 import { UserServiceV2 } from './user.service.v2';
+
+import { UserService } from './user.service';
+import cdf from 'castcle-cdf';
+
 @Injectable()
 export class ContentServiceV2 {
   private logger = new CastLogger(ContentServiceV2.name);
@@ -877,6 +884,82 @@ export class ContentServiceV2 {
       expiresFarmings.map((cf) =>
         this.expireFarm(String(cf.content), String(cf.user)),
       ),
+    );
+  };
+
+  getUndistributedContentFarmingCDF = async () => {
+    //const prospectContentFarmings = await this.contentFarmingModel.find({isDistributed: {$ne:true}},{ }, {sort: 'startAt:1'} );
+    const contents = await this.contentModel.find({
+      farming: { $exists: true },
+      'farming.isDistributed': { $ne: true },
+    });
+    const result: ContentFarmingCDF[] = [];
+    contents.forEach((item) => {
+      result.push({
+        contentId: item.id,
+        contentFarmings: item.farming,
+      });
+    });
+    return result;
+  };
+
+  findCumulativeStats = (contentFarmingCDF: ContentFarmingCDF) => {
+    const totalFarmedToken = contentFarmingCDF.contentFarmings.reduce(
+      (prev, now) => prev + now.farmAmount,
+      0
+    );
+    const FIX_CONST = 0.9340119642;
+    let cumulativeTotal = 0;
+    contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
+      (item) => {
+        cumulativeTotal += item.farmAmount;
+        item.cdfStat.cumulativeOrder = cumulativeTotal / totalFarmedToken;
+        item.cdfStat.cumulativeDistributed = cdf(
+          item.cdfStat.cumulativeOrder,
+          Math.E
+        );
+        item.cdfStat.adjustedCumulative =
+          item.cdfStat.cumulativeDistributed / FIX_CONST;
+        return item;
+      }
+    );
+    return contentFarmingCDF;
+  };
+
+  findWeight = (contentFarmingCDF: ContentFarmingCDF) => {
+    contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
+      (item, index) => {
+        if (index == 0) {
+          item.weight = item.cdfStat.adjustedCumulative;
+        } else {
+          item.weight =
+            item.cdfStat.adjustedCumulative -
+            contentFarmingCDF.contentFarmings[index - 1].cdfStat
+              .adjustedCumulative;
+        }
+        return item;
+      }
+    );
+    return contentFarmingCDF;
+  };
+
+  updateContentFarmingCDFStat = (contentFarmingCDF: ContentFarmingCDF) => {
+    return Promise.all(
+      contentFarmingCDF.contentFarmings.map((item) => {
+        item.markModified('cdfStat');
+        return item.save();
+      })
+    );
+  };
+
+  updateAllUndistributedContentFarming = async () => {
+    const contentFarmingCDFs = await this.getUndistributedContentFarmingCDF();
+    return Promise.all(
+      contentFarmingCDFs.map((item) => {
+        item = this.findCumulativeStats(item);
+        item = this.findWeight(item);
+        return this.updateContentFarmingCDFStat(item);
+      })
     );
   };
 
