@@ -53,6 +53,7 @@
     "bull": "^3.29.2",
     "cache-manager": "^3.4.4",
     "cache-manager-redis-store": "^2.0.0",
+    "castcle-cdf": "^0.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.1",
     "dotenv": "^16.0.0",

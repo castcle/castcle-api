@@ -23,6 +23,11 @@
 
 import { ContentFarming } from '../schemas';
 
+export type ContentFarmingCDF = {
+  contentId: string;
+  contentFarmings: ContentFarming[];
+};
+
 export class ContentFarmingReponse {
   'number': number;
   'balance': {
