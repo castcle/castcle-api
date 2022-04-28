@@ -90,14 +90,14 @@ export class UserServiceV2 {
       : [];
 
     return Promise.all(
-      users.map(async (user) => {
+      users.map(async (item) => {
         const syncSocials = userFields?.includes(UserField.SyncSocial)
-          ? await this._socialSyncModel.find({ 'author.id': user.id }).exec()
+          ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
           : [];
 
         let syncSocial: SyncSocialModelV2 = {};
         if (
-          String(user.ownerAccount) === String(viewer.ownerAccount) &&
+          String(item.ownerAccount) === String(viewer.ownerAccount) &&
           syncSocials.length > 0
         ) {
           syncSocials.forEach((item) => {
@@ -116,31 +116,31 @@ export class UserServiceV2 {
           syncSocial = undefined;
         }
         const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(user.ownerAccount) === String(viewer.ownerAccount)
+          ? String(item.ownerAccount) === String(viewer.ownerAccount)
             ? await this._accountModel
-                .findOne({ _id: user.ownerAccount })
+                .findOne({ _id: item.ownerAccount })
                 .exec()
             : undefined
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(user.id)
+          ? await this.contentService.getContentsFromUser(item.id)
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
-          ? await this.userService.getBalance(user)
+          ? await this.userService.getBalance(item)
           : undefined;
 
         const userResponse =
-          user.type === UserType.PAGE
-            ? user.toPageResponseV2(
+          item.type === UserType.PAGE
+            ? item.toPageResponseV2(
                 undefined,
                 undefined,
                 undefined,
                 syncSocial,
                 content?.total
               )
-            : await user.toUserResponseV2({
+            : await item.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
                 syncSocial,
@@ -150,7 +150,7 @@ export class UserServiceV2 {
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(user) === String(user.id) &&
+                String(user) === String(item.id) &&
                 String(followedUser) === String(viewer?.id)
             )
           : undefined;
@@ -158,7 +158,7 @@ export class UserServiceV2 {
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(followedUser) === String(user.id) &&
+                String(followedUser) === String(item.id) &&
                 String(user) === String(viewer?.id)
             )
           : undefined;
