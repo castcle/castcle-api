@@ -78,7 +78,7 @@ export const testCommentsFlow = () => {
       });
   });
 
-  it('STEP 3: UpdateComment should update content successful', async () => {
+  it('STEP 3: UpdateComment should update comment successful', async () => {
     const requst = { message: 'hello update!' };
 
     await UsersRequest.updateComment(userA.castcleId, commentId)

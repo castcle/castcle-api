@@ -5,11 +5,17 @@ import {
   testAuthenticationsFlow,
   testAuthenticationsSocialFlow,
 } from './modules/authentications';
-import { testCommentsFlow } from './modules/feeds/comments-flow.spec';
-import { testContentsFlow } from './modules/feeds/contents-flow.spec';
-import { testSyncSocialFlow, testUsersUpdateMobile } from './modules/users';
-import { testFollowsFlow } from './modules/users/follows-flow.spec';
-import { testUsersReporting } from './modules/users/reporting.spec';
+import {
+  testCommentsFlow,
+  testContentsFlow,
+  testReplyCommentsFlow,
+} from './modules/feeds';
+import {
+  testFollowsFlow,
+  testSyncSocialFlow,
+  testUsersReporting,
+  testUsersUpdateMobile,
+} from './modules/users';
 import {
   closeAuthenticationsModule,
   closeFeedsModule,
@@ -80,6 +86,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Comment Flow', () => {
       testCommentsFlow();
+    });
+
+    describe('- Reply Comment Flow', () => {
+      testReplyCommentsFlow();
     });
   });
 });

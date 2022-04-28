@@ -20,4 +20,8 @@ export class CommentRequest {
 
   static getCommentFromContent = (contentId: string) =>
     CommentRequest.get(`/v2/contents/${contentId}/comments`);
+  static getReplyComment = (contentId: string, sourceCommentId: string) =>
+    CommentRequest.get(
+      `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`
+    );
 }
