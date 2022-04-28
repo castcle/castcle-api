@@ -22,6 +22,11 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -33,14 +38,9 @@ import {
   UserAccessTokenPayload,
 } from '../dtos';
 import { AccountActivationType, UserType } from '../models';
+import { Repository } from '../repositories';
 import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
-import { Repository } from '../repositories';
-import {
-  FacebookClient,
-  Mailer,
-  TwitterClient,
-} from '@castcle-api/utils/clients';
 
 @Injectable()
 export class AuthenticationServiceV2 {
@@ -198,6 +198,15 @@ export class AuthenticationServiceV2 {
     );
     await this.analyticService.trackRegistration(ip, userAgent);
     return { registered: false, ...registration };
+  }
+  async getRefreshToken(refreshToken: string) {
+    const credential = await this.repository.findCredential({ refreshToken });
+    if (!credential?.isRefreshTokenValid())
+      throw CastcleException.INVALID_REFRESH_TOKEN;
+    const account = await this.repository.findAccount({
+      _id: credential.account._id,
+    });
+    return this.login(credential, account);
   }
 
   async registerWithEmail(

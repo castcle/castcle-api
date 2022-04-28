@@ -81,6 +81,11 @@ type RelationshipQuery = {
   userId: User[];
 };
 
+type CredentialQuery = {
+  refreshToken?: string;
+  accessToken?: string;
+};
+
 @Injectable()
 export class Repository {
   constructor(
@@ -242,5 +247,9 @@ export class Repository {
   }
   findContentById(contentId: string) {
     return this.contentModel.findById(contentId).exec();
+  }
+
+  findCredential(filter: CredentialQuery) {
+    return this.credentialModel.findOne(filter);
   }
 }
