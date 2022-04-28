@@ -334,15 +334,16 @@ export class CommentServiceV2 {
       ...replies.map((reply) => reply.author._id),
     ];
 
-    const relationships = hasRelationshipExpansion
-      ? await this.relationshipModel.find({
-          $or: [
-            { user: viewer._id, followedUser: { $in: authorIds } },
-            { user: { $in: authorIds }, followedUser: viewer._id },
-          ],
-          visibility: EntityVisibility.Publish,
-        })
-      : [];
+    const relationships =
+      hasRelationshipExpansion && viewer
+        ? await this.relationshipModel.find({
+            $or: [
+              { user: viewer._id, followedUser: { $in: authorIds } },
+              { user: { $in: authorIds }, followedUser: viewer._id },
+            ],
+            visibility: EntityVisibility.Publish,
+          })
+        : [];
 
     const engagementsReply = await this.engagementModel.find({
       targetRef: {
@@ -482,7 +483,7 @@ export class CommentServiceV2 {
       viewer,
       comments,
       engagements,
-      { hasRelationshipExpansion: false }
+      paginationQuery
     );
 
     return ResponseDto.ok<CommentPayload[], CommentIncludes>({
@@ -498,26 +499,23 @@ export class CommentServiceV2 {
    * @param {string} commentId
    * @returns {payload:CommentPayload[], includes:CommentIncludes}
    */
-  getCommentsById = async (viewer: User, commentId: string) => {
+  getCommentById = async (viewer: User, commentId: string) => {
     const query: FilterQuery<Comment> = {
       _id: mongoose.Types.ObjectId(commentId),
       visibility: EntityVisibility.Publish,
     };
     this.logger.log(`Query: ${JSON.stringify(query)}`);
-    const comments = await this.commentModel.find(query).exec();
+    const comment = await this.commentModel.findOne(query).exec();
 
     const engagements = await this.engagementModel.find({
       targetRef: {
-        $in: comments.map((comment) => ({ $ref: 'comment', $id: comment._id })),
+        $in: [{ $ref: 'comment', $id: comment._id }],
       },
     });
 
-    return this.convertCommentsToCommentResponse(
-      viewer,
-      comments,
-      engagements,
-      { hasRelationshipExpansion: false }
-    );
+    return this.convertCommentToCommentResponse(viewer, comment, engagements, {
+      hasRelationshipExpansion: false,
+    });
   };
 
   /**

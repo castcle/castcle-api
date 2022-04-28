@@ -102,17 +102,19 @@ export class CommentControllerV2 {
     this.validateObjectId(contentId);
     this.validateObjectId(commentId);
     const content = await this.contentService.getContentById(contentId);
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
-    const commentResult = await this.commentService.getCommentsById(
+    const commentResult = await this.commentService.getCommentById(
       authorizer.user,
       commentId
     );
+    if (!commentResult || !commentResult.payload || !content)
+      throw CastcleException.CONTENT_NOT_FOUND;
+
     const replyResult = await this.commentService.getReplyCommentsByCommentId(
       authorizer.user,
       commentId,
       query
     );
-
+    delete commentResult.payload.reply;
     return {
       payload: commentResult.payload,
       reply: replyResult.payload,
