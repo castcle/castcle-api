@@ -23,14 +23,11 @@
 
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
+import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
-import { Model, FilterQuery, Types } from 'mongoose';
 import { User, Notification, Account } from '../schemas';
-import { createCastcleFilter } from '../utils/common';
 import { QueueName, NotificationMessage, UserType } from '../models';
 import {
   CreateNotification,
@@ -39,75 +36,238 @@ import {
   AndroidMessagePriority,
   NotificationQuery,
 } from '../dtos';
-import { NotificationService } from './notification.service';
 import { pipelineNotificationBadge } from '../aggregations';
+import { Repository } from '../repositories';
+
+import {
+  NotificationLandingPage,
+  NotificationRef,
+  SoundDeviceDefault,
+} from './../dtos/notification.dto';
 
 @Injectable()
 export class NotificationServiceV2 {
   #logger = new CastLogger(NotificationServiceV2.name);
 
   constructor(
-    @InjectModel('User')
-    private _userModel: Model<User>,
-    @InjectModel('Notification')
-    private _notificationModel: Model<Notification>,
-    @InjectModel('Account')
-    private _accountModel: Model<Account>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>,
-    private notificationService: NotificationService
+    private repository: Repository
   ) {}
 
-  getFromId = async (id: string) => {
-    return this._notificationModel.findById(Types.ObjectId(id)).exec();
+  /**
+   * Checking if the notification type is enabled in the environment.
+   */
+  private checkNotify = (notificationData: CreateNotification) => {
+    switch (notificationData.type) {
+      case NotificationType.Like:
+        return Environment.NOTIFY_LIKE == '1';
+      case NotificationType.Recast:
+        return Environment.NOTIFY_RECAST == '1';
+      case NotificationType.Quote:
+        return Environment.NOTIFY_QUOTE == '1';
+      case NotificationType.Comment:
+        return Environment.NOTIFY_COMMENT == '1';
+      case NotificationType.Farm:
+        return Environment.NOTIFY_FARM == '1';
+      case NotificationType.Reply:
+        return Environment.NOTIFY_REPLY == '1';
+      case NotificationType.Tag:
+        return Environment.NOTIFY_TAG == '1';
+      case NotificationType.System:
+        return Environment.NOTIFY_SYSTEM == '1';
+      default:
+        return Environment.NOTIFY_FOLLOW == '1';
+    }
   };
 
-  getAllNotify = async (account: Account, query: NotificationQuery) => {
-    const filters: FilterQuery<Notification> = createCastcleFilter(
-      { account: account._id },
-      query
+  /**
+   * Generate message by type notification and language follow account.
+   */
+  private generateMessageByType = (
+    notify: Notification,
+    displayNames: string[],
+    user: User,
+    language: string
+  ) => {
+    switch (notify.type) {
+      case NotificationType.Like:
+        if (notify.commentRef) {
+          return CastcleLocalization.getTemplateLikeComment(
+            language,
+            displayNames,
+            user?.type === UserType.PAGE ? user.displayName : ''
+          );
+        } else {
+          return CastcleLocalization.getTemplateLike(
+            language,
+            displayNames,
+            user?.type === UserType.PAGE ? user.displayName : ''
+          );
+        }
+
+      case NotificationType.Comment:
+        return CastcleLocalization.getTemplateComment(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Farm:
+        return CastcleLocalization.getTemplateFarm(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Quote:
+        return CastcleLocalization.getTemplateQuote(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Recast:
+        return CastcleLocalization.getTemplateRecast(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Reply:
+        return CastcleLocalization.getTemplateReply(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Tag:
+        return CastcleLocalization.getTemplateTag(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.System:
+        return CastcleLocalization.getTemplateSystem(language, displayNames);
+
+      case NotificationType.AdsApprove:
+        return CastcleLocalization.getTemplateAdsApprove(language);
+
+      case NotificationType.AdsDecline:
+        return CastcleLocalization.getTemplateAdsDecline(language);
+
+      default:
+        return CastcleLocalization.getTemplateFollow(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+    }
+  };
+
+  /**
+   * Checking the notification type and targetRef to redirect page on mobile.
+   */
+  private checkNotificationTypePage = (
+    type: NotificationType,
+    targetRef?: string
+  ) => {
+    if (
+      (type === NotificationType.Like &&
+        targetRef === NotificationRef.Content) ||
+      type === NotificationType.Recast ||
+      type === NotificationType.Quote
+    ) {
+      return NotificationLandingPage.Cast;
+    } else if (
+      (type === NotificationType.Like &&
+        targetRef === NotificationRef.Content) ||
+      type === NotificationType.Comment ||
+      type === NotificationType.Reply
+    ) {
+      return NotificationLandingPage.Comment;
+    } else if (type === NotificationType.Follow) {
+      return NotificationLandingPage.Follower;
+    } else {
+      return;
+    }
+  };
+
+  /**
+   *  Checking if the notification is within the interval.
+   */
+  private checkIntervalNotify = (
+    type: NotificationType,
+    notify: Notification
+  ) => {
+    switch (type) {
+      case NotificationType.Follow:
+        return CastcleDate.checkIntervalNotify(
+          notify.createdAt,
+          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+        );
+
+      default:
+        return true;
+    }
+  };
+
+  getFromId = async (_id: string) => {
+    return this.repository.findNotification({ _id });
+  };
+
+  getAllNotify = async (
+    account: Account,
+    { maxResults, ...query }: NotificationQuery
+  ) => {
+    return this.repository.findNotifications(
+      {
+        ...query,
+        ...{ account: account._id },
+      },
+      {
+        sort: { createdAt: -1, updatedAt: -1 },
+        limit: maxResults,
+      }
     );
-    if (query?.source) filters.source = query?.source;
-    return this._notificationModel
-      .find(filters)
-      .limit(query.maxResults)
-      .sort({ createdAt: -1, updatedAt: -1 })
-      .exec();
   };
 
-  readNotify = async (notification: Notification) => {
-    notification.read = true;
-    return notification.save();
+  readNotify = async (_id: string) => {
+    return this.repository.updateNotification(
+      { _id },
+      { $set: { read: true } }
+    );
   };
 
   readAllSourceNotify = async (
     account: Account,
     source: NotificationSource
   ) => {
-    return this._notificationModel.updateMany(
+    return this.repository.updateNotifications(
       { account: account._id, source },
-      { read: true }
+      { $set: { read: true } }
     );
   };
 
-  deleteNotify = async (notification: Notification) => {
-    return notification.remove();
+  deleteNotify = async (_id: string) => {
+    return this.repository.deleteNotification({ _id });
   };
 
   deleteAllSourceNotify = async (
     account: Account,
     source: NotificationSource
   ) => {
-    return this._notificationModel.deleteMany({
+    return this.repository.deleteNotifications({
       account: account._id,
       source: source,
     });
   };
 
   getBadges = async (account: Account) => {
-    const pipeline = pipelineNotificationBadge(account._id);
-    const [totalNotification] =
-      await this._notificationModel.aggregate<Notification>(pipeline);
+    const [totalNotification] = await this.repository.aggregationNotification(
+      pipelineNotificationBadge(account._id)
+    );
     if (!totalNotification)
       return {
         profile: 0,
@@ -123,17 +283,13 @@ export class NotificationServiceV2 {
     userOwner: User,
     language: string
   ) => {
-    this.#logger.log('Check user action.');
+    this.#logger.log('Check user action notify.');
     if (String(sourceUserId) === String(userOwner._id)) return;
 
     this.#logger.log('Check configuration notify to user.');
-    if (!this.notificationService.checkNotify(notificationData)) return;
+    if (!this.checkNotify(notificationData)) return;
 
-    this.#logger.log('Notification to user.');
-
-    this.#logger.log('Prepare data into notification.');
-
-    let filters = {
+    const filters = {
       ...notificationData,
       ...{
         contentRef: notificationData.contentRef || { $exists: false },
@@ -143,34 +299,26 @@ export class NotificationServiceV2 {
       },
     };
 
+    this.#logger.log(`Check interval time follow user.`);
+
+    if (notificationData.type === NotificationType.Follow) {
+      const haveNotify = await this.repository.findNotification(filters, {
+        sort: { createdAt: -1 },
+      });
+
+      if (!this.checkIntervalNotify(notificationData.type, haveNotify)) return;
+    }
     if (
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     ) {
-      const notifyModel = await this._notificationModel
-        .findOne({
-          ...filters,
-          ...{ sourceUserId: { $in: [sourceUserId] } },
-        })
-        .sort({ _id: -1, createdAt: -1 })
-        .exec();
-
-      this.#logger.log(`Check follow interval time.`);
-      if (
-        !CastcleDate.checkIntervalFollowed(
-          notifyModel?.createdAt,
-          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
-        )
-      )
-        return;
-
-      await new this._notificationModel({
+      await this.repository.createNotification({
         ...notificationData,
         read,
         sourceUserId,
-      }).save();
+      });
     } else {
-      const updateNotify = await this._notificationModel.updateOne(
+      const updateNotify = await this.repository.updateNotification(
         filters,
         {
           $set: { read },
@@ -186,19 +334,10 @@ export class NotificationServiceV2 {
     }
     this.#logger.log('Insert data into notification is done.');
 
-    if (
-      notificationData.type === NotificationType.Tag ||
-      notificationData.type === NotificationType.Follow
-    )
-      filters = {
-        ...filters,
-        ...{ sourceUserId: { $in: [sourceUserId] } },
-      };
+    const notify = await this.repository.findNotification(filters, {
+      sort: { createdAt: -1 },
+    });
 
-    const notify = await this._notificationModel
-      .findOne(filters)
-      .sort({ createdAt: -1 })
-      .exec();
     this.#logger.log(
       'Insert data into notification is done.',
       JSON.stringify(notify)
@@ -206,13 +345,11 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Get devices by account.');
 
-    const account = await this._accountModel
-      .findOne({
-        _id: Types.ObjectId(notificationData.account._id),
-      })
-      .exec();
+    const account = await this.repository.findAccount({
+      _id: notificationData.account._id,
+    });
 
-    if (!account.devices) return;
+    if (!account?.devices) return;
 
     this.#logger.log('Generate notification message.');
 
@@ -221,14 +358,12 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Send notification message.', JSON.stringify(message));
 
-    const badgeCounts = await this._notificationModel
-      .countDocuments({
-        account: userOwner.ownerAccount,
-        read: false,
-      })
-      .exec();
+    const badgeCounts = await this.repository.findNotificationCount({
+      account: userOwner.ownerAccount,
+      read: false,
+    });
 
-    this.notificationQueue.add(
+    await this.notificationQueue.add(
       this.generateNotification(message, notify, account, badgeCounts),
       {
         removeOnComplete: true,
@@ -249,11 +384,9 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Get user data.');
 
-    const users = await this._userModel
-      .find({
-        _id: { $in: userIds },
-      })
-      .exec();
+    const users = await this.repository.findUsers({
+      _id: userIds,
+    });
 
     if (!notify) return;
 
@@ -267,7 +400,7 @@ export class NotificationServiceV2 {
     });
     const displayNames = userSort.map((user) => user.displayName);
 
-    const message = this.notificationService.checkTypeGenerateMessage(
+    const message = this.generateMessageByType(
       notify,
       displayNames,
       userOwner,
@@ -278,19 +411,17 @@ export class NotificationServiceV2 {
     return message;
   };
 
-  generateMessagesToNotifications = async (
-    notifies: Notification[],
+  generateNotificationsResponse = async (
+    notifications: Notification[],
     language: string
   ) => {
     this.#logger.log('Start generate notification message list.');
 
-    return await Promise.all(
-      notifies.map(async (notify: Notification) => {
-        const usersOwners = await this._userModel
-          .find({
-            ownerAccount: notify.account,
-          })
-          .exec();
+    return Promise.all(
+      notifications.map(async (notify: Notification) => {
+        const usersOwners = await this.repository.findUsers({
+          accountId: notify.account._id,
+        });
 
         const userSource = usersOwners.filter(
           (item) =>
@@ -299,21 +430,20 @@ export class NotificationServiceV2 {
               notify.source === NotificationSource.Profile)
         );
 
-        const userIds = notify.sourceUserId?.reverse();
-        const users = await this._userModel
-          .find({
-            _id: { $in: userIds },
-          })
-          .exec();
+        const reverseUserIds = notify.sourceUserId?.reverse();
+        const users = await this.repository.findUsers({
+          _id: reverseUserIds,
+        });
         const userSort = [];
+
         users.forEach((user) => {
-          const index = userIds.indexOf(user._id);
+          const index = reverseUserIds.indexOf(user._id);
           if (index > -1) userSort[index] = user;
         });
 
         const displayNames = userSort.map((user) => user.displayName);
 
-        const message = this.notificationService.checkTypeGenerateMessage(
+        const message = this.generateMessageByType(
           notify,
           displayNames,
           userSource[0],
@@ -323,10 +453,14 @@ export class NotificationServiceV2 {
         this.#logger.log('Prepare message show display name.', message);
 
         return notify.toNotificationPayload({
-          message: message,
+          message,
           user: userSort[0],
-          isDate: true,
-          read: notify.read,
+          landingPage: this.checkNotificationTypePage(
+            notify.type,
+            notify.commentRef
+              ? NotificationRef.Comment
+              : NotificationRef.Content
+          ),
         });
       })
     );
@@ -353,11 +487,17 @@ export class NotificationServiceV2 {
       aps: {
         alert: message,
         badge: badgeCounts,
-        sound: 'default',
+        sound: SoundDeviceDefault.Default,
         'mutable-content': 1,
       },
-      payload: notify.toNotificationPayload({ message }),
-      firebaseTokens: account.devices.map((item) => item.firebaseToken),
+      payload: notify.toNotificationPayload({
+        message,
+        landingPage: this.checkNotificationTypePage(
+          notify.type,
+          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
+        ),
+      }),
+      firebaseTokens: account?.devices.map((item) => item.firebaseToken),
     } as NotificationMessage;
   };
 }

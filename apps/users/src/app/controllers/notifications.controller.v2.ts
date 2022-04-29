@@ -44,8 +44,8 @@ import { CacheKeyName } from '@castcle-api/environments';
 export class NotificationsControllerV2 {
   constructor(private notificationServiceV2: NotificationServiceV2) {}
 
-  async _getNotificationIfExist(id: string) {
-    const notification = await this.notificationServiceV2.getFromId(id);
+  async _getNotificationIfExist(_id: string) {
+    const notification = await this.notificationServiceV2.getFromId(_id);
     if (!notification) throw CastcleException.NOTIFICATION_NOT_FOUND;
     return notification;
   }
@@ -54,7 +54,7 @@ export class NotificationsControllerV2 {
   @Get()
   async getAllNotify(
     @Auth() authorizer: Authorizer,
-    @Query() query?: NotificationQuery
+    @Query() query: NotificationQuery
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
@@ -63,7 +63,7 @@ export class NotificationsControllerV2 {
       query
     );
     return {
-      payload: await this.notificationServiceV2.generateMessagesToNotifications(
+      payload: await this.notificationServiceV2.generateNotificationsResponse(
         notifications,
         authorizer.account.preferences.languages[0]
       ),
@@ -77,8 +77,7 @@ export class NotificationsControllerV2 {
   async readNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
-    const notification = await this._getNotificationIfExist(id);
-    await this.notificationServiceV2.readNotify(notification);
+    await this.notificationServiceV2.readNotify(id);
   }
   @CastcleBasicAuth()
   @Post('reads')
@@ -101,8 +100,7 @@ export class NotificationsControllerV2 {
   async deleteNotify(@Auth() authorizer: Authorizer, @Param('id') id: string) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
-    const notification = await this._getNotificationIfExist(id);
-    await this.notificationServiceV2.deleteNotify(notification);
+    await this.notificationServiceV2.deleteNotify(id);
   }
 
   @CastcleBasicAuth()
