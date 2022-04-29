@@ -66,7 +66,7 @@ export class CastcleDate {
     const blockUpdate = displayIdUpdateAt.getTime();
     return now - blockUpdate >= 0 ? true : false;
   };
-  static checkIntervalFollowed = (dateBefore: Date, unitTime: number) => {
+  static checkIntervalNotify = (dateBefore: Date, unitTime: number) => {
     if (!dateBefore || unitTime === 0) return true;
     return (
       new Date().getTime() >

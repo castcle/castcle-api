@@ -30,7 +30,7 @@ import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isMongoId } from 'class-validator';
+import { isArray, isMongoId } from 'class-validator';
 import {
   AnyKeys,
   FilterQuery,
@@ -53,8 +53,13 @@ import {
   Engagement,
   Relationship,
   User,
+  Notification,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
+import {
+  NotificationSource,
+  NotificationType,
+} from './../dtos/notification.dto';
 
 type AccountQuery = {
   _id?: string;
@@ -65,7 +70,7 @@ type AccountQuery = {
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string;
+  _id?: string | Types.ObjectId[];
   accountId?: string;
   type?: UserType;
 };
@@ -86,6 +91,21 @@ type CredentialQuery = {
   accessToken?: string;
 };
 
+type NotificationQueryOption = {
+  _id?: string;
+  account?: Account;
+  source?: NotificationSource;
+  sinceId?: string;
+  untilId?: string;
+  read?: boolean;
+  type?: NotificationType;
+  contentRef?: Types.ObjectId | any;
+  commentRef?: Types.ObjectId | any;
+  replyRef?: Types.ObjectId | any;
+  adsRef?: Types.ObjectId | any;
+  profileRef?: Types.ObjectId | any;
+  sourceUserId?: Types.ObjectId;
+};
 @Injectable()
 export class Repository {
   constructor(
@@ -95,6 +115,7 @@ export class Repository {
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Notification') private notificationModel: Model<Notification>,
     private httpService: HttpService
   ) {}
 
@@ -142,6 +163,25 @@ export class Repository {
     return query;
   };
 
+  private getNotificationQuery = (filter: NotificationQueryOption) => {
+    const query: FilterQuery<Notification> = {};
+    if (filter?._id) query._id = filter._id;
+    if (filter?.account) query.account = filter.account;
+    if (filter?.source) query.source = filter.source;
+    if (filter?.read) query.read = filter.read;
+    if (filter?.type) query.type = filter.type;
+    if (filter?.contentRef) query.contentRef = filter.contentRef;
+    if (filter?.commentRef) query.commentRef = filter.commentRef;
+    if (filter?.replyRef) query.replyRef = filter.replyRef;
+    if (filter?.profileRef) query.profileRef = filter.profileRef;
+    if (filter?.adsRef) query.adsRef = filter.adsRef;
+    if (filter?.sourceUserId) query.sourceUserId = filter.sourceUserId;
+
+    return createCastcleFilter(query, {
+      sinceId: filter?.sinceId,
+      untilId: filter?.untilId,
+    });
+  };
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -216,7 +256,9 @@ export class Repository {
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
     if (isMongoId(String(filter._id))) query._id = filter._id;
-    else if (filter._id) query.displayId = CastcleRegExp.fromString(filter._id);
+    if (isArray(filter._id)) query._id = { $in: filter._id };
+    else if (filter._id)
+      query.displayId = CastcleRegExp.fromString(filter._id as string);
 
     return query;
   }
@@ -240,6 +282,7 @@ export class Repository {
       .countDocuments(this.getEngagementsQuery(filter))
       .exec();
   }
+
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
     return this.relationshipModel
       .find(this.getRelationshipsQuery(filter), {}, queryOptions)
@@ -251,5 +294,69 @@ export class Repository {
 
   findCredential(filter: CredentialQuery) {
     return this.credentialModel.findOne(filter);
+  }
+
+  createNotification(notify: AnyKeys<Notification>) {
+    return new this.notificationModel(notify).save();
+  }
+
+  findNotification(
+    filter: NotificationQueryOption,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel
+      .findOne(this.getNotificationQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  findNotifications(
+    filter: NotificationQueryOption,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel
+      .find(this.getNotificationQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  updateNotification(
+    filter: NotificationQueryOption,
+    updateQuery: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel.updateOne(
+      this.getNotificationQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  updateNotifications(
+    filter: NotificationQueryOption,
+    updateQuery: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel.updateMany(
+      this.getNotificationQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  deleteNotification(filter: NotificationQueryOption) {
+    return this.notificationModel.deleteOne(this.getNotificationQuery(filter));
+  }
+
+  deleteNotifications(filter: NotificationQueryOption) {
+    return this.notificationModel.deleteMany(this.getNotificationQuery(filter));
+  }
+
+  aggregationNotification(pipeline: any[]) {
+    return this.notificationModel.aggregate(pipeline);
+  }
+
+  findNotificationCount(filter: NotificationQueryOption) {
+    return this.notificationModel
+      .countDocuments(this.getNotificationQuery(filter))
+      .exec();
   }
 }

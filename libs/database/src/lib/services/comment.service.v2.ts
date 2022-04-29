@@ -34,6 +34,7 @@ import {
   CommentIncludes,
   CommentPayload,
   CommentResponse,
+  CreateNotification,
   EntityVisibility,
   ExpansionQuery,
   IncludeUser,
@@ -43,6 +44,7 @@ import {
   ResponseDto,
 } from '../dtos';
 import { UserType } from '../models';
+import { Repository } from '../repositories';
 import {
   Account,
   Comment,
@@ -51,6 +53,7 @@ import {
   Engagement,
   EngagementType,
   Hashtag,
+  Notification,
   Relationship,
   Revision,
   User,
@@ -58,6 +61,7 @@ import {
 import { createCastcleFilter, getRelationship } from '../utils/common';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
+import { AnyKeys } from 'mongoose';
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
@@ -77,7 +81,8 @@ export class CommentServiceV2 {
     @InjectModel('Engagement')
     public _engagementModel: Model<Engagement>,
     private userService: UserService,
-    private notificationServiceV2: NotificationServiceV2
+    private notificationServiceV2: NotificationServiceV2,
+    private repository: Repository
   ) {}
 
   /**
@@ -581,32 +586,32 @@ export class CommentServiceV2 {
 
     if (
       String(user._id) === String(comment.author._id) ||
-      String(user._id) === String(commentOriginal?.author?._id)
+      String(user._id) === String(content.author.id)
     )
       return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.type === CommentType.Reply
-        ? commentOriginal?.author._id
-        : comment.author._id
+      comment.author._id
     );
+    const notificationData: CreateNotification = {
+      source:
+        userOwner.type === UserType.PEOPLE
+          ? NotificationSource.Profile
+          : NotificationSource.Page,
+      sourceUserId: user._id,
+      type: NotificationType.Like,
+      contentRef: content._id,
+      commentRef:
+        comment.type === CommentType.Reply ? commentOriginal?._id : comment._id,
+      account: userOwner.ownerAccount,
+      read: false,
+    };
+
+    if (comment.type === CommentType.Reply)
+      notificationData.replyRef = comment._id;
+
     await this.notificationServiceV2.notifyToUser(
-      {
-        source:
-          userOwner.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: user._id,
-        type: NotificationType.Like,
-        contentRef: content._id,
-        commentRef:
-          comment.type === CommentType.Reply
-            ? commentOriginal?._id
-            : comment._id,
-        replyRef: comment.type === CommentType.Reply ? comment._id : undefined,
-        account: userOwner.ownerAccount,
-        read: false,
-      },
+      notificationData,
       userOwner,
       account.preferences.languages[0]
     );
@@ -626,7 +631,28 @@ export class CommentServiceV2 {
 
     if (!engagement) return;
 
-    if (String(engagement.user) !== String(user._id)) return;
+    const comment = await this.commentModel.findOne({
+      _id: engagement.targetRef?.oid || engagement.targetRef?.$id,
+    });
+
+    const filter: AnyKeys<Notification> = {
+      type: NotificationType.Like,
+    };
+
+    if (comment.type === CommentType.Comment) {
+      filter.commentRef = Types.ObjectId(commentId);
+      filter.replyRef = { $exists: false };
+    } else {
+      filter.replyRef = Types.ObjectId(commentId);
+    }
+
+    await this.repository.updateNotification(filter, {
+      $pull: { sourceUserId: { $eq: user._id } },
+    });
+    const notification = await this.repository.findNotification(filter);
+
+    if (notification && !notification?.sourceUserId?.length)
+      await notification.remove();
 
     return engagement.remove();
   };

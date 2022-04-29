@@ -223,10 +223,11 @@ describe('NotificationsController', () => {
             contentId: undefined,
             profileId: undefined,
             systemId: undefined,
+            landingPage: undefined,
             read: false,
+            type: 'comment',
             id: 'test',
             message: 'test commented on your cast',
-            notifyId: 'test',
             replyId: undefined,
             source: 'page',
           },
@@ -234,7 +235,6 @@ describe('NotificationsController', () => {
       };
       responseResult.payload.map((item) => {
         item.id = 'test';
-        item.notifyId = 'test';
         delete item.avatar;
         delete item.createdAt;
         delete item.updatedAt;

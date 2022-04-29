@@ -1286,11 +1286,16 @@ export class UsersController {
         req.$credential
       );
     }
-    if (id === content.author.id || id === content.author.castcleId) return;
+    if (
+      String(id) === String(content.author.id) ||
+      id === content.author.castcleId
+    )
+      return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
     );
+
     this.notifyService.notifyToUser(
       {
         source:
@@ -1299,7 +1304,7 @@ export class UsersController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Recast,
-        contentRef: content._id,
+        contentRef: result.recastContent._id,
         account: userOwner.ownerAccount,
         read: false,
       },
@@ -1352,7 +1357,12 @@ export class UsersController {
       );
     }
 
-    if (id === content.author.id || id === content.author.castcleId) return;
+    if (
+      String(id) === String(content.author.id) ||
+      id === content.author.castcleId
+    )
+      return;
+
     const userOwner = await this.userService.getByIdOrCastcleId(
       content.author.id
     );
@@ -1364,7 +1374,7 @@ export class UsersController {
             : NotificationSource.Page,
         sourceUserId: user._id,
         type: NotificationType.Quote,
-        contentRef: content._id,
+        contentRef: result.quoteContent._id,
         account: userOwner.ownerAccount,
         read: false,
       },
