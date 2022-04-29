@@ -1053,22 +1053,6 @@ describe('AppController', () => {
         'this is good content',
         credential
       );
-      const userOwner = await service.getByIdOrCastcleId(contentA.author.id);
-
-      const notify = await notifyService.notifyToUser(
-        {
-          type: NotificationType.Like,
-          read: false,
-          source: NotificationSource.Profile,
-          sourceUserId: user._id,
-          contentRef: contentA._id,
-          account: userOwner.ownerAccount,
-        },
-        userOwner,
-        'th'
-      );
-
-      expect(notify).toBeUndefined();
 
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
       expect(result.includes).toBeDefined();

@@ -116,8 +116,26 @@ export class ContentServiceV2 {
     });
 
     if (!engagement) return;
+    await this.repository.updateNotification(
+      {
+        type: NotificationType.Like,
+        contentRef: Types.ObjectId(contentId),
+        commentRef: { $exists: false },
+        replyRef: { $exists: false },
+      },
+      {
+        $pull: { sourceUserId: { $eq: user._id } },
+      }
+    );
+    const notification = await this.repository.findNotification({
+      type: NotificationType.Like,
+      contentRef: Types.ObjectId(contentId),
+      commentRef: { $exists: false },
+      replyRef: { $exists: false },
+    });
 
-    if (String(engagement.user) !== String(user._id)) return;
+    if (notification && !notification?.sourceUserId?.length)
+      await notification.remove();
 
     return engagement.remove();
   };
