@@ -28,7 +28,7 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { AnyKeys, FilterQuery, Model, Types } from 'mongoose';
 import { createCastcleMeta } from '../database.module';
 import {
   CommentIncludes,
@@ -61,7 +61,6 @@ import {
 import { createCastcleFilter, getRelationship } from '../utils/common';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
-import { AnyKeys } from 'mongoose';
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
@@ -464,7 +463,7 @@ export class CommentServiceV2 {
     const total = await this.commentModel.countDocuments(query).exec();
 
     this.logger.log('Filter Since & Until');
-    query = await createCastcleFilter(query, {
+    query = createCastcleFilter(query, {
       sinceId: paginationQuery?.sinceId,
       untilId: paginationQuery?.untilId,
     });
@@ -474,7 +473,7 @@ export class CommentServiceV2 {
       ? await this.commentModel
           .find(query)
           .limit(+paginationQuery.maxResults)
-          .sort(`createdAt: 1`)
+          .sort({ createdAt: -1 })
           .exec()
       : [];
 
