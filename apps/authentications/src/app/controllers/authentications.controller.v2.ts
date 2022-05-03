@@ -53,7 +53,7 @@ export class AuthenticationControllerV2 {
   constructor(private authenticationService: AuthenticationServiceV2) {}
 
   @CastcleBasicAuth()
-  @Post('register')
+  @Post('register-with-email')
   async requestEmailOtp(
     @Body() dto: RegisterWithEmailDto,
     @RequestMeta() { ip }: RequestMetadata,

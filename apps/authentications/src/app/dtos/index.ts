@@ -23,14 +23,15 @@
 import {
   AcceptPlatform,
   PageResponseDto,
-  RegisterWithEmailDto as RegisterWithEmailDtoV2,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
 import {
   AccountAuthenIdType,
   OtpObjective,
 } from '@castcle-api/database/schemas';
+import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -38,6 +39,8 @@ import {
   IsNotEmptyObject,
   IsOptional,
   IsString,
+  Matches,
+  ValidateNested,
 } from 'class-validator';
 export class GuestLoginDto {
   @IsString()
@@ -66,10 +69,36 @@ export class LoginDto {
   password: string;
 }
 
-export class RegisterByEmailDto extends RegisterWithEmailDtoV2 {
+class RegisterWithEmailPayload {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  displayName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  castcleId: string;
+}
+
+export class RegisterByEmailDto {
   @IsString()
   @IsNotEmpty()
   channel: string;
+
+  @IsOptional()
+  @IsString()
+  referral?: string;
+
+  @Type(() => RegisterWithEmailPayload)
+  @ValidateNested()
+  @IsNotEmptyObject()
+  payload: RegisterWithEmailPayload;
 }
 
 export class CheckIdExistDto {
