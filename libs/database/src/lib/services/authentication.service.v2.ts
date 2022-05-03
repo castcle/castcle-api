@@ -216,8 +216,8 @@ export class AuthenticationServiceV2 {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
         this.repository.findAccount({ _id: credential.account._id }),
-        this.repository.findAccount({ email: dto.payload.email }),
-        this.repository.findUser({ _id: dto.payload.castcleId }),
+        this.repository.findAccount({ email: dto.email }),
+        this.repository.findUser({ _id: dto.castcleId }),
       ]);
 
     if (!account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
@@ -230,15 +230,15 @@ export class AuthenticationServiceV2 {
     );
 
     account.isGuest = false;
-    account.email = dto.payload.email;
-    account.password = Password.hash(dto.payload.password);
+    account.email = dto.email;
+    account.password = Password.hash(dto.password);
     const activation = account.createActivation(AccountActivationType.EMAIL);
     await this.updateReferral(account, dto.referral, dto.ip);
     await account.save();
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId: dto.payload.castcleId,
-      displayName: dto.payload.displayName,
+      displayId: dto.castcleId,
+      displayName: dto.displayName,
       type: UserType.PEOPLE,
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
