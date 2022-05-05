@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
@@ -35,15 +35,15 @@ import {
   NotificationSource,
   AndroidMessagePriority,
   NotificationQuery,
+  NotificationRef,
+  NotificationLandingPage,
+  SoundDeviceDefault,
+  PushNotificationPayload,
+  NotificationPayloadDto,
 } from '../dtos';
 import { pipelineNotificationBadge } from '../aggregations';
 import { Repository } from '../repositories';
-
-import {
-  NotificationLandingPage,
-  NotificationRef,
-  SoundDeviceDefault,
-} from './../dtos/notification.dto';
+import { Image } from '@castcle-api/utils/aws';
 
 @Injectable()
 export class NotificationServiceV2 {
@@ -87,8 +87,8 @@ export class NotificationServiceV2 {
   private generateMessageByType = (
     notify: Notification,
     displayNames: string[],
-    user: User,
-    language: string
+    language: string,
+    user?: User
   ) => {
     switch (notify.type) {
       case NotificationType.Like:
@@ -213,6 +213,63 @@ export class NotificationServiceV2 {
     }
   };
 
+  private toNotificationPayload = (
+    notify: Notification,
+    message: string,
+    landingPage: string,
+    user?: User,
+    haveUsers?: number
+  ) => {
+    return {
+      message,
+      landingPage,
+      id: notify._id,
+      source: notify.source,
+      type: notify.type,
+      user: notify.user?._id,
+      actionId: haveUsers === 1 ? user?._id : undefined,
+      actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
+      commentId: String(notify.commentRef),
+      contentId: String(notify.contentRef),
+      replyId: String(notify.replyRef),
+      advertiseId: String(notify.adsRef),
+      profileId: String(notify.profileRef),
+      systemId: String(notify.systemRef),
+      createdAt: notify.createdAt.toISOString(),
+      updatedAt: notify.updatedAt.toISOString(),
+    } as PushNotificationPayload;
+  };
+
+  private toNotificationResponse = (
+    notify: Notification,
+    message: string,
+    landingPage: string,
+    user?: User,
+    haveUsers?: number
+  ) => {
+    return {
+      id: notify._id,
+      source: notify.source,
+      read: notify.read,
+      type: notify.type,
+      message: message,
+      landingPage: landingPage,
+      user: notify.user?._id,
+      actionId: haveUsers === 1 ? user?._id : undefined,
+      actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
+      avatar: user?.profile?.images?.avatar
+        ? new Image(user.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      commentId: notify.commentRef,
+      contentId: notify.contentRef,
+      replyId: notify.replyRef,
+      advertiseId: notify.adsRef,
+      profileId: notify.profileRef,
+      systemId: notify.systemRef,
+      createdAt: notify.createdAt,
+      updatedAt: notify.updatedAt,
+    } as NotificationPayloadDto;
+  };
   getFromId = async (_id: string) => {
     return this.repository.findNotification({ _id });
   };
@@ -314,6 +371,7 @@ export class NotificationServiceV2 {
     ) {
       await this.repository.createNotification({
         ...notificationData,
+        ...{ user: userOwner._id },
         read,
         sourceUserId,
       });
@@ -321,7 +379,7 @@ export class NotificationServiceV2 {
       const updateNotify = await this.repository.updateNotification(
         filters,
         {
-          $set: { read },
+          $set: { read, user: userOwner._id },
           $setOnInsert: notificationData,
           $addToSet: { sourceUserId },
         },
@@ -353,18 +411,32 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Generate notification message.');
 
-    const message = await this.generateMessage(userOwner, notify, language);
+    const { message, user, haveUser } = await this.generateMessage(
+      userOwner,
+      notify,
+      language
+    );
     this.#logger.log('Generate notification message is done.');
+
+    if (!message) return;
 
     this.#logger.log('Send notification message.', JSON.stringify(message));
 
     const badgeCounts = await this.repository.findNotificationCount({
+      user: userOwner._id,
       account: userOwner.ownerAccount,
       read: false,
     });
 
     await this.notificationQueue.add(
-      this.generateNotification(message, notify, account, badgeCounts),
+      this.generateNotification(
+        message,
+        notify,
+        account,
+        badgeCounts,
+        user,
+        haveUser
+      ),
       {
         removeOnComplete: true,
       }
@@ -378,37 +450,65 @@ export class NotificationServiceV2 {
     notify: Notification,
     language: string
   ) => {
-    this.#logger.log('Reverse latest user.');
-
-    const userIds = notify.sourceUserId?.reverse();
-
-    this.#logger.log('Get user data.');
-
-    const users = await this.repository.findUsers({
-      _id: userIds,
-    });
-
     if (!notify) return;
 
     const userSort = [];
 
-    this.#logger.log('Sort user by latest user action.');
+    if (
+      notify.type !== NotificationType.AdsApprove &&
+      notify.type !== NotificationType.AdsDecline
+    ) {
+      this.#logger.log('Reverse latest user.');
 
-    users.forEach((user) => {
-      const index = userIds.indexOf(user._id);
-      if (index > -1) userSort[index] = user;
-    });
+      const reverseUserIds = notify.sourceUserId?.reverse();
+
+      this.#logger.log('Get user data.');
+
+      const users = await this.repository.findUsers({
+        _id: reverseUserIds,
+      });
+
+      users.forEach((user) => {
+        const index = reverseUserIds.indexOf(user._id);
+        if (index > -1) {
+          userSort[index] = user;
+          reverseUserIds.splice(index, 1);
+        }
+      });
+
+      this.#logger.log('Check user not exists.');
+      if (reverseUserIds.length) {
+        await this.repository.updateNotification(
+          { _id: notify._id },
+          {
+            $pull: { sourceUserId: { $in: reverseUserIds } },
+          }
+        );
+        this.#logger.log('Check user empty at notification.');
+        const notifyUserEmpty = await this.repository.findNotification({
+          _id: notify._id,
+        });
+
+        if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
+          await notifyUserEmpty.remove();
+          return;
+        }
+      }
+      if (!userSort.length) return;
+    }
+    if (!userOwner) return;
+
     const displayNames = userSort.map((user) => user.displayName);
 
     const message = this.generateMessageByType(
       notify,
       displayNames,
-      userOwner,
-      language
+      language,
+      userOwner
     );
 
     this.#logger.log('Prepare message show display name.', message);
-    return message;
+    return { message, user: userSort[0], haveUser: userSort.length };
   };
 
   generateNotificationsResponse = async (
@@ -417,60 +517,92 @@ export class NotificationServiceV2 {
   ) => {
     this.#logger.log('Start generate notification message list.');
 
-    return Promise.all(
+    const payloadNotify = await Promise.all(
       notifications.map(async (notify: Notification) => {
-        const usersOwners = await this.repository.findUsers({
-          accountId: notify.account._id,
-        });
+        const userOwner = notify?.user
+          ? await this.repository.findUser({
+              _id: notify.user._id,
+            })
+          : null;
 
-        const userSource = usersOwners.filter(
-          (item) =>
-            item.type === UserType.PAGE ||
-            (item.type === 'people' &&
-              notify.source === NotificationSource.Profile)
-        );
-
-        const reverseUserIds = notify.sourceUserId?.reverse();
-        const users = await this.repository.findUsers({
-          _id: reverseUserIds,
-        });
         const userSort = [];
 
-        users.forEach((user) => {
-          const index = reverseUserIds.indexOf(user._id);
-          if (index > -1) userSort[index] = user;
-        });
+        if (
+          notify.type !== NotificationType.AdsApprove &&
+          notify.type !== NotificationType.AdsDecline
+        ) {
+          const reverseUserIds = notify.sourceUserId?.reverse();
+          const users = await this.repository.findUsers({
+            _id: reverseUserIds,
+          });
+
+          users.forEach((user) => {
+            const index = reverseUserIds.indexOf(user._id);
+            if (index > -1) {
+              userSort[index] = user;
+              reverseUserIds.splice(index, 1);
+            }
+          });
+
+          this.#logger.log('Check user not exists.');
+          if (reverseUserIds.length) {
+            await this.repository.updateNotification(
+              { _id: notify._id },
+              {
+                $pull: { sourceUserId: { $in: reverseUserIds } },
+              }
+            );
+
+            this.#logger.log('Check user empty at notification.');
+            const notifyUserEmpty = await this.repository.findNotification({
+              _id: notify._id,
+            });
+
+            if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
+              await notifyUserEmpty.remove();
+              return;
+            }
+          }
+          if (!userSort.length) return;
+        }
+        if (!userOwner) return;
 
         const displayNames = userSort.map((user) => user.displayName);
 
         const message = this.generateMessageByType(
           notify,
           displayNames,
-          userSource[0],
-          language
+          language,
+          userOwner
         );
 
         this.#logger.log('Prepare message show display name.', message);
 
-        return notify.toNotificationPayload({
+        return this.toNotificationResponse(
+          notify,
           message,
-          user: userSort[0],
-          landingPage: this.checkNotificationTypePage(
+          this.checkNotificationTypePage(
             notify.type,
             notify.commentRef
               ? NotificationRef.Comment
               : NotificationRef.Content
           ),
-        });
+          userSort[0],
+          userSort.length
+        );
       })
     );
+
+    return payloadNotify.filter((payload) => payload);
   };
 
   generateNotification = (
     message: string,
     notify: Notification,
     account: Account,
-    badgeCounts: number
+    badgeCounts: number,
+    user?: User,
+    haveUsers?: number
   ) => {
     return {
       notification: {
@@ -490,14 +622,17 @@ export class NotificationServiceV2 {
         sound: SoundDeviceDefault.Default,
         'mutable-content': 1,
       },
-      payload: notify.toNotificationPayload({
+      payload: this.toNotificationPayload(
+        notify,
         message,
-        landingPage: this.checkNotificationTypePage(
+        this.checkNotificationTypePage(
           notify.type,
           notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
         ),
-      }),
+        user,
+        haveUsers
+      ) as any,
       firebaseTokens: account?.devices.map((item) => item.firebaseToken),
-    } as NotificationMessage;
+    };
   };
 }

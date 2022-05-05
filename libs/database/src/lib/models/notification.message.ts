@@ -22,7 +22,7 @@
  */
 import {
   AndroidMessagePriority,
-  NotificationPayloadDto,
+  PushNotificationPayload,
 } from './../dtos/notification.dto';
 
 type Aps = {
@@ -50,6 +50,6 @@ export interface NotificationMessage {
   aps: Aps;
   notification: NotificationConfig;
   android: AndroidConfigs;
-  payload: NotificationPayloadDto;
+  payload: PushNotificationPayload;
   firebaseTokens: string[];
 }

@@ -180,8 +180,8 @@ describe('NotificationServiceV2', () => {
       const newMessage = (service as any).generateMessageByType(
         notify,
         [mocksUsers[1].user.displayName],
-        mocksUsers[0].user,
-        'en'
+        'en',
+        mocksUsers[0].user
       );
 
       expect(newMessage).toEqual('Mock-1 commented on your cast');
@@ -197,8 +197,8 @@ describe('NotificationServiceV2', () => {
       const newMessage = (service as any).generateMessageByType(
         notify,
         [mocksUsers[1].user.displayName],
-        mocksUsers[0].user,
-        'th'
+        'th',
+        mocksUsers[0].user
       );
 
       expect(newMessage).toEqual('Mock-1 แสดงความคิดเห็นบน cast ของคุณ');
@@ -356,13 +356,13 @@ describe('NotificationServiceV2', () => {
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
-      const newMessage = await (service as any).generateMessage(
+      const { message } = await (service as any).generateMessage(
         mocksUsers[0].user,
         notify,
         'en'
       );
-      expect(newMessage).toBeDefined();
-      expect(newMessage).toEqual('Mock-1 started following you');
+      expect(message).toBeDefined();
+      expect(message).toEqual('Mock-1 started following you');
     });
 
     it('should generate message notification by language thai is correct.', async () => {
@@ -371,14 +371,14 @@ describe('NotificationServiceV2', () => {
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
-      const newMessage = await (service as any).generateMessage(
+      const { message } = await (service as any).generateMessage(
         mocksUsers[0].user,
         notify,
         'th'
       );
 
-      expect(newMessage).toBeDefined();
-      expect(newMessage).toEqual('Mock-1 ได้ติดตามคุณ');
+      expect(message).toBeDefined();
+      expect(message).toEqual('Mock-1 ได้ติดตามคุณ');
     });
   });
 
