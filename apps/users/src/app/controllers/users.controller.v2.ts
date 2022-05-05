@@ -40,10 +40,10 @@ import {
   NotificationSource,
   NotificationType,
   PageResponseDto,
-  PagesResponse,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
+  UnblockParam,
   UnlikeCastParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
@@ -62,11 +62,20 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
+import { BlockingDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
-
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -514,9 +523,6 @@ export class UsersControllerV2 {
     await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 
-  @ApiOkResponse({
-    type: PagesResponse,
-  })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
   async getMyPages(@Auth() authorizer: Authorizer) {
@@ -524,5 +530,38 @@ export class UsersControllerV2 {
     return ResponseDto.ok<PageResponseDto[]>({
       payload: pages,
     });
+  }
+
+  @Post(':userId/blocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async blockUser(
+    @Auth() authorizer: Authorizer,
+    @Body() { targetCastcleId }: BlockingDto,
+    @Param()
+    { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.blockUser(user, targetCastcleId);
+  }
+
+  @Delete(':userId/blocking/:targetCastcleId')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unBlockUser(
+    @Auth() authorizer: Authorizer,
+    @Param()
+    { targetCastcleId, isMe, userId }: UnblockParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.unBlockUser(user, targetCastcleId);
   }
 }
