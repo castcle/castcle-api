@@ -67,4 +67,14 @@ export class UsersRequest {
     UsersRequest.delete(
       `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`
     );
+  static likeCasts = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/likes-casts`);
+  static unlikeCasts = (userId: string, sourceContentId: string) =>
+    UsersRequest.delete(`/v2/users/${userId}/likes-casts/${sourceContentId}`);
+  static likeComment = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/likes-comments`);
+  static unlikeComment = (userId: string, sourceCommentId: string) =>
+    UsersRequest.delete(
+      `/v2/users/${userId}/likes-comments/${sourceCommentId}`
+    );
 }

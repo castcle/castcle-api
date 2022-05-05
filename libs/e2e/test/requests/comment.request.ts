@@ -24,4 +24,6 @@ export class CommentRequest {
     CommentRequest.get(
       `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`
     );
+  static getCommentLookup = (contentId: string, sourceCommentId: string) =>
+    CommentRequest.get(`/v2/contents/${contentId}/comments/${sourceCommentId}`);
 }
