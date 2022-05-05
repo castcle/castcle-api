@@ -22,7 +22,7 @@
  */
 import {
   AndroidMessagePriority,
-  NotificationSource,
+  PushNotificationPayload,
 } from './../dtos/notification.dto';
 
 type Aps = {
@@ -32,23 +32,14 @@ type Aps = {
   badge: number;
   'mutable-content': number;
 };
-
-type NotificationPayload = {
-  notifyId: string;
-  message: string;
-  source: NotificationSource;
-  content?: string;
-  comment?: string;
-  system?: string;
+type AndroidNotification = {
+  body: string;
+  default_sound: boolean;
+  notification_count: number;
 };
-
 type AndroidConfigs = {
   priority: AndroidMessagePriority;
-  notification: {
-    body: string;
-    default_sound: boolean;
-    notification_count: number;
-  };
+  notification: AndroidNotification;
 };
 
 type NotificationConfig = {
@@ -59,6 +50,6 @@ export interface NotificationMessage {
   aps: Aps;
   notification: NotificationConfig;
   android: AndroidConfigs;
-  payload: NotificationPayload;
+  payload: PushNotificationPayload;
   firebaseTokens: string[];
 }

@@ -93,6 +93,7 @@ import {
   createCastcleMeta,
   getRelationship,
   getSocialPrefix,
+  validateObjectId,
 } from './utils/common';
 
 export const MongooseForFeatures = MongooseModule.forFeature([
@@ -259,4 +260,5 @@ export {
   NotificationServiceV2,
   CommentServiceV2,
   ContentServiceV2,
+  validateObjectId,
 };

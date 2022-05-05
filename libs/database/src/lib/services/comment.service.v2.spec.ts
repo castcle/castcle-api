@@ -30,7 +30,7 @@ import {
   MongooseForFeatures,
   NotificationService,
 } from '../database.module';
-import { ContentType, NotificationType } from '../dtos';
+import { ContentType, NotificationSource, NotificationType } from '../dtos';
 import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Comment, Content } from '../schemas';
@@ -40,6 +40,8 @@ import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
+import { Repository } from 'libs/database/src/lib/repositories';
+import { HttpModule } from '@nestjs/axios';
 
 describe('CommentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -52,6 +54,7 @@ describe('CommentServiceV2', () => {
   let reply: Comment;
   let content: Content;
   let mocksUsers: MockUserDetail[];
+  let notifyService: NotificationServiceV2;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -61,6 +64,7 @@ describe('CommentServiceV2', () => {
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
+        HttpModule,
       ],
       providers: [
         AuthenticationService,
@@ -70,6 +74,7 @@ describe('CommentServiceV2', () => {
         UserService,
         NotificationService,
         NotificationServiceV2,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -89,6 +94,7 @@ describe('CommentServiceV2', () => {
     contentService = app.get(ContentService);
     service = app.get(CommentServiceV2);
     userService = app.get(UserService);
+    notifyService = app.get(NotificationServiceV2);
 
     mocksUsers = await generateMockUsers(3, 0, {
       userService: userService,
@@ -163,9 +169,9 @@ describe('CommentServiceV2', () => {
   describe('#getCommentById()', () => {
     it('should get comment and reply from comment id', async () => {
       const user = mocksUsers[0].user;
-      const commentsResult = await service.getCommentsById(user, comment._id);
+      const commentsResult = await service.getCommentById(user, comment._id);
 
-      expect(commentsResult.payload.length).toEqual(1);
+      expect(commentsResult.payload.id).toBeDefined();
     });
   });
 
@@ -285,6 +291,49 @@ describe('CommentServiceV2', () => {
       reply = await contentService.replyComment(user, comment, {
         message: 'nice #baby',
       });
+
+      const notify_1 = await (
+        notifyService as any
+      ).repository.createNotification({
+        source: NotificationSource.Profile,
+        sourceUserId: mocksUsers[1].user._id,
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        read: false,
+        account: mocksUsers[0].account._id,
+      });
+
+      await (notifyService as any).repository.updateNotification(
+        {
+          _id: notify_1._id,
+        },
+        {
+          $addToSet: { sourceUserId: mocksUsers[2].user._id },
+        }
+      );
+
+      const notify_2 = await (
+        notifyService as any
+      ).repository.createNotification({
+        source: NotificationSource.Profile,
+        sourceUserId: mocksUsers[1].user._id,
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        replyRef: reply._id,
+        read: false,
+        account: mocksUsers[0].account._id,
+      });
+
+      await (notifyService as any).repository.updateNotification(
+        {
+          _id: notify_2._id,
+        },
+        {
+          $addToSet: { sourceUserId: mocksUsers[2].user._id },
+        }
+      );
     });
     it('should unlike comment cast', async () => {
       await service.likeCommentCast(
@@ -304,10 +353,21 @@ describe('CommentServiceV2', () => {
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'comment',
-          $id: unlikeCommentCast._id,
+          $id: comment._id,
         },
       });
+
+      const notify = await (service as any).repository.findNotification({
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        replyRef: { $exists: false },
+        account: mocksUsers[0].account._id,
+      });
+
+      expect(notify).not.toBeNull();
       expect(engagement).toBeNull();
+      expect(notify.sourceUserId).not.toContainEqual(mocksUsers[1].user._id);
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(
         String(mocksUsers[1].user._id)
@@ -316,7 +376,88 @@ describe('CommentServiceV2', () => {
         String(comment._id)
       );
     });
+    it('should unlike comment cast and delete notification', async () => {
+      await service.likeCommentCast(
+        undefined,
+        comment,
+        content,
+        mocksUsers[2].user,
+        mocksUsers[2].account
+      );
+      const unlikeCommentCast = await service.unlikeCommentCast(
+        comment._id,
+        mocksUsers[2].user
+      );
+
+      const engagement = await service._engagementModel.findOne({
+        user: mocksUsers[2].user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: comment._id,
+        },
+      });
+
+      const notify = await (service as any).repository.findNotification({
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        replyRef: { $exists: false },
+        account: mocksUsers[0].account._id,
+      });
+
+      expect(notify).toBeNull();
+      expect(engagement).toBeNull();
+      expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
+      expect(String(unlikeCommentCast.user)).toEqual(
+        String(mocksUsers[2].user._id)
+      );
+      expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
+        String(comment._id)
+      );
+    });
     it('should unlike reply comment cast', async () => {
+      await service.likeCommentCast(
+        comment,
+        reply,
+        content,
+        mocksUsers[1].user,
+        mocksUsers[1].account
+      );
+
+      const unlikeCommentCast = await service.unlikeCommentCast(
+        reply._id,
+        mocksUsers[1].user
+      );
+      const engagement = await service._engagementModel.findOne({
+        user: mocksUsers[1].user._id,
+        targetRef: {
+          $ref: 'comment',
+          $id: reply._id,
+        },
+      });
+
+      const notify = await (service as any).repository.findNotification({
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        replyRef: reply._id,
+        account: mocksUsers[0].account._id,
+      });
+
+      expect(notify).not.toBeNull();
+      expect(engagement).toBeNull();
+      expect(notify.sourceUserId).not.toContainEqual(mocksUsers[1].user._id);
+      expect(engagement).toBeNull();
+      expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
+      expect(String(unlikeCommentCast.user)).toEqual(
+        String(mocksUsers[1].user._id)
+      );
+      expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
+        String(reply._id)
+      );
+    });
+
+    it('should unlike reply comment cast and delete notification', async () => {
       await service.likeCommentCast(
         comment,
         reply,
@@ -329,14 +470,24 @@ describe('CommentServiceV2', () => {
         reply._id,
         mocksUsers[2].user
       );
-
       const engagement = await service._engagementModel.findOne({
-        user: mocksUsers[1].user._id,
+        user: mocksUsers[2].user._id,
         targetRef: {
           $ref: 'comment',
-          $id: unlikeCommentCast._id,
+          $id: reply._id,
         },
       });
+
+      const notify = await (service as any).repository.findNotification({
+        type: NotificationType.Like,
+        contentRef: content._id,
+        commentRef: comment._id,
+        replyRef: reply._id,
+        account: mocksUsers[0].account._id,
+      });
+
+      expect(notify).toBeNull();
+      expect(engagement).toBeNull();
       expect(engagement).toBeNull();
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(

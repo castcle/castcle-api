@@ -22,6 +22,11 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -33,14 +38,9 @@ import {
   UserAccessTokenPayload,
 } from '../dtos';
 import { AccountActivationType, UserType } from '../models';
+import { Repository } from '../repositories';
 import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
-import { Repository } from '../repositories';
-import {
-  FacebookClient,
-  Mailer,
-  TwitterClient,
-} from '@castcle-api/utils/clients';
 
 @Injectable()
 export class AuthenticationServiceV2 {
@@ -199,6 +199,15 @@ export class AuthenticationServiceV2 {
     await this.analyticService.trackRegistration(ip, userAgent);
     return { registered: false, ...registration };
   }
+  async getRefreshToken(refreshToken: string) {
+    const credential = await this.repository.findCredential({ refreshToken });
+    if (!credential?.isRefreshTokenValid())
+      throw CastcleException.INVALID_REFRESH_TOKEN;
+    const account = await this.repository.findAccount({
+      _id: credential.account._id,
+    });
+    return this.login(credential, account);
+  }
 
   async registerWithEmail(
     credential: Credential,
@@ -207,8 +216,8 @@ export class AuthenticationServiceV2 {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
         this.repository.findAccount({ _id: credential.account._id }),
-        this.repository.findAccount({ email: dto.payload.email }),
-        this.repository.findUser({ _id: dto.payload.castcleId }),
+        this.repository.findAccount({ email: dto.email }),
+        this.repository.findUser({ _id: dto.castcleId }),
       ]);
 
     if (!account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
@@ -221,15 +230,15 @@ export class AuthenticationServiceV2 {
     );
 
     account.isGuest = false;
-    account.email = dto.payload.email;
-    account.password = Password.hash(dto.payload.password);
+    account.email = dto.email;
+    account.password = Password.hash(dto.password);
     const activation = account.createActivation(AccountActivationType.EMAIL);
     await this.updateReferral(account, dto.referral, dto.ip);
     await account.save();
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId: dto.payload.castcleId,
-      displayName: dto.payload.displayName,
+      displayId: dto.castcleId,
+      displayName: dto.displayName,
       type: UserType.PEOPLE,
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);

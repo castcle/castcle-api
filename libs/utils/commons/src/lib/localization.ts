@@ -316,7 +316,6 @@ export class CastcleLocalization {
         return `Your ads is declined. Please check again`;
     }
   };
-
   static getTemplateLikeComment = (
     language: string,
     displayNames: string[],
@@ -355,7 +354,6 @@ export class CastcleLocalization {
         }
     }
   };
-
   static getTemplateFollow = (
     language: string,
     displayNames: string[],

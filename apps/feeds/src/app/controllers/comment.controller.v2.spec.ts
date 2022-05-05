@@ -41,6 +41,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CommentControllerV2 } from './comment.controller.v2';
+import { Repository } from 'libs/database/src/lib/repositories';
+import { HttpModule } from '@nestjs/axios';
 
 describe('CommentControllerV2', () => {
   let mongod: MongoMemoryServer;
@@ -64,6 +66,7 @@ describe('CommentControllerV2', () => {
         }),
         MongooseAsyncFeatures,
         MongooseForFeatures,
+        HttpModule,
       ],
       controllers: [CommentControllerV2],
       providers: [
@@ -74,6 +77,7 @@ describe('CommentControllerV2', () => {
         NotificationService,
         NotificationServiceV2,
         HashtagService,
+        Repository,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

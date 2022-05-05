@@ -22,15 +22,12 @@
  */
 
 import { CastcleRegExp } from '@castcle-api/utils/commons';
-import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
-  IsNotEmptyObject,
   IsOptional,
   IsString,
   Matches,
-  ValidateNested,
 } from 'class-validator';
 
 export class LoginWithEmailDto {
@@ -42,7 +39,7 @@ export class LoginWithEmailDto {
   password: string;
 }
 
-class RegisterWithEmailPayload {
+export class RegisterWithEmailDto {
   @IsEmail()
   email: string;
 
@@ -57,15 +54,8 @@ class RegisterWithEmailPayload {
   @IsString()
   @IsNotEmpty()
   castcleId: string;
-}
 
-export class RegisterWithEmailDto {
   @IsOptional()
   @IsString()
   referral?: string;
-
-  @Type(() => RegisterWithEmailPayload)
-  @ValidateNested()
-  @IsNotEmptyObject()
-  payload: RegisterWithEmailPayload;
 }

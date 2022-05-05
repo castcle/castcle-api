@@ -21,16 +21,13 @@
  * or have any questions.
  */
 
-import { Environment } from '@castcle-api/environments';
+import { Configs, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
+import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Queue } from 'bull';
-import { Model, FilterQuery, Types } from 'mongoose';
 import { User, Notification, Account } from '../schemas';
-import { createCastcleFilter } from '../utils/common';
 import { QueueName, NotificationMessage, UserType } from '../models';
 import {
   CreateNotification,
@@ -38,76 +35,296 @@ import {
   NotificationSource,
   AndroidMessagePriority,
   NotificationQuery,
+  NotificationRef,
+  NotificationLandingPage,
+  SoundDeviceDefault,
+  PushNotificationPayload,
+  NotificationPayloadDto,
 } from '../dtos';
-import { NotificationService } from './notification.service';
 import { pipelineNotificationBadge } from '../aggregations';
+import { Repository } from '../repositories';
+import { Image } from '@castcle-api/utils/aws';
 
 @Injectable()
 export class NotificationServiceV2 {
   #logger = new CastLogger(NotificationServiceV2.name);
 
   constructor(
-    @InjectModel('User')
-    private _userModel: Model<User>,
-    @InjectModel('Notification')
-    private _notificationModel: Model<Notification>,
-    @InjectModel('Account')
-    private _accountModel: Model<Account>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>,
-    private notificationService: NotificationService
+    private repository: Repository
   ) {}
 
-  getFromId = async (id: string) => {
-    return this._notificationModel.findById(Types.ObjectId(id)).exec();
+  /**
+   * Checking if the notification type is enabled in the environment.
+   */
+  private checkNotify = (notificationData: CreateNotification) => {
+    switch (notificationData.type) {
+      case NotificationType.Like:
+        return Environment.NOTIFY_LIKE == '1';
+      case NotificationType.Recast:
+        return Environment.NOTIFY_RECAST == '1';
+      case NotificationType.Quote:
+        return Environment.NOTIFY_QUOTE == '1';
+      case NotificationType.Comment:
+        return Environment.NOTIFY_COMMENT == '1';
+      case NotificationType.Farm:
+        return Environment.NOTIFY_FARM == '1';
+      case NotificationType.Reply:
+        return Environment.NOTIFY_REPLY == '1';
+      case NotificationType.Tag:
+        return Environment.NOTIFY_TAG == '1';
+      case NotificationType.System:
+        return Environment.NOTIFY_SYSTEM == '1';
+      default:
+        return Environment.NOTIFY_FOLLOW == '1';
+    }
   };
 
-  getAllNotify = async (account: Account, query: NotificationQuery) => {
-    const filters: FilterQuery<Notification> = createCastcleFilter(
-      { account: account._id },
-      query
+  /**
+   * Generate message by type notification and language follow account.
+   */
+  private generateMessageByType = (
+    notify: Notification,
+    displayNames: string[],
+    language: string,
+    user?: User
+  ) => {
+    switch (notify.type) {
+      case NotificationType.Like:
+        if (notify.commentRef) {
+          return CastcleLocalization.getTemplateLikeComment(
+            language,
+            displayNames,
+            user?.type === UserType.PAGE ? user.displayName : ''
+          );
+        } else {
+          return CastcleLocalization.getTemplateLike(
+            language,
+            displayNames,
+            user?.type === UserType.PAGE ? user.displayName : ''
+          );
+        }
+
+      case NotificationType.Comment:
+        return CastcleLocalization.getTemplateComment(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Farm:
+        return CastcleLocalization.getTemplateFarm(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Quote:
+        return CastcleLocalization.getTemplateQuote(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Recast:
+        return CastcleLocalization.getTemplateRecast(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Reply:
+        return CastcleLocalization.getTemplateReply(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.Tag:
+        return CastcleLocalization.getTemplateTag(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+
+      case NotificationType.System:
+        return CastcleLocalization.getTemplateSystem(language, displayNames);
+
+      case NotificationType.AdsApprove:
+        return CastcleLocalization.getTemplateAdsApprove(language);
+
+      case NotificationType.AdsDecline:
+        return CastcleLocalization.getTemplateAdsDecline(language);
+
+      default:
+        return CastcleLocalization.getTemplateFollow(
+          language,
+          displayNames,
+          user?.type === UserType.PAGE ? user.displayName : ''
+        );
+    }
+  };
+
+  /**
+   * Checking the notification type and targetRef to redirect page on mobile.
+   */
+  private checkNotificationTypePage = (
+    type: NotificationType,
+    targetRef?: string
+  ) => {
+    if (
+      (type === NotificationType.Like &&
+        targetRef === NotificationRef.Content) ||
+      type === NotificationType.Recast ||
+      type === NotificationType.Quote
+    ) {
+      return NotificationLandingPage.Cast;
+    } else if (
+      (type === NotificationType.Like &&
+        targetRef === NotificationRef.Content) ||
+      type === NotificationType.Comment ||
+      type === NotificationType.Reply
+    ) {
+      return NotificationLandingPage.Comment;
+    } else if (type === NotificationType.Follow) {
+      return NotificationLandingPage.Follower;
+    } else {
+      return;
+    }
+  };
+
+  /**
+   *  Checking if the notification is within the interval.
+   */
+  private checkIntervalNotify = (
+    type: NotificationType,
+    notify: Notification
+  ) => {
+    switch (type) {
+      case NotificationType.Follow:
+        return CastcleDate.checkIntervalNotify(
+          notify.createdAt,
+          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+        );
+
+      default:
+        return true;
+    }
+  };
+
+  private toNotificationPayload = (
+    notify: Notification,
+    message: string,
+    landingPage: string,
+    user?: User,
+    haveUsers?: number
+  ) => {
+    return {
+      message,
+      landingPage,
+      id: notify._id,
+      source: notify.source,
+      type: notify.type,
+      user: notify.user?._id,
+      actionId: haveUsers === 1 ? user?._id : undefined,
+      actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
+      commentId: String(notify.commentRef),
+      contentId: String(notify.contentRef),
+      replyId: String(notify.replyRef),
+      advertiseId: String(notify.adsRef),
+      profileId: String(notify.profileRef),
+      systemId: String(notify.systemRef),
+      createdAt: notify.createdAt.toISOString(),
+      updatedAt: notify.updatedAt.toISOString(),
+    } as PushNotificationPayload;
+  };
+
+  private toNotificationResponse = (
+    notify: Notification,
+    message: string,
+    landingPage: string,
+    user?: User,
+    haveUsers?: number
+  ) => {
+    return {
+      id: notify._id,
+      source: notify.source,
+      read: notify.read,
+      type: notify.type,
+      message: message,
+      landingPage: landingPage,
+      user: notify.user?._id,
+      actionId: haveUsers === 1 ? user?._id : undefined,
+      actionCastcleId: haveUsers === 1 ? user?.displayId : undefined,
+      avatar: user?.profile?.images?.avatar
+        ? new Image(user.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      commentId: notify.commentRef,
+      contentId: notify.contentRef,
+      replyId: notify.replyRef,
+      advertiseId: notify.adsRef,
+      profileId: notify.profileRef,
+      systemId: notify.systemRef,
+      createdAt: notify.createdAt,
+      updatedAt: notify.updatedAt,
+    } as NotificationPayloadDto;
+  };
+  getFromId = async (_id: string) => {
+    return this.repository.findNotification({ _id });
+  };
+
+  getAllNotify = async (
+    account: Account,
+    { maxResults, ...query }: NotificationQuery
+  ) => {
+    return this.repository.findNotifications(
+      {
+        ...query,
+        ...{ account: account._id },
+      },
+      {
+        sort: { createdAt: -1, updatedAt: -1 },
+        limit: maxResults,
+      }
     );
-    if (query?.source) filters.source = query?.source;
-    return this._notificationModel
-      .find(filters)
-      .limit(query.maxResults)
-      .sort({ createdAt: -1, updatedAt: -1 })
-      .exec();
   };
 
-  readNotify = async (notification: Notification) => {
-    notification.read = true;
-    return notification.save();
+  readNotify = async (_id: string) => {
+    return this.repository.updateNotification(
+      { _id },
+      { $set: { read: true } }
+    );
   };
 
   readAllSourceNotify = async (
     account: Account,
     source: NotificationSource
   ) => {
-    return this._notificationModel.updateMany(
+    return this.repository.updateNotifications(
       { account: account._id, source },
-      { read: true }
+      { $set: { read: true } }
     );
   };
 
-  deleteNotify = async (notification: Notification) => {
-    return notification.remove();
+  deleteNotify = async (_id: string) => {
+    return this.repository.deleteNotification({ _id });
   };
 
   deleteAllSourceNotify = async (
     account: Account,
     source: NotificationSource
   ) => {
-    return this._notificationModel.deleteMany({
+    return this.repository.deleteNotifications({
       account: account._id,
       source: source,
     });
   };
 
   getBadges = async (account: Account) => {
-    const pipeline = pipelineNotificationBadge(account._id);
-    const [totalNotification] =
-      await this._notificationModel.aggregate<Notification>(pipeline);
+    const [totalNotification] = await this.repository.aggregationNotification(
+      pipelineNotificationBadge(account._id)
+    );
     if (!totalNotification)
       return {
         profile: 0,
@@ -123,17 +340,13 @@ export class NotificationServiceV2 {
     userOwner: User,
     language: string
   ) => {
-    this.#logger.log('Check user action.');
+    this.#logger.log('Check user action notify.');
     if (String(sourceUserId) === String(userOwner._id)) return;
 
     this.#logger.log('Check configuration notify to user.');
-    if (!this.notificationService.checkNotify(notificationData)) return;
+    if (!this.checkNotify(notificationData)) return;
 
-    this.#logger.log('Notification to user.');
-
-    this.#logger.log('Prepare data into notification.');
-
-    let filters = {
+    const filters = {
       ...notificationData,
       ...{
         contentRef: notificationData.contentRef || { $exists: false },
@@ -143,37 +356,30 @@ export class NotificationServiceV2 {
       },
     };
 
+    this.#logger.log(`Check interval time follow user.`);
+
+    if (notificationData.type === NotificationType.Follow) {
+      const haveNotify = await this.repository.findNotification(filters, {
+        sort: { createdAt: -1 },
+      });
+
+      if (!this.checkIntervalNotify(notificationData.type, haveNotify)) return;
+    }
     if (
       notificationData.type === NotificationType.Tag ||
       notificationData.type === NotificationType.Follow
     ) {
-      const notifyModel = await this._notificationModel
-        .findOne({
-          ...filters,
-          ...{ sourceUserId: { $in: [sourceUserId] } },
-        })
-        .sort({ _id: -1, createdAt: -1 })
-        .exec();
-
-      this.#logger.log(`Check follow interval time.`);
-      if (
-        !CastcleDate.checkIntervalFollowed(
-          notifyModel?.createdAt,
-          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
-        )
-      )
-        return;
-
-      await new this._notificationModel({
+      await this.repository.createNotification({
         ...notificationData,
+        ...{ user: userOwner._id },
         read,
         sourceUserId,
-      }).save();
+      });
     } else {
-      const updateNotify = await this._notificationModel.updateOne(
+      const updateNotify = await this.repository.updateNotification(
         filters,
         {
-          $set: { read },
+          $set: { read, user: userOwner._id },
           $setOnInsert: notificationData,
           $addToSet: { sourceUserId },
         },
@@ -186,19 +392,10 @@ export class NotificationServiceV2 {
     }
     this.#logger.log('Insert data into notification is done.');
 
-    if (
-      notificationData.type === NotificationType.Tag ||
-      notificationData.type === NotificationType.Follow
-    )
-      filters = {
-        ...filters,
-        ...{ sourceUserId: { $in: [sourceUserId] } },
-      };
+    const notify = await this.repository.findNotification(filters, {
+      sort: { createdAt: -1 },
+    });
 
-    const notify = await this._notificationModel
-      .findOne(filters)
-      .sort({ createdAt: -1 })
-      .exec();
     this.#logger.log(
       'Insert data into notification is done.',
       JSON.stringify(notify)
@@ -206,30 +403,40 @@ export class NotificationServiceV2 {
 
     this.#logger.log('Get devices by account.');
 
-    const account = await this._accountModel
-      .findOne({
-        _id: Types.ObjectId(notificationData.account._id),
-      })
-      .exec();
+    const account = await this.repository.findAccount({
+      _id: notificationData.account._id,
+    });
 
-    if (!account.devices) return;
+    if (!account?.devices) return;
 
     this.#logger.log('Generate notification message.');
 
-    const message = await this.generateMessage(userOwner, notify, language);
+    const { message, user, haveUser } = await this.generateMessage(
+      userOwner,
+      notify,
+      language
+    );
     this.#logger.log('Generate notification message is done.');
+
+    if (!message) return;
 
     this.#logger.log('Send notification message.', JSON.stringify(message));
 
-    const badgeCounts = await this._notificationModel
-      .countDocuments({
-        account: userOwner.ownerAccount,
-        read: false,
-      })
-      .exec();
+    const badgeCounts = await this.repository.findNotificationCount({
+      user: userOwner._id,
+      account: userOwner.ownerAccount,
+      read: false,
+    });
 
-    this.notificationQueue.add(
-      this.generateNotification(message, notify, account, badgeCounts),
+    await this.notificationQueue.add(
+      this.generateNotification(
+        message,
+        notify,
+        account,
+        badgeCounts,
+        user,
+        haveUser
+      ),
       {
         removeOnComplete: true,
       }
@@ -243,100 +450,159 @@ export class NotificationServiceV2 {
     notify: Notification,
     language: string
   ) => {
-    this.#logger.log('Reverse latest user.');
-
-    const userIds = notify.sourceUserId?.reverse();
-
-    this.#logger.log('Get user data.');
-
-    const users = await this._userModel
-      .find({
-        _id: { $in: userIds },
-      })
-      .exec();
-
     if (!notify) return;
 
     const userSort = [];
 
-    this.#logger.log('Sort user by latest user action.');
+    if (
+      notify.type !== NotificationType.AdsApprove &&
+      notify.type !== NotificationType.AdsDecline
+    ) {
+      this.#logger.log('Reverse latest user.');
 
-    users.forEach((user) => {
-      const index = userIds.indexOf(user._id);
-      if (index > -1) userSort[index] = user;
-    });
+      const reverseUserIds = notify.sourceUserId?.reverse();
+
+      this.#logger.log('Get user data.');
+
+      const users = await this.repository.findUsers({
+        _id: reverseUserIds,
+      });
+
+      users.forEach((user) => {
+        const index = reverseUserIds.indexOf(user._id);
+        if (index > -1) {
+          userSort[index] = user;
+          reverseUserIds.splice(index, 1);
+        }
+      });
+
+      this.#logger.log('Check user not exists.');
+      if (reverseUserIds.length) {
+        await this.repository.updateNotification(
+          { _id: notify._id },
+          {
+            $pull: { sourceUserId: { $in: reverseUserIds } },
+          }
+        );
+        this.#logger.log('Check user empty at notification.');
+        const notifyUserEmpty = await this.repository.findNotification({
+          _id: notify._id,
+        });
+
+        if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
+          await notifyUserEmpty.remove();
+          return;
+        }
+      }
+      if (!userSort.length) return;
+    }
+    if (!userOwner) return;
+
     const displayNames = userSort.map((user) => user.displayName);
 
-    const message = this.notificationService.checkTypeGenerateMessage(
+    const message = this.generateMessageByType(
       notify,
       displayNames,
-      userOwner,
-      language
+      language,
+      userOwner
     );
 
     this.#logger.log('Prepare message show display name.', message);
-    return message;
+    return { message, user: userSort[0], haveUser: userSort.length };
   };
 
-  generateMessagesToNotifications = async (
-    notifies: Notification[],
+  generateNotificationsResponse = async (
+    notifications: Notification[],
     language: string
   ) => {
     this.#logger.log('Start generate notification message list.');
 
-    return await Promise.all(
-      notifies.map(async (notify: Notification) => {
-        const usersOwners = await this._userModel
-          .find({
-            ownerAccount: notify.account,
-          })
-          .exec();
+    const payloadNotify = await Promise.all(
+      notifications.map(async (notify: Notification) => {
+        const userOwner = notify?.user
+          ? await this.repository.findUser({
+              _id: notify.user._id,
+            })
+          : null;
 
-        const userSource = usersOwners.filter(
-          (item) =>
-            item.type === UserType.PAGE ||
-            (item.type === 'people' &&
-              notify.source === NotificationSource.Profile)
-        );
-
-        const userIds = notify.sourceUserId?.reverse();
-        const users = await this._userModel
-          .find({
-            _id: { $in: userIds },
-          })
-          .exec();
         const userSort = [];
-        users.forEach((user) => {
-          const index = userIds.indexOf(user._id);
-          if (index > -1) userSort[index] = user;
-        });
+
+        if (
+          notify.type !== NotificationType.AdsApprove &&
+          notify.type !== NotificationType.AdsDecline
+        ) {
+          const reverseUserIds = notify.sourceUserId?.reverse();
+          const users = await this.repository.findUsers({
+            _id: reverseUserIds,
+          });
+
+          users.forEach((user) => {
+            const index = reverseUserIds.indexOf(user._id);
+            if (index > -1) {
+              userSort[index] = user;
+              reverseUserIds.splice(index, 1);
+            }
+          });
+
+          this.#logger.log('Check user not exists.');
+          if (reverseUserIds.length) {
+            await this.repository.updateNotification(
+              { _id: notify._id },
+              {
+                $pull: { sourceUserId: { $in: reverseUserIds } },
+              }
+            );
+
+            this.#logger.log('Check user empty at notification.');
+            const notifyUserEmpty = await this.repository.findNotification({
+              _id: notify._id,
+            });
+
+            if (notifyUserEmpty && !notifyUserEmpty?.sourceUserId?.length) {
+              await notifyUserEmpty.remove();
+              return;
+            }
+          }
+          if (!userSort.length) return;
+        }
+        if (!userOwner) return;
 
         const displayNames = userSort.map((user) => user.displayName);
 
-        const message = this.notificationService.checkTypeGenerateMessage(
+        const message = this.generateMessageByType(
           notify,
           displayNames,
-          userSource[0],
-          language
+          language,
+          userOwner
         );
 
         this.#logger.log('Prepare message show display name.', message);
 
-        return notify.toNotificationPayload({
-          message: message,
-          user: userSort[0],
-          isDate: true,
-          read: notify.read,
-        });
+        return this.toNotificationResponse(
+          notify,
+          message,
+          this.checkNotificationTypePage(
+            notify.type,
+            notify.commentRef
+              ? NotificationRef.Comment
+              : NotificationRef.Content
+          ),
+          userSort[0],
+          userSort.length
+        );
       })
     );
+
+    return payloadNotify.filter((payload) => payload);
   };
 
   generateNotification = (
     message: string,
     notify: Notification,
     account: Account,
-    badgeCounts: number
+    badgeCounts: number,
+    user?: User,
+    haveUsers?: number
   ) => {
     return {
       notification: {
@@ -353,11 +619,20 @@ export class NotificationServiceV2 {
       aps: {
         alert: message,
         badge: badgeCounts,
-        sound: 'default',
+        sound: SoundDeviceDefault.Default,
         'mutable-content': 1,
       },
-      payload: notify.toNotificationPayload({ message }),
-      firebaseTokens: account.devices.map((item) => item.firebaseToken),
-    } as NotificationMessage;
+      payload: this.toNotificationPayload(
+        notify,
+        message,
+        this.checkNotificationTypePage(
+          notify.type,
+          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
+        ),
+        user,
+        haveUsers
+      ) as any,
+      firebaseTokens: account?.devices.map((item) => item.firebaseToken),
+    };
   };
 }
