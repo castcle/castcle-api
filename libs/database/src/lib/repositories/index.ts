@@ -83,7 +83,11 @@ type EngagementQuery = {
 };
 
 type RelationshipQuery = {
-  userId: User[];
+  userId?: User[];
+  followedUser?: string;
+  blocking?: boolean;
+  sinceId?: string;
+  untilId?: string;
 };
 
 type CredentialQuery = {
@@ -144,7 +148,17 @@ export class Repository {
   }
 
   private getRelationshipsQuery = (filter: RelationshipQuery) => {
-    return { user: { $in: filter.userId } };
+    const query: FilterQuery<Relationship> = {};
+
+    if (filter.sinceId || filter.untilId) {
+      query.followedUser = {};
+      if (filter.sinceId) query.followedUser.$gt = filter.sinceId as any;
+      if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
+    }
+    if (filter.blocking) query.blocking = filter.blocking;
+    if (filter.userId) query.user = { $in: filter.userId };
+
+    return query;
   };
 
   private getEngagementsQuery = (filter: EngagementQuery) => {
@@ -275,6 +289,10 @@ export class Repository {
     return this.userModel.find(this.getUserQuery(filter), {}, queryOptions);
   }
 
+  findUserCount(filter: UserQuery) {
+    return this.userModel.countDocuments(filter);
+  }
+
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
       .find(this.getEngagementsQuery(filter), {}, queryOptions)
@@ -288,9 +306,11 @@ export class Repository {
   }
 
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
-    return this.relationshipModel
-      .find(this.getRelationshipsQuery(filter), {}, queryOptions)
-      .exec();
+    return this.relationshipModel.find(
+      this.getRelationshipsQuery(filter),
+      {},
+      queryOptions
+    );
   }
   findContentById(contentId: string) {
     return this.contentModel.findById(contentId).exec();
@@ -362,5 +382,12 @@ export class Repository {
     return this.notificationModel
       .countDocuments(this.getNotificationQuery(filter))
       .exec();
+  }
+  updateRelationship(
+    filter: FilterQuery<Relationship>,
+    updateQuery?: UpdateQuery<Relationship>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
 }
