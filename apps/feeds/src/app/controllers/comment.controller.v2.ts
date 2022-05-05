@@ -116,11 +116,21 @@ export class CommentControllerV2 {
       commentId,
       query
     );
+    const commentUsers = new Set(
+      commentResult.includes.users.map((u) => u.castcleId)
+    );
+    const mergedUser = [
+      ...commentResult.includes.users,
+      ...replyResult.includes.users.filter(
+        (rUser) => !commentUsers.has(rUser.castcleId)
+      ),
+    ];
+
     delete commentResult.payload.reply;
     return {
       payload: commentResult.payload,
       reply: replyResult.payload,
-      includes: { users: replyResult.includes.users },
+      includes: { users: mergedUser },
       meta: replyResult.meta,
     };
   }
