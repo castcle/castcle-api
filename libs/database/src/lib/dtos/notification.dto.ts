@@ -86,6 +86,12 @@ export class NotificationPayloadDto extends CastcleBase {
   type: string;
 
   @ApiProperty()
+  actionId?: Types.ObjectId;
+
+  @ApiProperty()
+  actionCastcleId?: string;
+
+  @ApiProperty()
   contentId?: Types.ObjectId;
 
   @ApiProperty()
@@ -108,6 +114,9 @@ export class NotificationPayloadDto extends CastcleBase {
 
   @ApiProperty()
   landingPage?: NotificationLandingPage;
+
+  @ApiProperty()
+  user?: string;
 }
 
 export class NotificationResponse {
@@ -167,4 +176,8 @@ export class NotificationBadgesPayloadDto {
 export class NotificationBadgesResponse {
   @ApiProperty({ type: NotificationBadgesPayloadDto, isArray: false })
   payload: NotificationBadgesPayloadDto;
+}
+
+export class PushNotificationPayload {
+  [key: string]: string;
 }

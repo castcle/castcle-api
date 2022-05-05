@@ -62,12 +62,14 @@ export class NotificationsControllerV2 {
       authorizer.account,
       query
     );
-    return {
-      payload: await this.notificationServiceV2.generateNotificationsResponse(
+    const payloadNotify =
+      await this.notificationServiceV2.generateNotificationsResponse(
         notifications,
         authorizer.account.preferences.languages[0]
-      ),
-      meta: createCastcleMeta(notifications),
+      );
+    return {
+      payload: payloadNotify,
+      meta: createCastcleMeta(payloadNotify),
     };
   }
 

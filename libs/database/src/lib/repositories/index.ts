@@ -94,6 +94,7 @@ type CredentialQuery = {
 type NotificationQueryOption = {
   _id?: string;
   account?: Account;
+  user?: User;
   source?: NotificationSource;
   sinceId?: string;
   untilId?: string;
@@ -255,10 +256,13 @@ export class Repository {
 
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
-    if (isMongoId(String(filter._id))) query._id = filter._id;
-    if (isArray(filter._id)) query._id = { $in: filter._id };
-    else if (filter._id)
+    if (isMongoId(String(filter._id))) {
+      query._id = filter._id;
+    } else if (isArray(filter._id)) {
+      query._id = { $in: filter._id };
+    } else if (filter._id) {
       query.displayId = CastcleRegExp.fromString(filter._id as string);
+    }
 
     return query;
   }

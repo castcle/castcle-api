@@ -76,11 +76,18 @@ class NotificationDocument extends CastcleBase {
     index: true,
   })
   account: Account;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  user: User;
 }
 
 type NotifyResponseOption = {
   message: string;
-  user?: User;
+  userCurrent?: User;
   landingPage?: string;
 };
 
@@ -95,7 +102,7 @@ export class Notification extends NotificationDocument {
 
 NotificationSchema.methods.toNotificationPayload = function ({
   message,
-  user,
+  userCurrent,
   landingPage,
 }: NotifyResponseOption) {
   return {
@@ -105,8 +112,9 @@ NotificationSchema.methods.toNotificationPayload = function ({
     type: this.type,
     message: message,
     landingPage: landingPage,
-    avatar: user?.profile?.images?.avatar
-      ? new Image(user.profile.images.avatar).toSignUrls()
+    user: this.user?._id,
+    avatar: userCurrent?.profile?.images?.avatar
+      ? new Image(userCurrent.profile.images.avatar).toSignUrls()
       : Configs.DefaultAvatarImages,
     commentId: this.commentRef,
     contentId: this.contentRef,
