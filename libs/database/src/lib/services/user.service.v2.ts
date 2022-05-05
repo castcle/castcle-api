@@ -23,14 +23,10 @@
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import {
-  CastcleQueryOptions,
   EntityVisibility,
-  Meta,
   PageResponseDto,
-  PaginationQuery,
-  SortDirection,
   SyncSocialModelV2,
   UserField,
 } from '../dtos';
@@ -254,72 +250,34 @@ export class UserServiceV2 {
     session.endSession();
   }
 
-  async getBlockedLookup(
-    user: User,
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
-  ) {
-    const filterQuery = {
-      sinceId,
-      untilId,
-      userId: [user._id],
-      blocking: true,
-    };
-
-    const relationships = await this.repositoryService
-      .findRelationships(filterQuery)
-      .sort({ followedUser: SortDirection.DESC })
-      .limit(maxResults)
-      .exec();
-
-    const userIds = relationships.map(({ followedUser }) =>
-      Types.ObjectId(followedUser.toString())
-    );
-
-    return this.getByCriteria(
-      user,
-      { _id: userIds },
-      {},
-      hasRelationshipExpansion
-    );
-  }
-
-  getByCriteria = async (
-    viewer: User,
-    query: { _id: Types.ObjectId[] },
-    queryOptions?: CastcleQueryOptions,
-    hasRelationshipExpansion = false,
-    userFields?: UserField[]
-  ) => {
-    const { items: targetUsers, meta } = await this.getAllByCriteria(
-      query,
-      queryOptions
-    );
-    const users = await this.convertUsersToUserResponsesV2(
-      viewer,
-      targetUsers,
-      hasRelationshipExpansion,
-      userFields
-    );
-    return { users, meta };
-  };
-
-  getAllByCriteria = async (
-    filterQuery: { _id: Types.ObjectId[] },
-    queryOptions?: CastcleQueryOptions
-  ) => {
-    const total = await this.repositoryService.findUserCount(filterQuery);
-
-    const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
-
-    const users = await this.repositoryService.findUsers(filterQuery, {
-      limit: queryOptions.limit,
-      skip: queryOptions.page - 1,
-      sort: { [queryOptions.sortBy?.field ?? 'updatedAt']: sortKey },
+  async unBlockUser(user: User, targetCastcleId: string) {
+    const unblockedUser = await this.repositoryService.findUser({
+      _id: targetCastcleId,
     });
 
-    return {
-      items: users,
-      meta: Meta.fromDocuments(users, total),
-    };
-  };
+    if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const session = await this._relationshipModel.startSession();
+    await session.withTransaction(async () => {
+      await this.repositoryService.updateRelationship(
+        {
+          user: user._id,
+          followedUser: unblockedUser._id,
+          blocking: true,
+        },
+        { $set: { blocking: false } },
+        { session }
+      );
+      await this.repositoryService.updateRelationship(
+        {
+          followedUser: user._id,
+          user: unblockedUser._id,
+          blocked: true,
+        },
+        { $set: { blocked: false } },
+        { session }
+      );
+    });
+    session.endSession();
+  }
 }

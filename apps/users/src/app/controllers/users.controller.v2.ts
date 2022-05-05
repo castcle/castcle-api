@@ -40,10 +40,10 @@ import {
   NotificationSource,
   NotificationType,
   PageResponseDto,
-  PaginationQuery,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
+  UnblockParam,
   UnlikeCastParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
@@ -549,23 +549,19 @@ export class UsersControllerV2 {
     return this.userServiceV2.blockUser(user, targetCastcleId);
   }
 
-  @Get(':userId/blocking')
+  @Delete(':userId/blocking/:targetCastcleId')
   @CastcleBasicAuth()
-  async blockLookup(
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unBlockUser(
     @Auth() authorizer: Authorizer,
-    @Query() paginationQuery: PaginationQuery,
     @Param()
-    { isMe, userId }: GetUserParam
+    { targetCastcleId, isMe, userId }: UnblockParam
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const { users, meta } = await this.userServiceV2.getBlockedLookup(
-      user,
-      paginationQuery
-    );
-
-    return ResponseDto.ok({ payload: users, meta });
+    return this.userServiceV2.unBlockUser(user, targetCastcleId);
   }
 }

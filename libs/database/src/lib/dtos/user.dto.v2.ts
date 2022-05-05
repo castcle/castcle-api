@@ -28,3 +28,9 @@ export class UnlikeCastParam extends GetUserParam {
   @IsNotEmpty()
   sourceContentId: string;
 }
+
+export class UnblockParam extends GetUserParam {
+  @IsString()
+  @IsNotEmpty()
+  targetCastcleId: string;
+}
