@@ -78,7 +78,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { BlockingDto } from '../dtos';
+import { BlockingDto, TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -681,6 +681,26 @@ export class UsersControllerV2 {
     return this.contentService.convertContentToContentResponse(
       user,
       recast.quoteContent
+    );
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':userId/following')
+  async following(
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() body: TargetCastcleDtoV2,
+    @Auth() authorizer: Authorizer
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.userServiceV2.followUser(
+      user,
+      body.targetCastcleId,
+      user.ownerAccount
     );
   }
 }

@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -28,6 +29,8 @@ import {
   CastcleQueryOptions,
   EntityVisibility,
   Meta,
+  NotificationSource,
+  NotificationType,
   PageResponseDto,
   PaginationQuery,
   SortDirection,
@@ -38,6 +41,7 @@ import { UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
 import { ContentService } from './content.service';
+import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -53,7 +57,8 @@ export class UserServiceV2 {
     public _userModel: Model<User>,
     private contentService: ContentService,
     private repositoryService: Repository,
-    private userService: UserService
+    private userService: UserService,
+    private notificationService: NotificationService
   ) {}
 
   getUser = async (userId: string) => {
@@ -209,6 +214,31 @@ export class UserServiceV2 {
     );
 
     return pages as PageResponseDto[];
+  }
+
+  async followUser(user: User, targetCastcleId: string, account: Account) {
+    const followedUser = await this.repositoryService.findUser({
+      _id: targetCastcleId,
+    });
+
+    if (!followedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    await user.follow(followedUser);
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          followedUser.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Follow,
+        profileRef: followedUser._id,
+        account: followedUser.ownerAccount,
+        read: false,
+      },
+      followedUser,
+      account.preferences?.languages[0] || LocalizationLang.English
+    );
   }
 
   async blockUser(user: User, targetCastcleId: string) {
