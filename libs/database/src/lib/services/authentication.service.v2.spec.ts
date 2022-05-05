@@ -1,8 +1,16 @@
+import {
+  FacebookClient,
+  Mailer,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
+import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AnalyticService,
   AuthenticationService,
@@ -11,9 +19,10 @@ import {
   MongooseForFeatures,
 } from '../database.module';
 import { EntityVisibility } from '../dtos';
+import { QueueName } from '../models';
+import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential } from '../schemas';
 import { SignupRequirements } from './authentication.service';
-import { QueueName } from '../models';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
@@ -32,14 +41,14 @@ import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.clien
 import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
 
 describe('Authentication Service', () => {
-  let mongod: MongoMemoryServer;
+  let mongod: MongoMemoryReplSet;
   let app: TestingModule;
   let service: AuthenticationServiceV2;
   let serviceV1: AuthenticationService;
   let userService: UserService;
 
   beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
+    mongod = await MongoMemoryReplSet.create();
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
@@ -75,6 +84,21 @@ describe('Authentication Service', () => {
     service = app.get(AuthenticationServiceV2);
     serviceV1 = app.get(AuthenticationService);
     userService = app.get(UserService);
+  });
+
+  describe('#guestLogin()', () => {
+    it('should return accesstoken and refreshtoken after guestLogin', async () => {
+      const tokenResponse = await service.guestLogin({
+        device: 'iPhone01',
+        deviceUUID: '83b696d7-320b-4402-a412-d9cee10fc6a3',
+        languagesPreferences: ['en'],
+        header: {
+          platform: 'iOs',
+        },
+      });
+      expect(tokenResponse.accessToken).toBeDefined();
+      expect(tokenResponse.refreshToken).toBeDefined();
+    });
   });
 
   describe('#Exist', () => {

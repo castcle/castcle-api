@@ -35,10 +35,12 @@ import {
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { Types ,Model} from 'mongoose';
 import { DateTime } from 'luxon';
-import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
+  CreateCredentialDto,
+  EntityVisibility,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   SocialConnectDto,
@@ -49,9 +51,16 @@ import {
   OtpObjective,
   OtpTemplateMessage,
   UserType,
+  AccountRequirements
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
+import {
+  Account,
+  AccountAuthenIdType,
+  AccountRole,
+  Credential,
+  User,
+} from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
@@ -66,9 +75,10 @@ export class AuthenticationServiceV2 {
     private twitterClient: TwitterClient,
     private mailer: Mailer,
     private repository: Repository,
+    @InjectModel('Account') private accountModel: Model<Account>,
   ) {}
 
-  private generateTokenPayload(credential: Credential, user: User) {
+  private generateTokenPayload(credential: Credential, user?: User) {
     if (credential.account.isGuest) {
       return {
         id: credential.account._id,
@@ -374,6 +384,85 @@ export class AuthenticationServiceV2 {
       verifyTokenExpireDate,
       activationDate: autoActivateEmail ? now : undefined,
     });
+  }
+
+  /**
+   * create account from guest user
+   * @param {AccountRequirements} requestOption
+   * @returns {TokenResponse}
+   */
+  async guestLogin(requestOption: AccountRequirements) {
+    const credentialGuest = await this.repository.findCredential({
+      deviceUUID: requestOption.deviceUUID,
+      'account.isGuest': true,
+    });
+
+    if (credentialGuest) {
+      const tokenPayload = this.generateTokenPayload(credentialGuest);
+      return await credentialGuest.renewTokens(tokenPayload, {
+        id: String(credentialGuest.account._id),
+      });
+    }
+
+    const session = await this.accountModel.startSession();
+    session.startTransaction();
+    try {
+      const account = await this.repository.createAccount(requestOption, {
+        session,
+      });
+
+      const { accessToken, accessTokenExpireDate } =
+        this.repository.generateAccessToken({
+          id: account._id as string,
+          role: AccountRole.Guest,
+          showAds: true,
+        });
+
+      const { refreshToken, refreshTokenExpireDate } =
+        this.repository.generateRefreshToken({
+          id: account._id as string,
+        });
+
+      const credential = await this.repository.createCredential(
+        {
+          account: {
+            _id: Types.ObjectId(account._id),
+            isGuest: true,
+            preferences: {
+              languages: requestOption.languagesPreferences,
+            },
+            visibility: EntityVisibility.Publish,
+          },
+          accessToken,
+          accessTokenExpireDate,
+          refreshToken,
+          refreshTokenExpireDate,
+          device: requestOption.device,
+          platform: requestOption.header.platform,
+          deviceUUID: requestOption.deviceUUID,
+        } as CreateCredentialDto,
+        {
+          session,
+        },
+      );
+
+      if (!account.credentials) account.credentials = [];
+      account.credentials.push({
+        _id: Types.ObjectId(credential._id),
+        deviceUUID: credential.deviceUUID,
+      });
+
+      await account.save({ session });
+      await session.commitTransaction();
+
+      return {
+        accessToken: credential.accessToken,
+        refreshToken: credential.refreshToken,
+      };
+    } catch {
+      await session.abortTransaction();
+      throw CastcleException.FORBIDDEN;
+    }
   }
 
   /**

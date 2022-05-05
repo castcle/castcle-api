@@ -40,7 +40,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { EventName, OtpObjective, UserType } from '../models';
+import { EventName, OtpObjective,AccountRequirements, UserType } from '../models';
 import {
   Account,
   AccountActivation,
@@ -57,19 +57,6 @@ import {
 } from '../schemas';
 import { AccountDevice } from './../schemas/account-device.schema';
 import { UserService } from './user.service';
-
-export interface AccountRequirements {
-  header: {
-    platform: string;
-  };
-  device: string;
-  deviceUUID: string;
-  languagesPreferences: string[];
-  geolocation?: {
-    countryCode: string;
-    continentCode: string;
-  };
-}
 
 export interface SignupRequirements {
   email: string;
