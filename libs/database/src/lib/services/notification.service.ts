@@ -358,7 +358,7 @@ export class NotificationService {
 
         return notify.toNotificationPayload({
           message: message,
-          user: userSort[0],
+          userCurrent: userSort[0],
         });
       })
     );
@@ -390,7 +390,7 @@ export class NotificationService {
         sound: 'default',
         'mutable-content': 1,
       },
-      payload: notify.toNotificationPayload({ message }),
+      payload: notify.toNotificationPayload({ message }) as any,
       firebaseTokens: firebaseToken.map((item) => String(item.firebaseToken)),
     } as NotificationMessage;
   };

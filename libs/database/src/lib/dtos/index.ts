@@ -45,3 +45,4 @@ export * from './token.dto';
 export * from './user.dto';
 export * from './user.dto.v2';
 export * from './ux.engagement.dto';
+export * from './notification.dto';

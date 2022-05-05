@@ -90,10 +90,7 @@ const creatMockData = async (
     source: sourceType,
     sourceUserId: user,
     type: typeNoti,
-    targetRef: {
-      $ref: typeNoti !== NotificationType.System ? typeNoti : null,
-      $id: docRefId,
-    },
+    contentRef: undefined,
     read: false,
     account: {
       _id: userCredential.account._id,
