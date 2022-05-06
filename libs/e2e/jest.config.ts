@@ -1,6 +1,6 @@
 module.exports = {
   displayName: 'e2e',
-  preset: '../../jest.preset.js',
+  preset: '../../jest.preset.ts',
   setupFiles: ['../../jest.setup.ts', './jest.setup.ts'],
   globals: {
     'ts-jest': {
