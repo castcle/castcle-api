@@ -653,16 +653,30 @@ export class AdsService {
     session: mongoose.ClientSession
   ) => {
     //!!! TODO should embed in adsplacement
+    const creatorPool = reward.creatorShare + reward.farmingShare;
+    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
+    const cfs = await this._contentFarmingModel.find({
+      content: {
+        $in: adsplacement.contents.map((c) => String(c)),
+      },
+    });
 
     const transferTo: any[] = [];
     const ledgers: any[] = [];
     for (let i = 0; i < adsplacement.contents.length; i++) {
+      const currentCfs = cfs.filter(
+        (c) => String(c.content) === adsplacement.contents[i].contentId
+      );
+
       //contents[i].author.id get author id from this
       const user = await this._userModel.findById(
         adsplacement.contents[i].authorId
       );
       const rewardPerContent =
-        reward.creatorShare / adsplacement.contents.length;
+        currentCfs.length === 0
+          ? creatorRewardPerContent
+          : creatorRewardPerContent *
+            (reward.creatorShare / (reward.creatorShare + reward.farmingShare));
       transferTo.push({
         account: user.ownerAccount.id,
         type: WalletType.PERSONAL,
@@ -701,57 +715,109 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession
   ) => {
+    const creatorPool = reward.creatorShare + reward.farmingShare;
+    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
+
     const cfs = await this._contentFarmingModel.find({
       content: {
         $in: adsplacement.contents.map((c) => String(c)),
       },
     });
-    const transferTo: any[] = [];
-    const ledgers: any[] = [];
-    for (let i = 0; i < cfs.length; i++) {
-      const rewardContent = cfs[i].weight * reward.farmingShare;
-      transferTo.push({
-        account: String(cfs[i].account),
-        type: WalletType.PERSONAL,
-        value: rewardContent,
-      });
-      ledgers.push({
-        debit: {
-          caccountNo:
-            adsplacement.campaign.campaignPaymentType ===
-            AdsPaymentMethod.ADS_CREDIT
-              ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-              : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
-          value: rewardContent,
-        },
-        credit: {
-          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-          value: rewardContent,
-        },
-      });
+
+    for (let j = 0; j < adsplacement.contents.length; j++) {
+      const currentCfs = cfs.filter(
+        (c) => String(c.content) === adsplacement.contents[j].contentId
+      );
+      if (currentCfs.length > 0) {
+        //has content farming
+        const transferTo: any[] = [];
+        const ledgers: any[] = [];
+        for (let i = 0; i < currentCfs.length; i++) {
+          const rewardContent =
+            currentCfs[i].weight *
+            (reward.farmingShare /
+              (reward.farmingShare + reward.creatorShare)) *
+            creatorRewardPerContent;
+          transferTo.push({
+            account: String(currentCfs[i].account),
+            type: WalletType.PERSONAL,
+            value: rewardContent,
+          });
+          ledgers.push({
+            debit: {
+              caccountNo:
+                adsplacement.campaign.campaignPaymentType ===
+                AdsPaymentMethod.ADS_CREDIT
+                  ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                  : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+              value: rewardContent,
+            },
+            credit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              value: rewardContent,
+            },
+          });
+        }
+        await this._contentFarmingModel.updateMany(
+          { _id: { $in: currentCfs.map((c) => c.id) } },
+          {
+            isDistributed: true,
+          },
+          { session: session }
+        );
+        await this._contentModel.updateMany(
+          { _id: { $in: currentCfs.map((c) => c.content) } },
+          { 'farming.isDistributed': true }
+        );
+        await this.taccountService.transfers(
+          {
+            from: {
+              type: WalletType.CASTCLE_ADS_LOCKED,
+              value: reward.farmingShare,
+            },
+            to: transferTo,
+            ledgers: ledgers,
+          },
+          session
+        );
+      } else {
+        const author = await this._userModel.findById(
+          adsplacement.contents[j].authorId
+        );
+        await this.taccountService.transfers(
+          {
+            from: {
+              type: WalletType.CASTCLE_ADS_LOCKED,
+              value: creatorRewardPerContent,
+            },
+            to: [
+              {
+                type: WalletType.PERSONAL,
+                value: creatorRewardPerContent,
+                account: String(author.ownerAccount),
+              },
+            ],
+            ledgers: [
+              {
+                debit: {
+                  caccountNo:
+                    adsplacement.campaign.campaignPaymentType ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                      : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+                  value: creatorRewardPerContent,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: creatorRewardPerContent,
+                },
+              },
+            ],
+          },
+          session
+        );
+      }
     }
-    await this._contentFarmingModel.updateMany(
-      { _id: { $in: cfs.map((c) => c.id) } },
-      {
-        isDistributed: true,
-      },
-      { session: session }
-    );
-    await this._contentModel.updateMany(
-      { _id: { $in: cfs.map((c) => c.content) } },
-      { 'farming.isDistributed': true }
-    );
-    return this.taccountService.transfers(
-      {
-        from: {
-          type: WalletType.CASTCLE_ADS_LOCKED,
-          value: reward.farmingShare,
-        },
-        to: transferTo,
-        ledgers: ledgers,
-      },
-      session
-    );
 
     //transfer rewardContent from ads credit lock to cfs[0].account;
   };
