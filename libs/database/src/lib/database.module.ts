@@ -31,6 +31,7 @@ import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
+import {} from '..';
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {

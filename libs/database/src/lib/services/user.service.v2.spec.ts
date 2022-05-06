@@ -34,6 +34,12 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
+import {
+  Meta,
+  PageResponseDto,
+  PaginationQuery,
+  UserResponseDto,
+} from '../dtos';
 import { generateMockUsers } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Repository } from '../repositories';
@@ -119,6 +125,8 @@ describe('UserServiceV2', () => {
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
+
+      await userServiceV2.blockUser(user1, String(user2._id));
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
@@ -127,9 +135,17 @@ describe('UserServiceV2', () => {
       );
     });
 
-    it('should block user and create blocking relationship', async () => {
-      await userServiceV2.blockUser(user1, String(user2._id));
+    it('should return blocked lookup user', async () => {
+      const relationship: {
+        users: (PageResponseDto | UserResponseDto)[];
+        meta: Meta;
+      } = await userServiceV2.getBlockedLookup(user1, new PaginationQuery());
 
+      expect(relationship).not.toBeNull();
+      expect(relationship.users.length).toBeGreaterThan(0);
+    });
+
+    it('should block user and create blocking relationship', async () => {
       const [blockedUser, blockerUser] = await Promise.all([
         repository
           .findRelationships({ userId: [user2._id], followedUser: user1._id })
@@ -189,6 +205,11 @@ describe('UserServiceV2', () => {
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
     });
+  });
+
+  it('should be defined', () => {
+    expect(repository).toBeDefined();
+    expect(userServiceV2).toBeDefined();
   });
 
   afterAll(async () => {
