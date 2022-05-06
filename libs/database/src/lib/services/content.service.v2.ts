@@ -805,10 +805,12 @@ export class ContentServiceV2 {
       maxResults: query.maxResults,
       sinceId: query.sinceId,
       untilId: query.untilId,
+      isQuote: true,
     });
 
     const countContent = await this.repository.countContents({
       originalPost: contentId,
+      isQuote: true,
     });
 
     if (!bundleContents.contents.length)
