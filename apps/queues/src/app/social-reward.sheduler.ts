@@ -21,37 +21,16 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { Account, CastcleBase, Credential } from '.';
-import {
-  AdsCost,
-  AdsPlacementCampaign,
-  AdsPlacementContent,
-} from '../models/ads.model';
+import { ContentServiceV2 } from '@castcle-api/database';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
-@Schema({ timestamps: true })
-export class AdsPlacement extends CastcleBase {
-  @Prop({ required: true, type: Array })
-  contents: AdsPlacementContent[]; // array ob objectId
+@Injectable()
+export class SocialRewardScheduler {
+  constructor(private contentService: ContentServiceV2) {}
 
-  @Prop({ required: true, type: Object })
-  cost: AdsCost;
-
-  @Prop({ required: true, type: Object })
-  campaign: AdsPlacementCampaign;
-
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
-  viewer: Account;
-
-  @Prop({ type: Object })
-  engagements: { [key: string]: number };
-
-  @Prop()
-  seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
-
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
-  seenCredential?: Credential;
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async distributeSocialReward() {
+    //await this.contentService.expireAllFarmedToken();
+  }
 }
-
-export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);
