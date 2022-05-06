@@ -24,7 +24,7 @@
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   GetBalanceResponse,
   pipelineOfGetBalanceFromWalletType,
@@ -129,10 +129,10 @@ export class TAccountService {
     return true;
   }
 
-  async transfers(transferDTO: TransactionDto) {
+  async transfers(transferDTO: TransactionDto, session?: ClientSession) {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
-      return new this._transactionModel(transferDTO).save();
+      return new this._transactionModel(transferDTO).save({ session: session });
     else throw CastcleException.INVALID_TRANSACTIONS_DATA;
   }
 
