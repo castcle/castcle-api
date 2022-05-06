@@ -30,16 +30,27 @@ import {
   UserType,
   WalletType,
 } from '../models';
-import { Account, Content, ContentFarming, User } from '../schemas';
+import {
+  Account,
+  Content,
+  ContentFarming,
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+  User,
+} from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { NotificationServiceV2 } from './notification.service.v2';
 import {
   Author,
+  CastcleIncludes,
   ContentType,
   EntityVisibility,
+  GetQuoteCastDto,
+  Meta,
   NotificationSource,
   NotificationType,
   PaginationQuery,
+  ResponseDto,
   ShortPayload,
 } from '../dtos';
 import { Types } from 'mongoose';
@@ -47,9 +58,11 @@ import { TAccountService } from './taccount.service';
 import { ContentFarmingReponse } from '../models/content-farming.model';
 import { Repository } from '../repositories';
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 
 @Injectable()
 export class ContentServiceV2 {
+  private logger = new CastLogger(ContentServiceV2.name);
   constructor(
     private notificationServiceV2: NotificationServiceV2,
     private taccountService: TAccountService,
@@ -59,6 +72,78 @@ export class ContentServiceV2 {
     @InjectModel('Content')
     private contentModel: Model<Content>
   ) {}
+
+  toContentsResponses = async (
+    bundleContents: GetQuoteCastDto,
+    { hasRelationshipExpansion }: PaginationQuery,
+    viewer?: User,
+    countContents?: number
+  ) => {
+    const payloadContents = bundleContents.contents.map((content) =>
+      signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          content,
+          bundleContents.engagements,
+          bundleContents.metrics?.find(
+            (metric) => String(metric._id) === String(content._id)
+          )
+        )
+      )
+    );
+
+    if (hasRelationshipExpansion) {
+      const usersId = bundleContents.authors.map((item) => item._id);
+
+      const relationships = await this.repository
+        .findRelationships({
+          userId: viewer._id,
+          followedUser: usersId,
+        })
+        .exec();
+
+      const includesUsers = bundleContents.authors.map((author) => {
+        const relationshipUser = relationships.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(author._id)
+        );
+        return new Author(author as any).toIncludeUser({
+          blocked: relationshipUser?.blocking ?? false,
+          blocking: relationshipUser?.blocking ?? false,
+          followed: relationshipUser?.following ?? false,
+        });
+      });
+
+      const payloadCasts = bundleContents.casts.map((cast) =>
+        signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+      );
+
+      return {
+        payload: payloadContents,
+        includes: new CastcleIncludes({
+          casts: payloadCasts,
+          users: includesUsers,
+        }),
+        meta: Meta.fromDocuments(payloadContents as any, countContents),
+      } as ResponseDto;
+    }
+
+    const includesUsers = bundleContents.authors.map((author) =>
+      new Author(author as any).toIncludeUser()
+    );
+
+    const payloadCasts = bundleContents.casts.map((cast) =>
+      signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+    );
+
+    return {
+      payload: payloadContents,
+      includes: new CastcleIncludes({
+        casts: payloadCasts,
+        users: includesUsers,
+      }),
+      meta: Meta.fromDocuments(payloadContents as any, countContents),
+    } as ResponseDto;
+  };
 
   likeCast = async (contentId: string, user: User, account: Account) => {
     const content = await this.repository.findContent({ _id: contentId });
@@ -178,7 +263,7 @@ export class ContentServiceV2 {
       isRecast: true,
     } as Content;
     const recastContent = await this.repository.createContent(newContent);
-    if (!recastContent) throw CastcleException.SOMETHING_WRONG;
+    if (!recastContent) throw CastcleException.CONTENT_NOT_FOUND;
 
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Recast,
@@ -190,7 +275,6 @@ export class ContentServiceV2 {
       itemId: recastContent._id,
       visibility: EntityVisibility.Publish,
     });
-    if (!engagement) throw CastcleException.SOMETHING_WRONG;
 
     const userOwner = await this.repository.findUser({
       _id: content.author.id,
@@ -261,6 +345,88 @@ export class ContentServiceV2 {
       await notification.remove();
 
     return Promise.all([content.remove(), engagement.remove()]);
+  };
+
+  quoteCast = async (
+    contentId: string,
+    message: string,
+    user: User,
+    account: Account
+  ) => {
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const originalContent = await this.repository.findContent({
+      originalPost: contentId,
+      author: user._id,
+      isQuote: true,
+      message,
+    });
+
+    if (originalContent) throw CastcleException.QUOTE_IS_EXIST;
+
+    const author = new Author({
+      id: user._id,
+      avatar: user.profile?.images?.avatar || null,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
+      verified: user.verified,
+    });
+
+    const sourceContentId =
+      content.isRecast || content.isQuote
+        ? content?.originalPost?._id
+        : content._id;
+
+    const newContent = {
+      author: author,
+      payload: {
+        message: message,
+      } as ShortPayload,
+      revisionCount: 0,
+      type: ContentType.Short,
+      isQuote: true,
+      originalPost:
+        content.isQuote || content.isRecast ? content.originalPost : content,
+    } as Content;
+
+    const quoteContent = await this.repository.createContent(newContent);
+    if (!quoteContent) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagement = await this.repository.createEngagement({
+      type: EngagementType.Quote,
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: sourceContentId,
+      },
+      itemId: quoteContent._id,
+      visibility: EntityVisibility.Publish,
+    });
+
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
+
+    if (userOwner && String(user._id) !== String(content.author.id))
+      await this.notificationServiceV2.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: user._id,
+          type: NotificationType.Quote,
+          contentRef: quoteContent._id,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
+        userOwner,
+        account.preferences.languages[0]
+      );
+
+    return { quoteContent, engagement };
   };
 
   createContentFarming = async (contentId: string, accountId: string) => {
@@ -595,19 +761,19 @@ export class ContentServiceV2 {
       };
     }
 
-    const relationshipUser = users.map((item) => item._id);
-
     const relationships = await this.repository
       .findRelationships({
-        userId: relationshipUser,
+        userId: viewer._id,
+        followedUser: usersId,
       })
       .exec();
-    const relationship = relationships?.find(
-      (relationship) => String(relationship.user) === String(viewer?._id)
-    );
 
     const userResponses = await Promise.all(
       users.map(async (user) => {
+        const relationship = relationships?.find(
+          (relationship) =>
+            String(relationship.followedUser) === String(user._id)
+        );
         return user.type === UserType.PAGE
           ? user.toPageResponseV2(
               relationship?.blocking ?? false,
@@ -625,5 +791,40 @@ export class ContentServiceV2 {
       items: userResponses,
       count: userCounts,
     };
+  };
+
+  getQuoteByCast = async (
+    contentId: string,
+    query: PaginationQuery,
+    viewer?: User
+  ) => {
+    this.logger.log('Start get quote cast');
+    const [bundleContents] = await this.repository.aggregationContent({
+      viewer: viewer,
+      originalPost: contentId,
+      maxResults: query.maxResults,
+      sinceId: query.sinceId,
+      untilId: query.untilId,
+    });
+
+    const countContent = await this.repository.countContents({
+      originalPost: contentId,
+    });
+
+    if (!bundleContents.contents.length)
+      return {
+        payload: [],
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      } as ResponseDto;
+
+    this.logger.log('Success get quote cast');
+
+    return this.toContentsResponses(
+      bundleContents,
+      query,
+      viewer,
+      countContent
+    );
   };
 }

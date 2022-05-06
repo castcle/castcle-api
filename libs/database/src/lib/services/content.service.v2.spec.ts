@@ -188,6 +188,23 @@ describe('ContentServiceV2', () => {
     });
   });
 
+  describe('#quoteCast()', () => {
+    it('should create quote cast.', async () => {
+      const { quoteContent, engagement } = await service.quoteCast(
+        content._id,
+        'quote cast',
+        mocksUsers[1].user,
+        mocksUsers[1].account
+      );
+
+      expect(quoteContent).toBeTruthy();
+      expect(engagement).toBeTruthy();
+
+      expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
+      expect(String(engagement.itemId)).toEqual(String(quoteContent._id));
+      expect(engagement.type).toEqual(NotificationType.Quote);
+    });
+  });
   describe('Farming', () => {
     let mockFarmingUsers: MockUserDetail[];
     let testContents: Content[] = [];
@@ -435,6 +452,25 @@ describe('ContentServiceV2', () => {
       expect(recastResponse.items).toHaveLength(1);
       expect(recastResponse.count).toEqual(1);
       await recastResponse.items.map((item) => {
+        expect(item.id).toEqual(mocksUsers[1].user._id);
+      });
+    });
+
+    it('should create quote cast user on cast.', async () => {
+      const quotecastResponse = await service.getEngagementCast(
+        content._id,
+        mocksUsers[4].account,
+        {
+          maxResults: 25,
+          hasRelationshipExpansion: true,
+        },
+        EngagementType.Quote,
+        mocksUsers[4].user
+      );
+      expect(quotecastResponse).toBeTruthy();
+      expect(quotecastResponse.items).toHaveLength(1);
+      expect(quotecastResponse.count).toEqual(1);
+      await quotecastResponse.items.map((item) => {
         expect(item.id).toEqual(mocksUsers[1].user._id);
       });
     });

@@ -44,6 +44,7 @@ import {
   GetAvailableIdResponse,
   pipelineOfGetAvailableId,
 } from '../aggregations';
+import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
 import { EntityVisibility } from '../dtos';
 import { UserType } from '../models';
 import {
@@ -87,8 +88,8 @@ type EngagementQuery = {
 };
 
 type RelationshipQuery = {
-  userId?: User[];
-  followedUser?: string;
+  userId?: User | User[];
+  followedUser?: User | User[];
   blocking?: boolean;
   sinceId?: string;
   untilId?: string;
@@ -121,6 +122,12 @@ type ContentQuery = {
   author?: string;
   originalPost?: string;
   isRecast?: boolean;
+  isQuote?: boolean;
+  message?: string;
+  sinceId?: string;
+  untilId?: string;
+  maxResults?: number;
+  viewer?: User;
 };
 
 type HashtagQuery = {
@@ -128,6 +135,7 @@ type HashtagQuery = {
   tags?: string[];
   score?: number;
 };
+
 @Injectable()
 export class Repository {
   constructor(
@@ -174,7 +182,11 @@ export class Repository {
       if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
     }
     if (filter.blocking) query.blocking = filter.blocking;
-    if (filter.userId) query.user = { $in: filter.userId };
+    if (filter.followedUser) query.followedUser = filter.followedUser as any;
+    if (isArray(filter.followedUser))
+      query.followedUser = { $in: filter.followedUser as any };
+    if (filter.userId) query.user = filter.userId as any;
+    if (isArray(filter.userId)) query.user = { $in: filter.userId as any };
 
     return query;
   };
@@ -185,10 +197,18 @@ export class Repository {
     };
 
     if (filter._id) query._id = filter._id;
+    if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
       query['originalPost._id'] = Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
     if (filter.isRecast) query.isRecast = filter.isRecast;
+    if (filter.isQuote) query.isQuote = filter.isQuote;
+
+    if (filter.sinceId && filter.untilId)
+      return createCastcleFilter(query, {
+        sinceId: filter.sinceId,
+        untilId: filter.untilId,
+      });
 
     return query;
   };
@@ -373,6 +393,25 @@ export class Repository {
   }
   findContent(filter: ContentQuery) {
     return this.contentModel.findOne(this.getContentQuery(filter)).exec();
+  }
+
+  findContents(filter: ContentQuery) {
+    return this.contentModel.find(this.getContentQuery(filter)).exec();
+  }
+  countContents(filter: ContentQuery) {
+    return this.contentModel
+      .countDocuments(this.getContentQuery(filter))
+      .exec();
+  }
+
+  aggregationContent(filter: ContentQuery) {
+    return this.contentModel.aggregate(
+      pipelineGetContents({
+        filter: this.getContentQuery(filter),
+        viewer: filter.viewer,
+        maxResults: filter.maxResults,
+      })
+    );
   }
 
   createContent(content: AnyKeys<Content>) {

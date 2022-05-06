@@ -276,6 +276,11 @@ export const DefaultErrors = {
     code: '5010',
     message: 'You have reach your farming limit, please wait 24hrs',
   },
+  '5011': {
+    statusCode: '400',
+    code: '5011',
+    message: 'You already said that',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',
