@@ -303,7 +303,7 @@ export class UserServiceV2 {
       .exec();
 
     const userIds = relationships.map(({ followedUser }) =>
-      Types.ObjectId(followedUser.toString())
+      Types.ObjectId(followedUser._id)
     );
 
     return this.getByCriteria(
