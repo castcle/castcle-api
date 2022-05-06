@@ -78,7 +78,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { BlockingDto, TargetCastcleDto } from '../dtos';
+import { TargetCastcleDtoV2 } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -540,7 +540,7 @@ export class UsersControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   async blockUser(
     @Auth() authorizer: Authorizer,
-    @Body() { targetCastcleId }: BlockingDto,
+    @Body() { targetCastcleId }: TargetCastcleDtoV2,
     @Param()
     { isMe, userId }: GetUserParam
   ) {
