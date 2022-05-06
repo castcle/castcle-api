@@ -21,31 +21,19 @@
  * or have any questions.
  */
 import { HttpException } from '@nestjs/common';
-import { LocalErrorMessage } from './messages';
-import { ErrorMessages } from './messages/default';
+import { CastcleErrors } from './errors';
 
-interface ErrorStatus {
-  statusCode: string;
-  code: keyof typeof ErrorMessages;
-  message: string;
-}
-
-export class CastcleException extends HttpException {
-  public error: ErrorStatus;
-
-  constructor(castcleStatus: keyof typeof ErrorMessages, language = 'default') {
-    const error: ErrorStatus =
-      LocalErrorMessage[language]?.[castcleStatus] ??
-      ErrorMessages[castcleStatus];
-    super(error, Number(error.statusCode));
-    this.error = error;
+export class CastcleException<T = any> extends Error {
+  constructor(private code: string, private payload?: T) {
+    super(CastcleErrors.getLocalizedError(code).message);
   }
 
-  getLocalStatus(language: string, code?: keyof typeof ErrorMessages) {
-    return (
-      LocalErrorMessage[language]?.[code || this.error.code] ||
-      LocalErrorMessage.default[code || this.error.code]
-    );
+  getLocalizedException(language?: string) {
+    const error = CastcleErrors.getLocalizedError<T>(this.code, language);
+
+    if (this.payload) error.payload = this.payload;
+
+    return new HttpException(error, Number(error.statusCode));
   }
 
   static REQUEST_URL_NOT_FOUND = new CastcleException('1001');
@@ -101,4 +89,7 @@ export class CastcleException extends HttpException {
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');
+
+  static DUPLICATE_EMAIL_WITH_PAYLOAD = <T>(payload: T) =>
+    new CastcleException('3021', payload);
 }
