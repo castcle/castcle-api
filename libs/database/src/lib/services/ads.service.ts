@@ -700,11 +700,15 @@ export class AdsService {
       });
     }
     await this._contentFarmingModel.updateMany(
-      { _id: { $in: cfs.map((cfs) => cfs.id) } },
+      { _id: { $in: cfs.map((c) => c.id) } },
       {
         isDistributed: true,
       },
       { session: session }
+    );
+    await this._contentModel.updateMany(
+      { _id: { $in: cfs.map((c) => c.content) } },
+      { 'farming.isDistributed': true }
     );
     return this.taccountService.transfers(
       {
