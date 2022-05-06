@@ -225,10 +225,9 @@ export class UserServiceV2 {
             user: user._id,
             followedUser: blockUser._id,
             visibility: EntityVisibility.Publish,
-            following: false,
             blocked: false,
           },
-          $set: { blocking: true },
+          $set: { blocking: true, following: false },
         },
         { upsert: true, session }
       );
