@@ -29,6 +29,7 @@ import {
   ContentService,
   ContentServiceV2,
   DataService,
+  EngagementType,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
@@ -46,10 +47,11 @@ import {
   ContentType,
   GetUserParam,
   NotificationType,
+  GetContentDto,
   ReplyCommentParam,
   ShortPayload,
-  UnlikeCastParam,
   UnlikeCommentCastParam,
+  GetSourceContentParam,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import { Comment, Content } from '@castcle-api/database/schemas';
@@ -69,7 +71,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SuggestionService } from '../services/suggestion.service';
 import { UsersControllerV2 } from './users.controller.v2';
 
-describe('CommentControllerV2', () => {
+describe('UsersControllerV2', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
   let appController: UsersControllerV2;
@@ -493,17 +495,19 @@ describe('CommentControllerV2', () => {
           mocksUsers[1].user,
           mocksUsers[1].credential
         );
-        await appController.likeCast(authorizer, content._id, {
+        await appController.likeCast(authorizer, { contentId: content._id }, {
           userId: mocksUsers[1].user._id,
         } as GetUserParam);
 
         const engagement = await contentService._engagementModel.findOne({
           user: mocksUsers[1].user._id,
+          type: EngagementType.Like,
           targetRef: {
             $ref: 'content',
             $id: content._id,
           },
         });
+
         expect(engagement).toBeTruthy();
         expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
         expect(String(engagement.targetRef.oid)).toEqual(String(content._id));
@@ -517,9 +521,13 @@ describe('CommentControllerV2', () => {
           mocksUsers[2].user,
           mocksUsers[2].credential
         );
-        await appController.likeCommentCast(authorizer, comment._id, {
-          userId: mocksUsers[2].user._id,
-        } as GetUserParam);
+        await appController.likeCommentCast(
+          authorizer,
+          { commentId: comment._id },
+          {
+            userId: mocksUsers[2].user._id,
+          } as GetUserParam
+        );
 
         const engagement = await contentService._engagementModel.findOne({
           user: mocksUsers[2].user._id,
@@ -541,9 +549,13 @@ describe('CommentControllerV2', () => {
           mocksUsers[3].credential
         );
 
-        await appController.likeCommentCast(authorizer, reply._id, {
-          userId: mocksUsers[3].user._id,
-        } as GetUserParam);
+        await appController.likeCommentCast(
+          authorizer,
+          { commentId: reply._id },
+          {
+            userId: mocksUsers[3].user._id,
+          } as GetUserParam
+        );
 
         const engagement = await contentService._engagementModel.findOne({
           user: mocksUsers[3].user._id,
@@ -565,6 +577,7 @@ describe('CommentControllerV2', () => {
       await contentService._commentModel.deleteMany({});
     });
   });
+
   describe('#unlike', () => {
     let mocksUsers: MockUserDetail[];
     let content: Content;
@@ -602,7 +615,7 @@ describe('CommentControllerV2', () => {
         await appController.unlikeCast(authorizer, {
           userId: mocksUsers[1].user._id,
           sourceContentId: content._id,
-        } as UnlikeCastParam);
+        } as GetSourceContentParam);
 
         const engagement = await contentService._engagementModel.findOne({
           user: mocksUsers[1].user._id,
@@ -657,6 +670,91 @@ describe('CommentControllerV2', () => {
         });
 
         expect(engagement).toBeNull();
+      });
+    });
+
+    describe('#recast', () => {
+      describe('#recastContent()', () => {
+        it('should recast is correct.', async () => {
+          const authorizer = new Authorizer(
+            mocksUsers[1].account,
+            mocksUsers[1].user,
+            mocksUsers[1].credential
+          );
+          const recast = await appController.recastContent(
+            authorizer,
+            {
+              contentId: content._id,
+            } as GetContentDto,
+            {
+              userId: mocksUsers[1].user._id,
+            } as GetUserParam
+          );
+
+          const engagement = await (
+            service as any
+          ).repositoryService.findEngagement({
+            user: mocksUsers[1].user._id,
+            targetRef: {
+              $ref: 'content',
+              $id: content._id,
+            },
+            type: EngagementType.Recast,
+          });
+
+          expect(engagement.user).toEqual(mocksUsers[1].user._id);
+          expect(String(engagement.itemId)).toEqual(recast.payload.id);
+          expect(engagement.targetRef.oid).toEqual(content._id);
+          expect(engagement.type).toEqual(EngagementType.Recast);
+
+          expect(recast.payload.authorId).toEqual(mocksUsers[1].user._id);
+          expect(recast.payload.referencedCasts.id).toEqual(content._id);
+          expect(recast.includes.casts[0].id).toEqual(String(content._id));
+        });
+      });
+      describe('#undoRecast()', () => {
+        it('should undo recast is correct.', async () => {
+          const authorizer = new Authorizer(
+            mocksUsers[2].account,
+            mocksUsers[2].user,
+            mocksUsers[2].credential
+          );
+          const recast = await appController.recastContent(
+            authorizer,
+            {
+              contentId: content._id,
+            } as GetContentDto,
+            {
+              userId: mocksUsers[2].user._id,
+            } as GetUserParam
+          );
+
+          await appController.undoRecast(authorizer, {
+            userId: mocksUsers[2].user._id,
+            sourceContentId: recast.payload.id,
+          } as GetSourceContentParam);
+
+          const findContent = await (
+            service as any
+          ).repositoryService.findContent({
+            _id: recast.payload.id,
+            author: mocksUsers[2].user._id,
+          });
+
+          const engagement = await (
+            service as any
+          ).repositoryService.findEngagement({
+            user: mocksUsers[2].user._id,
+            targetRef: {
+              $ref: 'content',
+              $id: content._id,
+            },
+            type: EngagementType.Recast,
+          });
+
+          expect(findContent).toBeNull();
+          expect(engagement).toBeNull();
+        });
       });
     });
   });

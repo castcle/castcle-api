@@ -37,6 +37,7 @@ import {
   CreateCommentDto,
   ExpansionQuery,
   GetUserParam,
+  LikeCommentDto,
   NotificationSource,
   NotificationType,
   PageResponseDto,
@@ -44,10 +45,11 @@ import {
   ResponseDto,
   SyncSocialDtoV2,
   UnblockParam,
-  UnlikeCastParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
+  GetContentDto,
+  GetSourceContentParam,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -411,7 +413,7 @@ export class UsersControllerV2 {
   @Post(':userId/likes-casts')
   async likeCast(
     @Auth() authorizer: Authorizer,
-    @Body('contentId') contentId: string,
+    @Body() { contentId }: GetContentDto,
     @Param() { isMe, userId }: GetUserParam
   ) {
     const user = isMe
@@ -419,11 +421,12 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    const content = await this.contentService.getContentById(contentId);
 
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    await this.contentServiceV2.likeCast(content, user, authorizer.account);
+    const { content } = await this.contentServiceV2.likeCast(
+      contentId,
+      user,
+      authorizer.account
+    );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
@@ -437,13 +440,12 @@ export class UsersControllerV2 {
       feedItem._id,
       authorizer.credential
     );
-    return;
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':userId/likes-casts/:sourceContentId')
   async unlikeCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: UnlikeCastParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
   ) {
     const user = isMe
       ? authorizer.user
@@ -459,7 +461,7 @@ export class UsersControllerV2 {
   @Post(':userId/likes-comments')
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
-    @Body('commentId') commentId: string,
+    @Body() { commentId }: LikeCommentDto,
     @Param() { isMe, userId }: GetUserParam
   ) {
     const user = isMe
@@ -504,7 +506,6 @@ export class UsersControllerV2 {
       feedItem._id,
       authorizer.credential
     );
-    return;
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Comments)
@@ -563,5 +564,61 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.userServiceV2.unBlockUser(user, targetCastcleId);
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/recasts')
+  async recastContent(
+    @Auth() authorizer: Authorizer,
+    @Body() { contentId }: GetContentDto,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    this.logger.log(`Start recast content id: ${contentId}`);
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const recast = await this.contentServiceV2.recast(
+      contentId,
+      user,
+      authorizer.account
+    );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      recast.recastContent
+    );
+
+    if (feedItem) {
+      await this.suggestionService.seen(
+        authorizer.account,
+        feedItem._id,
+        authorizer.credential
+      );
+    }
+
+    return this.contentService.convertContentToContentResponse(
+      user,
+      recast.recastContent
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleBasicAuth()
+  @Delete(':userId/recasts/:sourceContentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoRecast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.contentServiceV2.undoRecast(sourceContentId, user);
   }
 }
