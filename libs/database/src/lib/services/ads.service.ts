@@ -565,7 +565,7 @@ export class AdsService {
       };
       const session = await this._adsPlacementModel.startSession();
       session.withTransaction(async () => {
-        await this.distributeAdsReward(adsplacement, reward);
+        await this.distributeAdsReward(adsplacement, reward, session);
         adsplacement.isModified('cost');
         await adsplacement.save();
       });
@@ -595,9 +595,9 @@ export class AdsService {
       };
       const session = await this._adsPlacementModel.startSession();
       session.withTransaction(async () => {
-        await this.distributeAdsReward(adsplacement, reward);
+        await this.distributeAdsReward(adsplacement, reward, session);
         adsplacement.isModified('cost');
-        await adsplacement.save();
+        await adsplacement.save({ session: session });
       });
       session.endSession();
     }
@@ -605,47 +605,52 @@ export class AdsService {
 
   distributeAdsReward = async (
     adsplacement: AdsPlacement,
-    reward: AdsSocialReward
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession
   ) => {
     //castRate = 1/castActualCost;
 
     //distribute Content Farming
-    await this.distributeContentFarmingReward(adsplacement, reward);
-    await this.distributeContentCreatorReward(adsplacement, reward);
-    return this.taccountService.transfers({
-      from: {
-        type: WalletType.CASTCLE_ADS_LOCKED,
-        value: reward.viewerShare,
-      },
-      to: [
-        {
-          account: adsplacement.viewer as unknown as string,
-          type: WalletType.PERSONAL,
+    await this.distributeContentFarmingReward(adsplacement, reward, session);
+    await this.distributeContentCreatorReward(adsplacement, reward, session);
+    return this.taccountService.transfers(
+      {
+        from: {
+          type: WalletType.CASTCLE_ADS_LOCKED,
           value: reward.viewerShare,
         },
-      ],
-      ledgers: [
-        {
-          debit: {
-            caccountNo:
-              adsplacement.campaign.campaignPaymentType ===
-              AdsPaymentMethod.ADS_CREDIT
-                ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-                : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+        to: [
+          {
+            account: adsplacement.viewer as unknown as string,
+            type: WalletType.PERSONAL,
             value: reward.viewerShare,
           },
-          credit: {
-            caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
-            value: reward.viewerShare,
+        ],
+        ledgers: [
+          {
+            debit: {
+              caccountNo:
+                adsplacement.campaign.campaignPaymentType ===
+                AdsPaymentMethod.ADS_CREDIT
+                  ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                  : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+              value: reward.viewerShare,
+            },
+            credit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              value: reward.viewerShare,
+            },
           },
-        },
-      ],
-    });
+        ],
+      },
+      session
+    );
   };
 
   distributeContentCreatorReward = async (
     adsplacement: AdsPlacement,
-    reward: AdsSocialReward
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession
   ) => {
     //!!! TODO should embed in adsplacement
 
@@ -678,19 +683,23 @@ export class AdsService {
         },
       });
     }
-    return this.taccountService.transfers({
-      from: {
-        type: WalletType.CASTCLE_ADS_LOCKED,
-        value: reward.creatorShare,
+    return this.taccountService.transfers(
+      {
+        from: {
+          type: WalletType.CASTCLE_ADS_LOCKED,
+          value: reward.creatorShare,
+        },
+        to: transferTo,
+        ledgers: ledgers,
       },
-      to: transferTo,
-      ledgers: ledgers,
-    });
+      session
+    );
   };
 
   distributeContentFarmingReward = async (
     adsplacement: AdsPlacement,
-    reward: AdsSocialReward
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession
   ) => {
     const cfs = await this._contentFarmingModel.find({
       content: {
@@ -700,7 +709,6 @@ export class AdsService {
     const transferTo: any[] = [];
     const ledgers: any[] = [];
     for (let i = 0; i < cfs.length; i++) {
-      cfs[i].isDistributed = true;
       const rewardContent = cfs[i].weight * reward.farmingShare;
       transferTo.push({
         account: String(cfs[i].account),
@@ -722,15 +730,24 @@ export class AdsService {
         },
       });
     }
-    Promise.all(cfs.map((cf) => cf.save()));
-    return this.taccountService.transfers({
-      from: {
-        type: WalletType.CASTCLE_ADS_LOCKED,
-        value: reward.farmingShare,
+    await this._contentFarmingModel.updateMany(
+      { _id: { $in: cfs.map((cfs) => cfs.id) } },
+      {
+        isDistributed: true,
       },
-      to: transferTo,
-      ledgers: ledgers,
-    });
+      { session: session }
+    );
+    return this.taccountService.transfers(
+      {
+        from: {
+          type: WalletType.CASTCLE_ADS_LOCKED,
+          value: reward.farmingShare,
+        },
+        to: transferTo,
+        ledgers: ledgers,
+      },
+      session
+    );
 
     //transfer rewardContent from ads credit lock to cfs[0].account;
   };
