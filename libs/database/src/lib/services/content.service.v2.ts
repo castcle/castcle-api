@@ -562,18 +562,20 @@ export class ContentServiceV2 {
       },
       type,
     };
-    const engagementCounts = await this.repository.countEngagements(filter);
 
     const engagementDocuments = await this.repository.findEngagements(
       { ...query, ...filter },
       {
         limit: query.maxResults,
         sort: { createdAt: -1 },
-        populate: 'user',
       }
     );
+    const usersId = engagementDocuments.map((item) => item.user._id);
 
-    if (!engagementDocuments.length)
+    const userCounts = await this.repository.findUserCount({ _id: usersId });
+
+    const users = await this.repository.findUsers({ _id: usersId });
+    if (!users.length)
       return {
         items: [],
         count: 0,
@@ -581,19 +583,19 @@ export class ContentServiceV2 {
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
       const engagementResponse = await Promise.all(
-        engagementDocuments.map(async (engagement) => {
-          return engagement.user.type === UserType.PAGE
-            ? engagement.user.toPageResponseV2()
-            : await engagement.user.toUserResponseV2();
+        users.map(async (user) => {
+          return user.type === UserType.PAGE
+            ? user.toPageResponseV2()
+            : await user.toUserResponseV2();
         })
       );
       return {
         items: engagementResponse,
-        count: engagementCounts,
+        count: userCounts,
       };
     }
 
-    const relationshipUser = engagementDocuments.map((item) => item.user?._id);
+    const relationshipUser = users.map((item) => item._id);
 
     const relationships = await this.repository
       .findRelationships({
@@ -605,25 +607,23 @@ export class ContentServiceV2 {
     );
 
     const engagementResponse = await Promise.all(
-      engagementDocuments
-        .filter((item) => item.user)
-        .map(async (engagement) => {
-          return engagement.user.type === UserType.PAGE
-            ? engagement.user.toPageResponseV2(
-                relationship?.blocking ?? false,
-                relationship?.blocking ?? false,
-                relationship?.following ?? false
-              )
-            : await engagement.user.toUserResponseV2({
-                blocked: relationship?.blocking ?? false,
-                blocking: relationship?.blocking ?? false,
-                followed: relationship?.following ?? false,
-              });
-        })
+      users.map(async (user) => {
+        return user.type === UserType.PAGE
+          ? user.toPageResponseV2(
+              relationship?.blocking ?? false,
+              relationship?.blocking ?? false,
+              relationship?.following ?? false
+            )
+          : await user.toUserResponseV2({
+              blocked: relationship?.blocking ?? false,
+              blocking: relationship?.blocking ?? false,
+              followed: relationship?.following ?? false,
+            });
+      })
     );
     return {
       items: engagementResponse,
-      count: engagementCounts,
+      count: userCounts,
     };
   };
 }
