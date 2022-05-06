@@ -283,7 +283,7 @@ export class UserServiceV2 {
     session.endSession();
   }
 
-  async unBlockUser(user: User, targetCastcleId: string) {
+  async unblockUser(user: User, targetCastcleId: string) {
     const unblockedUser = await this.repositoryService.findUser({
       _id: targetCastcleId,
     });
@@ -292,24 +292,52 @@ export class UserServiceV2 {
 
     const session = await this._relationshipModel.startSession();
     await session.withTransaction(async () => {
-      await this.repositoryService.updateRelationship(
-        {
-          user: user._id,
-          followedUser: unblockedUser._id,
-          blocking: true,
-        },
-        { $set: { blocking: false } },
-        { session },
-      );
-      await this.repositoryService.updateRelationship(
-        {
-          followedUser: user._id,
-          user: unblockedUser._id,
-          blocked: true,
-        },
-        { $set: { blocked: false } },
-        { session },
-      );
+      const [blockerRelation, blockedRelation] = await Promise.all([
+        this.repositoryService.findRelationship(
+          {
+            user: user._id,
+            followedUser: unblockedUser._id,
+          },
+          { session },
+        ),
+        this.repositoryService.findRelationship(
+          {
+            user: unblockedUser._id,
+            followedUser: user._id,
+          },
+          { session },
+        ),
+      ]);
+
+      if (blockerRelation.following || blockerRelation.blocked) {
+        await this.repositoryService.updateRelationship(
+          { _id: blockerRelation._id },
+          { $set: { blocking: false } },
+          { session },
+        );
+      } else {
+        await this.repositoryService.removeRelationship(
+          { _id: blockerRelation._id },
+          { session },
+        );
+      }
+
+      if (blockedRelation.following || blockedRelation.blocking) {
+        await this.repositoryService.updateRelationship(
+          {
+            followedUser: user._id,
+            user: unblockedUser._id,
+            blocked: true,
+          },
+          { $set: { blocked: false } },
+          { session },
+        );
+      } else {
+        await this.repositoryService.removeRelationship(
+          { _id: blockedRelation._id },
+          { session },
+        );
+      }
     });
     session.endSession();
   }

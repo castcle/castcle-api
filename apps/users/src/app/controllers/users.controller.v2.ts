@@ -555,7 +555,7 @@ export class UsersControllerV2 {
   @Delete(':userId/blocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async unBlockUser(
+  async unblockUser(
     @Auth() authorizer: Authorizer,
     @Param()
     { targetCastcleId, isMe, userId }: UnblockParam,
@@ -565,7 +565,7 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.userServiceV2.unBlockUser(user, targetCastcleId);
+    return this.userServiceV2.unblockUser(user, targetCastcleId);
   }
 
   @CastcleBasicAuth()
