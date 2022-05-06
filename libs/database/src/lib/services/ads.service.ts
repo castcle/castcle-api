@@ -47,6 +47,9 @@ import {
   AdsBoostStatus,
   AdsCpm,
   AdsPaymentMethod,
+  AdsPlacementCampaign,
+  AdsPlacementContent,
+  AdsSocialReward,
   AdsStatus,
   CACCOUNT_NO,
   DefaultAdsStatistic,
@@ -57,6 +60,7 @@ import {
   AdsCampaign,
   AdsPlacement,
   Content,
+  ContentFarming,
   toSignedContentPayloadItem,
   User,
 } from '../schemas';
@@ -86,6 +90,8 @@ export class AdsService {
     public _userModel: Model<User>,
     public taccountService: TAccountService,
     public dataService: DataService,
+    @InjectModel('ContentFarming')
+    public _contentFarmingModel: Model<ContentFarming>
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -162,7 +168,13 @@ export class AdsService {
   addAdsToFeeds = async (viewerAccountId: string, feeds: FeedItemResponse) => {
     const contentIds = feeds.payload
       .filter((item) => item.type === 'content')
-      .map((item) => (item.payload as ContentPayloadItem).id);
+      .map(
+        (item) =>
+          ({
+            contentId: (item.payload as ContentPayloadItem).id,
+            authorId: (item.payload as ContentPayloadItem).authorId,
+          } as AdsPlacementContent)
+      );
     const adsplacement = await this.getAdsPlacementFromAuction(
       contentIds,
       viewerAccountId,
@@ -446,7 +458,11 @@ export class AdsService {
                   value: estAdsCostCAST,
                 },
                 credit: {
-                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                  caccountNo:
+                    adsCampaign.detail.paymentMethod ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                      : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
                   value: estAdsCostCAST,
                 },
               },
@@ -525,4 +541,197 @@ export class AdsService {
   };
 
   auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
+
+  distributeSocialRewardAdsCredit = async () => {
+    //assume all conterm farming has been weigh
+    const adsIncomeToken = await this.taccountService.getBalance(
+      CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+    );
+    const adsPlacements = await this._adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+    });
+    //gety cost UST in aggregation
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    const castActualCost = totalCost / adsIncomeToken;
+    for (let i = 0; i < adsPlacements.length; i++) {
+      const adsplacement = adsPlacements[i];
+      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
+      const reward: AdsSocialReward = {
+        adsCost: adsplacement.cost.CAST,
+        castcleShare: 0,
+        creatorShare: 0.5 * adsplacement.cost.CAST,
+        farmingShare: 0.3 * adsplacement.cost.CAST,
+        viewerShare: 0.2 * adsplacement.cost.CAST,
+      };
+      const session = await this._adsPlacementModel.startSession();
+      session.withTransaction(async () => {
+        await this.distributeAdsReward(adsplacement, reward);
+        adsplacement.isModified('cost');
+        await adsplacement.save();
+      });
+      session.endSession();
+    }
+  };
+
+  distributeSocialRewardPersonal = async () => {
+    const adsIncomeToken = await this.taccountService.getBalance(
+      CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO
+    );
+    const adsPlacements = await this._adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+    });
+    //gety cost UST in aggregation
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    const castActualCost = totalCost / adsIncomeToken;
+    for (let i = 0; i < adsPlacements.length; i++) {
+      const adsplacement = adsPlacements[i];
+      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
+      const reward: AdsSocialReward = {
+        adsCost: adsplacement.cost.CAST,
+        castcleShare: 0.3 * adsplacement.cost.CAST,
+        creatorShare: 0.35 * adsplacement.cost.CAST,
+        farmingShare: 0.21 * adsplacement.cost.CAST,
+        viewerShare: 0.14 * adsplacement.cost.CAST,
+      };
+      const session = await this._adsPlacementModel.startSession();
+      session.withTransaction(async () => {
+        await this.distributeAdsReward(adsplacement, reward);
+        adsplacement.isModified('cost');
+        await adsplacement.save();
+      });
+      session.endSession();
+    }
+  };
+
+  distributeAdsReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward
+  ) => {
+    //castRate = 1/castActualCost;
+
+    //distribute Content Farming
+    await this.distributeContentFarmingReward(adsplacement, reward);
+    await this.distributeContentCreatorReward(adsplacement, reward);
+    return this.taccountService.transfers({
+      from: {
+        type: WalletType.CASTCLE_ADS_LOCKED,
+        value: reward.viewerShare,
+      },
+      to: [
+        {
+          account: adsplacement.viewer as unknown as string,
+          type: WalletType.PERSONAL,
+          value: reward.viewerShare,
+        },
+      ],
+      ledgers: [
+        {
+          debit: {
+            caccountNo:
+              adsplacement.campaign.campaignPaymentType ===
+              AdsPaymentMethod.ADS_CREDIT
+                ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+            value: reward.viewerShare,
+          },
+          credit: {
+            caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+            value: reward.viewerShare,
+          },
+        },
+      ],
+    });
+  };
+
+  distributeContentCreatorReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward
+  ) => {
+    //!!! TODO should embed in adsplacement
+
+    const transferTo: any[] = [];
+    const ledgers: any[] = [];
+    for (let i = 0; i < adsplacement.contents.length; i++) {
+      //contents[i].author.id get author id from this
+      const user = await this._userModel.findById(
+        adsplacement.contents[i].authorId
+      );
+      const rewardPerContent =
+        reward.creatorShare / adsplacement.contents.length;
+      transferTo.push({
+        account: user.ownerAccount.id,
+        type: WalletType.PERSONAL,
+        value: rewardPerContent,
+      });
+      ledgers.push({
+        debit: {
+          caccountNo:
+            adsplacement.campaign.campaignPaymentType ===
+            AdsPaymentMethod.ADS_CREDIT
+              ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+              : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+          value: rewardPerContent,
+        },
+        credit: {
+          caccountSourceNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          value: rewardPerContent,
+        },
+      });
+    }
+    return this.taccountService.transfers({
+      from: {
+        type: WalletType.CASTCLE_ADS_LOCKED,
+        value: reward.creatorShare,
+      },
+      to: transferTo,
+      ledgers: ledgers,
+    });
+  };
+
+  distributeContentFarmingReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward
+  ) => {
+    const cfs = await this._contentFarmingModel.find({
+      content: {
+        $in: adsplacement.contents.map((c) => String(c)),
+      },
+    });
+    const transferTo: any[] = [];
+    const ledgers: any[] = [];
+    for (let i = 0; i < cfs.length; i++) {
+      cfs[i].isDistributed = true;
+      const rewardContent = cfs[i].weight * reward.farmingShare;
+      transferTo.push({
+        account: String(cfs[i].account),
+        type: WalletType.PERSONAL,
+        value: rewardContent,
+      });
+      ledgers.push({
+        debit: {
+          caccountNo:
+            adsplacement.campaign.campaignPaymentType ===
+            AdsPaymentMethod.ADS_CREDIT
+              ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+              : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+          value: rewardContent,
+        },
+        credit: {
+          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          value: rewardContent,
+        },
+      });
+    }
+    Promise.all(cfs.map((cf) => cf.save()));
+    return this.taccountService.transfers({
+      from: {
+        type: WalletType.CASTCLE_ADS_LOCKED,
+        value: reward.farmingShare,
+      },
+      to: transferTo,
+      ledgers: ledgers,
+    });
+
+    //transfer rewardContent from ads credit lock to cfs[0].account;
+  };
 }
