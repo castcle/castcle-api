@@ -7,13 +7,13 @@ const { exclude: _, ...swcJestConfig } = JSON.parse(
 );
 
 module.exports = {
-  displayName: 'utils-clients',
-  preset: '../../../jest.preset.js',
+  displayName: 'utils-interceptors',
+  preset: '../../../jest.preset.ts',
   setupFiles: ['../../../jest.setup.ts'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  coverageDirectory: '../../../coverage/libs/utils/clients',
+  coverageDirectory: '../../../coverage/libs/utils/interceptors',
 };

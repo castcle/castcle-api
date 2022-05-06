@@ -1,19 +1,19 @@
 const fs = require('fs');
 const { exclude: _, ...swcJestConfig } = JSON.parse(
   fs.readFileSync(
-    `${__dirname.split('/').slice(0, -2).join('/')}/.swcrc`,
+    `${__dirname.split('/').slice(0, -3).join('/')}/.swcrc`,
     'utf-8'
   )
 );
 
 module.exports = {
-  displayName: 'environments',
-  preset: '../../jest.preset.js',
-  setupFiles: ['../../jest.setup.ts'],
+  displayName: 'utils-exception',
+  preset: '../../../jest.preset.ts',
+  setupFiles: ['../../../jest.setup.ts'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  coverageDirectory: '../../coverage/libs/environments',
+  coverageDirectory: '../../../coverage/libs/utils/exception',
 };

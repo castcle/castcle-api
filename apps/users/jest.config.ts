@@ -7,14 +7,14 @@ const { exclude: _, ...swcJestConfig } = JSON.parse(
 );
 
 module.exports = {
-  displayName: 'authentications',
-  preset: '../../jest.preset.js',
+  displayName: 'users',
+  preset: '../../jest.preset.ts',
   setupFiles: ['../../jest.setup.ts'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/authentications',
+  coverageDirectory: '../../coverage/apps/users',
   collectCoverage: true,
 };
