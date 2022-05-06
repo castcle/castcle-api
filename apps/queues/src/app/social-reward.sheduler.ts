@@ -21,16 +21,22 @@
  * or have any questions.
  */
 
-import { ContentServiceV2 } from '@castcle-api/database';
+import { AdsService, ContentServiceV2 } from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SocialRewardScheduler {
-  constructor(private contentService: ContentServiceV2) {}
+  constructor(
+    private contentService: ContentServiceV2,
+    private adsService: AdsService
+  ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async distributeSocialReward() {
     //await this.contentService.expireAllFarmedToken();
+    await this.contentService.updateAllUndistributedContentFarming();
+    await this.adsService.distributeSocialRewardAdsCredit();
+    await this.adsService.distributeSocialRewardPersonal();
   }
 }
