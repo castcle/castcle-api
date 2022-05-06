@@ -302,8 +302,8 @@ export class UserServiceV2 {
       .limit(maxResults)
       .exec();
 
-    const userIds = relationships.map(({ followedUser }) =>
-      Types.ObjectId(followedUser._id)
+    const userIds = relationships.map(
+      ({ followedUser }) => followedUser as unknown as Types.ObjectId
     );
 
     return this.getByCriteria(
