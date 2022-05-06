@@ -54,6 +54,7 @@ import {
   Relationship,
   User,
   Notification,
+  Hashtag,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import {
@@ -76,10 +77,13 @@ type UserQuery = {
 };
 
 type EngagementQuery = {
-  contentId: string;
-  type: string;
+  contentId?: string;
+  type?: string;
   sinceId?: string;
   untilId?: string;
+  user?: User;
+  targetRef?: any;
+  itemId?: string;
 };
 
 type RelationshipQuery = {
@@ -111,6 +115,19 @@ type NotificationQueryOption = {
   profileRef?: Types.ObjectId | any;
   sourceUserId?: Types.ObjectId;
 };
+
+type ContentQuery = {
+  _id?: string;
+  author?: string;
+  originalPost?: string;
+  isRecast?: boolean;
+};
+
+type HashtagQuery = {
+  tag?: string;
+  tags?: string[];
+  score?: number;
+};
 @Injectable()
 export class Repository {
   constructor(
@@ -121,6 +138,7 @@ export class Repository {
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
+    @InjectModel('Hashtag') public hashtagModel: Model<Hashtag>,
     private httpService: HttpService
   ) {}
 
@@ -147,7 +165,7 @@ export class Repository {
     return query;
   }
 
-  private getRelationshipsQuery = (filter: RelationshipQuery) => {
+  private getRelationshipQuery = (filter: RelationshipQuery) => {
     const query: FilterQuery<Relationship> = {};
 
     if (filter.sinceId || filter.untilId) {
@@ -161,14 +179,30 @@ export class Repository {
     return query;
   };
 
-  private getEngagementsQuery = (filter: EngagementQuery) => {
+  private getContentQuery = (filter: ContentQuery) => {
+    const query: FilterQuery<Content> = {
+      visibility: EntityVisibility.Publish,
+    };
+
+    if (filter._id) query._id = filter._id;
+    if (filter.originalPost) query['originalPost._id'] = filter.originalPost;
+    if (filter.author) query['author.id'] = filter.author;
+    if (filter.isRecast) query.isRecast = filter.isRecast;
+
+    return query;
+  };
+
+  private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
       type: filter.type,
-      targetRef: {
-        $ref: 'content',
-        $id: Types.ObjectId(filter.contentId),
-      },
     };
+    if (filter.user) query.user = filter.user;
+    if (filter.itemId) query.itemId = filter.itemId;
+    if (filter.targetRef)
+      query.targetRef = {
+        $ref: filter.targetRef.$ref,
+        $id: filter.targetRef.$id,
+      };
     if (filter.sinceId && filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
@@ -197,6 +231,20 @@ export class Repository {
       untilId: filter?.untilId,
     });
   };
+
+  private getHashtagQuery = (filter: HashtagQuery) => {
+    const query: FilterQuery<Hashtag> = {
+      score: {
+        $gt: 0,
+      },
+    };
+    if (filter.tag) query.tag = new CastcleName(filter.tag).slug;
+    if (filter.tags)
+      query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
+
+    return query;
+  };
+
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -295,25 +343,39 @@ export class Repository {
 
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
-      .find(this.getEngagementsQuery(filter), {}, queryOptions)
+      .findOne(this.getEngagementQuery(filter), {}, queryOptions)
       .exec();
   }
 
-  findEngagementCount(filter: EngagementQuery) {
+  findEngagements(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
-      .countDocuments(this.getEngagementsQuery(filter))
+      .find(this.getEngagementQuery(filter), {}, queryOptions)
       .exec();
+  }
+
+  countEngagements(filter: EngagementQuery) {
+    return this.engagementModel
+      .countDocuments(this.getEngagementQuery(filter))
+      .exec();
+  }
+
+  createEngagement(engagement: AnyKeys<Engagement>) {
+    return new this.engagementModel(engagement).save();
   }
 
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
     return this.relationshipModel.find(
-      this.getRelationshipsQuery(filter),
+      this.getRelationshipQuery(filter),
       {},
       queryOptions
     );
   }
-  findContentById(contentId: string) {
-    return this.contentModel.findById(contentId).exec();
+  findContent(filter: ContentQuery) {
+    return this.contentModel.findOne(this.getContentQuery(filter)).exec();
+  }
+
+  createContent(content: AnyKeys<Content>) {
+    return new this.contentModel(content).save();
   }
 
   findCredential(filter: CredentialQuery) {
@@ -389,5 +451,29 @@ export class Repository {
     queryOptions?: QueryOptions
   ) {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
+  }
+
+  removeFromTag(
+    filter: HashtagQuery,
+    updateQuery: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.hashtagModel.updateOne(
+      this.getHashtagQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  removeFromTags(
+    tags: string[],
+    updateQuery: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.hashtagModel.updateMany(
+      this.getHashtagQuery({ tags }),
+      updateQuery,
+      queryOptions
+    );
   }
 }

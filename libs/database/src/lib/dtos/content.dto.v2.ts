@@ -21,14 +21,34 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { CastcleMeta } from './common.dto';
-import { UserResponseDto, PageResponseDto } from './user.dto';
+import { IsMongoId, IsString } from 'class-validator';
+import { GetUserParam } from './user.dto';
+import { PaginationQuery } from './pagination.dto';
+import { IsNotEmpty } from 'class-validator';
 
-export class LikingUserResponse {
-  @ApiProperty()
-  payload: (UserResponseDto | PageResponseDto)[];
+export class GetContentDto {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  contentId: string;
+}
 
-  @ApiProperty()
-  meta: CastcleMeta;
+export class GetContentParam extends PaginationQuery {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  contentId: string;
+}
+export class LikeCommentDto {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  commentId: string;
+}
+
+export class GetSourceContentParam extends GetUserParam {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  sourceContentId: string;
 }
