@@ -41,6 +41,7 @@ import {
   NotificationSource,
   NotificationType,
   PageResponseDto,
+  PaginationQuery,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
@@ -620,5 +621,25 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     await this.contentServiceV2.undoRecast(sourceContentId, user);
+  }
+
+  @Get(':userId/blocking')
+  @CastcleBasicAuth()
+  async blockLookup(
+    @Auth() authorizer: Authorizer,
+    @Query() paginationQuery: PaginationQuery,
+    @Param()
+    { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getBlockedLookup(
+      user,
+      paginationQuery
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 }
