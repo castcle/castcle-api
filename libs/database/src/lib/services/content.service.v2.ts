@@ -51,7 +51,6 @@ import {
 import { Repository } from '../repositories';
 import { Environment } from '@castcle-api/environments';
 
-import { UserService } from './user.service';
 import cdf from 'castcle-cdf';
 
 @Injectable()
