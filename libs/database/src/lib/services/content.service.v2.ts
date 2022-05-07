@@ -582,7 +582,7 @@ export class ContentServiceV2 {
       };
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
-      const engagementResponse = await Promise.all(
+      const userResponses = await Promise.all(
         users.map(async (user) => {
           return user.type === UserType.PAGE
             ? user.toPageResponseV2()
@@ -590,7 +590,7 @@ export class ContentServiceV2 {
         })
       );
       return {
-        items: engagementResponse,
+        items: userResponses,
         count: userCounts,
       };
     }
@@ -606,7 +606,7 @@ export class ContentServiceV2 {
       (relationship) => String(relationship.user) === String(viewer?._id)
     );
 
-    const engagementResponse = await Promise.all(
+    const userResponses = await Promise.all(
       users.map(async (user) => {
         return user.type === UserType.PAGE
           ? user.toPageResponseV2(
@@ -622,7 +622,7 @@ export class ContentServiceV2 {
       })
     );
     return {
-      items: engagementResponse,
+      items: userResponses,
       count: userCounts,
     };
   };
