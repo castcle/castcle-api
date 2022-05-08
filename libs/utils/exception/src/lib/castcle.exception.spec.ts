@@ -21,17 +21,18 @@
  * or have any questions.
  */
 import { CastcleException } from './castcle.exception';
-import { ErrorMessages } from './messages/default';
+import { CastcleErrors } from './errors';
 
 describe('CastcleException', () => {
-  Object.keys(ErrorMessages).forEach((key: keyof typeof ErrorMessages) => {
-    it(`should throw ${key} and code ${key} with message '${ErrorMessages[key].message}' when called`, () => {
-      const throwResult = () => {
-        throw new CastcleException(key);
-      };
+  Object.keys(CastcleErrors.default).forEach(
+    (key: keyof typeof CastcleErrors.default) => {
+      it(`should throw ${key} and code ${key} with message '${CastcleErrors.default[key].message}' when called`, () => {
+        const exception = new CastcleException(key);
 
-      expect(throwResult).toThrow(CastcleException);
-      expect(throwResult).toThrowError(ErrorMessages[key].message);
-    });
-  });
+        expect(() => {
+          throw exception.getLocalizedException();
+        }).toThrowError(exception.message);
+      });
+    }
+  );
 });

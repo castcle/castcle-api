@@ -1,5 +1,5 @@
+import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpStatus } from '@nestjs/common';
-import { ErrorMessages } from 'libs/utils/exception/src/lib/messages/default';
 import { UsersRequest } from '../../requests';
 import { userAlpha, userBeta } from '../../variables';
 
@@ -48,7 +48,9 @@ export const testUsersReporting = () => {
       .auth(userAlpha.accessToken, { type: 'bearer' })
       .send({ message: 'spam', targetCastcleId: '61dd5e36acf08f6cfe74f0ea' })
       .expect(({ body }) => {
-        expect(body).toEqual(ErrorMessages[4001]);
+        expect(body).toMatchObject(
+          CastcleException.USER_OR_PAGE_NOT_FOUND.getLocalizedException().getResponse()
+        );
       })
       .expect(HttpStatus.NOT_FOUND);
   });
@@ -58,7 +60,9 @@ export const testUsersReporting = () => {
       .auth(userAlpha.accessToken, { type: 'bearer' })
       .send({ message: 'spam', targetContentId: '61dd5e36acf08f6cfe74f0ea' })
       .expect(({ body }) => {
-        expect(body).toEqual(ErrorMessages[5003]);
+        expect(body).toMatchObject(
+          CastcleException.CONTENT_NOT_FOUND.getLocalizedException().getResponse()
+        );
       })
       .expect(HttpStatus.NOT_FOUND);
   });
@@ -68,7 +72,9 @@ export const testUsersReporting = () => {
       .auth(userAlpha.accessToken, { type: 'bearer' })
       .send({ message: 'Spam', targetCastcleId: userBeta.id })
       .expect(({ body }) => {
-        expect(body).toEqual(ErrorMessages[1007]);
+        expect(body).toMatchObject(
+          CastcleException.FORBIDDEN.getLocalizedException().getResponse()
+        );
       })
       .expect(HttpStatus.FORBIDDEN);
   });

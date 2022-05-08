@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const ThErrorMessages = {
+
+export const DevErrors = {
   '1001': {
     statusCode: '404',
     code: '1001',
@@ -64,7 +65,7 @@ export const ThErrorMessages = {
   '1010': {
     statusCode: '429',
     code: '1010',
-    message: `Please wait a few minutes before you try again.`,
+    message: `API rate limit exceeded `,
   },
   '1011': {
     statusCode: '400',

@@ -40,9 +40,10 @@ export class ExceptionFilter implements NestExceptionFilter {
     const language = ['development', 'localhost'].includes(Environment.NODE_ENV)
       ? 'dev'
       : getLanguageFromRequest(request);
+    const localizedException = exception.getLocalizedException(language);
 
     response
-      .status(exception.getStatus())
-      .json(exception.getLocalStatus(language));
+      .status(localizedException.getStatus())
+      .json(localizedException.getResponse());
   }
 }
