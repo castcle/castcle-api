@@ -11,6 +11,8 @@ import {
 } from '@castcle-api/database/schemas';
 import { model } from 'mongoose';
 import { User } from '../models';
+import { CommentSchema } from './../../../database/src/lib/schemas/comment.schema';
+import { ContentSchema } from './../../../database/src/lib/schemas/content.schema';
 
 export const campaignModel = model('Campaign', CampaignSchema);
 export const otpModel = model('Otp', OtpSchema);
@@ -23,6 +25,8 @@ export const credentialModel = model('Credential', CredentialSchema);
 export const accountDeviceModel = model('AccountDevice', AccountDeviceSchema);
 export const socialSyncModel = model('SocialSync', SocialSyncSchema);
 export const relationshipModel = model('Relationship', RelationshipSchema);
+export const contentModel = model('Content', ContentSchema);
+export const commentModel = model('Comment', CommentSchema);
 /** verified: `mobile` */
 export const userAlpha = new User({ name: 'alpha' });
 

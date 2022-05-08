@@ -21,12 +21,26 @@
  * or have any questions.
  */
 
-import { ThErrorMessages } from './th';
-import { DevErrorMessages } from './dev.th';
-import { ErrorMessages } from './default';
+import { DefaultErrors } from './default';
+import { DevErrors } from './dev';
+import { ThErrors } from './th';
 
-export const LocalErrorMessage = {
-  default: ErrorMessages,
-  th: ThErrorMessages,
-  dev: DevErrorMessages,
-};
+interface CastcleError<T = any> {
+  statusCode: string;
+  code: string;
+  message: string;
+  payload?: T;
+}
+
+export class CastcleErrors {
+  static default = DefaultErrors;
+  static th = ThErrors;
+  static dev = DevErrors;
+
+  static getLocalizedError<T>(
+    code: string,
+    language = 'default'
+  ): CastcleError<T> {
+    return CastcleErrors[language]?.[code] || CastcleErrors.default[code];
+  }
+}

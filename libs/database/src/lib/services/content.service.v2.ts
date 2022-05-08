@@ -30,14 +30,17 @@ import {
   UserType,
   WalletType,
 } from '../models';
-import { Account, Content, ContentFarming, Engagement, User } from '../schemas';
+import { Account, Content, ContentFarming, User } from '../schemas';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { NotificationServiceV2 } from './notification.service.v2';
 import {
+  Author,
+  ContentType,
   EntityVisibility,
   NotificationSource,
   NotificationType,
   PaginationQuery,
+  ShortPayload,
 } from '../dtos';
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
@@ -45,16 +48,10 @@ import { ContentFarmingReponse } from '../models/content-farming.model';
 import { Repository } from '../repositories';
 import { Environment } from '@castcle-api/environments';
 
-import { UserService } from './user.service';
-import { isMongoId } from 'class-validator';
-
 @Injectable()
 export class ContentServiceV2 {
   constructor(
-    @InjectModel('Engagement')
-    private _engagementModel: Model<Engagement>,
     private notificationServiceV2: NotificationServiceV2,
-    private userService: UserService,
     private taccountService: TAccountService,
     private repository: Repository,
     @InjectModel('ContentFarming')
@@ -63,8 +60,10 @@ export class ContentServiceV2 {
     private contentModel: Model<Content>
   ) {}
 
-  likeCast = async (content: Content, user: User, account: Account) => {
-    const engagement = await this._engagementModel.findOne({
+  likeCast = async (contentId: string, user: User, account: Account) => {
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    const engagement = await this.repository.findEngagement({
       user: user._id,
       targetRef: {
         $ref: 'content',
@@ -72,9 +71,10 @@ export class ContentServiceV2 {
       },
       type: EngagementType.Like,
     });
+
     if (engagement) throw CastcleException.LIKE_IS_EXIST;
 
-    await new this._engagementModel({
+    const newEngagement = await this.repository.createEngagement({
       type: EngagementType.Like,
       user: user._id,
       targetRef: {
@@ -82,31 +82,33 @@ export class ContentServiceV2 {
         $id: content._id,
       },
       visibility: EntityVisibility.Publish,
-    }).save();
+    });
 
-    if (String(user._id) === String(content.author.id)) return;
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
 
-    const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
-    );
-    await this.notificationServiceV2.notifyToUser(
-      {
-        source:
-          userOwner.type === UserType.PEOPLE
-            ? NotificationSource.Profile
-            : NotificationSource.Page,
-        sourceUserId: user._id,
-        type: NotificationType.Like,
-        contentRef: content._id,
-        account: userOwner.ownerAccount,
-        read: false,
-      },
-      userOwner,
-      account.preferences.languages[0]
-    );
+    if (userOwner && String(user._id) !== String(content.author.id))
+      await this.notificationServiceV2.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: user._id,
+          type: NotificationType.Like,
+          contentRef: content._id,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
+        userOwner,
+        account.preferences.languages[0]
+      );
+    return { content, engagement: newEngagement };
   };
+
   unlikeCast = async (contentId: string, user: User) => {
-    const engagement = await this._engagementModel.findOne({
+    const engagement = await this.repository.findEngagement({
       user: user._id,
       targetRef: {
         $ref: 'content',
@@ -138,6 +140,127 @@ export class ContentServiceV2 {
       await notification.remove();
 
     return engagement.remove();
+  };
+
+  recast = async (contentId: string, user: User, account: Account) => {
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const originalContent = await this.repository.findContent({
+      originalPost: contentId,
+      author: user._id,
+      isRecast: true,
+    });
+
+    if (originalContent) throw CastcleException.RECAST_IS_EXIST;
+
+    const author = new Author({
+      id: user._id,
+      avatar: user.profile?.images?.avatar || null,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
+      verified: user.verified,
+    });
+
+    const sourceContentId =
+      content.isRecast || content.isQuote
+        ? content?.originalPost?._id
+        : content._id;
+
+    const newContent = {
+      author: author,
+      payload: {} as ShortPayload,
+      revisionCount: 0,
+      type: ContentType.Short,
+      originalPost:
+        content.isQuote || content.isRecast ? content?.originalPost : content,
+      isRecast: true,
+    } as Content;
+    const recastContent = await this.repository.createContent(newContent);
+    if (!recastContent) throw CastcleException.SOMETHING_WRONG;
+
+    const engagement = await this.repository.createEngagement({
+      type: EngagementType.Recast,
+      user: user._id,
+      targetRef: {
+        $ref: 'content',
+        $id: sourceContentId,
+      },
+      itemId: recastContent._id,
+      visibility: EntityVisibility.Publish,
+    });
+    if (!engagement) throw CastcleException.SOMETHING_WRONG;
+
+    const userOwner = await this.repository.findUser({
+      _id: content.author.id,
+    });
+
+    if (userOwner && String(user._id) !== String(content.author.id))
+      await this.notificationServiceV2.notifyToUser(
+        {
+          source:
+            userOwner.type === UserType.PEOPLE
+              ? NotificationSource.Profile
+              : NotificationSource.Page,
+          sourceUserId: user._id,
+          type: NotificationType.Recast,
+          contentRef: recastContent._id,
+          account: userOwner.ownerAccount,
+          read: false,
+        },
+        userOwner,
+        account.preferences.languages[0]
+      );
+
+    return { recastContent, engagement };
+  };
+
+  undoRecast = async (contentId: string, user: User) => {
+    const content = await this.repository.findContent({
+      _id: contentId,
+      author: user._id,
+    });
+
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagement = await this.repository.findEngagement({
+      user: user._id,
+      itemId: contentId,
+      type: EngagementType.Recast,
+    });
+
+    if (content.hashtags) {
+      await this.repository.removeFromTags(content.hashtags, {
+        $inc: {
+          score: -1,
+        },
+      });
+    }
+
+    if (!engagement) return;
+    await this.repository.updateNotification(
+      {
+        type: NotificationType.Recast,
+        contentRef: Types.ObjectId(contentId),
+        commentRef: { $exists: false },
+        replyRef: { $exists: false },
+      },
+      {
+        $pull: { sourceUserId: { $eq: user._id } },
+      }
+    );
+    const notification = await this.repository.findNotification({
+      type: NotificationType.Recast,
+      contentRef: Types.ObjectId(contentId),
+      commentRef: { $exists: false },
+      replyRef: { $exists: false },
+    });
+
+    if (notification && !notification?.sourceUserId?.length)
+      await notification.remove();
+
+    return Promise.all([content.remove(), engagement.remove()]);
   };
 
   createContentFarming = async (contentId: string, accountId: string) => {
@@ -422,69 +545,76 @@ export class ContentServiceV2 {
     );
   };
 
-  getLikingCast = async (
+  getEngagementCast = async (
     contentId: string,
     account: Account,
     query: PaginationQuery,
+    type: EngagementType,
     viewer?: User
   ) => {
-    if (!isMongoId(String(contentId))) throw CastcleException.CONTENT_NOT_FOUND;
-
-    const content = await this.repository.findContentById(contentId);
+    const content = await this.repository.findContent({ _id: contentId });
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
     const filter = {
-      contentId,
-      type: EngagementType.Like,
+      targetRef: {
+        $ref: 'content',
+        $id: Types.ObjectId(contentId),
+      },
+      type,
     };
-    const likingCounts = await this.repository.findEngagementCount(filter);
 
-    const likingDocuments = await this.repository.findEngagement(
+    const engagementDocuments = await this.repository.findEngagements(
       { ...query, ...filter },
       {
         limit: query.maxResults,
         sort: { createdAt: -1 },
-        populate: 'user',
       }
     );
+    const usersId = engagementDocuments.map((item) => item.user._id);
 
-    if (!likingDocuments.length)
+    const userCounts = await this.repository.findUserCount({ _id: usersId });
+
+    const users = await this.repository.findUsers({ _id: usersId });
+    if (!users.length)
       return {
         items: [],
         count: 0,
       };
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
-      const likingResponse = await Promise.all(
-        likingDocuments.map(async (engagement) => {
-          return engagement.user.type === UserType.PAGE
-            ? engagement.user.toPageResponseV2()
-            : await engagement.user.toUserResponseV2();
+      const userResponses = await Promise.all(
+        users.map(async (user) => {
+          return user.type === UserType.PAGE
+            ? user.toPageResponseV2()
+            : await user.toUserResponseV2();
         })
       );
       return {
-        items: likingResponse,
-        count: likingCounts,
+        items: userResponses,
+        count: userCounts,
       };
     }
-    const relationshipUser = likingDocuments.map((item) => item.user._id);
 
-    const relationships = await this.repository.findRelationships({
-      userId: relationshipUser,
-    });
+    const relationshipUser = users.map((item) => item._id);
+
+    const relationships = await this.repository
+      .findRelationships({
+        userId: relationshipUser,
+      })
+      .exec();
     const relationship = relationships?.find(
       (relationship) => String(relationship.user) === String(viewer?._id)
     );
 
-    const likingResponse = await Promise.all(
-      likingDocuments.map(async (engagement) => {
-        return engagement.user.type === UserType.PAGE
-          ? engagement.user.toPageResponseV2(
+    const userResponses = await Promise.all(
+      users.map(async (user) => {
+        return user.type === UserType.PAGE
+          ? user.toPageResponseV2(
               relationship?.blocking ?? false,
               relationship?.blocking ?? false,
               relationship?.following ?? false
             )
-          : await engagement.user.toUserResponseV2({
+          : await user.toUserResponseV2({
               blocked: relationship?.blocking ?? false,
               blocking: relationship?.blocking ?? false,
               followed: relationship?.following ?? false,
@@ -492,8 +622,8 @@ export class ContentServiceV2 {
       })
     );
     return {
-      items: likingResponse,
-      count: likingCounts,
+      items: userResponses,
+      count: userCounts,
     };
   };
 }

@@ -21,6 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleException } from '@castcle-api/utils/exception';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -32,6 +34,13 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
+import {
+  Meta,
+  PageResponseDto,
+  PaginationQuery,
+  UserResponseDto,
+} from '../dtos';
+import { generateMockUsers } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential, User } from '../schemas';
@@ -39,7 +48,6 @@ import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
-import { HttpModule } from '@nestjs/axios';
 
 describe('UserServiceV2', () => {
   let mongod: MongoMemoryReplSet;
@@ -52,6 +60,7 @@ describe('UserServiceV2', () => {
   };
   let accountDemo: AccountActivation;
   let userDemo: User;
+  let repository: Repository;
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
@@ -85,6 +94,7 @@ describe('UserServiceV2', () => {
 
     userServiceV2 = module.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = module.get<UserService>(UserService);
+    repository = module.get<Repository>(Repository);
     authService = module.get<AuthenticationService>(AuthenticationService);
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
@@ -94,7 +104,6 @@ describe('UserServiceV2', () => {
       },
       device: 'ifong',
     });
-    //sign up to create actual account
     accountDemo = await authService.signupByEmail(guestDemo.accountDocument, {
       displayId: 'sp',
       displayName: 'sp002',
@@ -105,8 +114,78 @@ describe('UserServiceV2', () => {
     userDemo = await authService.getUserFromAccount(accountDemo.account);
   });
 
-  afterAll(async () => {
-    await mongod.stop();
+  describe('#blockUser', () => {
+    let user1: User;
+    let user2: User;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 10, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+
+      await userServiceV2.blockUser(user1, String(user2._id));
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
+      await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toBe(
+        CastcleException.USER_OR_PAGE_NOT_FOUND
+      );
+    });
+
+    it('should return blocked lookup user', async () => {
+      const relationship: {
+        users: (PageResponseDto | UserResponseDto)[];
+        meta: Meta;
+      } = await userServiceV2.getBlockedLookup(user1, new PaginationQuery());
+
+      expect(relationship).not.toBeNull();
+      expect(relationship.users.length).toBeGreaterThan(0);
+    });
+
+    it('should block user and create blocking relationship', async () => {
+      const [blockedUser, blockerUser] = await Promise.all([
+        repository
+          .findRelationships({ userId: [user2._id], followedUser: user1._id })
+          .exec(),
+        repository
+          .findRelationships({ userId: [user1._id], followedUser: user2._id })
+          .exec(),
+      ]);
+
+      expect(blockerUser).not.toBeNull();
+      expect(blockedUser).not.toBeNull();
+
+      expect(blockedUser[0].blocked).toBeTruthy();
+      expect(blockedUser[0].following).toBeFalsy();
+
+      expect(blockerUser[0].blocking).toBeTruthy();
+      expect(blockerUser[0].following).toBeFalsy();
+    });
+
+    it('should unblock user and update blocking relationship', async () => {
+      await userServiceV2.unBlockUser(user1, String(user2._id));
+
+      const [blockedUser, blockerUser] = await Promise.all([
+        repository
+          .findRelationships({ userId: [user2._id], followedUser: user1._id })
+          .exec(),
+        repository
+          .findRelationships({ userId: [user1._id], followedUser: user2._id })
+          .exec(),
+      ]);
+
+      expect(blockerUser).not.toBeNull();
+      expect(blockedUser).not.toBeNull();
+
+      expect(blockedUser[0].blocked).toBeFalsy();
+      expect(blockedUser[0].following).toBeFalsy();
+
+      expect(blockerUser[0].blocking).toBeFalsy();
+      expect(blockerUser[0].following).toBeFalsy();
+    });
   });
 
   describe('#getMyPages', () => {
@@ -126,5 +205,14 @@ describe('UserServiceV2', () => {
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
     });
+  });
+
+  it('should be defined', () => {
+    expect(repository).toBeDefined();
+    expect(userServiceV2).toBeDefined();
+  });
+
+  afterAll(async () => {
+    await mongod.stop();
   });
 });

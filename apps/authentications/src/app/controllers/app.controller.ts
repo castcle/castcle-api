@@ -45,7 +45,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpException,
   Post,
   Req,
   Res,
@@ -667,22 +666,13 @@ export class AuthenticationController {
 
     if (!token) {
       this.logger.log(`response merge account.`);
-      const error = CastcleException.DUPLICATE_EMAIL.error;
-      throw new HttpException(
-        {
-          ...error,
-          ...{
-            payload: {
-              profile: users.profile
-                ? await users.profile.toUserResponse({
-                    passwordNotSet: account.password ? false : true,
-                  })
-                : null,
-            },
-          },
-        },
-        400
-      );
+      throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD({
+        profile: users.profile
+          ? await users.profile.toUserResponse({
+              passwordNotSet: account.password ? false : true,
+            })
+          : null,
+      });
     }
 
     this.logger.log(`response success.`);

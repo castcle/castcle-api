@@ -302,7 +302,10 @@ export const toSignedContentPayloadItem = (
 ) =>
   signedContentPayloadItem(toUnsignedContentPayloadItem(content, engagements));
 
-export const ContentSchema = SchemaFactory.createForClass(ContentDocument);
+export const ContentSchema = SchemaFactory.createForClass<
+  ContentDocument,
+  Content
+>(ContentDocument);
 
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 type ContentEngagement =

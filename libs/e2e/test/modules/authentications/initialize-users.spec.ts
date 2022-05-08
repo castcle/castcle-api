@@ -1,6 +1,10 @@
+import * as mongoose from 'mongoose';
 import { AuthenticationsRequest } from '../../requests';
 import { guest, userAlpha, userBeta, userModel } from '../../variables';
-import { userGamma } from './../../variables/global.variable';
+import {
+  accountActivationModel,
+  userGamma,
+} from './../../variables/global.variable';
 
 export const initializeUsers = async () => {
   await AuthenticationsRequest.guestLogin()
@@ -87,5 +91,25 @@ export const initializeUsers = async () => {
 
       userGamma.accessToken = body.accessToken;
       userGamma.id = body.profile.id;
+    });
+
+  const user = await userModel.findOne({
+    _id: mongoose.Types.ObjectId(userGamma.id),
+  });
+  userGamma.accountId = user.ownerAccount as unknown as string;
+  const activateAccount = await accountActivationModel.findOne({
+    account: userGamma.accountId as any,
+  });
+  await AuthenticationsRequest.verificationEmail()
+    .auth(activateAccount.verifyToken, { type: 'bearer' })
+    .send();
+
+  await AuthenticationsRequest.memberLogin()
+    .auth(userGamma.accessToken, { type: 'bearer' })
+    .send(userGamma.toMemberLoginPayload())
+    .expect(({ body }) => {
+      userGamma.accessToken = body.accessToken;
+      userGamma.id = body.profile.id;
+      userGamma.refreshToken = body.refreshToken;
     });
 };

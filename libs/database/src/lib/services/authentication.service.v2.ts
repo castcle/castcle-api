@@ -188,8 +188,16 @@ export class AuthenticationServiceV2 {
     }
 
     if (email) {
-      const isDuplicateEmail = await this.repository.findAccount({ email });
-      if (isDuplicateEmail) throw CastcleException.DUPLICATE_EMAIL;
+      const duplicateAccount = await this.repository.findAccount({ email });
+      if (duplicateAccount) {
+        const duplicateUser = await this.repository.findUser({
+          accountId: duplicateAccount._id,
+        });
+        const profile = await duplicateUser?.toUserResponseV2();
+        throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
+          profile ? { profile } : null
+        );
+      }
     }
 
     const registration = await this.registerWithSocial(
@@ -199,6 +207,7 @@ export class AuthenticationServiceV2 {
     await this.analyticService.trackRegistration(ip, userAgent);
     return { registered: false, ...registration };
   }
+
   async getRefreshToken(refreshToken: string) {
     const credential = await this.repository.findCredential({ refreshToken });
     if (!credential?.isRefreshTokenValid())
@@ -360,7 +369,7 @@ export class AuthenticationServiceV2 {
 
   /**
    * For check if email is existed
-   * @param {email} email
+   * @param {string} email
    * @returns account
    */
   getAccountFromEmail = (email: string) => {
