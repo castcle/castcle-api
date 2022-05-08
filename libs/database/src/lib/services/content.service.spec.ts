@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -713,7 +714,7 @@ describe('ContentService', () => {
     it('should throw CONTENT_NOT_FOUND when content to report is not found', async () => {
       await expect(
         service.reportContent(user, null, reportingMessage)
-      ).rejects.toMatchObject({ response: { code: '5003' } });
+      ).rejects.toThrowError(CastcleException.CONTENT_NOT_FOUND);
     });
 
     it('should report content by sending email to Castcle admin', async () => {

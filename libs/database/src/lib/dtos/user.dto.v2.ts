@@ -23,8 +23,8 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { GetUserParam } from './user.dto';
 
-export class UnlikeCastParam extends GetUserParam {
+export class UnblockParam extends GetUserParam {
   @IsString()
   @IsNotEmpty()
-  sourceContentId: string;
+  targetCastcleId: string;
 }

@@ -59,12 +59,19 @@ export enum AndroidMessagePriority {
   HIGH = 'high',
 }
 
+export enum NotificationLandingPage {
+  Cast = 'cast',
+  Comment = 'comment',
+  Follower = 'follower',
+}
+
+export enum SoundDeviceDefault {
+  Default = 'default',
+}
+
 export class NotificationPayloadDto extends CastcleBase {
   @ApiProperty()
   id: string;
-
-  @ApiProperty()
-  notifyId?: string;
 
   @ApiProperty()
   avatar?: CastcleImage;
@@ -77,6 +84,12 @@ export class NotificationPayloadDto extends CastcleBase {
 
   @ApiProperty()
   type: string;
+
+  @ApiProperty()
+  actionId?: Types.ObjectId;
+
+  @ApiProperty()
+  actionCastcleId?: string;
 
   @ApiProperty()
   contentId?: Types.ObjectId;
@@ -98,6 +111,12 @@ export class NotificationPayloadDto extends CastcleBase {
 
   @ApiProperty()
   read: boolean;
+
+  @ApiProperty()
+  landingPage?: NotificationLandingPage;
+
+  @ApiProperty()
+  user?: string;
 }
 
 export class NotificationResponse {
@@ -109,9 +128,9 @@ export class NotificationResponse {
 }
 
 export class NotificationQuery extends PaginationQuery {
-  @TransformStringToEnum(NotificationSource)
   @IsString()
   @IsOptional()
+  @TransformStringToEnum(NotificationSource)
   source?: NotificationSource;
 }
 
@@ -157,4 +176,8 @@ export class NotificationBadgesPayloadDto {
 export class NotificationBadgesResponse {
   @ApiProperty({ type: NotificationBadgesPayloadDto, isArray: false })
   payload: NotificationBadgesPayloadDto;
+}
+
+export class PushNotificationPayload {
+  [key: string]: string;
 }

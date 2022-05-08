@@ -30,7 +30,7 @@ import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isMongoId } from 'class-validator';
+import { isArray, isMongoId } from 'class-validator';
 import {
   AnyKeys,
   FilterQuery,
@@ -53,8 +53,14 @@ import {
   Engagement,
   Relationship,
   User,
+  Notification,
+  Hashtag,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
+import {
+  NotificationSource,
+  NotificationType,
+} from './../dtos/notification.dto';
 
 type AccountQuery = {
   _id?: string;
@@ -65,22 +71,63 @@ type AccountQuery = {
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string;
+  _id?: string | Types.ObjectId[];
   accountId?: string;
   type?: UserType;
 };
 
 type EngagementQuery = {
-  contentId: string;
-  type: string;
+  contentId?: string;
+  type?: string;
+  sinceId?: string;
+  untilId?: string;
+  user?: User;
+  targetRef?: any;
+  itemId?: string;
+};
+
+type RelationshipQuery = {
+  userId?: User[];
+  followedUser?: string;
+  blocking?: boolean;
   sinceId?: string;
   untilId?: string;
 };
 
-type RelationshipQuery = {
-  userId: User[];
+type CredentialQuery = {
+  refreshToken?: string;
+  accessToken?: string;
 };
 
+type NotificationQueryOption = {
+  _id?: string;
+  account?: Account;
+  user?: User;
+  source?: NotificationSource;
+  sinceId?: string;
+  untilId?: string;
+  read?: boolean;
+  type?: NotificationType;
+  contentRef?: Types.ObjectId | any;
+  commentRef?: Types.ObjectId | any;
+  replyRef?: Types.ObjectId | any;
+  adsRef?: Types.ObjectId | any;
+  profileRef?: Types.ObjectId | any;
+  sourceUserId?: Types.ObjectId;
+};
+
+type ContentQuery = {
+  _id?: string;
+  author?: string;
+  originalPost?: string;
+  isRecast?: boolean;
+};
+
+type HashtagQuery = {
+  tag?: string;
+  tags?: string[];
+  score?: number;
+};
 @Injectable()
 export class Repository {
   constructor(
@@ -90,6 +137,8 @@ export class Repository {
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Notification') private notificationModel: Model<Notification>,
+    @InjectModel('Hashtag') public hashtagModel: Model<Hashtag>,
     private httpService: HttpService
   ) {}
 
@@ -116,23 +165,83 @@ export class Repository {
     return query;
   }
 
-  private getRelationshipsQuery = (filter: RelationshipQuery) => {
-    return { user: { $in: filter.userId } };
+  private getRelationshipQuery = (filter: RelationshipQuery) => {
+    const query: FilterQuery<Relationship> = {};
+
+    if (filter.sinceId || filter.untilId) {
+      query.followedUser = {};
+      if (filter.sinceId) query.followedUser.$gt = filter.sinceId as any;
+      if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
+    }
+    if (filter.blocking) query.blocking = filter.blocking;
+    if (filter.userId) query.user = { $in: filter.userId };
+
+    return query;
   };
 
-  private getEngagementsQuery = (filter: EngagementQuery) => {
+  private getContentQuery = (filter: ContentQuery) => {
+    const query: FilterQuery<Content> = {
+      visibility: EntityVisibility.Publish,
+    };
+
+    if (filter._id) query._id = filter._id;
+    if (filter.originalPost)
+      query['originalPost._id'] = Types.ObjectId(filter.originalPost);
+    if (filter.author) query['author.id'] = filter.author;
+    if (filter.isRecast) query.isRecast = filter.isRecast;
+
+    return query;
+  };
+
+  private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
       type: filter.type,
-      targetRef: {
-        $ref: 'content',
-        $id: Types.ObjectId(filter.contentId),
-      },
     };
+    if (filter.user) query.user = filter.user;
+    if (filter.itemId) query.itemId = filter.itemId;
+    if (filter.targetRef)
+      query.targetRef = {
+        $ref: filter.targetRef.$ref,
+        $id: filter.targetRef.$id,
+      };
     if (filter.sinceId && filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
         untilId: filter.untilId,
       });
+
+    return query;
+  };
+
+  private getNotificationQuery = (filter: NotificationQueryOption) => {
+    const query: FilterQuery<Notification> = {};
+    if (filter?._id) query._id = filter._id;
+    if (filter?.account) query.account = filter.account;
+    if (filter?.source) query.source = filter.source;
+    if (filter?.read) query.read = filter.read;
+    if (filter?.type) query.type = filter.type;
+    if (filter?.contentRef) query.contentRef = filter.contentRef;
+    if (filter?.commentRef) query.commentRef = filter.commentRef;
+    if (filter?.replyRef) query.replyRef = filter.replyRef;
+    if (filter?.profileRef) query.profileRef = filter.profileRef;
+    if (filter?.adsRef) query.adsRef = filter.adsRef;
+    if (filter?.sourceUserId) query.sourceUserId = filter.sourceUserId;
+
+    return createCastcleFilter(query, {
+      sinceId: filter?.sinceId,
+      untilId: filter?.untilId,
+    });
+  };
+
+  private getHashtagQuery = (filter: HashtagQuery) => {
+    const query: FilterQuery<Hashtag> = {
+      score: {
+        $gt: 0,
+      },
+    };
+    if (filter.tag) query.tag = new CastcleName(filter.tag).slug;
+    if (filter.tags)
+      query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
 
     return query;
   };
@@ -210,8 +319,13 @@ export class Repository {
 
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
-    if (isMongoId(String(filter._id))) query._id = filter._id;
-    else if (filter._id) query.displayId = CastcleRegExp.fromString(filter._id);
+    if (isMongoId(String(filter._id))) {
+      query._id = filter._id;
+    } else if (isArray(filter._id)) {
+      query._id = { $in: filter._id };
+    } else if (filter._id) {
+      query.displayId = CastcleRegExp.fromString(filter._id as string);
+    }
 
     return query;
   }
@@ -224,23 +338,143 @@ export class Repository {
     return this.userModel.find(this.getUserQuery(filter), {}, queryOptions);
   }
 
+  findUserCount(filter: UserQuery) {
+    return this.userModel.countDocuments(filter);
+  }
+
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
-      .find(this.getEngagementsQuery(filter), {}, queryOptions)
+      .findOne(this.getEngagementQuery(filter), {}, queryOptions)
       .exec();
   }
 
-  findEngagementCount(filter: EngagementQuery) {
+  findEngagements(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
-      .countDocuments(this.getEngagementsQuery(filter))
+      .find(this.getEngagementQuery(filter), {}, queryOptions)
       .exec();
   }
+
+  countEngagements(filter: EngagementQuery) {
+    return this.engagementModel
+      .countDocuments(this.getEngagementQuery(filter))
+      .exec();
+  }
+
+  createEngagement(engagement: AnyKeys<Engagement>) {
+    return new this.engagementModel(engagement).save();
+  }
+
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
-    return this.relationshipModel
-      .find(this.getRelationshipsQuery(filter), {}, queryOptions)
+    return this.relationshipModel.find(
+      this.getRelationshipQuery(filter),
+      {},
+      queryOptions
+    );
+  }
+  findContent(filter: ContentQuery) {
+    return this.contentModel.findOne(this.getContentQuery(filter)).exec();
+  }
+
+  createContent(content: AnyKeys<Content>) {
+    return new this.contentModel(content).save();
+  }
+
+  findCredential(filter: CredentialQuery) {
+    return this.credentialModel.findOne(filter);
+  }
+
+  createNotification(notify: AnyKeys<Notification>) {
+    return new this.notificationModel(notify).save();
+  }
+
+  findNotification(
+    filter: NotificationQueryOption,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel
+      .findOne(this.getNotificationQuery(filter), {}, queryOptions)
       .exec();
   }
-  findContentById(contentId: string) {
-    return this.contentModel.findById(contentId).exec();
+
+  findNotifications(
+    filter: NotificationQueryOption,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel
+      .find(this.getNotificationQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  updateNotification(
+    filter: NotificationQueryOption,
+    updateQuery: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel.updateOne(
+      this.getNotificationQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  updateNotifications(
+    filter: NotificationQueryOption,
+    updateQuery: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.notificationModel.updateMany(
+      this.getNotificationQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  deleteNotification(filter: NotificationQueryOption) {
+    return this.notificationModel.deleteOne(this.getNotificationQuery(filter));
+  }
+
+  deleteNotifications(filter: NotificationQueryOption) {
+    return this.notificationModel.deleteMany(this.getNotificationQuery(filter));
+  }
+
+  aggregationNotification(pipeline: any[]) {
+    return this.notificationModel.aggregate(pipeline);
+  }
+
+  findNotificationCount(filter: NotificationQueryOption) {
+    return this.notificationModel
+      .countDocuments(this.getNotificationQuery(filter))
+      .exec();
+  }
+  updateRelationship(
+    filter: FilterQuery<Relationship>,
+    updateQuery?: UpdateQuery<Relationship>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
+  }
+
+  removeFromTag(
+    filter: HashtagQuery,
+    updateQuery: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.hashtagModel.updateOne(
+      this.getHashtagQuery(filter),
+      updateQuery,
+      queryOptions
+    );
+  }
+
+  removeFromTags(
+    tags: string[],
+    updateQuery: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions
+  ) {
+    return this.hashtagModel.updateMany(
+      this.getHashtagQuery({ tags }),
+      updateQuery,
+      queryOptions
+    );
   }
 }

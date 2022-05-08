@@ -37,17 +37,20 @@ import {
   CreateCommentDto,
   ExpansionQuery,
   GetUserParam,
+  LikeCommentDto,
   NotificationSource,
   NotificationType,
   PageResponseDto,
-  PagesResponse,
+  PaginationQuery,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
-  UnlikeCastParam,
+  UnblockParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
+  GetContentDto,
+  GetSourceContentParam,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -62,11 +65,20 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
+import { BlockingDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
-
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -402,7 +414,7 @@ export class UsersControllerV2 {
   @Post(':userId/likes-casts')
   async likeCast(
     @Auth() authorizer: Authorizer,
-    @Body('contentId') contentId: string,
+    @Body() { contentId }: GetContentDto,
     @Param() { isMe, userId }: GetUserParam
   ) {
     const user = isMe
@@ -410,11 +422,12 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
-    const content = await this.contentService.getContentById(contentId);
 
-    if (!content) throw CastcleException.REQUEST_URL_NOT_FOUND;
-
-    await this.contentServiceV2.likeCast(content, user, authorizer.account);
+    const { content } = await this.contentServiceV2.likeCast(
+      contentId,
+      user,
+      authorizer.account
+    );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
@@ -428,13 +441,12 @@ export class UsersControllerV2 {
       feedItem._id,
       authorizer.credential
     );
-    return;
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':userId/likes-casts/:sourceContentId')
   async unlikeCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: UnlikeCastParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
   ) {
     const user = isMe
       ? authorizer.user
@@ -450,7 +462,7 @@ export class UsersControllerV2 {
   @Post(':userId/likes-comments')
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
-    @Body('commentId') commentId: string,
+    @Body() { commentId }: LikeCommentDto,
     @Param() { isMe, userId }: GetUserParam
   ) {
     const user = isMe
@@ -495,7 +507,6 @@ export class UsersControllerV2 {
       feedItem._id,
       authorizer.credential
     );
-    return;
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Comments)
@@ -514,9 +525,6 @@ export class UsersControllerV2 {
     await this.commentService.unlikeCommentCast(sourceCommentId, user);
   }
 
-  @ApiOkResponse({
-    type: PagesResponse,
-  })
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
   async getMyPages(@Auth() authorizer: Authorizer) {
@@ -524,5 +532,114 @@ export class UsersControllerV2 {
     return ResponseDto.ok<PageResponseDto[]>({
       payload: pages,
     });
+  }
+
+  @Post(':userId/blocking')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async blockUser(
+    @Auth() authorizer: Authorizer,
+    @Body() { targetCastcleId }: BlockingDto,
+    @Param()
+    { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.blockUser(user, targetCastcleId);
+  }
+
+  @Delete(':userId/blocking/:targetCastcleId')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unBlockUser(
+    @Auth() authorizer: Authorizer,
+    @Param()
+    { targetCastcleId, isMe, userId }: UnblockParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.unBlockUser(user, targetCastcleId);
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/recasts')
+  async recastContent(
+    @Auth() authorizer: Authorizer,
+    @Body() { contentId }: GetContentDto,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    this.logger.log(`Start recast content id: ${contentId}`);
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const recast = await this.contentServiceV2.recast(
+      contentId,
+      user,
+      authorizer.account
+    );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      recast.recastContent
+    );
+
+    if (feedItem) {
+      await this.suggestionService.seen(
+        authorizer.account,
+        feedItem._id,
+        authorizer.credential
+      );
+    }
+
+    return this.contentService.convertContentToContentResponse(
+      user,
+      recast.recastContent
+    );
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @CastcleBasicAuth()
+  @Delete(':userId/recasts/:sourceContentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoRecast(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.contentServiceV2.undoRecast(sourceContentId, user);
+  }
+
+  @Get(':userId/blocking')
+  @CastcleBasicAuth()
+  async blockLookup(
+    @Auth() authorizer: Authorizer,
+    @Query() paginationQuery: PaginationQuery,
+    @Param()
+    { isMe, userId }: GetUserParam
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getBlockedLookup(
+      user,
+      paginationQuery
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 }

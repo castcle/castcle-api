@@ -20,7 +20,6 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import * as mongoose from 'mongoose';
 import { Document } from 'mongoose';
 import {
@@ -126,4 +125,9 @@ export const getSocialPrefix = (socialId: string, provider: string) => {
       return socialId;
     }
   }
+};
+
+export const validateObjectId = (id: string) => {
+  const ObjectId = mongoose.Types.ObjectId;
+  return ObjectId.isValid(id);
 };

@@ -832,9 +832,9 @@ describe('User Service', () => {
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
-      await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' },
-      });
+      await expect(service.blockUser(user1, null)).rejects.toMatchObject(
+        CastcleException.USER_OR_PAGE_NOT_FOUND
+      );
     });
 
     it('should block user and create blocking relationship', async () => {
@@ -881,9 +881,9 @@ describe('User Service', () => {
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to unblock is not found', async () => {
-      await expect(service.blockUser(user1, null)).rejects.toMatchObject({
-        response: { code: '4001' },
-      });
+      await expect(service.blockUser(user1, null)).rejects.toMatchObject(
+        CastcleException.USER_OR_PAGE_NOT_FOUND
+      );
     });
 
     it('should abort when user to unblock is not followed', async () => {
@@ -929,7 +929,7 @@ describe('User Service', () => {
     it('should throw USER_OR_PAGE_NOT_FOUND when user to report is not found', async () => {
       await expect(
         service.reportUser(user1, null, 'message')
-      ).rejects.toMatchObject({ response: { code: '4001' } });
+      ).rejects.toMatchObject(CastcleException.USER_OR_PAGE_NOT_FOUND);
     });
 
     it('should report user by sending email to Castcle admin', async () => {

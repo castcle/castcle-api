@@ -20,9 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ContentServiceV2 } from '@castcle-api/database';
 import {
-  LikingUserResponse,
+  ContentService,
+  ContentServiceV2,
+  EngagementType,
+  validateObjectId,
+} from '@castcle-api/database';
+import {
+  GetContentParam,
   Meta,
   PaginationQuery,
   ResponseDto,
@@ -34,24 +39,59 @@ import {
   Authorizer,
   CastcleAuth,
   CastcleBasicAuth,
+  CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Delete, Get, Param, Post, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'contents' })
 export class ContentControllerV2 {
   private logger = new CastLogger(ContentControllerV2.name);
-  constructor(private contentService: ContentServiceV2) {}
+  constructor(
+    private contentServiceV2: ContentServiceV2,
+    private contentService: ContentService
+  ) {}
 
-  @CastcleAuth(CacheKeyName.Comments)
+  private validateId(id: string) {
+    this.logger.log(`Validate is object id: ${id}`);
+    if (!validateObjectId(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
+
+  @CastcleAuth(CacheKeyName.Contents)
+  @Get(':contentId')
+  async getContentFromId(
+    @Param('contentId') contentId: string,
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery
+  ) {
+    this.validateId(contentId);
+    const content = await this.contentService.getContentById(contentId);
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+    const engagements = authorizer.user
+      ? await this.contentService.getAllEngagementFromContentAndUser(
+          content,
+          authorizer.user
+        )
+      : [];
+
+    return this.contentService.convertContentToContentResponse(
+      authorizer.user,
+      content,
+      engagements,
+      query.hasRelationshipExpansion
+    );
+  }
+
+  @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId/farming')
   async getContentFarming(
     @Param('contentId') contentId: string,
     @Auth() authorizer: Authorizer
   ) {
     this.logger.log(`Start get content farming from content: ${contentId}`);
-    return this.contentService.pipeContentFarming(
-      await this.contentService.getContentFarming(
+    return this.contentServiceV2.pipeContentFarming(
+      await this.contentServiceV2.getContentFarming(
         contentId,
         authorizer.account.id
       ),
@@ -59,28 +99,28 @@ export class ContentControllerV2 {
     );
   }
 
-  @CastcleAuth(CacheKeyName.Comments)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':contentId/farm')
   async farmContent(
     @Param('contentId') contentId: string,
     @Auth() authorizer: Authorizer
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
-    return this.contentService.pipeContentFarming(
-      await this.contentService.farm(contentId, authorizer.account.id),
+    return this.contentServiceV2.pipeContentFarming(
+      await this.contentServiceV2.farm(contentId, authorizer.account.id),
       authorizer.account.id
     );
   }
 
-  @CastcleAuth(CacheKeyName.Comments)
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':contentId/farm')
   async unfarmContent(
     @Param('contentId') contentId: string,
     @Auth() authorizer: Authorizer
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
-    return this.contentService.pipeContentFarming(
-      await this.contentService.unfarm(contentId, authorizer.account.id),
+    return this.contentServiceV2.pipeContentFarming(
+      await this.contentServiceV2.unfarm(contentId, authorizer.account.id),
       authorizer.account.id
     );
   }
@@ -89,23 +129,48 @@ export class ContentControllerV2 {
   @Get(':contentId/liking-users')
   async getLikingCast(
     @Auth() authorizer: Authorizer,
-    @Param('contentId') contentId: string,
-    @Query() query: PaginationQuery
+    @Param() { contentId, ...query }: GetContentParam
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    const likingResponse = await this.contentService.getLikingCast(
+    const likingResponse = await this.contentServiceV2.getEngagementCast(
       contentId,
       authorizer.account,
       query,
+      EngagementType.Like,
       authorizer.user
     );
     return ResponseDto.ok({
       payload: likingResponse.items,
       meta: Meta.fromDocuments(
-        likingResponse.items as any,
+        likingResponse.items as any[],
         likingResponse.count
       ),
-    } as LikingUserResponse);
+    });
+  }
+
+  @CastcleBasicAuth()
+  @Get(':contentId/recasts')
+  async getRecastBy(
+    @Auth() authorizer: Authorizer,
+    @Param() { contentId, ...query }: GetContentParam
+  ) {
+    this.logger.log(`Get Recasts from content : ${contentId}`);
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    const recastByResponse = await this.contentServiceV2.getEngagementCast(
+      contentId,
+      authorizer.account,
+      query,
+      EngagementType.Recast,
+      authorizer.user
+    );
+
+    return ResponseDto.ok({
+      payload: recastByResponse.items,
+      meta: Meta.fromDocuments(
+        recastByResponse.items as any[],
+        recastByResponse.count
+      ),
+    });
   }
 }

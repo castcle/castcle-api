@@ -76,13 +76,19 @@ class NotificationDocument extends CastcleBase {
     index: true,
   })
   account: Account;
+
+  @Prop({
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  user: User;
 }
 
 type NotifyResponseOption = {
   message: string;
-  user?: User;
-  isDate?: boolean;
-  read?: boolean;
+  userCurrent?: User;
+  landingPage?: string;
 };
 
 export const NotificationSchema =
@@ -96,18 +102,19 @@ export class Notification extends NotificationDocument {
 
 NotificationSchema.methods.toNotificationPayload = function ({
   message,
-  user,
-  isDate = false,
-  read,
+  userCurrent,
+  landingPage,
 }: NotifyResponseOption) {
   return {
     id: this._id,
-    notifyId: this._id,
     source: this.source,
-    message,
-    read,
-    avatar: user?.profile?.images?.avatar
-      ? new Image(user.profile.images.avatar).toSignUrls()
+    read: this.read,
+    type: this.type,
+    message: message,
+    landingPage: landingPage,
+    user: this.user?._id,
+    avatar: userCurrent?.profile?.images?.avatar
+      ? new Image(userCurrent.profile.images.avatar).toSignUrls()
       : Configs.DefaultAvatarImages,
     commentId: this.commentRef,
     contentId: this.contentRef,
@@ -115,7 +122,7 @@ NotificationSchema.methods.toNotificationPayload = function ({
     advertiseId: this.adsRef,
     profileId: this.profileRef,
     systemId: this.systemRef,
-    createdAt: isDate ? this.createdAt : undefined,
-    updatedAt: isDate ? this.updatedAt : undefined,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
   } as NotificationPayloadDto;
 };

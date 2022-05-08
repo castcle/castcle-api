@@ -159,7 +159,7 @@ export class NotificationService {
 
       this.#logger.log(`Check follow interval time.`);
       if (
-        !CastcleDate.checkIntervalFollowed(
+        !CastcleDate.checkIntervalNotify(
           notifyModel?.createdAt,
           Number(Environment.NOTIFY_FOLLOW_INTERVAL)
         )
@@ -358,9 +358,7 @@ export class NotificationService {
 
         return notify.toNotificationPayload({
           message: message,
-          user: userSort[0],
-          isDate: true,
-          read: notify.read,
+          userCurrent: userSort[0],
         });
       })
     );
@@ -392,7 +390,7 @@ export class NotificationService {
         sound: 'default',
         'mutable-content': 1,
       },
-      payload: notify.toNotificationPayload({ message }),
+      payload: notify.toNotificationPayload({ message }) as any,
       firebaseTokens: firebaseToken.map((item) => String(item.firebaseToken)),
     } as NotificationMessage;
   };

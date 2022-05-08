@@ -48,6 +48,7 @@ import { UserService } from './user.service';
 import { TAccountService } from './taccount.service';
 import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
+import { EngagementType } from './../schemas/engagement.schema';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -117,16 +118,17 @@ describe('ContentServiceV2', () => {
   describe('#likeCast()', () => {
     it('should create like cast.', async () => {
       await service.likeCast(
-        content,
+        content._id,
         mocksUsers[1].user,
         mocksUsers[1].account
       );
-      const engagement = await (service as any)._engagementModel.findOne({
+      const engagement = await (service as any).repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
           $id: content._id,
         },
+        type: EngagementType.Like,
       });
       expect(engagement).toBeTruthy();
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
@@ -134,19 +136,58 @@ describe('ContentServiceV2', () => {
       expect(engagement.type).toEqual(NotificationType.Like);
     });
   });
+
   describe('#unlikeCast()', () => {
     it('should delete unlike cast.', async () => {
       await service.unlikeCast(content._id, mocksUsers[1].user);
-      const engagement = await (service as any)._engagementModel.findOne({
+      const engagement = await (service as any).repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
           $id: content._id,
         },
+        type: EngagementType.Like,
       });
       expect(engagement).toBeNull();
     });
   });
+  describe('#recast()', () => {
+    it('should create recast.', async () => {
+      const { recastContent, engagement } = await service.recast(
+        content._id,
+        mocksUsers[1].user,
+        mocksUsers[1].account
+      );
+
+      expect(recastContent).toBeTruthy();
+      expect(engagement).toBeTruthy();
+
+      expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
+      expect(String(engagement.itemId)).toEqual(String(recastContent._id));
+      expect(engagement.type).toEqual(NotificationType.Recast);
+    });
+  });
+
+  describe('#undoRecast()', () => {
+    it('should delete unlike cast.', async () => {
+      const recast = await (service as any).repository.findContent({
+        author: mocksUsers[1].user._id,
+        originalPost: content._id,
+      });
+
+      await service.undoRecast(recast._id, mocksUsers[1].user);
+      const engagement = await (service as any).repository.findEngagement({
+        user: mocksUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: recast._id,
+        },
+        type: EngagementType.Recast,
+      });
+      expect(engagement).toBeNull();
+    });
+  });
+
   describe('Farming', () => {
     let mockFarmingUsers: MockUserDetail[];
     let testContents: Content[] = [];
@@ -343,38 +384,62 @@ describe('ContentServiceV2', () => {
     });
   });
 
-  describe('#getLikingCast()', () => {
+  describe('#getEngagementCast()', () => {
     it('should create liking user on cast.', async () => {
       await service.likeCast(
-        content,
+        content._id,
         mocksUsers[1].user,
         mocksUsers[1].account
       );
       await service.likeCast(
-        content,
+        content._id,
         mocksUsers[2].user,
         mocksUsers[2].account
       );
       await service.likeCast(
-        content,
+        content._id,
         mocksUsers[3].user,
         mocksUsers[3].account
       );
-      const likingResponse = await service.getLikingCast(
+      const likingResponse = await service.getEngagementCast(
         content._id,
         mocksUsers[4].account,
         {
           maxResults: 25,
           hasRelationshipExpansion: true,
         },
+        EngagementType.Like,
         mocksUsers[4].user
       );
-
       expect(likingResponse).toBeTruthy();
       expect(likingResponse.items).toHaveLength(3);
       expect(likingResponse.count).toEqual(3);
     });
+    it('should create recast user on cast.', async () => {
+      await service.recast(
+        content._id,
+        mocksUsers[1].user,
+        mocksUsers[1].account
+      );
+      const recastResponse = await service.getEngagementCast(
+        content._id,
+        mocksUsers[4].account,
+        {
+          maxResults: 25,
+          hasRelationshipExpansion: true,
+        },
+        EngagementType.Recast,
+        mocksUsers[4].user
+      );
+      expect(recastResponse).toBeTruthy();
+      expect(recastResponse.items).toHaveLength(1);
+      expect(recastResponse.count).toEqual(1);
+      await recastResponse.items.map((item) => {
+        expect(item.id).toEqual(mocksUsers[1].user._id);
+      });
+    });
   });
+
   afterAll(async () => {
     await app.close();
     await mongod.stop();

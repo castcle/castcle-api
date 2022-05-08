@@ -21,10 +21,11 @@
  * or have any questions.
  */
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { ErrorMessages } from '../utils-exception.module';
 import { getClientIp } from 'request-ip';
+import { CastcleErrors } from '../errors';
+
 export class CastcleThrottlerGuard extends ThrottlerGuard {
-  protected errorMessage: string = ErrorMessages['1010'].message;
+  override errorMessage = CastcleErrors.getLocalizedError('1010').message;
 
   getTracker(req: Record<string, any>): string {
     const ip = getClientIp(req as any);
