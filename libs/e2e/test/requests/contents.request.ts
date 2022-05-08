@@ -21,9 +21,11 @@ export class ContentsRequest {
   static checkHealth = () => ContentsRequest.get('/contents/healthy');
   static createContent = () => ContentsRequest.post('/contents/feed');
   static getContent = (contentId: string) =>
-    ContentsRequest.get(`/contents/${contentId}`);
+    ContentsRequest.get(`/v2/contents/${contentId}`);
   static updateContent = (contentId: string) =>
     ContentsRequest.put(`/contents/${contentId}`);
   static deleteContent = (contentId: string) =>
     ContentsRequest.delete(`/contents/${contentId}`);
+  static likingUser = (contentId: string) =>
+    ContentsRequest.get(`/v2/contents/${contentId}/liking-users`);
 }

@@ -12,6 +12,7 @@ import {
 } from './modules/feeds';
 import {
   testFollowsFlow,
+  testLikesFlow,
   testSyncSocialFlow,
   testUsersReporting,
   testUsersUpdateMobile,
@@ -76,6 +77,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Follows Flow', () => {
       testFollowsFlow();
+    });
+
+    describe('- Like Flow', () => {
+      testLikesFlow();
     });
   });
 
