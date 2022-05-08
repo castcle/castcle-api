@@ -105,7 +105,7 @@ export const testContentsFlow = () => {
       .auth(userGamma.accessToken, { type: 'bearer' })
       .expect(async ({ body }) => {
         expect(body.payload).toBeUndefined();
-        expect(body.code).toEqual('1001');
+        expect(body.code).toEqual('5003');
       });
   });
 };

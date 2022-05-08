@@ -185,7 +185,8 @@ export class Repository {
     };
 
     if (filter._id) query._id = filter._id;
-    if (filter.originalPost) query['originalPost._id'] = filter.originalPost;
+    if (filter.originalPost)
+      query['originalPost._id'] = Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
     if (filter.isRecast) query.isRecast = filter.isRecast;
 

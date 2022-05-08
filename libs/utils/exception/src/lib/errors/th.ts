@@ -20,16 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-export const ErrorMessages = {
+
+export const ThErrors = {
   '1001': {
     statusCode: '404',
     code: '1001',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'The requested URL was not found.',
   },
   '1002': {
     statusCode: '401',
     code: '1002',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Missing Authorization header.',
   },
   '1003': {
     statusCode: '401',
@@ -39,12 +40,12 @@ export const ErrorMessages = {
   '1004': {
     statusCode: '401',
     code: '1004',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid refresh token or expire',
   },
   '1005': {
     statusCode: '401',
     code: '1005',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid format',
   },
   '1006': {
     statusCode: '401',
@@ -71,15 +72,10 @@ export const ErrorMessages = {
     code: '1011',
     message: `Captcha failed please try again`,
   },
-  '1012': {
-    statusCode: '400',
-    code: '1012',
-    message: `Unable to sync with social platform`,
-  },
   '3001': {
     statusCode: '400',
     code: '3001',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid auth token.',
   },
   '3002': {
     statusCode: '400',
@@ -99,7 +95,7 @@ export const ErrorMessages = {
   '3005': {
     statusCode: '400',
     code: '3005',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Payload and Channel do not match.',
   },
   '3006': {
     statusCode: '400',
@@ -141,12 +137,12 @@ export const ErrorMessages = {
   '3013': {
     statusCode: '400',
     code: '3013',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid role.',
   },
   '3014': {
     statusCode: '400',
     code: '3014',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'This email already exists. Please choose another email.',
   },
   '3015': {
     statusCode: '400',
@@ -228,12 +224,12 @@ export const ErrorMessages = {
   '5001': {
     statusCode: '400',
     code: '5001',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Invalid feature.',
   },
   '5002': {
     statusCode: '400',
     code: '5002',
-    message: 'Sorry, Something went wrong. Please try again.',
+    message: 'Payload and Type do not match.',
   },
   '5003': {
     statusCode: '404',
@@ -249,31 +245,6 @@ export const ErrorMessages = {
     statusCode: '404',
     code: '5005',
     message: 'You already like this cast',
-  },
-  '5006': {
-    statusCode: '404',
-    code: '5005',
-    message: 'You already like this comment cast',
-  },
-  '5007': {
-    statusCode: '400',
-    code: '5007',
-    message: 'You already farm this cast',
-  },
-  '5008': {
-    statusCode: '404',
-    code: '5008',
-    message: 'Farming not found',
-  },
-  '5009': {
-    statusCode: '400',
-    code: '5009',
-    message: "You don't have enough $CAST to farm",
-  },
-  '5010': {
-    statusCode: '400',
-    code: '5010',
-    message: 'You have reach your farming limit, please wait 24hrs',
   },
   '6001': {
     statusCode: '400',
