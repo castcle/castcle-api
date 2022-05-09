@@ -22,7 +22,14 @@
  */
 
 import { Logger } from '@nestjs/common';
-import { connect, disconnect, model, Schema, SchemaTypes } from 'mongoose';
+import {
+  connect,
+  disconnect,
+  model,
+  Schema,
+  SchemaTypes,
+  Types,
+} from 'mongoose';
 
 const AccountAuthenIdSchema = new Schema({
   account: new Schema({ id: SchemaTypes.ObjectId }),
@@ -33,7 +40,7 @@ const AccountAuthenIdSchema = new Schema({
   avatar: SchemaTypes.String,
 });
 const AccountSchema = new Schema({
-  authentications: SchemaTypes.String,
+  authentications: SchemaTypes.Map,
 });
 
 class MigrateAuthenId {
@@ -48,7 +55,6 @@ class MigrateAuthenId {
 
     const dbName = args['dbName'] || 'test';
     const url = args['url'] || `mongodb://localhost:27017/${dbName}`;
-    console.log(args['url']);
 
     await connect(url);
     const accountReferralModel = model(
@@ -86,7 +92,7 @@ class MigrateAuthenId {
             };
           });
 
-          const updateResult = accountModel.updateOne(
+          const updateResult = await accountModel.updateOne(
             { _id: item._id },
             {
               $set: {

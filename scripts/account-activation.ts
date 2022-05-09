@@ -82,7 +82,6 @@ class MigrateActivation {
           $skip: offset,
         },
       ]);
-      console.log(activations);
 
       if (activations.length === 0) break;
 
