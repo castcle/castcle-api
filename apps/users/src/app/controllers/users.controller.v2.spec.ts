@@ -732,13 +732,13 @@ describe('UsersControllerV2', () => {
 
           await appController.undoRecast(authorizer, {
             userId: mocksUsers[2].user._id,
-            sourceContentId: recast.payload.id,
+            sourceContentId: content._id,
           } as GetSourceContentParam);
 
           const findContent = await (
             service as any
           ).repositoryService.findContent({
-            _id: recast.payload.id,
+            originalPost: content._id,
             author: mocksUsers[2].user._id,
           });
 
@@ -746,10 +746,7 @@ describe('UsersControllerV2', () => {
             service as any
           ).repositoryService.findEngagement({
             user: mocksUsers[2].user._id,
-            targetRef: {
-              $ref: 'content',
-              $id: content._id,
-            },
+            itemId: recast.payload.id,
             type: EngagementType.Recast,
           });
 
