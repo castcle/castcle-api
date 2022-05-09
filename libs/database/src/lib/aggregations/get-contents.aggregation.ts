@@ -22,6 +22,8 @@
  */
 
 import { User } from '../schemas';
+import { EngagementType } from './../schemas/engagement.schema';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
 
 type GetContentFilter = {
   [key: string]: string;
@@ -43,7 +45,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
       $match: query.filter,
     },
     {
-      $limit: query.maxResults,
+      $limit: query.maxResults || DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
     },
     {
       $facet: {
@@ -152,7 +154,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     likeCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'like'] },
+                          if: { $eq: ['$type', EngagementType.Like] },
                           then: 1,
                           else: 0,
                         },
@@ -161,7 +163,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     commentCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'comment'] },
+                          if: { $eq: ['$type', EngagementType.Comment] },
                           then: 1,
                           else: 0,
                         },
@@ -170,7 +172,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     quotedCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'quoted'] },
+                          if: { $eq: ['$type', EngagementType.Quote] },
                           then: 1,
                           else: 0,
                         },
@@ -179,7 +181,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     recastedCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'recasted'] },
+                          if: { $eq: ['$type', EngagementType.Recast] },
                           then: 1,
                           else: 0,
                         },
@@ -197,6 +199,74 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+        ],
+        metricsOriginal: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: { contentId: '$originalPost._id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                      ],
+                    },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$targetRef.$id',
+                    likeCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Like] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    commentCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Comment] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    quotedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Quote] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    recastedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Recast] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+              as: 'metricsOriginal',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$metricsOriginal' }, 0] },
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$metricsOriginal', 0] } },
         ],
         engagements: [
           {
@@ -228,6 +298,37 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+        ],
+        engagementsOriginal: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: {
+                contentId: '$originalPost._id',
+                userId: query.viewer._id,
+              },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                        { $eq: ['$user', '$$userId'] },
+                      ],
+                    },
+                  },
+                },
+              ],
+              as: 'engagementsOriginal',
+            },
+          },
+          {
+            $match: {
+              $expr: { $gt: [{ $size: '$engagementsOriginal' }, 0] },
+            },
+          },
+          { $replaceWith: { $arrayElemAt: ['$engagementsOriginal', 0] } },
         ],
       },
     },
