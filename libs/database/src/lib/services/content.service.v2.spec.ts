@@ -169,19 +169,16 @@ describe('ContentServiceV2', () => {
   });
 
   describe('#undoRecast()', () => {
-    it('should delete unlike cast.', async () => {
+    it('should delete cast.', async () => {
       const recast = await (service as any).repository.findContent({
         author: mocksUsers[1].user._id,
         originalPost: content._id,
       });
 
-      await service.undoRecast(recast._id, mocksUsers[1].user);
+      await service.undoRecast(content._id, mocksUsers[1].user);
       const engagement = await (service as any).repository.findEngagement({
         user: mocksUsers[1].user._id,
-        targetRef: {
-          $ref: 'content',
-          $id: recast._id,
-        },
+        itemId: recast._id,
         type: EngagementType.Recast,
       });
       expect(engagement).toBeNull();
@@ -429,8 +426,7 @@ describe('ContentServiceV2', () => {
         mocksUsers[4].user
       );
       expect(likingResponse).toBeTruthy();
-      expect(likingResponse.items).toHaveLength(3);
-      expect(likingResponse.count).toEqual(3);
+      expect(likingResponse.payload).toHaveLength(3);
     });
     it('should create recast user on cast.', async () => {
       await service.recast(
@@ -448,31 +444,25 @@ describe('ContentServiceV2', () => {
         EngagementType.Recast,
         mocksUsers[4].user
       );
-      expect(recastResponse).toBeTruthy();
-      expect(recastResponse.items).toHaveLength(1);
-      expect(recastResponse.count).toEqual(1);
-      await recastResponse.items.map((item) => {
+      expect(recastResponse.payload).toHaveLength(1);
+      await recastResponse.payload.map((item) => {
         expect(item.id).toEqual(mocksUsers[1].user._id);
       });
     });
+  });
 
+  describe('#getQuoteByCast()', () => {
     it('should create quote cast user on cast.', async () => {
-      const quotecastResponse = await service.getEngagementCast(
+      const quotecastResponse = await service.getQuoteByCast(
         content._id,
-        mocksUsers[4].account,
         {
           maxResults: 25,
           hasRelationshipExpansion: true,
         },
-        EngagementType.Quote,
         mocksUsers[4].user
       );
       expect(quotecastResponse).toBeTruthy();
-      expect(quotecastResponse.items).toHaveLength(1);
-      expect(quotecastResponse.count).toEqual(1);
-      await quotecastResponse.items.map((item) => {
-        expect(item.id).toEqual(mocksUsers[1].user._id);
-      });
+      expect(quotecastResponse.payload).toHaveLength(1);
     });
   });
 
