@@ -190,15 +190,17 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                   },
                 },
               ],
-              as: 'engagements',
+              as: 'metrics',
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            $unwind: {
+              path: '$metrics',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+          {
+            $replaceRoot: { newRoot: '$metrics' },
+          },
         ],
         metricsOriginal: [
           {
@@ -262,11 +264,13 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$metricsOriginal' }, 0] },
+            $unwind: {
+              path: '$metricsOriginal',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$metricsOriginal', 0] } },
+          {
+            $replaceRoot: { newRoot: '$metricsOriginal' },
+          },
         ],
         engagements: [
           {
@@ -293,11 +297,13 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            $unwind: {
+              path: '$engagements',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+          {
+            $replaceRoot: { newRoot: '$engagements' },
+          },
         ],
         engagementsOriginal: [
           {
@@ -324,11 +330,13 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagementsOriginal' }, 0] },
+            $unwind: {
+              path: '$engagementsOriginal',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagementsOriginal', 0] } },
+          {
+            $replaceRoot: { newRoot: '$engagementsOriginal' },
+          },
         ],
       },
     },
