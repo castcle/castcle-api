@@ -237,8 +237,8 @@ export const toUnsignedContentPayloadItem = (
 ) => {
   const engage = engagements.filter(
     (engagement) =>
-      String(engagement.targetRef.$id) === String(content.id) ||
-      String(engagement.targetRef.oid) === String(content.id)
+      String(engagement.targetRef.oid) === String(content.id) ||
+      String(engagement.targetRef.oid) === String(content._id)
   );
 
   const result = {
@@ -308,6 +308,7 @@ export const ContentSchema = SchemaFactory.createForClass<
 >(ContentDocument);
 
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
+ContentSchema.index({ 'originalPost._id': 1 });
 type ContentEngagement =
   | {
       [key: string]: boolean;
