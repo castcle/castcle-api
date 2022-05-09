@@ -26,12 +26,8 @@ import {
   EngagementType,
   validateObjectId,
 } from '@castcle-api/database';
-import {
-  GetContentDto,
-  Meta,
-  PaginationQuery,
-  ResponseDto,
-} from '@castcle-api/database/dtos';
+
+import { GetContentDto, PaginationQuery } from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -134,20 +130,13 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    const likingResponse = await this.contentServiceV2.getEngagementCast(
+    return await this.contentServiceV2.getEngagementCast(
       contentId,
       authorizer.account,
       query,
       EngagementType.Like,
       authorizer.user
     );
-    return ResponseDto.ok({
-      payload: likingResponse.items,
-      meta: Meta.fromDocuments(
-        likingResponse.items as any[],
-        likingResponse.count
-      ),
-    });
   }
 
   @CastcleBasicAuth()
@@ -159,21 +148,13 @@ export class ContentControllerV2 {
   ) {
     this.logger.log(`Get Recasts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
-    const recastByResponse = await this.contentServiceV2.getEngagementCast(
+    return await this.contentServiceV2.getEngagementCast(
       contentId,
       authorizer.account,
       query,
       EngagementType.Recast,
       authorizer.user
     );
-
-    return ResponseDto.ok({
-      payload: recastByResponse.items,
-      meta: Meta.fromDocuments(
-        recastByResponse.items as any[],
-        recastByResponse.count
-      ),
-    });
   }
 
   @CastcleBasicAuth()

@@ -302,7 +302,7 @@ export class ContentServiceV2 {
 
   undoRecast = async (contentId: string, user: User) => {
     const content = await this.repository.findContent({
-      _id: contentId,
+      originalPost: contentId,
       author: user._id,
     });
 
@@ -310,7 +310,7 @@ export class ContentServiceV2 {
 
     const engagement = await this.repository.findEngagement({
       user: user._id,
-      itemId: contentId,
+      itemId: content._id,
       type: EngagementType.Recast,
     });
 
@@ -322,7 +322,6 @@ export class ContentServiceV2 {
       });
     }
 
-    if (!engagement) return;
     await this.repository.updateNotification(
       {
         type: NotificationType.Recast,
@@ -734,32 +733,40 @@ export class ContentServiceV2 {
       {
         limit: query.maxResults,
         sort: { createdAt: -1 },
+        populate: 'user',
       }
     );
-    const usersId = engagementDocuments.map((item) => item.user._id);
+    const usersEngagement = engagementDocuments.filter((item) => item.user);
 
-    const userCounts = await this.repository.findUserCount({ _id: usersId });
+    const countUsersEngagement = await this.repository.countEngagements(filter);
 
-    const users = await this.repository.findUsers({ _id: usersId });
-    if (!users.length)
-      return {
-        items: [],
-        count: 0,
-      };
+    // const users = await this.repository.findUsers({ _id: usersId });
+    if (!usersEngagement.length)
+      return ResponseDto.ok({
+        payload: [],
+        meta: null,
+      });
+
+    console.log(query);
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
       const userResponses = await Promise.all(
-        users.map(async (user) => {
+        usersEngagement.map(async ({ user }) => {
           return user.type === UserType.PAGE
             ? user.toPageResponseV2()
             : await user.toUserResponseV2();
         })
       );
-      return {
-        items: userResponses,
-        count: userCounts,
-      };
+      return ResponseDto.ok({
+        payload: userResponses,
+        meta: Meta.fromDocuments(
+          engagementDocuments as any[],
+          countUsersEngagement
+        ),
+      });
     }
+
+    const usersId = usersEngagement.map(({ user }) => user._id);
 
     const relationships = await this.repository
       .findRelationships({
@@ -768,12 +775,12 @@ export class ContentServiceV2 {
       })
       .exec();
 
+    const relationship = relationships?.find(
+      (relationship) => String(relationship.user) === String(viewer?._id)
+    );
+
     const userResponses = await Promise.all(
-      users.map(async (user) => {
-        const relationship = relationships?.find(
-          (relationship) =>
-            String(relationship.followedUser) === String(user._id)
-        );
+      usersEngagement.map(async ({ user }) => {
         return user.type === UserType.PAGE
           ? user.toPageResponseV2(
               relationship?.blocking ?? false,
@@ -787,10 +794,14 @@ export class ContentServiceV2 {
             });
       })
     );
-    return {
-      items: userResponses,
-      count: userCounts,
-    };
+
+    return ResponseDto.ok({
+      payload: userResponses,
+      meta: Meta.fromDocuments(
+        engagementDocuments as any[],
+        countUsersEngagement
+      ),
+    });
   };
 
   getQuoteByCast = async (
