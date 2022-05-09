@@ -52,6 +52,7 @@ import {
   ShortPayload,
   UnlikeCommentCastParam,
   GetSourceContentParam,
+  QuoteCastDto,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import { Comment, Content } from '@castcle-api/database/schemas';
@@ -755,6 +756,46 @@ describe('UsersControllerV2', () => {
           expect(findContent).toBeNull();
           expect(engagement).toBeNull();
         });
+      });
+    });
+
+    describe('#quoteContent()', () => {
+      it('should quote cast is correct.', async () => {
+        const authorizer = new Authorizer(
+          mocksUsers[1].account,
+          mocksUsers[1].user,
+          mocksUsers[1].credential
+        );
+        const quotecast = await appController.quoteContent(
+          authorizer,
+          {
+            contentId: content._id,
+            message: 'quote cast',
+          } as QuoteCastDto,
+          {
+            userId: mocksUsers[1].user._id,
+          } as GetUserParam
+        );
+
+        const engagement = await (
+          service as any
+        ).repositoryService.findEngagement({
+          user: mocksUsers[1].user._id,
+          targetRef: {
+            $ref: 'content',
+            $id: content._id,
+          },
+          type: EngagementType.Quote,
+        });
+
+        expect(engagement.user).toEqual(mocksUsers[1].user._id);
+        expect(String(engagement.itemId)).toEqual(quotecast.payload.id);
+        expect(engagement.targetRef.oid).toEqual(content._id);
+        expect(engagement.type).toEqual(EngagementType.Quote);
+
+        expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
+        expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
+        expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
       });
     });
   });

@@ -27,7 +27,7 @@ import {
   validateObjectId,
 } from '@castcle-api/database';
 import {
-  GetContentParam,
+  GetContentDto,
   Meta,
   PaginationQuery,
   ResponseDto,
@@ -129,7 +129,8 @@ export class ContentControllerV2 {
   @Get(':contentId/liking-users')
   async getLikingCast(
     @Auth() authorizer: Authorizer,
-    @Param() { contentId, ...query }: GetContentParam
+    @Param() { contentId }: GetContentDto,
+    @Query() query: PaginationQuery
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
@@ -153,7 +154,8 @@ export class ContentControllerV2 {
   @Get(':contentId/recasts')
   async getRecastBy(
     @Auth() authorizer: Authorizer,
-    @Param() { contentId, ...query }: GetContentParam
+    @Param() { contentId }: GetContentDto,
+    @Query() query: PaginationQuery
   ) {
     this.logger.log(`Get Recasts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
@@ -172,5 +174,21 @@ export class ContentControllerV2 {
         recastByResponse.count
       ),
     });
+  }
+
+  @CastcleBasicAuth()
+  @Get(':contentId/quotecasts')
+  async getQuoteCastBy(
+    @Auth() authorizer: Authorizer,
+    @Param() { contentId }: GetContentDto,
+    @Query() query: PaginationQuery
+  ) {
+    this.logger.log(`Get quote casts from content : ${contentId}`);
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return await this.contentServiceV2.getQuoteByCast(
+      contentId,
+      query,
+      authorizer.user
+    );
   }
 }

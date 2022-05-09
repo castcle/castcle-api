@@ -23,8 +23,8 @@
 
 import { IsMongoId, IsString } from 'class-validator';
 import { GetUserParam } from './user.dto';
-import { PaginationQuery } from './pagination.dto';
 import { IsNotEmpty } from 'class-validator';
+import { Content, Engagement, User } from '../schemas';
 
 export class GetContentDto {
   @IsString()
@@ -33,12 +33,6 @@ export class GetContentDto {
   contentId: string;
 }
 
-export class GetContentParam extends PaginationQuery {
-  @IsString()
-  @IsMongoId()
-  @IsNotEmpty()
-  contentId: string;
-}
 export class LikeCommentDto {
   @IsString()
   @IsMongoId()
@@ -51,4 +45,17 @@ export class GetSourceContentParam extends GetUserParam {
   @IsMongoId()
   @IsNotEmpty()
   sourceContentId: string;
+}
+export class QuoteCastDto extends GetContentDto {
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+
+export class GetQuoteCastDto {
+  contents: Content[];
+  casts: Content[];
+  authors: User[];
+  engagements?: Engagement[];
+  metrics?: any;
 }

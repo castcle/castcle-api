@@ -51,6 +51,7 @@ import {
   UpdateUserDtoV2,
   GetContentDto,
   GetSourceContentParam,
+  QuoteCastDto,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -641,5 +642,45 @@ export class UsersControllerV2 {
     );
 
     return ResponseDto.ok({ payload: users, meta });
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/quotecasts')
+  async quoteContent(
+    @Auth() authorizer: Authorizer,
+    @Body() { contentId, message }: QuoteCastDto,
+    @Param() { isMe, userId }: GetUserParam
+  ) {
+    this.logger.log(`Start quote cast content id: ${contentId}`);
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const recast = await this.contentServiceV2.quoteCast(
+      contentId,
+      message,
+      user,
+      authorizer.account
+    );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      recast.quoteContent
+    );
+
+    if (feedItem) {
+      await this.suggestionService.seen(
+        authorizer.account,
+        feedItem._id,
+        authorizer.credential
+      );
+    }
+
+    return this.contentService.convertContentToContentResponse(
+      user,
+      recast.quoteContent
+    );
   }
 }
