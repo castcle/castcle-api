@@ -747,8 +747,6 @@ export class ContentServiceV2 {
         meta: null,
       });
 
-    console.log(query);
-
     if (!query.hasRelationshipExpansion || account.isGuest) {
       const userResponses = await Promise.all(
         usersEngagement.map(async ({ user }) => {
