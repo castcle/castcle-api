@@ -466,6 +466,49 @@ describe('ContentServiceV2', () => {
     });
   });
 
+  describe('#getRecastPipeline()', () => {
+    it('should get recast user on cast.', async () => {
+      const newRecast = await service.recast(
+        content._id,
+        mocksUsers[3].user,
+        mocksUsers[3].account
+      );
+
+      const recast = await service.getRecastPipeline(
+        newRecast.recastContent._id,
+        mocksUsers[3].user
+      );
+
+      expect(recast.payload).toBeTruthy();
+      expect(recast.payload.id).toEqual(newRecast.recastContent.id);
+      expect(recast.payload.referencedCasts.id).toEqual(
+        newRecast.recastContent.originalPost._id
+      );
+    });
+  });
+
+  describe('#getQuoteCastPipeline()', () => {
+    it('should get quote cast user on cast.', async () => {
+      const newQuote = await service.quoteCast(
+        content._id,
+        'quote cast',
+        mocksUsers[4].user,
+        mocksUsers[4].account
+      );
+
+      const recast = await service.getQuoteCastPipeline(
+        newQuote.quoteContent._id,
+        mocksUsers[3].user
+      );
+
+      expect(recast.payload).toBeTruthy();
+      expect(recast.payload.id).toEqual(newQuote.quoteContent.id);
+      expect(recast.payload.referencedCasts.id).toEqual(
+        newQuote.quoteContent.originalPost._id
+      );
+    });
+  });
+
   afterAll(async () => {
     await app.close();
     await mongod.stop();

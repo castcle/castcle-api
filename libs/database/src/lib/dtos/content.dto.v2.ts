@@ -52,10 +52,12 @@ export class QuoteCastDto extends GetContentDto {
   message: string;
 }
 
-export class GetQuoteCastDto {
+export class GetContentCastDto {
   contents: Content[];
   casts: Content[];
   authors: User[];
   engagements?: Engagement[];
-  metrics?: any;
+  metrics?: any[];
+  engagementsOriginal?: Engagement[];
+  metricsOriginal?: any[];
 }

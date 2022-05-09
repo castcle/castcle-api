@@ -601,9 +601,9 @@ export class UsersControllerV2 {
       );
     }
 
-    return this.contentService.convertContentToContentResponse(
-      user,
-      recast.recastContent
+    return await this.contentServiceV2.getRecastPipeline(
+      recast.recastContent._id,
+      user
     );
   }
 
@@ -658,7 +658,7 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const recast = await this.contentServiceV2.quoteCast(
+    const quotecasts = await this.contentServiceV2.quoteCast(
       contentId,
       message,
       user,
@@ -667,7 +667,7 @@ export class UsersControllerV2 {
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      recast.quoteContent
+      quotecasts.quoteContent
     );
 
     if (feedItem) {
@@ -678,9 +678,9 @@ export class UsersControllerV2 {
       );
     }
 
-    return this.contentService.convertContentToContentResponse(
-      user,
-      recast.quoteContent
+    return await this.contentServiceV2.getQuoteCastPipeline(
+      quotecasts.quoteContent._id,
+      user
     );
   }
 }

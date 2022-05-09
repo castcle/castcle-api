@@ -45,7 +45,7 @@ import {
   CastcleIncludes,
   ContentType,
   EntityVisibility,
-  GetQuoteCastDto,
+  GetContentCastDto,
   Meta,
   NotificationSource,
   NotificationType,
@@ -74,7 +74,7 @@ export class ContentServiceV2 {
   ) {}
 
   toContentsResponses = async (
-    bundleContents: GetQuoteCastDto,
+    bundleContents: GetContentCastDto,
     { hasRelationshipExpansion }: PaginationQuery,
     viewer?: User,
     countContents?: number
@@ -114,7 +114,15 @@ export class ContentServiceV2 {
       });
 
       const payloadCasts = bundleContents.casts.map((cast) =>
-        signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+        signedContentPayloadItem(
+          toUnsignedContentPayloadItem(
+            cast,
+            bundleContents.engagementsOriginal,
+            bundleContents.metricsOriginal?.find(
+              (metric) => String(metric._id) === String(cast._id)
+            )
+          )
+        )
       );
 
       return {
@@ -142,6 +150,46 @@ export class ContentServiceV2 {
         users: includesUsers,
       }),
       meta: Meta.fromDocuments(payloadContents as any, countContents),
+    } as ResponseDto;
+  };
+
+  toContentResponse = async (bundleContents: GetContentCastDto) => {
+    const [payloadContents] = bundleContents.contents.map((content) =>
+      signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          content,
+          bundleContents.engagements,
+          bundleContents.metrics?.find(
+            (metric) => String(metric._id) === String(content._id)
+          )
+        )
+      )
+    );
+
+    if (!bundleContents.contents) return;
+
+    const includesUsers = bundleContents.authors.map((author) =>
+      new Author(author as any).toIncludeUser()
+    );
+
+    const payloadCasts = bundleContents.casts.map((cast) =>
+      signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          cast,
+          bundleContents.engagementsOriginal,
+          bundleContents.metricsOriginal?.find(
+            (metric) => String(metric._id) === String(cast._id)
+          )
+        )
+      )
+    );
+
+    return {
+      payload: payloadContents,
+      includes: new CastcleIncludes({
+        casts: payloadCasts,
+        users: includesUsers,
+      }),
     } as ResponseDto;
   };
 
@@ -225,6 +273,26 @@ export class ContentServiceV2 {
       await notification.remove();
 
     return engagement.remove();
+  };
+
+  getRecastPipeline = async (contentId: string, user: User) => {
+    const [bundleContents] = await this.repository.aggregationContent({
+      viewer: user,
+      _id: contentId,
+      isRecast: true,
+    });
+
+    return this.toContentResponse(bundleContents);
+  };
+
+  getQuoteCastPipeline = async (contentId: string, user: User) => {
+    const [bundleContents] = await this.repository.aggregationContent({
+      viewer: user,
+      _id: contentId,
+      isQuote: true,
+    });
+
+    return this.toContentResponse(bundleContents);
   };
 
   recast = async (contentId: string, user: User, account: Account) => {
