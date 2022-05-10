@@ -122,7 +122,7 @@ describe('PageController', () => {
         displayId: 'test1234',
         displayName: 'test',
         password: '1234AbcD',
-      }
+      },
     );
     await authService.verifyAccount(accountActivation);
     jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
@@ -144,7 +144,7 @@ describe('PageController', () => {
     it('should create new user that has the info from pageDTO', async () => {
       const newPageResponse = await pageController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto
+        pageDto,
       );
       expect(newPageResponse.images.avatar).toBeDefined();
       expect(newPageResponse.displayName).toEqual(pageDto.displayName);
@@ -174,7 +174,7 @@ describe('PageController', () => {
             youtube: 'https://youtube.com',
             medium: 'https://medium.com',
           },
-        }
+        },
       );
       //expect(result).toEqual({ ...pageDto, displayName: 'change baby' });
       expect(result.displayName).toEqual('change baby');
@@ -194,7 +194,7 @@ describe('PageController', () => {
         testPage._id,
         {
           password: '1234AbcD',
-        }
+        },
       );
       expect(result).toEqual('');
       const postPage = await userService.getByIdOrCastcleId(pageDto.castcleId);
@@ -205,12 +205,12 @@ describe('PageController', () => {
     it('should be able to get page from user ID', async () => {
       await pageController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto2
+        pageDto2,
       );
       const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
-        testPage._id
+        testPage._id,
       );
       expect(getResult).toEqual(testPage.toPageResponse());
     });
@@ -218,7 +218,7 @@ describe('PageController', () => {
       const testPage = await userService.getByIdOrCastcleId(pageDto2.castcleId);
       const getResult = await pageController.getPageFromId(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto2.castcleId
+        pageDto2.castcleId,
       );
       expect(getResult).toEqual(testPage.toPageResponse());
     });
@@ -245,16 +245,16 @@ describe('PageController', () => {
       const createResult: Content[] = [];
       createResult[0] = await contentService.createContentFromUser(
         page,
-        contentDtos[0]
+        contentDtos[0],
       );
       createResult[1] = await contentService.createContentFromUser(
         page,
-        contentDtos[1]
+        contentDtos[1],
       );
       const response = await pageController.getPageContents(
         page._id,
         { $credential: userCredential, $language: 'th' } as any,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       const items = createResult
         .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1))
@@ -311,14 +311,14 @@ describe('PageController', () => {
               link: 'http://www.twitter.com/test2',
             },
           ],
-        }
+        },
       );
 
       const page1 = await userService.getByIdOrCastcleId(
-        newPageResponse.payload[0].castcleId
+        newPageResponse.payload[0].castcleId,
       );
       const page2 = await userService.getByIdOrCastcleId(
-        newPageResponse.payload[1].castcleId
+        newPageResponse.payload[1].castcleId,
       );
       const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
       const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
@@ -350,8 +350,8 @@ describe('PageController', () => {
                 link: 'http://www.facebook.com/test1',
               },
             ],
-          }
-        )
+          },
+        ),
       ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
@@ -386,7 +386,7 @@ describe('PageController', () => {
               link: 'http://www.facebook.com/test1',
             },
           ],
-        })
+        }),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });

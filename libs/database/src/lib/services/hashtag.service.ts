@@ -88,7 +88,7 @@ export class HashtagService {
         },
         {
           upsert: true,
-        }
+        },
       )
       .exec();
   };
@@ -112,7 +112,7 @@ export class HashtagService {
           $inc: {
             score: -1,
           },
-        }
+        },
       )
       .exec();
   };
@@ -143,11 +143,11 @@ export class HashtagService {
     if (oldTags) {
       //find conflict tag
       const removeTags = oldTags.filter(
-        (oldTag) => newTags.findIndex((nT) => nT === oldTag) < 0
+        (oldTag) => newTags.findIndex((nT) => nT === oldTag) < 0,
       );
       await Promise.all(removeTags.map((t) => this.removeFromTag(t)));
       newTags = newTags.filter(
-        (nT) => oldTags.findIndex((oldTag) => nT === oldTag) < 0
+        (nT) => oldTags.findIndex((oldTag) => nT === oldTag) < 0,
       );
     }
     return Promise.all(newTags.map((tag) => this.createFromTag(tag)));
@@ -174,7 +174,7 @@ export class HashtagService {
    * @returns
    */
   extractHashtagFromContentPayload = (
-    payload: ShortPayload | BlogPayload | ImagePayload
+    payload: ShortPayload | BlogPayload | ImagePayload,
   ) => {
     if ((payload as ShortPayload).message) {
       return this.extractHashtagFromText((payload as ShortPayload).message);
@@ -202,7 +202,7 @@ export class HashtagService {
    */
   searchHashtag = async (
     keyword: string,
-    queryOptions: CastcleQueryOptions
+    queryOptions: CastcleQueryOptions,
   ) => {
     const query = {
       tag: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },

@@ -74,7 +74,7 @@ export class CommentController {
     private notifyService: NotificationService,
     private userService: UserService,
     private rankerService: RankerService,
-    private suggestionService: SuggestionService
+    private suggestionService: SuggestionService,
   ) {}
 
   @ApiBody({
@@ -86,7 +86,7 @@ export class CommentController {
     @Param('id') contentId: string,
     @Body() commentBody: CreateCommentBody,
     @Req() { $credential }: CredentialRequest,
-    @Query() expansionQuery: ExpansionQuery
+    @Query() expansionQuery: ExpansionQuery,
   ) {
     // try {
     const [authorizedUser, content, user] = await Promise.all([
@@ -98,25 +98,25 @@ export class CommentController {
     const comment = await this.contentService.createCommentForContent(
       user,
       content,
-      { message: commentBody.message }
+      { message: commentBody.message },
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       $credential.account,
-      content._id
+      content._id,
     );
 
     if (feedItem) {
       this.suggestionService.seen(
         $credential.account,
         feedItem._id,
-        $credential
+        $credential,
       );
     }
 
     if (String(authorizedUser._id) !== String(content.author.id)) {
       const userOwner = await this.userService.getByIdOrCastcleId(
-        content.author.id
+        content.author.id,
       );
 
       this.notifyService.notifyToUser(
@@ -133,14 +133,14 @@ export class CommentController {
           read: false,
         },
         user,
-        $credential.account.preferences.languages[0]
+        $credential.account.preferences.languages[0],
       );
     }
     const payload = await this.commentService.convertCommentToCommentResponse(
       authorizedUser,
       comment,
       [],
-      expansionQuery
+      expansionQuery,
     );
 
     return { payload };
@@ -157,7 +157,7 @@ export class CommentController {
     @Query('page', PagePipe)
     page = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limit = DEFAULT_QUERY_OPTIONS.limit
+    limit = DEFAULT_QUERY_OPTIONS.limit,
   ) {
     const [authorizedUser, content] = await Promise.all([
       this.authService.getUserFromAccount($credential.account),
@@ -167,7 +167,7 @@ export class CommentController {
       return this.commentService.getCommentsByContentId(
         authorizedUser,
         content._id,
-        { ...expansionQuery, limit, page, sortBy }
+        { ...expansionQuery, limit, page, sortBy },
       );
     else {
       //guestCase
@@ -188,7 +188,7 @@ export class CommentController {
     @Param('commentId') commentId: string,
     @Body() replyCommentBody: ReplyCommentBody,
     @Req() { $credential }: CredentialRequest,
-    @Query() expansionQuery: ExpansionQuery
+    @Query() expansionQuery: ExpansionQuery,
   ) {
     const [authorizedUser, comment, user] = await Promise.all([
       this.authService.getUserFromAccount($credential.account),
@@ -201,7 +201,7 @@ export class CommentController {
 
     if (String(authorizedUser._id) !== String(comment.author._id)) {
       const userOwner = await this.userService.getByIdOrCastcleId(
-        comment.author._id
+        comment.author._id,
       );
 
       this.notifyService.notifyToUser(
@@ -219,7 +219,7 @@ export class CommentController {
           read: false,
         },
         user,
-        $credential.account.preferences.languages[0]
+        $credential.account.preferences.languages[0],
       );
     }
     return {
@@ -227,7 +227,7 @@ export class CommentController {
         authorizedUser,
         replyComment,
         [],
-        expansionQuery
+        expansionQuery,
       ),
     };
   }
@@ -241,10 +241,10 @@ export class CommentController {
     @Param('commentId') commentId: string,
     @Body() editCommentBody: EditCommentBody,
     @Req() { $credential }: CredentialRequest,
-    @Query() expansionQuery: ExpansionQuery
+    @Query() expansionQuery: ExpansionQuery,
   ) {
     const authorizedUser = await this.authService.getUserFromAccount(
-      $credential.account
+      $credential.account,
     );
     const comment = await this.contentService.getCommentById(commentId);
     const updatedComment = await this.contentService.updateComment(comment, {
@@ -256,7 +256,7 @@ export class CommentController {
         authorizedUser,
         updatedComment,
         [],
-        expansionQuery
+        expansionQuery,
       ),
     };
   }
@@ -280,7 +280,7 @@ export class CommentController {
     @Req() req: CredentialRequest,
     @Param('id') contentId: string,
     @Param('commentId') commentId: string,
-    @Body() likeCommentBody: LikeCommentBody
+    @Body() likeCommentBody: LikeCommentBody,
   ) {
     const [authorizedUser, comment, user, content] = await Promise.all([
       this.authService.getUserFromAccount(req.$credential.account),
@@ -295,7 +295,7 @@ export class CommentController {
 
     if (String(authorizedUser._id) === String(comment.author._id)) return;
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id
+      comment.author._id,
     );
 
     this.notifyService.notifyToUser(
@@ -312,7 +312,7 @@ export class CommentController {
         read: false,
       },
       user,
-      req.$credential.account.preferences.languages[0]
+      req.$credential.account.preferences.languages[0],
     );
   }
 
@@ -324,11 +324,11 @@ export class CommentController {
   @Put(':id/comments/:commentId/unliked')
   async unlikeComment(
     @Param('commentId') commentId: string,
-    @Body() likeCommentBody: LikeCommentBody
+    @Body() likeCommentBody: LikeCommentBody,
   ) {
     const comment = await this.contentService.getCommentById(commentId);
     const user = await this.userService.getByIdOrCastcleId(
-      likeCommentBody.castcleId
+      likeCommentBody.castcleId,
     );
     await this.contentService.unlikeComment(user, comment);
     return '';

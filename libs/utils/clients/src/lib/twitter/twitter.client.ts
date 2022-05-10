@@ -40,7 +40,7 @@ export class TwitterClient {
     Environment.TWITTER_SECRET_KEY,
     '1.0A',
     null,
-    'HMAC-SHA1'
+    'HMAC-SHA1',
   );
 
   /**
@@ -57,7 +57,7 @@ export class TwitterClient {
           } else {
             resolve({ oauth_token, oauth_token_secret, results });
           }
-        }
+        },
       );
     });
   }
@@ -72,7 +72,7 @@ export class TwitterClient {
   async requestAccessToken(
     accessToken: string,
     tokenSecret: string,
-    oauthVerifier: string
+    oauthVerifier: string,
   ): Promise<TwitterAccessToken> {
     this.logger.log('call twitter api for request access token');
     return new Promise((resolve, reject) => {
@@ -90,7 +90,7 @@ export class TwitterClient {
               results,
             });
           }
-        }
+        },
       );
     });
   }
@@ -107,7 +107,7 @@ export class TwitterClient {
         'GET',
         accessToken,
         tokenSecret,
-        (error, data) => resolve(error ? null : JSON.parse(data.toString()))
+        (error, data) => resolve(error ? null : JSON.parse(data.toString())),
       );
     });
   }

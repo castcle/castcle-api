@@ -49,7 +49,7 @@ export class AuthenticationServiceV2 {
     private facebookClient: FacebookClient,
     private twitterClient: TwitterClient,
     private mailer: Mailer,
-    private repository: Repository
+    private repository: Repository,
   ) {}
 
   private generateTokenPayload(credential: Credential, user: User) {
@@ -78,11 +78,11 @@ export class AuthenticationServiceV2 {
    */
   private async linkCredentialToAccount(
     credential: Credential,
-    account: Account
+    account: Account,
   ) {
     const isSameAccount = String(credential.account._id) === account.id;
     const isLinkedCredential = account.credentials?.some(
-      ({ deviceUUID }) => deviceUUID === credential.deviceUUID
+      ({ deviceUUID }) => deviceUUID === credential.deviceUUID,
     );
 
     if (!isSameAccount) {
@@ -111,7 +111,7 @@ export class AuthenticationServiceV2 {
               deviceUUID: credential.deviceUUID,
             },
           },
-        }
+        },
       );
     }
 
@@ -121,7 +121,7 @@ export class AuthenticationServiceV2 {
   private async login(credential: Credential, account: Account) {
     const users = await this.repository.findUsers(
       { accountId: account._id },
-      { sort: { updatedAt: -1 } }
+      { sort: { updatedAt: -1 } },
     );
 
     const user = users.find((user) => user.type === UserType.PEOPLE);
@@ -129,7 +129,7 @@ export class AuthenticationServiceV2 {
     const tokenPayload = this.generateTokenPayload(credential, user);
     const { accessToken, refreshToken } = await credential.renewTokens(
       tokenPayload,
-      { id: String(account._id) }
+      { id: String(account._id) },
     );
 
     return {
@@ -143,7 +143,7 @@ export class AuthenticationServiceV2 {
   async loginWithEmail(
     credential: Credential,
     email: string,
-    password: string
+    password: string,
   ) {
     const account = await this.repository.findAccount({ email });
 
@@ -158,7 +158,7 @@ export class AuthenticationServiceV2 {
 
   async loginWithSocial(
     credential: Credential,
-    socialConnectDto: SocialConnectDto & { ip: string; userAgent: string }
+    socialConnectDto: SocialConnectDto & { ip: string; userAgent: string },
   ) {
     const { email, socialId, provider, ip, userAgent, authToken } =
       socialConnectDto;
@@ -195,14 +195,14 @@ export class AuthenticationServiceV2 {
         });
         const profile = await duplicateUser?.toUserResponseV2();
         throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
-          profile ? { profile } : null
+          profile ? { profile } : null,
         );
       }
     }
 
     const registration = await this.registerWithSocial(
       credential,
-      socialConnectDto
+      socialConnectDto,
     );
     await this.analyticService.trackRegistration(ip, userAgent);
     return { registered: false, ...registration };
@@ -220,7 +220,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithEmail(
     credential: Credential,
-    dto: RegisterWithEmailDto & { hostname: string; ip: string }
+    dto: RegisterWithEmailDto & { hostname: string; ip: string },
   ) {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
@@ -235,7 +235,7 @@ export class AuthenticationServiceV2 {
 
     await this.repository.updateCredentials(
       { 'account._id': account._id },
-      { isGuest: false }
+      { isGuest: false },
     );
 
     account.isGuest = false;
@@ -254,7 +254,7 @@ export class AuthenticationServiceV2 {
     await this.mailer.sendRegistrationEmail(
       dto.hostname,
       account.email,
-      activation.verifyToken
+      activation.verifyToken,
     );
 
     return this.login(credential, account);
@@ -262,7 +262,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithSocial(
     credential: Credential,
-    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string }
+    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string },
   ) {
     const account = await this.repository.findAccount({
       _id: credential.account._id,
@@ -298,13 +298,13 @@ export class AuthenticationServiceV2 {
           avatar: registerDto.avatar
             ? await this.repository.createProfileImage(
                 account._id,
-                registerDto.avatar
+                registerDto.avatar,
               )
             : null,
           cover: registerDto.cover
             ? await this.repository.createCoverImage(
                 account._id,
-                registerDto.cover
+                registerDto.cover,
               )
             : null,
         },
@@ -317,7 +317,7 @@ export class AuthenticationServiceV2 {
   private async updateReferral(
     account: Account,
     referrerId: string,
-    ip: string
+    ip: string,
   ) {
     const referrer =
       (await this.repository.findUser({ _id: referrerId })) ||
@@ -328,18 +328,18 @@ export class AuthenticationServiceV2 {
     account.referralBy = referrer._id;
     await this.repository.updateAccount(
       { _id: referrer._id },
-      { $inc: { referralCount: 1 } }
+      { $inc: { referralCount: 1 } },
     );
   }
 
   private createAccountActivation(
     account: Account,
     type: AccountActivationType,
-    autoActivateEmail = false
+    autoActivateEmail = false,
   ) {
     const now = new Date();
     const verifyTokenExpireDate = new Date(
-      now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+      now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
     );
     const verifyToken = Token.generateToken(
       {
@@ -347,7 +347,7 @@ export class AuthenticationServiceV2 {
         verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
       },
       Environment.JWT_VERIFY_SECRET,
-      Environment.JWT_VERIFY_EXPIRES_IN
+      Environment.JWT_VERIFY_EXPIRES_IN,
     );
 
     (account.activations ??= []).push({

@@ -92,15 +92,15 @@ describe('HashtagService', () => {
     });
     it('should return all #hashtag with space infront only', () => {
       expect(
-        service.extractHashtagFromText('this is #good blog#stuff')
+        service.extractHashtagFromText('this is #good blog#stuff'),
       ).toEqual(['good']);
     });
     it('should pass complex case', () => {
       //metaverse  #GameFi #NFT #PlayToEarn #P2E #IDO  #BSC #PreSale  #Airdrop
       expect(
         service.extractHashtagFromText(
-          'SupreSpace: 🎁There is 10BNB to reach the hard top🎁\n✅✅Private sale will be closed soon.\n✅✅Join Private sale here:\n\n✅Like and retweet\n✅Drop your BEP20 address \n#metaverse  #GameFi #NFT #PlayToEarn #P2E #IDO  #BSC #PreSale  #Airdrop\n\nhttps://twitter.com/SupreSpace/status/1460873380618399750'
-        )
+          'SupreSpace: 🎁There is 10BNB to reach the hard top🎁\n✅✅Private sale will be closed soon.\n✅✅Join Private sale here:\n\n✅Like and retweet\n✅Drop your BEP20 address \n#metaverse  #GameFi #NFT #PlayToEarn #P2E #IDO  #BSC #PreSale  #Airdrop\n\nhttps://twitter.com/SupreSpace/status/1460873380618399750',
+        ),
       ).toEqual([
         'metaverse',
         'GameFi',

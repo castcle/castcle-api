@@ -332,10 +332,10 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         let: {
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
           dateDiffCalled: new Date(
-            new Date().getTime() - params.calledAtDelay * 1000
+            new Date().getTime() - params.calledAtDelay * 1000,
           ),
         },
         pipeline: [
@@ -373,7 +373,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
         },
         pipeline: [
@@ -433,7 +433,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
         },
         pipeline: [

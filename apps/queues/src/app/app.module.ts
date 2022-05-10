@@ -47,7 +47,7 @@ import { ContentFarmingScheduler } from './content-farming.sheduler';
     BullModule.registerQueue(
       { name: QueueName.CONTENT },
       { name: QueueName.CAMPAIGN },
-      { name: QueueName.NOTIFICATION }
+      { name: QueueName.NOTIFICATION },
     ),
     MongooseAsyncFeatures,
     MongooseForFeatures,

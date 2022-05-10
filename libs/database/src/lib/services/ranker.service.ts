@@ -81,7 +81,7 @@ export class RankerService {
     public _defaultContentModel: Model<DefaultContent>,
     @InjectModel('Engagement')
     public _engagementModel: Model<Engagement>,
-    private dataService: DataService
+    private dataService: DataService,
   ) {}
 
   /**
@@ -92,7 +92,7 @@ export class RankerService {
    */
   getAllEngagement = async (contentIds: any[], viewerAccount: Account) => {
     const viewer = await this.userService.getUserFromAccountId(
-      viewerAccount._id
+      viewerAccount._id,
     );
 
     return this._engagementModel
@@ -117,7 +117,7 @@ export class RankerService {
   getGuestFeedItems = async (
     query: PaginationQuery,
     viewer: Account,
-    excludeContents = []
+    excludeContents = [],
   ) => {
     const filtersGuest = {
       countryCode: viewer.geolocation?.countryCode?.toLowerCase() ?? 'en',
@@ -137,7 +137,7 @@ export class RankerService {
 
     const [feedResponses] =
       await this._defaultContentModel.aggregate<GetGuestFeedContentsResponse>(
-        pipeline
+        pipeline,
       );
 
     if (!feedResponses.defaultFeeds.length && !feedResponses.guestFeeds.length)
@@ -155,15 +155,15 @@ export class RankerService {
     const payloadFeeds = await this._feedItemsToPayloadItems(
       mergeFeeds,
       undefined,
-      feedResponses.engagements
+      feedResponses.engagements,
     );
 
     const includesUsers = feedResponses.authors.map((author) =>
-      new Author(author).toIncludeUser()
+      new Author(author).toIncludeUser(),
     );
 
     const payloadCasts = feedResponses.casts.map((cast) =>
-      signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+      signedContentPayloadItem(toUnsignedContentPayloadItem(cast)),
     );
 
     return {
@@ -179,7 +179,7 @@ export class RankerService {
   _feedItemsToPayloadItems = async (
     feedDocuments: FeedItem[],
     viewer?: Account,
-    metrics?: CastcleMetric[]
+    metrics?: CastcleMetric[],
   ) => {
     const contentIds = feedDocuments.map((feed) => feed.content._id);
     const engagements = viewer
@@ -205,9 +205,9 @@ export class RankerService {
             item.content,
             engagements,
             metrics?.find(
-              (metric) => String(metric.id) === String(item.content._id)
-            )
-          )
+              (metric) => String(metric.id) === String(item.content._id),
+            ),
+          ),
         ),
         type: 'content',
       } as FeedItemPayloadItem;
@@ -217,7 +217,7 @@ export class RankerService {
   _getCastcleInclude = async (
     feedDocuments: FeedItem[],
     viewer: Account,
-    query: PaginationQuery
+    query: PaginationQuery,
   ) => {
     const includes = {
       users: feedDocuments.map((item) => item.content.author),
@@ -231,12 +231,12 @@ export class RankerService {
     authors = authors.concat(
       feedDocuments
         .filter((feedItem) => feedItem.content.originalPost)
-        .map((feedItem) => new Author(feedItem.content.originalPost.author))
+        .map((feedItem) => new Author(feedItem.content.originalPost.author)),
     );
     includes.users = await this.userService.getIncludesUsers(
       viewer,
       authors,
-      query.hasRelationshipExpansion
+      query.hasRelationshipExpansion,
     );
 
     return { includes: new CastcleIncludes(includes), meta };
@@ -244,12 +244,12 @@ export class RankerService {
 
   _getMemberFeedHistoryItemsFromViewer = async (
     viewer: Account,
-    query: FeedQuery
+    query: FeedQuery,
   ) => {
     console.debug('start service');
     const filter = createCastcleFilter(
       { viewer: viewer._id, seenAt: { $exists: true } },
-      { ...query, sinceId: query.untilId, untilId: query.sinceId }
+      { ...query, sinceId: query.untilId, untilId: query.sinceId },
     );
     const documents = await this._feedItemModel
       .find(filter)
@@ -262,7 +262,7 @@ export class RankerService {
     const { includes, meta } = await this._getCastcleInclude(
       documents,
       viewer,
-      query
+      query,
     );
     return {
       payload: payload,
@@ -279,7 +279,7 @@ export class RankerService {
   getFeeds = async (viewer: Account, query: FeedQuery) => {
     this.logger.log(
       JSON.stringify({ viewer: viewer.id, query }),
-      'getFeeds:init'
+      'getFeeds:init',
     );
 
     if (query.mode === 'history') {
@@ -306,7 +306,7 @@ export class RankerService {
     this.logger.log(JSON.stringify(pipeline), 'getFeeds:aggregate');
 
     const [userFeed] = await this.userModel.aggregate<GetFeedContentsResponse>(
-      pipeline
+      pipeline,
     );
     this.logger.log('DONE AGGREGATE');
 
@@ -315,11 +315,11 @@ export class RankerService {
     const feedsContentIds = [...followingContentIds, ...globalContentIds];
     const contentScore = await this.dataService.personalizeContents(
       String(viewer._id),
-      feedsContentIds
+      feedsContentIds,
     );
 
     const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
-      contentScore[a] > contentScore[b] ? -1 : 1
+      contentScore[a] > contentScore[b] ? -1 : 1,
     );
 
     const contents = await this._contentModel.find({
@@ -356,13 +356,13 @@ export class RankerService {
 
     feeds.forEach((feed) => {
       feed.content = contents.find(
-        (content) => String(content._id) === String(feed.content)
+        (content) => String(content._id) === String(feed.content),
       );
     });
 
     const feedPayload = await this._feedItemsToPayloadItems(
       feeds.filter((f) => f.content),
-      viewer
+      viewer,
     );
 
     const casts = feeds
@@ -382,13 +382,13 @@ export class RankerService {
     const includesUsers = await this.userService.getIncludesUsers(
       viewer,
       authors,
-      query.hasRelationshipExpansion
+      query.hasRelationshipExpansion,
     );
 
     const castPayload = casts.map((cast) =>
       signedContentPayloadItem(
-        toUnsignedContentPayloadItem(cast, castEngagements)
-      )
+        toUnsignedContentPayloadItem(cast, castEngagements),
+      ),
     );
 
     return {
@@ -405,7 +405,7 @@ export class RankerService {
     const contentIds = contents.map((content) => content.id);
     const score = await this.dataService.personalizeContents(
       accountId,
-      contentIds
+      contentIds,
     );
 
     return contents.sort((a, b) => score[a.id] - score[b.id]);
@@ -420,7 +420,7 @@ export class RankerService {
   seenFeedItem = async (
     account: Account,
     feedItemId: string,
-    credential: Credential
+    credential: Credential,
   ) => {
     console.log(account, feedItemId);
     this._feedItemModel
@@ -435,7 +435,7 @@ export class RankerService {
         {
           seenAt: new Date(),
           seenCredential: credential._id,
-        }
+        },
       )
       .exec();
   };
@@ -458,7 +458,7 @@ export class RankerService {
         },
         {
           offScreenAt: new Date(),
-        }
+        },
       )
       .exec();
 

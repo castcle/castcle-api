@@ -44,12 +44,12 @@ export function CastcleController(options: ControllerOptions) {
       example: Configs.RequiredHeaders.AcceptLanguage.example,
       required: true,
     }),
-    Controller(options)
+    Controller(options),
   );
 }
 
 export const CastcleControllerV2 = ({ path, ...options }: ControllerOptions) =>
   applyDecorators(
     ApiHeader(Configs.RequiredHeaders.AcceptVersion),
-    Controller({ ...options, path: `v2/${path}`, version: VERSION_NEUTRAL })
+    Controller({ ...options, path: `v2/${path}`, version: VERSION_NEUTRAL }),
   );

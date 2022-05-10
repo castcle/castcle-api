@@ -119,7 +119,7 @@ describe('SocialSyncService', () => {
 
       const resultData = await service.getAllSocialSyncBySocial(
         SocialProvider.Facebook,
-        '12345678'
+        '12345678',
       );
 
       expect(resultData).toBeDefined();
@@ -152,7 +152,7 @@ describe('SocialSyncService', () => {
       await service.update(updateSocialSyncDto, mocksUser);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
       const result = socialSyncDoc.find(
-        (x) => x.provider === updateSocialSyncDto.provider
+        (x) => x.provider === updateSocialSyncDto.provider,
       );
       expect(result).toBeDefined();
       expect(result.provider).toEqual(SocialProvider.Facebook);
@@ -172,7 +172,7 @@ describe('SocialSyncService', () => {
       await service.delete(deleteSocial, mocksUser, true);
       const socialSyncDoc = await service.getSocialSyncByUser(mocksUser);
       const result = socialSyncDoc.find(
-        (x) => x.provider === deleteSocial.provider
+        (x) => x.provider === deleteSocial.provider,
       );
       expect(result).toBeUndefined();
     });
@@ -182,7 +182,7 @@ describe('SocialSyncService', () => {
     it('should get page is exist.', async () => {
       const page = await service.getPageByPageIdAndAccountId(
         mockSocialSync,
-        mocksUser
+        mocksUser,
       );
       expect(mocksPage._id).toEqual(page._id);
       expect(mocksPage.displayName).toEqual(page.displayName);

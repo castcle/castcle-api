@@ -117,11 +117,11 @@ describe('CommentController', () => {
         displayId: 'test1234',
         displayName: 'test',
         password: '2@HelloWorld',
-      }
+      },
     );
     await authService.verifyAccount(accountActivation);
     userCredential = await authService.getCredentialFromAccessToken(
-      result.credentialDocument.accessToken
+      result.credentialDocument.accessToken,
     ); //result.credentialDocument;
     user = await service.getUserFromCredential(userCredential);
     content = await contentService.createContentFromUser(user, {
@@ -151,7 +151,7 @@ describe('CommentController', () => {
           castcleId: user.displayId,
         },
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
 
       expect(commentResult.payload).toBeDefined();
@@ -164,7 +164,7 @@ describe('CommentController', () => {
         rootCommentId,
         { message: 'yo', castcleId: user.displayId },
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(replyResult.payload).toBeDefined();
     });
@@ -174,7 +174,7 @@ describe('CommentController', () => {
       const comments = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload.length).toEqual(1);
       expect(comments.payload[0].reply.length).toEqual(1);
@@ -187,7 +187,7 @@ describe('CommentController', () => {
         userCredentialRequest,
         content._id,
         rootCommentId,
-        { castcleId: user.displayId, feedItemId: 'test' }
+        { castcleId: user.displayId, feedItemId: 'test' },
       );
       const engagement = await contentService._engagementModel.findOne({
         targetRef: {
@@ -203,14 +203,14 @@ describe('CommentController', () => {
       const comments = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(1);
 
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
 
       expect(comments2.payload[0].metrics.likeCount).toEqual(1);
@@ -228,7 +228,7 @@ describe('CommentController', () => {
       const comments = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload[0].metrics.likeCount).toEqual(0);
       await commentController.unlikeComment(rootCommentId, {
@@ -238,7 +238,7 @@ describe('CommentController', () => {
       const comments2 = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments2.payload[0].metrics.likeCount).toEqual(0);
     });
@@ -249,13 +249,13 @@ describe('CommentController', () => {
         rootCommentId,
         { message: 'zup' },
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(updateComment.payload).toBeDefined();
       const comments = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload[0]).toEqual(updateComment.payload);
     });
@@ -263,13 +263,13 @@ describe('CommentController', () => {
   describe('#deleteComment()', () => {
     it('should delete a comment', async () => {
       const deleteComment = await commentController.deleteComment(
-        rootCommentId
+        rootCommentId,
       );
       expect(deleteComment).toEqual('');
       const comments = await commentController.getAllComment(
         content._id,
         userCredentialRequest,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload.length).toEqual(0);
     });

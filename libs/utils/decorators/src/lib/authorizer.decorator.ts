@@ -29,7 +29,7 @@ export class Authorizer {
   constructor(
     public account: Account,
     public user: User,
-    public credential: Credential
+    public credential: Credential,
   ) {}
 
   /**
@@ -64,5 +64,5 @@ export const Auth = createParamDecorator(
     const user = await request.$user;
     const credential = request.$credential;
     return new Authorizer(account, user, credential);
-  }
+  },
 );

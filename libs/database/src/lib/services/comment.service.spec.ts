@@ -92,12 +92,12 @@ describe('CommentService', () => {
         user,
         comment,
         [],
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
 
       expect(response.author.followed).toBeUndefined();
       expect(response.metrics.likeCount).toEqual(
-        comment.engagements.like.count
+        comment.engagements.like.count,
       );
     });
 
@@ -106,7 +106,7 @@ describe('CommentService', () => {
         user,
         comment,
         [],
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true },
       );
 
       expect(response.author.followed).toBeDefined();

@@ -76,8 +76,8 @@ describe('Campaign Service', () => {
     await expect(
       campaignService.claimCampaignsAirdrop(
         accountId,
-        CampaignType.VERIFY_MOBILE
-      )
+        CampaignType.VERIFY_MOBILE,
+      ),
     ).rejects.toThrowError('This campaign has not started');
   });
 
@@ -96,8 +96,8 @@ describe('Campaign Service', () => {
     await expect(
       campaignService.claimCampaignsAirdrop(
         accountId,
-        CampaignType.VERIFY_MOBILE
-      )
+        CampaignType.VERIFY_MOBILE,
+      ),
     ).rejects.toThrowError('The reward is not enough');
 
     await campaign.deleteOne();
@@ -121,7 +121,7 @@ describe('Campaign Service', () => {
 
       claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
         accountId,
-        CampaignType.VERIFY_MOBILE
+        CampaignType.VERIFY_MOBILE,
       );
     });
 
@@ -137,8 +137,8 @@ describe('Campaign Service', () => {
       await expect(
         campaignService.claimCampaignsAirdrop(
           accountId,
-          CampaignType.VERIFY_MOBILE
-        )
+          CampaignType.VERIFY_MOBILE,
+        ),
       ).rejects.toThrowError('Reached the maximum limit of claims');
     });
   });
@@ -161,7 +161,7 @@ describe('Campaign Service', () => {
 
       claimAirdropResponse = await campaignService.claimCampaignsAirdrop(
         accountId,
-        CampaignType.FRIEND_REFERRAL
+        CampaignType.FRIEND_REFERRAL,
       );
     });
 
@@ -177,8 +177,8 @@ describe('Campaign Service', () => {
       await expect(
         campaignService.claimCampaignsAirdrop(
           accountId,
-          CampaignType.FRIEND_REFERRAL
-        )
+          CampaignType.FRIEND_REFERRAL,
+        ),
       ).rejects.toThrowError('Reached the maximum limit of claims');
     });
   });

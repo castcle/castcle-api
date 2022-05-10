@@ -113,7 +113,7 @@ export class ContentService {
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectQueue(QueueName.CONTENT)
-    private contentQueue: Queue<ContentMessage>
+    private contentQueue: Queue<ContentMessage>,
   ) {}
 
   /**
@@ -138,7 +138,7 @@ export class ContentService {
   async createContentFromUser(user: User, contentDto: SaveContentDto) {
     const author = this._getAuthorFromUser(user);
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
-      contentDto.payload
+      contentDto.payload,
     );
 
     await this.hashtagService.createFromTags(hashtags);
@@ -158,7 +158,7 @@ export class ContentService {
       },
       {
         removeOnComplete: true,
-      }
+      },
     );
 
     return content;
@@ -172,7 +172,7 @@ export class ContentService {
    */
   async createContentsFromAuthor(
     author: Author,
-    contentsDtos: SaveContentDto[]
+    contentsDtos: SaveContentDto[],
   ): Promise<Content[]> {
     const $contentsToCreate = contentsDtos.map(async ({ payload, type }) => {
       const hashtags =
@@ -201,7 +201,7 @@ export class ContentService {
         },
         {
           removeOnComplete: true,
-        }
+        },
       );
     });
 
@@ -276,7 +276,7 @@ export class ContentService {
    */
   deleteRecastContentFromOriginalAndAuthor = async (
     originalPostId: string,
-    authorId: string
+    authorId: string,
   ) => {
     this.logger.log('get content for delete.');
     const content = await this.getRecastContent(originalPostId, authorId);
@@ -317,7 +317,7 @@ export class ContentService {
             { _id: sourceContent._id },
             {
               $inc: incEngagement,
-            }
+            },
           )
           .exec();
         //if update not success return false
@@ -339,12 +339,12 @@ export class ContentService {
     content.payload = contentDto.payload;
     content.type = contentDto.type;
     const newHashtags = this.hashtagService.extractHashtagFromContentPayload(
-      contentDto.payload
+      contentDto.payload,
     );
     //TODO !!! need to improve performance
     await this.hashtagService.updateFromTags(newHashtags, content.hashtags);
     content.hashtags = this.hashtagService.extractHashtagFromContentPayload(
-      contentDto.payload
+      contentDto.payload,
     );
     return content.save();
   };
@@ -366,7 +366,7 @@ export class ContentService {
    */
   getContentsFromUser = async (
     userId: string,
-    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
+    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS,
   ) => {
     let findFilter: FilterQuery<Content> = {
       'author.id': typeof userId === 'string' ? Types.ObjectId(userId) : userId,
@@ -447,7 +447,7 @@ export class ContentService {
   getContentEngagement = async (
     content: Content,
     engagementType: EngagementType,
-    user: User
+    user: User,
   ) => {
     const engagement = await this._engagementModel
       .findOne({
@@ -466,7 +466,7 @@ export class ContentService {
   getCommentEngagement = async (
     comment: Comment,
     engagementType: EngagementType,
-    user: User
+    user: User,
   ) => {
     const engagement = await this._engagementModel
       .findOne({
@@ -502,7 +502,7 @@ export class ContentService {
       .populate('user')
       .exec();
     const liked = likeResult.find(
-      (engagement) => engagement.user._id === user._id
+      (engagement) => engagement.user._id === user._id,
     )
       ? true
       : false;
@@ -537,7 +537,7 @@ export class ContentService {
   quoteContentFromUser = async (
     content: Content,
     user: User,
-    message?: string
+    message?: string,
   ) => {
     const author = this._getAuthorFromUser(user);
     const sourceContentId =
@@ -618,7 +618,7 @@ export class ContentService {
    * @returns
    */
   getContentsForAdmin = async (
-    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS
+    options: CastcleContentQueryOptions = DEFAULT_CONTENT_QUERY_OPTIONS,
   ) => {
     let findFilter: any = {
       visibility: EntityVisibility.Publish,
@@ -681,7 +681,7 @@ export class ContentService {
   createCommentForContent = async (
     author: User,
     content: Content,
-    updateCommentDto: UpdateCommentDto
+    updateCommentDto: UpdateCommentDto,
   ) => {
     const dto = {
       author: author as User,
@@ -717,7 +717,7 @@ export class ContentService {
   replyComment = async (
     author: User,
     rootComment: Comment,
-    updateCommentDto: UpdateCommentDto
+    updateCommentDto: UpdateCommentDto,
   ) => {
     const dto = {
       author: author as User,
@@ -744,12 +744,12 @@ export class ContentService {
    */
   updateComment = async (
     rootComment: Comment,
-    updateCommentDto: UpdateCommentDto
+    updateCommentDto: UpdateCommentDto,
   ) => {
     const comment = await this._commentModel.findById(rootComment._id);
     comment.message = updateCommentDto.message;
     const tags = this.hashtagService.extractHashtagFromText(
-      updateCommentDto.message
+      updateCommentDto.message,
     );
     await this.hashtagService.updateFromTags(tags, comment.hashtags);
     comment.hashtags = tags;
@@ -854,7 +854,7 @@ export class ContentService {
    */
   getAllEngagementFromContentsAndUser = async (
     contents: Content[],
-    userId: string
+    userId: string,
   ) => {
     const contentIds = contents.map((c) => c._id);
     console.debug('contentIds', contentIds);
@@ -869,7 +869,7 @@ export class ContentService {
    */
   getAllEngagementFromContentIdsAndUser = async (
     contentIds: any[],
-    userId: string
+    userId: string,
   ) => {
     return this._engagementModel
       .find({
@@ -911,7 +911,7 @@ export class ContentService {
       .updateOne(
         engagementFilter,
         { ...engagementFilter, visibility: EntityVisibility.Publish },
-        { upsert: true }
+        { upsert: true },
       )
       .exec();
 
@@ -939,14 +939,14 @@ Message: ${message}`,
     viewer: User,
     content: Content,
     engagements: Engagement[] = [],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
   ) {
     const users: IncludeUser[] = [];
     const authorIds = [];
     const engagementsOriginal = content.originalPost
       ? await this.getAllEngagementFromContentIdsAndUser(
           [content.originalPost?._id],
-          viewer?.id
+          viewer?.id,
         )
       : [];
     const casts = content.originalPost
@@ -983,10 +983,10 @@ Message: ${message}`,
     viewer: User | null,
     contents: Content[],
     hasRelationshipExpansion = false,
-    inputEngagements: Engagement[] = []
+    inputEngagements: Engagement[] = [],
   ): Promise<ContentsResponse> {
     const meta = createCastcleMeta(
-      inputEngagements.length ? inputEngagements : contents
+      inputEngagements.length ? inputEngagements : contents,
     );
     const users: IncludeUser[] = [];
     const authorIds = [];
@@ -999,7 +999,7 @@ Message: ${message}`,
     const engagementsOriginal = engageOriginal
       ? await this.getAllEngagementFromContentIdsAndUser(
           engageOriginal,
-          viewer?.id
+          viewer?.id,
         )
       : [];
     const engagements = inputEngagements.length
@@ -1009,14 +1009,14 @@ Message: ${message}`,
       const contentEngagements = engagements.filter(
         (engagement) =>
           String(engagement.targetRef.$id) === String(content.id) ||
-          String(engagement.targetRef.oid) === String(content.id)
+          String(engagement.targetRef.oid) === String(content.id),
       );
 
       payload.push(content.toContentPayloadItem(contentEngagements));
 
       if (content.originalPost) {
         casts.push(
-          toSignedContentPayloadItem(content.originalPost, engagementsOriginal)
+          toSignedContentPayloadItem(content.originalPost, engagementsOriginal),
         );
       }
 
@@ -1054,7 +1054,7 @@ Message: ${message}`,
     originalPostId: string,
     maxResults: number,
     sinceId?: string,
-    untilId?: string
+    untilId?: string,
   ) => {
     let filter: FilterQuery<Content> = {
       'originalPost._id': Types.ObjectId(originalPostId),
@@ -1092,7 +1092,7 @@ Message: ${message}`,
   private async updateUserRelationships(
     viewer: User,
     authorIds: any[],
-    users: IncludeUser[]
+    users: IncludeUser[],
   ) {
     const relationships = viewer
       ? await this.relationshipModel.find({
@@ -1108,13 +1108,13 @@ Message: ${message}`,
       const authorRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(user) === String(author.id) &&
-          String(followedUser) === String(viewer?.id)
+          String(followedUser) === String(viewer?.id),
       );
 
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
-          String(user) === String(viewer?.id)
+          String(user) === String(viewer?.id),
       );
 
       author.blocked = Boolean(getterRelationship?.blocking);
@@ -1166,7 +1166,7 @@ Message: ${message}`,
     contentId: string,
     maxResults: number,
     sinceId?: string,
-    untilId?: string
+    untilId?: string,
   ) => {
     let filter: FilterQuery<Engagement> = {
       type: 'like',
@@ -1206,7 +1206,7 @@ Message: ${message}`,
     userId: User,
     sinceId: string,
     untilId: string,
-    maxResults = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
+    maxResults = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
   ) => {
     let filter: FilterQuery<Engagement> = {
       'targetRef.$ref': 'content',

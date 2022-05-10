@@ -42,7 +42,7 @@ export class CommentControllerV2 {
   private logger = new CastLogger(CommentControllerV2.name);
   constructor(
     private commentService: CommentServiceV2,
-    private contentService: ContentService
+    private contentService: ContentService,
   ) {}
 
   private validateId(id: string) {
@@ -55,7 +55,7 @@ export class CommentControllerV2 {
   async getAllComment(
     @Param('contentId') contentId: string,
     @Auth() authorizer: Authorizer,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     this.validateId(contentId);
@@ -64,7 +64,7 @@ export class CommentControllerV2 {
     return this.commentService.getCommentsByContentId(
       authorizer.user,
       content._id,
-      query
+      query,
     );
   }
 
@@ -74,10 +74,10 @@ export class CommentControllerV2 {
     @Param('contentId') contentId: string,
     @Param('sourceCommentId') commentId: string,
     @Auth() authorizer: Authorizer,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(
-      `Start get all reply comment from content: ${contentId} and comment: ${commentId}`
+      `Start get all reply comment from content: ${contentId} and comment: ${commentId}`,
     );
     this.validateId(contentId);
     this.validateId(commentId);
@@ -86,7 +86,7 @@ export class CommentControllerV2 {
     return this.commentService.getReplyCommentsByCommentId(
       authorizer.user,
       commentId,
-      query
+      query,
     );
   }
 
@@ -96,17 +96,17 @@ export class CommentControllerV2 {
     @Param('contentId') contentId: string,
     @Param('sourceCommentId') commentId: string,
     @Auth() authorizer: Authorizer,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(
-      `Start lookup comment from content: ${contentId} and comment: ${commentId}`
+      `Start lookup comment from content: ${contentId} and comment: ${commentId}`,
     );
     this.validateId(contentId);
     this.validateId(commentId);
     const content = await this.contentService.getContentById(contentId);
     const commentResult = await this.commentService.getCommentById(
       authorizer.user,
-      commentId
+      commentId,
     );
     if (!commentResult || !commentResult.payload || !content)
       throw CastcleException.CONTENT_NOT_FOUND;
@@ -114,15 +114,15 @@ export class CommentControllerV2 {
     const replyResult = await this.commentService.getReplyCommentsByCommentId(
       authorizer.user,
       commentId,
-      query
+      query,
     );
     const commentUsers = new Set(
-      commentResult.includes.users.map((u) => u.castcleId)
+      commentResult.includes.users.map((u) => u.castcleId),
     );
     const mergedUser = [
       ...commentResult.includes.users,
       ...replyResult.includes.users.filter(
-        (rUser) => !commentUsers.has(rUser.castcleId)
+        (rUser) => !commentUsers.has(rUser.castcleId),
       ),
     ];
 

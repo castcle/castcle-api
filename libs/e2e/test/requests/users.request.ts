@@ -54,18 +54,18 @@ export class UsersRequest {
   static updateReplyComment = (
     userId: string,
     sourceCommentId: string,
-    replyCommentId: string
+    replyCommentId: string,
   ) =>
     UsersRequest.put(
-      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`
+      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`,
     );
   static deleteReplyComment = (
     userId: string,
     sourceCommentId: string,
-    replyCommentId: string
+    replyCommentId: string,
   ) =>
     UsersRequest.delete(
-      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`
+      `/v2/users/${userId}/comments/${sourceCommentId}/reply/${replyCommentId}`,
     );
   static likeCasts = (userId: string) =>
     UsersRequest.post(`/v2/users/${userId}/likes-casts`);
@@ -75,6 +75,6 @@ export class UsersRequest {
     UsersRequest.post(`/v2/users/${userId}/likes-comments`);
   static unlikeComment = (userId: string, sourceCommentId: string) =>
     UsersRequest.delete(
-      `/v2/users/${userId}/likes-comments/${sourceCommentId}`
+      `/v2/users/${userId}/likes-comments/${sourceCommentId}`,
     );
 }

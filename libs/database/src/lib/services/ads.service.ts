@@ -83,7 +83,7 @@ export class AdsService {
     @InjectModel('User')
     public _userModel: Model<User>,
     public taccountService: TAccountService,
-    public dataService: DataService
+    public dataService: DataService,
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -91,25 +91,25 @@ export class AdsService {
   selectContentAds = async (
     adsPrice: GetAdsPriceResponse,
     viewerAccountId: string,
-    allContentAdsIds: string[]
+    allContentAdsIds: string[],
   ) => {
     const contentScore = await this.dataService.personalizeContents(
       viewerAccountId,
-      allContentAdsIds
+      allContentAdsIds,
     );
     if (!(contentScore && Object.keys(contentScore).length > 0)) return null;
     const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
-      contentScore[a] > contentScore[b] ? -1 : 1
+      contentScore[a] > contentScore[b] ? -1 : 1,
     );
     const adsIndex = adsPrice.adsRef.findIndex(
-      (item) => String(item.$id || item.oid) === sortedContentIds[0]
+      (item) => String(item.$id || item.oid) === sortedContentIds[0],
     );
     return adsPrice.ads[adsIndex];
   };
 
   selectAdsFromActiveAds = async (
     adsPrice: GetAdsPriceResponse,
-    viewerAccountId: string
+    viewerAccountId: string,
   ) => {
     const allContentAdsIds = adsPrice.adsRef
       .filter((item) => item.$ref === 'content' || item.namespace === 'content')
@@ -121,7 +121,7 @@ export class AdsService {
       const selectedContentAds = await this.selectContentAds(
         adsPrice,
         viewerAccountId,
-        allContentAdsIds
+        allContentAdsIds,
       );
       return selectedContentAds
         ? selectedContentAds
@@ -132,17 +132,17 @@ export class AdsService {
 
   getAdsPlacementFromAuction = async (
     contentIds: string[],
-    viewerAccountId: string
+    viewerAccountId: string,
   ) => {
     const session = await this._adsPlacementModel.startSession();
     try {
       session.startTransaction();
       const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
-        pipe2AdsAuctionPrice()
+        pipe2AdsAuctionPrice(),
       );
       const selectAds = await this.selectAdsFromActiveAds(
         price[0],
-        viewerAccountId
+        viewerAccountId,
       );
       const adsPlacement = new this._adsPlacementModel({
         campaign: selectAds,
@@ -169,10 +169,10 @@ export class AdsService {
       .map((item) => (item.payload as ContentPayloadItem).id);
     const adsplacement = await this.getAdsPlacementFromAuction(
       contentIds,
-      viewerAccountId
+      viewerAccountId,
     );
     const campaign = await this._adsCampaignModel.findById(
-      adsplacement.campaign
+      adsplacement.campaign,
     );
     let adsItem: FeedItemPayloadItem;
     if (
@@ -180,7 +180,7 @@ export class AdsService {
       campaign.adsRef.namespace === 'content'
     ) {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
       );
       adsItem = {
         id: adsplacement.id,
@@ -202,7 +202,7 @@ export class AdsService {
       };
     } else {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
       );
       adsItem = {
         id: adsplacement.id,
@@ -241,7 +241,7 @@ export class AdsService {
       String(account._id),
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
-        : WalletType.PERSONAL
+        : WalletType.PERSONAL,
     );
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
@@ -291,12 +291,12 @@ export class AdsService {
     let payload: ContentPayloadItem | PageResponseDto; // = {};
     if (campaign.adsRef.$ref === 'user' || campaign.adsRef.oref === 'user') {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid,
       );
       payload = page.toPageResponse();
     } else {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid,
       );
       payload = toSignedContentPayloadItem(content);
     }
@@ -335,20 +335,20 @@ export class AdsService {
 
   async getListAds(
     { _id }: Account,
-    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery
+    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
   ) {
     const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
       { owner: _id },
       {
         sinceId,
         untilId,
-      }
+      },
     );
 
     if (filter && filter !== FilterInterval.All) {
       const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
         timezone,
-        filter
+        filter,
       );
 
       filters.createdAt = {
@@ -384,7 +384,7 @@ export class AdsService {
             duration: adsRequest.duration,
           } as AdsDetail,
         },
-      }
+      },
     );
   }
   async deleteAdsById(adsId: string) {
@@ -401,7 +401,7 @@ export class AdsService {
         $set: {
           boostStatus: adsBoostStatus,
         },
-      }
+      },
     );
   }
 
@@ -414,10 +414,10 @@ export class AdsService {
         if (adsPlacement && !adsPlacement.seenAt) {
           adsPlacement.seenAt = new Date();
           adsPlacement.seenCredential = mongoose.Types.ObjectId(
-            seenByCredentialId
+            seenByCredentialId,
           ) as any;
           const adsCampaign = await this._adsCampaignModel.findById(
-            adsPlacement.campaign
+            adsPlacement.campaign,
           );
           const estAdsCostCAST =
             adsPlacement.cost.UST / mockOracleService.getCastPrice();
@@ -463,7 +463,7 @@ export class AdsService {
             String(adsCampaign.owner),
             adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
               ? WalletType.ADS
-              : WalletType.PERSONAL
+              : WalletType.PERSONAL,
           );
           //if balance < 1 CAST THen pause ads
           if (

@@ -75,7 +75,7 @@ const _generatePageDto = (pagePerAccountAmount: number) => {
  */
 const _generateUserInfos = (
   userAccountAmount: number,
-  pagePerAccountAmount: number
+  pagePerAccountAmount: number,
 ) => {
   const userInfos: UserInfo[] = [];
   for (let i = 0; i < userAccountAmount; i++) {
@@ -103,7 +103,7 @@ const _generateUserInfos = (
 export const generateMockUsers = async (
   userAccountAmount: number,
   pagePerAccountAmount: number,
-  model: Models
+  model: Models,
 ) => {
   const userInfos = _generateUserInfos(userAccountAmount, pagePerAccountAmount);
   const mockUsers: MockUserDetail[] = [];
@@ -111,23 +111,23 @@ export const generateMockUsers = async (
   for (let j = 0; j < userInfos.length; j++) {
     const info = userInfos[j];
     const result = await model.accountService.createAccount(
-      info.accountRequirement
+      info.accountRequirement,
     );
     const accountActivation = await model.accountService.signupByEmail(
       result.accountDocument,
-      info.signupRequirement
+      info.signupRequirement,
     );
     const verifyAcc = await model.accountService.verifyAccount(
-      accountActivation
+      accountActivation,
     );
     const user = await model.userService.getByIdOrCastcleId(
-      info.signupRequirement.displayId
+      info.signupRequirement.displayId,
     );
 
     const pages: User[] = [];
     for (let i = 0; i < info.pages.length; i++) {
       pages.push(
-        await model.userService.createPageFromUser(user, info.pages[i])
+        await model.userService.createPageFromUser(user, info.pages[i]),
       );
     }
     mockUsers.push({

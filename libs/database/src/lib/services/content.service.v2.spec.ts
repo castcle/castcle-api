@@ -120,7 +120,7 @@ describe('ContentServiceV2', () => {
       await service.likeCast(
         content._id,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
       const engagement = await (service as any).repository.findEngagement({
         user: mocksUsers[1].user._id,
@@ -156,7 +156,7 @@ describe('ContentServiceV2', () => {
       const { recastContent, engagement } = await service.recast(
         content._id,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
 
       expect(recastContent).toBeTruthy();
@@ -191,7 +191,7 @@ describe('ContentServiceV2', () => {
         content._id,
         'quote cast',
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
 
       expect(quoteContent).toBeTruthy();
@@ -226,11 +226,11 @@ describe('ContentServiceV2', () => {
       await mockDeposit(
         mockFarmingUsers[1].account,
         initialBalance,
-        taccountService._transactionModel
+        taccountService._transactionModel,
       );
       const balance = await taccountService.getAccountBalance(
         mockFarmingUsers[1].account.id,
-        WalletType.PERSONAL
+        WalletType.PERSONAL,
       );
       expect(balance).toEqual(initialBalance);
 
@@ -242,21 +242,21 @@ describe('ContentServiceV2', () => {
         expect(await taccountService._transactionModel.count()).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id
+          mockFarmingUsers[1].account.id,
         );
         expect(await taccountService._transactionModel.count()).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);
         expect(String(contentFarming.account)).toEqual(
-          mockFarmingUsers[1].account.id
+          mockFarmingUsers[1].account.id,
         );
         expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
       });
       it('should have 95% balance of %initialBalance', async () => {
         const currentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(currentBalance).toEqual(0.95 * initialBalance);
       });
@@ -264,11 +264,11 @@ describe('ContentServiceV2', () => {
         for (let i = 1; i < testContents.length - 1; i++) {
           await service.createContentFarming(
             testContents[i].id,
-            mockFarmingUsers[1].account.id
+            mockFarmingUsers[1].account.id,
           );
           const currentBalance = await taccountService.getAccountBalance(
             mockFarmingUsers[1].account.id,
-            WalletType.PERSONAL
+            WalletType.PERSONAL,
           );
           expect(currentBalance).toEqual(expectedBalances[i]);
         }
@@ -280,23 +280,23 @@ describe('ContentServiceV2', () => {
       it('should get balance back once unfarm and the farm status of that should be farmed', async () => {
         const currentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         const unfarmResult = await service.unfarm(
           testContents[0].id,
-          mockFarmingUsers[1].account.id
+          mockFarmingUsers[1].account.id,
         );
         const afterBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(afterBalance).toEqual(unfarmResult.farmAmount + currentBalance);
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id
+          mockFarmingUsers[1].account.id,
         );
         expect(recentContentFarming.status).toEqual(
-          ContentFarmingStatus.Farmed
+          ContentFarmingStatus.Farmed,
         );
       });
     });
@@ -304,25 +304,25 @@ describe('ContentServiceV2', () => {
       it('should change status from farmed to farming', async () => {
         const currentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id
+          mockFarmingUsers[1].account.id,
         );
         const updateFarmingResult = await service.updateContentFarming(
-          recentContentFarming
+          recentContentFarming,
         );
         expect(updateFarmingResult.status).toEqual(
-          ContentFarmingStatus.Farming
+          ContentFarmingStatus.Farming,
         );
         const recentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(currentBalance).not.toEqual(recentBalance);
         expect(recentBalance).toEqual(
-          currentBalance - updateFarmingResult.farmAmount
+          currentBalance - updateFarmingResult.farmAmount,
         );
       });
     });
@@ -331,25 +331,25 @@ describe('ContentServiceV2', () => {
       it('should return all tokens to users and all status should be farmed', async () => {
         const currentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(currentBalance).toEqual(0);
         let start = 0;
         for (let i = 0; i < testContents.length - 1; i++) {
           const unfarmResult = await service.expireFarm(
             testContents[i].id,
-            mockFarmingUsers[1].account.id
+            mockFarmingUsers[1].account.id,
           );
           start += unfarmResult.farmAmount;
           const recentBalance = await taccountService.getAccountBalance(
             mockFarmingUsers[1].account.id,
-            WalletType.PERSONAL
+            WalletType.PERSONAL,
           );
           expect(recentBalance).toEqual(currentBalance + start);
         }
         const latestBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(latestBalance).toEqual(initialBalance);
       });
@@ -362,24 +362,24 @@ describe('ContentServiceV2', () => {
         finalTestContents = await mockContents(
           user,
           (service as any).contentModel,
-          { amount: 21, type: ContentType.Short }
+          { amount: 21, type: ContentType.Short },
         );
       });
       it('should create new contentFarming if not yet create', async () => {
         for (let i = 0; i < finalTestContents.length - 1; i++) {
           await service.farm(
             finalTestContents[i].id,
-            mockFarmingUsers[1].account.id
+            mockFarmingUsers[1].account.id,
           );
           const currentBalance = await taccountService.getAccountBalance(
             mockFarmingUsers[1].account.id,
-            WalletType.PERSONAL
+            WalletType.PERSONAL,
           );
           expect(currentBalance).toEqual(expectedBalances[i]);
         }
         const recentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
         expect(recentBalance).toEqual(0);
       });
@@ -390,7 +390,7 @@ describe('ContentServiceV2', () => {
         await service.expireAllFarmedToken();
         const recentBalance = await taccountService.getAccountBalance(
           mockFarmingUsers[1].account.id,
-          WalletType.PERSONAL
+          WalletType.PERSONAL,
         );
 
         expect(recentBalance).toEqual(initialBalance);
@@ -403,17 +403,17 @@ describe('ContentServiceV2', () => {
       await service.likeCast(
         content._id,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
       await service.likeCast(
         content._id,
         mocksUsers[2].user,
-        mocksUsers[2].account
+        mocksUsers[2].account,
       );
       await service.likeCast(
         content._id,
         mocksUsers[3].user,
-        mocksUsers[3].account
+        mocksUsers[3].account,
       );
       const likingResponse = await service.getEngagementCast(
         content._id,
@@ -423,7 +423,7 @@ describe('ContentServiceV2', () => {
           hasRelationshipExpansion: true,
         },
         EngagementType.Like,
-        mocksUsers[4].user
+        mocksUsers[4].user,
       );
       expect(likingResponse).toBeTruthy();
       expect(likingResponse.payload).toHaveLength(3);
@@ -432,7 +432,7 @@ describe('ContentServiceV2', () => {
       await service.recast(
         content._id,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
       const recastResponse = await service.getEngagementCast(
         content._id,
@@ -442,7 +442,7 @@ describe('ContentServiceV2', () => {
           hasRelationshipExpansion: true,
         },
         EngagementType.Recast,
-        mocksUsers[4].user
+        mocksUsers[4].user,
       );
       expect(recastResponse.payload).toHaveLength(1);
       await recastResponse.payload.map((item) => {
@@ -459,7 +459,7 @@ describe('ContentServiceV2', () => {
           maxResults: 25,
           hasRelationshipExpansion: true,
         },
-        mocksUsers[4].user
+        mocksUsers[4].user,
       );
       expect(quotecastResponse).toBeTruthy();
       expect(quotecastResponse.payload).toHaveLength(1);
@@ -471,18 +471,18 @@ describe('ContentServiceV2', () => {
       const newRecast = await service.recast(
         content._id,
         mocksUsers[3].user,
-        mocksUsers[3].account
+        mocksUsers[3].account,
       );
 
       const recast = await service.getRecastPipeline(
         newRecast.recastContent._id,
-        mocksUsers[3].user
+        mocksUsers[3].user,
       );
 
       expect(recast.payload).toBeTruthy();
       expect(recast.payload.id).toEqual(newRecast.recastContent.id);
       expect(recast.payload.referencedCasts.id).toEqual(
-        newRecast.recastContent.originalPost._id
+        newRecast.recastContent.originalPost._id,
       );
     });
   });
@@ -493,18 +493,18 @@ describe('ContentServiceV2', () => {
         content._id,
         'quote cast',
         mocksUsers[4].user,
-        mocksUsers[4].account
+        mocksUsers[4].account,
       );
 
       const recast = await service.getQuoteCastPipeline(
         newQuote.quoteContent._id,
-        mocksUsers[3].user
+        mocksUsers[3].user,
       );
 
       expect(recast.payload).toBeTruthy();
       expect(recast.payload.id).toEqual(newQuote.quoteContent.id);
       expect(recast.payload.referencedCasts.id).toEqual(
-        newQuote.quoteContent.originalPost._id
+        newQuote.quoteContent.originalPost._id,
       );
     });
   });

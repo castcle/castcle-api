@@ -39,7 +39,9 @@ export class Downloader {
         .get(url, {
           responseType: 'arraybuffer',
         })
-        .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
+        .pipe(
+          map(({ data }) => Buffer.from(data, 'binary').toString('base64')),
+        ),
     );
   }
 }

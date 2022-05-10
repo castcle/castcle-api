@@ -147,7 +147,7 @@ export class Repository {
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Hashtag') public hashtagModel: Model<Hashtag>,
-    private httpService: HttpService
+    private httpService: HttpService,
   ) {}
 
   private getBase64FromUrl(url: string) {
@@ -156,7 +156,9 @@ export class Repository {
         .get(url, {
           responseType: 'arraybuffer',
         })
-        .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
+        .pipe(
+          map(({ data }) => Buffer.from(data, 'binary').toString('base64')),
+        ),
     );
   }
 
@@ -281,13 +283,13 @@ export class Repository {
   updateAccount(filter: AccountQuery, updateQuery: UpdateQuery<Account>) {
     return this.accountModel.updateOne(
       this.getAccountQuery(filter),
-      updateQuery
+      updateQuery,
     );
   }
 
   updateCredentials(
     filter: FilterQuery<Credential>,
-    updateQuery: UpdateQuery<Credential>
+    updateQuery: UpdateQuery<Credential>,
   ) {
     return this.credentialModel.updateMany(filter, updateQuery);
   }
@@ -318,11 +320,11 @@ export class Repository {
 
   async createUser(user: AnyKeys<User>) {
     const { suggestCastcleId } = new CastcleName(
-      user.displayId || user.displayName
+      user.displayId || user.displayName,
     );
     const [availableId] =
       await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(suggestCastcleId)
+        pipelineOfGetAvailableId(suggestCastcleId),
       );
 
     user.displayId = availableId?.count
@@ -388,7 +390,7 @@ export class Repository {
     return this.relationshipModel.find(
       this.getRelationshipQuery(filter),
       {},
-      queryOptions
+      queryOptions,
     );
   }
   findContent(filter: ContentQuery) {
@@ -410,7 +412,7 @@ export class Repository {
         filter: this.getContentQuery(filter),
         viewer: filter.viewer,
         maxResults: filter.maxResults,
-      })
+      }),
     );
   }
 
@@ -428,7 +430,7 @@ export class Repository {
 
   findNotification(
     filter: NotificationQueryOption,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel
       .findOne(this.getNotificationQuery(filter), {}, queryOptions)
@@ -437,7 +439,7 @@ export class Repository {
 
   findNotifications(
     filter: NotificationQueryOption,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel
       .find(this.getNotificationQuery(filter), {}, queryOptions)
@@ -447,24 +449,24 @@ export class Repository {
   updateNotification(
     filter: NotificationQueryOption,
     updateQuery: UpdateQuery<Notification>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateOne(
       this.getNotificationQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
   updateNotifications(
     filter: NotificationQueryOption,
     updateQuery: UpdateQuery<Notification>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateMany(
       this.getNotificationQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
@@ -488,7 +490,7 @@ export class Repository {
   updateRelationship(
     filter: FilterQuery<Relationship>,
     updateQuery?: UpdateQuery<Relationship>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
@@ -496,24 +498,24 @@ export class Repository {
   removeFromTag(
     filter: HashtagQuery,
     updateQuery: UpdateQuery<Hashtag>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateOne(
       this.getHashtagQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
   removeFromTags(
     tags: string[],
     updateQuery: UpdateQuery<Hashtag>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateMany(
       this.getHashtagQuery({ tags }),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 }

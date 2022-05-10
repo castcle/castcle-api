@@ -39,7 +39,7 @@ export class LinksController {
     @RequestMeta() requestMetadata: RequestMetadata,
     @Res() res: Response,
     @Query()
-    { e: name, d: data, dest, src }: Record<string, string>
+    { e: name, d: data, dest, src }: Record<string, string>,
   ) {
     const analytic = { ...requestMetadata, name, data, dest, src } as Analytic;
 

@@ -46,7 +46,7 @@ export class CredentialInterceptor implements NestInterceptor {
 
   constructor(
     private authService: AuthenticationService,
-    private userService: UserService
+    private userService: UserService,
   ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler) {
@@ -54,7 +54,7 @@ export class CredentialInterceptor implements NestInterceptor {
     const accessToken = getTokenFromRequest(request);
     const language = getLanguageFromRequest(request);
     const credential = await this.authService.getCredentialFromAccessToken(
-      accessToken
+      accessToken,
     );
 
     request.$credential = credential;
@@ -62,7 +62,7 @@ export class CredentialInterceptor implements NestInterceptor {
     request.$token = accessToken;
     request.$user = this.userService.getUserFromCredential(credential);
     request.$account = this.authService.getAccountFromId(
-      credential?.account._id
+      credential?.account._id,
     );
 
     const isAccessTokenValid = request.$credential?.isAccessTokenValid();
@@ -72,7 +72,7 @@ export class CredentialInterceptor implements NestInterceptor {
         isAccessTokenValid,
         credentialId: request.$credential?._id,
         accountId: request.$credential?.account?._id,
-      })
+      }),
     );
 
     if (!isAccessTokenValid) throw CastcleException.INVALID_ACCESS_TOKEN;

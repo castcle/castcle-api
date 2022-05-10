@@ -33,14 +33,14 @@ export class CommentService {
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectModel('Revision')
-    private revisionModel: Model<Revision>
+    private revisionModel: Model<Revision>,
   ) {}
 
   async convertCommentToCommentResponse(
     viewer: User,
     comment: Comment,
     engagements: Engagement[],
-    { hasRelationshipExpansion }: ExpansionQuery
+    { hasRelationshipExpansion }: ExpansionQuery,
   ) {
     const [replies, revisionCount] = await Promise.all([
       this.commentModel
@@ -80,7 +80,7 @@ export class CommentService {
       hasRelationshipExpansion,
       revisionCount,
       replies,
-      viewer
+      viewer,
     );
   }
 
@@ -97,7 +97,7 @@ export class CommentService {
     hasRelationshipExpansion: boolean,
     revisionCount: number,
     replies: Comment[],
-    viewer?: User
+    viewer?: User,
   ) {
     const author = viewer
       ? {
@@ -116,7 +116,7 @@ export class CommentService {
             relationships,
             viewer._id,
             comment.author._id,
-            hasRelationshipExpansion
+            hasRelationshipExpansion,
           ),
         }
       : {
@@ -157,7 +157,7 @@ export class CommentService {
                 relationships,
                 viewer._id,
                 reply.author._id,
-                hasRelationshipExpansion
+                hasRelationshipExpansion,
               ),
             }
           : {
@@ -206,13 +206,13 @@ export class CommentService {
             'objectRef.$ref': 'comment',
             'payload.author._id': { $in: commentsAuthorIds },
           },
-          { 'objectRef.$id': true }
+          { 'objectRef.$id': true },
         )
         .exec(),
     ]);
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id)
+        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {
@@ -225,7 +225,7 @@ export class CommentService {
         [],
         false,
         revisionCount,
-        commentReplies
+        commentReplies,
       );
     });
   }
@@ -234,7 +234,7 @@ export class CommentService {
     viewer: User,
     comments: Comment[],
     engagements: Engagement[],
-    { hasRelationshipExpansion }: ExpansionQuery
+    { hasRelationshipExpansion }: ExpansionQuery,
   ) {
     const commentsIds = comments.map(({ _id }) => _id);
     const commentsAuthorIds = comments.map(({ author }) => author._id);
@@ -254,7 +254,7 @@ export class CommentService {
             'objectRef.$ref': 'comment',
             'payload.author._id': { $in: commentsAuthorIds },
           },
-          { 'objectRef.$id': true }
+          { 'objectRef.$id': true },
         )
         .exec(),
     ]);
@@ -276,7 +276,7 @@ export class CommentService {
 
     return comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id)
+        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {
@@ -290,14 +290,14 @@ export class CommentService {
         hasRelationshipExpansion,
         revisionCount,
         commentReplies,
-        viewer
+        viewer,
       );
     });
   }
 
   getCommentsByContentIdFromGuest = async (
     contentId: string,
-    options: CastcleQueryOptions
+    options: CastcleQueryOptions,
   ) => {
     const query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
@@ -309,11 +309,11 @@ export class CommentService {
       .limit(options.limit)
       .skip(options.page - 1)
       .sort(
-        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
+        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`,
       )
       .exec();
     const payload = await this.convertCommentsToCommentResponseForGuest(
-      comments
+      comments,
     );
     return {
       payload,
@@ -333,7 +333,7 @@ export class CommentService {
     options: CastcleQueryOptions & ExpansionQuery = {
       ...DEFAULT_QUERY_OPTIONS,
       hasRelationshipExpansion: false,
-    }
+    },
   ): Promise<CommentsResponse> => {
     const query: FilterQuery<Comment> = {
       targetRef: { $id: contentId, $ref: 'content' },
@@ -345,7 +345,7 @@ export class CommentService {
       .limit(options.limit)
       .skip(options.page - 1)
       .sort(
-        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`
+        `${options.sortBy.type === 'desc' ? '-' : ''}${options.sortBy.field}`,
       )
       .exec();
 
@@ -359,7 +359,7 @@ export class CommentService {
       viewer,
       comments,
       engagements,
-      options
+      options,
     );
 
     return {

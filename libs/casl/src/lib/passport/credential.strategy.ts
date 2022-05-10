@@ -42,7 +42,7 @@ export class CredentialStrategy extends PassportStrategy(Strategy) {
     if (!haveAllHeader) throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
     const token = req.headers['authorization'].split(' ')[1];
     const credential = await this.authService.getCredentialFromAccessToken(
-      token
+      token,
     );
     if (credential) {
       return {

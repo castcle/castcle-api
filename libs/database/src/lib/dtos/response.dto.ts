@@ -33,7 +33,7 @@ export class Meta {
 
   static fromDocuments = (
     documents: Document[],
-    resultTotal?: number
+    resultTotal?: number,
   ): Meta => {
     return {
       oldestId: documents[documents.length - 1]?.id

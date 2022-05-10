@@ -93,7 +93,7 @@ export class UsersControllerV2 {
     private contentServiceV2: ContentServiceV2,
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
-    private suggestionService: SuggestionService
+    private suggestionService: SuggestionService,
   ) {}
 
   private validateObjectId(id: string) {
@@ -107,7 +107,7 @@ export class UsersControllerV2 {
   async syncSocial(
     @Auth() authorizer: Authorizer,
     @Body() syncSocialDto: SyncSocialDtoV2,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -123,7 +123,7 @@ export class UsersControllerV2 {
   async getUserById(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Query() userQuery?: ExpansionQuery
+    @Query() userQuery?: ExpansionQuery,
   ) {
     const user = isMe
       ? authorizer.user
@@ -133,7 +133,7 @@ export class UsersControllerV2 {
       authorizer.user,
       user,
       userQuery?.hasRelationshipExpansion,
-      userQuery?.userFields
+      userQuery?.userFields,
     );
   }
 
@@ -143,7 +143,7 @@ export class UsersControllerV2 {
   async updateMyData(
     @Auth() authorizer: Authorizer,
     @Body() body: UpdateUserDtoV2,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -156,7 +156,7 @@ export class UsersControllerV2 {
         throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
       const userExisting = await this.authService.getExistedUserFromCastcleId(
-        body.castcleId
+        body.castcleId,
       );
 
       if (String(userExisting?.id) !== String(user?.id))
@@ -165,7 +165,7 @@ export class UsersControllerV2 {
 
     const prepareUser = await this.userService.uploadUserInfo(
       body,
-      authorizer.account._id
+      authorizer.account._id,
     );
 
     const updateUser = await this.userService.updateUser(user, prepareUser);
@@ -177,7 +177,7 @@ export class UsersControllerV2 {
   async createComment(
     @Auth() authorizer: Authorizer,
     @Body() commentDto: CreateCommentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     this.logger.log('Start comment : ' + JSON.stringify(commentDto));
 
@@ -188,17 +188,17 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     const content = await this.contentService.getContentById(
-      commentDto.contentId
+      commentDto.contentId,
     );
 
     const comment = await this.contentService.createCommentForContent(
       user,
       content,
-      { message: commentDto.message }
+      { message: commentDto.message },
     );
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
 
     await this.notificationServiceV2.notifyToUser(
@@ -215,14 +215,14 @@ export class UsersControllerV2 {
         read: false,
       },
       userOwner,
-      authorizer.account.preferences.languages[0]
+      authorizer.account.preferences.languages[0],
     );
 
     const payload = await this.commentService.convertCommentToCommentResponse(
       user,
       comment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
 
     return payload;
@@ -233,12 +233,12 @@ export class UsersControllerV2 {
   async updateComment(
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(
       `Start update comment id: ${sourceCommentId}, body: ${JSON.stringify(
-        updateCommentDto
-      )}`
+        updateCommentDto,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -258,7 +258,7 @@ export class UsersControllerV2 {
       user,
       updatedComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -266,7 +266,7 @@ export class UsersControllerV2 {
   @Delete(':userId/comments/:sourceCommentId')
   async deleteComment(
     @Auth() authorizer: Authorizer,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(`Start delete comment id: ${sourceCommentId})}`);
     const user = isMe
@@ -284,12 +284,12 @@ export class UsersControllerV2 {
   async replyComment(
     @Auth() authorizer: Authorizer,
     @Body() replyCommentBody: UpdateCommentDto,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(
       `Start reply comment id: ${sourceCommentId}, body: ${JSON.stringify(
-        replyCommentBody
-      )}`
+        replyCommentBody,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -306,7 +306,7 @@ export class UsersControllerV2 {
     });
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id
+      comment.author._id,
     );
 
     await this.notificationServiceV2.notifyToUser(
@@ -324,14 +324,14 @@ export class UsersControllerV2 {
         read: false,
       },
       userOwner,
-      authorizer.account.preferences.languages[0]
+      authorizer.account.preferences.languages[0],
     );
 
     return await this.commentService.convertCommentToCommentResponse(
       user,
       replyComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -341,12 +341,12 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
     @Param()
-    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam,
   ) {
     this.logger.log(
       `Start update reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId} ,body: ${JSON.stringify(
-        updateCommentDto
-      )}`
+        updateCommentDto,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -357,7 +357,7 @@ export class UsersControllerV2 {
     this.validateObjectId(replyCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
-      replyCommentId
+      replyCommentId,
     );
     if (
       !comment ||
@@ -370,14 +370,14 @@ export class UsersControllerV2 {
       replyComment,
       {
         message: updateCommentDto.message,
-      }
+      },
     );
 
     return await this.commentService.convertCommentToCommentResponse(
       user,
       updatedComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -386,10 +386,10 @@ export class UsersControllerV2 {
   async deleteReplyComment(
     @Auth() authorizer: Authorizer,
     @Param()
-    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam,
   ) {
     this.logger.log(
-      `Start delete reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId}`
+      `Start delete reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId}`,
     );
     const user = isMe
       ? authorizer.user
@@ -399,7 +399,7 @@ export class UsersControllerV2 {
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
-      replyCommentId
+      replyCommentId,
     );
     if (
       !comment ||
@@ -416,7 +416,7 @@ export class UsersControllerV2 {
   async likeCast(
     @Auth() authorizer: Authorizer,
     @Body() { contentId }: GetContentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -427,12 +427,12 @@ export class UsersControllerV2 {
     const { content } = await this.contentServiceV2.likeCast(
       contentId,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      content
+      content,
     );
 
     if (!feedItem) return;
@@ -440,14 +440,14 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential
+      authorizer.credential,
     );
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':userId/likes-casts/:sourceContentId')
   async unlikeCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -464,7 +464,7 @@ export class UsersControllerV2 {
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
     @Body() { commentId }: LikeCommentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -478,14 +478,14 @@ export class UsersControllerV2 {
     let originalComment: Comment;
     if (comment.type === CommentType.Reply) {
       originalComment = await this.contentService.getCommentById(
-        comment.targetRef.oid
+        comment.targetRef.oid,
       );
       if (!originalComment) throw CastcleException.REQUEST_URL_NOT_FOUND;
     }
     const content = await this.contentService.getContentById(
       comment.type === CommentType.Reply
         ? originalComment.targetRef.oid
-        : comment.targetRef.oid
+        : comment.targetRef.oid,
     );
 
     await this.commentService.likeCommentCast(
@@ -493,12 +493,12 @@ export class UsersControllerV2 {
       comment,
       content,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      content
+      content,
     );
 
     if (!feedItem) return;
@@ -506,7 +506,7 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential
+      authorizer.credential,
     );
   }
 
@@ -515,7 +515,7 @@ export class UsersControllerV2 {
   @Delete(':userId/likes-comments/:sourceCommentId')
   async unlikeCommentCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam
+    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -542,7 +542,7 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Body() { targetCastcleId }: TargetCastcleDtoV2,
     @Param()
-    { isMe, userId }: GetUserParam
+    { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -558,7 +558,7 @@ export class UsersControllerV2 {
   async unBlockUser(
     @Auth() authorizer: Authorizer,
     @Param()
-    { targetCastcleId, isMe, userId }: UnblockParam
+    { targetCastcleId, isMe, userId }: UnblockParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -573,7 +573,7 @@ export class UsersControllerV2 {
   async recastContent(
     @Auth() authorizer: Authorizer,
     @Body() { contentId }: GetContentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     this.logger.log(`Start recast content id: ${contentId}`);
     const user = isMe
@@ -585,25 +585,25 @@ export class UsersControllerV2 {
     const recast = await this.contentServiceV2.recast(
       contentId,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      recast.recastContent
+      recast.recastContent,
     );
 
     if (feedItem) {
       await this.suggestionService.seen(
         authorizer.account,
         feedItem._id,
-        authorizer.credential
+        authorizer.credential,
       );
     }
 
     return await this.contentServiceV2.getRecastPipeline(
       recast.recastContent._id,
-      user
+      user,
     );
   }
 
@@ -613,7 +613,7 @@ export class UsersControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   async undoRecast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -630,7 +630,7 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() paginationQuery: PaginationQuery,
     @Param()
-    { isMe, userId }: GetUserParam
+    { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -638,7 +638,7 @@ export class UsersControllerV2 {
 
     const { users, meta } = await this.userServiceV2.getBlockedLookup(
       user,
-      paginationQuery
+      paginationQuery,
     );
 
     return ResponseDto.ok({ payload: users, meta });
@@ -649,7 +649,7 @@ export class UsersControllerV2 {
   async quoteContent(
     @Auth() authorizer: Authorizer,
     @Body() { contentId, message }: QuoteCastDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     this.logger.log(`Start quote cast content id: ${contentId}`);
     const user = isMe
@@ -662,25 +662,25 @@ export class UsersControllerV2 {
       contentId,
       message,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      quotecasts.quoteContent
+      quotecasts.quoteContent,
     );
 
     if (feedItem) {
       await this.suggestionService.seen(
         authorizer.account,
         feedItem._id,
-        authorizer.credential
+        authorizer.credential,
       );
     }
 
     return await this.contentServiceV2.getQuoteCastPipeline(
       quotecasts.quoteContent._id,
-      user
+      user,
     );
   }
 
@@ -690,7 +690,7 @@ export class UsersControllerV2 {
   async following(
     @Param() { isMe, userId }: GetUserParam,
     @Body() body: TargetCastcleDtoV2,
-    @Auth() authorizer: Authorizer
+    @Auth() authorizer: Authorizer,
   ) {
     const user = isMe
       ? authorizer.user
@@ -700,7 +700,7 @@ export class UsersControllerV2 {
     await this.userServiceV2.followUser(
       user,
       body.targetCastcleId,
-      user.ownerAccount
+      user.ownerAccount,
     );
   }
 }

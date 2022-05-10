@@ -95,7 +95,7 @@ export const testCommentsFlow = () => {
       userA.accessToken,
       {
         type: 'bearer',
-      }
+      },
     );
 
     await CommentRequest.getCommentFromContent(contentId)

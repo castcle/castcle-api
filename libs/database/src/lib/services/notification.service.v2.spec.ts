@@ -147,7 +147,7 @@ describe('NotificationServiceV2', () => {
           case NotificationType.Follow:
             return CastcleDate.checkIntervalNotify(
               notify.createdAt,
-              Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+              Number(Environment.NOTIFY_FOLLOW_INTERVAL),
             );
 
           default:
@@ -181,7 +181,7 @@ describe('NotificationServiceV2', () => {
         notify,
         [mocksUsers[1].user.displayName],
         'en',
-        mocksUsers[0].user
+        mocksUsers[0].user,
       );
 
       expect(newMessage).toEqual('Mock-1 commented on your cast');
@@ -198,7 +198,7 @@ describe('NotificationServiceV2', () => {
         notify,
         [mocksUsers[1].user.displayName],
         'th',
-        mocksUsers[0].user
+        mocksUsers[0].user,
       );
 
       expect(newMessage).toEqual('Mock-1 แสดงความคิดเห็นบน cast ของคุณ');
@@ -215,7 +215,7 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
+        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
       );
       expect(landingPage).toEqual('comment');
     });
@@ -229,7 +229,7 @@ describe('NotificationServiceV2', () => {
 
       const landingPage = (service as any).checkNotificationTypePage(
         notify.type,
-        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
+        notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
       );
       expect(landingPage).toEqual('follower');
     });
@@ -247,7 +247,7 @@ describe('NotificationServiceV2', () => {
 
       const isInterval = (service as any).checkIntervalNotify(
         notify.type,
-        notify
+        notify,
       );
       expect(isInterval).toEqual(false);
     });
@@ -264,7 +264,7 @@ describe('NotificationServiceV2', () => {
 
       const isInterval = (service as any).checkIntervalNotify(
         notify.type,
-        notify
+        notify,
       );
       expect(isInterval).toEqual(true);
     });
@@ -289,7 +289,7 @@ describe('NotificationServiceV2', () => {
     it('should get all notification data is exists.', async () => {
       const notifies = await (service as any).getAllNotify(
         mocksUsers[0].account,
-        { maxResults: 100 }
+        { maxResults: 100 },
       );
 
       expect(notifies).toHaveLength(2);
@@ -308,7 +308,7 @@ describe('NotificationServiceV2', () => {
   describe('getBadges', () => {
     it('should get count by notification unread is exists', async () => {
       const notifyBadges = await (service as any).getBadges(
-        mocksUsers[0].account
+        mocksUsers[0].account,
       );
 
       expect(notifyBadges.profile).toEqual(2);
@@ -332,12 +332,12 @@ describe('NotificationServiceV2', () => {
     it('should update all notification read equal true.', async () => {
       await (service as any).readAllSourceNotify(
         mocksUsers[0].account,
-        NotificationSource.Profile
+        NotificationSource.Profile,
       );
 
       const notifies = await (service as any).getAllNotify(
         mocksUsers[0].account,
-        { maxResults: 100 }
+        { maxResults: 100 },
       );
 
       expect(notifies).toHaveLength(2);
@@ -359,7 +359,7 @@ describe('NotificationServiceV2', () => {
       const { message } = await (service as any).generateMessage(
         mocksUsers[0].user,
         notify,
-        'en'
+        'en',
       );
       expect(message).toBeDefined();
       expect(message).toEqual('Mock-1 started following you');
@@ -374,7 +374,7 @@ describe('NotificationServiceV2', () => {
       const { message } = await (service as any).generateMessage(
         mocksUsers[0].user,
         notify,
-        'th'
+        'th',
       );
 
       expect(message).toBeDefined();
@@ -386,7 +386,7 @@ describe('NotificationServiceV2', () => {
     it('should generate message notification response by language default is correct.', async () => {
       const notifyResp = await (service as any).generateNotificationsResponse(
         notification,
-        'en'
+        'en',
       );
 
       expect(notifyResp).toBeDefined();
@@ -402,7 +402,7 @@ describe('NotificationServiceV2', () => {
     it('should generate message notification response by language thai is correct.', async () => {
       const notifyResp = await (service as any).generateNotificationsResponse(
         notification,
-        'th'
+        'th',
       );
 
       expect(notifyResp).toBeDefined();
@@ -421,7 +421,7 @@ describe('NotificationServiceV2', () => {
       const newMessage = await (service as any).generateMessage(
         mocksUsers[0].user,
         notification[0],
-        'en'
+        'en',
       );
       mocksUsers[0].account.devices = [
         {
@@ -434,7 +434,7 @@ describe('NotificationServiceV2', () => {
         newMessage,
         notification[0],
         mocksUsers[0].account,
-        2
+        2,
       );
 
       expect(devicePayload.notification.body).toEqual(newMessage);
@@ -443,10 +443,10 @@ describe('NotificationServiceV2', () => {
       expect(devicePayload.payload.source).toEqual(NotificationSource.Profile);
       expect(devicePayload.payload.type).toEqual(NotificationType.Comment);
       expect(devicePayload.payload.landingPage).toEqual(
-        NotificationLandingPage.Comment
+        NotificationLandingPage.Comment,
       );
       expect(devicePayload.firebaseTokens).toContainEqual(
-        'mocktestfirebasetoken'
+        'mocktestfirebasetoken',
       );
     });
   });
@@ -464,12 +464,12 @@ describe('NotificationServiceV2', () => {
     it('should delete all notification by source is correct.', async () => {
       await (service as any).deleteAllSourceNotify(
         mocksUsers[0].account,
-        NotificationSource.Profile
+        NotificationSource.Profile,
       );
 
       const notifies = await (service as any).getAllNotify(
         mocksUsers[0].account,
-        { maxResults: 100 }
+        { maxResults: 100 },
       );
 
       expect(notifies).toHaveLength(0);

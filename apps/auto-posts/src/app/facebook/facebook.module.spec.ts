@@ -27,7 +27,7 @@ import { Image } from '@castcle-api/utils/aws';
 import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getLinkPreview } from 'link-preview-js';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { Model, Types } from 'mongoose';
@@ -39,6 +39,7 @@ import { FacebookModule } from './facebook.module';
 jest.mock('@castcle-api/utils/aws');
 
 describe('FacebookController', () => {
+  let testingModule: TestingModule;
   let controller: FacebookController;
   let logger: Logger;
   let mongo: MongoMemoryReplSet;
@@ -57,26 +58,23 @@ describe('FacebookController', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       imports: [MongooseModule.forRoot(mongo.getUri()), FacebookModule],
-      providers: [
-        {
-          provide: getQueueToken(QueueName.CONTENT),
-          useValue: { add: jest.fn() },
-        },
-      ],
-    }).compile();
+    })
+      .overrideProvider(getQueueToken(QueueName.CONTENT))
+      .useValue({ add: jest.fn() })
+      .compile();
 
-    controller = module.get(FacebookController);
+    controller = testingModule.get(FacebookController);
     logger = (controller as any).logger;
 
     jest
       .spyOn(Image, 'upload')
       .mockResolvedValue({ image: { original: 'uploaded-image-url' } } as any);
 
-    const userModel = module.get<Model<User>>(getModelToken('User'));
-    const socialSyncModel = module.get<Model<SocialSync>>(
-      getModelToken('SocialSync')
+    const userModel = testingModule.get<Model<User>>(getModelToken('User'));
+    const socialSyncModel = testingModule.get<Model<SocialSync>>(
+      getModelToken('SocialSync'),
     );
 
     await userModel.create(user);
@@ -103,6 +101,7 @@ describe('FacebookController', () => {
   });
 
   afterAll(async () => {
+    await testingModule.close();
     await mongo.stop();
   });
 
@@ -112,7 +111,7 @@ describe('FacebookController', () => {
         controller.validateWebhook({
           'hub.verify_token': 'invalid-verify-token',
           'hub.challenge': 'challenge',
-        } as ValidateWebhookQuery)
+        } as ValidateWebhookQuery),
       ).toEqual(undefined);
     });
 
@@ -121,7 +120,7 @@ describe('FacebookController', () => {
         controller.validateWebhook({
           'hub.verify_token': undefined,
           'hub.challenge': 'challenge',
-        } as ValidateWebhookQuery)
+        } as ValidateWebhookQuery),
       ).toEqual('challenge');
     });
   });
@@ -135,7 +134,7 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
         `facebook-${socialId.invalid}`,
-        'handleWebhook:sync-account-not-found'
+        'handleWebhook:sync-account-not-found',
       );
     });
 
@@ -155,7 +154,7 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
         `author-${user._id}`,
-        `handleWebhook:no-change`
+        `handleWebhook:no-change`,
       );
     });
 
@@ -184,7 +183,7 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
         `postId: ${post[0].changes[0].value.post_id}`,
-        'handleWebhook:verb-mismatched'
+        'handleWebhook:verb-mismatched',
       );
     });
 
@@ -214,7 +213,7 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.error).lastCalledWith(
         `postId: ${post[0].changes[0].value.post_id}`,
-        'handleWebhook:item-mismatched'
+        'handleWebhook:item-mismatched',
       );
     });
 
@@ -243,11 +242,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).lastCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"short"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -276,11 +275,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).toBeCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"long"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -311,11 +310,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).toBeCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"video"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -345,7 +344,7 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"image"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -376,11 +375,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).lastCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"short"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -414,11 +413,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).lastCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"short"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
 
@@ -459,11 +458,11 @@ describe('FacebookController', () => {
       await expect(controller.handleWebhook(post)).resolves.not.toThrow();
       expect(logger.log).lastCalledWith(
         expect.stringContaining(post[0].changes[0].value.message),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(`"type":"short"`),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
       expect(logger.log).lastCalledWith(
         expect.stringContaining(
@@ -479,9 +478,9 @@ describe('FacebookController', () => {
                   'https://scontent.fbkk12-4.fna.fbcdn.net/v/t39.30808-1/257382132_100776269104565_5345001410806291244_n.png?_nc_cat=110&ccb=1-5&_nc_sid=baafbc&_nc_ohc=VlkK08pa4vkAX8D61gA&_nc_ht=scontent.fbkk12-4.fna&oh=00_AT_0Wvk5Tmj-3Gmo6b7cJ8uFgluujDHro9oBiPlXsnqGnA&oe=625185C0',
               },
             ],
-          })
+          }),
         ),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     });
   });
@@ -518,16 +517,16 @@ describe('FacebookController', () => {
     await expect(controller.handleWebhook(post)).resolves.not.toThrow();
     expect(logger.log).lastCalledWith(
       expect.stringContaining(post[0].changes[0].value.message),
-      'handleWebhook:contents-created'
+      'handleWebhook:contents-created',
     );
     expect(logger.log).lastCalledWith(
       expect.stringContaining(
         JSON.stringify({
           message: 'Decentralized Social Media',
           photo: { contents: [{ original: 'uploaded-image-url' }] },
-        })
+        }),
       ),
-      'handleWebhook:contents-created'
+      'handleWebhook:contents-created',
     );
   });
 });

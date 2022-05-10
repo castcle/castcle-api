@@ -132,7 +132,7 @@ describe('CommentControllerV2', () => {
       const comments = await commentController.getAllComment(
         content._id,
         credential,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(comments.payload.length).toEqual(2);
       expect(comments.includes).toBeDefined();
@@ -153,7 +153,7 @@ describe('CommentControllerV2', () => {
         content,
         {
           message: 'Hello #hello v2',
-        }
+        },
       );
 
       await contentService.replyComment(user, comment, {
@@ -164,7 +164,7 @@ describe('CommentControllerV2', () => {
         content._id,
         comment._id,
         credential,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(replyComments.payload.length).toEqual(1);
       expect(replyComments.includes).toBeDefined();
