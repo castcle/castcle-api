@@ -28,4 +28,6 @@ export class ContentsRequest {
     ContentsRequest.delete(`/contents/${contentId}`);
   static likingUser = (contentId: string) =>
     ContentsRequest.get(`/v2/contents/${contentId}/liking-users`);
+  static quotecastsUser = (contentId: string) =>
+    ContentsRequest.get(`/v2/contents/${contentId}/quotecasts`);
 }

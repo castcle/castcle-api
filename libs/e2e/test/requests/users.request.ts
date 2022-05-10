@@ -77,4 +77,6 @@ export class UsersRequest {
     UsersRequest.delete(
       `/v2/users/${userId}/likes-comments/${sourceCommentId}`,
     );
+  static quotecasts = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/quotecasts`);
 }
