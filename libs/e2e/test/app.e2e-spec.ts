@@ -17,6 +17,7 @@ import {
   testUsersReporting,
   testUsersUpdateMobile,
 } from './modules/users';
+import { testQuoteCastsFlow } from './modules/users/quotecasts-flow.spec';
 import {
   closeAuthenticationsModule,
   closeFeedsModule,
@@ -81,6 +82,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Like Flow', () => {
       testLikesFlow();
+    });
+
+    describe('- Quote Casts Flow', () => {
+      testQuoteCastsFlow();
     });
   });
 
