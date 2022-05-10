@@ -59,7 +59,7 @@ export class CastcleDate {
   static verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
     if (!displayIdUpdateAt) return false;
     displayIdUpdateAt.setDate(
-      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
     );
 
     const now = new Date().getTime();
@@ -71,7 +71,7 @@ export class CastcleDate {
     return (
       new Date().getTime() >
       new Date(
-        DateTime.fromJSDate(dateBefore).plus({ hours: unitTime }).toISO()
+        DateTime.fromJSDate(dateBefore).plus({ hours: unitTime }).toISO(),
       ).getTime()
     );
   };

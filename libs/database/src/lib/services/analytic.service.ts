@@ -32,7 +32,7 @@ import { Analytic } from '../schemas';
 export class AnalyticService {
   constructor(
     @InjectModel('Analytic') private analyticModel: Model<Analytic>,
-    private repository: Repository
+    private repository: Repository,
   ) {}
 
   async track(payload: Analytic) {
@@ -43,7 +43,7 @@ export class AnalyticService {
         name: payload.name,
       },
       {},
-      { sort: { createdAt: -1 } }
+      { sort: { createdAt: -1 } },
     );
 
     if (
@@ -62,18 +62,18 @@ export class AnalyticService {
     ip: string,
     accountId: string,
     countryCode: string,
-    mobileNumber: string
+    mobileNumber: string,
   ) {
     return this.analyticModel.updateMany(
       { ip, 'registered.account': accountId },
-      { mobileVerified: { countryCode, mobileNumber } }
+      { mobileVerified: { countryCode, mobileNumber } },
     );
   }
 
   trackRegistration(ip: string, accountId: string) {
     return this.analyticModel.updateMany(
       { ip, registered: { $exists: false } },
-      { registered: { account: accountId } }
+      { registered: { account: accountId } },
     );
   }
 
@@ -81,7 +81,7 @@ export class AnalyticService {
     const analytic = await this.analyticModel.findOne(
       { ip, name: EventName.INVITE_FRIENDS },
       {},
-      { sort: { createdAt: -1 } }
+      { sort: { createdAt: -1 } },
     );
 
     return this.repository.findUser({ _id: analytic?.data });

@@ -119,7 +119,7 @@ export const UserSchema = SchemaFactory.createForClass(UserDocument);
 export class User extends UserDocument {
   covertToUserResponse: (
     user: User | User,
-    followed?: boolean
+    followed?: boolean,
   ) => UserResponseDto;
   follow: (user: User) => Promise<void>;
   unfollow: (user: User) => Promise<void>;
@@ -133,14 +133,14 @@ export class User extends UserDocument {
     blocking?: boolean,
     followed?: boolean,
     syncSocial?: SocialSync,
-    casts?: number
+    casts?: number,
   ) => PageResponseDto;
   toPageResponseV2: (
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean,
     syncSocial?: SyncSocialModelV2,
-    casts?: number
+    casts?: number,
   ) => PageResponseDto;
 }
 
@@ -185,7 +185,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
 
 UserSchema.statics.covertToUserResponse = (
   self: User | User,
-  followed = false
+  followed = false,
 ) => _covertToUserResponse(self, followed);
 
 UserSchema.statics.toAuthor = (self: User | User) =>
@@ -212,7 +212,7 @@ UserSchema.methods.toUserResponse = async function (
     linkSocial,
     syncSocial,
     casts,
-  } = {} as UserResponseOption
+  } = {} as UserResponseOption,
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
   const response = _covertToUserResponse(self, followed);
@@ -234,7 +234,7 @@ UserSchema.methods.toUserResponse = async function (
             displayName: social.displayName,
           },
         };
-      })
+      }),
     );
 
     response.linkSocial.facebook = response.linkSocial.facebook ?? null;
@@ -270,7 +270,7 @@ UserSchema.methods.toUserResponseV2 = async function (
     linkSocial,
     syncSocial,
     casts,
-  } = {} as UserResponseOption
+  } = {} as UserResponseOption,
 ) {
   const self = await (this as User).populate('ownerAccount').execPopulate();
   const response = _covertToUserResponse(self, followed);
@@ -303,7 +303,7 @@ UserSchema.methods.toPageResponse = function (
   blocking?: boolean,
   followed?: boolean,
   syncSocial?: SocialSync,
-  casts?: number
+  casts?: number,
 ) {
   return {
     id: (this as User)._id,
@@ -396,7 +396,7 @@ UserSchema.methods.toPageResponseV2 = function (
   blocking?: boolean,
   followed?: boolean,
   syncSocial?: SocialSync,
-  casts?: number
+  casts?: number,
 ) {
   return {
     id: (this as User)._id,
@@ -542,14 +542,14 @@ UserSchema.methods.toSearchResponse = function () {
 
 const _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
   displayIdUpdateAt.setDate(
-    displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+    displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
   );
   const now = new Date().getTime();
   const blockUpdate = displayIdUpdateAt.getTime();
   return now - blockUpdate >= 0;
 };
 export const UserSchemaFactory = (
-  relationshipModel: Model<Relationship>
+  relationshipModel: Model<Relationship>,
   /*contentModel: Model<Content>,
   feedModel: Model<FeedItem>,
   commentModel: Model<Comment>*/
@@ -613,7 +613,7 @@ export const UserSchemaFactory = (
           },
           {
             upsert: true,
-          }
+          },
         )
         .exec();
       if (result.upserted) {

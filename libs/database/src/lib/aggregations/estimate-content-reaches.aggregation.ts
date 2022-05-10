@@ -33,7 +33,7 @@ export class EligibleAccount {
 
 export const pipelineOfEstimateContentReach = (
   campaign: Campaign,
-  accountId?: string
+  accountId?: string,
 ) => [
   {
     $match: {

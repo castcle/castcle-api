@@ -28,7 +28,7 @@ import { Account, Transaction } from '../schemas';
 export const mockDeposit = (
   account: Account,
   value: number,
-  transactionModel: Model<Transaction>
+  transactionModel: Model<Transaction>,
 ) => {
   console.log('mockDeposit', account._id);
   return new transactionModel({

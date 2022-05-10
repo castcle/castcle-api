@@ -81,7 +81,7 @@ describe('SearchService', () => {
       await mockUser(
         `User ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -89,7 +89,7 @@ describe('SearchService', () => {
       await mockUser(
         `Page ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -97,7 +97,7 @@ describe('SearchService', () => {
       await mockUser(
         `cPage ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -105,7 +105,7 @@ describe('SearchService', () => {
       await mockUser(
         `cUser ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
   });

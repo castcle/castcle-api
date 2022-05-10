@@ -45,7 +45,7 @@ export const predictSuggestion = (accountId: string) => {
       (err, data) => {
         console.timeEnd('Spend time on AWS lambda');
         err ? reject(err) : resolve(JSON.parse(data.Payload as string));
-      }
+      },
     );
   });
 };

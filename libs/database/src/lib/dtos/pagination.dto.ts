@@ -67,7 +67,7 @@ export class ExpansionQuery {
 
   @Expose()
   @Transform(({ obj }) =>
-    Boolean(obj.userFields?.includes(UserField.Relationships))
+    Boolean(obj.userFields?.includes(UserField.Relationships)),
   )
   hasRelationshipExpansion: boolean;
 }

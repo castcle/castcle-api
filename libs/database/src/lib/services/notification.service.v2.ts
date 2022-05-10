@@ -52,7 +52,7 @@ export class NotificationServiceV2 {
   constructor(
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>,
-    private repository: Repository
+    private repository: Repository,
   ) {}
 
   /**
@@ -88,7 +88,7 @@ export class NotificationServiceV2 {
     notify: Notification,
     displayNames: string[],
     language: string,
-    user?: User
+    user?: User,
   ) => {
     switch (notify.type) {
       case NotificationType.Like:
@@ -96,13 +96,13 @@ export class NotificationServiceV2 {
           return CastcleLocalization.getTemplateLikeComment(
             language,
             displayNames,
-            user?.type === UserType.PAGE ? user.displayName : ''
+            user?.type === UserType.PAGE ? user.displayName : '',
           );
         } else {
           return CastcleLocalization.getTemplateLike(
             language,
             displayNames,
-            user?.type === UserType.PAGE ? user.displayName : ''
+            user?.type === UserType.PAGE ? user.displayName : '',
           );
         }
 
@@ -110,42 +110,42 @@ export class NotificationServiceV2 {
         return CastcleLocalization.getTemplateComment(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Farm:
         return CastcleLocalization.getTemplateFarm(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Quote:
         return CastcleLocalization.getTemplateQuote(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Recast:
         return CastcleLocalization.getTemplateRecast(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Reply:
         return CastcleLocalization.getTemplateReply(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Tag:
         return CastcleLocalization.getTemplateTag(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.System:
@@ -161,7 +161,7 @@ export class NotificationServiceV2 {
         return CastcleLocalization.getTemplateFollow(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
     }
   };
@@ -171,7 +171,7 @@ export class NotificationServiceV2 {
    */
   private checkNotificationTypePage = (
     type: NotificationType,
-    targetRef?: string
+    targetRef?: string,
   ) => {
     if (
       (type === NotificationType.Like &&
@@ -199,13 +199,13 @@ export class NotificationServiceV2 {
    */
   private checkIntervalNotify = (
     type: NotificationType,
-    notify: Notification
+    notify: Notification,
   ) => {
     switch (type) {
       case NotificationType.Follow:
         return CastcleDate.checkIntervalNotify(
           notify.createdAt,
-          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+          Number(Environment.NOTIFY_FOLLOW_INTERVAL),
         );
 
       default:
@@ -218,7 +218,7 @@ export class NotificationServiceV2 {
     message: string,
     landingPage: string,
     user?: User,
-    haveUsers?: number
+    haveUsers?: number,
   ) => {
     return {
       message,
@@ -245,7 +245,7 @@ export class NotificationServiceV2 {
     message: string,
     landingPage: string,
     user?: User,
-    haveUsers?: number
+    haveUsers?: number,
   ) => {
     return {
       id: notify._id,
@@ -276,7 +276,7 @@ export class NotificationServiceV2 {
 
   getAllNotify = async (
     account: Account,
-    { maxResults, ...query }: NotificationQuery
+    { maxResults, ...query }: NotificationQuery,
   ) => {
     return this.repository.findNotifications(
       {
@@ -286,24 +286,24 @@ export class NotificationServiceV2 {
       {
         sort: { createdAt: -1, updatedAt: -1 },
         limit: maxResults,
-      }
+      },
     );
   };
 
   readNotify = async (_id: string) => {
     return this.repository.updateNotification(
       { _id },
-      { $set: { read: true } }
+      { $set: { read: true } },
     );
   };
 
   readAllSourceNotify = async (
     account: Account,
-    source: NotificationSource
+    source: NotificationSource,
   ) => {
     return this.repository.updateNotifications(
       { account: account._id, source },
-      { $set: { read: true } }
+      { $set: { read: true } },
     );
   };
 
@@ -313,7 +313,7 @@ export class NotificationServiceV2 {
 
   deleteAllSourceNotify = async (
     account: Account,
-    source: NotificationSource
+    source: NotificationSource,
   ) => {
     return this.repository.deleteNotifications({
       account: account._id,
@@ -323,7 +323,7 @@ export class NotificationServiceV2 {
 
   getBadges = async (account: Account) => {
     const [totalNotification] = await this.repository.aggregationNotification(
-      pipelineNotificationBadge(account._id)
+      pipelineNotificationBadge(account._id),
     );
     if (!totalNotification)
       return {
@@ -338,7 +338,7 @@ export class NotificationServiceV2 {
   notifyToUser = async (
     { sourceUserId, read, ...notificationData }: CreateNotification,
     userOwner: User,
-    language: string
+    language: string,
   ) => {
     this.#logger.log('Check user action notify.');
     if (String(sourceUserId) === String(userOwner._id)) return;
@@ -385,7 +385,7 @@ export class NotificationServiceV2 {
         },
         {
           upsert: true,
-        }
+        },
       );
 
       if (!updateNotify.nModified && !updateNotify.upserted) return;
@@ -398,7 +398,7 @@ export class NotificationServiceV2 {
 
     this.#logger.log(
       'Insert data into notification is done.',
-      JSON.stringify(notify)
+      JSON.stringify(notify),
     );
 
     this.#logger.log('Get devices by account.');
@@ -414,7 +414,7 @@ export class NotificationServiceV2 {
     const { message, user, haveUser } = await this.generateMessage(
       userOwner,
       notify,
-      language
+      language,
     );
     this.#logger.log('Generate notification message is done.');
 
@@ -435,11 +435,11 @@ export class NotificationServiceV2 {
         account,
         badgeCounts,
         user,
-        haveUser
+        haveUser,
       ),
       {
         removeOnComplete: true,
-      }
+      },
     );
 
     return notify;
@@ -448,7 +448,7 @@ export class NotificationServiceV2 {
   generateMessage = async (
     userOwner: User,
     notify: Notification,
-    language: string
+    language: string,
   ) => {
     if (!notify) return;
 
@@ -482,7 +482,7 @@ export class NotificationServiceV2 {
           { _id: notify._id },
           {
             $pull: { sourceUserId: { $in: reverseUserIds } },
-          }
+          },
         );
         this.#logger.log('Check user empty at notification.');
         const notifyUserEmpty = await this.repository.findNotification({
@@ -504,7 +504,7 @@ export class NotificationServiceV2 {
       notify,
       displayNames,
       language,
-      userOwner
+      userOwner,
     );
 
     this.#logger.log('Prepare message show display name.', message);
@@ -513,7 +513,7 @@ export class NotificationServiceV2 {
 
   generateNotificationsResponse = async (
     notifications: Notification[],
-    language: string
+    language: string,
   ) => {
     this.#logger.log('Start generate notification message list.');
 
@@ -550,7 +550,7 @@ export class NotificationServiceV2 {
               { _id: notify._id },
               {
                 $pull: { sourceUserId: { $in: reverseUserIds } },
-              }
+              },
             );
 
             this.#logger.log('Check user empty at notification.');
@@ -573,7 +573,7 @@ export class NotificationServiceV2 {
           notify,
           displayNames,
           language,
-          userOwner
+          userOwner,
         );
 
         this.#logger.log('Prepare message show display name.', message);
@@ -585,12 +585,12 @@ export class NotificationServiceV2 {
             notify.type,
             notify.commentRef
               ? NotificationRef.Comment
-              : NotificationRef.Content
+              : NotificationRef.Content,
           ),
           userSort[0],
-          userSort.length
+          userSort.length,
         );
-      })
+      }),
     );
 
     return payloadNotify.filter((payload) => payload);
@@ -602,7 +602,7 @@ export class NotificationServiceV2 {
     account: Account,
     badgeCounts: number,
     user?: User,
-    haveUsers?: number
+    haveUsers?: number,
   ) => {
     return {
       notification: {
@@ -627,10 +627,10 @@ export class NotificationServiceV2 {
         message,
         this.checkNotificationTypePage(
           notify.type,
-          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content
+          notify.commentRef ? NotificationRef.Comment : NotificationRef.Content,
         ),
         user,
-        haveUsers
+        haveUsers,
       ) as any,
       firebaseTokens: account?.devices.map((item) => item.firebaseToken),
     };

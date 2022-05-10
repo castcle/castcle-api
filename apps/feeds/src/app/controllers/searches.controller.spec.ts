@@ -113,7 +113,7 @@ describe('NotificationsController', () => {
       await mockUser(
         `User ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -121,7 +121,7 @@ describe('NotificationsController', () => {
       await mockUser(
         `Page ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -129,7 +129,7 @@ describe('NotificationsController', () => {
       await mockUser(
         `cPage ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -137,7 +137,7 @@ describe('NotificationsController', () => {
       await mockUser(
         `cUser ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
   });
@@ -183,7 +183,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         20,
-        'hashtags'
+        'hashtags',
       );
 
       expect(responseResult.hashtags.length).toEqual(0);
@@ -208,7 +208,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         20,
-        'hashtags,follows'
+        'hashtags,follows',
       );
 
       expect(responseResult.hashtags.length).toEqual(0);
@@ -223,7 +223,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         10,
-        'c'
+        'c',
       );
       console.log(responseResult);
       expect(responseResult.keyword.length).toEqual(3);
@@ -259,7 +259,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         10,
-        '#ca'
+        '#ca',
       );
       console.log(responseResult);
       expect(responseResult.keyword.length).toEqual(0);
@@ -280,7 +280,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         10,
-        '@cuse'
+        '@cuse',
       );
       console.log(responseResult);
       expect(responseResult.keyword.length).toEqual(0);
@@ -294,7 +294,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         10,
-        'abc'
+        'abc',
       );
 
       expect(responseResult.keyword.length).toEqual(0);

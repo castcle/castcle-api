@@ -41,7 +41,7 @@ export class CommentIncludes {
 
     rawAuthors.forEach((author) => {
       const authorIndex = authors.findIndex(
-        ({ id }) => String(author.id) == String(id)
+        ({ id }) => String(author.id) == String(id),
       );
 
       if (authorIndex >= 0) return;

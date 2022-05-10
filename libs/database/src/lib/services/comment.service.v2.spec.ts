@@ -129,12 +129,12 @@ describe('CommentServiceV2', () => {
         user,
         comment,
         [],
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
 
       expect(response.includes.users[0].followed).toBeUndefined();
       expect(response.payload.metrics.likeCount).toEqual(
-        comment.engagements.like.count
+        comment.engagements.like.count,
       );
     });
 
@@ -144,7 +144,7 @@ describe('CommentServiceV2', () => {
         user,
         comment,
         [],
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true },
       );
       expect(response.includes.users[0].followed).toBeDefined();
     });
@@ -159,7 +159,7 @@ describe('CommentServiceV2', () => {
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
-        }
+        },
       );
 
       expect(commentsResult.meta.resultCount).toEqual(1);
@@ -184,7 +184,7 @@ describe('CommentServiceV2', () => {
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
-        }
+        },
       );
       expect(replyComments.meta.resultCount).toEqual(1);
     });
@@ -230,7 +230,7 @@ describe('CommentServiceV2', () => {
         comment,
         content,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
       const engagement = await service._engagementModel.findOne({
         user: mocksUsers[1].user._id,
@@ -243,7 +243,7 @@ describe('CommentServiceV2', () => {
       expect(engagement.type).toEqual(NotificationType.Like);
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
       expect(String(engagement.targetRef.oid)).toEqual(
-        String(likeCommentCast._id)
+        String(likeCommentCast._id),
       );
     });
 
@@ -253,7 +253,7 @@ describe('CommentServiceV2', () => {
         reply,
         content,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
       const engagement = await service._engagementModel.findOne({
         user: mocksUsers[1].user._id,
@@ -266,7 +266,7 @@ describe('CommentServiceV2', () => {
       expect(engagement.type).toEqual(NotificationType.Like);
       expect(String(engagement.user)).toEqual(String(mocksUsers[1].user._id));
       expect(String(engagement.targetRef.oid)).toEqual(
-        String(likeCommentCast._id)
+        String(likeCommentCast._id),
       );
     });
     afterAll(async () => {
@@ -310,7 +310,7 @@ describe('CommentServiceV2', () => {
         },
         {
           $addToSet: { sourceUserId: mocksUsers[2].user._id },
-        }
+        },
       );
 
       const notify_2 = await (
@@ -332,7 +332,7 @@ describe('CommentServiceV2', () => {
         },
         {
           $addToSet: { sourceUserId: mocksUsers[2].user._id },
-        }
+        },
       );
     });
     it('should unlike comment cast', async () => {
@@ -341,12 +341,12 @@ describe('CommentServiceV2', () => {
         comment,
         content,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
 
       const unlikeCommentCast = await service.unlikeCommentCast(
         comment._id,
-        mocksUsers[1].user
+        mocksUsers[1].user,
       );
 
       const engagement = await service._engagementModel.findOne({
@@ -370,10 +370,10 @@ describe('CommentServiceV2', () => {
       expect(notify.sourceUserId).not.toContainEqual(mocksUsers[1].user._id);
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(
-        String(mocksUsers[1].user._id)
+        String(mocksUsers[1].user._id),
       );
       expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
-        String(comment._id)
+        String(comment._id),
       );
     });
     it('should unlike comment cast and delete notification', async () => {
@@ -382,11 +382,11 @@ describe('CommentServiceV2', () => {
         comment,
         content,
         mocksUsers[2].user,
-        mocksUsers[2].account
+        mocksUsers[2].account,
       );
       const unlikeCommentCast = await service.unlikeCommentCast(
         comment._id,
-        mocksUsers[2].user
+        mocksUsers[2].user,
       );
 
       const engagement = await service._engagementModel.findOne({
@@ -409,10 +409,10 @@ describe('CommentServiceV2', () => {
       expect(engagement).toBeNull();
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(
-        String(mocksUsers[2].user._id)
+        String(mocksUsers[2].user._id),
       );
       expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
-        String(comment._id)
+        String(comment._id),
       );
     });
     it('should unlike reply comment cast', async () => {
@@ -421,12 +421,12 @@ describe('CommentServiceV2', () => {
         reply,
         content,
         mocksUsers[1].user,
-        mocksUsers[1].account
+        mocksUsers[1].account,
       );
 
       const unlikeCommentCast = await service.unlikeCommentCast(
         reply._id,
-        mocksUsers[1].user
+        mocksUsers[1].user,
       );
       const engagement = await service._engagementModel.findOne({
         user: mocksUsers[1].user._id,
@@ -450,10 +450,10 @@ describe('CommentServiceV2', () => {
       expect(engagement).toBeNull();
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(
-        String(mocksUsers[1].user._id)
+        String(mocksUsers[1].user._id),
       );
       expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
-        String(reply._id)
+        String(reply._id),
       );
     });
 
@@ -463,12 +463,12 @@ describe('CommentServiceV2', () => {
         reply,
         content,
         mocksUsers[2].user,
-        mocksUsers[2].account
+        mocksUsers[2].account,
       );
 
       const unlikeCommentCast = await service.unlikeCommentCast(
         reply._id,
-        mocksUsers[2].user
+        mocksUsers[2].user,
       );
       const engagement = await service._engagementModel.findOne({
         user: mocksUsers[2].user._id,
@@ -491,10 +491,10 @@ describe('CommentServiceV2', () => {
       expect(engagement).toBeNull();
       expect(unlikeCommentCast.type).toEqual(NotificationType.Like);
       expect(String(unlikeCommentCast.user)).toEqual(
-        String(mocksUsers[2].user._id)
+        String(mocksUsers[2].user._id),
       );
       expect(String(unlikeCommentCast.targetRef.oid)).toEqual(
-        String(reply._id)
+        String(reply._id),
       );
     });
   });

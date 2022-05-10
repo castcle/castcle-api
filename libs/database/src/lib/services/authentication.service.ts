@@ -114,7 +114,7 @@ export class AuthenticationService {
     public _accountReferral: Model<AccountReferral>,
     @InjectModel('AccountDevice')
     private _accountDeviceModel: Model<AccountDevice>,
-    private userService: UserService
+    private userService: UserService,
   ) {}
 
   getGuestCredentialFromDeviceUUID = (deviceUUID: string) =>
@@ -136,7 +136,7 @@ export class AuthenticationService {
    */
   getAccountAuthenIdFromSocialId = (
     socialUserId: string,
-    provider: AccountAuthenIdType
+    provider: AccountAuthenIdType,
   ) =>
     this._accountAuthenId
       .findOne({ socialId: socialUserId, type: provider })
@@ -212,7 +212,7 @@ export class AuthenticationService {
     console.log(
       'account not match',
       String(account._id),
-      String(credential.account._id)
+      String(credential.account._id),
     );
     //remove account old crdentiial
     await this._accountModel.findByIdAndDelete(credential.account);
@@ -242,7 +242,7 @@ export class AuthenticationService {
                 deviceUUID: credential.deviceUUID,
               },
             },
-          }
+          },
         )
         .exec();
     } else return null; //this should not happen
@@ -369,7 +369,7 @@ export class AuthenticationService {
           $set: {
             'activations.$.activationDate': new Date(),
           },
-        }
+        },
       )
       .exec();
 
@@ -390,7 +390,7 @@ export class AuthenticationService {
 
     const updateAccount = await this.createAccountActivation(account, 'email');
     const referrerFromBody = await this.userService.getByIdOrCastcleId(
-      requirements.referral
+      requirements.referral,
     );
 
     const referrer =
@@ -412,7 +412,7 @@ export class AuthenticationService {
           },
           {
             $inc: { referralCount: 1 },
-          }
+          },
         ),
       ]);
     }
@@ -421,8 +421,8 @@ export class AuthenticationService {
       `#signupByEmail\n${JSON.stringify(
         { ...requirements, referrer: referrer?.displayId },
         null,
-        2
-      )}`
+        2,
+      )}`,
     );
 
     return updateAccount;
@@ -446,7 +446,7 @@ export class AuthenticationService {
               verifyTokenExpireDate: emailTokenResult.verifyTokenExpireDate,
             },
           },
-        }
+        },
       )
       .exec();
 
@@ -474,7 +474,7 @@ export class AuthenticationService {
           $set: {
             'activations.$.revocationDate': new Date(),
           },
-        }
+        },
       )
       .exec();
 
@@ -493,7 +493,7 @@ export class AuthenticationService {
   async suggestCastcleId(displayName: string) {
     const name = new CastcleName(displayName);
     const result = await this.userService.getByIdOrCastcleId(
-      name.suggestCastcleId
+      name.suggestCastcleId,
     );
     if (result) {
       const totalUser = await this._userModel.countDocuments().exec();
@@ -530,7 +530,7 @@ export class AuthenticationService {
     channel: string,
     verify: boolean,
     receiver?: string,
-    sid?: string
+    sid?: string,
   ) {
     const otp = await this._otpModel.generate(
       account._id,
@@ -539,7 +539,7 @@ export class AuthenticationService {
       channel,
       verify,
       receiver,
-      sid
+      sid,
     );
     return otp;
   }
@@ -564,7 +564,7 @@ export class AuthenticationService {
    */
   async getAllOtpFromRequestIdObjective(
     requestId: string,
-    objective?: OtpObjective
+    objective?: OtpObjective,
   ) {
     const filter = () => {
       if (objective) return { requestId: requestId, action: objective };
@@ -679,7 +679,7 @@ export class AuthenticationService {
    */
   async signupBySocial(
     account: Account,
-    requirements: SignupSocialRequirements
+    requirements: SignupSocialRequirements,
   ) {
     account.isGuest = false;
     await account.save();
@@ -692,7 +692,7 @@ export class AuthenticationService {
     });
 
     const suggestDisplayId = await this.suggestCastcleId(
-      requirements.displayName
+      requirements.displayName,
     );
 
     this.logger.log('Create User.');
@@ -709,7 +709,7 @@ export class AuthenticationService {
     }).save();
 
     const referrerFromBody = await this.userService.getByIdOrCastcleId(
-      requirements.referral
+      requirements.referral,
     );
 
     const referrer =
@@ -731,7 +731,7 @@ export class AuthenticationService {
           },
           {
             $inc: { referralCount: 1 },
-          }
+          },
         ),
       ]);
     }
@@ -740,8 +740,8 @@ export class AuthenticationService {
       `#signupBySocial\n${JSON.stringify(
         { ...requirements, referrer: referrer?.displayId },
         null,
-        2
-      )}`
+        2,
+      )}`,
     );
 
     return this.createAccountAuthenId(
@@ -751,7 +751,7 @@ export class AuthenticationService {
       requirements.socialToken,
       requirements.socialSecretToken,
       requirements.avatar?.original,
-      requirements.displayName
+      requirements.displayName,
     );
   }
 
@@ -765,7 +765,7 @@ export class AuthenticationService {
         },
         {
           'verified.social': true,
-        }
+        },
       )
       .exec();
     return user;
@@ -789,7 +789,7 @@ export class AuthenticationService {
     socialUserToken?: string,
     socialSecretToken?: string,
     avatar?: string,
-    displayName?: string
+    displayName?: string,
   ) {
     const accountActivation = new this._accountAuthenId({
       account: account._id,
@@ -809,7 +809,7 @@ export class AuthenticationService {
     const analytic = await this.analyticModel.findOne(
       { ip, name: EventName.INVITE_FRIENDS },
       {},
-      { sort: { createdAt: -1 } }
+      { sort: { createdAt: -1 } },
     );
 
     return this.userService.getByIdOrCastcleId(analytic?.data);
@@ -840,7 +840,7 @@ export class AuthenticationService {
         },
         {
           upsert: true,
-        }
+        },
       )
       .exec();
 
@@ -877,7 +877,7 @@ export class AuthenticationService {
                   firebaseToken,
                 },
               },
-            }
+            },
       )
       .exec();
   }
@@ -897,7 +897,7 @@ export class AuthenticationService {
           },
           {
             $pull: { devices: { uuid: uuid, platform: platform } },
-          }
+          },
         )
         .exec(),
       this._accountDeviceModel

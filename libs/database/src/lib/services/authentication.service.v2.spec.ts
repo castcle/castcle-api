@@ -102,7 +102,7 @@ describe('Authentication Service', () => {
           displayName: 'People',
           email: signupRequirements.email,
           password: signupRequirements.password,
-        }
+        },
       );
     });
 
@@ -137,7 +137,7 @@ describe('Authentication Service', () => {
 
       it('should found an account that have email match', async () => {
         const newlyInsertEmail = `${Math.ceil(
-          Math.random() * 1000
+          Math.random() * 1000,
         )}@testinsert.com`;
         const newAccount = new (service as any).repository.accountModel({
           email: newlyInsertEmail,

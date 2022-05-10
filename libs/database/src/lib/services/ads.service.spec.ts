@@ -81,7 +81,7 @@ describe('AdsService', () => {
           useValue: {
             personalizeContents: async (
               accountId: string,
-              contentIds: string[]
+              contentIds: string[],
             ) => ({
               [contentIds[0]]: 4,
             }),
@@ -198,7 +198,7 @@ describe('AdsService', () => {
       const ads = await service.createAds(mocks[0].account, adsInput);
       const adsCampaign = await service.lookupAds(
         mocks[0].account._id,
-        ads._id
+        ads._id,
       );
 
       expect(adsCampaign).toBeTruthy();
@@ -277,7 +277,7 @@ describe('AdsService', () => {
           $set: {
             status: AdsStatus.Approved,
           },
-        }
+        },
       );
 
       await service.updateAdsBoostStatus(ads.id, AdsBoostStatus.Pause);

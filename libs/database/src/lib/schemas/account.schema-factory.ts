@@ -29,7 +29,7 @@ import { User } from './user.schema';
 
 export const AccountSchemaFactory = (
   credentialModel: Model<Credential>,
-  userModel: Model<User>
+  userModel: Model<User>,
 ): Schema<any> => {
   AccountSchema.pre('save', function (next) {
     preAccountSave(this as Account);

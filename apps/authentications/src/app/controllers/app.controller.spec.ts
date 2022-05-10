@@ -81,14 +81,14 @@ const createMockCredential = async (
   castcleId?: string,
   displayName?: string,
   email?: string,
-  password?: string
+  password?: string,
 ) => {
   const guestResult = await appController.guestLogin(
     { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
-    { deviceUUID: deviceUUID }
+    { deviceUUID: deviceUUID },
   );
   const guestAccount = await service.getCredentialFromAccessToken(
-    guestResult.accessToken
+    guestResult.accessToken,
   );
 
   if (!skipRegister) {
@@ -107,7 +107,7 @@ const createMockCredential = async (
           password: password,
         },
       },
-      {}
+      {},
     );
   }
 
@@ -219,7 +219,7 @@ describe('AppController', () => {
     it('should always return {accessToken, refreshToken} if it pass the interceptor', async () => {
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345' }
+        { deviceUUID: 'sompop12345' },
       );
       expect(response).toBeDefined();
       expect(response.accessToken).toBeDefined();
@@ -229,7 +229,7 @@ describe('AppController', () => {
       const deviceUUID = 'abc1345';
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       expect(response).toBeDefined();
       const firstResponseCredentialId = await (
@@ -237,7 +237,7 @@ describe('AppController', () => {
       )._id;
       const secondReponse = await appController.guestLogin(
         { $device: 'android', $language: 'en', $platform: 'android' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       expect(secondReponse).toBeDefined();
       expect(response).not.toEqual(secondReponse);
@@ -249,10 +249,10 @@ describe('AppController', () => {
     it('should create new credential when the credetnail form this device is already signup', async () => {
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345' }
+        { deviceUUID: 'sompop12345' },
       );
       const currentCredential = await service.getCredentialFromAccessToken(
-        response.accessToken
+        response.accessToken,
       );
       const currentAccountId = currentCredential.account._id;
       expect(currentAccountId).toBeDefined();
@@ -275,10 +275,10 @@ describe('AppController', () => {
       expect(afterVerify.isGuest).toBe(false);
       const response2 = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'sompop12345' }
+        { deviceUUID: 'sompop12345' },
       );
       const postCredential = await service.getCredentialFromAccessToken(
-        response2.accessToken
+        response2.accessToken,
       );
       expect(postCredential.account.isGuest).toBe(true);
       expect(postCredential.account._id === currentAccountId).toBe(false);
@@ -291,7 +291,7 @@ describe('AppController', () => {
       const language = 'th';
       const response = await appController.guestLogin(
         { $device: 'iphone', $language: language, $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const refreshTokenResponse = await appController.refreshToken({
         $token: response.refreshToken,
@@ -302,10 +302,10 @@ describe('AppController', () => {
       expect(refreshTokenResponse.profile).toBeDefined();
       expect(refreshTokenResponse.pages).toBeDefined();
       expect(response.accessToken).not.toEqual(
-        refreshTokenResponse.accessToken
+        refreshTokenResponse.accessToken,
       );
       const credentialFromToken = await service.getCredentialFromAccessToken(
-        refreshTokenResponse.accessToken
+        refreshTokenResponse.accessToken,
       );
       const credentialFromDeviceUUID =
         await service.getGuestCredentialFromDeviceUUID(deviceUUID);
@@ -318,7 +318,7 @@ describe('AppController', () => {
         appController.refreshToken({
           $token: '123',
           $language: language,
-        } as any)
+        } as any),
       ).rejects.toEqual(CastcleException.INVALID_REFRESH_TOKEN);
     });
   });
@@ -330,7 +330,7 @@ describe('AppController', () => {
         { $language: 'th' } as any,
         {
           email: testEmail,
-        }
+        },
       );
       expect(response.payload.exist).toBe(false);
       const result = await service.createAccount({
@@ -345,7 +345,7 @@ describe('AppController', () => {
         { $language: 'th' } as any,
         {
           email: testEmail,
-        }
+        },
       );
       expect(response.payload.exist).toBe(true);
     });
@@ -357,10 +357,10 @@ describe('AppController', () => {
       const deviceUUID = 'sompop12345';
       await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const randomAccount = await service.getAccountFromCredential(
-        await service.getGuestCredentialFromDeviceUUID(deviceUUID)
+        await service.getGuestCredentialFromDeviceUUID(deviceUUID),
       );
       let result = await appController.checkCastcleIdExists({
         castcleId: testId,
@@ -400,7 +400,7 @@ describe('AppController', () => {
       expect(result.payload.exist).toBe(false);
       let response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        { email: registerEmail }
+        { email: registerEmail },
       );
       expect(response.payload.exist).toBe(false);
       guestResult = await appController.guestLogin(
@@ -409,10 +409,10 @@ describe('AppController', () => {
           $language: 'th',
           $platform: 'iOs',
         } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
 
       tokens = await appController.register(
@@ -430,7 +430,7 @@ describe('AppController', () => {
             password: '2@HelloWorld',
           },
         },
-        {}
+        {},
       );
 
       expect(tokens).toBeDefined();
@@ -444,7 +444,7 @@ describe('AppController', () => {
       expect(result.payload.exist).toBe(true);
       response = await appController.checkEmailExists(
         { $language: 'th' } as any,
-        { email: registerEmail }
+        { email: registerEmail },
       );
       expect(response.payload.exist).toBe(true);
 
@@ -453,11 +453,11 @@ describe('AppController', () => {
         await service.getGuestCredentialFromDeviceUUID(deviceUUID);
       expect(guestCredentialFromDeviceID).toBeNull(); //this credential should be null because it's already signup so it's not a guess
       const credentialFromDeviceID = await service.getCredentialFromAccessToken(
-        tokens.accessToken
+        tokens.accessToken,
       );
       const accountFromEmail = await service.getAccountFromEmail(registerEmail);
       const accountFromDeviceID = await service.getAccountFromCredential(
-        credentialFromDeviceID
+        credentialFromDeviceID,
       );
       expect(accountFromEmail._id).toEqual(accountFromDeviceID._id);
       const accountActivation =
@@ -476,10 +476,10 @@ describe('AppController', () => {
     it('should be able to login after register', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       await appController.register(
         {
@@ -496,10 +496,10 @@ describe('AppController', () => {
             password: password,
           },
         },
-        {}
+        {},
       );
       const currentUser = await userService.getUserFromCredential(
-        credentialGuest
+        credentialGuest,
       );
       await userService.createPageFromUser(currentUser, {
         displayName: 'new Page',
@@ -515,7 +515,7 @@ describe('AppController', () => {
         {
           password: password,
           username: registerEmail,
-        }
+        },
       );
 
       expect(result).toBeDefined();
@@ -528,10 +528,10 @@ describe('AppController', () => {
     it('should be able to login with different device', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: newDeviceUUID }
+        { deviceUUID: newDeviceUUID },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       const result = await appController.login(
         {
@@ -542,13 +542,13 @@ describe('AppController', () => {
         {
           password: password,
           username: registerEmail,
-        }
+        },
       );
 
       const linkAccount = await service.getAccountFromEmail(registerEmail);
       expect(linkAccount.credentials.length).toEqual(2);
       const loginCredential = await service.getCredentialFromAccessToken(
-        result.accessToken
+        result.accessToken,
       );
       const postResult = await appController.login(
         {
@@ -559,7 +559,7 @@ describe('AppController', () => {
         {
           password: password,
           username: registerEmail,
-        }
+        },
       );
 
       expect(postResult).toBeDefined();
@@ -582,10 +582,10 @@ describe('AppController', () => {
       const language = 'en';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'en', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       await expect(
         appController.login(
@@ -597,8 +597,8 @@ describe('AppController', () => {
           {
             password: password,
             username: 'error',
-          }
-        )
+          },
+        ),
       ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
@@ -606,10 +606,10 @@ describe('AppController', () => {
       const language = 'en';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'en', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       await expect(
         appController.login(
@@ -621,8 +621,8 @@ describe('AppController', () => {
           {
             password: '1234',
             username: registerEmail,
-          }
-        )
+          },
+        ),
       ).rejects.toEqual(CastcleException.INVALID_EMAIL_OR_PASSWORD);
     });
 
@@ -635,10 +635,10 @@ describe('AppController', () => {
 
       const guestResult = await appController.guestLogin(
         { $device: 'iphone13', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: 'i13Test' }
+        { deviceUUID: 'i13Test' },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       const result = await appController.login(
         {
@@ -649,7 +649,7 @@ describe('AppController', () => {
         {
           password: mockpassword,
           username: mocks[0].account.email,
-        }
+        },
       );
 
       expect(result).toBeDefined();
@@ -669,10 +669,10 @@ describe('AppController', () => {
       const deviceUUID = 'sompop12341';
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-        { deviceUUID: deviceUUID }
+        { deviceUUID: deviceUUID },
       );
       const credentialGuest = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       await appController.register(
         {
@@ -689,7 +689,7 @@ describe('AppController', () => {
             password: password,
           },
         },
-        {}
+        {},
       );
       const preAccountActivation =
         await service.getAccountActivationFromCredential(credentialGuest);
@@ -719,10 +719,10 @@ describe('AppController', () => {
         const deviceUUID = 'sompop12341';
         const guestResult = await appController.guestLogin(
           { $device: 'iphone', $language: 'th', $platform: 'iOs' } as any,
-          { deviceUUID: deviceUUID }
+          { deviceUUID: deviceUUID },
         );
         const credentialGuest = await service.getCredentialFromAccessToken(
-          guestResult.accessToken
+          guestResult.accessToken,
         );
         registerResult = await appController.register(
           {
@@ -739,7 +739,7 @@ describe('AppController', () => {
               password: password,
             },
           },
-          {}
+          {},
         );
         const preAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
@@ -751,7 +751,7 @@ describe('AppController', () => {
             $language: 'th',
             $token: credentialGuest.accessToken,
           } as any,
-          mockResponse
+          mockResponse,
         );
         const postAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
@@ -763,7 +763,7 @@ describe('AppController', () => {
     describe('verificationPassword', () => {
       it('it should create otp document after send', async () => {
         const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
+          registerResult.accessToken,
         );
         const response = await appController.verificationPassword(
           {
@@ -773,7 +773,7 @@ describe('AppController', () => {
           {
             $credential: credential,
             $language: 'th',
-          } as any
+          } as any,
         );
 
         expect(response.refCode).toBeDefined();
@@ -785,7 +785,7 @@ describe('AppController', () => {
     describe('changePasswordSubmit', () => {
       it('should be able to change password', async () => {
         const credential = await service.getCredentialFromAccessToken(
-          registerResult.accessToken
+          registerResult.accessToken,
         );
         const response = await appController.changePasswordSubmit(
           {
@@ -796,7 +796,7 @@ describe('AppController', () => {
           {
             $credential: credential,
             $language: 'th',
-          } as any
+          } as any,
         );
         expect(response).toEqual('');
       });
@@ -829,15 +829,15 @@ describe('AppController', () => {
           email: 'testfb@gmail.com',
           authToken: '',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+        { ip: '127.0.0.1', userAgent: 'castcle-app' },
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
-        AccountAuthenIdType.Facebook
+        AccountAuthenIdType.Facebook,
       );
 
       const activation = await service.getAccountActivationFromCredential(
-        credentialGuest.$credential
+        credentialGuest.$credential,
       );
 
       expect(result).toBeDefined();
@@ -853,10 +853,10 @@ describe('AppController', () => {
     it('should create new account with generate castcle id', async () => {
       const guestResult = await appController.guestLogin(
         { $device: 'iphone', $language: 'th', $platform: 'IOS' } as any,
-        { deviceUUID: 'test1232425' }
+        { deviceUUID: 'test1232425' },
       );
       const guestAccount = await service.getCredentialFromAccessToken(
-        guestResult.accessToken
+        guestResult.accessToken,
       );
       const newCredentialGuest = {
         $credential: guestAccount,
@@ -871,14 +871,14 @@ describe('AppController', () => {
           socialId: '109364223777',
           authToken: 'auth-token',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+        { ip: '127.0.0.1', userAgent: 'castcle-app' },
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
-        AccountAuthenIdType.Google
+        AccountAuthenIdType.Google,
       );
       const user = await userService.getUserAndPagesFromAccountId(
-        accountSocial.account._id
+        accountSocial.account._id,
       );
 
       expect(user).toBeDefined();
@@ -900,11 +900,11 @@ describe('AppController', () => {
           email: 'testfb@gmail.com',
           authToken: '',
         },
-        { ip: '127.0.0.1', userAgent: 'castcle-app' }
+        { ip: '127.0.0.1', userAgent: 'castcle-app' },
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
-        AccountAuthenIdType.Facebook
+        AccountAuthenIdType.Facebook,
       );
 
       expect(result).toBeDefined();
@@ -930,8 +930,8 @@ describe('AppController', () => {
             email: 'testfb@gmail.com',
             authToken: '',
           },
-          { ip: '127.0.0.1', userAgent: 'castcle-app' }
-        )
+          { ip: '127.0.0.1', userAgent: 'castcle-app' },
+        ),
       ).rejects.toEqual(CastcleException.DUPLICATE_EMAIL);
     });
   });
@@ -954,7 +954,7 @@ describe('AppController', () => {
     it('should create new social connect map to user ', async () => {
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
-        AccountAuthenIdType.Facebook
+        AccountAuthenIdType.Facebook,
       );
       const result = await appController.connectWithSocial(credential, {
         provider: AccountAuthenIdType.Facebook,
@@ -966,7 +966,7 @@ describe('AppController', () => {
       });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
-        AccountAuthenIdType.Facebook
+        AccountAuthenIdType.Facebook,
       );
 
       expect(beforeConnect).toBeNull();
@@ -987,7 +987,7 @@ describe('AppController', () => {
           avatar: '',
           email: mockUsers[0].account.email,
           authToken: '',
-        })
+        }),
       ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
@@ -996,7 +996,7 @@ describe('AppController', () => {
         appController,
         service,
         true,
-        'iphone15x'
+        'iphone15x',
       );
       await expect(
         appController.connectWithSocial(guest, {
@@ -1006,7 +1006,7 @@ describe('AppController', () => {
           avatar: '',
           email: mockUsers[0].account.email,
           authToken: '',
-        })
+        }),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -1038,7 +1038,7 @@ describe('AppController', () => {
       expect(registerToken.uuid).toEqual(registerTokenBody.uuid);
       expect(registerToken.platform).toEqual(registerTokenBody.platform);
       expect(registerToken.firebaseToken).toEqual(
-        registerTokenBody.firebaseToken
+        registerTokenBody.firebaseToken,
       );
     });
     it('should delete account device is empty', async () => {

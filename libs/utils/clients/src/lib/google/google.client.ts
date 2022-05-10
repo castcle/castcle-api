@@ -32,7 +32,7 @@ export class GoogleClient {
   constructor() {
     this.oauthClient = new google.auth.OAuth2(
       Environment.GOOGLE_CLIENT_ID,
-      Environment.GOOGLE_SECRET
+      Environment.GOOGLE_SECRET,
     );
   }
 

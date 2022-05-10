@@ -32,7 +32,7 @@ export class TwilioClient {
   private logger = new CastLogger(TwilioClient.name);
   private client = new Twilio.Twilio(
     Environment.TWILIO_ACCOUNT_SID,
-    Environment.TWILIO_AUTH_TOKEN
+    Environment.TWILIO_AUTH_TOKEN,
   );
 
   async getRateLimitsOTP(
@@ -41,7 +41,7 @@ export class TwilioClient {
     countryCode: string,
     receiver: string,
     channel: TwilioChannel,
-    account_id: string
+    account_id: string,
   ) {
     if (channel == TwilioChannel.Email) {
       return {
@@ -81,7 +81,7 @@ export class TwilioClient {
     receiver: string,
     channel: TwilioChannel,
     config: any,
-    account_id: string
+    account_id: string,
   ) {
     const rateLimits = await this.getRateLimitsOTP(
       ip,
@@ -89,7 +89,7 @@ export class TwilioClient {
       countryCode,
       receiver,
       channel,
-      account_id
+      account_id,
     );
     this.logger.log(`* [START] requestOtp *`);
     this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
@@ -107,7 +107,7 @@ export class TwilioClient {
       .then((verification) => {
         this.logger.log(`* [SUCCESS] requestOtp *`);
         this.logger.log(
-          `${account_id} invoke Twilio Verification SID: ${verification.sid}`
+          `${account_id} invoke Twilio Verification SID: ${verification.sid}`,
         );
         return verification;
       })

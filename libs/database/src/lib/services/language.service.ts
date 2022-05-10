@@ -29,7 +29,7 @@ import { Language } from './../schemas';
 @Injectable()
 export class LanguageService {
   constructor(
-    @InjectModel('Language') public _languageModel: Model<Language>
+    @InjectModel('Language') public _languageModel: Model<Language>,
   ) {}
 
   /**

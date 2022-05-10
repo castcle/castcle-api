@@ -136,7 +136,7 @@ describe('UserServiceV2', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toBe(
-        CastcleException.USER_OR_PAGE_NOT_FOUND
+        CastcleException.USER_OR_PAGE_NOT_FOUND,
       );
     });
 
@@ -208,7 +208,7 @@ describe('UserServiceV2', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
       await expect(
-        userServiceV2.followUser(user1, 'undefined', user1.ownerAccount)
+        userServiceV2.followUser(user1, 'undefined', user1.ownerAccount),
       ).rejects.toBe(CastcleException.USER_OR_PAGE_NOT_FOUND);
     });
 
@@ -216,7 +216,7 @@ describe('UserServiceV2', () => {
       await userServiceV2.followUser(
         user1,
         String(user2._id),
-        user1.ownerAccount
+        user1.ownerAccount,
       );
 
       const followRelation = await repository
@@ -240,7 +240,7 @@ describe('UserServiceV2', () => {
         {
           castcleId: accountDemo.account.id,
           displayName: 'sp002',
-        }
+        },
       );
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();

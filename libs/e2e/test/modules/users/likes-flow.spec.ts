@@ -156,7 +156,7 @@ export const testLikesFlow = () => {
   it('STEP 5: UnLike Content should unlike content successful', async () => {
     await UsersRequest.unlikeCasts(userA.castcleId, contentId).auth(
       userA.accessToken,
-      { type: 'bearer' }
+      { type: 'bearer' },
     );
 
     const content = await contentModel
@@ -168,7 +168,7 @@ export const testLikesFlow = () => {
   it('STEP 6: UnLike Comment should unlike comment successful', async () => {
     await UsersRequest.unlikeComment(userB.castcleId, commentId).auth(
       userB.accessToken,
-      { type: 'bearer' }
+      { type: 'bearer' },
     );
 
     const comment = await commentModel
@@ -181,7 +181,7 @@ export const testLikesFlow = () => {
   it('STEP 7: UnLike ReplyComment should unlike reply comment successful', async () => {
     await UsersRequest.unlikeComment(userC.castcleId, replyCommentId).auth(
       userC.accessToken,
-      { type: 'bearer' }
+      { type: 'bearer' },
     );
 
     const replyComment = await commentModel

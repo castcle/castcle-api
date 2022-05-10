@@ -77,7 +77,7 @@ export class SearchesController {
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
     @Query('exclude')
-    excludeOption: string = DEFAULT_TOP_TREND_QUERY_OPTIONS.exclude
+    excludeOption: string = DEFAULT_TOP_TREND_QUERY_OPTIONS.exclude,
   ): Promise<TopTrendsResponse> {
     this.logger.log('Start get top trends');
     const result = await this.searchService.getTopTrends({
@@ -88,7 +88,7 @@ export class SearchesController {
 
     return {
       hashtags: result.hashtags.map((hashtag, index) =>
-        hashtag.toSearchTopTrendhPayload(index)
+        hashtag.toSearchTopTrendhPayload(index),
       ),
       follows: result.follows.map((user) => user.toSearchTopTrendResponse()),
       topics: [],
@@ -119,13 +119,13 @@ export class SearchesController {
     @Query('limit', LimitPipe)
     limitOption: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
     @Query('keyword')
-    keyword: string
+    keyword: string,
   ): Promise<SearchResponse> {
     this.logger.log(`Start get search key : ${keyword}`);
     const result = await this.searchService.getSearch(
       req.$credential,
       keyword,
-      limitOption
+      limitOption,
     );
     this.logger.log('Success get search');
     return {

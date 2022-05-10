@@ -56,7 +56,7 @@ export class NotificationService {
     @InjectModel('AccountDevice')
     private _accountDeviceModel: Model<AccountDevice>,
     @InjectQueue(QueueName.NOTIFICATION)
-    private notificationQueue: Queue<NotificationMessage>
+    private notificationQueue: Queue<NotificationMessage>,
   ) {}
 
   /**
@@ -67,7 +67,7 @@ export class NotificationService {
    */
   getNotificationAll = async (
     credential: Credential,
-    { source, sinceId, untilId, maxResults }: NotificationQuery
+    { source, sinceId, untilId, maxResults }: NotificationQuery,
   ) => {
     const filter: FilterQuery<Notification> = {
       account: credential.account._id,
@@ -128,7 +128,7 @@ export class NotificationService {
   notifyToUser = async (
     { sourceUserId, read, ...notificationData }: CreateNotification,
     userOwner: User,
-    language: string
+    language: string,
   ) => {
     this.#logger.log('Check configuration notify to user.');
 
@@ -161,7 +161,7 @@ export class NotificationService {
       if (
         !CastcleDate.checkIntervalNotify(
           notifyModel?.createdAt,
-          Number(Environment.NOTIFY_FOLLOW_INTERVAL)
+          Number(Environment.NOTIFY_FOLLOW_INTERVAL),
         )
       )
         return;
@@ -181,7 +181,7 @@ export class NotificationService {
         },
         {
           upsert: true,
-        }
+        },
       );
 
       if (!updateNotify.nModified && !updateNotify.upserted) return;
@@ -204,7 +204,7 @@ export class NotificationService {
 
     this.#logger.log(
       'Insert data into notification is done.',
-      JSON.stringify(notify)
+      JSON.stringify(notify),
     );
 
     this.#logger.log('Get credentials by account.');
@@ -233,7 +233,7 @@ export class NotificationService {
       this.generateNotification(message, notify, firebaseToken, badgeCounts),
       {
         removeOnComplete: true,
-      }
+      },
     );
 
     return notify;
@@ -250,7 +250,7 @@ export class NotificationService {
         { deviceUUID: registerTokenDto?.deviceUUID },
         {
           firebaseNotificationToken: registerTokenDto?.firebaseToken,
-        }
+        },
       )
       .exec();
   };
@@ -276,7 +276,7 @@ export class NotificationService {
   generateMessage = async (
     userOwner: User,
     notify: Notification,
-    language: string
+    language: string,
   ) => {
     this.#logger.log('Reverse latest user.');
 
@@ -306,7 +306,7 @@ export class NotificationService {
       notify,
       displayNames,
       userOwner,
-      language
+      language,
     );
 
     this.#logger.log('Prepare message show display name.', message);
@@ -314,7 +314,7 @@ export class NotificationService {
   };
   generateMessagesToNotifications = async (
     notifies: Notification[],
-    language: string
+    language: string,
   ) => {
     this.#logger.log('Start generate notification message list.');
 
@@ -330,7 +330,7 @@ export class NotificationService {
           (item) =>
             item.type === UserType.PAGE ||
             (item.type === 'people' &&
-              notify.source === NotificationSource.Profile)
+              notify.source === NotificationSource.Profile),
         );
 
         const userIds = notify.sourceUserId?.reverse();
@@ -351,7 +351,7 @@ export class NotificationService {
           notify,
           displayNames,
           userSource[0],
-          language
+          language,
         );
 
         this.#logger.log('Prepare message show display name.', message);
@@ -360,7 +360,7 @@ export class NotificationService {
           message: message,
           userCurrent: userSort[0],
         });
-      })
+      }),
     );
   };
 
@@ -368,7 +368,7 @@ export class NotificationService {
     message: string,
     notify: Notification,
     firebaseToken: AccountDevice[],
-    badgeCounts: number
+    badgeCounts: number,
   ) => {
     return {
       notification: {
@@ -422,7 +422,7 @@ export class NotificationService {
     notify: Notification,
     displayNames: string[],
     user: User,
-    language: string
+    language: string,
   ) => {
     switch (notify.type) {
       case NotificationType.Like:
@@ -430,13 +430,13 @@ export class NotificationService {
           return CastcleLocalization.getTemplateLikeComment(
             language,
             displayNames,
-            user?.type === UserType.PAGE ? user.displayName : ''
+            user?.type === UserType.PAGE ? user.displayName : '',
           );
         } else {
           return CastcleLocalization.getTemplateLike(
             language,
             displayNames,
-            user?.type === UserType.PAGE ? user.displayName : ''
+            user?.type === UserType.PAGE ? user.displayName : '',
           );
         }
 
@@ -444,42 +444,42 @@ export class NotificationService {
         return CastcleLocalization.getTemplateComment(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Farm:
         return CastcleLocalization.getTemplateFarm(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Quote:
         return CastcleLocalization.getTemplateQuote(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Recast:
         return CastcleLocalization.getTemplateRecast(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Reply:
         return CastcleLocalization.getTemplateReply(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.Tag:
         return CastcleLocalization.getTemplateTag(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
 
       case NotificationType.System:
@@ -495,7 +495,7 @@ export class NotificationService {
         return CastcleLocalization.getTemplateFollow(
           language,
           displayNames,
-          user?.type === UserType.PAGE ? user.displayName : ''
+          user?.type === UserType.PAGE ? user.displayName : '',
         );
     }
   };

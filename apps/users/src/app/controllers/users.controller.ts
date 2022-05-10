@@ -147,7 +147,7 @@ export class UsersController {
     private download: Downloader,
     private facebookClient: FacebookClient,
     private rankerService: RankerService,
-    private socialSyncServiceV2: SocialSyncServiceV2
+    private socialSyncServiceV2: SocialSyncServiceV2,
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -161,10 +161,10 @@ export class UsersController {
    */
   _validateOwnerAccount = async (
     credentialRequest: CredentialRequest,
-    user: User
+    user: User,
   ) => {
     const account = await this.authService.getAccountFromCredential(
-      credentialRequest.$credential
+      credentialRequest.$credential,
     );
     if (String(user.ownerAccount) !== String(account._id)) {
       throw CastcleException.FORBIDDEN;
@@ -217,7 +217,7 @@ export class UsersController {
 
   _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
     displayIdUpdateAt.setDate(
-      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS
+      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
     );
 
     const now = new Date().getTime();
@@ -259,15 +259,15 @@ export class UsersController {
     @Query('page', PagePipe)
     pageOption: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_QUERY_OPTIONS.limit
+    limitOption: number = DEFAULT_QUERY_OPTIONS.limit,
   ) {
     const authorizedUser = await this.userService.getUserFromCredential(
-      $credential
+      $credential,
     );
     const { pagination, users } = await this.userService.getMentionsFromPublic(
       authorizedUser,
       keyword,
-      { page: pageOption, limit: limitOption }
+      { page: pageOption, limit: limitOption },
     );
 
     return {
@@ -282,12 +282,12 @@ export class UsersController {
   async getMeMentions(
     @Req() { $credential }: CredentialRequest,
     @Query('keyword', KeywordPipe) keyword: string,
-    @Query() userQuery?: ExpansionQuery
+    @Query() userQuery?: ExpansionQuery,
   ) {
     this.logger.log(`Me mentions keyword: ${keyword}`);
     const maxResult = 10;
     const authorizedUser = await this.userService.getUserFromCredential(
-      $credential
+      $credential,
     );
 
     let userMentions = [];
@@ -298,7 +298,7 @@ export class UsersController {
         page: DEFAULT_QUERY_OPTIONS.page,
         limit: DEFAULT_QUERY_OPTIONS.limit,
       },
-      userQuery.userFields?.includes(UserField.Relationships)
+      userQuery.userFields?.includes(UserField.Relationships),
     );
 
     if (followingUser.userData.users.length < maxResult) {
@@ -312,7 +312,7 @@ export class UsersController {
             limit: DEFAULT_QUERY_OPTIONS.limit,
           },
           userQuery.userFields?.includes(UserField.Relationships),
-          followingUser.followingUserId
+          followingUser.followingUserId,
         );
       this.logger.log(`Filter block user.`);
       const resultFilter = publicUser.filter((u) => !u.blocked && !u.blocking);
@@ -337,12 +337,12 @@ export class UsersController {
   @Get('me')
   async getMyData(
     @Req() req: CredentialRequest,
-    @Query() userQuery?: ExpansionQuery
+    @Query() userQuery?: ExpansionQuery,
   ) {
     const { user, account, balance, authenSocial, syncPage, casts } =
       await this.userService.getUserFromAccountId(
         req.$credential.account._id,
-        userQuery?.userFields
+        userQuery?.userFields,
       );
 
     return await user.toUserResponse({
@@ -367,7 +367,7 @@ export class UsersController {
 
     this.logger.log(`Get user.`);
     const pages = await this.userService.getPagesFromCredential(
-      req.$credential
+      req.$credential,
     );
 
     this.logger.log(`Get social from user.`);
@@ -376,7 +376,7 @@ export class UsersController {
       pages.map(async (x) => {
         const syncData = await this.socialSyncService.getSocialSyncByUser(x);
         social.push(...syncData);
-      })
+      }),
     );
 
     const response = {};
@@ -397,13 +397,13 @@ export class UsersController {
   @Get('me/pages/sync-social')
   async getSyncSocialOfArray(@Req() req: CredentialRequest) {
     const pages = await this.userService.getPagesFromCredential(
-      req.$credential
+      req.$credential,
     );
     const socials = await this.socialSyncService.getSocialSyncByUser(...pages);
     if (!socials.length) return { payload: null };
 
     const socialResponse = socials.map((social) =>
-      social.toSocialSyncPayload()
+      social.toSocialSyncPayload(),
     );
     return { payload: socialResponse };
   }
@@ -412,11 +412,11 @@ export class UsersController {
   @Get('search')
   async getSearch(
     @Auth() { user }: Authorizer,
-    @Query() getSearchUsersDto: GetSearchUsersDto
+    @Query() getSearchUsersDto: GetSearchUsersDto,
   ) {
     const { users, meta } = await this.userService.getSearchUsers(
       user,
-      getSearchUsersDto
+      getSearchUsersDto,
     );
 
     return ResponseDto.ok({ payload: users, meta });
@@ -428,18 +428,18 @@ export class UsersController {
   async getUserById(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query() userQuery?: ExpansionQuery
+    @Query() userQuery?: ExpansionQuery,
   ) {
     this.logger.log(`User get ${id}`);
     const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+      req.$credential,
     );
     return this.userService.getById(
       authorizedUser,
       id,
       undefined,
       userQuery?.hasRelationshipExpansion,
-      userQuery?.userFields
+      userQuery?.userFields,
     );
   }
 
@@ -454,7 +454,7 @@ export class UsersController {
   async updateMyData(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Body() body: UpdateUserDto
+    @Body() body: UpdateUserDto,
   ) {
     const user = await this._getUser(id, req.$credential);
     if (user) {
@@ -469,7 +469,7 @@ export class UsersController {
 
       if (body.castcleId) {
         const userExisting = await this.authService.getExistedUserFromCastcleId(
-          body.castcleId
+          body.castcleId,
         );
         if (userExisting && userExisting.id !== user.id)
           throw CastcleException.USER_ID_IS_EXIST;
@@ -477,7 +477,7 @@ export class UsersController {
 
       const newBody = await this.userService.uploadUserInfo(
         body,
-        req.$credential.account._id
+        req.$credential.account._id,
       );
       const afterUpdateUser = await this.userService.updateUser(user, newBody);
       const response = await afterUpdateUser.toUserResponse();
@@ -492,7 +492,7 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
     @Auth() { account, user }: Authorizer,
-    @Body() { channel, payload: { password } }: DeleteUserDto
+    @Body() { channel, payload: { password } }: DeleteUserDto,
   ) {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
 
@@ -528,7 +528,7 @@ export class UsersController {
     @Query('sinceId') sinceId?: string,
     @Query('untilId') untilId?: string,
     @Query('maxResults', LimitPipe)
-    maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults
+    maxResults: number = DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
   ): Promise<ContentsResponse> {
     const user = await this.userService.getUserFromCredential($credential);
 
@@ -536,11 +536,11 @@ export class UsersController {
 
     const { items: contents } = await this.contentService.getContentsFromUser(
       user.id,
-      { sinceId, sortBy, untilId, maxResults }
+      { sinceId, sortBy, untilId, maxResults },
     );
     return this.contentService.convertContentsToContentsResponse(
       user,
-      contents
+      contents,
     );
   }
 
@@ -548,12 +548,12 @@ export class UsersController {
   @Post('me/advertise')
   async createAds(
     @Auth() { account }: Authorizer,
-    @Body() adsRequestDto: AdsRequestDto
+    @Body() adsRequestDto: AdsRequestDto,
   ) {
     //check if
     const campaign = await this.adsService.createAds(account, adsRequestDto);
     const response = await this.adsService.transformAdsCampaignToAdsResponse(
-      campaign
+      campaign,
     );
     return response;
   }
@@ -568,7 +568,7 @@ export class UsersController {
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('page', PagePipe)
-    pageOption: number = DEFAULT_QUERY_OPTIONS.page
+    pageOption: number = DEFAULT_QUERY_OPTIONS.page,
   ): Promise<PagesResponse> {
     const user = await this.userService.getUserFromCredential($credential);
 
@@ -577,7 +577,7 @@ export class UsersController {
       { ownerAccount: $credential.account._id, type: UserType.PAGE },
       { page: pageOption, sortBy: sortByOption },
       false,
-      [UserField.SyncSocial]
+      [UserField.SyncSocial],
     );
 
     return { pagination, payload: pages as PageResponseDto[] };
@@ -602,7 +602,7 @@ export class UsersController {
     @Req() { $credential }: CredentialRequest,
     @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
   ): Promise<ContentsResponse> {
     const user = await this.userService.getByIdOrCastcleId(id);
 
@@ -611,12 +611,12 @@ export class UsersController {
     const requester = await this.userService.getUserFromCredential($credential);
     const { items: contents } = await this.contentService.getContentsFromUser(
       user.id,
-      { ...getContentsDto, sortBy }
+      { ...getContentsDto, sortBy },
     );
     return this.contentService.convertContentsToContentsResponse(
       requester,
       contents,
-      getContentsDto.hasRelationshipExpansion
+      getContentsDto.hasRelationshipExpansion,
     );
   }
 
@@ -639,7 +639,7 @@ export class UsersController {
   async follow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body() body: TargetCastcleDto
+    @Body() body: TargetCastcleDto,
   ) {
     const currentUser = await this.userService.findUser(id);
     const followedUser = await this.userService.findUser(body.targetCastcleId);
@@ -666,7 +666,7 @@ export class UsersController {
   async following(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body() body: TargetCastcleDto
+    @Body() body: TargetCastcleDto,
   ) {
     const { user } = await this._getUserAndViewer(id, req.$credential);
     const followedUser = await this.userService.findUser(body.targetCastcleId);
@@ -689,7 +689,7 @@ export class UsersController {
         read: false,
       },
       followedUser,
-      req.$credential.account.preferences.languages[0]
+      req.$credential.account.preferences.languages[0],
     );
     return '';
   }
@@ -713,7 +713,7 @@ export class UsersController {
   async _unfollow(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Body() body: TargetCastcleDto
+    @Body() body: TargetCastcleDto,
   ) {
     const currentUser = await this.userService.findUser(id);
     const followedUser = await this.userService.findUser(body.targetCastcleId);
@@ -741,7 +741,7 @@ export class UsersController {
   async unfollow(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Param('target_castcle_id') targetCastcleId: string
+    @Param('target_castcle_id') targetCastcleId: string,
   ) {
     const { user } = await this._getUserAndViewer(id, req.$credential);
     const followedUser = await this.userService.findUser(targetCastcleId);
@@ -763,14 +763,14 @@ export class UsersController {
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
-    userTypeOption?: UserType
+    userTypeOption?: UserType,
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get followers ${id}, page query:${JSON.stringify(
-        query
+        query,
       )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
-        userTypeOption
-      )}`
+        userTypeOption,
+      )}`,
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
@@ -780,7 +780,7 @@ export class UsersController {
       user,
       query,
       sortByOption,
-      userTypeOption
+      userTypeOption,
     );
 
     return { payload: users, meta };
@@ -798,14 +798,14 @@ export class UsersController {
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
     @Query('type')
-    userTypeOption?: UserType
+    userTypeOption?: UserType,
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get following ${id}, page query:${JSON.stringify(
-        query
+        query,
       )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
-        userTypeOption
-      )}`
+        userTypeOption,
+      )}`,
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
@@ -815,7 +815,7 @@ export class UsersController {
       user,
       query,
       sortByOption,
-      userTypeOption
+      userTypeOption,
     );
     return { payload: users, meta };
   }
@@ -825,12 +825,12 @@ export class UsersController {
   async getBlockedUsers(
     @Req() req: CredentialRequest,
     @Query() paginationQuery: PaginationQuery,
-    @Param('id') requestById: string
+    @Param('id') requestById: string,
   ) {
     const blockUser = await this._getUser(requestById, req.$credential);
     const { users, meta } = await this.userService.getBlockedUsers(
       blockUser,
-      paginationQuery
+      paginationQuery,
     );
 
     return ResponseDto.ok({ payload: users, meta });
@@ -843,12 +843,12 @@ export class UsersController {
   async blockUser(
     @Req() req: CredentialRequest,
     @Body() { targetCastcleId }: BlockingDto,
-    @Param('id') requestById: string
+    @Param('id') requestById: string,
   ) {
     const requestUser = await this._getUser(requestById, req.$credential);
     const authorizedUser = await this._validateOwnerAccount(req, requestUser);
     const blockUser = await this.userService.getByIdOrCastcleId(
-      targetCastcleId
+      targetCastcleId,
     );
 
     await this.userService.blockUser(authorizedUser, blockUser);
@@ -860,12 +860,12 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async unblockUser(
     @Req() req: CredentialRequest,
-    @Param() { id: requestById, targetCastcleId }: UnblockingDto
+    @Param() { id: requestById, targetCastcleId }: UnblockingDto,
   ) {
     const requestUser = await this._getUser(requestById, req.$credential);
     const authorizedUser = await this._validateOwnerAccount(req, requestUser);
     const unblockUser = await this.userService.getByIdOrCastcleId(
-      targetCastcleId
+      targetCastcleId,
     );
 
     await this.userService.unblockUser(authorizedUser, unblockUser);
@@ -878,14 +878,14 @@ export class UsersController {
   async reportUser(
     @Body() { message, targetCastcleId, targetContentId }: ReportingDto,
     @Param('id') reportedById: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const requestUser = await this._getUser(reportedById, req.$credential);
     const authorizedUser = await this._validateOwnerAccount(req, requestUser);
 
     if (targetCastcleId) {
       const reportedUser = await this.userService.getByIdOrCastcleId(
-        targetCastcleId
+        targetCastcleId,
       );
 
       await this.userService.reportUser(authorizedUser, reportedUser, message);
@@ -893,7 +893,7 @@ export class UsersController {
 
     if (targetContentId) {
       const content = await this.contentService.getContentFromId(
-        targetContentId
+        targetContentId,
       );
 
       await this.contentService.reportContent(authorizedUser, content, message);
@@ -907,13 +907,13 @@ export class UsersController {
   async updateMobile(
     @Auth() { account, user }: Authorizer,
     @Body() { countryCode, mobileNumber, refCode }: UpdateMobileDto,
-    @RequestMeta() { ip }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata,
   ) {
     if (account?.isGuest) throw CastcleException.FORBIDDEN;
 
     const isMobileNumberDuplicate = await this.authService.getAccountFromMobile(
       mobileNumber,
-      countryCode
+      countryCode,
     );
 
     if (isMobileNumberDuplicate) {
@@ -922,7 +922,7 @@ export class UsersController {
 
     const otp = await this.authService.getOtpFromRequestIdRefCode(
       account._id,
-      refCode
+      refCode,
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
@@ -935,7 +935,7 @@ export class UsersController {
       user,
       account._id,
       countryCode,
-      mobileNumber
+      mobileNumber,
     );
 
     await otp.delete();
@@ -943,21 +943,21 @@ export class UsersController {
       ip,
       account._id,
       countryCode,
-      mobileNumber
+      mobileNumber,
     );
 
     if (isFirstTimeVerification) {
       try {
         await this.campaignService.claimCampaignsAirdrop(
           account._id,
-          CampaignType.VERIFY_MOBILE
+          CampaignType.VERIFY_MOBILE,
         );
 
         const referral = await this.userService.getReferrer(account._id);
 
         await this.campaignService.claimCampaignsAirdrop(
           referral.ownerAccount as unknown as string,
-          CampaignType.FRIEND_REFERRAL
+          CampaignType.FRIEND_REFERRAL,
         );
       } catch (error: unknown) {
         this.logger.error(error, `updateMobile:claimAirdrop:error`);
@@ -1007,19 +1007,19 @@ export class UsersController {
     const userSync = await this.socialSyncService.getSocialSyncByUser(user);
     if (userSync.find((x) => x.provider === body.provider)) {
       this.logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`,
       );
       throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
     }
 
     const dupSocialSync = await this.socialSyncService.getAllSocialSyncBySocial(
       body.provider,
-      body.socialId
+      body.socialId,
     );
 
     if (dupSocialSync?.length) {
       this.logger.error(
-        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`
+        `Duplicate provider : ${body.provider} with social id : ${body.socialId}.`,
       );
       throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
     }
@@ -1103,12 +1103,12 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateUserSettings(
     @Req() req: CredentialRequest,
-    @Body() body: UserSettingsDto
+    @Body() body: UserSettingsDto,
   ) {
     this.logger.log(`Start user setting.`);
     this.logger.log(JSON.stringify(body));
     const account = await this.authService.getAccountFromCredential(
-      req.$credential
+      req.$credential,
     );
     if (!body?.preferredLanguages?.length) {
       this.logger.error('Payload is empty.');
@@ -1138,7 +1138,7 @@ export class UsersController {
   async getReferrer(
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
-    @Query() userQuery: ExpansionQuery
+    @Query() userQuery: ExpansionQuery,
   ): Promise<UserReferrerResponse> {
     const { user, viewer } = await this._getUserAndViewer(id, $credential);
 
@@ -1151,7 +1151,7 @@ export class UsersController {
       const relationships = await this.userService.getRelationshipData(
         userQuery.hasRelationshipExpansion,
         userReferrer.id,
-        viewer.id
+        viewer.id,
       );
 
       this.logger.log('Get User relation status');
@@ -1159,7 +1159,7 @@ export class UsersController {
         relationships,
         viewer.id,
         userReferrer.id,
-        userQuery.hasRelationshipExpansion
+        userQuery.hasRelationshipExpansion,
       );
 
       this.logger.log('build response');
@@ -1194,14 +1194,14 @@ export class UsersController {
     @Param('id') id: string,
     @Req() { $credential }: CredentialRequest,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ): Promise<UserRefereeResponse> {
     const { user, viewer } = await this._getUserAndViewer(id, $credential);
     const usersReferrer = await this.userService.getReferee(
       user.ownerAccount,
       maxResults,
       sinceId,
-      untilId
+      untilId,
     );
 
     if (!usersReferrer) return { payload: [], meta: null };
@@ -1213,7 +1213,7 @@ export class UsersController {
       const relationships = await this.userService.getRelationshipData(
         hasRelationshipExpansion,
         userID,
-        viewer.id
+        viewer.id,
       );
 
       response = await Promise.all(
@@ -1223,7 +1223,7 @@ export class UsersController {
             relationships,
             viewer.id,
             x.id,
-            hasRelationshipExpansion
+            hasRelationshipExpansion,
           );
 
           this.logger.log('build response with relation');
@@ -1232,12 +1232,12 @@ export class UsersController {
             blocking: relationStatus.blocking,
             followed: relationStatus.followed,
           });
-        })
+        }),
       );
     } else {
       this.logger.log('build response without relation');
       response = await Promise.all(
-        usersReferrer.items.map(async (x) => await x.toUserResponse())
+        usersReferrer.items.map(async (x) => await x.toUserResponse()),
       );
     }
     const meta = createCastcleMeta(usersReferrer.items, usersReferrer.total);
@@ -1253,7 +1253,7 @@ export class UsersController {
   async recastContent(
     @Param('id') id: string,
     @Body('contentId') contentId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     this.logger.log(`Start recast content id: ${contentId}, user: ${id}`);
     const content = await this._getContentIfExist(contentId);
@@ -1261,7 +1261,7 @@ export class UsersController {
 
     const recastContent = await this.contentService.getRecastContent(
       content.id,
-      user.id
+      user.id,
     );
 
     if (recastContent) {
@@ -1272,18 +1272,18 @@ export class UsersController {
     const userRecast = await this._validateOwnerAccount(req, user);
     const result = await this.contentService.recastContentFromUser(
       content,
-      userRecast
+      userRecast,
     );
     const feedItem = await this.rankerService.getFeedItem(
       req.$credential.account,
-      content
+      content,
     );
 
     if (feedItem) {
       this.suggestionService.seen(
         req.$credential.account,
         feedItem._id,
-        req.$credential
+        req.$credential,
       );
     }
     if (
@@ -1293,7 +1293,7 @@ export class UsersController {
       return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
 
     this.notifyService.notifyToUser(
@@ -1309,12 +1309,12 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$credential.account.preferences.languages[0]
+      req.$credential.account.preferences.languages[0],
     );
 
     return this.contentService.convertContentToContentResponse(
       userRecast,
-      result.recastContent
+      result.recastContent,
     );
   }
 
@@ -1328,10 +1328,10 @@ export class UsersController {
     @Param('id') id: string,
     @Body('contentId') contentId: string,
     @Body('message') message: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     this.logger.log(
-      `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`
+      `Start quotecast content id: ${contentId}, user: ${id}, message: ${message}`,
     );
     const { user } = await this._getUserAndViewer(id, req.$credential);
     const [userQuotecast, content] = await Promise.all([
@@ -1341,19 +1341,19 @@ export class UsersController {
     const result = await this.contentService.quoteContentFromUser(
       content,
       userQuotecast,
-      message
+      message,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       req.$credential.account,
-      content
+      content,
     );
 
     if (feedItem) {
       this.suggestionService.seen(
         req.$credential.account,
         feedItem._id,
-        req.$credential
+        req.$credential,
       );
     }
 
@@ -1364,7 +1364,7 @@ export class UsersController {
       return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
     this.notifyService.notifyToUser(
       {
@@ -1379,12 +1379,12 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$credential.account.preferences.languages[0]
+      req.$credential.account.preferences.languages[0],
     );
 
     return this.contentService.convertContentToContentResponse(
       userQuotecast,
-      result.quoteContent
+      result.quoteContent,
     );
   }
 
@@ -1404,14 +1404,14 @@ export class UsersController {
   async undoRecast(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Param('sourceContentId') sourceContentId: string
+    @Param('sourceContentId') sourceContentId: string,
   ) {
     this.logger.log(`Start delete content id: ${sourceContentId}, user: ${id}`);
     const { user } = await this._getUserAndViewer(id, req.$credential);
     const userDelete = await this._validateOwnerAccount(req, user);
     this.contentService.deleteRecastContentFromOriginalAndAuthor(
       sourceContentId,
-      userDelete.id
+      userDelete.id,
     );
   }
 
@@ -1419,13 +1419,13 @@ export class UsersController {
   @CastcleBasicAuth()
   async getMyAirdropBalances(
     @Auth() { account }: Authorizer,
-    @Query() { campaignFields, status }: GetAirdropBalancesQuery
+    @Query() { campaignFields, status }: GetAirdropBalancesQuery,
   ) {
     const [campaigns, totalBalance] = await Promise.all([
       this.campaignService.getAirdropBalances(
         account._id,
         status === GetAirdropBalancesStatus.ACTIVE ? new Date() : null,
-        campaignFields
+        campaignFields,
       ),
       this.userService.getBalance({ ownerAccount: account._id } as User),
     ]);
@@ -1450,15 +1450,15 @@ export class UsersController {
   async createPage(@Req() req: CredentialRequest, @Body() body: PageDto) {
     //check if page name exist
     const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+      req.$credential,
     );
     const namingResult = await this.authService.getExistedUserFromCastcleId(
-      body.castcleId
+      body.castcleId,
     );
     if (namingResult) throw CastcleException.PAGE_IS_EXIST;
     const page = await this.userService.createPageFromCredential(
       req.$credential,
-      body
+      body,
     );
     return this.userService.getById(authorizedUser, page.id, UserType.PAGE);
   }
@@ -1482,7 +1482,7 @@ export class UsersController {
   async likeContent(
     @Param('id') id: string,
     @Body('contentId') contentId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const [content, user] = await Promise.all([
       this._getContentIfExist(contentId),
@@ -1498,21 +1498,21 @@ export class UsersController {
 
     const feedItem = await this.rankerService.getFeedItem(
       req.$credential.account,
-      content
+      content,
     );
 
     if (feedItem) {
       this.suggestionService.seen(
         req.$credential.account,
         feedItem._id,
-        req.$credential
+        req.$credential,
       );
     }
 
     if (String(user._id) === String(content.author.id)) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
     this.notifyService.notifyToUser(
       {
@@ -1527,7 +1527,7 @@ export class UsersController {
         read: false,
       },
       userOwner,
-      req.$credential.account.preferences.languages[0]
+      req.$credential.account.preferences.languages[0],
     );
   }
 
@@ -1550,7 +1550,7 @@ export class UsersController {
   async unLikeContent(
     @Param('id') id: string,
     @Param('source_content_id') contentId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(contentId);
 
@@ -1572,8 +1572,8 @@ export class UsersController {
     if (!adsCampaigns) return { payload: null };
     const adsResponses = await Promise.all(
       adsCampaigns.map((adsCampaign) =>
-        this.adsService.transformAdsCampaignToAdsResponse(adsCampaign)
-      )
+        this.adsService.transformAdsCampaignToAdsResponse(adsCampaign),
+      ),
     );
     return ResponseDto.ok({
       payload: adsResponses,
@@ -1605,7 +1605,7 @@ export class UsersController {
   async updateAds(
     @Auth() { account }: Authorizer,
     @Param('id') adsId: string,
-    @Body() adsRequest: AdsRequestDto
+    @Body() adsRequest: AdsRequestDto,
   ) {
     const adsCampaign = await this.adsService.lookupAds(account, adsId);
     if (!adsCampaign) {
@@ -1643,7 +1643,7 @@ export class UsersController {
     @Req() req: CredentialRequest,
     @Param('id') id: string,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
     if (!user) {
@@ -1659,13 +1659,13 @@ export class UsersController {
       user.id,
       sinceId,
       untilId,
-      maxResults
+      maxResults,
     );
 
     if (!engagement.items.length) return { payload: null };
 
     const content = await this.contentService.getContentAllFromId(
-      engagement.items
+      engagement.items,
     );
     if (!content.length) return { payload: null };
 
@@ -1673,7 +1673,7 @@ export class UsersController {
       viewer,
       content,
       hasRelationshipExpansion,
-      engagement.items
+      engagement.items,
     );
   }
 
@@ -1690,7 +1690,7 @@ export class UsersController {
   @Post('me/pages/sync-social')
   async createPageSocial(
     @Req() req: CredentialRequest,
-    @Body() body: { payload: SocialSyncDto[] }
+    @Body() body: { payload: SocialSyncDto[] },
   ) {
     this.logger.log(`Start create sync social.`);
     this.logger.log(JSON.stringify(body));
@@ -1720,14 +1720,14 @@ export class UsersController {
 
         this.logger.log('Suggest CastcleId');
         const sugguestDisplayId = await this.authService.suggestCastcleId(
-          castcleId
+          castcleId,
         );
         socialPage.castcleId = sugguestDisplayId;
 
         if (syncBody.avatar) {
           this.logger.log(`download avatar from ${syncBody.avatar}`);
           const imgAvatar = await this.download.getImageFromUrl(
-            syncBody.avatar
+            syncBody.avatar,
           );
 
           this.logger.log('upload avatar to s3');
@@ -1765,7 +1765,7 @@ export class UsersController {
         this.logger.log('Create new page');
         const page = await this.userService.createPageFromSocial(
           req.$credential.account._id,
-          socialPage
+          socialPage,
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
@@ -1779,7 +1779,7 @@ export class UsersController {
           autoPost: (syncBody.autoPost ??= true),
           authToken: syncBody.authToken,
         });
-      })
+      }),
     );
 
     this.logger.log(`get page data.`);
@@ -1794,24 +1794,24 @@ export class UsersController {
           field: 'createdAt',
           type: SortDirection.DESC,
         },
-      }
+      },
     );
 
     this.logger.log(`filter only new pages.`);
     const pageResult = pages.filter((item) =>
-      social.includes(item.id.toString())
+      social.includes(item.id.toString()),
     );
 
     const response = await Promise.all(
       pageResult.map(async (page) => {
         const sync = await this.socialSyncService.getSocialSyncByPageId(
-          page.id
+          page.id,
         );
         return {
           ...page,
           ...{ socialSyncs: sync.length > 0 ? sync[0] : null },
         };
-      })
+      }),
     );
     return { payload: response };
   }
@@ -1824,7 +1824,7 @@ export class UsersController {
   @Post('me/pages/sync-social/:id/auto-post')
   async updateAutoPost(
     @Auth() { credential }: Authorizer,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const user = await this.userService.getUserFromCredential(credential);
     if (!user) throw CastcleException.FORBIDDEN;
@@ -1834,7 +1834,7 @@ export class UsersController {
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
-      user
+      user,
     );
     if (!page) throw CastcleException.FORBIDDEN;
 
@@ -1845,7 +1845,7 @@ export class UsersController {
   @Delete('me/pages/sync-social/:id/auto-post')
   async deleteAutoPost(
     @Auth() { credential }: Authorizer,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const user = await this.userService.getUserFromCredential(credential);
     if (!user) throw CastcleException.FORBIDDEN;
@@ -1855,7 +1855,7 @@ export class UsersController {
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
-      user
+      user,
     );
     if (!page) throw CastcleException.FORBIDDEN;
 
@@ -1874,7 +1874,7 @@ export class UsersController {
   async connectSyncSocial(
     @Auth() { credential, user }: Authorizer,
     @Param('id') id: string,
-    @Body('payload') syncBody: SocialSyncDto
+    @Body('payload') syncBody: SocialSyncDto,
   ) {
     this.logger.log(`Start reconnect sync social.`);
     await this.validateGuestAccount(credential);
@@ -1884,7 +1884,7 @@ export class UsersController {
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
-      user
+      user,
     );
     if (!page) throw CastcleException.FORBIDDEN;
 
@@ -1931,7 +1931,7 @@ export class UsersController {
       this.logger.log('Subscribed facebook page.');
       await this.facebookClient.subscribed(
         syncBody.authToken || social.authToken,
-        syncBody.socialId || social.socialId
+        syncBody.socialId || social.socialId,
       );
     }
   }
@@ -1946,7 +1946,7 @@ export class UsersController {
   @Delete('me/pages/sync-social/:id/connect')
   async disconnectSyncSocial(
     @Auth() { credential, user }: Authorizer,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     this.logger.log(`Start create sync social.`);
 
@@ -1957,7 +1957,7 @@ export class UsersController {
 
     const page = await this.socialSyncService.getPageByPageIdAndAccountId(
       social,
-      user
+      user,
     );
 
     if (!page) throw CastcleException.FORBIDDEN;
@@ -1975,7 +1975,7 @@ export class UsersController {
   @Post('me/advertise/:id/running')
   async adsRunning(
     @Auth() { credential }: Authorizer,
-    @Param('id') adsId: string
+    @Param('id') adsId: string,
   ) {
     this.logger.log(`Start running ads.`);
     const account = await this.validateGuestAccount(credential);
@@ -1983,14 +1983,14 @@ export class UsersController {
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
       this.logger.log(
-        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
       );
       throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(
       adsCampaign._id,
-      AdsBoostStatus.Running
+      AdsBoostStatus.Running,
     );
   }
 
@@ -2000,7 +2000,7 @@ export class UsersController {
   @Post('me/advertise/:id/pause')
   async adsPause(
     @Auth() { credential }: Authorizer,
-    @Param('id') adsId: string
+    @Param('id') adsId: string,
   ) {
     this.logger.log(`Start pause ads.`);
     const account = await this.validateGuestAccount(credential);
@@ -2008,14 +2008,14 @@ export class UsersController {
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Running) {
       this.logger.log(
-        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
       );
       throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(
       adsCampaign._id,
-      AdsBoostStatus.Pause
+      AdsBoostStatus.Pause,
     );
   }
 
@@ -2035,14 +2035,14 @@ export class UsersController {
       )
     ) {
       this.logger.log(
-        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`
+        `Ads boost status mismatch. status : ${adsCampaign.boostStatus}`,
       );
       throw CastcleException.ADS_BOOST_STATUS_MISMATCH;
     }
 
     await this.adsService.updateAdsBoostStatus(
       adsCampaign._id,
-      AdsBoostStatus.End
+      AdsBoostStatus.End,
     );
   }
 }

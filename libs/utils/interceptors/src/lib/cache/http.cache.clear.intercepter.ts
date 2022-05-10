@@ -38,13 +38,13 @@ import { getTokenFromRequest } from '../util';
 export class HttpCacheClearInterceptor implements NestInterceptor {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private reflector: Reflector
+    private reflector: Reflector,
   ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler<any>) {
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (cacheKey) {

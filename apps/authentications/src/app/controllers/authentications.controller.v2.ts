@@ -57,7 +57,7 @@ export class AuthenticationControllerV2 {
   async requestEmailOtp(
     @Body() dto: RegisterWithEmailDto,
     @RequestMeta() { ip }: RequestMetadata,
-    @Req() { $credential, hostname }: CredentialRequest
+    @Req() { $credential, hostname }: CredentialRequest,
   ) {
     return this.authenticationService.registerWithEmail($credential, {
       ...dto,
@@ -71,12 +71,12 @@ export class AuthenticationControllerV2 {
   @CastcleTrack()
   loginWithEmail(
     @Body() { email, password }: LoginWithEmailDto,
-    @Req() { $credential }: CredentialRequest
+    @Req() { $credential }: CredentialRequest,
   ) {
     return this.authenticationService.loginWithEmail(
       $credential,
       email,
-      password
+      password,
     );
   }
 
@@ -86,7 +86,7 @@ export class AuthenticationControllerV2 {
   loginWithSocial(
     @Body() socialConnectDto: SocialConnectDto,
     @Req() { $credential }: CredentialRequest,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip, userAgent }: RequestMetadata,
   ) {
     return this.authenticationService.loginWithSocial($credential, {
       ...socialConnectDto,
@@ -106,7 +106,7 @@ export class AuthenticationControllerV2 {
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
     const user = await this.authenticationService.getExistedUserFromCastcleId(
-      body.castcleId
+      body.castcleId,
     );
     return ResponseDto.ok<CheckingResponseV2>({
       payload: {

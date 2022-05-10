@@ -58,7 +58,7 @@ export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
   contentModel: Model<Content>,
-  commentModel: Model<Comment>
+  commentModel: Model<Comment>,
 ): mongoose.Schema<any> => {
   EngagementSchema.post('save', async function (doc: Engagement, next) {
     const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;

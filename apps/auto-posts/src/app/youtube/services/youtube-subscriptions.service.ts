@@ -37,13 +37,13 @@ export class YoutubeSubscriptionsService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly socialSyncService: SocialSyncService
+    private readonly socialSyncService: SocialSyncService,
   ) {}
 
   async renewWebhookSubscription(socialId: string) {
     try {
       this.logger.log(
-        `Renewing webhook subscription of Youtube ID: ${socialId}`
+        `Renewing webhook subscription of Youtube ID: ${socialId}`,
       );
 
       await firstValueFrom(
@@ -54,19 +54,19 @@ export class YoutubeSubscriptionsService {
             'hub.verify_token': encodeURI(Environment.YOUTUBE_VERIFY_TOKEN),
             'hub.callback': encodeURI(Environment.YOUTUBE_WEBHOOK_CALLBACK),
           },
-        })
+        }),
       );
 
       this.logger.log(
-        `Webhook subscription of Youtube ID: ${socialId} has successfully renewed`
+        `Webhook subscription of Youtube ID: ${socialId} has successfully renewed`,
       );
     } catch (error) {
       this.logger.log(
         `Cannot renew webhook subscription of Youtube ID: ${socialId} due to error: ${JSON.stringify(
           error,
           null,
-          2
-        )}`
+          2,
+        )}`,
       );
     }
   }
@@ -74,7 +74,7 @@ export class YoutubeSubscriptionsService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async renewWebhookSubscriptions() {
     const syncAccounts = await this.socialSyncService.getAutoSyncAccounts(
-      SocialProvider.Youtube
+      SocialProvider.Youtube,
     );
 
     syncAccounts.forEach(async (syncAccount) => {

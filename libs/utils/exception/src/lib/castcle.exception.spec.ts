@@ -33,6 +33,6 @@ describe('CastcleException', () => {
           throw exception.getLocalizedException();
         }).toThrowError(exception.message);
       });
-    }
+    },
   );
 });

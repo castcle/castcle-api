@@ -96,7 +96,7 @@ export const NotificationSchema =
 
 export class Notification extends NotificationDocument {
   toNotificationPayload: (
-    option: NotifyResponseOption
+    option: NotifyResponseOption,
   ) => NotificationPayloadDto;
 }
 

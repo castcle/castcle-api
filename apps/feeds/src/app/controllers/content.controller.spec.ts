@@ -110,7 +110,7 @@ describe('ContentController', () => {
               return {
                 original: item.image,
               };
-            }
+            },
           );
         }
 
@@ -129,11 +129,11 @@ describe('ContentController', () => {
         displayId: 'test1234',
         displayName: 'test',
         password: '1234AbcD',
-      }
+      },
     );
     await authService.verifyAccount(accountActivation);
     userCredential = await authService.getCredentialFromAccessToken(
-      result.credentialDocument.accessToken
+      result.credentialDocument.accessToken,
     ); //result.credentialDocument;
     user = await service.getUserFromCredential(userCredential);
     console.debug('======USER FROM TEST=====');
@@ -177,7 +177,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Short);
@@ -213,7 +213,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Blog);
@@ -236,7 +236,7 @@ describe('ContentController', () => {
       };
       const newPage = await service.createPageFromCredential(
         userCredential,
-        pageDto
+        pageDto,
       );
       const shortPayload = {
         message: 'อุบกขา',
@@ -257,7 +257,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       payloadId = result.payload.id;
       expect(result.payload.authorId).toEqual(newPage._id);
@@ -292,7 +292,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       console.debug('createResult', actual.payload.authorId);
       const expected = await contentController.getContentFromId(
@@ -301,7 +301,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expected.payload.photo.contents[0].original =
         actual.payload.photo.contents[0].original;
@@ -334,7 +334,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
 
       const updateContentPayload = { message: 'Hello World' } as ShortPayload;
@@ -346,11 +346,11 @@ describe('ContentController', () => {
         },
         result.payload.id,
         { hasRelationshipExpansion: false },
-        { $credential: userCredential, $language: 'th' } as any
+        { $credential: userCredential, $language: 'th' } as any,
       );
 
       expect(updateResult.payload.message).toEqual(
-        updateContentPayload.message
+        updateContentPayload.message,
       );
 
       const getResult = await contentController.getContentFromId(
@@ -359,7 +359,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
 
       expect(getResult.payload).toEqual(updateResult.payload);
@@ -374,7 +374,7 @@ describe('ContentController', () => {
         },
         payloadId as string,
         { hasRelationshipExpansion: false },
-        { $credential: userCredential, $language: 'en' } as any
+        { $credential: userCredential, $language: 'en' } as any,
       );
 
       expect(updateResult.payload.message).toEqual('hi bro');
@@ -385,11 +385,11 @@ describe('ContentController', () => {
     it('it should be able to delete from page', async () => {
       const deleteResult = await contentController.deleteContentFromId(
         payloadId as string,
-        { $credential: userCredential, $language: 'th' } as any
+        { $credential: userCredential, $language: 'th' } as any,
       );
       expect(deleteResult).toEqual(undefined);
       const getContentResultService = await contentService.getContentFromId(
-        payloadId as string
+        payloadId as string,
       );
       expect(getContentResultService).toBeNull();
     });
@@ -426,7 +426,7 @@ describe('ContentController', () => {
           $language: 'th',
         } as any,
         contentA.id,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(result).toBeDefined();
       expect(result.payload.length).toEqual(4);
@@ -438,7 +438,7 @@ describe('ContentController', () => {
           $language: 'th',
         } as any,
         contentA.id,
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true },
       );
       expect(resultHasRelation).toBeDefined();
       expect(resultHasRelation.payload.length).toEqual(4);
@@ -468,7 +468,7 @@ describe('ContentController', () => {
           } as ShortPayload,
           type: ContentType.Short,
           castcleId: userMock[0].user.displayId,
-        }
+        },
       );
 
       engagement = await new contentService._engagementModel({
@@ -505,7 +505,7 @@ describe('ContentController', () => {
         contentMock.id,
         100,
         null,
-        null
+        null,
       );
 
       if (!userCredential.account.isGuest) {
@@ -516,13 +516,13 @@ describe('ContentController', () => {
         relationUser = await service.getRelationshipData(
           true,
           relationUser,
-          userMock[0].user.id
+          userMock[0].user.id,
         );
       }
 
       for await (const obj of engagements.items) {
         relationStatus = await relationUser.filter(
-          (e) => String(e.followedUser) === String(obj.user.id)
+          (e) => String(e.followedUser) === String(obj.user.id),
         );
 
         if (relationStatus.length) {
@@ -588,7 +588,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
 
       const expected = await contentController.getParticipates(
@@ -596,7 +596,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expect(expected.payload[0].user).toBeDefined();
       expect(expected.payload[0].participate).toBeDefined();
