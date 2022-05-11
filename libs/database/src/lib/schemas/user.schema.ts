@@ -1,6 +1,7 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DateTime } from 'luxon';
 import { Model, SchemaTypes } from 'mongoose';
 import {
   SearchFollowsResponseDto,
@@ -112,9 +113,8 @@ type UserResponseOptionV2 = {
   casts?: number;
 };
 
-export const UserSchema = SchemaFactory.createForClass(UserDocument);
-
 export class User extends UserDocument {
+  canUpdateCastcleId: () => boolean;
   follow: (user: User) => Promise<void>;
   unfollow: (user: User) => Promise<void>;
   toSearchTopTrendResponse: () => SearchFollowsResponseDto;
@@ -136,6 +136,10 @@ export class User extends UserDocument {
     casts?: number,
   ) => PageResponseDto;
 }
+
+export const UserSchema = SchemaFactory.createForClass<UserDocument, User>(
+  UserDocument,
+);
 
 const _covertToUserResponse = (self: User | User, followed?: boolean) => {
   const selfSocial: any = { ...self.profile?.socials };
@@ -161,9 +165,7 @@ const _covertToUserResponse = (self: User | User, followed?: boolean) => {
     links: selfSocial,
     verified: self.verified,
     followed: followed,
-    canUpdateCastcleId: self.displayIdUpdatedAt
-      ? _verifyUpdateCastcleId(self.displayIdUpdatedAt)
-      : true,
+    canUpdateCastcleId: self.canUpdateCastcleId(),
     contact: self.contact,
   } as UserResponseDto;
 };
@@ -323,9 +325,7 @@ UserSchema.methods.toPageResponse = function (
         }
       : undefined,
     casts: casts,
-    canUpdateCastcleId: this.displayIdUpdatedAt
-      ? _verifyUpdateCastcleId(this.displayIdUpdatedAt)
-      : true,
+    canUpdateCastcleId: this.canUpdateCastcleId(),
   } as PageResponseDto;
 };
 
@@ -384,9 +384,7 @@ UserSchema.methods.toPageResponseV2 = function (
           )
         : undefined,
     casts: casts,
-    canUpdateCastcleId: this.displayIdUpdatedAt
-      ? _verifyUpdateCastcleId(this.displayIdUpdatedAt)
-      : true,
+    canUpdateCastcleId: this.canUpdateCastcleId(),
     contact: this.contact,
   } as PageResponseDto;
 };
@@ -414,13 +412,15 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
   } as SearchFollowsResponseDto;
 };
 
-const _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
-  displayIdUpdateAt.setDate(
-    displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
-  );
-  const now = new Date().getTime();
-  const blockUpdate = displayIdUpdateAt.getTime();
-  return now - blockUpdate >= 0;
+UserSchema.methods.canUpdateCastcleId = function (): boolean {
+  if (!this.displayIdUpdatedAt) return true;
+
+  const now = DateTime.local();
+  const canUpdateCastcleIdAt = DateTime.fromJSDate(
+    this.displayIdUpdatedAt,
+  ).plus({ days: Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS });
+
+  return canUpdateCastcleIdAt <= now;
 };
 
 export const UserSchemaFactory = (relationshipModel: Model<Relationship>) => {
