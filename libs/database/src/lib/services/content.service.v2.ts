@@ -210,6 +210,7 @@ export class ContentServiceV2 {
     const newEngagement = await this.repository.createEngagement({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: content._id,
@@ -336,6 +337,7 @@ export class ContentServiceV2 {
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Recast,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
@@ -464,6 +466,7 @@ export class ContentServiceV2 {
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Quote,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
