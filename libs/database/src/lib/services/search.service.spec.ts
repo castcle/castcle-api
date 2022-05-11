@@ -158,30 +158,4 @@ describe('SearchService', () => {
       expect(result.follows.length).toEqual(0);
     });
   });
-
-  describe('#getSearch', () => {
-    it('should get search result with keyword c', async () => {
-      const result = await service.getSearch(null, 'c', 10);
-
-      expect(result.keywords.length).toEqual(3);
-      expect(result.hashtags.length).toEqual(2);
-      expect(result.follows.length).toEqual(10);
-    });
-
-    it('should get search result with keyword c and limit follows 5', async () => {
-      const result = await service.getSearch(null, 'c', 5);
-
-      expect(result.keywords.length).toEqual(3);
-      expect(result.hashtags.length).toEqual(2);
-      expect(result.follows.length).toEqual(5);
-    });
-
-    it('should get empty result with keyword abc', async () => {
-      const result = await service.getSearch(null, 'abc', 10);
-
-      expect(result.keywords.length).toEqual(0);
-      expect(result.hashtags.length).toEqual(0);
-      expect(result.follows.length).toEqual(0);
-    });
-  });
 });

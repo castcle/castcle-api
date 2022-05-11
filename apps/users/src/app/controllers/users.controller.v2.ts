@@ -169,7 +169,9 @@ export class UsersControllerV2 {
     );
 
     const updateUser = await this.userService.updateUser(user, prepareUser);
-    return updateUser.toUserResponse();
+    return updateUser.toUserResponseV2(
+      isMe ? { passwordNotSet: !authorizer.account.password } : undefined,
+    );
   }
 
   @CastcleBasicAuth()

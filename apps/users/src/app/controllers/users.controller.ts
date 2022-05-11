@@ -347,7 +347,7 @@ export class UsersController {
 
     return await user.toUserResponse({
       balance: balance,
-      passwordNotSet: account.password ? false : true,
+      passwordNotSet: !account.password,
       mobile: account.mobile,
       linkSocial: authenSocial,
       syncSocial: syncPage,
@@ -457,6 +457,9 @@ export class UsersController {
     @Body() body: UpdateUserDto,
   ) {
     const user = await this._getUser(id, req.$credential);
+    const account = await this.authService.getAccountFromCredential(
+      req.$credential,
+    );
     if (user) {
       if (String(user.ownerAccount) !== String(req.$credential.account._id))
         throw CastcleException.FORBIDDEN;
@@ -480,7 +483,9 @@ export class UsersController {
         req.$credential.account._id,
       );
       const afterUpdateUser = await this.userService.updateUser(user, newBody);
-      const response = await afterUpdateUser.toUserResponse();
+      const response = await afterUpdateUser.toUserResponse({
+        passwordNotSet: !account?.password,
+      });
       return response;
     } else throw CastcleException.INVALID_ACCESS_TOKEN;
   }
@@ -497,7 +502,7 @@ export class UsersController {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
 
     const isValidChannel = channel === 'email';
-    const isPasswordValid = await account.verifyPassword(password);
+    const isPasswordValid = account.verifyPassword(password);
 
     if (!isValidChannel || !isPasswordValid) {
       throw CastcleException.INVALID_PASSWORD;

@@ -117,20 +117,3 @@ export class TopTrendsResponse {
   @ApiProperty()
   topics: [];
 }
-
-export class SearchKeywordResponseDto {
-  @ApiProperty()
-  text: string;
-
-  @ApiProperty()
-  isTrending: boolean;
-}
-
-export class SearchResponse {
-  @ApiProperty({ type: SearchKeywordResponseDto, isArray: true })
-  keyword: SearchKeywordResponseDto[];
-  @ApiProperty({ type: SearchHashtagResponseDto, isArray: true })
-  hashtags: SearchHashtagResponseDto[];
-  @ApiProperty({ type: SearchFollowsResponseDto, isArray: true })
-  follows: SearchFollowsResponseDto[];
-}

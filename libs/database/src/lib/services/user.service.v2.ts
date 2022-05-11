@@ -34,7 +34,6 @@ import {
   PageResponseDto,
   PaginationQuery,
   SortDirection,
-  SyncSocialModelV2,
   UserField,
 } from '../dtos';
 import { UserType } from '../models';
@@ -97,30 +96,12 @@ export class UserServiceV2 {
 
     return Promise.all(
       users.map(async (item) => {
-        const syncSocials = userFields?.includes(UserField.SyncSocial)
-          ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
-          : [];
-
-        let syncSocial: SyncSocialModelV2 = {};
-        if (
+        const syncSocials =
           String(item.ownerAccount) === String(viewer.ownerAccount) &&
-          syncSocials.length > 0
-        ) {
-          syncSocials.forEach((item) => {
-            syncSocial[item.provider] = {
-              id: item._id,
-              provider: item.provider,
-              socialId: item.socialId,
-              userName: item.userName,
-              displayName: item.displayName,
-              avatar: item.avatar,
-              active: item.active,
-              autoPost: item.autoPost,
-            };
-          });
-        } else {
-          syncSocial = undefined;
-        }
+          userFields?.includes(UserField.SyncSocial)
+            ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
+            : [];
+
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(item.ownerAccount) === String(viewer.ownerAccount)
             ? await this._accountModel
@@ -143,13 +124,13 @@ export class UserServiceV2 {
                 undefined,
                 undefined,
                 undefined,
-                syncSocial,
+                syncSocials,
                 content?.total,
               )
             : await item.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
-                syncSocial,
+                syncSocials,
                 balance,
               });
 

@@ -46,7 +46,6 @@ export const HashtagSchema = SchemaFactory.createForClass(HashtagDocument);
 export class Hashtag extends HashtagDocument {
   toHashtagPayload: () => HashtagPayloadDto;
   toSearchTopTrendhPayload: (index: number) => SearchHashtagResponseDto;
-  toSearchPayload: () => SearchHashtagResponseDto;
 }
 
 HashtagSchema.methods.toHashtagPayload = function () {
@@ -68,16 +67,5 @@ HashtagSchema.methods.toSearchTopTrendhPayload = function (index) {
     count: this.score,
     // TODO !!! need implement trends
     trends: 'up',
-  } as SearchHashtagResponseDto;
-};
-
-HashtagSchema.methods.toSearchPayload = function () {
-  return {
-    id: this._id,
-    slug: this.tag,
-    name: this.name,
-    key: 'hashtag.castcle',
-    // TODO !!! need implement isTrending
-    isTrending: true,
   } as SearchHashtagResponseDto;
 };
