@@ -56,7 +56,7 @@ export class FacebookClient {
     return lastValueFrom(
       this.httpService
         .get<FacebookAccessToken>(url)
-        .pipe(map(({ data }) => data))
+        .pipe(map(({ data }) => data)),
     );
   }
 
@@ -74,7 +74,7 @@ export class FacebookClient {
     return lastValueFrom(
       this.httpService
         .get<{ data: FacebookTokenData }>(url)
-        .pipe(map(({ data }) => data.data))
+        .pipe(map(({ data }) => data.data)),
     );
   }
 
@@ -89,7 +89,7 @@ export class FacebookClient {
     this.logger.log('get user info');
 
     return lastValueFrom(
-      this.httpService.get<FacebookUserInfo>(url).pipe(map(({ data }) => data))
+      this.httpService.get<FacebookUserInfo>(url).pipe(map(({ data }) => data)),
     );
   }
 
@@ -107,8 +107,8 @@ export class FacebookClient {
     return lastValueFrom(
       this.httpService.post(url).pipe(
         map(({ data }) => data),
-        catchError(async (error) => this.logger.error(error))
-      )
+        catchError(async (error) => this.logger.error(error)),
+      ),
     );
   }
   /**
@@ -125,8 +125,8 @@ export class FacebookClient {
     return lastValueFrom(
       this.httpService.delete(url).pipe(
         map(({ data }) => data),
-        catchError(async (error) => this.logger.error(error))
-      )
+        catchError(async (error) => this.logger.error(error)),
+      ),
     );
   }
 
@@ -136,7 +136,7 @@ export class FacebookClient {
 
     try {
       const { data } = await lastValueFrom(
-        this.httpService.post<{ success: boolean }>(url)
+        this.httpService.post<{ success: boolean }>(url),
       );
 
       this.logger.log(JSON.stringify({ data }), `subscribeApps:${socialId}`);
@@ -152,12 +152,12 @@ export class FacebookClient {
     const url = `${Environment.FACEBOOK_HOST}/v13.0/${socialId}/subscribed_apps?access_token=${authToken}&subscribed_fields=feed`;
     this.logger.log(
       JSON.stringify({ url }),
-      `unsubscribeApps:${socialId}:init`
+      `unsubscribeApps:${socialId}:init`,
     );
 
     try {
       const { data } = await lastValueFrom(
-        this.httpService.delete<{ success: boolean }>(url)
+        this.httpService.delete<{ success: boolean }>(url),
       );
 
       this.logger.log(JSON.stringify({ data }), `unsubscribeApps:${socialId}`);
@@ -176,12 +176,12 @@ export class FacebookClient {
       const profile = await lastValueFrom(
         this.httpService
           .get<{ id: string; name: string }>(url)
-          .pipe(map(({ data }) => data))
+          .pipe(map(({ data }) => data)),
       );
 
       this.logger.log(
         JSON.stringify({ profile }),
-        `getFacebookProfile:${profile.id}`
+        `getFacebookProfile:${profile.id}`,
       );
 
       return profile;

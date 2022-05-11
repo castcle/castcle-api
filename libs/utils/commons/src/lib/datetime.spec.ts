@@ -27,7 +27,7 @@ describe('#CastcleDate', () => {
   it('should able to convert current date startOf - endOf today.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'today'
+      'today',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-03-02T17:00:00.000Z');
@@ -36,7 +36,7 @@ describe('#CastcleDate', () => {
   it('should able convert current date startOf - endOf week.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'week'
+      'week',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-02-27T17:00:00.000Z');
@@ -45,7 +45,7 @@ describe('#CastcleDate', () => {
   it('should able convert current date startOf - endOf month.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'month'
+      'month',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-02-28T17:00:00.000Z');

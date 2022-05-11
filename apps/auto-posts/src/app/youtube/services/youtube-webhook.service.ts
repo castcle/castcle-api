@@ -45,7 +45,7 @@ export class YoutubeWebhookService {
   constructor(
     private readonly contentService: ContentService,
     private readonly downloader: Downloader,
-    private readonly socialSyncService: SocialSyncService
+    private readonly socialSyncService: SocialSyncService,
   ) {
     this.parser = new XMLParser();
   }
@@ -71,14 +71,14 @@ export class YoutubeWebhookService {
     const syncAccount =
       await this.socialSyncService.getAutoSyncAccountBySocialId(
         SocialProvider.Youtube,
-        channelId
+        channelId,
       );
 
     if (!syncAccount) return;
     if (syncAccount.latestSyncDate > feed.entry.published) return;
 
     this.logger.log(
-      `New youtube feed from: ${feed.entry.author.name}, Video Title: ${feed.entry.title}`
+      `New youtube feed from: ${feed.entry.author.name}, Video Title: ${feed.entry.title}`,
     );
 
     const [author, shortContent] = await Promise.all([
@@ -101,11 +101,11 @@ export class YoutubeWebhookService {
 
   private async convertFeedToShortContent(
     feed: PublishedContent,
-    authenticationId: string
+    authenticationId: string,
   ) {
     const thumbnailUrl = await this.getThumbnailUrlFromVideoId(
       authenticationId,
-      feed.entry['yt:videoId']
+      feed.entry['yt:videoId'],
     );
 
     const linkPreview = {

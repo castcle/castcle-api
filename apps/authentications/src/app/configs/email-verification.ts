@@ -1,7 +1,7 @@
 export const getEmailVerificationHtml = (
   email: string,
   castcleLink: string,
-  supportEmail: string
+  supportEmail: string,
 ) => `<body style="margin:0;">
 <!-- Embedded HTML code sent along with email begins here -->
 

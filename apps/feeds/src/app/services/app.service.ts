@@ -46,7 +46,7 @@ export class AppService {
    */
   async getUserFromBody(
     credentialRequest: CredentialRequest,
-    castcleId: string
+    castcleId: string,
   ) {
     const account = credentialRequest.$credential?.account;
     const user = await this.userService.getByIdOrCastcleId(castcleId);
@@ -72,7 +72,7 @@ export class AppService {
             sizes: COMMON_SIZE_CONFIGS,
             subpath: `contents/${uploader._id}`,
           }).then((r) => r.image);
-        })
+        }),
       );
       body.payload.photo.contents = newContents;
       console.debug('photo contents', newContents);
@@ -88,7 +88,7 @@ export class AppService {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
             subpath: `contents/${uploader._id}`,
-          }
+          },
         )
       ).image;
     }

@@ -37,7 +37,7 @@ export class YoutubeController {
     {
       'hub.challenge': challenge,
       'hub.verify_token': verifyToken,
-    }: ValidateWebhookQuery
+    }: ValidateWebhookQuery,
   ) {
     if (verifyToken !== Environment.YOUTUBE_VERIFY_TOKEN) return;
 
@@ -50,7 +50,7 @@ export class YoutubeController {
       await this.youtubeWebhookService.getSubscriptionContentFromRequest(req);
 
     await this.youtubeWebhookService.createContentFromYoutubeFeed(
-      subscriptionContent
+      subscriptionContent,
     );
   }
 }

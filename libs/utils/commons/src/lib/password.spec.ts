@@ -62,7 +62,7 @@ describe('Password', () => {
       const passPassword = 'verify654321';
       const encryptPassword = Password.hash(passPassword);
       expect(Password.verify('this-is-a-wrong-password', encryptPassword)).toBe(
-        false
+        false,
       );
     });
     it('should return true to P jul password Abcd1@34$ ', async () => {

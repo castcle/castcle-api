@@ -29,6 +29,7 @@ import { Comment } from './comment.schema';
 import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
+import { Account } from './account.schema';
 
 export enum EngagementType {
   Like = 'like',
@@ -41,13 +42,26 @@ export enum EngagementType {
 
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {
-  @Prop({ required: true, type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true,
+  })
   user: User;
 
-  @Prop({ required: true, type: Object })
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    index: true,
+  })
+  account: Account;
+
+  @Prop({ required: true, type: Object, index: true })
   targetRef: any;
 
-  @Prop({ required: true })
+  @Prop({ required: true, index: true })
   type: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId })
@@ -58,7 +72,7 @@ export const EngagementSchema = SchemaFactory.createForClass(Engagement);
 
 export const EngagementSchemaFactory = (
   contentModel: Model<Content>,
-  commentModel: Model<Comment>
+  commentModel: Model<Comment>,
 ): mongoose.Schema<any> => {
   EngagementSchema.post('save', async function (doc: Engagement, next) {
     const count = doc.visibility === EntityVisibility.Publish ? 1 : -1;

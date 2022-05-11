@@ -25,6 +25,5 @@ COPY ./dist/apps/authentications .
 COPY package*.json ./
 ENV PORT=80
 EXPOSE ${PORT}
-RUN npm set-script prepare ""
 RUN npm install --prod
 CMD node ./main.js

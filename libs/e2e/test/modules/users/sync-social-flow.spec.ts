@@ -81,10 +81,10 @@ export const testSyncSocialFlow = () => {
         expect(body.payload.filter((x) => x.autoPost).length).toEqual(2);
         expect(body.payload.filter((x) => x.active).length).toEqual(2);
         expect(
-          body.payload.find((x) => x.provider === 'twitter')
+          body.payload.find((x) => x.provider === 'twitter'),
         ).toBeDefined();
         expect(
-          body.payload.find((x) => x.provider === 'facebook')
+          body.payload.find((x) => x.provider === 'facebook'),
         ).toBeDefined();
         socialSync = body;
       });
@@ -92,7 +92,7 @@ export const testSyncSocialFlow = () => {
 
   it('STEP 3: CancelAutoPost should cancel auto post successful', async () => {
     const socialSyncId = socialSync.payload.find(
-      (x) => x.provider === 'facebook'
+      (x) => x.provider === 'facebook',
     ).id;
     await UsersRequest.cancelAutoPost(socialSyncId).auth(user.accessToken, {
       type: 'bearer',
@@ -101,14 +101,14 @@ export const testSyncSocialFlow = () => {
       .auth(user.accessToken, { type: 'bearer' })
       .expect(async ({ body }) => {
         expect(
-          body.payload.find((x) => x.id === socialSyncId).autoPost
+          body.payload.find((x) => x.id === socialSyncId).autoPost,
         ).toEqual(false);
       });
   });
 
   it('STEP 4: SetAutoPost should set auto post successful', async () => {
     const socialSyncId = socialSync.payload.find(
-      (x) => x.provider === 'facebook'
+      (x) => x.provider === 'facebook',
     ).id;
     await UsersRequest.setAutoPost(socialSyncId).auth(user.accessToken, {
       type: 'bearer',
@@ -117,14 +117,14 @@ export const testSyncSocialFlow = () => {
       .auth(user.accessToken, { type: 'bearer' })
       .expect(async ({ body }) => {
         expect(
-          body.payload.find((x) => x.id === socialSyncId).autoPost
+          body.payload.find((x) => x.id === socialSyncId).autoPost,
         ).toEqual(true);
       });
   });
 
   it('STEP 5: DisconnectSyncSocial should disconnect sync social successful', async () => {
     const socialSyncId = socialSync.payload.find(
-      (x) => x.provider === 'facebook'
+      (x) => x.provider === 'facebook',
     ).id;
     await UsersRequest.disconnectSocial(socialSyncId).auth(user.accessToken, {
       type: 'bearer',
@@ -134,17 +134,17 @@ export const testSyncSocialFlow = () => {
       .expect(async ({ body }) => {
         expect(body.payload.filter((x) => !x.active).length).toEqual(1);
         expect(body.payload.find((x) => x.id === socialSyncId).active).toEqual(
-          false
+          false,
         );
         expect(
-          body.payload.find((x) => x.id === socialSyncId).autoPost
+          body.payload.find((x) => x.id === socialSyncId).autoPost,
         ).toEqual(false);
       });
   });
 
   it('STEP 6: ConnectSyncSocial should connet sync social successful', async () => {
     const socialSyncId = socialSync.payload.find(
-      (x) => x.provider === 'facebook'
+      (x) => x.provider === 'facebook',
     ).id;
     const request = {
       payload: {
@@ -169,10 +169,10 @@ export const testSyncSocialFlow = () => {
       .expect(async ({ body }) => {
         expect(body.payload.filter((x) => x.active).length).toEqual(2);
         expect(body.payload.find((x) => x.id === socialSyncId).active).toEqual(
-          true
+          true,
         );
         expect(
-          body.payload.find((x) => x.id === socialSyncId).autoPost
+          body.payload.find((x) => x.id === socialSyncId).autoPost,
         ).toEqual(true);
       });
   });

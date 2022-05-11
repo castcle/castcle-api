@@ -42,7 +42,7 @@ export class AwsXRayInterceptor implements NestInterceptor {
       catchError((error) => {
         subSegment.close();
         throw error;
-      })
+      }),
     );
   }
 }

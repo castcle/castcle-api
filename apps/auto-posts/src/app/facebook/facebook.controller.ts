@@ -54,7 +54,7 @@ export class FacebookController {
   constructor(
     private readonly contentService: ContentService,
     private readonly downloader: Downloader,
-    private readonly socialSyncService: SocialSyncService
+    private readonly socialSyncService: SocialSyncService,
   ) {}
 
   @Get()
@@ -63,7 +63,7 @@ export class FacebookController {
     {
       'hub.challenge': challenge,
       'hub.verify_token': verifyToken,
-    }: ValidateWebhookQuery
+    }: ValidateWebhookQuery,
   ) {
     this.logger.log(
       JSON.stringify({
@@ -71,7 +71,7 @@ export class FacebookController {
         verifyToken,
         isValidToken: verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN,
       }),
-      'validateWebhook'
+      'validateWebhook',
     );
 
     if (verifyToken !== Environment.FACEBOOK_VERIFY_TOKEN) return;
@@ -81,7 +81,7 @@ export class FacebookController {
 
   @Post()
   async handleWebhook(
-    @Body('entry') entries: SubscriptionEntry<FeedEntryChange>[]
+    @Body('entry') entries: SubscriptionEntry<FeedEntryChange>[],
   ) {
     this.logger.log(JSON.stringify(entries), 'handleWebhook:init');
 
@@ -90,25 +90,25 @@ export class FacebookController {
       const syncAccount =
         await this.socialSyncService.getAutoSyncAccountBySocialId(
           SocialProvider.Facebook,
-          socialId
+          socialId,
         );
 
       if (!syncAccount) {
         this.logger.error(
           `facebook-${socialId}`,
-          'handleWebhook:sync-account-not-found'
+          'handleWebhook:sync-account-not-found',
         );
         continue;
       }
 
       const author = await this.contentService.getAuthorFromId(
-        syncAccount.author.id
+        syncAccount.author.id,
       );
 
       if (!author) {
         this.logger.error(
           `authorId: ${syncAccount.author.id}`,
-          'handleWebhook:author-not-found'
+          'handleWebhook:author-not-found',
         );
         continue;
       }
@@ -127,7 +127,7 @@ export class FacebookController {
         if (feed.verb !== FeedEntryType.ADD) {
           this.logger.error(
             `postId: ${feed.post_id}`,
-            'handleWebhook:verb-mismatched'
+            'handleWebhook:verb-mismatched',
           );
           continue;
         }
@@ -135,7 +135,7 @@ export class FacebookController {
         if (!isEnum(feed.item, FeedEntryItem)) {
           this.logger.error(
             `postId: ${feed.post_id}`,
-            'handleWebhook:item-mismatched'
+            'handleWebhook:item-mismatched',
           );
           continue;
         }
@@ -218,7 +218,7 @@ export class FacebookController {
 
       this.logger.log(
         JSON.stringify(createdContents),
-        'handleWebhook:contents-created'
+        'handleWebhook:contents-created',
       );
     }
   }

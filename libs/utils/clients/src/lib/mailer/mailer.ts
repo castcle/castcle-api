@@ -51,7 +51,7 @@ export class Mailer {
         html: getRegistrationHtml(
           toEmail,
           `${verifyLink}?code=${code}`,
-          Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com'
+          Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com',
         ),
       });
 

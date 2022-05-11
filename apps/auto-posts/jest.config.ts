@@ -7,13 +7,13 @@ const { exclude: _, ...swcJestConfig } = JSON.parse(
 );
 
 module.exports = {
-  displayName: 'feeds',
-  preset: '../../jest.preset.js',
+  displayName: 'auto-posts',
+  preset: '../../jest.preset.ts',
   setupFiles: ['../../jest.setup.ts'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/feeds',
+  coverageDirectory: '../../coverage/apps/auto-posts',
 };

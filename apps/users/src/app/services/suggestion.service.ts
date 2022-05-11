@@ -45,7 +45,7 @@ export class SuggestionService {
     private dataService: DataService,
     private userService: UserService,
     private adsService: AdsService,
-    private rankerService: RankerService
+    private rankerService: RankerService,
   ) {}
 
   /**
@@ -57,14 +57,14 @@ export class SuggestionService {
     const result = await this.dataService.getFollowingSuggestions(accountId);
     const userIds = result.map((item) => item.userId);
     const users = await Promise.all(
-      userIds.map((uid) => this.userService.getByIdOrCastcleId(uid))
+      userIds.map((uid) => this.userService.getByIdOrCastcleId(uid)),
     );
     const userResponses = await Promise.all(
       users
         .filter((u) => u && u.type)
         .map(async (u) =>
-          u.type === UserType.PEOPLE ? u.toUserResponse() : u.toPageResponse()
-        )
+          u.type === UserType.PEOPLE ? u.toUserResponse() : u.toPageResponse(),
+        ),
     );
     return {
       payload: userResponses,
@@ -85,7 +85,7 @@ export class SuggestionService {
         seenCount: 0,
         lastSeen: new Date(),
         lastSuggestion: new Date(),
-      } as SeenState)
+      } as SeenState),
     );
 
   /**
@@ -100,7 +100,7 @@ export class SuggestionService {
     ]);
     const accountId = account.id;
     const currentSetting: string = await this.cacheManager.get(
-      this._seenKey(accountId)
+      this._seenKey(accountId),
     );
     if (!currentSetting) {
       this.cacheManager.set(
@@ -108,7 +108,7 @@ export class SuggestionService {
         JSON.stringify({
           seenCount: 1,
           lastSeen: new Date(),
-        } as SeenState)
+        } as SeenState),
       );
     } else {
       const setting: SeenState = JSON.parse(currentSetting);
@@ -118,11 +118,11 @@ export class SuggestionService {
           ...setting,
           seenCount: setting.seenCount + 1,
           lastSeen: new Date(),
-        } as SeenState)
+        } as SeenState),
       );
     }
     const adsSetting: string = await this.cacheManager.get(
-      this._seenAdsKey(accountId)
+      this._seenAdsKey(accountId),
     );
     if (!adsSetting) {
       this.cacheManager.set(
@@ -130,7 +130,7 @@ export class SuggestionService {
         JSON.stringify({
           seenCount: 1,
           lastSeen: new Date(),
-        } as SeenState)
+        } as SeenState),
       );
     } else {
       const setting: SeenState = JSON.parse(adsSetting);
@@ -140,7 +140,7 @@ export class SuggestionService {
           ...setting,
           seenCount: setting.seenCount + 1,
           lastSeen: new Date(),
-        } as SeenState)
+        } as SeenState),
       );
     }
   }

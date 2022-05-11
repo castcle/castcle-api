@@ -47,7 +47,7 @@ import { NotificationsController } from './notifications.controller';
 const buildMockData = async (
   notification: NotificationService,
   user: User,
-  userCredential: Credential
+  userCredential: Credential,
 ) => {
   await creatMockData(
     notification as any,
@@ -55,7 +55,7 @@ const buildMockData = async (
     NotificationSource.Profile,
     NotificationType.Comment,
     '6138afa4f616a467b5c4eb72',
-    userCredential
+    userCredential,
   );
 
   await creatMockData(
@@ -64,7 +64,7 @@ const buildMockData = async (
     NotificationSource.Page,
     NotificationType.Comment,
     '6138afa4f616a467b5c4eb72',
-    userCredential
+    userCredential,
   );
 
   await creatMockData(
@@ -73,7 +73,7 @@ const buildMockData = async (
     NotificationSource.Profile,
     NotificationType.System,
     '6138afa4f616a467b5c4eb72',
-    userCredential
+    userCredential,
   );
 };
 
@@ -83,7 +83,7 @@ const creatMockData = async (
   sourceType: NotificationSource,
   typeNoti: NotificationType,
   docRefId: string,
-  userCredential: Credential
+  userCredential: Credential,
 ) => {
   const newNotification = new (notification as any)._notificationModel({
     avatar: '',
@@ -168,7 +168,7 @@ describe('NotificationsController', () => {
     userCredential = resultAccount.credentialDocument;
     wrongUserCredential = resultWrongAccount.credentialDocument;
     user = await userService.getUserFromCredential(
-      resultAccount.credentialDocument
+      resultAccount.credentialDocument,
     );
 
     await buildMockData(notification, user, userCredential);
@@ -186,7 +186,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       expect(responseResult.payload).toHaveLength(3);
@@ -198,8 +198,8 @@ describe('NotificationsController', () => {
             !x.replyId ||
             !x.advertiseId ||
             !x.systemId ||
-            !x.profileId
-        ).length
+            !x.profileId,
+        ).length,
       ).toEqual(3);
     });
 
@@ -209,7 +209,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        NotificationSource.Page
+        NotificationSource.Page,
       );
 
       const expectResult = {
@@ -249,7 +249,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       const readNoti = allNotification.payload[0];
@@ -257,11 +257,11 @@ describe('NotificationsController', () => {
         {
           $credential: userCredential,
         } as any,
-        readNoti.id
+        readNoti.id,
       );
 
       const result = await (notification as any)._notificationModel.findById(
-        readNoti.id
+        readNoti.id,
       );
 
       expect(result.read).toEqual(true);
@@ -273,7 +273,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       await expect(
@@ -281,8 +281,8 @@ describe('NotificationsController', () => {
           {
             $credential: userCredential,
           } as any,
-          ''
-        )
+          '',
+        ),
       ).rejects.toEqual(CastcleException.NOTIFICATION_NOT_FOUND);
 
       await expect(
@@ -290,8 +290,8 @@ describe('NotificationsController', () => {
           {
             $credential: wrongUserCredential,
           } as any,
-          ''
-        )
+          '',
+        ),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -307,7 +307,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       const notificationList = await (
@@ -315,7 +315,7 @@ describe('NotificationsController', () => {
       )._notificationModel.find();
 
       expect(notificationList.filter((x) => x.read).length).toEqual(
-        result.payload.length
+        result.payload.length,
       );
     });
 
@@ -325,13 +325,13 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       await expect(
         controller.notificationReadAll({
           $credential: wrongUserCredential,
-        } as any)
+        } as any),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -349,7 +349,7 @@ describe('NotificationsController', () => {
         {
           deviceUUID: deviceID,
           firebaseToken: firebaseToken,
-        } as RegisterTokenDto
+        } as RegisterTokenDto,
       );
 
       const credentailUpdate = await (notification as any)._credentialModel
@@ -368,7 +368,7 @@ describe('NotificationsController', () => {
           $credential: userCredential,
         } as any,
         null,
-        null
+        null,
       );
 
       await expect(
@@ -379,8 +379,8 @@ describe('NotificationsController', () => {
           {
             deviceUUID: deviceID,
             firebaseToken: firebaseToken,
-          } as RegisterTokenDto
-        )
+          } as RegisterTokenDto,
+        ),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -402,7 +402,7 @@ describe('NotificationsController', () => {
         NotificationSource.Profile,
         NotificationType.Comment,
         '6138afa4f616a467b5c4eb72',
-        userCredential
+        userCredential,
       );
       const expectResult = { payload: { badges: '1' } };
       const result = await controller.badges({
@@ -419,7 +419,7 @@ describe('NotificationsController', () => {
           NotificationSource.Profile,
           NotificationType.Comment,
           '6138afa4f616a467b5c4eb72',
-          userCredential
+          userCredential,
         );
       }
       const expectResult = { payload: { badges: '+99' } };

@@ -46,7 +46,7 @@ export class ContentControllerV2 {
   private logger = new CastLogger(ContentControllerV2.name);
   constructor(
     private contentServiceV2: ContentServiceV2,
-    private contentService: ContentService
+    private contentService: ContentService,
   ) {}
 
   private validateId(id: string) {
@@ -59,7 +59,7 @@ export class ContentControllerV2 {
   async getContentFromId(
     @Param('contentId') contentId: string,
     @Auth() authorizer: Authorizer,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.validateId(contentId);
     const content = await this.contentService.getContentById(contentId);
@@ -67,7 +67,7 @@ export class ContentControllerV2 {
     const engagements = authorizer.user
       ? await this.contentService.getAllEngagementFromContentAndUser(
           content,
-          authorizer.user
+          authorizer.user,
         )
       : [];
 
@@ -75,7 +75,7 @@ export class ContentControllerV2 {
       authorizer.user,
       content,
       engagements,
-      query.hasRelationshipExpansion
+      query.hasRelationshipExpansion,
     );
   }
 
@@ -83,15 +83,15 @@ export class ContentControllerV2 {
   @Get(':contentId/farming')
   async getContentFarming(
     @Param('contentId') contentId: string,
-    @Auth() authorizer: Authorizer
+    @Auth() authorizer: Authorizer,
   ) {
     this.logger.log(`Start get content farming from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.getContentFarming(
         contentId,
-        authorizer.account.id
+        authorizer.account.id,
       ),
-      authorizer.account.id
+      authorizer.account.id,
     );
   }
 
@@ -99,12 +99,12 @@ export class ContentControllerV2 {
   @Post(':contentId/farm')
   async farmContent(
     @Param('contentId') contentId: string,
-    @Auth() authorizer: Authorizer
+    @Auth() authorizer: Authorizer,
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.farm(contentId, authorizer.account.id),
-      authorizer.account.id
+      authorizer.account.id,
     );
   }
 
@@ -112,12 +112,12 @@ export class ContentControllerV2 {
   @Delete(':contentId/farm')
   async unfarmContent(
     @Param('contentId') contentId: string,
-    @Auth() authorizer: Authorizer
+    @Auth() authorizer: Authorizer,
   ) {
     this.logger.log(`Start get all comment from content: ${contentId}`);
     return this.contentServiceV2.pipeContentFarming(
       await this.contentServiceV2.unfarm(contentId, authorizer.account.id),
-      authorizer.account.id
+      authorizer.account.id,
     );
   }
 
@@ -126,7 +126,7 @@ export class ContentControllerV2 {
   async getLikingCast(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
@@ -135,7 +135,7 @@ export class ContentControllerV2 {
       authorizer.account,
       query,
       EngagementType.Like,
-      authorizer.user
+      authorizer.user,
     );
   }
 
@@ -144,7 +144,7 @@ export class ContentControllerV2 {
   async getRecastBy(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get Recasts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
@@ -153,7 +153,7 @@ export class ContentControllerV2 {
       authorizer.account,
       query,
       EngagementType.Recast,
-      authorizer.user
+      authorizer.user,
     );
   }
 
@@ -162,14 +162,14 @@ export class ContentControllerV2 {
   async getQuoteCastBy(
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
-    @Query() query: PaginationQuery
+    @Query() query: PaginationQuery,
   ) {
     this.logger.log(`Get quote casts from content : ${contentId}`);
     authorizer.requestAccessForAccount(authorizer.account._id);
     return await this.contentServiceV2.getQuoteByCast(
       contentId,
       query,
-      authorizer.user
+      authorizer.user,
     );
   }
 }

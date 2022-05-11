@@ -45,7 +45,7 @@ export class Image {
       original: string;
       [key: string]: string;
     },
-    public order?: number
+    public order?: number,
   ) {}
 
   toSignUrl(sizeName?: string) {
@@ -57,7 +57,7 @@ export class Image {
       env.CLOUDFRONT_ACCESS_KEY_ID
         ? env.CLOUDFRONT_ACCESS_KEY_ID
         : 'testCloudKey',
-      cloudFrontPrivateKey
+      cloudFrontPrivateKey,
     );
 
     const imageUrl = sizeName ? this.image[sizeName] : this.image.original;
@@ -97,7 +97,7 @@ export class Image {
   static _getNewSameRatioSize = (
     originalWidth: number,
     originalHeight: number,
-    maxSize: Size
+    maxSize: Size,
   ) => {
     const heightRatio = originalHeight / maxSize.height;
     const widthRatio = originalWidth / maxSize.width;
@@ -127,7 +127,7 @@ export class Image {
     buffer: Buffer,
     size: Size,
     fileType: string,
-    options?: ImageUploadOptions
+    options?: ImageUploadOptions,
   ) => {
     const sharpImage = sharp(buffer);
     const metaData = await sharpImage.metadata();
@@ -138,7 +138,7 @@ export class Image {
       .toBuffer();
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER
+      Configs.IMAGE_BUCKET_FOLDER,
     );
     return uploader.uploadBufferToS3(newBuffer, fileType, {
       ...options,
@@ -151,7 +151,7 @@ export class Image {
       original: string;
       [key: string]: string;
     },
-    defaultImage?: string
+    defaultImage?: string,
   ): {
     original: string;
     [key: string]: string;
@@ -171,7 +171,7 @@ export class Image {
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER
+      Configs.IMAGE_BUCKET_FOLDER,
     );
     const contentType = Uploader.getImageContentType(base64);
     const fileType = Uploader.getFileTypeFromBase64(base64);
@@ -198,7 +198,7 @@ export class Image {
           {
             ...options,
             contentType: contentType,
-          }
+          },
         ).then((data) => data.Key);
       }
     }

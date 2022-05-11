@@ -39,7 +39,7 @@ export class TwitterClientMock {
   requestAccessToken(
     accessToken: string,
     tokenSecret: string,
-    oauthVerifier: string
+    oauthVerifier: string,
   ) {
     if (
       accessToken === 'wAAAAABUZusAAABfHLxV60' &&

@@ -65,10 +65,10 @@ export type AppAbility = Ability<[Action, Subjects]>;
 export class CaslAbilityFactory {
   getUserManageContentAbility(users: User[], content: Content) {
     const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
-      Ability as AbilityClass<AppAbility>
+      Ability as AbilityClass<AppAbility>,
     );
     const findUser = users.findIndex(
-      (u) => String(u._id) === String(content.author.id)
+      (u) => String(u._id) === String(content.author.id),
     );
     if (findUser >= 0) {
       can(Action.Update, Content);
@@ -85,7 +85,7 @@ export class CaslAbilityFactory {
 
   createForCredential(credential: Credential) {
     const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
-      Ability as AbilityClass<AppAbility>
+      Ability as AbilityClass<AppAbility>,
     );
     /**
      * Credential Interaction
@@ -126,7 +126,7 @@ export class CaslAbilityFactory {
 
   createForUser(user: User) {
     const { can, build } = new AbilityBuilder<Ability<[Action, Subjects]>>(
-      Ability as AbilityClass<AppAbility>
+      Ability as AbilityClass<AppAbility>,
     );
     /**
      * Content Interaction

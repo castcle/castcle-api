@@ -63,7 +63,7 @@ export class NotificationsController {
 
   constructor(
     private notificationService: NotificationService,
-    private userService: UserService
+    private userService: UserService,
   ) {}
 
   async _getNotificationIfExist(id: string) {
@@ -102,7 +102,7 @@ export class NotificationsController {
     @Req() req: CredentialRequest,
     @Query() query?: NotificationQuery,
     @Query('source', NotificationSourcePipe)
-    sourceOption?: NotificationSource
+    sourceOption?: NotificationSource,
   ) {
     if (query?.maxResults) {
       if (+query.maxResults < 5 || +query.maxResults > 100) {
@@ -114,13 +114,13 @@ export class NotificationsController {
       {
         ...query,
         ...{ source: sourceOption },
-      }
+      },
     );
 
     const responseNotifications =
       await this.notificationService.generateMessagesToNotifications(
         notifications,
-        req.$language
+        req.$language,
       );
     return {
       payload: responseNotifications,
@@ -136,7 +136,7 @@ export class NotificationsController {
   @HttpCode(204)
   async notificationRead(
     @Req() req: CredentialRequest,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) {
@@ -174,11 +174,11 @@ export class NotificationsController {
   @Post('registerToken')
   async registerToken(
     @Req() req: CredentialRequest,
-    @Body() body: RegisterTokenDto
+    @Body() body: RegisterTokenDto,
   ) {
     this.#logger.log(
       'Notification register token. uuid:',
-      JSON.stringify(body.deviceUUID)
+      JSON.stringify(body.deviceUUID),
     );
     const user = await this.userService.getUserFromCredential(req.$credential);
     if (!user) throw CastcleException.FORBIDDEN;
@@ -192,7 +192,7 @@ export class NotificationsController {
   @Get('badges')
   async badges(@Req() req: CredentialRequest) {
     const badgeNotify = await this.notificationService.getBadges(
-      req.$credential
+      req.$credential,
     );
     return {
       payload: {

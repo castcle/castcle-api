@@ -33,7 +33,7 @@ import { SocialSync, User } from '../schemas';
 export class SocialSyncServiceV2 {
   constructor(
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
-    private facebookClient: FacebookClient
+    private facebookClient: FacebookClient,
   ) {}
 
   async sync(user: User, socialSyncDto: SyncSocialDtoV2) {
@@ -51,7 +51,7 @@ export class SocialSyncServiceV2 {
     ) {
       await this.facebookClient.subscribeApps(
         socialSyncDto.authToken,
-        socialSyncDto.socialId
+        socialSyncDto.socialId,
       );
     }
 
@@ -73,7 +73,7 @@ export class SocialSyncServiceV2 {
     ) {
       await this.facebookClient.unsubscribeApps(
         socialSync.authToken,
-        socialSync.socialId
+        socialSync.socialId,
       );
     }
 

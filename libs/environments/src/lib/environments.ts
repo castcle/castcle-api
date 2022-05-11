@@ -61,7 +61,7 @@ export class Environment {
     Number(process.env.JWT_VERIFY_EXPIRES_IN) || 6002;
   static JWT_SIGNATURE_SECRET = process.env.JWT_SIGNATURE_SECRET;
   static JWT_SIGNATURE_EXPIRES_IN = Number(
-    process.env.JWT_SIGNATURE_EXPIRES_IN
+    process.env.JWT_SIGNATURE_EXPIRES_IN,
   );
 
   // Cloudfront
@@ -143,19 +143,19 @@ export class Environment {
 
   // Feed Setting
   static FEED_FOLLOW_MAX = Number(
-    process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax
+    process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax,
   );
   static FEED_FOLLOW_RATIO = Number(
-    process.env.FEED_FOLLOW_RATIO || Configs.Feed.FollowFeedRatio
+    process.env.FEED_FOLLOW_RATIO || Configs.Feed.FollowFeedRatio,
   );
   static FEED_DECAY_DAYS = Number(
-    process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays
+    process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays,
   );
   static FEED_DUPLICATE_MAX = Number(
-    process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax
+    process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax,
   );
   static FEED_CALLED_AT_DELAY = Number(
-    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay
+    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay,
   );
   static FEED_IGNORE_PERSONALIZED_CONTENTS =
     process.env.FEED_IGNORE_PERSONALIZED_CONTENTS || 0;
@@ -215,6 +215,6 @@ export class Environment {
   static NOTIFY_FOLLOW_INTERVAL = process.env.NOTIFY_FOLLOW_INTERVAL || 0;
 
   static CONTENT_FARMING_COOLDOWN_HR = Number(
-    process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000
+    process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000,
   ); //hours
 }

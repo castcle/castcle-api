@@ -78,7 +78,7 @@ export class Otp extends OtpDocument {
 }
 
 export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
-  OtpDocument
+  OtpDocument,
 );
 
 export interface OtpModel extends mongoose.Model<Otp> {
@@ -95,7 +95,7 @@ export interface OtpModel extends mongoose.Model<Otp> {
     channel: string,
     verify: boolean,
     receiver?: string,
-    sid?: string
+    sid?: string,
   ): Promise<Otp>;
 }
 
@@ -106,7 +106,7 @@ OtpSchema.statics.generate = async function (
   channel: string,
   verify: boolean,
   receiver?: string,
-  sid?: string
+  sid?: string,
 ) {
   let newRefCode: string;
   let otpFindingResult;

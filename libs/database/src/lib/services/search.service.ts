@@ -33,7 +33,7 @@ import { Credential, Hashtag, User } from '../schemas';
 export class SearchService {
   constructor(
     @InjectModel('Hashtag') public _hashtagModel: Model<Hashtag>,
-    @InjectModel('User') public _userModel: Model<User>
+    @InjectModel('User') public _userModel: Model<User>,
   ) {}
 
   private getHashtag(limitFilter, keyword?) {
@@ -136,7 +136,7 @@ export class SearchService {
    * @returns {hashtags,follows,topics} return top trends hashtags,follows,topics Document
    */
   async getTopTrends(
-    options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS
+    options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS,
   ) {
     let hashtag: Hashtag[] = [];
     let follow: User[] = [];
@@ -168,7 +168,7 @@ export class SearchService {
   async getSearch(
     credential: Credential,
     keyword: string,
-    limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
+    limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
   ) {
     // TODO !!! need implement search content relate to user
     const limitHashtag = 2;

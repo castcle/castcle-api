@@ -50,7 +50,7 @@ export const pipelineOfGetBalance = (accountId: string) => [
 
 export const pipelineOfGetBalanceFromWalletType = (
   accountId: string,
-  walletType: WalletType
+  walletType: WalletType,
 ) => [
   { $unwind: { path: '$to' } },
   {

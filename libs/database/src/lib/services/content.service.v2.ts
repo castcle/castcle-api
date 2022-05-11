@@ -70,14 +70,14 @@ export class ContentServiceV2 {
     @InjectModel('ContentFarming')
     private contentFarmingModel: Model<ContentFarming>,
     @InjectModel('Content')
-    private contentModel: Model<Content>
+    private contentModel: Model<Content>,
   ) {}
 
   toContentsResponses = async (
     bundleContents: GetContentCastDto,
     { hasRelationshipExpansion }: PaginationQuery,
     viewer?: User,
-    countContents?: number
+    countContents?: number,
   ) => {
     const payloadContents = bundleContents.contents.map((content) =>
       signedContentPayloadItem(
@@ -85,10 +85,10 @@ export class ContentServiceV2 {
           content,
           bundleContents.engagements,
           bundleContents.metrics?.find(
-            (metric) => String(metric._id) === String(content._id)
-          )
-        )
-      )
+            (metric) => String(metric._id) === String(content._id),
+          ),
+        ),
+      ),
     );
 
     if (hasRelationshipExpansion) {
@@ -104,7 +104,7 @@ export class ContentServiceV2 {
       const includesUsers = bundleContents.authors.map((author) => {
         const relationshipUser = relationships.find(
           (relationship) =>
-            String(relationship.followedUser) === String(author._id)
+            String(relationship.followedUser) === String(author._id),
         );
         return new Author(author as any).toIncludeUser({
           blocked: relationshipUser?.blocking ?? false,
@@ -119,10 +119,10 @@ export class ContentServiceV2 {
             cast,
             bundleContents.engagementsOriginal,
             bundleContents.metricsOriginal?.find(
-              (metric) => String(metric._id) === String(cast._id)
-            )
-          )
-        )
+              (metric) => String(metric._id) === String(cast._id),
+            ),
+          ),
+        ),
       );
 
       return {
@@ -136,11 +136,11 @@ export class ContentServiceV2 {
     }
 
     const includesUsers = bundleContents.authors.map((author) =>
-      new Author(author as any).toIncludeUser()
+      new Author(author as any).toIncludeUser(),
     );
 
     const payloadCasts = bundleContents.casts.map((cast) =>
-      signedContentPayloadItem(toUnsignedContentPayloadItem(cast))
+      signedContentPayloadItem(toUnsignedContentPayloadItem(cast)),
     );
 
     return {
@@ -160,16 +160,16 @@ export class ContentServiceV2 {
           content,
           bundleContents.engagements,
           bundleContents.metrics?.find(
-            (metric) => String(metric._id) === String(content._id)
-          )
-        )
-      )
+            (metric) => String(metric._id) === String(content._id),
+          ),
+        ),
+      ),
     );
 
     if (!bundleContents.contents) return;
 
     const includesUsers = bundleContents.authors.map((author) =>
-      new Author(author as any).toIncludeUser()
+      new Author(author as any).toIncludeUser(),
     );
 
     const payloadCasts = bundleContents.casts.map((cast) =>
@@ -178,10 +178,10 @@ export class ContentServiceV2 {
           cast,
           bundleContents.engagementsOriginal,
           bundleContents.metricsOriginal?.find(
-            (metric) => String(metric._id) === String(cast._id)
-          )
-        )
-      )
+            (metric) => String(metric._id) === String(cast._id),
+          ),
+        ),
+      ),
     );
 
     return {
@@ -210,6 +210,7 @@ export class ContentServiceV2 {
     const newEngagement = await this.repository.createEngagement({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: content._id,
@@ -235,7 +236,7 @@ export class ContentServiceV2 {
           read: false,
         },
         userOwner,
-        account.preferences.languages[0]
+        account.preferences.languages[0],
       );
     return { content, engagement: newEngagement };
   };
@@ -260,7 +261,7 @@ export class ContentServiceV2 {
       },
       {
         $pull: { sourceUserId: { $eq: user._id } },
-      }
+      },
     );
     const notification = await this.repository.findNotification({
       type: NotificationType.Like,
@@ -336,6 +337,7 @@ export class ContentServiceV2 {
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Recast,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
@@ -362,7 +364,7 @@ export class ContentServiceV2 {
           read: false,
         },
         userOwner,
-        account.preferences.languages[0]
+        account.preferences.languages[0],
       );
 
     return { recastContent, engagement };
@@ -399,7 +401,7 @@ export class ContentServiceV2 {
       },
       {
         $pull: { sourceUserId: { $eq: user._id } },
-      }
+      },
     );
     const notification = await this.repository.findNotification({
       type: NotificationType.Recast,
@@ -418,7 +420,7 @@ export class ContentServiceV2 {
     contentId: string,
     message: string,
     user: User,
-    account: Account
+    account: Account,
   ) => {
     const content = await this.repository.findContent({ _id: contentId });
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
@@ -464,6 +466,7 @@ export class ContentServiceV2 {
     const engagement = await this.repository.createEngagement({
       type: EngagementType.Quote,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
@@ -490,7 +493,7 @@ export class ContentServiceV2 {
           read: false,
         },
         userOwner,
-        account.preferences.languages[0]
+        account.preferences.languages[0],
       );
 
     return { quoteContent, engagement };
@@ -499,11 +502,11 @@ export class ContentServiceV2 {
   createContentFarming = async (contentId: string, accountId: string) => {
     const balance = await this.taccountService.getAccountBalance(
       accountId,
-      WalletType.PERSONAL
+      WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
       accountId,
-      WalletType.FARM_LOCKED
+      WalletType.FARM_LOCKED,
     );
 
     if (balance >= (lockBalance + balance) * 0.05) {
@@ -560,11 +563,11 @@ export class ContentServiceV2 {
     contentFarming.startAt = new Date();
     const balance = await this.taccountService.getAccountBalance(
       String(contentFarming.account),
-      WalletType.PERSONAL
+      WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
       String(contentFarming.account),
-      WalletType.FARM_LOCKED
+      WalletType.FARM_LOCKED,
     );
     if (balance >= (lockBalance + balance) * 0.05) {
       const farmAmount = (lockBalance + balance) * 0.05;
@@ -655,7 +658,7 @@ export class ContentServiceV2 {
             $push: {
               farming: contentFarming,
             },
-          }
+          },
         );
         await this.taccountService.transfers({
           from: {
@@ -707,7 +710,7 @@ export class ContentServiceV2 {
           $push: {
             farming: contentFarming,
           },
-        }
+        },
       );
       await this.taccountService.transfers({
         from: {
@@ -742,7 +745,8 @@ export class ContentServiceV2 {
 
   expireAllFarmedToken = async () => {
     const cutOffDate = new Date(
-      new Date().getTime() - Environment.CONTENT_FARMING_COOLDOWN_HR * 60 * 1000
+      new Date().getTime() -
+        Environment.CONTENT_FARMING_COOLDOWN_HR * 60 * 1000,
     );
     const expiresFarmings = await this.contentFarmingModel.find({
       status: ContentFarmingStatus.Farming,
@@ -750,22 +754,22 @@ export class ContentServiceV2 {
     });
     return Promise.all(
       expiresFarmings.map((cf) =>
-        this.expireFarm(String(cf.content), String(cf.account))
-      )
+        this.expireFarm(String(cf.content), String(cf.account)),
+      ),
     );
   };
 
   pipeContentFarming = async (
     contentFarming: ContentFarming,
-    accountId: string
+    accountId: string,
   ) => {
     const balance = await this.taccountService.getAccountBalance(
       accountId,
-      WalletType.PERSONAL
+      WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
       accountId,
-      WalletType.FARM_LOCKED
+      WalletType.FARM_LOCKED,
     );
     const totalContentFarming = await this.contentFarmingModel.count({
       account: accountId,
@@ -774,7 +778,7 @@ export class ContentServiceV2 {
       contentFarming,
       balance,
       lockBalance,
-      totalContentFarming
+      totalContentFarming,
     );
   };
 
@@ -783,7 +787,7 @@ export class ContentServiceV2 {
     account: Account,
     query: PaginationQuery,
     type: EngagementType,
-    viewer?: User
+    viewer?: User,
   ) => {
     const content = await this.repository.findContent({ _id: contentId });
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
@@ -802,11 +806,9 @@ export class ContentServiceV2 {
         limit: query.maxResults,
         sort: { createdAt: -1 },
         populate: 'user',
-      }
+      },
     );
     const usersEngagement = engagementDocuments.filter((item) => item.user);
-
-    const countUsersEngagement = await this.repository.countEngagements(filter);
 
     // const users = await this.repository.findUsers({ _id: usersId });
     if (!usersEngagement.length)
@@ -821,14 +823,11 @@ export class ContentServiceV2 {
           return user.type === UserType.PAGE
             ? user.toPageResponseV2()
             : await user.toUserResponseV2();
-        })
+        }),
       );
       return ResponseDto.ok({
         payload: userResponses,
-        meta: Meta.fromDocuments(
-          engagementDocuments as any[],
-          countUsersEngagement
-        ),
+        meta: Meta.fromDocuments(engagementDocuments as any[]),
       });
     }
 
@@ -842,7 +841,7 @@ export class ContentServiceV2 {
       .exec();
 
     const relationship = relationships?.find(
-      (relationship) => String(relationship.user) === String(viewer?._id)
+      (relationship) => String(relationship.user) === String(viewer?._id),
     );
 
     const userResponses = await Promise.all(
@@ -851,29 +850,26 @@ export class ContentServiceV2 {
           ? user.toPageResponseV2(
               relationship?.blocking ?? false,
               relationship?.blocking ?? false,
-              relationship?.following ?? false
+              relationship?.following ?? false,
             )
           : await user.toUserResponseV2({
               blocked: relationship?.blocking ?? false,
               blocking: relationship?.blocking ?? false,
               followed: relationship?.following ?? false,
             });
-      })
+      }),
     );
 
     return ResponseDto.ok({
       payload: userResponses,
-      meta: Meta.fromDocuments(
-        engagementDocuments as any[],
-        countUsersEngagement
-      ),
+      meta: Meta.fromDocuments(usersEngagement as any[]),
     });
   };
 
   getQuoteByCast = async (
     contentId: string,
     query: PaginationQuery,
-    viewer?: User
+    viewer?: User,
   ) => {
     this.logger.log('Start get quote cast');
     const [bundleContents] = await this.repository.aggregationContent({
@@ -882,11 +878,6 @@ export class ContentServiceV2 {
       maxResults: query.maxResults,
       sinceId: query.sinceId,
       untilId: query.untilId,
-      isQuote: true,
-    });
-
-    const countContent = await this.repository.countContents({
-      originalPost: contentId,
       isQuote: true,
     });
 
@@ -899,11 +890,6 @@ export class ContentServiceV2 {
 
     this.logger.log('Success get quote cast');
 
-    return this.toContentsResponses(
-      bundleContents,
-      query,
-      viewer,
-      countContent
-    );
+    return this.toContentsResponses(bundleContents, query, viewer);
   };
 }

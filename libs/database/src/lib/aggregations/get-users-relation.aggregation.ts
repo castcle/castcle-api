@@ -44,7 +44,7 @@ export type GetUserRelationResponseCount = {
 };
 
 export const pipelineOfUserRelationMentions = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     {
@@ -135,13 +135,13 @@ const userFollowQuery = (params: GetUserRelationParams) => {
 };
 
 export const pipelineOfUserRelationFollowers = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [...userFollowQuery(params), ...[{ $limit: params.limit }]];
 };
 
 export const pipelineOfUserRelationFollowersCount = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     ...userFollowQuery(params),
@@ -181,13 +181,13 @@ const userFollowingQuery = (params: GetUserRelationParams) => {
 };
 
 export const pipelineOfUserRelationFollowing = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [...userFollowingQuery(params), ...[{ $limit: params.limit }]];
 };
 
 export const pipelineOfUserRelationFollowingCount = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     ...userFollowingQuery(params),

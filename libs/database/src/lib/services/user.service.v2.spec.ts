@@ -21,9 +21,10 @@
  * or have any questions.
  */
 
+import { CastcleBullModule } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
-import { getQueueToken } from '@nestjs/bull';
+import { BullModule, getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -31,6 +32,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  NotificationService,
   UserService,
   UserServiceV2,
 } from '../database.module';
@@ -70,10 +72,13 @@ describe('UserServiceV2', () => {
         HttpModule,
         MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
         MongooseAsyncFeatures,
+        CastcleBullModule,
+        BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
         MongooseForFeatures,
       ],
       providers: [
         AuthenticationService,
+        NotificationService,
         ContentService,
         CommentService,
         Repository,
@@ -131,7 +136,7 @@ describe('UserServiceV2', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toBe(
-        CastcleException.USER_OR_PAGE_NOT_FOUND
+        CastcleException.USER_OR_PAGE_NOT_FOUND,
       );
     });
 
@@ -188,6 +193,41 @@ describe('UserServiceV2', () => {
     });
   });
 
+  describe('#followUser', () => {
+    let user1: User;
+    let user2: User;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 10, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
+      await expect(
+        userServiceV2.followUser(user1, 'undefined', user1.ownerAccount),
+      ).rejects.toBe(CastcleException.USER_OR_PAGE_NOT_FOUND);
+    });
+
+    it('should follow user and create follow relationship', async () => {
+      await userServiceV2.followUser(
+        user1,
+        String(user2._id),
+        user1.ownerAccount,
+      );
+
+      const followRelation = await repository
+        .findRelationships({ userId: [user1._id], followedUser: user2._id })
+        .exec();
+
+      expect(followRelation).not.toBeNull();
+      expect(followRelation[0].following).toBeTruthy();
+    });
+  });
+
   describe('#getMyPages', () => {
     it('should return undefined when user have no page', async () => {
       const result = await userServiceV2.getMyPages(userDemo);
@@ -200,7 +240,7 @@ describe('UserServiceV2', () => {
         {
           castcleId: accountDemo.account.id,
           displayName: 'sp002',
-        }
+        },
       );
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();

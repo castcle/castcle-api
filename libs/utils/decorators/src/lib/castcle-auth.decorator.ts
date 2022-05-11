@@ -40,14 +40,14 @@ export function CastcleAuth(cacheConfig: { Name: string; Ttl: number }) {
     CacheTTL(cacheConfig.Ttl),
     UseInterceptors(HttpCacheIndividualInterceptor),
     ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor)
+    UseInterceptors(CredentialInterceptor),
   );
 }
 
 export function CastcleBasicAuth() {
   return applyDecorators(
     ApiBearerAuth(),
-    UseInterceptors(CredentialInterceptor)
+    UseInterceptors(CredentialInterceptor),
   );
 }
 
@@ -59,7 +59,7 @@ export function CastcleClearCacheAuth(cacheConfig: {
     CacheKey(cacheConfig.Name),
     ApiBearerAuth(),
     UseInterceptors(CredentialInterceptor),
-    UseInterceptors(HttpCacheClearInterceptor)
+    UseInterceptors(HttpCacheClearInterceptor),
   );
 }
 
