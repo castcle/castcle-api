@@ -148,7 +148,7 @@ export const testLikesFlow = () => {
     await ContentsRequest.likingUser(contentId)
       .auth(userA.accessToken, { type: 'bearer' })
       .expect(async ({ body }) => {
-        expect(body.meta.resultTotal).toEqual(1);
+        expect(body.meta.resultCount).toEqual(1);
         expect(body.payload[0].castcleId).toEqual(userA.castcleId);
       });
   });
