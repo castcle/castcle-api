@@ -206,7 +206,7 @@ export class Repository {
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
 
-    if (filter.sinceId && filter.untilId)
+    if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
         untilId: filter.untilId,
@@ -218,6 +218,7 @@ export class Repository {
   private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
       type: filter.type,
+      visibility: EntityVisibility.Publish,
     };
     if (filter.user) query.user = filter.user;
     if (filter.itemId) query.itemId = filter.itemId;
@@ -226,7 +227,7 @@ export class Repository {
         $ref: filter.targetRef.$ref,
         $id: filter.targetRef.$id,
       };
-    if (filter.sinceId && filter.untilId)
+    if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
         untilId: filter.untilId,

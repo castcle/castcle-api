@@ -807,8 +807,6 @@ export class ContentServiceV2 {
     );
     const usersEngagement = engagementDocuments.filter((item) => item.user);
 
-    const countUsersEngagement = await this.repository.countEngagements(filter);
-
     // const users = await this.repository.findUsers({ _id: usersId });
     if (!usersEngagement.length)
       return ResponseDto.ok({
@@ -826,10 +824,7 @@ export class ContentServiceV2 {
       );
       return ResponseDto.ok({
         payload: userResponses,
-        meta: Meta.fromDocuments(
-          engagementDocuments as any[],
-          countUsersEngagement,
-        ),
+        meta: Meta.fromDocuments(engagementDocuments as any[]),
       });
     }
 
@@ -864,10 +859,7 @@ export class ContentServiceV2 {
 
     return ResponseDto.ok({
       payload: userResponses,
-      meta: Meta.fromDocuments(
-        engagementDocuments as any[],
-        countUsersEngagement,
-      ),
+      meta: Meta.fromDocuments(usersEngagement as any[]),
     });
   };
 
@@ -886,11 +878,6 @@ export class ContentServiceV2 {
       isQuote: true,
     });
 
-    const countContent = await this.repository.countContents({
-      originalPost: contentId,
-      isQuote: true,
-    });
-
     if (!bundleContents.contents.length)
       return {
         payload: [],
@@ -900,11 +887,6 @@ export class ContentServiceV2 {
 
     this.logger.log('Success get quote cast');
 
-    return this.toContentsResponses(
-      bundleContents,
-      query,
-      viewer,
-      countContent,
-    );
+    return this.toContentsResponses(bundleContents, query, viewer);
   };
 }
