@@ -576,6 +576,7 @@ export class CommentServiceV2 {
     await new this._engagementModel({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'comment',
         $id: comment._id,

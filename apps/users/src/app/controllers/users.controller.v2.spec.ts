@@ -673,7 +673,23 @@ describe('UsersControllerV2', () => {
         expect(engagement).toBeNull();
       });
     });
+  });
+  describe('#recast', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
 
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
     describe('#recast', () => {
       describe('#recastContent()', () => {
         it('should recast is correct.', async () => {
@@ -755,45 +771,61 @@ describe('UsersControllerV2', () => {
         });
       });
     });
+  });
 
-    describe('#quoteContent()', () => {
-      it('should quote cast is correct.', async () => {
-        const authorizer = new Authorizer(
-          mocksUsers[1].account,
-          mocksUsers[1].user,
-          mocksUsers[1].credential,
-        );
-        const quotecast = await appController.quoteContent(
-          authorizer,
-          {
-            contentId: content._id,
-            message: 'quote cast',
-          } as QuoteCastDto,
-          {
-            userId: mocksUsers[1].user._id,
-          } as GetUserParam,
-        );
+  describe('#quoteContent()', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
 
-        const engagement = await (
-          service as any
-        ).repositoryService.findEngagement({
-          user: mocksUsers[1].user._id,
-          targetRef: {
-            $ref: 'content',
-            $id: content._id,
-          },
-          type: EngagementType.Quote,
-        });
-
-        expect(engagement.user).toEqual(mocksUsers[1].user._id);
-        expect(String(engagement.itemId)).toEqual(quotecast.payload.id);
-        expect(engagement.targetRef.oid).toEqual(content._id);
-        expect(engagement.type).toEqual(EngagementType.Quote);
-
-        expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
-        expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
-        expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
       });
+
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
+    it('should quote cast is correct.', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const quotecast = await appController.quoteContent(
+        authorizer,
+        {
+          contentId: content._id,
+          message: 'quote cast',
+        } as QuoteCastDto,
+        {
+          userId: mocksUsers[1].user._id,
+        } as GetUserParam,
+      );
+
+      const engagement = await (
+        service as any
+      ).repositoryService.findEngagement({
+        user: mocksUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id,
+        },
+        type: EngagementType.Quote,
+      });
+
+      expect(engagement.user).toEqual(mocksUsers[1].user._id);
+      expect(String(engagement.itemId)).toEqual(quotecast.payload.id);
+      expect(engagement.targetRef.oid).toEqual(content._id);
+      expect(engagement.type).toEqual(EngagementType.Quote);
+
+      expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
+      expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
+      expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
     });
   });
 });

@@ -1198,6 +1198,7 @@ describe('AppController', () => {
       await new contentService._engagementModel({
         type: 'like',
         user: mockUsers[1].user._id,
+        account: mockUsers[1].user.ownerAccount,
         targetRef: {
           $ref: 'content',
           $id: content.id,

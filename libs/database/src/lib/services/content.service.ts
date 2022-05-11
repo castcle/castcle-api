@@ -418,6 +418,7 @@ export class ContentService {
     engagement = new this._engagementModel({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: content._id,
@@ -563,6 +564,7 @@ export class ContentService {
     const engagement = await new this._engagementModel({
       type: EngagementType.Quote,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
@@ -602,6 +604,7 @@ export class ContentService {
     const engagement = await new this._engagementModel({
       type: EngagementType.Recast,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'content',
         $id: sourceContentId,
@@ -643,7 +646,11 @@ export class ContentService {
    * Update Comment Engagement from Content or Comment
    * @param {Comment} comment
    */
-  _updateCommentCounter = async (comment: Comment, commentBy?: any) => {
+  _updateCommentCounter = async (
+    comment: Comment,
+    commentBy?: any,
+    user?: User,
+  ) => {
     if (![CommentType.Comment, CommentType.Reply].includes(comment.type)) {
       return true;
     }
@@ -661,6 +668,7 @@ export class ContentService {
         ...query,
         visibility: EntityVisibility.Publish,
         user: commentBy,
+        account: user.ownerAccount,
       }).save();
     } else {
       const engagements = await this._engagementModel.find(query).exec();
@@ -702,7 +710,7 @@ export class ContentService {
       comment.save(),
     ]);
 
-    await this._updateCommentCounter(comment, author._id);
+    await this._updateCommentCounter(comment, author._id, author);
 
     return comment;
   };
@@ -732,7 +740,7 @@ export class ContentService {
     newComment.hashtags = this.hashtagService.extractHashtagFromCommentDto(dto);
     await this.hashtagService.createFromTags(newComment.hashtags);
     const comment = await newComment.save();
-    await this._updateCommentCounter(comment, author._id);
+    await this._updateCommentCounter(comment, author._id, author);
     return comment;
   };
 
@@ -790,6 +798,7 @@ export class ContentService {
     engagement = new this._engagementModel({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'comment',
         $id: comment._id,
