@@ -79,4 +79,8 @@ export class UsersRequest {
     );
   static quotecasts = (userId: string) =>
     UsersRequest.post(`/v2/users/${userId}/quotecasts`);
+  static recast = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/recasts`);
+  static undoRecast = (userId: string, sourceCommentId: string) =>
+    UsersRequest.delete(`/v2/users/${userId}/recasts/${sourceCommentId}`);
 }
