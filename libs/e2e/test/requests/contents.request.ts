@@ -30,4 +30,6 @@ export class ContentsRequest {
     ContentsRequest.get(`/v2/contents/${contentId}/liking-users`);
   static quotecastsUser = (contentId: string) =>
     ContentsRequest.get(`/v2/contents/${contentId}/quotecasts`);
+  static recastsUser = (contentId: string) =>
+    ContentsRequest.get(`/v2/contents/${contentId}/recasts`);
 }
