@@ -778,16 +778,6 @@ export class UserService {
         JSON.stringify(deactivateResults),
         `deactivate:success:account-${account._id}`,
       );
-
-      this.userQueue.add(
-        {
-          id: account,
-          action: CastcleQueueAction.Deleting,
-        },
-        {
-          removeOnComplete: true,
-        },
-      );
     } catch (error: unknown) {
       this.logger.error(error, `deactivate:error:account-${account._id}`);
       throw error;
@@ -859,6 +849,7 @@ export class UserService {
   removeAllEngagementsFromUsers = async (users: User[]) => {
     const engagements = await this.engagementModel.find({
       user: { $in: users.map((user) => user._id) },
+      visibility: { $ne: EntityVisibility.Deleted },
     });
 
     const $deletedEngagements = engagements.map((engagement) => {
@@ -872,10 +863,7 @@ export class UserService {
     return Promise.all([
       this._accountModel.updateOne(
         { _id: account._id },
-        {
-          visibility: EntityVisibility.Deleted,
-          queueAction: CastcleQueueAction.Deleting,
-        },
+        { visibility: EntityVisibility.Deleted },
       ),
       this._userModel.updateMany(
         { ownerAccount: account._id },
@@ -891,15 +879,6 @@ export class UserService {
       },
       { visibility: EntityVisibility.Deleted },
     );
-  };
-
-  /**
-   * Deactivate one account by id
-   * @param id
-   */
-  deactivateBackground = async (accountId: any) => {
-    const account = await this._accountModel.findById(accountId).exec();
-    await this.deactivate(account);
   };
 
   reactivate = async (user: User) => {

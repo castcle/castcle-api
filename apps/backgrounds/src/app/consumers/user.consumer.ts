@@ -40,15 +40,9 @@ export class UserConsumer {
     try {
       this.logger.log(`consume user message '${JSON.stringify(job.data)}' `);
 
-      switch (job.data.action) {
-        case CastcleQueueAction.Deleting:
-          this.userService.deactivateBackground(job.data.id);
-          this.logger.log(`deleting user ${job.data.id}`);
-          break;
-        case CastcleQueueAction.UpdateProfile:
-          this.userService.updateUserInEmbedContentBackground(job.data.id);
-          this.logger.log(`Updating profile of user ${job.data.id}`);
-          break;
+      if (job.data.action === CastcleQueueAction.UpdateProfile) {
+        this.userService.updateUserInEmbedContentBackground(job.data.id);
+        this.logger.log(`Updating profile of user ${job.data.id}`);
       }
     } catch (error) {
       this.logger.error(error);
