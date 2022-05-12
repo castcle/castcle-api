@@ -24,6 +24,7 @@
 import { User } from '../schemas';
 import { EngagementType } from './../schemas/engagement.schema';
 import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
+import { EntityVisibility } from './../dtos/common.dto';
 
 type GetContentFilter = {
   [key: string]: string;
@@ -76,10 +77,19 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                   },
                 },
               ],
-              as: 'cast',
+              as: 'casts',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$cast', 0] } },
+          {
+            $unwind: {
+              path: '$casts',
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: '$casts',
+            },
+          },
         ],
         authors: [
           {
@@ -144,6 +154,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
                   },
@@ -288,6 +299,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
                         { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
                   },
@@ -321,6 +333,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
                         { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
                   },

@@ -20,14 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import {
-  ContentService,
-  ContentServiceV2,
-  EngagementType,
-  validateObjectId,
-} from '@castcle-api/database';
+import { ContentServiceV2, EngagementType } from '@castcle-api/database';
 
-import { GetContentDto, PaginationQuery } from '@castcle-api/database/dtos';
+import {
+  CreateContentDto,
+  GetContentDto,
+  PaginationQuery,
+} from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -39,43 +38,41 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Delete, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { Action, CaslAbilityFactory } from '@castcle-api/casl';
+import { Content } from '@castcle-api/database/schemas';
+import { SaveContentPipe } from './../pipes/save-content.pipe';
 
 @CastcleControllerV2({ path: 'contents' })
 export class ContentControllerV2 {
   private logger = new CastLogger(ContentControllerV2.name);
   constructor(
     private contentServiceV2: ContentServiceV2,
-    private contentService: ContentService,
+    private caslAbility: CaslAbilityFactory,
   ) {}
-
-  private validateId(id: string) {
-    this.logger.log(`Validate is object id: ${id}`);
-    if (!validateObjectId(id)) throw CastcleException.CONTENT_NOT_FOUND;
-  }
 
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId')
-  async getContentFromId(
-    @Param('contentId') contentId: string,
+  async getContent(
+    @Param() { contentId }: GetContentDto,
     @Auth() authorizer: Authorizer,
-    @Query() query: PaginationQuery,
+    @Query() { hasRelationshipExpansion }: PaginationQuery,
   ) {
-    this.validateId(contentId);
-    const content = await this.contentService.getContentById(contentId);
-    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
-    const engagements = authorizer.user
-      ? await this.contentService.getAllEngagementFromContentAndUser(
-          content,
-          authorizer.user,
-        )
-      : [];
+    this.logger.log(`Get casts from content : ${contentId}`);
 
-    return this.contentService.convertContentToContentResponse(
+    return await this.contentServiceV2.getContent(
+      contentId,
       authorizer.user,
-      content,
-      engagements,
-      query.hasRelationshipExpansion,
+      hasRelationshipExpansion,
     );
   }
 
@@ -170,6 +167,49 @@ export class ContentControllerV2 {
       contentId,
       query,
       authorizer.user,
+    );
+  }
+
+  @CastcleBasicAuth()
+  @Post('feed')
+  async createFeedContent(
+    @Auth() authorizer: Authorizer,
+    @Body(new SaveContentPipe()) body: CreateContentDto,
+  ) {
+    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
+
+    const ability = this.caslAbility.createForCredential(authorizer.credential);
+    if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
+
+    return await this.contentServiceV2.createContent(body, authorizer.user);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Contents)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':contentId')
+  async deleteContentFromId(
+    @Auth() authorizer: Authorizer,
+    @Param() { contentId }: GetContentDto,
+  ) {
+    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
+
+    const ability = this.caslAbility.createForCredential(authorizer.credential);
+    if (!ability.can(Action.Update, Content)) throw CastcleException.FORBIDDEN;
+
+    await this.contentServiceV2.deleteContent(contentId, authorizer.user);
+  }
+
+  @CastcleAuth(CacheKeyName.Contents)
+  @Get(':contentId/participates')
+  async getParticipates(
+    @Auth() authorizer: Authorizer,
+    @Param() { contentId }: GetContentDto,
+  ) {
+    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
+
+    return await this.contentServiceV2.getParticipates(
+      contentId,
+      authorizer.account,
     );
   }
 }
