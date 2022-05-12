@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { AnalyticService, AuthenticationService } from '@castcle-api/database';
-import { SocialConnectDto } from '@castcle-api/database/dtos';
+import { SocialConnectDto } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Host } from '@castcle-api/utils/commons';

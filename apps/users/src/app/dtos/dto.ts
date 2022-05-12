@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
-import { OtpObjective } from '@castcle-api/database/schemas';
+import { CastcleMeta, UserResponseDto } from '@castcle-api/database';
+import { OtpObjective } from '@castcle-api/database';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 

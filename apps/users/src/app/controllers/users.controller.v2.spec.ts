@@ -53,9 +53,9 @@ import {
   UnlikeCommentCastParam,
   GetSourceContentParam,
   QuoteCastDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import { Comment, Content } from '@castcle-api/database/schemas';
+import { Comment, Content } from '@castcle-api/database';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';

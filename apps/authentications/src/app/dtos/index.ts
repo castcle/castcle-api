@@ -24,11 +24,8 @@ import {
   AcceptPlatform,
   PageResponseDto,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
-import {
-  AccountAuthenIdType,
-  OtpObjective,
-} from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { AccountAuthenIdType, OtpObjective } from '@castcle-api/database';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';

@@ -22,8 +22,8 @@
  */
 
 import { User } from '../schemas';
-import { EngagementType } from './../schemas/engagement.schema';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
+import { EngagementType } from '../models';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from '../dtos/content.dto';
 
 type GetContentFilter = {
   [key: string]: string;

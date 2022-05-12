@@ -26,7 +26,7 @@ import {
   Content,
   Credential,
   User,
-} from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
 import {
   InferSubjects,
   Ability,

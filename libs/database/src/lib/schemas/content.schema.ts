@@ -35,7 +35,7 @@ import {
   ShortPayload,
 } from '../dtos/content.dto';
 import { postContentSave, preContentSave } from '../hooks/content.save';
-import { EngagementType } from '../models/engagement.enum';
+import { EngagementType } from '../models';
 import { CastcleBase } from './base.schema';
 import { ContentFarming } from './content-farming.schema';
 import { Engagement } from './engagement.schema';

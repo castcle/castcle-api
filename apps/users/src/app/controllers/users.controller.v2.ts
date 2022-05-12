@@ -52,8 +52,8 @@ import {
   GetContentDto,
   GetSourceContentParam,
   QuoteCastDto,
-} from '@castcle-api/database/dtos';
-import { Comment, CommentType } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { Comment, CommentType } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

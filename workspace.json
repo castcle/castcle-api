@@ -8,7 +8,7 @@
       "projectType": "application",
       "targets": {
         "build": {
-          "executor": "@nrwl/node:webpack",
+          "executor": "@nrwl/js:swc",
           "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/authentications",
@@ -61,7 +61,7 @@
       "projectType": "application",
       "targets": {
         "build": {
-          "executor": "@nrwl/node:webpack",
+          "executor": "@nrwl/js:swc",
           "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/auto-posts",
@@ -114,7 +114,7 @@
       "projectType": "application",
       "targets": {
         "build": {
-          "executor": "@nrwl/node:webpack",
+          "executor": "@nrwl/js:swc",
           "outputs": ["{options.outputPath}"],
           "options": {
             "outputPath": "dist/apps/backgrounds",
@@ -166,6 +166,16 @@
       "sourceRoot": "libs/casl/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/casl",
+            "main": "libs/casl/src/index.ts",
+            "tsConfig": "libs/casl/tsconfig.lib.json",
+            "assets": ["libs/casl/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -189,6 +199,16 @@
       "sourceRoot": "libs/database/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/database",
+            "main": "libs/database/src/index.ts",
+            "tsConfig": "libs/database/tsconfig.lib.json",
+            "assets": ["libs/database/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -230,35 +250,23 @@
       },
       "tags": []
     },
-    "environments": {
-      "root": "libs/environments",
-      "sourceRoot": "libs/environments/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/environments/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/environments"],
-          "options": {
-            "jestConfig": "libs/environments/jest.config.ts",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
+    "environments": "libs/environments",
     "feeds": "apps/feeds",
     "healthy": {
       "root": "libs/healthy",
       "sourceRoot": "libs/healthy/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/healthy",
+            "main": "libs/healthy/src/index.ts",
+            "tsConfig": "libs/healthy/tsconfig.lib.json",
+            "assets": ["libs/healthy/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -282,6 +290,16 @@
       "sourceRoot": "libs/logger/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/logger",
+            "main": "libs/logger/src/index.ts",
+            "tsConfig": "libs/logger/tsconfig.lib.json",
+            "assets": ["libs/logger/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -307,6 +325,16 @@
       "sourceRoot": "libs/utils/aws/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/aws",
+            "main": "libs/utils/aws/src/index.ts",
+            "tsConfig": "libs/utils/aws/tsconfig.lib.json",
+            "assets": ["libs/utils/aws/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -330,6 +358,16 @@
       "sourceRoot": "libs/utils/clients/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/clients",
+            "main": "libs/utils/clients/src/index.ts",
+            "tsConfig": "libs/utils/clients/tsconfig.lib.json",
+            "assets": ["libs/utils/clients/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -353,6 +391,16 @@
       "sourceRoot": "libs/utils/commons/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/commons",
+            "main": "libs/utils/commons/src/index.ts",
+            "tsConfig": "libs/utils/commons/tsconfig.lib.json",
+            "assets": ["libs/utils/commons/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -376,6 +424,16 @@
       "sourceRoot": "libs/utils/decorators/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/decorators",
+            "main": "libs/utils/decorators/src/index.ts",
+            "tsConfig": "libs/utils/decorators/tsconfig.lib.json",
+            "assets": ["libs/utils/decorators/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -399,6 +457,16 @@
       "sourceRoot": "libs/utils/exception/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/exception",
+            "main": "libs/utils/exception/src/index.ts",
+            "tsConfig": "libs/utils/exception/tsconfig.lib.json",
+            "assets": ["libs/utils/exception/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -422,6 +490,16 @@
       "sourceRoot": "libs/utils/interceptors/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/interceptors",
+            "main": "libs/utils/interceptors/src/index.ts",
+            "tsConfig": "libs/utils/interceptors/tsconfig.lib.json",
+            "assets": ["libs/utils/interceptors/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {
@@ -445,6 +523,16 @@
       "sourceRoot": "libs/utils/pipes/src",
       "projectType": "library",
       "targets": {
+        "build": {
+          "executor": "@nrwl/js:swc",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/libs/utils/pipes",
+            "main": "libs/utils/pipes/src/index.ts",
+            "tsConfig": "libs/utils/pipes/tsconfig.lib.json",
+            "assets": ["libs/utils/pipes/*.md"]
+          }
+        },
         "lint": {
           "executor": "@nrwl/linter:eslint",
           "options": {

@@ -21,5 +21,7 @@
  * or have any questions.
  */
 
+export * from './lib/dtos';
 export * from './lib/models';
+export * from './lib/schemas';
 export * from './lib/database.module';

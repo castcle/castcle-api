@@ -23,11 +23,33 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { SocialSyncDto } from '../dtos/user.dto';
-import { SocialProvider } from '../models';
+import { CastcleImage, SocialSyncDto } from '../dtos';
+import { SocialProvider, UserVerified } from '../models';
 import { Account } from './account.schema';
-import { Author, AuthorSchema } from './author.schema';
 import { CastcleBase } from './base.schema';
+
+@Schema({ _id: false, timestamps: false, versionKey: false })
+class Author {
+  @Prop({ index: true })
+  id: string;
+
+  @Prop()
+  type: 'people' | 'page';
+
+  @Prop({ index: true })
+  castcleId: string;
+
+  @Prop()
+  displayName: string;
+
+  @Prop({ type: Object })
+  avatar: CastcleImage | null;
+
+  @Prop({ type: Object })
+  verified: UserVerified;
+}
+
+const AuthorSchema = SchemaFactory.createForClass(Author);
 
 @Schema({ timestamps: true })
 class SocialSyncDocument extends CastcleBase {

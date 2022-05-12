@@ -32,9 +32,9 @@ import {
   QueueName,
   UserService,
 } from '@castcle-api/database';
-import { ContentType } from '@castcle-api/database/dtos';
+import { ContentType } from '@castcle-api/database';
 import { generateMockUsers } from '@castcle-api/database/mocks';
-import { Content, User } from '@castcle-api/database/schemas';
+import { Content, User } from '@castcle-api/database';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';

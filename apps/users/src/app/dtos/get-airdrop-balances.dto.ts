@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CampaignField } from '@castcle-api/database/dtos';
+import { CampaignField } from '@castcle-api/database';
 import { TransformStringToArrayOfStrings } from '@castcle-api/utils/commons';
 import { IsEnum, IsOptional } from 'class-validator';
 

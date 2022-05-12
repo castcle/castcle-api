@@ -39,8 +39,8 @@ import {
   PageDto,
   SaveContentDto,
   ShortPayload,
-} from '@castcle-api/database/dtos';
-import { Content, Credential } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { Content, Credential } from '@castcle-api/database';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';

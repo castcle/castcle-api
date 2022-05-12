@@ -25,17 +25,14 @@ import {
   getSocialPrefix,
   UserService,
 } from '@castcle-api/database';
-import {
-  DEFAULT_QUERY_OPTIONS,
-  SocialConnectDto,
-} from '@castcle-api/database/dtos';
+import { DEFAULT_QUERY_OPTIONS, SocialConnectDto } from '@castcle-api/database';
 import {
   Account,
   Credential,
   Otp,
   OtpObjective,
   User,
-} from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

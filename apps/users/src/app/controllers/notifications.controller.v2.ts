@@ -24,7 +24,7 @@
 import {
   NotificationQuery,
   NotificationSourceQuery,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import {

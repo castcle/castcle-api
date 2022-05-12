@@ -22,7 +22,7 @@
  */
 
 import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
-import { UxEngagementBody } from '@castcle-api/database/dtos';
+import { UxEngagementBody } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,

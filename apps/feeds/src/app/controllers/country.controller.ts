@@ -24,7 +24,7 @@ import { CountryService } from '@castcle-api/database';
 import {
   CountryResponse,
   DEFAULT_COUNTRY_QUERY_OPTIONS,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';

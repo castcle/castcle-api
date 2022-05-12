@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database/dtos';
+import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database';
 import { LimitPipe, LIMIT_MAX, PagePipe, SortByPipe } from './query.pipe';
 
 describe('SortByPipe', () => {

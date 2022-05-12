@@ -28,7 +28,7 @@ import {
   LinkType,
   SaveContentDto,
   ShortPayload,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { SocialProvider } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';

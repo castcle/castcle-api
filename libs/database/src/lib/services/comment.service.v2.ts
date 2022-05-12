@@ -43,7 +43,7 @@ import {
   PaginationQuery,
   ResponseDto,
 } from '../dtos';
-import { UserType } from '../models';
+import { EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import {
   Account,
@@ -51,7 +51,6 @@ import {
   CommentType,
   Content,
   Engagement,
-  EngagementType,
   Hashtag,
   Notification,
   Relationship,

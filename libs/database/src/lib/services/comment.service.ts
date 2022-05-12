@@ -16,11 +16,11 @@ import {
   Comment,
   CommentType,
   Engagement,
-  EngagementType,
   User,
   Relationship,
   Revision,
 } from '../schemas';
+import { EngagementType } from '../models';
 import { getRelationship } from '../utils/common';
 
 @Injectable()

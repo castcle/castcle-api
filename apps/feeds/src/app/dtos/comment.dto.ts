@@ -24,7 +24,7 @@ import {
   CastcleMeta,
   PageResponseDto,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 

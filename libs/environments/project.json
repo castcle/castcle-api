@@ -1,0 +1,32 @@
+{
+  "sourceRoot": "libs/environments/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:swc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/environments",
+        "main": "libs/environments/src/index.ts",
+        "tsConfig": "libs/environments/tsconfig.lib.json",
+        "assets": ["libs/environments/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/environments/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/environments"],
+      "options": {
+        "jestConfig": "libs/environments/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

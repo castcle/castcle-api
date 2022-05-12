@@ -174,3 +174,5 @@ db
 
 #localDocker
 docker-compose.yml
+
+*.d.ts

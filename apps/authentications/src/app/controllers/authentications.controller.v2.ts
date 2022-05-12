@@ -27,7 +27,7 @@ import {
   RegisterWithEmailDto,
   ResponseDto,
   SocialConnectDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,

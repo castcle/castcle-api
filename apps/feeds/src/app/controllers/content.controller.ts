@@ -40,8 +40,8 @@ import {
   PaginationQuery,
   ResponseDto,
   SaveContentDto,
-} from '@castcle-api/database/dtos';
-import { Content, User } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { Content, User } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

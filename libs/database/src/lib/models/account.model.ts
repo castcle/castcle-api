@@ -37,14 +37,14 @@ export enum AccountActivationType {
   EMAIL = 'email',
   PHONE = 'phone',
 }
-export class AccountActivation {
+export class AccountActivationProp {
   type: AccountActivationType;
   verifyToken: string;
   verifyTokenExpireDate: Date;
   activationDate?: Date;
   revocationDate?: Date;
 }
-export class AccountDevice {
+export class AccountDeviceModel {
   uuid: string;
   firebaseToken: string;
   platform: AcceptPlatform;

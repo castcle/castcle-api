@@ -25,11 +25,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
 import { Password, Token } from '@castcle-api/utils/commons';
 import {
-  AccountActivation,
+  AccountActivationProp,
   AccountActivationType,
   AccountAuthentication,
   AccountCampaigns,
-  AccountDevice,
+  AccountDeviceModel,
 } from '../models';
 
 import { SchemaTypes, Types } from 'mongoose';
@@ -98,10 +98,10 @@ class AccountDocument extends CastcleBase {
   referralCount: number;
 
   @Prop({ type: Array })
-  activations: AccountActivation[];
+  activations: AccountActivationProp[];
 
   @Prop({ type: Array })
-  devices: AccountDevice[];
+  devices: AccountDeviceModel[];
   /**
    * TO DO !!! this is a hot fix for guests
    */
@@ -114,7 +114,7 @@ export const AccountSchema = SchemaFactory.createForClass(AccountDocument);
 export class Account extends AccountDocument {
   changePassword: (password: string, email?: string) => Promise<Account | null>;
   verifyPassword: (password: string) => boolean;
-  createActivation: (type: AccountActivationType) => AccountActivation;
+  createActivation: (type: AccountActivationType) => AccountActivationProp;
 }
 
 AccountSchema.methods.changePassword = function (
