@@ -56,7 +56,6 @@ import {
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
@@ -152,7 +151,7 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     if (body.castcleId) {
-      if (!CastcleDate.verifyUpdateCastcleId(user.displayIdUpdatedAt))
+      if (!user.canUpdateCastcleId())
         throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
       const userExisting = await this.authService.getExistedUserFromCastcleId(
@@ -169,7 +168,9 @@ export class UsersControllerV2 {
     );
 
     const updateUser = await this.userService.updateUser(user, prepareUser);
-    return updateUser.toUserResponse();
+    return updateUser.toUserResponseV2(
+      isMe ? { passwordNotSet: !authorizer.account.password } : undefined,
+    );
   }
 
   @CastcleBasicAuth()

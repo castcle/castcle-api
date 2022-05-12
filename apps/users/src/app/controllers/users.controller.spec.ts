@@ -291,14 +291,14 @@ describe('AppController', () => {
       expect(responseFull.links).toEqual(updateDto.links);
       expect(responseFull.images).toBeDefined();
       expect(responseFull.overview).toEqual(updateDto.overview);
-      const postReponse = await appController.getMyData({
+      const postResponse = await appController.getMyData({
         $credential: userCredential,
         $language: 'th',
       } as any);
-      expect(postReponse).toEqual(responseFull);
+      expect(postResponse).toEqual(responseFull);
     });
 
-    it('should return Exception when update dupplicate castcle id', async () => {
+    it('should return Exception when update duplicate castcle id', async () => {
       const mocks = await generateMockUsers(1, 0, {
         accountService: authService,
         userService: service,

@@ -1,6 +1,7 @@
 import { Configs, Environment } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DateTime } from 'luxon';
 import { Model, SchemaTypes } from 'mongoose';
 import {
   SearchFollowsResponseDto,
@@ -10,11 +11,9 @@ import {
   PageResponseDto,
   UserResponseDto,
   UserContact,
-  SyncSocialModelV2,
 } from '../dtos';
 import {
   AccountAuthentication,
-  PageVerified,
   SocialProvider,
   UserType,
   UserVerified,
@@ -110,21 +109,15 @@ type UserResponseOptionV2 = {
   balance?: number;
   mobile?: { countryCode: string; number: string };
   linkSocial?: AccountAuthentication;
-  syncSocial?: SyncSocialModelV2;
+  syncSocials?: SocialSync[];
   casts?: number;
 };
 
-export const UserSchema = SchemaFactory.createForClass(UserDocument);
-
 export class User extends UserDocument {
-  covertToUserResponse: (
-    user: User | User,
-    followed?: boolean,
-  ) => UserResponseDto;
+  canUpdateCastcleId: () => boolean;
   follow: (user: User) => Promise<void>;
   unfollow: (user: User) => Promise<void>;
   toSearchTopTrendResponse: () => SearchFollowsResponseDto;
-  toSearchResponse: () => SearchFollowsResponseDto;
   toAuthor: (user?: User | User) => Author;
   toUserResponse: (option?: UserResponseOption) => Promise<UserResponseDto>;
   toUserResponseV2: (option?: UserResponseOptionV2) => Promise<UserResponseDto>;
@@ -139,83 +132,57 @@ export class User extends UserDocument {
     blocked?: boolean,
     blocking?: boolean,
     followed?: boolean,
-    syncSocial?: SyncSocialModelV2,
+    syncSocials?: SocialSync[],
     casts?: number,
   ) => PageResponseDto;
 }
 
+export const UserSchema = SchemaFactory.createForClass<UserDocument, User>(
+  UserDocument,
+);
+
 const _covertToUserResponse = (self: User | User, followed?: boolean) => {
-  const selfSocial: any =
-    self.profile && self.profile.socials ? { ...self.profile.socials } : {};
-  if (self.profile && self.profile.websites && self.profile.websites.length > 0)
+  const selfSocial: any = { ...self.profile?.socials };
+  if (self.profile?.websites?.length > 0)
     selfSocial.website = self.profile.websites[0].website;
   return {
     id: self._id,
     castcleId: self.displayId,
     displayName: self.displayName,
     type: self.type,
-    dob: self.profile && self.profile.birthdate ? self.profile.birthdate : null,
-    followers: {
-      count: self.followerCount,
-    },
-    following: {
-      count: self.followedCount,
-    },
+    dob: self.profile?.birthdate || null,
+    followers: { count: self.followerCount },
+    following: { count: self.followedCount },
     images: {
-      avatar:
-        self.profile && self.profile.images && self.profile.images.avatar
-          ? new Image(self.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-      cover:
-        self.profile && self.profile.images && self.profile.images.cover
-          ? new Image(self.profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers,
+      avatar: self.profile?.images?.avatar
+        ? new Image(self.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      cover: self.profile?.images?.cover
+        ? new Image(self.profile.images.cover).toSignUrls()
+        : Configs.DefaultAvatarCovers,
     },
-    overview:
-      self.profile && self.profile.overview ? self.profile.overview : null,
+    overview: self.profile?.overview || null,
     links: selfSocial,
-    verified: self.verified, //self.verified ? true : false,
+    verified: self.verified,
     followed: followed,
-    canUpdateCastcleId: self.displayIdUpdatedAt
-      ? _verifyUpdateCastcleId(self.displayIdUpdatedAt)
-      : true,
+    canUpdateCastcleId: self.canUpdateCastcleId(),
     contact: self.contact,
   } as UserResponseDto;
 };
 
-UserSchema.statics.covertToUserResponse = (
-  self: User | User,
-  followed = false,
-) => _covertToUserResponse(self, followed);
-
-UserSchema.statics.toAuthor = (self: User | User) =>
-  ({
-    id: self._id,
-    avatar:
-      self.profile && self.profile.images && self.profile.images.avatar
-        ? new Image(self.profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
-    castcleId: self.displayId,
-    displayName: self.displayName,
-    type: self.type,
-    verified: self.verified,
-  } as Author);
-
-UserSchema.methods.toUserResponse = async function (
-  {
-    passwordNotSet = false,
-    blocked,
-    blocking,
-    followed,
-    balance,
-    mobile,
-    linkSocial,
-    syncSocial,
-    casts,
-  } = {} as UserResponseOption,
-) {
-  const self = await (this as User).populate('ownerAccount').execPopulate();
-  const response = _covertToUserResponse(self, followed);
+UserSchema.methods.toUserResponse = async function ({
+  passwordNotSet,
+  blocked,
+  blocking,
+  followed,
+  balance,
+  mobile,
+  linkSocial,
+  syncSocial,
+  casts,
+}: UserResponseOption = {}) {
+  const self = await this.populate('ownerAccount').execPopulate();
+  const response = _covertToUserResponse(self as User, followed);
   response.email = self.ownerAccount?.email ?? null;
   response.blocking = blocking;
   response.blocked = blocked;
@@ -259,41 +226,52 @@ UserSchema.methods.toUserResponse = async function (
   return response;
 };
 
-UserSchema.methods.toUserResponseV2 = async function (
-  {
-    passwordNotSet = false,
-    blocked,
-    blocking,
-    followed,
-    balance,
-    mobile,
-    linkSocial,
-    syncSocial,
-    casts,
-  } = {} as UserResponseOption,
-) {
-  const self = await (this as User).populate('ownerAccount').execPopulate();
-  const response = _covertToUserResponse(self, followed);
+UserSchema.methods.toUserResponseV2 = async function ({
+  passwordNotSet,
+  blocked,
+  blocking,
+  followed,
+  balance,
+  mobile,
+  linkSocial,
+  syncSocials,
+  casts,
+}: UserResponseOptionV2 = {}) {
+  const self = await this.populate('ownerAccount').execPopulate();
+  const response = _covertToUserResponse(self as User, followed);
   response.email = self.ownerAccount?.email ?? null;
   response.blocking = blocking;
   response.blocked = blocked;
   response.passwordNotSet = passwordNotSet;
-  response.wallet = {
-    balance: balance,
-  };
+  response.wallet = { balance };
   response.mobile = mobile;
   response.linkSocial = {};
 
   Object.values(SocialProvider).forEach((provider) => {
-    response.linkSocial[provider] =
-      linkSocial && linkSocial[provider]
-        ? {
-            socialId: linkSocial[provider].socialId,
-          }
-        : null;
+    response.linkSocial[provider] = linkSocial?.[provider]
+      ? { socialId: linkSocial[provider].socialId }
+      : null;
   });
 
-  response.syncSocial = syncSocial;
+  response.syncSocial =
+    syncSocials?.length > 0
+      ? Object.assign(
+          {},
+          ...syncSocials.map((item) => ({
+            [item.provider]: {
+              id: item._id,
+              provider: item.provider,
+              socialId: item.socialId,
+              userName: item.userName,
+              displayName: item.displayName,
+              avatar: item.avatar,
+              active: item.active,
+              autoPost: item.autoPost,
+            },
+          })),
+        )
+      : undefined;
+
   response.casts = casts;
   return response;
 };
@@ -306,72 +284,34 @@ UserSchema.methods.toPageResponse = function (
   casts?: number,
 ) {
   return {
-    id: (this as User)._id,
-    castcleId: (this as User).displayId,
-    displayName: (this as User).displayName,
-    type: (this as User).type,
+    id: this._id,
+    castcleId: this.displayId,
+    displayName: this.displayName,
+    type: this.type,
     images: {
-      avatar:
-        (this as User).profile &&
-        (this as User).profile.images &&
-        (this as User).profile.images.avatar
-          ? new Image((this as User).profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-      cover:
-        (this as User).profile &&
-        (this as User).profile.images &&
-        (this as User).profile.images.cover
-          ? new Image((this as User).profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers,
+      avatar: this.profile?.images?.avatar
+        ? new Image(this.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      cover: this.profile?.images?.cover
+        ? new Image(this.profile.images.cover).toSignUrls()
+        : Configs.DefaultAvatarCovers,
     },
-    followers: {
-      count: (this as User).followerCount,
-    },
-    following: {
-      count: (this as User).followedCount,
-    },
-    overview:
-      (this as User).profile && (this as User).profile.overview
-        ? (this as User).profile.overview
-        : null,
+    followers: { count: this.followerCount },
+    following: { count: this.followedCount },
+    overview: this.profile?.overview || null,
     links: {
-      facebook:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.facebook
-          ? (this as User).profile.socials.facebook
-          : null,
-      medium:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.medium
-          ? (this as User).profile.socials.medium
-          : null,
-      twitter:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.twitter
-          ? (this as User).profile.socials.twitter
-          : null,
-      youtube:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.youtube
-          ? (this as User).profile.socials.youtube
-          : null,
-      website:
-        (this as User).profile && (this as User).profile.websites
-          ? (this as User).profile.websites[0].website
-          : null,
+      facebook: this.profile?.socials?.facebook || null,
+      medium: this.profile?.socials?.medium || null,
+      twitter: this.profile?.socials?.twitter || null,
+      youtube: this.profile?.socials?.youtube || null,
+      website: this.profile?.websites?.[0]?.website || null,
     },
-    verified: {
-      official: (this as User).verified.official,
-    } as PageVerified,
+    verified: { official: this.verified.official },
     blocked,
     blocking,
     followed,
-    updatedAt: (this as User).updatedAt.toISOString(),
-    createdAt: (this as User).createdAt.toISOString(),
+    updatedAt: this.updatedAt.toISOString(),
+    createdAt: this.createdAt.toISOString(),
     syncSocial: syncSocial
       ? {
           id: syncSocial.id,
@@ -385,9 +325,7 @@ UserSchema.methods.toPageResponse = function (
         }
       : undefined,
     casts: casts,
-    canUpdateCastcleId: (this as User).displayIdUpdatedAt
-      ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
-      : true,
+    canUpdateCastcleId: this.canUpdateCastcleId(),
   } as PageResponseDto;
 };
 
@@ -395,101 +333,72 @@ UserSchema.methods.toPageResponseV2 = function (
   blocked?: boolean,
   blocking?: boolean,
   followed?: boolean,
-  syncSocial?: SocialSync,
+  syncSocials?: SocialSync[],
   casts?: number,
 ) {
   return {
-    id: (this as User)._id,
-    castcleId: (this as User).displayId,
-    displayName: (this as User).displayName,
-    type: (this as User).type,
+    id: this._id,
+    castcleId: this.displayId,
+    displayName: this.displayName,
+    type: this.type,
     images: {
-      avatar:
-        (this as User).profile &&
-        (this as User).profile.images &&
-        (this as User).profile.images.avatar
-          ? new Image((this as User).profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-      cover:
-        (this as User).profile &&
-        (this as User).profile.images &&
-        (this as User).profile.images.cover
-          ? new Image((this as User).profile.images.cover).toSignUrls()
-          : Configs.DefaultAvatarCovers,
+      avatar: this.profile?.images?.avatar
+        ? new Image(this.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      cover: this.profile?.images?.cover
+        ? new Image(this.profile.images.cover).toSignUrls()
+        : Configs.DefaultAvatarCovers,
     },
-    followers: {
-      count: (this as User).followerCount,
-    },
-    following: {
-      count: (this as User).followedCount,
-    },
-    overview:
-      (this as User).profile && (this as User).profile.overview
-        ? (this as User).profile.overview
-        : null,
+    followers: { count: this.followerCount },
+    following: { count: this.followedCount },
+    overview: this.profile?.overview || null,
     links: {
-      facebook:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.facebook
-          ? (this as User).profile.socials.facebook
-          : null,
-      medium:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.medium
-          ? (this as User).profile.socials.medium
-          : null,
-      twitter:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.twitter
-          ? (this as User).profile.socials.twitter
-          : null,
-      youtube:
-        (this as User).profile &&
-        (this as User).profile.socials &&
-        (this as User).profile.socials.youtube
-          ? (this as User).profile.socials.youtube
-          : null,
-      website:
-        (this as User).profile && (this as User).profile.websites
-          ? (this as User).profile.websites[0].website
-          : null,
+      facebook: this.profile?.socials?.facebook || null,
+      medium: this.profile?.socials?.medium || null,
+      twitter: this.profile?.socials?.twitter || null,
+      youtube: this.profile?.socials?.youtube || null,
+      website: this.profile?.websites?.[0]?.website || null,
     },
-    verified: {
-      official: (this as User).verified.official,
-    } as PageVerified,
+    verified: { official: this.verified.official },
     blocked,
     blocking,
     followed,
-    updatedAt: (this as User).updatedAt.toISOString(),
-    createdAt: (this as User).createdAt.toISOString(),
-    syncSocial: syncSocial || undefined,
+    updatedAt: this.updatedAt.toISOString(),
+    createdAt: this.createdAt.toISOString(),
+    syncSocial:
+      syncSocials?.length > 0
+        ? Object.assign(
+            {},
+            ...syncSocials.map((item) => ({
+              [item.provider]: {
+                id: item._id,
+                provider: item.provider,
+                socialId: item.socialId,
+                userName: item.userName,
+                displayName: item.displayName,
+                avatar: item.avatar,
+                active: item.active,
+                autoPost: item.autoPost,
+              },
+            })),
+          )
+        : undefined,
     casts: casts,
-    canUpdateCastcleId: (this as User).displayIdUpdatedAt
-      ? _verifyUpdateCastcleId((this as User).displayIdUpdatedAt)
-      : true,
-    contact: (this as User).contact,
+    canUpdateCastcleId: this.canUpdateCastcleId(),
+    contact: this.contact,
   } as PageResponseDto;
 };
 
 UserSchema.methods.toSearchTopTrendResponse = function () {
   return {
-    id: (this as User)._id,
-    castcleId: (this as User).displayId,
-    displayName: (this as User).displayName,
-    overview:
-      (this as User).profile && (this as User).profile.overview
-        ? (this as User).profile.overview
-        : '',
-    avatar:
-      (this as User).profile &&
-      (this as User).profile.images &&
-      (this as User).profile.images.avatar
-        ? new Image((this as User).profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
-    type: (this as User).type,
+    id: this._id,
+    castcleId: this.displayId,
+    displayName: this.displayName,
+    overview: this.profile?.overview || '',
+    avatar: this.profile?.images?.avatar
+      ? new Image(this.profile.images.avatar).toSignUrls()
+      : Configs.DefaultAvatarImages,
+    type: this.type,
     // TODO !!! need implement aggregator
     aggregator: {
       type: '',
@@ -498,93 +407,47 @@ UserSchema.methods.toSearchTopTrendResponse = function () {
       message: '',
     },
     verified:
-      (this as User).verified &&
-      ((this as User).verified.email ||
-        (this as User).verified.mobile ||
-        (this as User).verified.official),
-    count: (this as User).followerCount,
+      this.verified?.email || this.verified?.mobile || this.verified?.official,
+    count: this.followerCount,
   } as SearchFollowsResponseDto;
 };
 
-UserSchema.methods.toSearchResponse = function () {
-  return {
-    id: (this as User)._id,
-    castcleId: (this as User).displayId,
-    displayName: (this as User).displayName,
-    overview:
-      (this as User).profile && (this as User).profile.overview
-        ? (this as User).profile.overview
-        : '',
-    avatar:
-      (this as User).profile &&
-      (this as User).profile.images &&
-      (this as User).profile.images.avatar
-        ? new Image((this as User).profile.images.avatar).toSignUrls()
-        : Configs.DefaultAvatarImages,
-    type: (this as User).type,
-    // TODO !!! need implement aggregator
-    aggregator: {
-      type: '',
-      id: '',
-      action: '',
-      message: '',
-      count: 1234,
-    },
-    verified:
-      (this as User).verified &&
-      ((this as User).verified.email ||
-        (this as User).verified.mobile ||
-        (this as User).verified.official),
-    // TODO !!! need implement followed
-    followed: true,
-  } as SearchFollowsResponseDto;
+UserSchema.methods.canUpdateCastcleId = function (): boolean {
+  if (!this.displayIdUpdatedAt) return true;
+
+  const now = DateTime.local();
+  const canUpdateCastcleIdAt = DateTime.fromJSDate(
+    this.displayIdUpdatedAt,
+  ).plus({ days: Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS });
+
+  return canUpdateCastcleIdAt <= now;
 };
 
-const _verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
-  displayIdUpdateAt.setDate(
-    displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
-  );
-  const now = new Date().getTime();
-  const blockUpdate = displayIdUpdateAt.getTime();
-  return now - blockUpdate >= 0;
-};
-export const UserSchemaFactory = (
-  relationshipModel: Model<Relationship>,
-  /*contentModel: Model<Content>,
-  feedModel: Model<FeedItem>,
-  commentModel: Model<Comment>*/
-) => {
-  /**
-   * Make sure all aggregate counter is 0
-   */
+export const UserSchemaFactory = (relationshipModel: Model<Relationship>) => {
   UserSchema.pre('save', function (next) {
-    if (!(this as User).visibility)
-      (this as User).visibility = EntityVisibility.Publish;
-    if (!(this as User).followedCount) (this as User).followedCount = 0;
-    if (!(this as User).followerCount) (this as User).followerCount = 0;
-    //add activate state
-    if (!(this as User).verified)
-      (this as User).verified = {
+    if (!this.visibility) this.visibility = EntityVisibility.Publish;
+    if (!this.followedCount) this.followedCount = 0;
+    if (!this.followerCount) this.followerCount = 0;
+    if (!this.verified)
+      this.verified = {
         email: false,
         mobile: false,
         official: false,
         social: false,
-      } as UserVerified;
+      };
     next();
   });
 
   UserSchema.methods.toAuthor = function () {
-    const self = this as User;
     return {
-      id: self._id,
-      avatar:
-        self.profile && self.profile.images && self.profile.images.avatar
-          ? new Image(self.profile.images.avatar).toSignUrls()
-          : Configs.DefaultAvatarImages,
-      castcleId: self.displayId,
-      displayName: self.displayName,
-      type: self.type,
-      verified: self.verified,
+      id: this._id,
+      avatar: this.profile?.images?.avatar
+        ? new Image(this.profile.images.avatar).toSignUrls()
+        : Configs.DefaultAvatarImages,
+      castcleId: this.displayId,
+      displayName: this.displayName,
+      type: this.type,
+      verified: this.verified,
     } as Author;
   };
 
@@ -593,7 +456,7 @@ export const UserSchemaFactory = (
     await session.withTransaction(async () => {
       ///TODO !!! Might have to change if relationship is embed
       const setObject = {
-        user: (this as User)._id,
+        user: this._id,
         followedUser: followedUser._id,
         isFollowPage: false,
         blocking: false,
@@ -604,7 +467,7 @@ export const UserSchemaFactory = (
       const result = await relationshipModel
         .updateOne(
           {
-            user: (this as User)._id,
+            user: this._id,
             followedUser: followedUser._id,
           },
           {
@@ -617,7 +480,7 @@ export const UserSchemaFactory = (
         )
         .exec();
       if (result.upserted) {
-        (this as User).followedCount++;
+        this.followedCount++;
         followedUser.followerCount++;
         await Promise.all([this.save(), followedUser.save()]);
       }
@@ -631,7 +494,7 @@ export const UserSchemaFactory = (
     await session.withTransaction(async () => {
       const relationship = await relationshipModel
         .findOne({
-          user: (this as User)._id,
+          user: this._id,
           followedUser: followedUser._id,
           following: true,
         })
@@ -639,7 +502,7 @@ export const UserSchemaFactory = (
 
       if (!relationship) return;
 
-      (this as User).followedCount--;
+      this.followedCount--;
       followedUser.followerCount--;
 
       const toSaves: Promise<any>[] = [this.save(), followedUser.save()];
