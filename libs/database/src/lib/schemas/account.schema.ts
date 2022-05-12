@@ -130,7 +130,7 @@ AccountSchema.methods.changePassword = function (
 };
 
 AccountSchema.methods.verifyPassword = function (password: string) {
-  return Password.verify(password, this.password);
+  return Password.verify(password, this.password || '');
 };
 
 AccountSchema.methods.createActivation = function (
