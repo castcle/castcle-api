@@ -500,6 +500,7 @@ export class UsersController {
     @Body() { channel, payload: { password } }: DeleteUserDto,
   ) {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (!account.password) throw CastcleException.NO_PASSWORD_SET;
 
     const isValidChannel = channel === 'email';
     const isPasswordValid = account.verifyPassword(password);
