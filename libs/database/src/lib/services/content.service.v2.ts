@@ -26,7 +26,10 @@ import { Model } from 'mongoose';
 import {
   CACCOUNT_NO,
   ContentFarmingStatus,
+  ContentMessage,
+  ContentMessageEvent,
   EngagementType,
+  QueueName,
   UserType,
   WalletType,
 } from '../models';
@@ -44,6 +47,7 @@ import {
   Author,
   CastcleIncludes,
   ContentType,
+  CreateContentDto,
   EntityVisibility,
   GetContentCastDto,
   Meta,
@@ -51,6 +55,7 @@ import {
   NotificationType,
   PaginationQuery,
   ResponseDto,
+  ResponseParticipate,
   ShortPayload,
 } from '../dtos';
 import { Types } from 'mongoose';
@@ -59,6 +64,9 @@ import { ContentFarmingReponse } from '../models/content-farming.model';
 import { Repository } from '../repositories';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { HashtagService } from './hashtag.service';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -71,11 +79,14 @@ export class ContentServiceV2 {
     private contentFarmingModel: Model<ContentFarming>,
     @InjectModel('Content')
     private contentModel: Model<Content>,
+    private hashtagService: HashtagService,
+    @InjectQueue(QueueName.CONTENT)
+    private contentQueue: Queue<ContentMessage>,
   ) {}
 
   toContentsResponses = async (
     bundleContents: GetContentCastDto,
-    { hasRelationshipExpansion }: PaginationQuery,
+    hasRelationshipExpansion?: boolean,
     viewer?: User,
     countContents?: number,
   ) => {
@@ -91,88 +102,45 @@ export class ContentServiceV2 {
       ),
     );
 
-    if (hasRelationshipExpansion) {
-      const usersId = bundleContents.authors.map((item) => item._id);
-
-      const relationships = await this.repository
-        .findRelationships({
-          userId: viewer._id,
-          followedUser: usersId,
-        })
-        .exec();
-
-      const includesUsers = bundleContents.authors.map((author) => {
-        const relationshipUser = relationships.find(
-          (relationship) =>
-            String(relationship.followedUser) === String(author._id),
-        );
-        return new Author(author as any).toIncludeUser({
-          blocked: relationshipUser?.blocking ?? false,
-          blocking: relationshipUser?.blocking ?? false,
-          followed: relationshipUser?.following ?? false,
-        });
-      });
-
-      const payloadCasts = bundleContents.casts.map((cast) =>
-        signedContentPayloadItem(
-          toUnsignedContentPayloadItem(
-            cast,
-            bundleContents.engagementsOriginal,
-            bundleContents.metricsOriginal?.find(
-              (metric) => String(metric._id) === String(cast._id),
-            ),
-          ),
-        ),
-      );
-
+    if (!bundleContents.contents)
       return {
-        payload: payloadContents,
-        includes: new CastcleIncludes({
-          casts: payloadCasts,
-          users: includesUsers,
-        }),
-        meta: Meta.fromDocuments(payloadContents as any, countContents),
+        payload: [],
+        includes: {
+          casts: [],
+          users: [],
+        },
       } as ResponseDto;
-    }
 
-    const includesUsers = bundleContents.authors.map((author) =>
-      new Author(author as any).toIncludeUser(),
-    );
+    const usersId = bundleContents.authors.map((item) => item._id);
 
-    const payloadCasts = bundleContents.casts.map((cast) =>
-      signedContentPayloadItem(toUnsignedContentPayloadItem(cast)),
-    );
+    const relationships = hasRelationshipExpansion
+      ? await this.repository
+          .findRelationships({
+            userId: viewer._id,
+            followedUser: usersId,
+          })
+          .exec()
+      : [];
 
-    return {
-      payload: payloadContents,
-      includes: new CastcleIncludes({
-        casts: payloadCasts,
-        users: includesUsers,
-      }),
-      meta: Meta.fromDocuments(payloadContents as any, countContents),
-    } as ResponseDto;
-  };
+    const includesUsers = bundleContents.authors.map((author) => {
+      const relationshipUser = relationships?.find(
+        (relationship) =>
+          String(relationship.followedUser) === String(author._id),
+      );
+      return new Author(author as any).toIncludeUser({
+        blocked: hasRelationshipExpansion
+          ? relationshipUser?.blocking ?? false
+          : undefined,
+        blocking: hasRelationshipExpansion
+          ? relationshipUser?.blocking ?? false
+          : undefined,
+        followed: hasRelationshipExpansion
+          ? relationshipUser?.following ?? false
+          : undefined,
+      });
+    });
 
-  toContentResponse = async (bundleContents: GetContentCastDto) => {
-    const [payloadContents] = bundleContents.contents.map((content) =>
-      signedContentPayloadItem(
-        toUnsignedContentPayloadItem(
-          content,
-          bundleContents.engagements,
-          bundleContents.metrics?.find(
-            (metric) => String(metric._id) === String(content._id),
-          ),
-        ),
-      ),
-    );
-
-    if (!bundleContents.contents) return;
-
-    const includesUsers = bundleContents.authors.map((author) =>
-      new Author(author as any).toIncludeUser(),
-    );
-
-    const payloadCasts = bundleContents.casts.map((cast) =>
+    const payloadCasts = bundleContents.casts?.map((cast) =>
       signedContentPayloadItem(
         toUnsignedContentPayloadItem(
           cast,
@@ -186,6 +154,83 @@ export class ContentServiceV2 {
 
     return {
       payload: payloadContents,
+      includes: new CastcleIncludes({
+        casts: payloadCasts,
+        users: includesUsers,
+      }),
+      meta: Meta.fromDocuments(payloadContents as any, countContents),
+    } as ResponseDto;
+  };
+
+  toContentResponse = async (
+    bundleContents: GetContentCastDto,
+    hasRelationshipExpansion?: boolean,
+    viewer?: User,
+  ) => {
+    const [payloadContent] = bundleContents.contents.map((content) =>
+      signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          content,
+          bundleContents.engagements,
+          bundleContents.metrics?.find(
+            (metric) => String(metric._id) === String(content._id),
+          ),
+        ),
+      ),
+    );
+
+    if (!bundleContents.contents)
+      return {
+        payload: [],
+        includes: {
+          casts: [],
+          users: [],
+        },
+      } as ResponseDto;
+
+    const usersId = bundleContents.authors.map((item) => item._id);
+
+    const relationships = hasRelationshipExpansion
+      ? await this.repository
+          .findRelationships({
+            userId: viewer._id,
+            followedUser: usersId,
+          })
+          .exec()
+      : [];
+
+    const includesUsers = bundleContents.authors.map((author) => {
+      const relationshipUser = relationships?.find(
+        (relationship) =>
+          String(relationship.followedUser) === String(author._id),
+      );
+      return new Author(author as any).toIncludeUser({
+        blocked: hasRelationshipExpansion
+          ? relationshipUser?.blocking ?? false
+          : undefined,
+        blocking: hasRelationshipExpansion
+          ? relationshipUser?.blocking ?? false
+          : undefined,
+        followed: hasRelationshipExpansion
+          ? relationshipUser?.following ?? false
+          : undefined,
+      });
+    });
+
+    const payloadCasts = bundleContents.casts?.map((cast) =>
+      signedContentPayloadItem(
+        toUnsignedContentPayloadItem(
+          cast,
+          bundleContents.engagementsOriginal,
+          bundleContents.metricsOriginal?.find(
+            (metric) => String(metric._id) === String(cast._id),
+          ),
+        ),
+      ),
+    );
+
+    return {
+      payload: payloadContent,
       includes: new CastcleIncludes({
         casts: payloadCasts,
         users: includesUsers,
@@ -808,9 +853,9 @@ export class ContentServiceV2 {
         populate: 'user',
       },
     );
+
     const usersEngagement = engagementDocuments.filter((item) => item.user);
 
-    // const users = await this.repository.findUsers({ _id: usersId });
     if (!usersEngagement.length)
       return ResponseDto.ok({
         payload: [],
@@ -890,6 +935,138 @@ export class ContentServiceV2 {
 
     this.logger.log('Success get quote cast');
 
-    return this.toContentsResponses(bundleContents, query, viewer);
+    return this.toContentsResponses(
+      bundleContents,
+      query.hasRelationshipExpansion,
+      viewer,
+    );
+  };
+
+  getContent = async (
+    contentId: string,
+    viewer?: User,
+    hasRelationshipExpansion?: boolean,
+  ) => {
+    const [bundleContents] = await this.repository.aggregationContent({
+      viewer: viewer,
+      _id: contentId,
+    });
+    return this.toContentResponse(
+      bundleContents,
+      hasRelationshipExpansion,
+      viewer,
+    );
+  };
+
+  createContent = async (body: CreateContentDto, user: User) => {
+    const userAccess = await this.repository.findUser({
+      _id: body.castcleId,
+    });
+    if (!userAccess) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    if (String(userAccess.ownerAccount) !== String(user.ownerAccount))
+      throw CastcleException.FORBIDDEN;
+
+    const convertImage = await this.repository.createContentImage(body, user);
+
+    const hashtags = this.hashtagService.extractHashtagFromContentPayload(
+      body.payload,
+    );
+
+    const author = new Author({
+      id: user._id,
+      avatar: user.profile?.images?.avatar || null,
+      castcleId: user.displayId,
+      displayName: user.displayName,
+      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
+      verified: user.verified,
+    });
+
+    const newContent = {
+      ...convertImage,
+      author: author,
+      payload: convertImage.payload,
+      revisionCount: 0,
+      type: convertImage.type,
+      visibility: EntityVisibility.Publish,
+      hashtags: hashtags,
+    };
+    const content = await this.repository.createContent(newContent);
+
+    await this.contentQueue.add(
+      {
+        event: ContentMessageEvent.NEW_CONTENT,
+        contentId: content.id,
+      },
+      {
+        removeOnComplete: true,
+      },
+    );
+
+    return this.toContentResponse({
+      contents: [content],
+      authors: [author as any],
+    });
+  };
+
+  deleteContent = async (contentId: string, user: User) => {
+    const content = await this.repository.findContent({
+      _id: contentId,
+      author: user._id,
+    });
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    await this.repository.updateContent(
+      { _id: contentId },
+      { $set: { visibility: EntityVisibility.Deleted } },
+    );
+
+    if (content.isRecast || content.isQuote)
+      await this.repository.removeEngagements({ itemId: content._id });
+
+    if (content.hashtags)
+      await this.repository.removeFromTags(content.hashtags, {
+        $inc: {
+          score: -1,
+        },
+      });
+  };
+
+  getParticipates = async (contentId: string, account: Account) => {
+    const users = await this.repository
+      .findUsers({ accountId: account._id })
+      .exec();
+
+    if (!users.length) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const userIds = users.map((user) => user._id);
+
+    const content = await this.repository.findContent({ _id: contentId });
+    if (!content) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagements = await this.repository.findEngagements({
+      user: userIds,
+      targetRef: {
+        $ref: 'content',
+        $id: content._id,
+      },
+    });
+
+    const userParticipates = users.map((user) => {
+      return {
+        user: {
+          id: user.id,
+          castcleId: user.displayId,
+          displayName: user.displayName,
+          type: user.type,
+        },
+        participate: toUnsignedContentPayloadItem(
+          content,
+          engagements.filter((item) => String(item.user) === String(user._id)),
+        ).participate,
+      };
+    });
+
+    return userParticipates as ResponseParticipate[];
   };
 }

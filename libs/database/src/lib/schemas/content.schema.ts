@@ -289,7 +289,12 @@ export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
   if (unsignedItem.link)
     unsignedItem.link = unsignedItem.link.map((item) => {
       if (item.image) {
-        item.image = new Image(item.image as CastcleImage).toSignUrls();
+        return {
+          ...item,
+          image: (item.image = new Image(
+            item.image as CastcleImage,
+          ).toSignUrls()),
+        };
       } else return item;
     });
 

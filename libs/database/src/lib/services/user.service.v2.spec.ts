@@ -170,9 +170,8 @@ describe('UserServiceV2', () => {
       expect(blockerUser[0].following).toBeFalsy();
     });
 
-    it('should unblock user and update blocking relationship', async () => {
-      await userServiceV2.unBlockUser(user1, String(user2._id));
-
+    it('should unblock user and remove blocking relationship', async () => {
+      await userServiceV2.unblockUser(user1, String(user2._id));
       const [blockedUser, blockerUser] = await Promise.all([
         repository
           .findRelationships({ userId: [user2._id], followedUser: user1._id })
@@ -182,14 +181,8 @@ describe('UserServiceV2', () => {
           .exec(),
       ]);
 
-      expect(blockerUser).not.toBeNull();
-      expect(blockedUser).not.toBeNull();
-
-      expect(blockedUser[0].blocked).toBeFalsy();
-      expect(blockedUser[0].following).toBeFalsy();
-
-      expect(blockerUser[0].blocking).toBeFalsy();
-      expect(blockerUser[0].following).toBeFalsy();
+      expect(blockerUser).toHaveLength(0);
+      expect(blockedUser).toHaveLength(0);
     });
   });
 

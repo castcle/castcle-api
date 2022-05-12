@@ -25,6 +25,13 @@ import { IsMongoId, IsString } from 'class-validator';
 import { GetUserParam } from './user.dto';
 import { IsNotEmpty } from 'class-validator';
 import { Content, Engagement, User } from '../schemas';
+import {
+  BlogPayload,
+  ContentType,
+  ImagePayload,
+  ShortPayload,
+} from './content.dto';
+import { UserType } from '../models';
 
 export class GetContentDto {
   @IsString()
@@ -54,10 +61,40 @@ export class QuoteCastDto extends GetContentDto {
 
 export class GetContentCastDto {
   contents: Content[];
-  casts: Content[];
-  authors: User[];
+  casts?: Content[];
+  authors?: User[];
   engagements?: Engagement[];
   metrics?: any[];
   engagementsOriginal?: Engagement[];
   metricsOriginal?: any[];
+}
+
+export class CreateContentDto {
+  @IsString()
+  @IsNotEmpty()
+  type: ContentType;
+
+  @IsNotEmpty()
+  payload: ShortPayload | BlogPayload | ImagePayload;
+
+  @IsString()
+  @IsNotEmpty()
+  castcleId: string;
+}
+
+export class ResponseParticipate {
+  user: {
+    id: string;
+    castcleId: string;
+    displayName: string;
+    type: UserType;
+  };
+
+  participate: {
+    liked: boolean;
+    commented: boolean;
+    quoted: boolean;
+    recasted: boolean;
+    reported: boolean;
+  };
 }

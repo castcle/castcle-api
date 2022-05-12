@@ -22,7 +22,7 @@
  */
 import { Prop, Schema } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { CastcleQueueAction, EntityVisibility } from '../dtos/common.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 
 @Schema()
 export class CastcleBase extends Document {
@@ -37,7 +37,4 @@ export class CastcleBase extends Document {
 
   @Prop()
   wasNew?: boolean;
-
-  @Prop({ type: String })
-  queueAction?: CastcleQueueAction;
 }
