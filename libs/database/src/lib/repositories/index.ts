@@ -394,6 +394,21 @@ export class Repository {
       queryOptions,
     );
   }
+
+  findRelationship(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.findOne(filter, {}, queryOptions);
+  }
+
+  removeRelationship(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.deleteOne(filter, queryOptions);
+  }
+
   findContent(filter: ContentQuery) {
     return this.contentModel.findOne(this.getContentQuery(filter)).exec();
   }
