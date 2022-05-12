@@ -32,7 +32,7 @@ import {
   MongooseForFeatures,
   NotificationService,
 } from '../database.module';
-import { ContentType, NotificationType } from '../dtos';
+import { ContentType, NotificationType, ShortPayload } from '../dtos';
 import {
   generateMockUsers,
   MockUserDetail,
@@ -112,6 +112,38 @@ describe('ContentServiceV2', () => {
       payload: { message: 'content v2' },
       type: ContentType.Short,
       castcleId: user.displayId,
+    });
+  });
+
+  describe('#toContentsResponses()', () => {
+    it('should get casts is exists.', async () => {
+      const [bundleContents] = await (
+        service as any
+      ).repository.aggregationContent({
+        viewer: mocksUsers[2].user,
+        _id: content._id,
+        maxResults: 25,
+      });
+      const contentResp = await service.toContentsResponses(bundleContents);
+
+      expect(contentResp.payload).toHaveLength(1);
+    });
+  });
+  describe('#toContentResponse()', () => {
+    it('should get cast is exists.', async () => {
+      const [bundleContents] = await (
+        service as any
+      ).repository.aggregationContent({
+        viewer: mocksUsers[2].user,
+        _id: content._id,
+        maxResults: 25,
+      });
+      const contentResp = await service.toContentResponse(bundleContents);
+
+      expect(contentResp.payload.id).toEqual(String(content._id));
+      expect(contentResp.payload.message).toEqual(
+        (content.payload as ShortPayload).message,
+      );
     });
   });
 
@@ -506,6 +538,125 @@ describe('ContentServiceV2', () => {
       expect(recast.payload.referencedCasts.id).toEqual(
         newQuote.quoteContent.originalPost._id,
       );
+    });
+  });
+
+  describe('#getContent()', () => {
+    it('should get cast is exists.', async () => {
+      const contentResp = await service.getContent(
+        content._id,
+        mocksUsers[1].user,
+        false,
+      );
+
+      expect(contentResp.payload.id).toEqual(String(content._id));
+      expect(contentResp.payload.message).toEqual(
+        (content.payload as ShortPayload).message,
+      );
+    });
+  });
+
+  describe('#createContent()', () => {
+    it('should create cast is exists.', async () => {
+      const createContent = {
+        castcleId: mocksUsers[3].user.displayId,
+        type: ContentType.Short,
+        payload: {
+          message: 'Hello world!',
+          photo: {
+            contents: [],
+          },
+          link: [
+            {
+              type: 'other',
+              url: 'https://castcle.com',
+            },
+          ],
+        },
+      };
+      const contentResp = await service.createContent(
+        createContent,
+        mocksUsers[3].user,
+      );
+
+      expect(contentResp.payload.type).toEqual(ContentType.Short);
+      expect(String(contentResp.payload.authorId)).toEqual(
+        String(mocksUsers[3].user._id),
+      );
+      expect(contentResp.payload.message).toEqual(
+        createContent.payload.message,
+      );
+    });
+  });
+
+  describe('#deleteContent()', () => {
+    it('should delete cast is exists.', async () => {
+      const createContent = {
+        castcleId: mocksUsers[3].user.displayId,
+        type: ContentType.Short,
+        payload: {
+          message: 'Hello world!',
+          photo: {
+            contents: [],
+          },
+          link: [
+            {
+              type: 'other',
+              url: 'https://castcle.com',
+            },
+          ],
+        },
+      };
+      const contentResp = await service.createContent(
+        createContent,
+        mocksUsers[3].user,
+      );
+      await service.likeCast(
+        contentResp.payload.id,
+        mocksUsers[3].user,
+        mocksUsers[3].account,
+      );
+      await service.deleteContent(contentResp.payload.id, mocksUsers[3].user);
+
+      const content = await (service as any).repository.findContent({
+        _id: contentResp.payload.id,
+      });
+
+      expect(content).toBeNull();
+    });
+  });
+
+  describe('#getParticipates()', () => {
+    it('should get participates cast is exists.', async () => {
+      await service.likeCast(
+        content._id,
+        mocksUsers[4].user,
+        mocksUsers[4].account,
+      );
+
+      await service.recast(
+        content._id,
+        mocksUsers[4].user,
+        mocksUsers[4].account,
+      );
+
+      await service.quoteCast(
+        content._id,
+        'test',
+        mocksUsers[4].user,
+        mocksUsers[4].account,
+      );
+      const participates = await service.getParticipates(
+        content._id,
+        mocksUsers[4].account,
+      );
+
+      expect(participates[0].user.id).toEqual(String(mocksUsers[4].user._id));
+      expect(participates[0].participate.liked).toBeTruthy();
+      expect(participates[0].participate.commented).toBeFalsy();
+      expect(participates[0].participate.quoted).toBeTruthy();
+      expect(participates[0].participate.recasted).toBeTruthy();
+      expect(participates[0].participate.reported).toBeFalsy();
     });
   });
 

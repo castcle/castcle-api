@@ -45,7 +45,14 @@ import {
   pipelineOfGetAvailableId,
 } from '../aggregations';
 import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
-import { EntityVisibility } from '../dtos';
+import {
+  BlogPayload,
+  ContentType,
+  CreateContentDto,
+  EntityVisibility,
+  ShortPayload,
+  Url,
+} from '../dtos';
 import { UserType } from '../models';
 import {
   Account,
@@ -82,7 +89,7 @@ type EngagementQuery = {
   type?: string;
   sinceId?: string;
   untilId?: string;
-  user?: User;
+  user?: User | User[];
   targetRef?: any;
   itemId?: string;
 };
@@ -198,7 +205,8 @@ export class Repository {
       visibility: EntityVisibility.Publish,
     };
 
-    if (filter._id) query._id = filter._id;
+    if (filter._id) query._id = Types.ObjectId(filter._id);
+
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
       query['originalPost._id'] = Types.ObjectId(filter.originalPost);
@@ -217,15 +225,17 @@ export class Repository {
 
   private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
-      type: filter.type,
       visibility: EntityVisibility.Publish,
     };
-    if (filter.user) query.user = filter.user;
+    if (filter.type) query.type = filter.type;
+
+    if (filter.user) query.user = filter.user as any;
+    if (isArray(filter.user)) query.user = { $in: filter.user as any };
     if (filter.itemId) query.itemId = filter.itemId;
     if (filter.targetRef)
       query.targetRef = {
         $ref: filter.targetRef.$ref,
-        $id: filter.targetRef.$id,
+        $id: Types.ObjectId(filter.targetRef.$id),
       };
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -281,7 +291,7 @@ export class Repository {
     return this.accountModel.find(this.getAccountQuery(filter));
   }
 
-  updateAccount(filter: AccountQuery, updateQuery: UpdateQuery<Account>) {
+  updateAccount(filter: AccountQuery, updateQuery?: UpdateQuery<Account>) {
     return this.accountModel.updateOne(
       this.getAccountQuery(filter),
       updateQuery,
@@ -290,9 +300,61 @@ export class Repository {
 
   updateCredentials(
     filter: FilterQuery<Credential>,
-    updateQuery: UpdateQuery<Credential>,
+    updateQuery?: UpdateQuery<Credential>,
   ) {
     return this.credentialModel.updateMany(filter, updateQuery);
+  }
+
+  async createContentImage(body: CreateContentDto, uploader: User) {
+    if (body.payload.photo && body.payload.photo.contents) {
+      const newContents = await Promise.all(
+        (body.payload.photo.contents as Url[]).map(async (item) => {
+          return Image.upload(item.image, {
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${uploader._id}`,
+          }).then((r) => r.image);
+        }),
+      );
+      body.payload.photo.contents = newContents;
+    }
+    if (
+      body.type === ContentType.Blog &&
+      (body.payload as BlogPayload).photo.cover
+    ) {
+      (body.payload as BlogPayload).photo.cover = (
+        await Image.upload(
+          ((body.payload as BlogPayload).photo.cover as Url).image,
+          {
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${uploader._id}`,
+          },
+        )
+      ).image;
+    }
+
+    if ((body.payload as BlogPayload | ShortPayload).link) {
+      const newLink = await Promise.all(
+        ((body.payload as BlogPayload | ShortPayload).link as Url[]).map(
+          async (item) => {
+            if (!item?.image) return item;
+            return {
+              ...item,
+              image: await Image.upload(item.image, {
+                addTime: true,
+                sizes: COMMON_SIZE_CONFIGS,
+                subpath: `contents/${uploader._id}`,
+              }).then((r) => r.image),
+            };
+          },
+        ),
+      );
+
+      (body.payload as any).link = newLink;
+    }
+
+    return body;
   }
 
   async createProfileImage(accountId: string, imageUrl: string) {
@@ -387,6 +449,10 @@ export class Repository {
     return new this.engagementModel(engagement).save();
   }
 
+  removeEngagements(filter: EngagementQuery) {
+    return this.engagementModel.deleteMany(this.getEngagementQuery(filter));
+  }
+
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
     return this.relationshipModel.find(
       this.getRelationshipQuery(filter),
@@ -421,6 +487,18 @@ export class Repository {
     return new this.contentModel(content).save();
   }
 
+  updateContent(
+    filter: ContentQuery,
+    updateQuery?: UpdateQuery<Content>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.contentModel.updateOne(
+      this.getContentQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
+  }
+
   findCredential(filter: CredentialQuery) {
     return this.credentialModel.findOne(filter);
   }
@@ -449,7 +527,7 @@ export class Repository {
 
   updateNotification(
     filter: NotificationQueryOption,
-    updateQuery: UpdateQuery<Notification>,
+    updateQuery?: UpdateQuery<Notification>,
     queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateOne(
@@ -461,7 +539,7 @@ export class Repository {
 
   updateNotifications(
     filter: NotificationQueryOption,
-    updateQuery: UpdateQuery<Notification>,
+    updateQuery?: UpdateQuery<Notification>,
     queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateMany(
@@ -498,7 +576,7 @@ export class Repository {
 
   removeFromTag(
     filter: HashtagQuery,
-    updateQuery: UpdateQuery<Hashtag>,
+    updateQuery?: UpdateQuery<Hashtag>,
     queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateOne(
@@ -510,7 +588,7 @@ export class Repository {
 
   removeFromTags(
     tags: string[],
-    updateQuery: UpdateQuery<Hashtag>,
+    updateQuery?: UpdateQuery<Hashtag>,
     queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateMany(
