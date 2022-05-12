@@ -24,7 +24,6 @@
 import { SearchService } from '@castcle-api/database';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
-  SearchResponse,
   TopTrendsResponse,
 } from '@castcle-api/database/dtos';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -33,7 +32,6 @@ import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   CredentialInterceptor,
   CredentialRequest,
-  HttpCacheIndividualInterceptor,
   HttpCacheSharedWithQueryInterceptor,
 } from '@castcle-api/utils/interceptors';
 import { LimitPipe } from '@castcle-api/utils/pipes';
@@ -92,46 +90,6 @@ export class SearchesController {
       ),
       follows: result.follows.map((user) => user.toSearchTopTrendResponse()),
       topics: [],
-    };
-  }
-
-  @ApiBearerAuth()
-  @ApiOkResponse({
-    type: SearchResponse,
-  })
-  @UseInterceptors(HttpCacheIndividualInterceptor)
-  @CacheKey(CacheKeyName.Searches.Name)
-  @CacheTTL(CacheKeyName.Searches.Ttl)
-  @UseInterceptors(CredentialInterceptor)
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'keyword',
-    type: String,
-    required: false,
-  })
-  @Get()
-  async getSearches(
-    @Req() req: CredentialRequest,
-    @Query('limit', LimitPipe)
-    limitOption: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit,
-    @Query('keyword')
-    keyword: string,
-  ): Promise<SearchResponse> {
-    this.logger.log(`Start get search key : ${keyword}`);
-    const result = await this.searchService.getSearch(
-      req.$credential,
-      keyword,
-      limitOption,
-    );
-    this.logger.log('Success get search');
-    return {
-      keyword: result.keywords,
-      hashtags: result.hashtags.map((hashtag) => hashtag.toSearchPayload()),
-      follows: result.follows.map((user) => user.toSearchResponse()),
     };
   }
 }

@@ -135,8 +135,10 @@ export class AuthenticationServiceV2 {
     return {
       accessToken,
       refreshToken,
-      profile: await user.toUserResponse(),
-      pages: pages.map((page) => page.toPageResponse()),
+      profile: await user.toUserResponseV2({
+        passwordNotSet: !account.password,
+      }),
+      pages: pages.map((page) => page.toPageResponseV2()),
     };
   }
 

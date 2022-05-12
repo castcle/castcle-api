@@ -42,10 +42,6 @@ export const CacheKeyName = {
     Name: 'TOP_TRENDS',
     Ttl: 10,
   },
-  Searches: {
-    Name: 'SEARCHES',
-    Ttl: 10,
-  },
   Pages: {
     Name: 'PAGES',
     Ttl: 10,

@@ -20,11 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Environment } from '@castcle-api/environments';
+
 import { DateTime, DateTimeUnit } from 'luxon';
 
 export class CastcleDate {
-  static inputDate = new Date();
   /**
    * Convert a timezone string to a UTC offset.
    * @param {string} timeZone - The time zone to convert to.
@@ -40,32 +39,27 @@ export class CastcleDate {
    * @param {FilterInterval} dateInterval enum of filter
    * @returns
    */
-  static convertDateFilterInterval(timeZone: string, dateInterval: string) {
-    const interval =
-      dateInterval === 'today' ? 'day' : (dateInterval as DateTimeUnit);
+
+  static convertDateFilterInterval(
+    timeZone: string,
+    dateInterval: DateTimeUnit | 'today',
+  ) {
+    const now = new Date();
+    const interval = dateInterval === 'today' ? 'day' : dateInterval;
     return {
-      startDate: DateTime.fromJSDate(this.inputDate, {
+      startDate: DateTime.fromJSDate(now, {
         zone: this.convertTimezone(timeZone),
       })
         .startOf(interval)
         .toJSDate(),
-      endDate: DateTime.fromJSDate(this.inputDate, {
+      endDate: DateTime.fromJSDate(now, {
         zone: this.convertTimezone(timeZone),
       })
         .endOf(interval)
         .toJSDate(),
     };
   }
-  static verifyUpdateCastcleId = (displayIdUpdateAt: Date) => {
-    if (!displayIdUpdateAt) return false;
-    displayIdUpdateAt.setDate(
-      displayIdUpdateAt.getDate() + Environment.CASTCLE_ID_ALLOW_UPDATE_DAYS,
-    );
 
-    const now = new Date().getTime();
-    const blockUpdate = displayIdUpdateAt.getTime();
-    return now - blockUpdate >= 0 ? true : false;
-  };
   static checkIntervalNotify = (dateBefore: Date, unitTime: number) => {
     if (!dateBefore || unitTime === 0) return true;
     return (
