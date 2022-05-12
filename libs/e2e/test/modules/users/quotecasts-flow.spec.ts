@@ -87,4 +87,19 @@ export const testQuoteCastsFlow = () => {
         expect(body.includes.users.length).toEqual(4);
       });
   });
+
+  it('STEP 3: LikeQuotecast should like quote content successful', async () => {
+    const requst = {
+      contentId: quoteCastId,
+    };
+    await UsersRequest.likeCasts(userB.castcleId)
+      .auth(userB.accessToken, { type: 'bearer' })
+      .send(requst);
+
+    await ContentsRequest.getContent(quoteCastId)
+      .auth(userB.accessToken, { type: 'bearer' })
+      .expect(async ({ body }) => {
+        expect(body.payload.participate.liked).toEqual(true);
+      });
+  });
 };
