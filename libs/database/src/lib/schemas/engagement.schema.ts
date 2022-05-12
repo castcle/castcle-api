@@ -80,21 +80,41 @@ export const EngagementSchemaFactory = (
 
     if (['content', 'comment'].includes(doc.targetRef.$ref)) {
       await (doc.targetRef.$ref === 'content' ? contentModel : commentModel)
-        .updateOne({ _id: doc.targetRef.$id }, contentInc)
+        .updateOne(
+          count
+            ? { _id: doc.targetRef.$id }
+            : {
+                _id: doc.targetRef.oid,
+                [`engagements.${doc.type}.count`]: { $gt: 0 },
+              },
+          contentInc,
+        )
         .exec();
     } else if (
       doc.targetRef.namespace === 'content' &&
       doc.visibility !== EntityVisibility.Publish
     ) {
       await contentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .updateOne(
+          {
+            _id: doc.targetRef.oid,
+            [`engagements.${doc.type}.count`]: { $gt: 0 },
+          },
+          contentInc,
+        )
         .exec();
     } else if (
       doc.targetRef.namespace === 'comment' &&
       doc.visibility !== EntityVisibility.Publish
     ) {
       await commentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .updateOne(
+          {
+            _id: doc.targetRef.oid,
+            [`engagements.${doc.type}.count`]: { $gt: 0 },
+          },
+          contentInc,
+        )
         .exec();
     }
 
@@ -106,11 +126,23 @@ export const EngagementSchemaFactory = (
 
     if (doc.targetRef.namespace === 'content') {
       await contentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .updateOne(
+          {
+            _id: doc.targetRef.oid,
+            [`engagements.${doc.type}.count`]: { $gt: 0 },
+          },
+          contentInc,
+        )
         .exec();
     } else {
       await commentModel
-        .updateOne({ _id: doc.targetRef.oid }, contentInc)
+        .updateOne(
+          {
+            _id: doc.targetRef.oid,
+            [`engagements.${doc.type}.count`]: { $gt: 0 },
+          },
+          contentInc,
+        )
         .exec();
     }
 
