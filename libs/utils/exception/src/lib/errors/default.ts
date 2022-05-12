@@ -196,6 +196,11 @@ export const DefaultErrors = {
     code: '3023',
     message: 'Sorry, Boost Status not match. Please try again.',
   },
+  '3024': {
+    statusCode: '400',
+    code: '3024',
+    message: 'Cannot delete account. You have not set a password.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
