@@ -102,4 +102,18 @@ export const testQuoteCastsFlow = () => {
         expect(body.payload.participate.liked).toEqual(true);
       });
   });
+
+  it('STEP 4: CommentQuotecast should comment quote content successful', async () => {
+    const requst = {
+      message: 'good content',
+      contentId: quoteCastId,
+    };
+    await UsersRequest.comment(userB.castcleId)
+      .auth(userB.accessToken, { type: 'bearer' })
+      .send(requst)
+      .expect(async ({ body }) => {
+        expect(body.payload.message).toEqual('good content');
+        expect(body.payload).toBeDefined();
+      });
+  });
 };

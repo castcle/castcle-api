@@ -5,9 +5,9 @@ import { registerMockUser } from '../../utils/user.utils';
 import { userGamma } from './../../variables/global.variable';
 
 export const testRecastsFlow = () => {
-  let userA = new User({ name: 'quoteCastA' });
-  let userB = new User({ name: 'quoteCastB' });
-  let userC = new User({ name: 'quoteCastC' });
+  let userA = new User({ name: 'reCastA' });
+  let userB = new User({ name: 'reCastB' });
+  let userC = new User({ name: 'reCastC' });
   let contentId;
   beforeAll(async () => {
     userA = await registerMockUser(userA);
@@ -79,7 +79,7 @@ export const testRecastsFlow = () => {
   it('STEP 3: UndoRecast should undo recast user successful', async () => {
     await UsersRequest.undoRecast(userA.castcleId, contentId).auth(
       userA.accessToken,
-      { type: 'bearer' }
+      { type: 'bearer' },
     );
 
     await ContentsRequest.recastsUser(contentId)
