@@ -863,7 +863,7 @@ export class UserService {
     return Promise.all([
       this._accountModel.updateOne(
         { _id: account._id },
-        { visibility: EntityVisibility.Deleted },
+        { visibility: EntityVisibility.Deleted }
       ),
       this._userModel.updateMany(
         { ownerAccount: account._id },
