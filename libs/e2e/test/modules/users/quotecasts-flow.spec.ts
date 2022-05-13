@@ -116,4 +116,34 @@ export const testQuoteCastsFlow = () => {
         expect(body.payload).toBeDefined();
       });
   });
+
+  it('STEP 5: UpdateQuotecast should update quote content successful', async () => {
+    const updateContentPayload = {
+      message: 'good content update',
+    } as ShortPayload;
+    const requst = {
+      payload: updateContentPayload,
+      type: 'short',
+      castcleId: userA.castcleId,
+    };
+
+    await ContentsRequest.updateContent(quoteCastId)
+      .auth(userA.accessToken, { type: 'bearer' })
+      .send(requst)
+      .expect(async ({ body }) => {
+        expect(body.payload.id).toBeDefined();
+        expect(body.payload.type).toEqual('short');
+        expect(body.payload.message).toEqual('good content update');
+        expect(body.payload).toBeDefined();
+      });
+
+    await ContentsRequest.getContent(quoteCastId)
+      .auth(userA.accessToken, { type: 'bearer' })
+      .expect(async ({ body }) => {
+        expect(body.payload.id).toBeDefined();
+        expect(body.payload.type).toEqual('short');
+        expect(body.payload.message).toEqual('good content update');
+        expect(body.payload).toBeDefined();
+      });
+  });
 };
