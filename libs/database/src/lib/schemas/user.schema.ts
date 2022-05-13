@@ -507,7 +507,7 @@ export const UserSchemaFactory = (relationshipModel: Model<Relationship>) => {
 
       const toSaves: Promise<any>[] = [this.save(), followedUser.save()];
 
-      if (relationship.blocking) {
+      if (relationship.blocking || relationship.blocked) {
         relationship.following = false;
         toSaves.push(relationship.save());
       } else {

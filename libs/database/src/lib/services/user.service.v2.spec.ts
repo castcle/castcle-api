@@ -186,7 +186,7 @@ describe('UserServiceV2', () => {
     });
   });
 
-  describe('#followUser', () => {
+  describe('#follow', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
@@ -197,6 +197,11 @@ describe('UserServiceV2', () => {
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
+      await userServiceV2.followUser(
+        user1,
+        String(user2._id),
+        user1.ownerAccount,
+      );
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
@@ -206,18 +211,22 @@ describe('UserServiceV2', () => {
     });
 
     it('should follow user and create follow relationship', async () => {
-      await userServiceV2.followUser(
-        user1,
-        String(user2._id),
-        user1.ownerAccount,
-      );
-
       const followRelation = await repository
         .findRelationships({ userId: [user1._id], followedUser: user2._id })
         .exec();
 
       expect(followRelation).not.toBeNull();
       expect(followRelation[0].following).toBeTruthy();
+    });
+
+    it('should remove relationship after unfollow user', async () => {
+      await userServiceV2.unfollowUser(user1, String(user2._id));
+
+      const followRelation = await repository
+        .findRelationships({ userId: [user1._id], followedUser: user2._id })
+        .exec();
+
+      expect(followRelation).toHaveLength(0);
     });
   });
 
