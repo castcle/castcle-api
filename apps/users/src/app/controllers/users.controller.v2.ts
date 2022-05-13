@@ -45,7 +45,7 @@ import {
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
-  TargetIDParam,
+  TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
@@ -559,7 +559,7 @@ export class UsersControllerV2 {
   async unblockUser(
     @Auth() authorizer: Authorizer,
     @Param()
-    { targetCastcleId, isMe, userId }: TargetIDParam,
+    { targetCastcleId, isMe, userId }: TargetIdParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -711,7 +711,7 @@ export class UsersControllerV2 {
   async unfollow(
     @Auth() authorizer: Authorizer,
     @Param()
-    { targetCastcleId, isMe, userId }: TargetIDParam,
+    { targetCastcleId, isMe, userId }: TargetIdParam,
   ) {
     const user = isMe
       ? authorizer.user
