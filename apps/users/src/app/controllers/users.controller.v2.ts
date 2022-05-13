@@ -45,7 +45,7 @@ import {
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
-  UnblockParam,
+  TargetIDParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
@@ -77,7 +77,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { TargetCastcleDtoV2 } from '../dtos';
+import { TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -541,7 +541,7 @@ export class UsersControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   async blockUser(
     @Auth() authorizer: Authorizer,
-    @Body() { targetCastcleId }: TargetCastcleDtoV2,
+    @Body() { targetCastcleId }: TargetCastcleDto,
     @Param()
     { isMe, userId }: GetUserParam,
   ) {
@@ -559,7 +559,7 @@ export class UsersControllerV2 {
   async unblockUser(
     @Auth() authorizer: Authorizer,
     @Param()
-    { targetCastcleId, isMe, userId }: UnblockParam,
+    { targetCastcleId, isMe, userId }: TargetIDParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -690,7 +690,7 @@ export class UsersControllerV2 {
   @Post(':userId/following')
   async following(
     @Param() { isMe, userId }: GetUserParam,
-    @Body() body: TargetCastcleDtoV2,
+    @Body() body: TargetCastcleDto,
     @Auth() authorizer: Authorizer,
   ) {
     const user = isMe
@@ -703,5 +703,21 @@ export class UsersControllerV2 {
       body.targetCastcleId,
       user.ownerAccount,
     );
+  }
+
+  @Delete(':userId/following/:targetCastcleId')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unfollow(
+    @Auth() authorizer: Authorizer,
+    @Param()
+    { targetCastcleId, isMe, userId }: TargetIDParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.unfollowUser(user, targetCastcleId);
   }
 }

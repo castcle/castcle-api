@@ -377,9 +377,7 @@ export class UserServiceV2 {
     queryOptions?: CastcleQueryOptions,
   ) => {
     const total = await this.repositoryService.findUserCount(filterQuery);
-
     const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
-
     const users = await this.repositoryService.findUsers(filterQuery, {
       limit: queryOptions.limit,
       skip: queryOptions.page - 1,
@@ -391,4 +389,14 @@ export class UserServiceV2 {
       meta: Meta.fromDocuments(users, total),
     };
   };
+
+  async unfollowUser(user: User, targetCastcleId: string) {
+    const targetUser = await this.repositoryService
+      .findUser({ _id: targetCastcleId })
+      .exec();
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    await user.unfollow(targetUser);
+  }
 }

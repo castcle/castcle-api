@@ -23,7 +23,7 @@
 import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
 import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export class TargetCastcleDto {
   @ApiProperty()
@@ -66,11 +66,4 @@ export class UserRefereeResponse {
   payload: UserResponseDto[];
   @ApiProperty()
   meta: CastcleMeta;
-}
-
-export class TargetCastcleDtoV2 {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsMongoId()
-  targetCastcleId: string;
 }
