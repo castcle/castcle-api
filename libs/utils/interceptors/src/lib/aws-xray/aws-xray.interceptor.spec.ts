@@ -22,10 +22,8 @@
  */
 
 import { TracingService } from '@narando/nest-xray';
-import { AwsXRayInterceptor } from './aws-xray.interceptor';
 import { of, lastValueFrom } from 'rxjs';
-
-jest.mock('@narando/nest-xray');
+import { AwsXRayInterceptor } from './aws-xray.interceptor';
 
 describe('#AWSXRayInterceptor', () => {
   const handler = {

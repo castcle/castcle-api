@@ -20,15 +20,19 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { CastcleException } from './castcle.exception';
-import { CastcleThrottlerGuard } from './guards/castcle.throttler.guard';
 
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [CastcleThrottlerGuard],
-})
-export class UtilsExceptionModule {}
+import { CastcleException } from '@castcle-api/utils/exception';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { getClientIp } from 'request-ip';
 
-export { CastcleException, CastcleThrottlerGuard };
+export class CastcleThrottlerGuard extends ThrottlerGuard {
+  override getTracker(req: Record<string, any>): string {
+    const ip = getClientIp(req as any);
+    const userAgent = req.get('User-Agent');
+    return `${ip}-${userAgent}`;
+  }
+
+  override throwThrottlingException(): void {
+    throw CastcleException.RATE_LIMIT_REQUEST;
+  }
+}

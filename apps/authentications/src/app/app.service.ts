@@ -23,19 +23,15 @@
 import {
   AuthenticationService,
   getSocialPrefix,
+  OtpObjective,
+  OtpTemplateMessage,
   UserService,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
   SocialConnectDto,
 } from '@castcle-api/database/dtos';
-import {
-  Account,
-  Credential,
-  Otp,
-  OtpObjective,
-  User,
-} from '@castcle-api/database/schemas';
+import { Account, Credential, Otp } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -270,7 +266,7 @@ export class AppService {
   async getAccountFromEmail(email: string) {
     this.logger.log('Get Account from email');
     const account = await this.authService.getAccountFromEmail(email);
-    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
+    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
 
     return account;
   }
@@ -296,7 +292,7 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        // disable cancle
+        // disable cancel
         // await this.cancelOtp(exOtp);
         // this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         // await exOtp.delete();
@@ -322,7 +318,7 @@ export class AppService {
       this.logger.error(
         'Can not get Account from mobile : ' + countryCode + mobileNumber,
       );
-      throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
+      throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
     }
 
     if (account && objective === OtpObjective.VerifyMobile) {
@@ -362,7 +358,7 @@ export class AppService {
     let account: Account = null;
     let otp: Otp = null;
     const objective = request.objective;
-    // recapchaToken mobile and on web only
+    // recaptchaToken mobile and on web only
     if (source.toLowerCase() == 'web' && request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
@@ -407,14 +403,14 @@ export class AppService {
           request.payload.countryCode,
           request.payload.email,
           account,
-          TwilioChannel.Email,
+          TwilioChannel.EMAIL,
           objective,
           credential,
           request.channel,
         );
         break;
       }
-      case 'mobile': {
+      case TwilioChannel.MOBILE: {
         const exOtp = await this.validateExistingOtp(
           objective,
           credential,
@@ -440,7 +436,7 @@ export class AppService {
           request.payload.countryCode,
           request.payload.countryCode + request.payload.mobileNumber,
           account,
-          TwilioChannel.Mobile,
+          TwilioChannel.SMS,
           objective,
           credential,
           request.channel,
@@ -468,25 +464,25 @@ export class AppService {
     countryCode: string,
     receiver: string,
     account: Account,
-    twilioChannel: TwilioChannel,
+    channel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
-    otpChannel: string,
+    otpChannel: TwilioChannel,
   ): Promise<Otp> {
     let sid = '';
     this.logger.log('Send Otp');
     try {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
-      const result = await this.twilioClient.requestOtp(
+      const result = await this.twilioClient.requestOtp({
         ip,
         userAgent,
         countryCode,
         receiver,
-        twilioChannel,
-        this.buildTemplateMessage(objective, user),
-        account.id,
-      );
+        channel,
+        config: OtpTemplateMessage.from(objective, user?.displayName),
+        accountId: account.id,
+      });
       sid = result.sid;
     } catch (ex) {
       this.logger.error('Twilio Error : ' + ex.message, ex);
@@ -510,28 +506,6 @@ export class AppService {
     return otp;
   }
 
-  private buildTemplateMessage(objective: OtpObjective, user: User) {
-    const userName = user && user.displayName ? user.displayName : '';
-    if (objective === OtpObjective.ForgotPassword) {
-      this.logger.log('build template forgot password objective');
-      return {
-        twilio_name: userName,
-        twilio_message_body:
-          'We received a request to reset your  Castcle password. Enter the following password reset code',
-        twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: 'If you didn’t request a new password',
-      };
-    } else {
-      this.logger.log('build template other objective');
-      return {
-        twilio_name: userName,
-        twilio_message_body:
-          'We received a request for One Time Password (OTP).',
-        twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: '',
-      };
-    }
-  }
   /**
    * forgot password verify Otp
    * @param {VerificationOtpDto} request

@@ -22,31 +22,47 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import {
   FacebookClient,
+  GoogleClient,
   Mailer,
+  TwilioChannel,
+  TwilioClient,
+  TwilioErrorMessage,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
   RegisterWithEmailDto,
+  RequestOtpByEmailDto,
   SocialConnectDto,
   UserAccessTokenPayload,
 } from '../dtos';
-import { AccountActivationType, UserType } from '../models';
+import {
+  AccountActivationType,
+  OtpObjective,
+  OtpTemplateMessage,
+  UserType,
+} from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
 export class AuthenticationServiceV2 {
+  private logger = new CastLogger(AuthenticationServiceV2.name);
+
   constructor(
     private analyticService: AnalyticService,
     private facebookClient: FacebookClient,
+    private googleClient: GoogleClient,
+    private twilioClient: TwilioClient,
     private twitterClient: TwitterClient,
     private mailer: Mailer,
     private repository: Repository,
@@ -365,16 +381,91 @@ export class AuthenticationServiceV2 {
    * @param {string} castcleId
    * @returns user
    */
-  getExistedUserFromCastcleId = (castcleId: string) => {
+  getExistedUserFromCastcleId(castcleId: string) {
     return this.repository.findUser({ _id: castcleId });
-  };
+  }
 
   /**
    * For check if email is existed
    * @param {string} email
    * @returns account
    */
-  getAccountFromEmail = (email: string) => {
+  getAccountFromEmail(email: string) {
     return this.repository.findAccount({ email });
-  };
+  }
+
+  async requestOtpByEmail({
+    email,
+    objective,
+    recaptchaToken,
+    requestedBy,
+    ip,
+    source,
+    userAgent,
+  }: RequestOtpByEmailDto & {
+    ip?: string;
+    requestedBy: string;
+    source?: string;
+    userAgent?: string;
+  }) {
+    if (source.toLowerCase() === 'web') {
+      const success = await this.googleClient.verifyRecaptcha(
+        recaptchaToken,
+        ip,
+      );
+      if (!success) CastcleException.RECAPTCHA_FAILED;
+    }
+
+    const account = await this.repository.findAccount({ email });
+
+    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
+    if (
+      objective !== OtpObjective.ForgotPassword &&
+      (account.id !== String(requestedBy) || account.isGuest)
+    ) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+
+    try {
+      const existingOtp = await this.repository.findOtp({
+        channel: TwilioChannel.EMAIL,
+        objective,
+        receiver: email,
+        isValid: true,
+      });
+
+      if (existingOtp) return existingOtp;
+
+      const user = await this.repository.findUser({ accountId: account._id });
+      const { sid } = await this.twilioClient.requestOtp({
+        channel: TwilioChannel.EMAIL,
+        accountId: account.id,
+        userAgent,
+        receiver: email,
+        config: OtpTemplateMessage.from(objective, user?.displayName),
+      });
+
+      return this.repository.createOtp({
+        channel: TwilioChannel.EMAIL,
+        accountId: account._id,
+        objective,
+        requestId: requestedBy,
+        verified: false,
+        receiver: email,
+        sid,
+        expiryDate: DateTime.now()
+          .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
+          .toJSDate(),
+      });
+    } catch (error) {
+      this.logger.error(error, 'requestOtpByEmail');
+      if (error.message === TwilioErrorMessage.TOO_MANY_REQUESTS) {
+        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
+      } else if (error instanceof CastcleException) {
+        throw error;
+      } else {
+        throw CastcleException.TWILIO_MAX_LIMIT;
+      }
+    }
+  }
 }
