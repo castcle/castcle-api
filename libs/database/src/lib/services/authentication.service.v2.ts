@@ -506,7 +506,7 @@ export class AuthenticationServiceV2 {
 
     const account = await this.repository.findAccount({ email });
 
-    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
     if (
       objective !== OtpObjective.ForgotPassword &&
       (account.id !== String(requestedBy) || account.isGuest)

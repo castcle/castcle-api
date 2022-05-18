@@ -74,6 +74,7 @@ export class CastcleException<T = any> extends Error {
   static TWILIO_TOO_MANY_REQUESTS = new CastcleException('3022');
   static ADS_BOOST_STATUS_MISMATCH = new CastcleException('3023');
   static NO_PASSWORD_SET = new CastcleException('3024');
+  static EMAIL_NOT_FOUND = new CastcleException('3025');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
   static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
   static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
