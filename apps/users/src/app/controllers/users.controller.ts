@@ -62,6 +62,7 @@ import {
   SocialSyncDeleteDto,
   SocialSyncDto,
   SortDirection,
+  TargetIdParam,
   UpdateUserDto,
   UserField,
   UserResponseDto,
@@ -114,14 +115,12 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-  BlockingDto,
   ContentLikeBody,
   DeleteUserDto,
   GetAirdropBalancesQuery,
   GetAirdropBalancesStatus,
   ReportingDto,
   TargetCastcleDto,
-  UnblockingDto,
   UpdateMobileDto,
   UserRefereeResponse,
   UserReferrerResponse,
@@ -848,7 +847,7 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async blockUser(
     @Req() req: CredentialRequest,
-    @Body() { targetCastcleId }: BlockingDto,
+    @Body() { targetCastcleId }: TargetCastcleDto,
     @Param('id') requestById: string,
   ) {
     const requestUser = await this._getUser(requestById, req.$credential);
@@ -861,12 +860,12 @@ export class UsersController {
   }
 
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @Delete(':id/unblocking/:targetCastcleId')
+  @Delete(':userId/unblocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   async unblockUser(
     @Req() req: CredentialRequest,
-    @Param() { id: requestById, targetCastcleId }: UnblockingDto,
+    @Param() { userId: requestById, targetCastcleId }: TargetIdParam,
   ) {
     const requestUser = await this._getUser(requestById, req.$credential);
     const authorizedUser = await this._validateOwnerAccount(req, requestUser);

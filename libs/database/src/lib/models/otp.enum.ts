@@ -20,15 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Module } from '@nestjs/common';
-import { CastcleException } from './castcle.exception';
-import { CastcleThrottlerGuard } from './guards/castcle.throttler.guard';
 
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [CastcleThrottlerGuard],
-})
-export class UtilsExceptionModule {}
-
-export { CastcleException, CastcleThrottlerGuard };
+export enum OtpObjective {
+  ChangePassword = 'change_password',
+  ForgotPassword = 'forgot_password',
+  VerifyMobile = 'verify_mobile',
+  MergeAccount = 'merge_account',
+}

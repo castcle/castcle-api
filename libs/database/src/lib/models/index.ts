@@ -36,6 +36,8 @@ export * from './feed.enum';
 export * from './feed.model';
 export * from './notification.message';
 export * from './number.model';
+export * from './otp.enum';
+export * from './otp.model';
 export * from './queue.enum';
 export * from './queue.model';
 export * from './social-sync.enum';

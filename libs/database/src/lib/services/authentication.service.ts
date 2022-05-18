@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { CastLogger } from '@castcle-api/logger';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -39,7 +40,7 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { EventName, UserType } from '../models';
+import { EventName, OtpObjective, UserType } from '../models';
 import {
   Account,
   AccountActivation,
@@ -52,7 +53,6 @@ import {
   CredentialModel,
   Otp,
   OtpModel,
-  OtpObjective,
   User,
 } from '../schemas';
 import { AccountDevice } from './../schemas/account-device.schema';
@@ -527,7 +527,7 @@ export class AuthenticationService {
     account: Account,
     objective: OtpObjective,
     requestId: string,
-    channel: string,
+    channel: TwilioChannel,
     verify: boolean,
     receiver?: string,
     sid?: string,

@@ -21,12 +21,18 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { getClientIp } from 'request-ip';
 
-export class BlockingDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  targetCastcleId: string;
+export class CastcleThrottlerGuard extends ThrottlerGuard {
+  override getTracker(req: Record<string, any>): string {
+    const ip = getClientIp(req as any);
+    const userAgent = req.get('User-Agent');
+    return `${ip}-${userAgent}`;
+  }
+
+  override throwThrottlingException(): void {
+    throw CastcleException.RATE_LIMIT_REQUEST;
+  }
 }

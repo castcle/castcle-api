@@ -25,9 +25,11 @@ import { AuthenticationServiceV2 } from '@castcle-api/database';
 import {
   LoginWithEmailDto,
   RegisterWithEmailDto,
+  RequestOtpByEmailDto,
   ResponseDto,
   SocialConnectDto,
 } from '@castcle-api/database/dtos';
+import { Environment } from '@castcle-api/environments';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
@@ -42,6 +44,7 @@ import {
   TokenRequest,
 } from '@castcle-api/utils/interceptors';
 import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
@@ -125,5 +128,23 @@ export class AuthenticationControllerV2 {
         exist: account ? true : false,
       },
     });
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL)
+  @Post('request-otp/email')
+  async requestOtp(
+    @Body() requestOtpDto: RequestOtpByEmailDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpByEmail({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account._id,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
   }
 }

@@ -22,6 +22,11 @@
  */
 
 export enum TwilioChannel {
-  Email = 'email',
-  Mobile = 'sms',
+  EMAIL = 'email',
+  MOBILE = 'mobile',
+  SMS = 'sms',
+}
+
+export enum TwilioErrorMessage {
+  TOO_MANY_REQUESTS = 'Error: Too many requests',
 }

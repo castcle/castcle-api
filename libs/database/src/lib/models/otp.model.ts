@@ -21,17 +21,27 @@
  * or have any questions.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { OtpObjective } from './otp.enum';
 
-export class UnblockingDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  targetCastcleId: string;
+export class OtpTemplateMessage {
+  static from(objective: OtpObjective, username = '') {
+    switch (objective) {
+      case OtpObjective.ForgotPassword:
+        return {
+          twilio_name: username,
+          twilio_message_body:
+            'We received a request to reset your  Castcle password. Enter the following password reset code',
+          twilio_message_footer_1: 'Didn’t request this change?',
+          twilio_message_footer_2: 'If you didn’t request a new password',
+        };
+      default:
+        return {
+          twilio_name: username,
+          twilio_message_body:
+            'We received a request for One Time Password (OTP).',
+          twilio_message_footer_1: 'Didn’t request this change?',
+          twilio_message_footer_2: '',
+        };
+    }
+  }
 }

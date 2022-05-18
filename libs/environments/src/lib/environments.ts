@@ -98,6 +98,8 @@ export class Environment {
    * @default 60 seconds
    */
   static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
+  /** @default 10 minutes */
+  static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 10;
 
   // Firebase
   static FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
@@ -126,8 +128,9 @@ export class Environment {
   static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || 'ACd501e';
   static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || 'secret';
   static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID || 'VA356353';
-  static TWILIO_COUNTRY_CODE =
-    process.env.TWILIO_COUNTRY_CODE || '+62,+91,+880';
+  static TWILIO_COUNTRY_CODES = (
+    process.env.TWILIO_COUNTRY_CODE || '+62,+91,+880'
+  ).split(',');
 
   // Youtube
   static YOUTUBE_VERIFY_TOKEN = process.env.YOUTUBE_VERIFY_TOKEN;
@@ -175,8 +178,8 @@ export class Environment {
 
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 300;
   static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 200;
-  static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 300;
-  static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 200;
+  static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 60;
+  static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 20;
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;

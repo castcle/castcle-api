@@ -23,7 +23,7 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { GetUserParam } from './user.dto';
 
-export class UnblockParam extends GetUserParam {
+export class TargetIdParam extends GetUserParam {
   @IsString()
   @IsNotEmpty()
   targetCastcleId: string;

@@ -21,11 +21,15 @@ import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
 import {
   FacebookClient,
+  GoogleClient,
   Mailer,
+  TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
+import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
+import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
 
 describe('Authentication Service', () => {
   let mongod: MongoMemoryServer;
@@ -53,7 +57,9 @@ describe('Authentication Service', () => {
         HashtagService,
         Repository,
         { provide: FacebookClient, useValue: FacebookClientMock },
+        { provide: GoogleClient, useValue: GoogleClientMock },
         { provide: TwitterClient, useValue: TwitterClientMock },
+        { provide: TwilioClient, useValue: TwilioClientMock },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
