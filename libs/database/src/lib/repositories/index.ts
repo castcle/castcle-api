@@ -34,6 +34,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isArray, isBoolean, isMongoId } from 'class-validator';
 import {
   AnyKeys,
+  ClientSession,
   FilterQuery,
   Model,
   QueryOptions,
@@ -48,29 +49,29 @@ import {
 } from '../aggregations';
 import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
 import {
+  AccessTokenPayload,
   BlogPayload,
   ContentType,
   CreateContentDto,
-  ShortPayload,
-  Url,
-  AccessTokenPayload,
   CreateCredentialDto,
   EntityVisibility,
   RefreshTokenPayload,
+  ShortPayload,
+  Url,
 } from '../dtos';
 import { OtpObjective, UserType } from '../models';
 import {
   Account,
   Content,
   Credential,
-  Engagement,
-  Relationship,
-  Notification,
-  Hashtag,
   CredentialModel,
-  User,
-  OtpModel,
+  Engagement,
+  Hashtag,
+  Notification,
   Otp,
+  OtpModel,
+  Relationship,
+  User,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import {
@@ -692,5 +693,9 @@ export class Repository {
       query.expireDate = { [dto.isValid ? '$gte' : '$lt']: new Date() };
 
     return this.otpModel.findOne(query);
+  }
+
+  accountSession(): Promise<ClientSession> {
+    return this.accountModel.startSession();
   }
 }

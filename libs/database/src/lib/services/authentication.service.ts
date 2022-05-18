@@ -40,7 +40,12 @@ import {
   RefreshTokenPayload,
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
-import { EventName, OtpObjective,AccountRequirements, UserType } from '../models';
+import {
+  EventName,
+  OtpObjective,
+  AccountRequirements,
+  UserType,
+} from '../models';
 import {
   Account,
   AccountActivation,

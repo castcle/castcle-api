@@ -1,6 +1,8 @@
 import {
   FacebookClient,
+  GoogleClient,
   Mailer,
+  TwilioClient,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
@@ -9,6 +11,8 @@ import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
+import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
+import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
@@ -26,19 +30,6 @@ import { SignupRequirements } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
-import { Repository } from '../repositories';
-import { HttpModule } from '@nestjs/axios';
-import {
-  FacebookClient,
-  GoogleClient,
-  Mailer,
-  TwilioClient,
-  TwitterClient,
-} from '@castcle-api/utils/clients';
-import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
-import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
-import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
-import { GoogleClientMock } from 'libs/utils/clients/src/lib/google/google.client.spec';
 
 describe('Authentication Service', () => {
   let mongod: MongoMemoryReplSet;

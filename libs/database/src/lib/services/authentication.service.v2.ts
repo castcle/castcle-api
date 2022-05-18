@@ -35,8 +35,8 @@ import {
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
-import { Types ,Model} from 'mongoose';
 import { DateTime } from 'luxon';
+import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
   CreateCredentialDto,
@@ -48,10 +48,10 @@ import {
 } from '../dtos';
 import {
   AccountActivationType,
+  AccountRequirements,
   OtpObjective,
   OtpTemplateMessage,
   UserType,
-  AccountRequirements
 } from '../models';
 import { Repository } from '../repositories';
 import {
@@ -75,7 +75,6 @@ export class AuthenticationServiceV2 {
     private twitterClient: TwitterClient,
     private mailer: Mailer,
     private repository: Repository,
-    @InjectModel('Account') private accountModel: Model<Account>,
   ) {}
 
   private generateTokenPayload(credential: Credential, user?: User) {
@@ -404,7 +403,7 @@ export class AuthenticationServiceV2 {
       });
     }
 
-    const session = await this.accountModel.startSession();
+    const session = await this.repository.accountSession();
     session.startTransaction();
     try {
       const account = await this.repository.createAccount(requestOption, {
@@ -413,20 +412,20 @@ export class AuthenticationServiceV2 {
 
       const { accessToken, accessTokenExpireDate } =
         this.repository.generateAccessToken({
-          id: account._id as string,
+          id: String(account._id),
           role: AccountRole.Guest,
           showAds: true,
         });
 
       const { refreshToken, refreshTokenExpireDate } =
         this.repository.generateRefreshToken({
-          id: account._id as string,
+          id: String(account._id),
         });
 
       const credential = await this.repository.createCredential(
         {
           account: {
-            _id: Types.ObjectId(account._id),
+            _id: account._id,
             isGuest: true,
             preferences: {
               languages: requestOption.languagesPreferences,
@@ -459,9 +458,9 @@ export class AuthenticationServiceV2 {
         accessToken: credential.accessToken,
         refreshToken: credential.refreshToken,
       };
-    } catch {
+    } catch (error) {
       await session.abortTransaction();
-      throw CastcleException.FORBIDDEN;
+      throw CastcleException.INTERNAL_SERVER_ERROR;
     }
   }
 
