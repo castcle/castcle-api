@@ -49,3 +49,16 @@ export class AccountDevice {
   firebaseToken: string;
   platform: AcceptPlatform;
 }
+
+export interface AccountRequirements {
+  header: {
+    platform: string;
+  };
+  device: string;
+  deviceUUID: string;
+  languagesPreferences: string[];
+  geolocation?: {
+    countryCode: string;
+    continentCode: string;
+  };
+}

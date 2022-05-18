@@ -94,6 +94,7 @@ export class CastcleException<T = any> extends Error {
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');
+  static INTERNAL_SERVER_ERROR = new CastcleException('0000');
 
   static DUPLICATE_EMAIL_WITH_PAYLOAD = <T>(payload: T) =>
     new CastcleException('3021', payload);
