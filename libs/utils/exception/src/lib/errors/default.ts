@@ -206,6 +206,11 @@ export const DefaultErrors = {
     code: '3024',
     message: 'Cannot delete account. You have not set a password.',
   },
+  '3025': {
+    statusCode: '404',
+    code: '3025',
+    message: 'Email could not be found. Please try again.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
