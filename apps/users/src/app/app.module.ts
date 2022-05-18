@@ -26,15 +26,14 @@ import { CastcleCacheModule, Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
+import { CastcleThrottlerModule } from '@castcle-api/throttler';
 import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
 } from '@castcle-api/utils/interceptors';
 import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesController } from './controllers/pages.controller';
@@ -45,6 +44,7 @@ import { SuggestionService } from './services/suggestion.service';
 @Module({
   imports: [
     CastcleCacheModule,
+    CastcleThrottlerModule,
     DatabaseModule,
     HealthyModule,
     RouterModule.register([{ path: 'users', module: HealthyModule }]),
@@ -54,10 +54,6 @@ import { SuggestionService } from './services/suggestion.service';
     TracingModule.forRoot({
       serviceName: 'users',
       daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
-    ThrottlerModule.forRoot({
-      ttl: Environment.RATE_LIMIT_TTL,
-      limit: Environment.RATE_LIMIT_LIMIT,
     }),
   ],
   controllers: [
@@ -72,10 +68,6 @@ import { SuggestionService } from './services/suggestion.service';
     {
       provide: APP_INTERCEPTOR,
       useClass: AwsXRayInterceptor,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: CastcleThrottlerGuard,
     },
   ],
 })

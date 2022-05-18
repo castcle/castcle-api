@@ -21,12 +21,27 @@
  * or have any questions.
  */
 
-export enum TwilioChannel {
-  EMAIL = 'email',
-  MOBILE = 'mobile',
-  SMS = 'sms',
-}
+import { OtpObjective } from './otp.enum';
 
-export enum TwilioErrorMessage {
-  TOO_MANY_REQUESTS = 'Error: Too many requests',
+export class OtpTemplateMessage {
+  static from(objective: OtpObjective, username = '') {
+    switch (objective) {
+      case OtpObjective.ForgotPassword:
+        return {
+          twilio_name: username,
+          twilio_message_body:
+            'We received a request to reset your  Castcle password. Enter the following password reset code',
+          twilio_message_footer_1: 'Didn’t request this change?',
+          twilio_message_footer_2: 'If you didn’t request a new password',
+        };
+      default:
+        return {
+          twilio_name: username,
+          twilio_message_body:
+            'We received a request for One Time Password (OTP).',
+          twilio_message_footer_1: 'Didn’t request this change?',
+          twilio_message_footer_2: '',
+        };
+    }
+  }
 }

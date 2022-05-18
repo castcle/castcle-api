@@ -24,7 +24,10 @@ import { HttpException } from '@nestjs/common';
 import { CastcleErrors } from './errors';
 
 export class CastcleException<T = any> extends Error {
-  constructor(private code: string, private payload?: T) {
+  constructor(
+    private code: keyof typeof CastcleErrors.default,
+    private payload?: T,
+  ) {
     super(CastcleErrors.getLocalizedError(code).message);
   }
 
@@ -52,7 +55,7 @@ export class CastcleException<T = any> extends Error {
   static INVALID_EMAIL = new CastcleException('3003');
   static INVALID_PHONE_NUMBER = new CastcleException('3004');
   static PAYLOAD_CHANNEL_MISMATCH = new CastcleException('3005');
-  static EMAIL_OR_PHONE_NOTFOUND = new CastcleException('3006');
+  static EMAIL_OR_PHONE_NOT_FOUND = new CastcleException('3006');
   static PLEASE_TRY_AGAIN = new CastcleException('3007');
   static INVALID_OTP = new CastcleException('3008');
   static EXPIRED_OTP = new CastcleException('3009');

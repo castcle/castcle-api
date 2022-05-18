@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -33,8 +34,8 @@ import {
   MongooseForFeatures,
   UserService,
 } from '../database.module';
-import { EntityVisibility } from '../dtos/common.dto';
-import { QueueName } from '../models';
+import { EntityVisibility } from '../dtos';
+import { OtpObjective, QueueName } from '../models';
 import {
   Account,
   AccountActivation,
@@ -42,7 +43,6 @@ import {
   AccountAuthenIdType,
   Credential,
   Otp,
-  OtpObjective,
   User,
 } from '../schemas';
 import {
@@ -710,7 +710,7 @@ describe('Authentication Service', () => {
           account,
           OtpObjective.ForgotPassword,
           account.id,
-          'email',
+          TwilioChannel.EMAIL,
           false,
         );
       });

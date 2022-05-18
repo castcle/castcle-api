@@ -20,16 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ThrottlerGuard } from '@nestjs/throttler';
-import { getClientIp } from 'request-ip';
-import { CastcleErrors } from '../errors';
 
-export class CastcleThrottlerGuard extends ThrottlerGuard {
-  override errorMessage = CastcleErrors.getLocalizedError('1010').message;
-
-  getTracker(req: Record<string, any>): string {
-    const ip = getClientIp(req as any);
-    const userAgent = req.get('User-Agent');
-    return `${ip}-${userAgent}`;
-  }
+export enum OtpObjective {
+  ChangePassword = 'change_password',
+  ForgotPassword = 'forgot_password',
+  VerifyMobile = 'verify_mobile',
+  MergeAccount = 'merge_account',
 }

@@ -26,11 +26,12 @@ import {
   COMMON_SIZE_CONFIGS,
   Image,
 } from '@castcle-api/utils/aws';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isArray, isMongoId } from 'class-validator';
+import { isArray, isBoolean, isMongoId } from 'class-validator';
 import {
   AnyKeys,
   FilterQuery,
@@ -53,7 +54,7 @@ import {
   ShortPayload,
   Url,
 } from '../dtos';
-import { UserType } from '../models';
+import { OtpObjective, UserType } from '../models';
 import {
   Account,
   Content,
@@ -63,6 +64,8 @@ import {
   User,
   Notification,
   Hashtag,
+  OtpModel,
+  Otp,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import {
@@ -150,10 +153,11 @@ export class Repository {
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: Model<Credential>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
+    @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
+    @InjectModel('Notification') private notificationModel: Model<Notification>,
+    @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('User') private userModel: Model<User>,
-    @InjectModel('Notification') private notificationModel: Model<Notification>,
-    @InjectModel('Hashtag') public hashtagModel: Model<Hashtag>,
     private httpService: HttpService,
   ) {}
 
@@ -581,6 +585,7 @@ export class Repository {
       .countDocuments(this.getNotificationQuery(filter))
       .exec();
   }
+
   updateRelationship(
     filter: FilterQuery<Relationship>,
     updateQuery?: UpdateQuery<Relationship>,
@@ -611,5 +616,44 @@ export class Repository {
       updateQuery,
       queryOptions,
     );
+  }
+
+  createOtp(createOtpDto: {
+    accountId: string;
+    objective: OtpObjective;
+    requestId: string;
+    channel: TwilioChannel;
+    verified: boolean;
+    receiver?: string;
+    sid?: string;
+    expiryDate?: Date;
+  }) {
+    return this.otpModel.generate(
+      createOtpDto.accountId,
+      createOtpDto.objective,
+      createOtpDto.requestId,
+      createOtpDto.channel,
+      createOtpDto.verified,
+      createOtpDto.receiver,
+      createOtpDto.sid,
+      createOtpDto.expiryDate,
+    );
+  }
+
+  findOtp(dto: {
+    channel?: TwilioChannel;
+    isValid?: boolean;
+    objective?: OtpObjective;
+    receiver?: string;
+  }) {
+    const query: FilterQuery<Otp> = {};
+
+    if (dto.channel) query.channel = dto.channel;
+    if (dto.objective) query.action = dto.objective;
+    if (dto.receiver) query.reciever = dto.receiver;
+    if (isBoolean(dto.isValid))
+      query.expireDate = { [dto.isValid ? '$gte' : '$lt']: new Date() };
+
+    return this.otpModel.findOne(query);
   }
 }

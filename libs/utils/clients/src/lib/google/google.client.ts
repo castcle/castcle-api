@@ -22,19 +22,19 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { Auth, google } from 'googleapis';
+import { google } from 'googleapis';
+import { lastValueFrom, map } from 'rxjs';
 @Injectable()
 export class GoogleClient {
-  private oauthClient: Auth.OAuth2Client;
   private logger = new CastLogger(GoogleClient.name);
+  private oauthClient = new google.auth.OAuth2(
+    Environment.GOOGLE_CLIENT_ID,
+    Environment.GOOGLE_SECRET,
+  );
 
-  constructor() {
-    this.oauthClient = new google.auth.OAuth2(
-      Environment.GOOGLE_CLIENT_ID,
-      Environment.GOOGLE_SECRET,
-    );
-  }
+  constructor(private httpService: HttpService) {}
 
   /**
    * Get Authentication token from facebook
@@ -60,5 +60,18 @@ export class GoogleClient {
       auth: this.oauthClient,
     });
     return userInfoResponse.data;
+  }
+
+  async verifyRecaptcha(recaptchaToken: string, ip: string) {
+    const url = `https://www.google.com/recaptcha/api/siteverify?secret=${Environment.RECAPTCHA_SITE_KEY}&response=${recaptchaToken}&remoteip=${ip}`;
+
+    try {
+      const { success } = await lastValueFrom<{ success: boolean }>(
+        this.httpService.post(url).pipe(map(({ data }) => data)),
+      );
+      return success;
+    } catch {
+      return false;
+    }
   }
 }

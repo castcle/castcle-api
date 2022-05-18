@@ -28,16 +28,13 @@ import {
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  OtpObjective,
   QueueName,
   UserService,
 } from '@castcle-api/database';
 import { AcceptPlatform } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import {
-  AccountAuthenIdType,
-  Credential,
-  OtpObjective,
-} from '@castcle-api/database/schemas';
+import { AccountAuthenIdType, Credential } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   AppleClient,

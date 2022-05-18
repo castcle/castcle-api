@@ -24,6 +24,7 @@ import { AnalyticService, AuthenticationService } from '@castcle-api/database';
 import { SocialConnectDto } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
@@ -242,7 +243,7 @@ export class AuthenticationController {
           id: credential.account._id as unknown as string,
         },
       );
-      //update geolocation if current geolocaiton is not the same from service
+      //update geolocation if current geolocation is not the same from service
       return tokenResult;
     } else {
       const result = await this.authService.createAccount({
@@ -602,12 +603,12 @@ export class AuthenticationController {
     );
     //add password checker
     this.appService.validatePassword(payload.password);
-    if (await account.verifyPassword(payload.password)) {
+    if (account.verifyPassword(payload.password)) {
       const otp = await this.authService.generateOtp(
         account,
         payload.objective,
         req.$credential.account._id,
-        '',
+        TwilioChannel.EMAIL,
         true,
       );
       return {

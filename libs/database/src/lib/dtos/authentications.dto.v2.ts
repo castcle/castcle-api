@@ -24,11 +24,13 @@
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
+import { OtpObjective } from '../models';
 
 export class LoginWithEmailDto {
   @IsEmail()
@@ -58,4 +60,17 @@ export class RegisterWithEmailDto {
   @IsOptional()
   @IsString()
   referral?: string;
+}
+
+export class RequestOtpByEmailDto {
+  @IsEnum(OtpObjective)
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
 }

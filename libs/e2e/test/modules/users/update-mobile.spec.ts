@@ -1,4 +1,4 @@
-import { OtpObjective } from '@castcle-api/database/schemas';
+import { OtpObjective } from '@castcle-api/database';
 import { HttpStatus } from '@nestjs/common';
 import { Response } from 'supertest';
 import { User } from '../../models';
