@@ -99,7 +99,7 @@ export class Environment {
    */
   static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
   /** @default 10 minutes */
-  static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 10;
+  static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EMAIL_EXPIRES_IN) || 10;
 
   // Firebase
   static FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
