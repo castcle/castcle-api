@@ -29,7 +29,7 @@ const stringToArrayOfStrings = ({ value }: TransformFnParams) => {
 };
 
 export const TransformStringToArrayOfStrings = () => {
-  return Transform(stringToArrayOfStrings);
+  return Transform(stringToArrayOfStrings, { toClassOnly: true });
 };
 
 const stringToEnum = (T: any) => {
@@ -39,5 +39,20 @@ const stringToEnum = (T: any) => {
 };
 
 export const TransformStringToEnum = (T: any) => {
-  return Transform(stringToEnum(T));
+  return Transform(stringToEnum(T), { toClassOnly: true });
+};
+
+const stringToObjectOfStrings = ({ value }: TransformFnParams) => {
+  const sortByPattern = /(desc|asc)\(([\w.]+)\)/;
+  const sorts = (value as string)?.split(',').map((sortStr) => {
+    const [sortDirection, sortKey] = sortStr.match(sortByPattern).slice(1);
+
+    return { [sortKey]: sortDirection === 'asc' ? 1 : -1 };
+  });
+
+  return Object.assign({}, ...sorts);
+};
+
+export const TransformSortStringToSortObject = () => {
+  return Transform(stringToObjectOfStrings, { toClassOnly: true });
 };

@@ -31,14 +31,17 @@ type GetContentFilter = {
 };
 
 type GetContentsQuery = {
-  filter: GetContentFilter;
-  maxResults: number;
-  viewer: User;
+  filter?: GetContentFilter;
+  maxResults?: number;
+  viewer?: User;
+  sortBy?: {
+    [key: string]: string;
+  };
 };
 export const pipelineGetContents = (query: GetContentsQuery) => {
   return [
     {
-      $sort: {
+      $sort: query.sortBy || {
         createdAt: -1,
       },
     },
@@ -52,7 +55,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
       $facet: {
         contents: [
           {
-            $sort: {
+            $sort: query.sortBy || {
               createdAt: -1,
             },
           },
@@ -180,7 +183,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Quote] },
@@ -189,7 +192,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Recast] },
