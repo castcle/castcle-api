@@ -52,6 +52,7 @@ import {
   GetContentDto,
   GetSourceContentParam,
   QuoteCastDto,
+  GetContentQuery,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -719,5 +720,20 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.userServiceV2.unfollowUser(user, targetCastcleId);
+  }
+
+  @CastcleBasicAuth()
+  @Get(':userId/contents')
+  async getContents(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() query: GetContentQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return await this.contentServiceV2.getContents(query, user);
   }
 }
