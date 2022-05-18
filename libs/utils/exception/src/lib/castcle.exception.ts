@@ -74,6 +74,7 @@ export class CastcleException<T = any> extends Error {
   static TWILIO_TOO_MANY_REQUESTS = new CastcleException('3022');
   static ADS_BOOST_STATUS_MISMATCH = new CastcleException('3023');
   static NO_PASSWORD_SET = new CastcleException('3024');
+  static EMAIL_NOT_FOUND = new CastcleException('3025');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
   static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
   static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');
@@ -94,6 +95,7 @@ export class CastcleException<T = any> extends Error {
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');
+  static INTERNAL_SERVER_ERROR = new CastcleException('0000');
 
   static DUPLICATE_EMAIL_WITH_PAYLOAD = <T>(payload: T) =>
     new CastcleException('3021', payload);

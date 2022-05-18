@@ -21,7 +21,10 @@
  * or have any questions.
  */
 
-import { AuthenticationServiceV2 } from '@castcle-api/database';
+import {
+  AccountRequirements,
+  AuthenticationServiceV2,
+} from '@castcle-api/database';
 import {
   LoginWithEmailDto,
   RegisterWithEmailDto,
@@ -49,7 +52,12 @@ import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponseV2,
+  GuestLoginDto,
 } from '../dtos';
+import {
+  GuestInterceptor,
+  GuestRequest,
+} from '../interceptors/guest.interceptor';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
@@ -146,5 +154,25 @@ export class AuthenticationControllerV2 {
       });
 
     return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleTrack()
+  @UseInterceptors(GuestInterceptor)
+  @Post('guest')
+  async guestLogin(
+    @Req() req: GuestRequest,
+    @Body() { deviceUUID }: GuestLoginDto,
+  ) {
+    const requestOption: AccountRequirements = {
+      deviceUUID,
+      device: req.$device,
+      header: {
+        platform: req.$platform,
+      },
+      languagesPreferences: [req.$language],
+      geolocation: req.$geolocation || null,
+    };
+
+    return await this.authenticationService.guestLogin(requestOption);
   }
 }

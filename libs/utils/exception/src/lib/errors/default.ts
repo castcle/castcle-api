@@ -22,6 +22,11 @@
  */
 
 export const DefaultErrors = {
+  '0000': {
+    statusCode: '500',
+    code: '0000',
+    message: 'Sorry, Something went wrong. Please try again',
+  },
   '1001': {
     statusCode: '404',
     code: '1001',
@@ -200,6 +205,11 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '3024',
     message: 'Cannot delete account. You have not set a password.',
+  },
+  '3025': {
+    statusCode: '404',
+    code: '3025',
+    message: 'Email could not be found. Please try again.',
   },
   '4001': {
     statusCode: '404',

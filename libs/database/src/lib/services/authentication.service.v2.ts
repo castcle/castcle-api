@@ -39,6 +39,8 @@ import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
+  CreateCredentialDto,
+  EntityVisibility,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   SocialConnectDto,
@@ -46,12 +48,19 @@ import {
 } from '../dtos';
 import {
   AccountActivationType,
+  AccountRequirements,
   OtpObjective,
   OtpTemplateMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
+import {
+  Account,
+  AccountAuthenIdType,
+  AccountRole,
+  Credential,
+  User,
+} from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
@@ -68,7 +77,7 @@ export class AuthenticationServiceV2 {
     private repository: Repository,
   ) {}
 
-  private generateTokenPayload(credential: Credential, user: User) {
+  private generateTokenPayload(credential: Credential, user?: User) {
     if (credential.account.isGuest) {
       return {
         id: credential.account._id,
@@ -151,10 +160,10 @@ export class AuthenticationServiceV2 {
     return {
       accessToken,
       refreshToken,
-      profile: await user.toUserResponseV2({
+      profile: await user?.toUserResponseV2({
         passwordNotSet: !account.password,
       }),
-      pages: pages.map((page) => page.toPageResponseV2()),
+      pages: user && pages.map((page) => page.toPageResponseV2()),
     };
   }
 
@@ -377,6 +386,85 @@ export class AuthenticationServiceV2 {
   }
 
   /**
+   * create account from guest user
+   * @param {AccountRequirements} requestOption
+   * @returns {TokenResponse}
+   */
+  async guestLogin(requestOption: AccountRequirements) {
+    const credentialGuest = await this.repository.findCredential({
+      deviceUUID: requestOption.deviceUUID,
+      'account.isGuest': true,
+    });
+
+    if (credentialGuest) {
+      const tokenPayload = this.generateTokenPayload(credentialGuest);
+      return await credentialGuest.renewTokens(tokenPayload, {
+        id: String(credentialGuest.account._id),
+      });
+    }
+
+    const session = await this.repository.accountSession();
+    session.startTransaction();
+    try {
+      const account = await this.repository.createAccount(requestOption, {
+        session,
+      });
+
+      const { accessToken, accessTokenExpireDate } =
+        this.repository.generateAccessToken({
+          id: String(account._id),
+          role: AccountRole.Guest,
+          showAds: true,
+        });
+
+      const { refreshToken, refreshTokenExpireDate } =
+        this.repository.generateRefreshToken({
+          id: String(account._id),
+        });
+
+      const credential = await this.repository.createCredential(
+        {
+          account: {
+            _id: account._id,
+            isGuest: true,
+            preferences: {
+              languages: requestOption.languagesPreferences,
+            },
+            visibility: EntityVisibility.Publish,
+          },
+          accessToken,
+          accessTokenExpireDate,
+          refreshToken,
+          refreshTokenExpireDate,
+          device: requestOption.device,
+          platform: requestOption.header.platform,
+          deviceUUID: requestOption.deviceUUID,
+        } as CreateCredentialDto,
+        {
+          session,
+        },
+      );
+
+      if (!account.credentials) account.credentials = [];
+      account.credentials.push({
+        _id: Types.ObjectId(credential._id),
+        deviceUUID: credential.deviceUUID,
+      });
+
+      await account.save({ session });
+      await session.commitTransaction();
+
+      return {
+        accessToken: credential.accessToken,
+        refreshToken: credential.refreshToken,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw CastcleException.INTERNAL_SERVER_ERROR;
+    }
+  }
+
+  /**
    * For check if castcle ID is existed
    * @param {string} castcleId
    * @returns user
@@ -418,7 +506,7 @@ export class AuthenticationServiceV2 {
 
     const account = await this.repository.findAccount({ email });
 
-    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
     if (
       objective !== OtpObjective.ForgotPassword &&
       (account.id !== String(requestedBy) || account.isGuest)

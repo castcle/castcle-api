@@ -34,9 +34,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isArray, isBoolean, isMongoId } from 'class-validator';
 import {
   AnyKeys,
+  ClientSession,
   FilterQuery,
   Model,
   QueryOptions,
+  SaveOptions,
   Types,
   UpdateQuery,
 } from 'mongoose';
@@ -47,10 +49,13 @@ import {
 } from '../aggregations';
 import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
 import {
+  AccessTokenPayload,
   BlogPayload,
   ContentType,
   CreateContentDto,
+  CreateCredentialDto,
   EntityVisibility,
+  RefreshTokenPayload,
   ShortPayload,
   Url,
 } from '../dtos';
@@ -59,13 +64,14 @@ import {
   Account,
   Content,
   Credential,
+  CredentialModel,
   Engagement,
+  Hashtag,
+  Notification,
+  Otp,
+  OtpModel,
   Relationship,
   User,
-  Notification,
-  Hashtag,
-  OtpModel,
-  Otp,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 import {
@@ -108,6 +114,8 @@ type RelationshipQuery = {
 type CredentialQuery = {
   refreshToken?: string;
   accessToken?: string;
+  deviceUUID?: string;
+  'account.isGuest'?: boolean;
 };
 
 type NotificationQueryOption = {
@@ -151,7 +159,7 @@ export class Repository {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Credential') private credentialModel: Model<Credential>,
+    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
@@ -307,6 +315,21 @@ export class Repository {
     updateQuery?: UpdateQuery<Credential>,
   ) {
     return this.credentialModel.updateMany(filter, updateQuery);
+  }
+  async createAccount(
+    accountRequirements: AnyKeys<Account>,
+    queryOptions?: SaveOptions,
+  ) {
+    const newAccount: Partial<Account> = {
+      isGuest: true,
+      preferences: {
+        languages: accountRequirements['languagesPreferences'],
+      },
+      geolocation: accountRequirements.geolocation,
+      visibility: EntityVisibility.Publish,
+    };
+
+    return new this.accountModel(newAccount).save(queryOptions);
   }
 
   async createContentImage(body: CreateContentDto, uploader: User) {
@@ -618,6 +641,21 @@ export class Repository {
     );
   }
 
+  async createCredential(
+    credential: CreateCredentialDto,
+    queryOptions?: SaveOptions,
+  ) {
+    return new this.credentialModel(credential).save(queryOptions);
+  }
+
+  generateAccessToken(payload: AccessTokenPayload) {
+    return this.credentialModel.generateAccessToken(payload);
+  }
+
+  generateRefreshToken(payload: RefreshTokenPayload) {
+    return this.credentialModel.generateRefreshToken(payload);
+  }
+
   createOtp(createOtpDto: {
     accountId: string;
     objective: OtpObjective;
@@ -655,5 +693,9 @@ export class Repository {
       query.expireDate = { [dto.isValid ? '$gte' : '$lt']: new Date() };
 
     return this.otpModel.findOne(query);
+  }
+
+  accountSession(): Promise<ClientSession> {
+    return this.accountModel.startSession();
   }
 }
