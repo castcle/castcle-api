@@ -23,13 +23,23 @@
 
 import { CastcleException } from '@castcle-api/utils/exception';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { Request } from 'express';
 import { getClientIp } from 'request-ip';
 
 export class CastcleThrottlerGuard extends ThrottlerGuard {
-  override getTracker(req: Record<string, any>): string {
+  override getTracker(req: Request): string {
     const ip = getClientIp(req as any);
     const userAgent = req.get('User-Agent');
-    return `${ip}-${userAgent}`;
+    const defaultTracker = `${ip}-${userAgent}`;
+
+    if (/[request|verify]-otp\/[mobile|email]/.test(req.path)) {
+      const { objective, email, mobileNumber } = req.body;
+      return [defaultTracker, objective, email, mobileNumber]
+        .filter(Boolean)
+        .join('-');
+    }
+
+    return defaultTracker;
   }
 
   override throwThrottlingException(): void {
