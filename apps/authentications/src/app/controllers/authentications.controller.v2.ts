@@ -29,9 +29,11 @@ import {
   LoginWithEmailDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
+  RequestOtpByMobileDto,
   ResponseDto,
   SocialConnectDto,
   VerifyOtpByEmailDto,
+  VerifyOtpByMobileDto,
 } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import {
@@ -140,9 +142,12 @@ export class AuthenticationControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL)
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
   @Post('request-otp/email')
-  async requestOtp(
+  async requestOtpByEmail(
     @Body() requestOtpDto: RequestOtpByEmailDto,
     @Req() { $credential }: CredentialRequest,
     @RequestMeta() requestMetadata: RequestMetadata,
@@ -158,9 +163,33 @@ export class AuthenticationControllerV2 {
   }
 
   @CastcleBasicAuth()
-  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL)
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_MOBILE_LIMIT,
+    Environment.RATE_LIMIT_OTP_MOBILE_TTL,
+  )
+  @Post('request-otp/mobile')
+  async requestOtpByMobile(
+    @Body() requestOtpDto: RequestOtpByMobileDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpByMobile({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
   @Post('verify-otp/email')
-  async verifyOtp(
+  async verifyOtpByEmail(
     @Body() verifyOtpDto: VerifyOtpByEmailDto,
     @Req() { $credential }: CredentialRequest,
   ) {
@@ -175,6 +204,28 @@ export class AuthenticationControllerV2 {
       objective: verifyOtpDto.objective,
       expireDate: otp.expireDate,
       accessToken,
+    };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_MOBILE_LIMIT,
+    Environment.RATE_LIMIT_OTP_MOBILE_TTL,
+  )
+  @Post('verify-otp/mobile')
+  async verifyOtpByMobile(
+    @Body() verifyOtpDto: VerifyOtpByMobileDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    const otp = await this.authenticationService.verifyOtpByMobile({
+      ...verifyOtpDto,
+      requestedBy: $credential.account,
+    });
+
+    return {
+      refCode: otp.refCode,
+      objective: verifyOtpDto.objective,
+      expireDate: otp.expireDate,
     };
   }
 

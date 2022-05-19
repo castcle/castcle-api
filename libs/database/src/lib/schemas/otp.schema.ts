@@ -149,4 +149,5 @@ OtpSchema.methods.isValidVerifyMobileOtp = function () {
 OtpSchema.methods.markVerified = function () {
   this.isVerify = true;
   this.refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
+  return this;
 };

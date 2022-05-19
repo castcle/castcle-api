@@ -44,9 +44,11 @@ import {
   EntityVisibility,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
+  RequestOtpByMobileDto,
   SocialConnectDto,
   UserAccessTokenPayload,
   VerifyOtpByEmailDto,
+  VerifyOtpByMobileDto,
 } from '../dtos';
 import {
   AccountActivationType,
@@ -510,11 +512,76 @@ export class AuthenticationServiceV2 {
     const account = await this.repository.findAccount({ email });
     if (!account) throw CastcleException.EMAIL_NOT_FOUND;
 
+    return this.requestOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      account,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
+  async requestOtpByMobile({
+    countryCode,
+    mobileNumber,
+    objective,
+    recaptchaToken,
+    requestedBy,
+    ip,
+    source,
+    userAgent,
+  }: RequestOtpByMobileDto & {
+    ip?: string;
+    requestedBy: Account;
+    source?: string;
+    userAgent?: string;
+  }) {
+    if (source?.toLowerCase() === 'web') {
+      const success = await this.googleClient.verifyRecaptcha(
+        recaptchaToken,
+        ip,
+      );
+      if (!success) CastcleException.RECAPTCHA_FAILED;
+    }
+
+    const existingAccount = await this.repository.findAccount({
+      mobileCountryCode: countryCode,
+      mobileNumber,
+    });
+    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
+    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    return this.requestOtp({
+      channel: TwilioChannel.SMS,
+      objective,
+      receiver: countryCode + mobileNumber,
+      account: requestedBy,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
+  private async requestOtp({
+    channel,
+    objective,
+    receiver,
+    account,
+    requestedBy,
+    userAgent,
+  }: {
+    channel: TwilioChannel;
+    objective: OtpObjective;
+    receiver: string;
+    account: Account;
+    requestedBy: string;
+    userAgent?: string;
+  }) {
     try {
       const existingOtp = await this.repository.findOtp({
-        channel: TwilioChannel.EMAIL,
+        channel,
         objective,
-        receiver: email,
+        receiver,
       });
 
       if (existingOtp?.isValid()) return existingOtp;
@@ -522,20 +589,20 @@ export class AuthenticationServiceV2 {
 
       const user = await this.repository.findUser({ accountId: account._id });
       const { sid } = await this.twilioClient.requestOtp({
-        channel: TwilioChannel.EMAIL,
+        channel,
         accountId: account.id,
         userAgent,
-        receiver: email,
+        receiver,
         config: OtpTemplateMessage.from(objective, user?.displayName),
       });
 
       return this.repository.createOtp({
-        channel: TwilioChannel.EMAIL,
+        channel,
         accountId: account._id,
         objective,
-        requestId: requestedBy._id,
+        requestId: requestedBy,
         verified: false,
-        receiver: email,
+        receiver,
         sid,
         expiryDate: DateTime.now()
           .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
@@ -582,6 +649,31 @@ export class AuthenticationServiceV2 {
     return { otp, accessToken };
   }
 
+  async verifyOtpByMobile({
+    objective,
+    countryCode,
+    mobileNumber,
+    refCode,
+    otp: otpCode,
+    requestedBy,
+  }: VerifyOtpByMobileDto & { requestedBy: Account }) {
+    const existingAccount = await this.repository.findAccount({
+      mobileCountryCode: countryCode,
+      mobileNumber,
+    });
+    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
+    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    return this.verifyOtp({
+      channel: TwilioChannel.SMS,
+      objective,
+      receiver: countryCode + mobileNumber,
+      refCode,
+      otp: otpCode,
+      account: existingAccount,
+    });
+  }
+
   private async verifyOtp({
     channel,
     objective,
@@ -624,7 +716,7 @@ export class AuthenticationServiceV2 {
         await existingOtp.updateOne({ $inc: { retry: 1 } });
         throw CastcleException.INVALID_OTP;
       }
-      return existingOtp;
+      return existingOtp.markVerified().save();
     } catch (error) {
       this.logger.error(error, 'verifyOtp');
       if (error instanceof CastcleException) throw error;

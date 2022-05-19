@@ -177,10 +177,19 @@ export class Environment {
   // DS Service
   static DS_SERVICE_BASE_URL = process.env.DS_SERVICE_BASE_URL;
 
+  // Rate Limiting
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 300;
   static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 200;
   static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 60;
   static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 20;
+  static RATE_LIMIT_OTP_EMAIL_TTL =
+    Number(process.env.RATE_LIMIT_OTP_EMAIL_TTL) || 60;
+  static RATE_LIMIT_OTP_EMAIL_LIMIT =
+    Number(process.env.RATE_LIMIT_OTP_EMAIL_LIMIT) || 20;
+  static RATE_LIMIT_OTP_MOBILE_TTL =
+    Number(process.env.RATE_LIMIT_OTP_MOBILE_TTL) || 300;
+  static RATE_LIMIT_OTP_MOBILE_LIMIT =
+    Number(process.env.RATE_LIMIT_OTP_MOBILE_LIMIT) || 1;
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;

@@ -84,6 +84,8 @@ type AccountQuery = {
   email?: string;
   provider?: string;
   socialId?: string;
+  mobileCountryCode?: string;
+  mobileNumber?: string;
 };
 
 type UserQuery = {
@@ -192,6 +194,9 @@ export class Repository {
 
     if (filter._id) query._id = filter._id;
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
+    if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
+    if (filter.mobileCountryCode)
+      query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
