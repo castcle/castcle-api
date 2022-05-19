@@ -88,12 +88,6 @@ export const getRelationship = (
 ) => {
   if (!hasRelationshipExpansion) return {};
 
-  const authorRelationship = relationships.find(
-    ({ followedUser, user }) =>
-      String(user) === String(authorId) &&
-      String(followedUser) === String(viewerId),
-  );
-
   const getterRelationship = relationships.find(
     ({ followedUser, user }) =>
       String(followedUser) === String(authorId) &&
@@ -101,8 +95,8 @@ export const getRelationship = (
   );
 
   return {
-    blocked: Boolean(getterRelationship?.blocking),
-    blocking: Boolean(authorRelationship?.blocking),
+    blocked: Boolean(getterRelationship?.blocked),
+    blocking: Boolean(getterRelationship?.blocking),
     followed: Boolean(getterRelationship?.following),
   };
 };

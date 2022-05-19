@@ -11,6 +11,7 @@ import {
   testReplyCommentsFlow,
 } from './modules/feeds';
 import {
+  testBlocksFlow,
   testFollowsFlow,
   testLikesFlow,
   testSyncSocialFlow,
@@ -91,6 +92,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Recasts Flow', () => {
       testRecastsFlow();
+    });
+
+    describe('- Block Flow', () => {
+      testBlocksFlow();
     });
   });
 
