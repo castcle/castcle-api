@@ -79,10 +79,10 @@ export class TAccountService {
    * Get user's balance
    * @param {string} accountId
    */
-  getAccountBalance = async (accountId: string, walletType: WalletType) => {
+  getAccountBalance = async (userId: string, walletType: WalletType) => {
     const [balance] =
       await this._transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalanceFromWalletType(accountId, walletType),
+        pipelineOfGetBalanceFromWalletType(userId, walletType),
       );
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
@@ -113,9 +113,9 @@ export class TAccountService {
       return false;
     }
     //validate source balance
-    if (transferDTO.from.account && transferDTO.from.value) {
+    if (transferDTO.from.user && transferDTO.from.value) {
       const accountBalance = await this.getAccountBalance(
-        transferDTO.from.account,
+        transferDTO.from.user,
         transferDTO.from.type,
       );
       if (

@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -30,6 +31,7 @@ import { FilterQuery, Model } from 'mongoose';
 import {
   GetAdsPriceResponse,
   pipe2AdsAuctionPrice,
+  pipe2AvaialableAdsCampaign,
 } from '../aggregations/ads.aggregation';
 import {
   ContentPayloadItem,
@@ -44,6 +46,7 @@ import {
 } from '../dtos/ads.dto';
 import {
   AdsBoostStatus,
+  AdsCpm,
   AdsPaymentMethod,
   AdsStatus,
   CACCOUNT_NO,
@@ -137,18 +140,12 @@ export class AdsService {
     const session = await this._adsPlacementModel.startSession();
     try {
       session.startTransaction();
-      const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
-        pipe2AdsAuctionPrice(),
-      );
-      const selectAds = await this.selectAdsFromActiveAds(
-        price[0],
-        viewerAccountId,
-      );
+      const cpm = await this.getAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
-        campaign: selectAds,
+        campaign: cpm.adsCampignId,
         contents: contentIds,
         cost: {
-          UST: price[0].price,
+          UST: cpm.bidding_cpm,
         },
         viewer: mongoose.Types.ObjectId(viewerAccountId),
       });
@@ -489,4 +486,42 @@ export class AdsService {
           adsPlacement: adsPlacement,
         };
   };
+
+  getAds = async (accountId:string) => {
+    //select all ads that user Balance > budget
+    const ads = await this._adsCampaignModel.aggregate(pipe2AvaialableAdsCampaign());
+    const releventScore = await this.dataService.personalizeContents(
+      accountId,
+      ads.map(a => a.$id || a.oid),
+    );// O ?
+    let cpms: AdsCpm[] = [];
+    for(let i =0 ; i < ads.length; i++){
+      cpms[i] = {cpm:ads.length * Environment.ADS_MINIMUM_CPM }
+      if(cpms[i].cpm > ads[i].budgetLeft)
+        cpms[i].cpm = ads[i].budgetLeft
+      cpms[i].bidding_cpm = cpms[i].cpm;
+      cpms[i].relevance_score = releventScore[ads[i].id];
+      cpms[i].ranking_score = cpms[i].relevance_score * cpms[i].bidding_cpm;
+      cpms[i].adsCampignId = String( ads[i]._id );
+    }
+    //
+    const sortedCpms = cpms.sort((a, b) => a.ranking_score > b.ranking_score?-1:1);
+    for(let i =0; i < sortedCpms.length;i++){
+      if(i == 0)
+        sortedCpms[i].bidding_cpm =  Environment.ADS_MINIMUM_CPM
+      else{
+        let bid = sortedCpms[i-1].ranking_score / sortedCpms[i-1].relevance_score;
+        bid = Math.floor(bid / Environment.ADS_MINIMUM_CPM) * Environment.ADS_MINIMUM_CPM + Environment.ADS_MINIMUM_CPM;
+        sortedCpms[i].bidding_cpm = bid;
+      }
+      sortedCpms[i].ranking_score = sortedCpms[i].relevance_score * sortedCpms[i].bidding_cpm;
+      
+    }
+    //get adsThat has Max ranking
+    return sortedCpms.reduce((prev, current) => {
+      current.ranking_score > prev.ranking_score
+      return current;
+    }, sortedCpms[0]);
+  }
+
 }

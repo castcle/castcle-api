@@ -31,6 +31,9 @@ export class MicroTransaction {
   @Prop({ index: true, ref: 'Account', type: SchemaTypes.ObjectId })
   account?: string;
 
+  @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
+  user?:string
+
   @Prop({ type: String })
   type: WalletType;
 
