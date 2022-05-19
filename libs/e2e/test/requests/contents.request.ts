@@ -21,7 +21,9 @@ export class ContentsRequest {
   static checkHealth = () => ContentsRequest.get('/contents/healthy');
   static createContent = () => ContentsRequest.post('/contents/feed');
   static getContent = (contentId: string) =>
-    ContentsRequest.get(`/v2/contents/${contentId}`);
+    ContentsRequest.get(
+      `/v2/contents/${contentId}?userFields=relationships&hasRelationshipExpansion=true`,
+    );
   static updateContent = (contentId: string) =>
     ContentsRequest.put(`/contents/${contentId}`);
   static deleteContent = (contentId: string) =>

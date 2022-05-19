@@ -202,7 +202,7 @@ export class ContentServiceV2 {
       );
       return new Author(author as any).toIncludeUser({
         blocked: hasRelationshipExpansion
-          ? relationshipUser?.blocking ?? false
+          ? relationshipUser?.blocked ?? false
           : undefined,
         blocking: hasRelationshipExpansion
           ? relationshipUser?.blocking ?? false
