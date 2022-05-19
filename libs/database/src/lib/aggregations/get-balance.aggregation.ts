@@ -48,8 +48,9 @@ export const pipelineOfGetBalance = (accountId: string) => [
   },
 ];
 
+
 export const pipelineOfGetBalanceFromWalletType = (
-  accountId: string,
+  userId: string,
   walletType: WalletType,
 ) => [
   { $unwind: { path: '$to' } },
@@ -58,7 +59,7 @@ export const pipelineOfGetBalanceFromWalletType = (
       inflows: [
         {
           $match: {
-            'to.account': Types.ObjectId(accountId),
+            'to.user': Types.ObjectId(userId),
             'to.type': walletType,
           },
         },
@@ -66,7 +67,7 @@ export const pipelineOfGetBalanceFromWalletType = (
       outflows: [
         {
           $match: {
-            'from.account': Types.ObjectId(accountId),
+            'from.user': Types.ObjectId(userId),
             'from.type': walletType,
           },
         },

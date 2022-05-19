@@ -210,7 +210,7 @@ export class Environment {
     Number(process.env.CASTCLE_ID_ALLOW_UPDATE_DAYS) || 60;
 
   // ADS
-  static ADS_MINIMUM_CPM = process.env.ADS_MINIMUM_CPM || 0.01;
+  static ADS_MINIMUM_CPM = Number(process.env.ADS_MINIMUM_CPM) || 0.001;
   static ADS_MINIMUM_FEED_VIEW = process.env.ADS_MINIMUM_FEED_VIEW || 6;
   static ADS_MINIMUM_FEED_COOL_DOWN =
     process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;

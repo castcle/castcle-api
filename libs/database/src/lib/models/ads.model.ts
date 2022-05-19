@@ -7,6 +7,8 @@
  * Copyright (c) 2022 Your Company
  */
 
+import { AdsCampaign } from "../schemas";
+
 export class AdsCost {
   CAST: number;
   UST: number;
@@ -16,4 +18,12 @@ export enum AdsPaymentMethod {
   ADS_CREDIT = 'ads-credit',
   TOKEN_WALLET = 'token-wallet',
   CREDIT_CARD = 'credit-card',
+}
+
+export type AdsCpm  ={
+  cpm?:number;
+  bidding_cpm?:number;
+  relevance_score?:number;
+  ranking_score?:number;
+  adsCampignId?:string;
 }
