@@ -103,13 +103,11 @@ export class ContentServiceV2 {
     );
 
     if (!bundleContents.contents)
-      return {
+      return ResponseDto.ok({
         payload: [],
-        includes: {
-          casts: [],
-          users: [],
-        },
-      } as ResponseDto;
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      });
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
@@ -180,13 +178,11 @@ export class ContentServiceV2 {
     );
 
     if (!bundleContents.contents)
-      return {
+      return ResponseDto.ok({
         payload: [],
-        includes: {
-          casts: [],
-          users: [],
-        },
-      } as ResponseDto;
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      });
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
@@ -831,7 +827,7 @@ export class ContentServiceV2 {
     contentId: string,
     account: Account,
     query: PaginationQuery,
-    type: EngagementType,
+    type?: EngagementType,
     viewer?: User,
   ) => {
     const content = await this.repository.findContent({ _id: contentId });
@@ -859,7 +855,7 @@ export class ContentServiceV2 {
     if (!usersEngagement.length)
       return ResponseDto.ok({
         payload: [],
-        meta: null,
+        meta: { resultCount: 0 },
       });
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
@@ -927,17 +923,40 @@ export class ContentServiceV2 {
     });
 
     if (!bundleContents.contents.length)
-      return {
+      return ResponseDto.ok({
         payload: [],
         includes: { casts: [], users: [] },
         meta: { resultCount: 0 },
-      } as ResponseDto;
+      });
 
     this.logger.log('Success get quote cast');
 
     return this.toContentsResponses(
       bundleContents,
       query.hasRelationshipExpansion,
+      viewer,
+    );
+  };
+
+  getContents = async (
+    { hasRelationshipExpansion, ...query }: PaginationQuery,
+    viewer?: User,
+  ) => {
+    const [bundleContents] = await this.repository.aggregationContent({
+      viewer,
+      ...query,
+    });
+
+    if (!bundleContents.contents.length)
+      return ResponseDto.ok({
+        payload: [],
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      });
+
+    return this.toContentsResponses(
+      bundleContents,
+      hasRelationshipExpansion,
       viewer,
     );
   };

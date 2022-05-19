@@ -53,6 +53,7 @@ import {
   UnlikeCommentCastParam,
   GetSourceContentParam,
   QuoteCastDto,
+  GetContentQuery,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import { Comment, Content } from '@castcle-api/database/schemas';
@@ -826,6 +827,45 @@ describe('UsersControllerV2', () => {
       expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
       expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
       expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
+    });
+  });
+
+  describe('#getContents()', () => {
+    let mocksUsers: MockUserDetail[];
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const user = mocksUsers[0].user;
+      await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+      await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
+    it('should get cast is exists.', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const contentResp = await appController.getContents(
+        authorizer,
+        {
+          userId: mocksUsers[1].user._id,
+        } as GetUserParam,
+        { hasRelationshipExpansion: false } as GetContentQuery,
+      );
+
+      expect(contentResp.payload).toHaveLength(7);
     });
   });
 });

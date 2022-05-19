@@ -21,7 +21,13 @@
  * or have any questions.
  */
 
-import { IsMongoId, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { GetUserParam } from './user.dto';
 import { IsNotEmpty } from 'class-validator';
 import { Content, Engagement, User } from '../schemas';
@@ -32,6 +38,11 @@ import {
   ShortPayload,
 } from './content.dto';
 import { UserType } from '../models';
+import {
+  TransformSortStringToSortObject,
+  TransformStringToArrayOfStrings,
+} from '@castcle-api/utils/commons';
+import { PaginationQuery } from './pagination.dto';
 
 export class GetContentDto {
   @IsString()
@@ -97,4 +108,16 @@ export class ResponseParticipate {
     recasted: boolean;
     reported: boolean;
   };
+}
+
+export class GetContentQuery extends PaginationQuery {
+  @IsOptional()
+  @IsEnum(ContentType, { each: true })
+  @TransformStringToArrayOfStrings()
+  type?: string;
+
+  @IsOptional()
+  @IsObject()
+  @TransformSortStringToSortObject()
+  sortBy?: string;
 }

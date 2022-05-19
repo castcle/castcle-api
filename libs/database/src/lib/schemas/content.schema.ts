@@ -249,14 +249,12 @@ export const toUnsignedContentPayloadItem = (
     link: (content.payload as ShortPayload)?.link,
     photo: (content.payload as ShortPayload)?.photo,
 
-    metrics: metrics
-      ? metrics
-      : {
-          likeCount: content.engagements?.like?.count | 0,
-          commentCount: content.engagements?.comment?.count | 0,
-          quoteCount: content.engagements?.quote?.count | 0,
-          recastCount: content.engagements?.recast?.count | 0,
-        },
+    metrics: metrics || {
+      likeCount: content.engagements?.like?.count | 0,
+      commentCount: content.engagements?.comment?.count | 0,
+      quoteCount: content.engagements?.quote?.count | 0,
+      recastCount: content.engagements?.recast?.count | 0,
+    },
     participate: {
       liked: engage.some(({ type }) => type === EngagementType.Like),
       commented: engage.some(({ type }) => type === EngagementType.Comment),

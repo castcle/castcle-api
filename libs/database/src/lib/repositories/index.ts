@@ -146,6 +146,10 @@ type ContentQuery = {
   untilId?: string;
   maxResults?: number;
   viewer?: User;
+  type?: string[];
+  sortBy?: {
+    [key: string]: string;
+  };
 };
 
 type HashtagQuery = {
@@ -225,6 +229,7 @@ export class Repository {
     if (filter.author) query['author.id'] = filter.author;
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
+    if (isArray(filter.type)) query.type = { $in: filter.type };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -515,12 +520,13 @@ export class Repository {
       .exec();
   }
 
-  aggregationContent(filter: ContentQuery) {
+  aggregationContent({ maxResults, sortBy, ...filter }: ContentQuery) {
     return this.contentModel.aggregate(
       pipelineGetContents({
-        filter: this.getContentQuery(filter),
+        maxResults,
+        sortBy,
         viewer: filter.viewer,
-        maxResults: filter.maxResults,
+        filter: this.getContentQuery(filter),
       }),
     );
   }

@@ -556,6 +556,16 @@ describe('ContentServiceV2', () => {
     });
   });
 
+  describe('#getContents()', () => {
+    it('should get cast is exists.', async () => {
+      const contentResp = await service.getContents(
+        { hasRelationshipExpansion: false },
+        mocksUsers[1].user,
+      );
+      expect(contentResp.payload).toHaveLength(25);
+    });
+  });
+
   describe('#createContent()', () => {
     it('should create cast is exists.', async () => {
       const createContent = {
