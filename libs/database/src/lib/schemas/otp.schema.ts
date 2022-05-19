@@ -71,6 +71,7 @@ class OtpDocument extends CastcleBase {
 export class Otp extends OtpDocument {
   isValid: () => boolean;
   isValidVerifyMobileOtp: () => boolean;
+  markVerified: () => this;
 }
 
 export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
@@ -143,4 +144,9 @@ OtpSchema.methods.isValidVerifyMobileOtp = function () {
   return (
     this.action === OtpObjective.VerifyMobile && this.isValid() && this.isVerify
   );
+};
+
+OtpSchema.methods.markVerified = function () {
+  this.isVerify = true;
+  this.refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
 };

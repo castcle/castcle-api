@@ -22,3 +22,4 @@
  */
 
 export * from './lib/utils-clients.module';
+export * from './lib/twilio/twilio.enum';

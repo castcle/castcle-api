@@ -63,7 +63,7 @@ export class RegisterWithEmailDto {
 }
 
 export class RequestOtpByEmailDto {
-  @IsEnum(OtpObjective)
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
   objective: OtpObjective;
 
   @IsEmail()
@@ -73,4 +73,20 @@ export class RequestOtpByEmailDto {
   @IsString()
   @IsNotEmpty()
   recaptchaToken?: string;
+}
+
+export class VerifyOtpByEmailDto {
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 }

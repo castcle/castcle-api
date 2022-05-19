@@ -690,7 +690,7 @@ export class Repository {
     objective?: OtpObjective;
     receiver?: string;
   }) {
-    const query: FilterQuery<Otp> = {};
+    const query: FilterQuery<Otp> = { isVerify: false };
 
     if (dto.channel) query.channel = dto.channel;
     if (dto.objective) query.action = dto.objective;

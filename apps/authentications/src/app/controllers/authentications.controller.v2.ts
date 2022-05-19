@@ -31,6 +31,7 @@ import {
   RequestOtpByEmailDto,
   ResponseDto,
   SocialConnectDto,
+  VerifyOtpByEmailDto,
 } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import {
@@ -150,10 +151,31 @@ export class AuthenticationControllerV2 {
       await this.authenticationService.requestOtpByEmail({
         ...requestOtpDto,
         ...requestMetadata,
-        requestedBy: $credential.account._id,
+        requestedBy: $credential.account,
       });
 
     return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL)
+  @Post('verify-otp/email')
+  async verifyOtp(
+    @Body() verifyOtpDto: VerifyOtpByEmailDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    const { otp, accessToken } =
+      await this.authenticationService.verifyOtpByEmail({
+        ...verifyOtpDto,
+        credential: $credential,
+      });
+
+    return {
+      refCode: otp.refCode,
+      objective: verifyOtpDto.objective,
+      expireDate: otp.expireDate,
+      accessToken,
+    };
   }
 
   @CastcleTrack()

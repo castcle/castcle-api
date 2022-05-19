@@ -30,6 +30,7 @@ import {
   TwilioChannel,
   TwilioClient,
   TwilioErrorMessage,
+  TwilioStatus,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
@@ -45,6 +46,7 @@ import {
   RequestOtpByEmailDto,
   SocialConnectDto,
   UserAccessTokenPayload,
+  VerifyOtpByEmailDto,
 } from '../dtos';
 import {
   AccountActivationType,
@@ -492,11 +494,12 @@ export class AuthenticationServiceV2 {
     userAgent,
   }: RequestOtpByEmailDto & {
     ip?: string;
-    requestedBy: string;
+    requestedBy: Account;
     source?: string;
     userAgent?: string;
   }) {
-    if (source.toLowerCase() === 'web') {
+    if (!requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (source?.toLowerCase() === 'web') {
       const success = await this.googleClient.verifyRecaptcha(
         recaptchaToken,
         ip,
@@ -505,24 +508,17 @@ export class AuthenticationServiceV2 {
     }
 
     const account = await this.repository.findAccount({ email });
-
     if (!account) throw CastcleException.EMAIL_NOT_FOUND;
-    if (
-      objective !== OtpObjective.ForgotPassword &&
-      (account.id !== String(requestedBy) || account.isGuest)
-    ) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
-    }
 
     try {
       const existingOtp = await this.repository.findOtp({
         channel: TwilioChannel.EMAIL,
         objective,
         receiver: email,
-        isValid: true,
       });
 
-      if (existingOtp) return existingOtp;
+      if (existingOtp?.isValid()) return existingOtp;
+      else if (existingOtp) await existingOtp.remove();
 
       const user = await this.repository.findUser({ accountId: account._id });
       const { sid } = await this.twilioClient.requestOtp({
@@ -537,7 +533,7 @@ export class AuthenticationServiceV2 {
         channel: TwilioChannel.EMAIL,
         accountId: account._id,
         objective,
-        requestId: requestedBy,
+        requestId: requestedBy._id,
         verified: false,
         receiver: email,
         sid,
@@ -554,6 +550,87 @@ export class AuthenticationServiceV2 {
       } else {
         throw CastcleException.TWILIO_MAX_LIMIT;
       }
+    }
+  }
+
+  async verifyOtpByEmail({
+    objective,
+    email,
+    refCode,
+    otp: otpCode,
+    credential,
+  }: VerifyOtpByEmailDto & { credential: Credential }) {
+    if (!credential.account.isGuest) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const otp = await this.verifyOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      refCode,
+      otp: otpCode,
+      account,
+    });
+
+    if (objective !== OtpObjective.MergeAccount) return { otp };
+
+    const { accessToken } = await this.login(credential, account);
+    return { otp, accessToken };
+  }
+
+  private async verifyOtp({
+    channel,
+    objective,
+    receiver,
+    refCode,
+    otp,
+  }: {
+    channel: TwilioChannel;
+    objective: OtpObjective;
+    receiver: string;
+    refCode: string;
+    otp: string;
+    account: Account;
+  }) {
+    const existingOtp = await this.repository.findOtp({
+      channel,
+      objective,
+      receiver,
+    });
+
+    if (!existingOtp) {
+      throw CastcleException.INVALID_OTP;
+    }
+    if (existingOtp.refCode !== refCode) {
+      throw CastcleException.INVALID_REF_CODE;
+    }
+    if (!existingOtp.isValid()) {
+      await existingOtp.remove();
+      throw CastcleException.EXPIRED_OTP;
+    }
+    if (existingOtp.retry >= Environment.OTP_MAX_RETRIES) {
+      await this.twilioClient.cancelOtp(existingOtp.sid);
+      await existingOtp.remove();
+      throw CastcleException.LOCKED_OTP;
+    }
+
+    try {
+      const otpVerification = await this.twilioClient.verifyOtp(receiver, otp);
+      if (otpVerification.status !== TwilioStatus.APPROVED) {
+        await existingOtp.updateOne({ $inc: { retry: 1 } });
+        throw CastcleException.INVALID_OTP;
+      }
+      return existingOtp;
+    } catch (error) {
+      this.logger.error(error, 'verifyOtp');
+      if (error instanceof CastcleException) throw error;
+      await this.twilioClient.cancelOtp(existingOtp.sid);
+      await existingOtp.remove();
+      throw CastcleException.EXPIRED_OTP;
     }
   }
 }
