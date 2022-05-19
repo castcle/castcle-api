@@ -211,6 +211,11 @@ export const DefaultErrors = {
     code: '3025',
     message: 'Email could not be found. Please try again.',
   },
+  '3026': {
+    statusCode: '404',
+    code: '3026',
+    message: 'Mobile could not be found. Please try again.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',

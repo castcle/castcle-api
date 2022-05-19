@@ -25,7 +25,8 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { Twilio } from 'twilio';
-import { TwilioChannel } from './twilio.message';
+import { TwilioStatus } from '../..';
+import { TwilioChannel } from './twilio.enum';
 
 @Injectable()
 export class TwilioClient {
@@ -121,17 +122,16 @@ export class TwilioClient {
       });
   }
 
-  async canceledOtp(sid: string) {
-    this.logger.log(`Cancel otp sid: ${sid}`);
+  async cancelOtp(sid: string) {
+    this.logger.log(`Cancel otp sid: ${sid}`, 'cancelOtp');
     return this.client.verify
       .services(Environment.TWILIO_OTP_SID)
       .verifications(sid)
-      .update({ status: 'canceled' })
-      .then((verification) => {
-        return verification;
-      })
+      .update({ status: TwilioStatus.CANCELED })
+      .then(() => true)
       .catch((error) => {
-        throw new Error(error);
+        this.logger.log(error, 'cancelOtp');
+        return false;
       });
   }
 }

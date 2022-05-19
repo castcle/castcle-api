@@ -655,7 +655,7 @@ export class AppService {
   private async cancelOtp(otp: Otp) {
     this.logger.log('Cancel Twilio Otp.');
     try {
-      if (otp.sid) await this.twilioClient.canceledOtp(otp.sid);
+      if (otp.sid) await this.twilioClient.cancelOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
     }

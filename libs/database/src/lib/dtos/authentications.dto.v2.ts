@@ -25,6 +25,7 @@ import { CastcleRegExp } from '@castcle-api/utils/commons';
 import {
   IsEmail,
   IsEnum,
+  IsMobilePhone,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -63,7 +64,7 @@ export class RegisterWithEmailDto {
 }
 
 export class RequestOtpByEmailDto {
-  @IsEnum(OtpObjective)
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
   objective: OtpObjective;
 
   @IsEmail()
@@ -73,4 +74,57 @@ export class RequestOtpByEmailDto {
   @IsString()
   @IsNotEmpty()
   recaptchaToken?: string;
+}
+
+export class RequestOtpByMobileDto {
+  @IsEnum([OtpObjective.VerifyMobile])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
+}
+
+export class VerifyOtpByEmailDto {
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class VerifyOtpByMobileDto {
+  @IsEnum([OtpObjective.VerifyMobile])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 }

@@ -30,3 +30,8 @@ export enum TwilioChannel {
 export enum TwilioErrorMessage {
   TOO_MANY_REQUESTS = 'Error: Too many requests',
 }
+
+export enum TwilioStatus {
+  APPROVED = 'approved',
+  CANCELED = 'canceled',
+}
