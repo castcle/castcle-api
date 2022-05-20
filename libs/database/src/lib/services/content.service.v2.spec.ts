@@ -256,12 +256,12 @@ describe('ContentServiceV2', () => {
 
       //top up user 1 for 1000 CAST
       await mockDeposit(
-        mockFarmingUsers[1].account,
+        mockFarmingUsers[1].user,
         initialBalance,
         taccountService._transactionModel,
       );
       const balance = await taccountService.getAccountBalance(
-        mockFarmingUsers[1].account.id,
+        mockFarmingUsers[1].user.id,
         WalletType.PERSONAL,
       );
       expect(balance).toEqual(initialBalance);
@@ -274,20 +274,20 @@ describe('ContentServiceV2', () => {
         expect(await taccountService._transactionModel.count()).toEqual(1);
         contentFarming = await service.createContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
         );
         expect(await taccountService._transactionModel.count()).toEqual(2);
       });
       it('should be able to create content farming instance if have balance > 5% total', async () => {
         expect(String(contentFarming.content)).toEqual(testContents[0].id);
-        expect(String(contentFarming.account)).toEqual(
-          mockFarmingUsers[1].account.id,
+        expect(String(contentFarming.user)).toEqual(
+          mockFarmingUsers[1].user.id,
         );
         expect(contentFarming.status).toEqual(ContentFarmingStatus.Farming);
       });
       it('should have 95% balance of %initialBalance', async () => {
         const currentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(currentBalance).toEqual(0.95 * initialBalance);
@@ -296,10 +296,10 @@ describe('ContentServiceV2', () => {
         for (let i = 1; i < testContents.length - 1; i++) {
           await service.createContentFarming(
             testContents[i].id,
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
           );
           const currentBalance = await taccountService.getAccountBalance(
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
           expect(currentBalance).toEqual(expectedBalances[i]);
@@ -311,21 +311,21 @@ describe('ContentServiceV2', () => {
     describe('#unfarm', () => {
       it('should get balance back once unfarm and the farm status of that should be farmed', async () => {
         const currentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         const unfarmResult = await service.unfarm(
           testContents[0].id,
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
         );
         const afterBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(afterBalance).toEqual(unfarmResult.farmAmount + currentBalance);
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
         );
         expect(recentContentFarming.status).toEqual(
           ContentFarmingStatus.Farmed,
@@ -335,12 +335,12 @@ describe('ContentServiceV2', () => {
     describe('#updateContentFarming', () => {
       it('should change status from farmed to farming', async () => {
         const currentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         const recentContentFarming = await service.getContentFarming(
           testContents[0].id,
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
         );
         const updateFarmingResult = await service.updateContentFarming(
           recentContentFarming,
@@ -349,7 +349,7 @@ describe('ContentServiceV2', () => {
           ContentFarmingStatus.Farming,
         );
         const recentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(currentBalance).not.toEqual(recentBalance);
@@ -362,7 +362,7 @@ describe('ContentServiceV2', () => {
     describe('#expire', () => {
       it('should return all tokens to users and all status should be farmed', async () => {
         const currentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(currentBalance).toEqual(0);
@@ -370,17 +370,17 @@ describe('ContentServiceV2', () => {
         for (let i = 0; i < testContents.length - 1; i++) {
           const unfarmResult = await service.expireFarm(
             testContents[i].id,
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
           );
           start += unfarmResult.farmAmount;
           const recentBalance = await taccountService.getAccountBalance(
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
           expect(recentBalance).toEqual(currentBalance + start);
         }
         const latestBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(latestBalance).toEqual(initialBalance);
@@ -401,16 +401,16 @@ describe('ContentServiceV2', () => {
         for (let i = 0; i < finalTestContents.length - 1; i++) {
           await service.farm(
             finalTestContents[i].id,
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
           );
           const currentBalance = await taccountService.getAccountBalance(
-            mockFarmingUsers[1].account.id,
+            mockFarmingUsers[1].user.id,
             WalletType.PERSONAL,
           );
           expect(currentBalance).toEqual(expectedBalances[i]);
         }
         const recentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
         expect(recentBalance).toEqual(0);
@@ -421,7 +421,7 @@ describe('ContentServiceV2', () => {
         await new Promise((r) => setTimeout(r, 2000));
         await service.expireAllFarmedToken();
         const recentBalance = await taccountService.getAccountBalance(
-          mockFarmingUsers[1].account.id,
+          mockFarmingUsers[1].user.id,
           WalletType.PERSONAL,
         );
 

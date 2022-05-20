@@ -48,7 +48,6 @@ export const pipelineOfGetBalance = (accountId: string) => [
   },
 ];
 
-
 export const pipelineOfGetBalanceFromWalletType = (
   userId: string,
   walletType: WalletType,

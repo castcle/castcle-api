@@ -32,7 +32,7 @@ export class MicroTransaction {
   account?: string;
 
   @Prop({ index: true, ref: 'User', type: SchemaTypes.ObjectId })
-  user?:string
+  user?: string;
 
   @Prop({ type: String })
   type: WalletType;
