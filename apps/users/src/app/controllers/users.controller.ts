@@ -552,11 +552,11 @@ export class UsersController {
   @CastcleBasicAuth()
   @Post('me/advertise')
   async createAds(
-    @Auth() { account }: Authorizer,
+    @Auth() { user }: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
     //check if
-    const campaign = await this.adsService.createAds(account, adsRequestDto);
+    const campaign = await this.adsService.createAds(user, adsRequestDto);
     const response = await this.adsService.transformAdsCampaignToAdsResponse(
       campaign,
     );
