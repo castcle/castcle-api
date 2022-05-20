@@ -1271,7 +1271,7 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
@@ -1341,7 +1341,7 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
@@ -1562,7 +1562,7 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
