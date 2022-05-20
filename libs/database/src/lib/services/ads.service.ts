@@ -30,7 +30,6 @@ import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import {
   GetAdsPriceResponse,
-  pipe2AdsAuctionPrice,
   pipe2AvaialableAdsCampaign,
 } from '../aggregations/ads.aggregation';
 import {
@@ -140,7 +139,7 @@ export class AdsService {
     const session = await this._adsPlacementModel.startSession();
     try {
       session.startTransaction();
-      const cpm = await this.getAds(viewerAccountId);
+      const cpm = await this.auctionAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
         campaign: cpm.adsCampignId,
         contents: contentIds,
@@ -233,9 +232,9 @@ export class AdsService {
    * @param adsRequest
    * @returns
    */
-  validateAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  validateAds = async (user: User, adsRequest: AdsRequestDto) => {
     const balance = await this.taccountService.getAccountBalance(
-      String(account._id),
+      user.id,
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
         : WalletType.PERSONAL,
@@ -252,7 +251,7 @@ export class AdsService {
    * @param adsRequest
    * @returns {AdsCampaign}
    */
-  createAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  createAds = async (user: User, adsRequest: AdsRequestDto) => {
     const adsRef = adsRequest.userId
       ? {
           $ref: 'user',
@@ -262,17 +261,17 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    if (!(await this.validateAds(account, adsRequest)))
+    if (!(await this.validateAds(user, adsRequest)))
       throw CastcleException.INVALID_TRANSACTIONS_DATA;
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
-      owner: account._id,
+      owner: user.ownerAccount,
       objective: adsRequest.objective,
       detail: {
         name: adsRequest.campaignName,
         message: adsRequest.campaignMessage,
-        code: this.getCode(account), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
+        code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
@@ -487,41 +486,47 @@ export class AdsService {
         };
   };
 
-  getAds = async (accountId:string) => {
+  getAds = async (accountId: string) => {
     //select all ads that user Balance > budget
-    const ads = await this._adsCampaignModel.aggregate(pipe2AvaialableAdsCampaign());
+    const ads = await this._adsCampaignModel
+      .aggregate(pipe2AvaialableAdsCampaign())
+      .exec();
+    console.log('===--=getAds');
+    console.log(ads);
+    console.log(ads.length);
+
     const releventScore = await this.dataService.personalizeContents(
       accountId,
-      ads.map(a => a.$id || a.oid),
-    );// O ?
-    let cpms: AdsCpm[] = [];
-    for(let i =0 ; i < ads.length; i++){
-      cpms[i] = {cpm:ads.length * Environment.ADS_MINIMUM_CPM }
-      if(cpms[i].cpm > ads[i].budgetLeft)
-        cpms[i].cpm = ads[i].budgetLeft
+      ads.map((a) => a.adsRef.$id || a.adsRef.oid),
+    ); // O ?
+    const cpms: AdsCpm[] = [];
+    for (let i = 0; i < ads.length; i++) {
+      cpms[i] = { cpm: ads.length * Environment.ADS_MINIMUM_CPM };
+      if (cpms[i].cpm > ads[i].budgetLeft) cpms[i].cpm = ads[i].budgetLeft;
       cpms[i].bidding_cpm = cpms[i].cpm;
-      cpms[i].relevance_score = releventScore[ads[i].id];
+      cpms[i].relevance_score =
+        releventScore[ads[i].adsRef.$id || ads[i].adsRef.oid];
       cpms[i].ranking_score = cpms[i].relevance_score * cpms[i].bidding_cpm;
-      cpms[i].adsCampignId = String( ads[i]._id );
+      cpms[i].adsCampignId = String(ads[i]._id);
     }
     //
-    const sortedCpms = cpms.sort((a, b) => a.ranking_score > b.ranking_score?-1:1);
-    for(let i =0; i < sortedCpms.length;i++){
-      if(i == 0)
-        sortedCpms[i].bidding_cpm =  Environment.ADS_MINIMUM_CPM
-      else{
-        let bid = sortedCpms[i-1].ranking_score / sortedCpms[i-1].relevance_score;
-        bid = Math.floor(bid / Environment.ADS_MINIMUM_CPM) * Environment.ADS_MINIMUM_CPM + Environment.ADS_MINIMUM_CPM;
-        sortedCpms[i].bidding_cpm = bid;
+    const sortedCpms = cpms.sort((a, b) =>
+      a.ranking_score < b.ranking_score ? -1 : 1,
+    );
+    for (let i = 0; i < sortedCpms.length; i++) {
+      if (i == 0) sortedCpms[i].bidding_cpm = Environment.ADS_MINIMUM_CPM;
+      else {
+        const bid = Math.min(
+          (i + 1) * Environment.ADS_MINIMUM_CPM,
+          sortedCpms[i].bidding_cpm,
+        );
+        sortedCpms[i].bidding_cpm =
+          Math.floor(bid / Environment.ADS_MINIMUM_CPM) *
+          Environment.ADS_MINIMUM_CPM;
       }
-      sortedCpms[i].ranking_score = sortedCpms[i].relevance_score * sortedCpms[i].bidding_cpm;
-      
     }
-    //get adsThat has Max ranking
-    return sortedCpms.reduce((prev, current) => {
-      current.ranking_score > prev.ranking_score
-      return current;
-    }, sortedCpms[0]);
-  }
+    return sortedCpms.reverse(); //most score show up first
+  };
 
+  auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
 }
