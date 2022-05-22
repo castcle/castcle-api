@@ -44,7 +44,7 @@ export class DataService {
       const result = await lastValueFrom(
         this.httpService
           .post<{ result: T }>(url, body)
-          .pipe(map(({ data }) => data?.result ?? {}))
+          .pipe(map(({ data }) => data?.result ?? {})),
       );
 
       this.logger.timeEnd(payload, `${context}:time`);
@@ -65,7 +65,7 @@ export class DataService {
       });
       this.logger.log(
         JSON.stringify(personalizedContents),
-        `personalizeContents:success`
+        `personalizeContents:success`,
       );
     } else {
       const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/personalize_content_predict`;
@@ -73,14 +73,14 @@ export class DataService {
       personalizedContents = await this.post<Record<string, number>>(
         url,
         body,
-        'personalizeContents'
+        'personalizeContents',
       );
     }
     return personalizedContents ?? {};
   }
 
   async getFollowingSuggestions(
-    accountId: string
+    accountId: string,
   ): Promise<{ engagements: number; userId: string }[]> {
     const url = `${Environment.DS_SERVICE_BASE_URL}/ds_service/suggest_follow_score`;
     const body = { accountId };
@@ -97,7 +97,7 @@ export class DataService {
     const detection = await this.post<{ illegalClass: boolean }>(
       url,
       body,
-      'detectContent'
+      'detectContent',
     );
 
     return Boolean(detection?.illegalClass);

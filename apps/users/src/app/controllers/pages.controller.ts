@@ -92,7 +92,7 @@ export class PagesController {
     private userService: UserService,
     private contentService: ContentService,
     private socialSyncService: SocialSyncService,
-    private download: Downloader
+    private download: Downloader,
   ) {}
 
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
@@ -100,7 +100,7 @@ export class PagesController {
 
   _getOwnPageByIdOrCastcleId = async (
     idOrCastCleId: string,
-    req: CredentialRequest
+    req: CredentialRequest,
   ) => {
     const idResult = await this.userService.getByIdOrCastcleId(idOrCastCleId);
     if (
@@ -112,7 +112,7 @@ export class PagesController {
     else if (idResult && idResult.type === UserType.PAGE)
       throw CastcleException.INVALID_ACCESS_TOKEN;
     const castcleIdResult = await this.userService.getByIdOrCastcleId(
-      idOrCastCleId
+      idOrCastCleId,
     );
     if (
       castcleIdResult &&
@@ -146,16 +146,16 @@ export class PagesController {
     console.debug('create body', body);
     //check if page name exist
     const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+      req.$credential,
     );
     const namingResult = await this.authService.getExistedUserFromCastcleId(
-      body.castcleId
+      body.castcleId,
     );
     if (namingResult) throw CastcleException.PAGE_IS_EXIST;
 
     const page = await this.userService.createPageFromCredential(
       req.$credential,
-      body
+      body,
     );
 
     return this.userService.getById(authorizedUser, page.id, UserType.PAGE);
@@ -175,7 +175,7 @@ export class PagesController {
   async updatePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Body() body: UpdatePageDto
+    @Body() body: UpdatePageDto,
   ) {
     //check if page name exist
     const page = await this._getOwnPageByIdOrCastcleId(id, req);
@@ -222,7 +222,7 @@ export class PagesController {
     await page.save();
 
     const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+      req.$credential,
     );
     return this.userService.getById(authorizedUser, id, UserType.PAGE);
   }
@@ -232,10 +232,10 @@ export class PagesController {
   @Get(':id')
   async getPageFromId(
     @Req() { $credential }: CredentialRequest,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const authorizedUser = await this.userService.getUserFromCredential(
-      $credential
+      $credential,
     );
 
     return this.userService.getById(authorizedUser, id, UserType.PAGE);
@@ -251,15 +251,15 @@ export class PagesController {
     @Query('page', PagePipe)
     page: number = DEFAULT_QUERY_OPTIONS.page,
     @Query('limit', LimitPipe)
-    limit: number = DEFAULT_QUERY_OPTIONS.limit
+    limit: number = DEFAULT_QUERY_OPTIONS.limit,
   ): Promise<PagesResponse> {
     const authorizedUser = await this.userService.getUserFromCredential(
-      $credential
+      $credential,
     );
     const { users: pages, pagination } = await this.userService.getByCriteria(
       authorizedUser,
       { type: UserType.PAGE },
-      { page, sortBy, limit }
+      { page, sortBy, limit },
     );
 
     return { payload: pages as PageResponseDto[], pagination };
@@ -275,21 +275,21 @@ export class PagesController {
   async deletePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Body() deletePageDto: DeletePageDto
+    @Body() deletePageDto: DeletePageDto,
   ) {
     try {
       const page = await this._getOwnPageByIdOrCastcleId(id, req);
       //TODO !!! need guard later on
       const password = deletePageDto.password;
       const account = await this.authService.getAccountFromCredential(
-        req.$credential
+        req.$credential,
       );
       if (!(await account.verifyPassword(password))) {
         throw CastcleException.INVALID_PASSWORD;
       }
       if (String(page.ownerAccount) === String(req.$credential.account._id)) {
         const syncSocial = await this.socialSyncService.getSocialSyncByPageId(
-          page._id as string
+          page._id as string,
         );
 
         await Promise.all(
@@ -302,9 +302,9 @@ export class PagesController {
                 castcleId: page.displayId,
               },
               page,
-              true
+              true,
             );
-          })
+          }),
         );
 
         await this.userService.deleteUserFromId(page._id);
@@ -336,7 +336,7 @@ export class PagesController {
     @Req() { $credential }: CredentialRequest,
     @Query() getContentsDto: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortBy = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
   ): Promise<ContentsResponse> {
     const page = await this.userService.getByIdOrCastcleId(id, UserType.PAGE);
 
@@ -345,13 +345,13 @@ export class PagesController {
     const requester = await this.userService.getUserFromCredential($credential);
     const { items: contents } = await this.contentService.getContentsFromUser(
       page.id,
-      { ...getContentsDto, sortBy }
+      { ...getContentsDto, sortBy },
     );
 
     return this.contentService.convertContentsToContentsResponse(
       requester,
       contents,
-      getContentsDto.hasRelationshipExpansion
+      getContentsDto.hasRelationshipExpansion,
     );
   }
 
@@ -370,7 +370,7 @@ export class PagesController {
   @Post('social')
   async createPageSocial(
     @Req() req: CredentialRequest,
-    @Body() body: CreatePageSocialDto
+    @Body() body: CreatePageSocialDto,
   ) {
     this.logger.log(`Start create sync social.`);
     this.logger.log(JSON.stringify(body));
@@ -384,16 +384,16 @@ export class PagesController {
         const dupSocialSync =
           await this.socialSyncService.getAllSocialSyncBySocial(
             socialSync.provider,
-            socialSync.socialId
+            socialSync.socialId,
           );
 
         if (dupSocialSync?.length) {
           this.logger.error(
-            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`
+            `Duplicate provider : ${socialSync.provider} with social id : ${socialSync.socialId}.`,
           );
           throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
         }
-      })
+      }),
     );
 
     const social: string[] = [];
@@ -418,14 +418,14 @@ export class PagesController {
 
         this.logger.log('Suggest CastcleId');
         const sugguestDisplayId = await this.authService.suggestCastcleId(
-          castcleId
+          castcleId,
         );
         socialPage.castcleId = sugguestDisplayId;
 
         if (syncBody.avatar) {
           this.logger.log(`download avatar from ${syncBody.avatar}`);
           const imgAvatar = await this.download.getImageFromUrl(
-            syncBody.avatar
+            syncBody.avatar,
           );
 
           this.logger.log('upload avatar to s3');
@@ -463,12 +463,12 @@ export class PagesController {
         this.logger.log('Create new page');
         const page = await this.userService.createPageFromSocial(
           req.$credential.account._id,
-          socialPage
+          socialPage,
         );
         social.push(page.id);
         this.logger.log('Create sync socail');
         this.socialSyncService.create(page, syncBody);
-      })
+      }),
     );
 
     this.logger.log(`get page data.`);
@@ -483,24 +483,24 @@ export class PagesController {
           field: 'createdAt',
           type: SortDirection.DESC,
         },
-      }
+      },
     );
 
     this.logger.log(`filter only new pages.`);
     const pageResult = pages.filter((item) =>
-      social.includes(item.id.toString())
+      social.includes(item.id.toString()),
     );
 
     const response = await Promise.all(
       pageResult.map(async (page) => {
         const sync = await this.socialSyncService.getSocialSyncByPageId(
-          page.id
+          page.id,
         );
         return {
           ...page,
           ...{ socialSyncs: sync.length > 0 ? sync[0] : null },
         };
-      })
+      }),
     );
     return { payload: response };
   }

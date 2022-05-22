@@ -24,11 +24,14 @@
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import {
   IsEmail,
+  IsEnum,
+  IsMobilePhone,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
+import { OtpObjective } from '../models';
 
 export class LoginWithEmailDto {
   @IsEmail()
@@ -58,4 +61,70 @@ export class RegisterWithEmailDto {
   @IsOptional()
   @IsString()
   referral?: string;
+}
+
+export class RequestOtpByEmailDto {
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
+}
+
+export class RequestOtpByMobileDto {
+  @IsEnum([OtpObjective.VerifyMobile])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
+}
+
+export class VerifyOtpByEmailDto {
+  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class VerifyOtpByMobileDto {
+  @IsEnum([OtpObjective.VerifyMobile])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
 }

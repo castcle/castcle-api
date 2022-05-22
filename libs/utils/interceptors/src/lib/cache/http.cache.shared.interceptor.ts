@@ -33,7 +33,7 @@ export class HttpCacheSharedInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (cacheKey) {
@@ -49,7 +49,7 @@ export class HttpCacheSharedWithQueryInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (cacheKey) {

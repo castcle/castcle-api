@@ -11,7 +11,8 @@
     "**/*.spec.ts",
     "**/*.test.ts",
     "**/*.e2e-spec.ts",
-    "**/*.e2e-test.ts"
+    "**/*.e2e-test.ts",
+    "jest.config.ts"
   ],
   "include": ["**/*.ts"]
 }

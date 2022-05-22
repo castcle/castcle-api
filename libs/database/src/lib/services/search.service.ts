@@ -27,13 +27,13 @@ import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
   TopTrendsQueryOptions,
 } from '../dtos/search.dto';
-import { Credential, Hashtag, User } from '../schemas';
+import { Hashtag, User } from '../schemas';
 
 @Injectable()
 export class SearchService {
   constructor(
     @InjectModel('Hashtag') public _hashtagModel: Model<Hashtag>,
-    @InjectModel('User') public _userModel: Model<User>
+    @InjectModel('User') public _userModel: Model<User>,
   ) {}
 
   private getHashtag(limitFilter, keyword?) {
@@ -71,64 +71,6 @@ export class SearchService {
       .exec();
   }
 
-  private getKeyword(limitFilter, keyword?) {
-    let filter;
-    if (keyword) {
-      const filterKeyword: {
-        text: any;
-      } = {
-        text: { $regex: new RegExp(`^${keyword}`, 'i') },
-      };
-      filter = filterKeyword;
-    }
-
-    // TODO !!! need implement keyword collection
-    const mockKeyword = [
-      {
-        text: 'castcle',
-        isTrending: true,
-      },
-      {
-        text: 'coronavirus',
-        isTrending: true,
-      },
-      {
-        text: 'election results',
-        isTrending: false,
-      },
-      {
-        text: 'kobe bryant',
-        isTrending: false,
-      },
-      {
-        text: 'zoom',
-        isTrending: true,
-      },
-      {
-        text: 'IPL',
-        isTrending: false,
-      },
-      {
-        text: 'India vs New Zealand',
-        isTrending: true,
-      },
-      {
-        text: 'Coronavirus update',
-        isTrending: true,
-      },
-      {
-        text: 'Joe Biden',
-        isTrending: true,
-      },
-      {
-        text: 'Google Classroom',
-        isTrending: true,
-      },
-    ];
-
-    return mockKeyword.filter((x) => x.text.match(filter.text.$regex));
-  }
-
   /**
    * get Top Trend Hashtags, Follows, Topics
    *
@@ -136,7 +78,7 @@ export class SearchService {
    * @returns {hashtags,follows,topics} return top trends hashtags,follows,topics Document
    */
   async getTopTrends(
-    options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS
+    options: TopTrendsQueryOptions = DEFAULT_TOP_TREND_QUERY_OPTIONS,
   ) {
     let hashtag: Hashtag[] = [];
     let follow: User[] = [];
@@ -154,45 +96,6 @@ export class SearchService {
       follows: follow,
       // TODO !!! need implement topics
       topics: [],
-    };
-  }
-
-  /**
-   * get search data from keyword
-   *
-   * @param {Credential} credential
-   * @param {string} keyword search keyword
-   * @param {number} limitFollow limit follows data,
-   * @returns {keyword,hashtags,follows} return search data keyword,hashtags,follows Document
-   */
-  async getSearch(
-    credential: Credential,
-    keyword: string,
-    limitFollow: number = DEFAULT_TOP_TREND_QUERY_OPTIONS.limit
-  ) {
-    // TODO !!! need implement search content relate to user
-    const limitHashtag = 2;
-    const limitKeyword = 3;
-
-    let follow: User[] = [];
-    let hashtag: Hashtag[] = [];
-    let KeywordResult: { text: string; isTrending: boolean }[] = [];
-    if (keyword) {
-      const sign = keyword.charAt(0);
-      if (sign === '@') {
-        follow = await this.getFollows(limitFollow, keyword.slice(1));
-      } else if (sign === '#') {
-        hashtag = await this.getHashtag(limitHashtag, keyword.slice(1));
-      } else {
-        hashtag = await this.getHashtag(limitHashtag, keyword);
-        follow = await this.getFollows(limitFollow, keyword);
-        KeywordResult = await this.getKeyword(limitKeyword, keyword);
-      }
-    }
-    return {
-      keywords: KeywordResult,
-      hashtags: hashtag,
-      follows: follow,
     };
   }
 }

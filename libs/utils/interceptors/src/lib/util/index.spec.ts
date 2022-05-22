@@ -36,13 +36,13 @@ describe('#getTokenFromRequest', () => {
     const headers = { authorization: 'Bearer' };
 
     expect(() => getTokenFromRequest({ headers } as any)).toThrow(
-      CastcleException
+      CastcleException,
     );
   });
 
   it('should throw exception when there is no authorization header', () => {
     expect(() => getTokenFromRequest({ headers: {} } as any)).toThrow(
-      CastcleException
+      CastcleException,
     );
   });
 });
@@ -57,7 +57,7 @@ describe('#getLanguageFromRequest', () => {
 
   it('should throw exception when there is no header', () => {
     expect(() => getLanguageFromRequest({ headers: {} } as any)).toThrow(
-      CastcleException
+      CastcleException,
     );
   });
 });

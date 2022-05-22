@@ -22,37 +22,66 @@
  */
 
 import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import {
   FacebookClient,
+  GoogleClient,
   Mailer,
+  TwilioChannel,
+  TwilioClient,
+  TwilioErrorMessage,
+  TwilioStatus,
   TwitterClient,
 } from '@castcle-api/utils/clients';
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
+  CreateCredentialDto,
+  EntityVisibility,
   RegisterWithEmailDto,
+  RequestOtpByEmailDto,
+  RequestOtpByMobileDto,
   SocialConnectDto,
   UserAccessTokenPayload,
+  VerifyOtpByEmailDto,
+  VerifyOtpByMobileDto,
 } from '../dtos';
-import { AccountActivationType, UserType } from '../models';
+import {
+  AccountActivationType,
+  AccountRequirements,
+  OtpObjective,
+  OtpTemplateMessage,
+  UserType,
+} from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountAuthenIdType, Credential, User } from '../schemas';
+import {
+  Account,
+  AccountAuthenIdType,
+  AccountRole,
+  Credential,
+  User,
+} from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
 export class AuthenticationServiceV2 {
+  private logger = new CastLogger(AuthenticationServiceV2.name);
+
   constructor(
     private analyticService: AnalyticService,
     private facebookClient: FacebookClient,
+    private googleClient: GoogleClient,
+    private twilioClient: TwilioClient,
     private twitterClient: TwitterClient,
     private mailer: Mailer,
-    private repository: Repository
+    private repository: Repository,
   ) {}
 
-  private generateTokenPayload(credential: Credential, user: User) {
+  private generateTokenPayload(credential: Credential, user?: User) {
     if (credential.account.isGuest) {
       return {
         id: credential.account._id,
@@ -78,11 +107,11 @@ export class AuthenticationServiceV2 {
    */
   private async linkCredentialToAccount(
     credential: Credential,
-    account: Account
+    account: Account,
   ) {
     const isSameAccount = String(credential.account._id) === account.id;
     const isLinkedCredential = account.credentials?.some(
-      ({ deviceUUID }) => deviceUUID === credential.deviceUUID
+      ({ deviceUUID }) => deviceUUID === credential.deviceUUID,
     );
 
     if (!isSameAccount) {
@@ -111,7 +140,7 @@ export class AuthenticationServiceV2 {
               deviceUUID: credential.deviceUUID,
             },
           },
-        }
+        },
       );
     }
 
@@ -121,7 +150,7 @@ export class AuthenticationServiceV2 {
   private async login(credential: Credential, account: Account) {
     const users = await this.repository.findUsers(
       { accountId: account._id },
-      { sort: { updatedAt: -1 } }
+      { sort: { updatedAt: -1 } },
     );
 
     const user = users.find((user) => user.type === UserType.PEOPLE);
@@ -129,21 +158,23 @@ export class AuthenticationServiceV2 {
     const tokenPayload = this.generateTokenPayload(credential, user);
     const { accessToken, refreshToken } = await credential.renewTokens(
       tokenPayload,
-      { id: String(account._id) }
+      { id: String(account._id) },
     );
 
     return {
       accessToken,
       refreshToken,
-      profile: await user.toUserResponse(),
-      pages: pages.map((page) => page.toPageResponse()),
+      profile: await user?.toUserResponseV2({
+        passwordNotSet: !account.password,
+      }),
+      pages: user && pages.map((page) => page.toPageResponseV2()),
     };
   }
 
   async loginWithEmail(
     credential: Credential,
     email: string,
-    password: string
+    password: string,
   ) {
     const account = await this.repository.findAccount({ email });
 
@@ -158,7 +189,7 @@ export class AuthenticationServiceV2 {
 
   async loginWithSocial(
     credential: Credential,
-    socialConnectDto: SocialConnectDto & { ip: string; userAgent: string }
+    socialConnectDto: SocialConnectDto & { ip: string; userAgent: string },
   ) {
     const { email, socialId, provider, ip, userAgent, authToken } =
       socialConnectDto;
@@ -195,14 +226,14 @@ export class AuthenticationServiceV2 {
         });
         const profile = await duplicateUser?.toUserResponseV2();
         throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
-          profile ? { profile } : null
+          profile ? { profile } : null,
         );
       }
     }
 
     const registration = await this.registerWithSocial(
       credential,
-      socialConnectDto
+      socialConnectDto,
     );
     await this.analyticService.trackRegistration(ip, userAgent);
     return { registered: false, ...registration };
@@ -220,7 +251,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithEmail(
     credential: Credential,
-    dto: RegisterWithEmailDto & { hostname: string; ip: string }
+    dto: RegisterWithEmailDto & { hostname: string; ip: string },
   ) {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
@@ -235,7 +266,7 @@ export class AuthenticationServiceV2 {
 
     await this.repository.updateCredentials(
       { 'account._id': account._id },
-      { isGuest: false }
+      { isGuest: false },
     );
 
     account.isGuest = false;
@@ -254,7 +285,7 @@ export class AuthenticationServiceV2 {
     await this.mailer.sendRegistrationEmail(
       dto.hostname,
       account.email,
-      activation.verifyToken
+      activation.verifyToken,
     );
 
     return this.login(credential, account);
@@ -262,7 +293,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithSocial(
     credential: Credential,
-    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string }
+    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string },
   ) {
     const account = await this.repository.findAccount({
       _id: credential.account._id,
@@ -298,13 +329,13 @@ export class AuthenticationServiceV2 {
           avatar: registerDto.avatar
             ? await this.repository.createProfileImage(
                 account._id,
-                registerDto.avatar
+                registerDto.avatar,
               )
             : null,
           cover: registerDto.cover
             ? await this.repository.createCoverImage(
                 account._id,
-                registerDto.cover
+                registerDto.cover,
               )
             : null,
         },
@@ -317,7 +348,7 @@ export class AuthenticationServiceV2 {
   private async updateReferral(
     account: Account,
     referrerId: string,
-    ip: string
+    ip: string,
   ) {
     const referrer =
       (await this.repository.findUser({ _id: referrerId })) ||
@@ -328,18 +359,18 @@ export class AuthenticationServiceV2 {
     account.referralBy = referrer._id;
     await this.repository.updateAccount(
       { _id: referrer._id },
-      { $inc: { referralCount: 1 } }
+      { $inc: { referralCount: 1 } },
     );
   }
 
   private createAccountActivation(
     account: Account,
     type: AccountActivationType,
-    autoActivateEmail = false
+    autoActivateEmail = false,
   ) {
     const now = new Date();
     const verifyTokenExpireDate = new Date(
-      now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+      now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
     );
     const verifyToken = Token.generateToken(
       {
@@ -347,7 +378,7 @@ export class AuthenticationServiceV2 {
         verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
       },
       Environment.JWT_VERIFY_SECRET,
-      Environment.JWT_VERIFY_EXPIRES_IN
+      Environment.JWT_VERIFY_EXPIRES_IN,
     );
 
     (account.activations ??= []).push({
@@ -359,20 +390,339 @@ export class AuthenticationServiceV2 {
   }
 
   /**
+   * create account from guest user
+   * @param {AccountRequirements} requestOption
+   * @returns {TokenResponse}
+   */
+  async guestLogin(requestOption: AccountRequirements) {
+    const credentialGuest = await this.repository.findCredential({
+      deviceUUID: requestOption.deviceUUID,
+      'account.isGuest': true,
+    });
+
+    if (credentialGuest) {
+      const tokenPayload = this.generateTokenPayload(credentialGuest);
+      return await credentialGuest.renewTokens(tokenPayload, {
+        id: String(credentialGuest.account._id),
+      });
+    }
+
+    const session = await this.repository.accountSession();
+    session.startTransaction();
+    try {
+      const account = await this.repository.createAccount(requestOption, {
+        session,
+      });
+
+      const { accessToken, accessTokenExpireDate } =
+        this.repository.generateAccessToken({
+          id: String(account._id),
+          role: AccountRole.Guest,
+          showAds: true,
+        });
+
+      const { refreshToken, refreshTokenExpireDate } =
+        this.repository.generateRefreshToken({
+          id: String(account._id),
+        });
+
+      const credential = await this.repository.createCredential(
+        {
+          account: {
+            _id: account._id,
+            isGuest: true,
+            preferences: {
+              languages: requestOption.languagesPreferences,
+            },
+            visibility: EntityVisibility.Publish,
+          },
+          accessToken,
+          accessTokenExpireDate,
+          refreshToken,
+          refreshTokenExpireDate,
+          device: requestOption.device,
+          platform: requestOption.header.platform,
+          deviceUUID: requestOption.deviceUUID,
+        } as CreateCredentialDto,
+        {
+          session,
+        },
+      );
+
+      if (!account.credentials) account.credentials = [];
+      account.credentials.push({
+        _id: Types.ObjectId(credential._id),
+        deviceUUID: credential.deviceUUID,
+      });
+
+      await account.save({ session });
+      await session.commitTransaction();
+
+      return {
+        accessToken: credential.accessToken,
+        refreshToken: credential.refreshToken,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw CastcleException.INTERNAL_SERVER_ERROR;
+    }
+  }
+
+  /**
    * For check if castcle ID is existed
    * @param {string} castcleId
    * @returns user
    */
-  getExistedUserFromCastcleId = (castcleId: string) => {
+  getExistedUserFromCastcleId(castcleId: string) {
     return this.repository.findUser({ _id: castcleId });
-  };
+  }
 
   /**
    * For check if email is existed
    * @param {string} email
    * @returns account
    */
-  getAccountFromEmail = (email: string) => {
+  getAccountFromEmail(email: string) {
     return this.repository.findAccount({ email });
-  };
+  }
+
+  async requestOtpByEmail({
+    email,
+    objective,
+    recaptchaToken,
+    requestedBy,
+    ip,
+    source,
+    userAgent,
+  }: RequestOtpByEmailDto & {
+    ip?: string;
+    requestedBy: Account;
+    source?: string;
+    userAgent?: string;
+  }) {
+    if (!requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (source?.toLowerCase() === 'web') {
+      const success = await this.googleClient.verifyRecaptcha(
+        recaptchaToken,
+        ip,
+      );
+      if (!success) CastcleException.RECAPTCHA_FAILED;
+    }
+
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+
+    return this.requestOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      account,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
+  async requestOtpByMobile({
+    countryCode,
+    mobileNumber,
+    objective,
+    recaptchaToken,
+    requestedBy,
+    ip,
+    source,
+    userAgent,
+  }: RequestOtpByMobileDto & {
+    ip?: string;
+    requestedBy: Account;
+    source?: string;
+    userAgent?: string;
+  }) {
+    if (source?.toLowerCase() === 'web') {
+      const success = await this.googleClient.verifyRecaptcha(
+        recaptchaToken,
+        ip,
+      );
+      if (!success) CastcleException.RECAPTCHA_FAILED;
+    }
+
+    const existingAccount = await this.repository.findAccount({
+      mobileCountryCode: countryCode,
+      mobileNumber,
+    });
+    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
+    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    return this.requestOtp({
+      channel: TwilioChannel.SMS,
+      objective,
+      receiver: countryCode + mobileNumber,
+      account: requestedBy,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
+  private async requestOtp({
+    channel,
+    objective,
+    receiver,
+    account,
+    requestedBy,
+    userAgent,
+  }: {
+    channel: TwilioChannel;
+    objective: OtpObjective;
+    receiver: string;
+    account: Account;
+    requestedBy: string;
+    userAgent?: string;
+  }) {
+    try {
+      const existingOtp = await this.repository.findOtp({
+        channel,
+        objective,
+        receiver,
+      });
+
+      if (existingOtp?.isValid()) return existingOtp;
+      else if (existingOtp) await existingOtp.remove();
+
+      const user = await this.repository.findUser({ accountId: account._id });
+      const { sid } = await this.twilioClient.requestOtp({
+        channel,
+        accountId: account.id,
+        userAgent,
+        receiver,
+        config: OtpTemplateMessage.from(objective, user?.displayName),
+      });
+
+      return this.repository.createOtp({
+        channel,
+        accountId: account._id,
+        objective,
+        requestId: requestedBy,
+        verified: false,
+        receiver,
+        sid,
+        expiryDate: DateTime.now()
+          .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
+          .toJSDate(),
+      });
+    } catch (error) {
+      this.logger.error(error, 'requestOtpByEmail');
+      if (error.message === TwilioErrorMessage.TOO_MANY_REQUESTS) {
+        throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
+      } else if (error instanceof CastcleException) {
+        throw error;
+      } else {
+        throw CastcleException.TWILIO_MAX_LIMIT;
+      }
+    }
+  }
+
+  async verifyOtpByEmail({
+    objective,
+    email,
+    refCode,
+    otp: otpCode,
+    credential,
+  }: VerifyOtpByEmailDto & { credential: Credential }) {
+    if (!credential.account.isGuest) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const otp = await this.verifyOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      refCode,
+      otp: otpCode,
+      account,
+    });
+
+    if (objective !== OtpObjective.MergeAccount) return { otp };
+
+    const { accessToken } = await this.login(credential, account);
+    return { otp, accessToken };
+  }
+
+  async verifyOtpByMobile({
+    objective,
+    countryCode,
+    mobileNumber,
+    refCode,
+    otp: otpCode,
+    requestedBy,
+  }: VerifyOtpByMobileDto & { requestedBy: Account }) {
+    const existingAccount = await this.repository.findAccount({
+      mobileCountryCode: countryCode,
+      mobileNumber,
+    });
+    if (existingAccount) throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
+    if (requestedBy.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    return this.verifyOtp({
+      channel: TwilioChannel.SMS,
+      objective,
+      receiver: countryCode + mobileNumber,
+      refCode,
+      otp: otpCode,
+      account: existingAccount,
+    });
+  }
+
+  private async verifyOtp({
+    channel,
+    objective,
+    receiver,
+    refCode,
+    otp,
+  }: {
+    channel: TwilioChannel;
+    objective: OtpObjective;
+    receiver: string;
+    refCode: string;
+    otp: string;
+    account: Account;
+  }) {
+    const existingOtp = await this.repository.findOtp({
+      channel,
+      objective,
+      receiver,
+    });
+
+    if (!existingOtp) {
+      throw CastcleException.INVALID_OTP;
+    }
+    if (existingOtp.refCode !== refCode) {
+      throw CastcleException.INVALID_REF_CODE;
+    }
+    if (!existingOtp.isValid()) {
+      await existingOtp.remove();
+      throw CastcleException.EXPIRED_OTP;
+    }
+    if (existingOtp.retry >= Environment.OTP_MAX_RETRIES) {
+      await this.twilioClient.cancelOtp(existingOtp.sid);
+      await existingOtp.remove();
+      throw CastcleException.LOCKED_OTP;
+    }
+
+    try {
+      const otpVerification = await this.twilioClient.verifyOtp(receiver, otp);
+      if (otpVerification.status !== TwilioStatus.APPROVED) {
+        await existingOtp.updateOne({ $inc: { retry: 1 } });
+        throw CastcleException.INVALID_OTP;
+      }
+      return existingOtp.markVerified().save();
+    } catch (error) {
+      this.logger.error(error, 'verifyOtp');
+      if (error instanceof CastcleException) throw error;
+      await this.twilioClient.cancelOtp(existingOtp.sid);
+      await existingOtp.remove();
+      throw CastcleException.EXPIRED_OTP;
+    }
+  }
 }

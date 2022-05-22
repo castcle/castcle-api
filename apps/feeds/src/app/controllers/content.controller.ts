@@ -84,7 +84,7 @@ export class ContentController {
     private userService: UserService,
     private contentService: ContentService,
     private caslAbility: CaslAbilityFactory,
-    private notifyService: NotificationService
+    private notifyService: NotificationService,
   ) {}
 
   @ApiBody({ type: SaveContentDto })
@@ -94,7 +94,7 @@ export class ContentController {
   async createFeedContent(
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const ability = this.caslAbility.createForCredential(req.$credential);
 
@@ -102,7 +102,7 @@ export class ContentController {
 
     const user = await this.userService.getByIdOrCastcleId(body.castcleId);
     const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential
+      req.$credential,
     );
 
     if (String(user.ownerAccount) !== String(authorizedUser.ownerAccount)) {
@@ -112,14 +112,14 @@ export class ContentController {
     const uploadedBody = await this.appService.uploadContentToS3(body, user);
     const content = await this.contentService.createContentFromUser(
       user,
-      uploadedBody
+      uploadedBody,
     );
 
     return this.contentService.convertContentToContentResponse(
       authorizedUser,
       content,
       [],
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -129,21 +129,21 @@ export class ContentController {
   async getContentFromId(
     @Param('id') id: string,
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
     const user = await this.userService.getUserFromCredential(req.$credential);
     const engagements =
       await this.contentService.getAllEngagementFromContentAndUser(
         content,
-        user
+        user,
       );
 
     return this.contentService.convertContentToContentResponse(
       user,
       content,
       engagements,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -165,12 +165,12 @@ export class ContentController {
     )
       throw CastcleException.FORBIDDEN;
     const users = await this.userService.getUserAndPagesFromCredential(
-      req.$credential
+      req.$credential,
     );
     console.log('caslUser', users as User[]);
     const ability = this.caslAbility.getUserManageContentAbility(
       users,
-      content
+      content,
     );
     const result = ability.can(Action.Update, Content);
     console.log('result', result);
@@ -190,7 +190,7 @@ export class ContentController {
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Param('id') id: string,
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
 
@@ -201,14 +201,14 @@ export class ContentController {
 
     const updatedContent = await this.contentService.updateContentFromId(
       content._id,
-      newBody
+      newBody,
     );
 
     return this.contentService.convertContentToContentResponse(
       user,
       updatedContent,
       [],
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -218,7 +218,7 @@ export class ContentController {
   @Delete(':id')
   async deleteContentFromId(
     @Param('id') id: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
 
@@ -233,7 +233,7 @@ export class ContentController {
     @Req() { $credential }: CredentialRequest,
     @Query() { hasRelationshipExpansion, ...getContentsDto }: GetContentsDto,
     @Query('sortBy', SortByPipe)
-    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy
+    sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
   ): Promise<ContentsResponse> {
     const user = await this.userService.getUserFromCredential($credential);
     const { items: contents } = await this.contentService.getContentsForAdmin({
@@ -244,7 +244,7 @@ export class ContentController {
     return this.contentService.convertContentsToContentsResponse(
       user,
       contents,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -268,7 +268,7 @@ export class ContentController {
   async likeContent(
     @Param('id') id: string,
     @Body('castcleId') castcleId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
     const user = await this.appService.getUserFromBody(req, castcleId);
@@ -277,7 +277,7 @@ export class ContentController {
     if (user.id === castcleId) return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
     this.notifyService.notifyToUser(
       {
@@ -292,7 +292,7 @@ export class ContentController {
         read: false,
       },
       userOwner,
-      req.$language
+      req.$language,
     );
   }
   /**
@@ -312,7 +312,7 @@ export class ContentController {
   async unLikeContent(
     @Param('id') id: string,
     @Body('castcleId') castcleId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id);
@@ -333,14 +333,14 @@ export class ContentController {
   async recastContent(
     @Param('id') id: string,
     @Body('castcleId') castcleId: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id);
     const user = await this.appService.getUserFromBody(req, castcleId);
     const result = await this.contentService.recastContentFromUser(
       content,
-      user
+      user,
     );
     return {
       payload: result.recastContent.toContentPayloadItem(),
@@ -360,7 +360,7 @@ export class ContentController {
     @Param('id') id: string,
     @Body('castcleId') castcleId: string,
     @Body('message') message: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     //TODO !!! has to add feedItem once implement
     const content = await this._getContentIfExist(id);
@@ -369,7 +369,7 @@ export class ContentController {
     const result = await this.contentService.quoteContentFromUser(
       content,
       user,
-      message
+      message,
     );
     return {
       payload: result.quoteContent.toContentPayloadItem(),
@@ -383,14 +383,14 @@ export class ContentController {
     @Auth() { user }: Authorizer,
     @Param('id') contentId: string,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     this.logger.log(`Get OriginalPost from content : ${contentId}`);
     const contents = await this.contentService.getContentFromOriginalPost(
       contentId,
       maxResults,
       sinceId,
-      untilId
+      untilId,
     );
 
     if (!contents?.total) return { payload: [], meta: null };
@@ -401,7 +401,7 @@ export class ContentController {
       user,
       query,
       {},
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
 
     return ResponseDto.ok({ payload: users, meta });
@@ -420,7 +420,7 @@ export class ContentController {
     @Req() req: CredentialRequest,
     @Param('id') contentId: string,
     @Query()
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     this.logger.log(`Get Liking from content : ${contentId}`);
 
@@ -433,13 +433,13 @@ export class ContentController {
       contentId,
       maxResults,
       sinceId,
-      untilId
+      untilId,
     );
     if (!engagement.items) return { payload: null };
 
     if (!req.$credential.account.isGuest) {
       const user = await this.userService.getUserAndPagesFromCredential(
-        req.$credential
+        req.$credential,
       );
       if (!user) throw CastcleException.FORBIDDEN;
 
@@ -451,14 +451,14 @@ export class ContentController {
         relationUser = await this.userService.getRelationshipData(
           hasRelationshipExpansion,
           relationUser,
-          user[0].id
+          user[0].id,
         );
       }
     }
 
     for await (const obj of engagement.items) {
       relationStatus = await relationUser.filter(
-        (e) => String(e.followedUser) === String(obj.user.id)
+        (e) => String(e.followedUser) === String(obj.user.id),
       );
       if (relationStatus.length) {
         relationStatus = relationStatus[0];
@@ -492,11 +492,11 @@ export class ContentController {
   @Get(':id/participates')
   async getParticipates(
     @Param('id') id: string,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
     const users = await this.userService.getUserAndPagesFromCredential(
-      req.$credential
+      req.$credential,
     );
 
     const result = await Promise.all(
@@ -504,7 +504,7 @@ export class ContentController {
         const engagements =
           await this.contentService.getAllEngagementFromContentAndUser(
             content,
-            user
+            user,
           );
 
         const contentResponse =
@@ -512,7 +512,7 @@ export class ContentController {
             user,
             content,
             engagements,
-            true
+            true,
           );
         return {
           user: {
@@ -523,7 +523,7 @@ export class ContentController {
           },
           participate: contentResponse.payload.participate,
         };
-      })
+      }),
     );
     return { payload: result };
   }

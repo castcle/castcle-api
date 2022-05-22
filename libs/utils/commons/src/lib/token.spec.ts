@@ -29,7 +29,7 @@ describe('Token', () => {
       const result = Token.generateToken(
         { testPayload: 'yo' },
         'randomSecret',
-        1000
+        1000,
       );
       expect(typeof result).toBe('string');
     });
@@ -37,12 +37,12 @@ describe('Token', () => {
       const result1 = Token.generateToken(
         { testPayload: 'yo' },
         'randomSecret',
-        1000
+        1000,
       );
       const result2 = Token.generateToken(
         { testPayload: 'yo' },
         'random2',
-        1000
+        1000,
       );
       expect(result1 === result2).toBe(false);
     });
@@ -65,7 +65,7 @@ describe('Token', () => {
       const token = Token.generateToken(
         { whatsup: 'castcle' },
         secret,
-        timeoutSecond
+        timeoutSecond,
       );
       expect(Token.isTokenValid(token, secret)).toBe(true);
       await new Promise((resolve) => {
@@ -83,7 +83,7 @@ describe('Token', () => {
       const token = Token.generateToken(
         { whatsup: 'castcle' },
         secret,
-        timeoutSecond
+        timeoutSecond,
       );
       expect(Token.isTokenValid(token, secret)).toBe(true);
       await new Promise((resolve) => {
@@ -99,7 +99,7 @@ describe('Token', () => {
       const token = Token.generateToken(
         { whatsup: 'castcle' },
         secret,
-        timeoutSecond
+        timeoutSecond,
       );
       const wrongSecret = 'wrongSecret';
       expect(await Token.isTokenExpire(token, wrongSecret)).toBe(false);
@@ -110,7 +110,7 @@ describe('Token', () => {
       const token = Token.generateToken(
         { whatsup: 'castcle' },
         secret,
-        timeoutSecond
+        timeoutSecond,
       );
       expect(await Token.isTokenExpire(token, secret)).toBe(false);
     });

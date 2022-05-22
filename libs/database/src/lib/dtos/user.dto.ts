@@ -80,6 +80,24 @@ class Counter {
   count: number;
 }
 
+export type SyncSocialModelV2 = {
+  [provider in SocialProvider]?: SyncSocialDetail;
+};
+
+export class ContactDto {
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
 export class UserResponseDto {
   @ApiProperty()
   id: string;
@@ -147,7 +165,7 @@ export class UserResponseDto {
   };
 
   @ApiProperty()
-  syncSocial: syncSocialDetail[];
+  syncSocial: SyncSocialDetail[] | SyncSocialModelV2;
 
   @ApiProperty()
   casts: number;
@@ -155,6 +173,7 @@ export class UserResponseDto {
   @ApiProperty()
   canUpdateCastcleId: boolean;
 
+  @ApiProperty()
   contact?: ContactDto;
 }
 
@@ -163,7 +182,7 @@ export class linkSocialDetail {
   displayName: string;
 }
 
-export class syncSocialDetail {
+export class SyncSocialDetail {
   id?: string;
   provider: string;
   socialId: string;
@@ -173,6 +192,7 @@ export class syncSocialDetail {
   active: boolean;
   autoPost: boolean;
 }
+
 export class UpdateUserDto {
   @ApiProperty()
   @IsString()
@@ -272,7 +292,7 @@ export class PageResponseDto {
   createdAt: string;
 
   @ApiProperty()
-  syncSocial: syncSocialDetail;
+  syncSocial: SyncSocialDetail;
 
   @ApiProperty()
   casts: number;
@@ -445,18 +465,6 @@ export class GetUserParam {
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
 }
-export class ContactDto {
-  @IsOptional()
-  @IsString()
-  countryCode?: string;
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-}
 
 export class LinkSocialDetail {
   [key: string]: string;
@@ -505,20 +513,6 @@ export class UpdateModelUserDto {
   links?: Link;
   contact?: ContactDto;
   images?: UserModelImage;
-}
-
-export class SyncSocialModelV2 {
-  @IsOptional()
-  facebook?: syncSocialDetail;
-
-  @IsOptional()
-  twitter?: syncSocialDetail;
-
-  @IsOptional()
-  youtube?: syncSocialDetail;
-
-  @IsOptional()
-  medium?: syncSocialDetail;
 }
 
 export class PagesResponseV2 {

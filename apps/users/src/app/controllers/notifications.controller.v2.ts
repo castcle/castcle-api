@@ -54,18 +54,18 @@ export class NotificationsControllerV2 {
   @Get()
   async getAllNotify(
     @Auth() authorizer: Authorizer,
-    @Query() query: NotificationQuery
+    @Query() query: NotificationQuery,
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
     const notifications = await this.notificationServiceV2.getAllNotify(
       authorizer.account,
-      query
+      query,
     );
     const payloadNotify =
       await this.notificationServiceV2.generateNotificationsResponse(
         notifications,
-        authorizer.account.preferences.languages[0]
+        authorizer.account.preferences.languages[0],
       );
     return {
       payload: payloadNotify,
@@ -86,13 +86,13 @@ export class NotificationsControllerV2 {
   @HttpCode(204)
   async readAllSourceNotify(
     @Auth() authorizer: Authorizer,
-    @Query() { source }: NotificationSourceQuery
+    @Query() { source }: NotificationSourceQuery,
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
     await this.notificationServiceV2.readAllSourceNotify(
       authorizer.account,
-      source
+      source,
     );
   }
 
@@ -110,13 +110,13 @@ export class NotificationsControllerV2 {
   @HttpCode(204)
   async deleteAllSourceNotify(
     @Auth() authorizer: Authorizer,
-    @Query() { source }: NotificationSourceQuery
+    @Query() { source }: NotificationSourceQuery,
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
     await this.notificationServiceV2.deleteAllSourceNotify(
       authorizer.account,
-      source
+      source,
     );
   }
 
@@ -126,7 +126,7 @@ export class NotificationsControllerV2 {
     authorizer.requestAccessForAccount(authorizer.account._id);
 
     const badgeNotify = await this.notificationServiceV2.getBadges(
-      authorizer.account
+      authorizer.account,
     );
     return badgeNotify;
   }

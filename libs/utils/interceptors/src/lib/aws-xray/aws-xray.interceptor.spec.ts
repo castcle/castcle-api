@@ -22,10 +22,8 @@
  */
 
 import { TracingService } from '@narando/nest-xray';
-import { AwsXRayInterceptor } from './aws-xray.interceptor';
 import { of, lastValueFrom } from 'rxjs';
-
-jest.mock('@narando/nest-xray');
+import { AwsXRayInterceptor } from './aws-xray.interceptor';
 
 describe('#AWSXRayInterceptor', () => {
   const handler = {
@@ -55,7 +53,7 @@ describe('#AWSXRayInterceptor', () => {
       next.handle().pipe(() => {
         subSegment.close();
         return Promise.reject(new Error('some error'));
-      })
+      }),
     ).rejects.toThrowError();
     expect(subSegment.close).toBeCalledTimes(3);
   });

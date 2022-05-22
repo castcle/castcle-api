@@ -1,4 +1,4 @@
-import { OtpObjective } from '@castcle-api/database/schemas';
+import { OtpObjective } from '@castcle-api/database';
 import { HttpStatus } from '@nestjs/common';
 import { Response } from 'supertest';
 import { User } from '../../models';
@@ -67,7 +67,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .expect(({ body }) => {
         expect(body.message).toEqual(
-          'Sorry, Something went wrong. Please try again.'
+          'Sorry, Something went wrong. Please try again.',
         );
       })
       .expect(HttpStatus.UNAUTHORIZED);
@@ -84,7 +84,7 @@ export const testUsersUpdateMobile = () => {
             'refCode must be a string',
             'countryCode must be a string',
             'mobileNumber must be a string',
-          ].sort()
+          ].sort(),
         );
       })
       .expect(HttpStatus.BAD_REQUEST);
@@ -101,7 +101,7 @@ export const testUsersUpdateMobile = () => {
       })
       .expect(({ body }) => {
         expect(body.message.sort()).toEqual(
-          ['objective must be a valid enum value'].sort()
+          ['objective must be a valid enum value'].sort(),
         );
       })
       .expect(HttpStatus.BAD_REQUEST);
@@ -118,7 +118,7 @@ export const testUsersUpdateMobile = () => {
       })
       .expect(({ body }) => {
         expect(body.message).toEqual(
-          'Can not access the data. Please try again.'
+          'Can not access the data. Please try again.',
         );
       })
       .expect(HttpStatus.FORBIDDEN);

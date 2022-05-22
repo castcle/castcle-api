@@ -35,7 +35,6 @@ import { Mailer } from './mailer/mailer';
 import { TelegramClient } from './telegram/telegram.client';
 import { TelegramUserInfo } from './telegram/telegram.message';
 import { TwilioClient } from './twilio/twilio.client';
-import { TwilioChannel } from './twilio/twilio.message';
 import { TwitterClient } from './twitter/twitter.client';
 import { TwitterAccessToken, TwitterUserData } from './twitter/twitter.message';
 
@@ -80,7 +79,6 @@ export {
   TwitterUserData,
   AppleClient,
   TwilioClient,
-  TwilioChannel,
   GoogleClient,
   Mailer,
 };

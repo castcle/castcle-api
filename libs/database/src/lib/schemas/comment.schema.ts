@@ -68,7 +68,7 @@ CommentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
 
 export const CommentSchemaFactory = (
   revisionModel: Model<Revision>,
-  contentModel: Model<Content>
+  contentModel: Model<Content>,
 ): mongoose.Schema<any> => {
   CommentSchema.pre('save', function (next) {
     preCommentSave(this as Comment);

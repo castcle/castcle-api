@@ -39,7 +39,7 @@ export class UxEngagementService {
     @InjectModel('UxEngagement')
     public _uxEngagementModel: Model<UxEngagement>,
     @InjectModel('DsContentReach')
-    public reachModel: Model<DsContentReach>
+    public reachModel: Model<DsContentReach>,
   ) {}
 
   /**
@@ -66,7 +66,7 @@ export class UxEngagementService {
   async addReachToContents(accountId: string, contentIds: string[]) {
     this.#logger.log(
       JSON.stringify({ accountId, contentIds }),
-      'addReachToContents'
+      'addReachToContents',
     );
 
     const existingReaches = await this.reachModel.find({
@@ -75,7 +75,7 @@ export class UxEngagementService {
 
     const $reaches = contentIds.map((contentId) => {
       const reach = existingReaches.find(
-        (reach) => String(reach.content) === String(contentId)
+        (reach) => String(reach.content) === String(contentId),
       );
 
       if (!reach) {

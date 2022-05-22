@@ -51,18 +51,18 @@ export class TwitterService {
   constructor(
     private readonly contentService: ContentService,
     private readonly downloader: Downloader,
-    private readonly socialSyncService: SocialSyncService
+    private readonly socialSyncService: SocialSyncService,
   ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async handleTwitterJobs() {
     this.logger.log(
       `Start looking for user's timeline`,
-      'handleTwitterJobs:init'
+      'handleTwitterJobs:init',
     );
 
     const syncAccounts = await this.socialSyncService.getAutoSyncAccounts(
-      SocialProvider.Twitter
+      SocialProvider.Twitter,
     );
 
     this.logger.log(JSON.stringify(syncAccounts), 'handleTwitterJobs:start');
@@ -73,7 +73,7 @@ export class TwitterService {
 
     this.logger.log(
       'Waiting for next available schedule',
-      'handleTwitterJobs:done'
+      'handleTwitterJobs:done',
     );
   }
 
@@ -81,7 +81,7 @@ export class TwitterService {
     try {
       const timeline = await this.getTimelineByUserId(
         syncAccount.socialId,
-        syncAccount.latestSyncId
+        syncAccount.latestSyncId,
       );
 
       if (!timeline?.meta?.result_count) return;
@@ -93,7 +93,7 @@ export class TwitterService {
 
       await this.contentService.createContentsFromAuthor(
         new Author(author),
-        contents
+        contents,
       );
 
       syncAccount.author = author;
@@ -104,7 +104,7 @@ export class TwitterService {
 
       this.logger.log(
         `Name: ${syncAccount.displayName}, ${timeline.meta.result_count} tweet(s) saved`,
-        `${syncAccount.socialId}:syncTweetsByAccount`
+        `${syncAccount.socialId}:syncTweetsByAccount`,
       );
     } catch (error: unknown) {
       this.logger.error(error, `${syncAccount.socialId}:syncTweetsByAccount`);
@@ -129,7 +129,7 @@ export class TwitterService {
           latestPostId,
           tweetsCount: timeline.meta.result_count,
         }),
-        `${userId}:getTimelineByUserId`
+        `${userId}:getTimelineByUserId`,
       );
 
       return timeline;
@@ -146,7 +146,7 @@ export class TwitterService {
       .map(async ({ attachments, entities, id, text }) => {
         const $images = attachments?.media_keys?.map(async (mediaKey) => {
           const medium = timeline.includes?.media?.find(
-            ({ media_key: key }) => key === mediaKey
+            ({ media_key: key }) => key === mediaKey,
           );
 
           const imageUrl = medium?.url || medium?.preview_image_url;
@@ -171,7 +171,7 @@ export class TwitterService {
             const isTwitterReferenceLink = expanded_url.includes(id);
             text = text.replace(
               url,
-              isTwitterReferenceLink ? '' : expanded_url
+              isTwitterReferenceLink ? '' : expanded_url,
             );
 
             if (!isTwitterReferenceLink) {
@@ -183,7 +183,7 @@ export class TwitterService {
                 description,
               });
             }
-          }
+          },
         );
 
         return {

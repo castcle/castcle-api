@@ -136,7 +136,7 @@ describe('Youtube Webhook Service', () => {
     it('should return data if there is no error', async () => {
       const request = new MockRequest();
       const context = youtubeService.getSubscriptionContentFromRequest(
-        request as any
+        request as any,
       );
 
       request.emit('data', request.raw);

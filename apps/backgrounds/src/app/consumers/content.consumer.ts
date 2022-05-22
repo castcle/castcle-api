@@ -38,7 +38,7 @@ export class ContentConsumer {
 
   constructor(
     private contentService: ContentService,
-    private dataService: DataService
+    private dataService: DataService,
   ) {}
 
   @Process()

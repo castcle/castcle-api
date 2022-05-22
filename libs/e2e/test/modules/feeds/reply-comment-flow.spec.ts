@@ -126,7 +126,7 @@ export const testReplyCommentsFlow = () => {
     await UsersRequest.updateReplyComment(
       userB.castcleId,
       commentId,
-      replyCommentId
+      replyCommentId,
     )
       .auth(userB.accessToken, { type: 'bearer' })
       .send(requst)
@@ -140,7 +140,7 @@ export const testReplyCommentsFlow = () => {
     await UsersRequest.deleteReplyComment(
       userB.castcleId,
       commentId,
-      replyCommentId
+      replyCommentId,
     ).auth(userB.accessToken, {
       type: 'bearer',
     });

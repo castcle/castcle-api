@@ -22,20 +22,26 @@
  */
 
 import { User } from '../schemas';
+import { EngagementType } from './../schemas/engagement.schema';
+import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
+import { EntityVisibility } from './../dtos/common.dto';
 
 type GetContentFilter = {
   [key: string]: string;
 };
 
 type GetContentsQuery = {
-  filter: GetContentFilter;
-  maxResults: number;
-  viewer: User;
+  filter?: GetContentFilter;
+  maxResults?: number;
+  viewer?: User;
+  sortBy?: {
+    [key: string]: string;
+  };
 };
 export const pipelineGetContents = (query: GetContentsQuery) => {
   return [
     {
-      $sort: {
+      $sort: query.sortBy || {
         createdAt: -1,
       },
     },
@@ -43,13 +49,13 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
       $match: query.filter,
     },
     {
-      $limit: query.maxResults,
+      $limit: query.maxResults || DEFAULT_CONTENT_QUERY_OPTIONS.maxResults,
     },
     {
       $facet: {
         contents: [
           {
-            $sort: {
+            $sort: query.sortBy || {
               createdAt: -1,
             },
           },
@@ -74,10 +80,19 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                   },
                 },
               ],
-              as: 'cast',
+              as: 'casts',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$cast', 0] } },
+          {
+            $unwind: {
+              path: '$casts',
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: '$casts',
+            },
+          },
         ],
         authors: [
           {
@@ -142,6 +157,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                       $and: [
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
                   },
@@ -152,7 +168,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     likeCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'like'] },
+                          if: { $eq: ['$type', EngagementType.Like] },
                           then: 1,
                           else: 0,
                         },
@@ -161,25 +177,25 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                     commentCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'comment'] },
+                          if: { $eq: ['$type', EngagementType.Comment] },
                           then: 1,
                           else: 0,
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'quoted'] },
+                          if: { $eq: ['$type', EngagementType.Quote] },
                           then: 1,
                           else: 0,
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'recasted'] },
+                          if: { $eq: ['$type', EngagementType.Recast] },
                           then: 1,
                           else: 0,
                         },
@@ -188,15 +204,87 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                   },
                 },
               ],
-              as: 'engagements',
+              as: 'metrics',
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            $unwind: {
+              path: '$metrics',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+          {
+            $replaceRoot: { newRoot: '$metrics' },
+          },
+        ],
+        metricsOriginal: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: { contentId: '$originalPost._id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                      ],
+                    },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$targetRef.$id',
+                    likeCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Like] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    commentCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Comment] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    quotedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Quote] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                    recastedCount: {
+                      $sum: {
+                        $cond: {
+                          if: { $eq: ['$type', EngagementType.Recast] },
+                          then: 1,
+                          else: 0,
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+              as: 'metricsOriginal',
+            },
+          },
+          {
+            $unwind: {
+              path: '$metricsOriginal',
+            },
+          },
+          {
+            $replaceRoot: { newRoot: '$metricsOriginal' },
+          },
         ],
         engagements: [
           {
@@ -214,6 +302,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         { $eq: ['$targetRef.$ref', 'content'] },
                         { $eq: ['$targetRef.$id', '$$contentId'] },
                         { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
                       ],
                     },
                   },
@@ -223,11 +312,47 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            $unwind: {
+              path: '$engagements',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+          {
+            $replaceRoot: { newRoot: '$engagements' },
+          },
+        ],
+        engagementsOriginal: [
+          {
+            $lookup: {
+              from: 'engagements',
+              let: {
+                contentId: '$originalPost._id',
+                userId: query.viewer._id,
+              },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$targetRef.$ref', 'content'] },
+                        { $eq: ['$targetRef.$id', '$$contentId'] },
+                        { $eq: ['$user', '$$userId'] },
+                        { $eq: ['$visibility', EntityVisibility.Publish] },
+                      ],
+                    },
+                  },
+                },
+              ],
+              as: 'engagementsOriginal',
+            },
+          },
+          {
+            $unwind: {
+              path: '$engagementsOriginal',
+            },
+          },
+          {
+            $replaceRoot: { newRoot: '$engagementsOriginal' },
+          },
         ],
       },
     },

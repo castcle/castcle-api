@@ -23,19 +23,15 @@
 import {
   AuthenticationService,
   getSocialPrefix,
+  OtpObjective,
+  OtpTemplateMessage,
   UserService,
 } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
   SocialConnectDto,
 } from '@castcle-api/database/dtos';
-import {
-  Account,
-  Credential,
-  Otp,
-  OtpObjective,
-  User,
-} from '@castcle-api/database/schemas';
+import { Account, Credential, Otp } from '@castcle-api/database/schemas';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -70,7 +66,7 @@ export class AppService {
     private download: Downloader,
     private userService: UserService,
     private twilioClient: TwilioClient,
-    private httpService: HttpService
+    private httpService: HttpService,
   ) {}
 
   private logger = new CastLogger(AppService.name);
@@ -108,7 +104,7 @@ export class AppService {
       html: getSignupHtml(
         toEmail,
         `${verifyLink}?code=${code}`,
-        Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com'
+        Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com',
       ),
     });
 
@@ -134,18 +130,18 @@ export class AppService {
   async socialLogin(
     body: SocialConnectDto,
     req: CredentialRequest,
-    { ip }: RequestMetadata = {}
+    { ip }: RequestMetadata = {},
   ) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
-      body.provider
+      body.provider,
     );
 
     if (socialAccount) {
       this.logger.log('Existing Social Account');
       const account = await this.authService.getAccountFromId(
-        socialAccount.account._id
+        socialAccount.account._id,
       );
 
       this.logger.log('get All User');
@@ -155,13 +151,13 @@ export class AppService {
       this.logger.log('renew Tokens');
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
-          req.$credential
+          req.$credential,
         );
       const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
         {
           id: account.id as any,
-        }
+        },
       );
       return { token, users, account, isNewUser: false };
     } else {
@@ -178,7 +174,7 @@ export class AppService {
 
       this.logger.log('Register new social account');
       const account = await this.authService.getAccountFromCredential(
-        req.$credential
+        req.$credential,
       );
 
       if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
@@ -230,11 +226,11 @@ export class AppService {
       req.$credential.account.isGuest = false;
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
-          req.$credential
+          req.$credential,
         );
       const token: TokenResponse = await req.$credential.renewTokens(
         accessTokenPayload,
-        { id: account.id as any }
+        { id: account.id as any },
       );
 
       return { token, users, account, isNewUser: true };
@@ -270,7 +266,7 @@ export class AppService {
   async getAccountFromEmail(email: string) {
     this.logger.log('Get Account from email');
     const account = await this.authService.getAccountFromEmail(email);
-    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
+    if (!account) throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
 
     return account;
   }
@@ -279,11 +275,11 @@ export class AppService {
     objective: OtpObjective,
     credential: CredentialRequest,
     channel: string,
-    receiver: string
+    receiver: string,
   ) {
     const allExistingOtp =
       await this.authService.getAllOtpFromRequestIdObjective(
-        credential.$credential.account._id
+        credential.$credential.account._id,
       );
 
     let existingOtp = null;
@@ -296,7 +292,7 @@ export class AppService {
       ) {
         existingOtp = exOtp;
       } else {
-        // disable cancle
+        // disable cancel
         // await this.cancelOtp(exOtp);
         // this.logger.log('Delete OTP refCode: ' + exOtp.refCode);
         // await exOtp.delete();
@@ -310,19 +306,19 @@ export class AppService {
     mobileNumber: string,
     countryCode: string,
     objective: OtpObjective,
-    credential: CredentialRequest
+    credential: CredentialRequest,
   ) {
     this.logger.log('Get Account from mobile');
     let account = await this.authService.getAccountFromMobile(
       mobileNumber,
-      countryCode
+      countryCode,
     );
 
     if (!account && objective !== OtpObjective.VerifyMobile) {
       this.logger.error(
-        'Can not get Account from mobile : ' + countryCode + mobileNumber
+        'Can not get Account from mobile : ' + countryCode + mobileNumber,
       );
-      throw CastcleException.EMAIL_OR_PHONE_NOTFOUND;
+      throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
     }
 
     if (account && objective === OtpObjective.VerifyMobile) {
@@ -332,7 +328,7 @@ export class AppService {
 
     if (!account && objective === OtpObjective.VerifyMobile) {
       account = await this.authService.getAccountFromCredential(
-        credential.$credential
+        credential.$credential,
       );
 
       if (account.isGuest) {
@@ -357,22 +353,24 @@ export class AppService {
     credential: CredentialRequest,
     ip: string,
     userAgent: string,
-    source: string
+    source: string,
   ) {
     let account: Account = null;
     let otp: Otp = null;
     const objective = request.objective;
-    // recapchaToken mobile and on web only
+    // recaptchaToken mobile and on web only
     if (source.toLowerCase() == 'web' && request.channel == 'mobile') {
       if (request.payload.recapchaToken) {
         const token = request.payload.recapchaToken;
         const url = `https://www.google.com/recaptcha/api/siteverify?secret=${Environment.RECAPTCHA_SITE_KEY}&response=${token}&remoteip=${ip}`;
         this.logger.log(`[requestOtpCode] url: ${url}`);
         const captchaResponse = await lastValueFrom(
-          this.httpService.post(url).pipe(map(({ data }) => data))
+          this.httpService.post(url).pipe(map(({ data }) => data)),
         );
         this.logger.log(
-          `[requestOtpCode] captchaResponse: ${JSON.stringify(captchaResponse)}`
+          `[requestOtpCode] captchaResponse: ${JSON.stringify(
+            captchaResponse,
+          )}`,
         );
         if (captchaResponse && captchaResponse.success == false) {
           throw CastcleException.RECAPTCHA_FAILED;
@@ -389,7 +387,7 @@ export class AppService {
           objective,
           credential,
           request.channel,
-          request.payload.email
+          request.payload.email,
         );
         if (exOtp) {
           this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
@@ -405,19 +403,19 @@ export class AppService {
           request.payload.countryCode,
           request.payload.email,
           account,
-          TwilioChannel.Email,
+          TwilioChannel.EMAIL,
           objective,
           credential,
-          request.channel
+          request.channel,
         );
         break;
       }
-      case 'mobile': {
+      case TwilioChannel.MOBILE: {
         const exOtp = await this.validateExistingOtp(
           objective,
           credential,
           request.channel,
-          request.payload.countryCode + request.payload.mobileNumber
+          request.payload.countryCode + request.payload.mobileNumber,
         );
         if (exOtp) {
           this.logger.log('Already has Otp. ref code : ' + exOtp.refCode);
@@ -428,7 +426,7 @@ export class AppService {
           request.payload.mobileNumber,
           request.payload.countryCode,
           objective,
-          credential
+          credential,
         );
 
         this.logger.log('Create OTP');
@@ -438,10 +436,10 @@ export class AppService {
           request.payload.countryCode,
           request.payload.countryCode + request.payload.mobileNumber,
           account,
-          TwilioChannel.Mobile,
+          TwilioChannel.SMS,
           objective,
           credential,
-          request.channel
+          request.channel,
         );
         break;
       }
@@ -466,25 +464,25 @@ export class AppService {
     countryCode: string,
     receiver: string,
     account: Account,
-    twilioChannel: TwilioChannel,
+    channel: TwilioChannel,
     objective: OtpObjective,
     credential: CredentialRequest,
-    otpChannel: string
+    otpChannel: TwilioChannel,
   ): Promise<Otp> {
     let sid = '';
     this.logger.log('Send Otp');
     try {
       this.logger.log('get user from account');
       const user = await this.authService.getUserFromAccount(account);
-      const result = await this.twilioClient.requestOtp(
+      const result = await this.twilioClient.requestOtp({
         ip,
         userAgent,
         countryCode,
         receiver,
-        twilioChannel,
-        this.buildTemplateMessage(objective, user),
-        account.id
-      );
+        channel,
+        config: OtpTemplateMessage.from(objective, user?.displayName),
+        accountId: account.id,
+      });
       sid = result.sid;
     } catch (ex) {
       this.logger.error('Twilio Error : ' + ex.message, ex);
@@ -503,33 +501,11 @@ export class AppService {
       otpChannel,
       false,
       receiver,
-      sid
+      sid,
     );
     return otp;
   }
 
-  private buildTemplateMessage(objective: OtpObjective, user: User) {
-    const userName = user && user.displayName ? user.displayName : '';
-    if (objective === OtpObjective.ForgotPassword) {
-      this.logger.log('build template forgot password objective');
-      return {
-        twilio_name: userName,
-        twilio_message_body:
-          'We received a request to reset your  Castcle password. Enter the following password reset code',
-        twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: 'If you didn’t request a new password',
-      };
-    } else {
-      this.logger.log('build template other objective');
-      return {
-        twilio_name: userName,
-        twilio_message_body:
-          'We received a request for One Time Password (OTP).',
-        twilio_message_footer_1: 'Didn’t request this change?',
-        twilio_message_footer_2: '',
-      };
-    }
-  }
   /**
    * forgot password verify Otp
    * @param {VerificationOtpDto} request
@@ -538,7 +514,7 @@ export class AppService {
    */
   async verificationOTP(
     request: VerificationOtpDto,
-    credential: CredentialRequest
+    credential: CredentialRequest,
   ) {
     const limitRetry = 3;
     let account: Account = null;
@@ -556,7 +532,7 @@ export class AppService {
           request.payload.mobileNumber,
           request.payload.countryCode,
           objective,
-          credential
+          credential,
         );
         receiver = request.payload.countryCode + request.payload.mobileNumber;
 
@@ -571,7 +547,7 @@ export class AppService {
     this.logger.log('Get Account from OTP');
     const otp = await this.authService.getOtpFromRequestIdRefCode(
       credential.$credential.account._id,
-      request.refCode
+      request.refCode,
     );
 
     if (!otp) {
@@ -599,7 +575,7 @@ export class AppService {
       try {
         verifyOtpResult = await this.twilioClient.verifyOtp(
           receiver,
-          request.otp
+          request.otp,
         );
       } catch (ex) {
         this.logger.error(ex.message, ex);
@@ -618,7 +594,7 @@ export class AppService {
       const tokenResult = await this.getTokenMergeAccount(
         objective,
         credential.$credential,
-        account
+        account,
       );
 
       this.logger.log('delete old otp');
@@ -631,7 +607,7 @@ export class AppService {
         credential.$credential.account._id,
         request.channel,
         true,
-        receiver
+        receiver,
       );
       return { otp: newOtp, token: tokenResult };
     } else {
@@ -653,7 +629,7 @@ export class AppService {
     this.logger.log('Get otp document');
     const otp = await this.authService.getOtpFromRequestIdRefCode(
       credential.$credential.account._id,
-      data.refCode
+      data.refCode,
     );
 
     if (
@@ -679,7 +655,7 @@ export class AppService {
   private async cancelOtp(otp: Otp) {
     this.logger.log('Cancel Twilio Otp.');
     try {
-      if (otp.sid) await this.twilioClient.canceledOtp(otp.sid);
+      if (otp.sid) await this.twilioClient.cancelOtp(otp.sid);
     } catch (ex) {
       this.logger.warn('Can not cancel otp:', ex);
     }
@@ -688,12 +664,12 @@ export class AppService {
   private async getTokenMergeAccount(
     objective: OtpObjective,
     credential: Credential,
-    account: Account
+    account: Account,
   ) {
     if (objective === OtpObjective.MergeAccount) {
       credential = await this.authService.linkCredentialToAccount(
         credential,
-        account
+        account,
       );
 
       this.logger.log('renew Tokens for merge account.');

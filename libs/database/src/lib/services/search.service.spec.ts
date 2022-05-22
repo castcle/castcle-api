@@ -81,7 +81,7 @@ describe('SearchService', () => {
       await mockUser(
         `User ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -89,7 +89,7 @@ describe('SearchService', () => {
       await mockUser(
         `Page ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -97,7 +97,7 @@ describe('SearchService', () => {
       await mockUser(
         `cPage ${i}`,
         UserType.PAGE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
 
@@ -105,7 +105,7 @@ describe('SearchService', () => {
       await mockUser(
         `cUser ${i}`,
         UserType.PEOPLE,
-        Math.floor(Math.random() * 99999)
+        Math.floor(Math.random() * 99999),
       );
     }
   });
@@ -154,32 +154,6 @@ describe('SearchService', () => {
       const result = await service.getTopTrends({
         exclude: 'follows,hashtags',
       });
-      expect(result.hashtags.length).toEqual(0);
-      expect(result.follows.length).toEqual(0);
-    });
-  });
-
-  describe('#getSearch', () => {
-    it('should get search result with keyword c', async () => {
-      const result = await service.getSearch(null, 'c', 10);
-
-      expect(result.keywords.length).toEqual(3);
-      expect(result.hashtags.length).toEqual(2);
-      expect(result.follows.length).toEqual(10);
-    });
-
-    it('should get search result with keyword c and limit follows 5', async () => {
-      const result = await service.getSearch(null, 'c', 5);
-
-      expect(result.keywords.length).toEqual(3);
-      expect(result.hashtags.length).toEqual(2);
-      expect(result.follows.length).toEqual(5);
-    });
-
-    it('should get empty result with keyword abc', async () => {
-      const result = await service.getSearch(null, 'abc', 10);
-
-      expect(result.keywords.length).toEqual(0);
       expect(result.hashtags.length).toEqual(0);
       expect(result.follows.length).toEqual(0);
     });

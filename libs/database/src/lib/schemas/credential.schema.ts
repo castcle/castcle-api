@@ -69,11 +69,11 @@ class CredentialDocument extends CastcleBase {
 export class Credential extends CredentialDocument {
   renewTokens: (
     accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
-    refreshTokenPayload: RefreshTokenPayload
+    refreshTokenPayload: RefreshTokenPayload,
   ) => Promise<{ accessToken: string; refreshToken: string }>;
 
   renewAccessToken: (
-    payload: AccessTokenPayload | MemberAccessTokenPayload
+    payload: AccessTokenPayload | MemberAccessTokenPayload,
   ) => Promise<string>;
 
   isAccessTokenValid: () => boolean;
@@ -99,17 +99,17 @@ export const CredentialSchema = SchemaFactory.createForClass<
 >(CredentialDocument);
 
 CredentialSchema.statics.generateAccessToken = (
-  payload: AccessTokenPayload | MemberAccessTokenPayload
+  payload: AccessTokenPayload | MemberAccessTokenPayload,
 ) => {
   const now = new Date();
   const accessTokenExpireDate = new Date(
-    now.getTime() + Environment.JWT_ACCESS_EXPIRES_IN * 1000
+    now.getTime() + Environment.JWT_ACCESS_EXPIRES_IN * 1000,
   );
   payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
   const accessToken = Token.generateToken(
     payload,
     Environment.JWT_ACCESS_SECRET,
-    Environment.JWT_ACCESS_EXPIRES_IN
+    Environment.JWT_ACCESS_EXPIRES_IN,
   );
   return {
     accessToken,
@@ -118,17 +118,17 @@ CredentialSchema.statics.generateAccessToken = (
 };
 
 CredentialSchema.statics.generateRefreshToken = (
-  payload: RefreshTokenPayload
+  payload: RefreshTokenPayload,
 ) => {
   const now = new Date();
   const refreshTokenExpireDate = new Date(
-    now.getTime() + Environment.JWT_REFRESH_EXPIRES_IN * 1000
+    now.getTime() + Environment.JWT_REFRESH_EXPIRES_IN * 1000,
   );
   payload.refreshTokenExpiresTime = refreshTokenExpireDate.toISOString();
   const refreshToken = Token.generateToken(
     payload,
     Environment.JWT_REFRESH_SECRET,
-    Environment.JWT_REFRESH_EXPIRES_IN
+    Environment.JWT_REFRESH_EXPIRES_IN,
   );
 
   return {
@@ -139,11 +139,11 @@ CredentialSchema.statics.generateRefreshToken = (
 
 CredentialSchema.methods.renewTokens = async function (
   accessTokenPayload: AccessTokenPayload | MemberAccessTokenPayload,
-  refreshTokenPayload: RefreshTokenPayload
+  refreshTokenPayload: RefreshTokenPayload,
 ) {
   const credentialModel = mongoose.model<Credential, CredentialModel>(
     'Credential',
-    CredentialSchema
+    CredentialSchema,
   );
   const refreshTokenResult =
     credentialModel.generateRefreshToken(refreshTokenPayload);
@@ -161,11 +161,11 @@ CredentialSchema.methods.renewTokens = async function (
 };
 
 CredentialSchema.methods.renewAccessToken = async function (
-  payload: AccessTokenPayload | MemberAccessTokenPayload
+  payload: AccessTokenPayload | MemberAccessTokenPayload,
 ) {
   const credentialModel = mongoose.model<Credential, CredentialModel>(
     'Credential',
-    CredentialSchema
+    CredentialSchema,
   );
   const result = credentialModel.generateAccessToken(payload);
   this.accessToken = result.accessToken;

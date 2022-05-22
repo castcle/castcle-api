@@ -23,6 +23,7 @@
 
 import { FilterQuery, Types } from 'mongoose';
 import { CastcleMetric } from '../dtos';
+import { EngagementType } from '../models';
 import {
   DefaultContent,
   GuestFeedItem,
@@ -168,7 +169,7 @@ export const pipelineOfGetGuestFeedContents = ({
                     likeCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'like'] },
+                          if: { $eq: ['$type', EngagementType.Like] },
                           then: 1,
                           else: 0,
                         },
@@ -177,7 +178,7 @@ export const pipelineOfGetGuestFeedContents = ({
                     commentCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'comment'] },
+                          if: { $eq: ['$type', EngagementType.Comment] },
                           then: 1,
                           else: 0,
                         },
@@ -186,7 +187,7 @@ export const pipelineOfGetGuestFeedContents = ({
                     quotedCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'quoted'] },
+                          if: { $eq: ['$type', EngagementType.Quote] },
                           then: 1,
                           else: 0,
                         },
@@ -195,7 +196,7 @@ export const pipelineOfGetGuestFeedContents = ({
                     recastedCount: {
                       $sum: {
                         $cond: {
-                          if: { $eq: ['$type', 'recasted'] },
+                          if: { $eq: ['$type', EngagementType.Recast] },
                           then: 1,
                           else: 0,
                         },
@@ -218,11 +219,13 @@ export const pipelineOfGetGuestFeedContents = ({
             },
           },
           {
-            $match: {
-              $expr: { $gt: [{ $size: '$engagements' }, 0] },
+            $unwind: {
+              path: '$engagements',
             },
           },
-          { $replaceWith: { $arrayElemAt: ['$engagements', 0] } },
+          {
+            $replaceRoot: { newRoot: '$engagements' },
+          },
         ],
         authors: [
           {
@@ -332,10 +335,10 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
         let: {
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
           dateDiffCalled: new Date(
-            new Date().getTime() - params.calledAtDelay * 1000
+            new Date().getTime() - params.calledAtDelay * 1000,
           ),
         },
         pipeline: [
@@ -373,7 +376,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
         },
         pipeline: [
@@ -433,7 +436,7 @@ export const pipelineOfGetFeedContents = (params: GetFeedContentsParams) => {
           duplicateContents: '$duplicateContents',
           dateNow: new Date(),
           dateDiff: new Date(
-            new Date().getTime() - params.decayDays * 1000 * 86400
+            new Date().getTime() - params.decayDays * 1000 * 86400,
           ),
         },
         pipeline: [

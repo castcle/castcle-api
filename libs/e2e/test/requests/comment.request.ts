@@ -22,7 +22,7 @@ export class CommentRequest {
     CommentRequest.get(`/v2/contents/${contentId}/comments`);
   static getReplyComment = (contentId: string, sourceCommentId: string) =>
     CommentRequest.get(
-      `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`
+      `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`,
     );
   static getCommentLookup = (contentId: string, sourceCommentId: string) =>
     CommentRequest.get(`/v2/contents/${contentId}/comments/${sourceCommentId}`);

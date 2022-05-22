@@ -23,6 +23,7 @@
 
 import { plainToClass } from 'class-transformer';
 import {
+  TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
   TransformStringToEnum,
 } from './transformers';
@@ -77,5 +78,26 @@ describe('TransformStringToEnum', () => {
     const target = plainToClass(Target, object);
 
     expect(target).toMatchObject({ type: undefined });
+  });
+});
+
+describe('TransformSortStringToSortObject', () => {
+  class Target {
+    @TransformSortStringToSortObject()
+    sortBy: string;
+  }
+
+  it('should return type if it contained in TargetType', () => {
+    const sortString = { sortBy: 'desc(createdAt),asc(updatedAt)' };
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({ sortBy: { createdAt: -1, updatedAt: 1 } });
+  });
+
+  it(`should return undefined if it does not exist`, () => {
+    const sortString = {};
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({});
   });
 });

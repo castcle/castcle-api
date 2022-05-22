@@ -61,7 +61,7 @@ export class Environment {
     Number(process.env.JWT_VERIFY_EXPIRES_IN) || 6002;
   static JWT_SIGNATURE_SECRET = process.env.JWT_SIGNATURE_SECRET;
   static JWT_SIGNATURE_EXPIRES_IN = Number(
-    process.env.JWT_SIGNATURE_EXPIRES_IN
+    process.env.JWT_SIGNATURE_EXPIRES_IN,
   );
 
   // Cloudfront
@@ -98,6 +98,9 @@ export class Environment {
    * @default 60 seconds
    */
   static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
+  /** @default 10 minutes */
+  static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EMAIL_EXPIRES_IN) || 10;
+  static OTP_MAX_RETRIES = Number(process.env.OTP_MAX_RETRIES) || 3;
 
   // Firebase
   static FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
@@ -126,8 +129,9 @@ export class Environment {
   static TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || 'ACd501e';
   static TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || 'secret';
   static TWILIO_OTP_SID = process.env.TWILIO_OTP_SID || 'VA356353';
-  static TWILIO_COUNTRY_CODE =
-    process.env.TWILIO_COUNTRY_CODE || '+62,+91,+880';
+  static TWILIO_COUNTRY_CODES = (
+    process.env.TWILIO_COUNTRY_CODE || '+62,+91,+880'
+  ).split(',');
 
   // Youtube
   static YOUTUBE_VERIFY_TOKEN = process.env.YOUTUBE_VERIFY_TOKEN;
@@ -143,19 +147,19 @@ export class Environment {
 
   // Feed Setting
   static FEED_FOLLOW_MAX = Number(
-    process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax
+    process.env.FEED_FOLLOW_MAX || Configs.Feed.FollowFeedMax,
   );
   static FEED_FOLLOW_RATIO = Number(
-    process.env.FEED_FOLLOW_RATIO || Configs.Feed.FollowFeedRatio
+    process.env.FEED_FOLLOW_RATIO || Configs.Feed.FollowFeedRatio,
   );
   static FEED_DECAY_DAYS = Number(
-    process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays
+    process.env.FEED_DECAY_DAYS || Configs.Feed.DecayDays,
   );
   static FEED_DUPLICATE_MAX = Number(
-    process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax
+    process.env.FEED_DUPLICATE_MAX || Configs.Feed.DuplicateContentMax,
   );
   static FEED_CALLED_AT_DELAY = Number(
-    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay
+    process.env.FEED_CALLED_AT_DELAY || Configs.Feed.CalledAtDelay,
   );
   static FEED_IGNORE_PERSONALIZED_CONTENTS =
     process.env.FEED_IGNORE_PERSONALIZED_CONTENTS || 0;
@@ -173,10 +177,19 @@ export class Environment {
   // DS Service
   static DS_SERVICE_BASE_URL = process.env.DS_SERVICE_BASE_URL;
 
+  // Rate Limiting
   static RATE_LIMIT_TTL = Number(process.env.RATE_LIMIT_TTL) || 300;
   static RATE_LIMIT_LIMIT = Number(process.env.RATE_LIMIT_LIMIT) || 200;
-  static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 300;
-  static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 200;
+  static RATE_LIMIT_OTP_TTL = Number(process.env.RATE_LIMIT_OTP_TTL) || 60;
+  static RATE_LIMIT_OTP_LIMIT = Number(process.env.RATE_LIMIT_OTP_LIMIT) || 20;
+  static RATE_LIMIT_OTP_EMAIL_TTL =
+    Number(process.env.RATE_LIMIT_OTP_EMAIL_TTL) || 60;
+  static RATE_LIMIT_OTP_EMAIL_LIMIT =
+    Number(process.env.RATE_LIMIT_OTP_EMAIL_LIMIT) || 20;
+  static RATE_LIMIT_OTP_MOBILE_TTL =
+    Number(process.env.RATE_LIMIT_OTP_MOBILE_TTL) || 300;
+  static RATE_LIMIT_OTP_MOBILE_LIMIT =
+    Number(process.env.RATE_LIMIT_OTP_MOBILE_LIMIT) || 1;
 
   // AWS Xray
   static AWS_XRAY_DAEMON_ADDRESS = process.env.AWS_XRAY_DAEMON_ADDRESS;
@@ -215,6 +228,6 @@ export class Environment {
   static NOTIFY_FOLLOW_INTERVAL = process.env.NOTIFY_FOLLOW_INTERVAL || 0;
 
   static CONTENT_FARMING_COOLDOWN_HR = Number(
-    process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000
+    process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000,
   ); //hours
 }

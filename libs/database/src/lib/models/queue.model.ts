@@ -30,6 +30,6 @@ export class ClaimAirdropPayload {
   constructor(
     public campaignId: string,
     public to: MicroTransaction[],
-    public mobile?: { countryCode: string; number: string }
+    public mobile?: { countryCode: string; number: string },
   ) {}
 }

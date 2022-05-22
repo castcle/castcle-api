@@ -32,7 +32,7 @@ export class CastcleRegExp {
 
   static fromString = (
     str: string,
-    { exactMatch = true, caseInsensitive = true } = {}
+    { exactMatch = true, caseInsensitive = true } = {},
   ) => {
     const escapeStr = CastcleRegExp.replaceEscapeStrings(str);
     const strPattern = exactMatch ? `^${escapeStr}$` : escapeStr;

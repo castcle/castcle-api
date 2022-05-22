@@ -43,11 +43,11 @@ describe('Uploader', () => {
     it('should get content type after "data:image/{type};base54"', () => {
       expect(
         Uploader.getFileTypeFromBase64Prefix(
-          'data:image/sompop;base64blablabla'
-        )
+          'data:image/sompop;base64blablabla',
+        ),
       ).toEqual('sompop');
       expect(
-        Uploader.getFileTypeFromBase64Prefix('data:video/mp4;base64blablabla')
+        Uploader.getFileTypeFromBase64Prefix('data:video/mp4;base64blablabla'),
       ).toEqual('mp4');
       expect(Uploader.getFileTypeFromBase64Prefix('blablabla')).toBeNull();
     });
@@ -55,7 +55,7 @@ describe('Uploader', () => {
   describe('#Uploader.getImageContentType()', () => {
     it('should be able to get content type from prefix and first char of base64', () => {
       expect(
-        Uploader.getImageContentType('data:image/sompop;base64blab')
+        Uploader.getImageContentType('data:image/sompop;base64blab'),
       ).toEqual('image/sompop');
       expect(Uploader.getImageContentType('iTest')).toEqual('image/png');
       expect(Uploader.getImageContentType('blablabbla')).toEqual('image/jpeg');
@@ -64,7 +64,7 @@ describe('Uploader', () => {
   describe('#Uploader.getFileTypeFromBase64()', () => {
     it('should be able to get file type from prefix and first char of base64', () => {
       expect(
-        Uploader.getFileTypeFromBase64('data:image/sompop;base64blab')
+        Uploader.getFileTypeFromBase64('data:image/sompop;base64blab'),
       ).toEqual('sompop');
       expect(Uploader.getFileTypeFromBase64('iTest')).toEqual('png');
     });
@@ -77,7 +77,7 @@ describe('Uploader', () => {
       expect(
         Uploader.getFileSavedNameFromOptions('png', {
           filename: 'sompop-test',
-        })
+        }),
       ).toEqual('sompop-test.png');
     });
     it('should get subpath for fileName if set in options', () => {
@@ -85,7 +85,7 @@ describe('Uploader', () => {
         Uploader.getFileSavedNameFromOptions('png', {
           filename: 'sompop-test',
           subpath: 'usera',
-        })
+        }),
       ).toEqual('usera/sompop-test.png');
     });
   });

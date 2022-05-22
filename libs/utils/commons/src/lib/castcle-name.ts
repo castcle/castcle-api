@@ -105,7 +105,7 @@ export class CastcleName {
     //remove any special character
     let replaceName = name.replace(
       /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/g,
-      ''
+      '',
     );
     if (name.length >= LENGTH_MAX)
       replaceName = replaceName.slice(0, LENGTH_MAX - 1);

@@ -22,6 +22,11 @@
  */
 
 export const DevErrors = {
+  '0000': {
+    statusCode: '500',
+    code: '0000',
+    message: 'Sorry, Something went wrong. Please try again',
+  },
   '1001': {
     statusCode: '404',
     code: '1001',
@@ -132,7 +137,7 @@ export const DevErrors = {
   '3012': {
     statusCode: '400',
     code: '3012',
-    message: 'The request exceeded the time limit.',
+    message: 'Invalid ref code. Please try again.',
   },
   '3013': {
     statusCode: '400',

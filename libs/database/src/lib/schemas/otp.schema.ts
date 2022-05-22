@@ -21,18 +21,14 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { Password } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DateTime } from 'luxon';
 import * as mongoose from 'mongoose';
+import { OtpObjective } from '../models';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-
-export enum OtpObjective {
-  ChangePassword = 'change_password',
-  ForgotPassword = 'forgot_password',
-  VerifyMobile = 'verify_mobile',
-  MergeAccount = 'merge_account',
-}
 
 @Schema({ timestamps: true })
 class OtpDocument extends CastcleBase {
@@ -75,10 +71,11 @@ class OtpDocument extends CastcleBase {
 export class Otp extends OtpDocument {
   isValid: () => boolean;
   isValidVerifyMobileOtp: () => boolean;
+  markVerified: () => this;
 }
 
 export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
-  OtpDocument
+  OtpDocument,
 );
 
 export interface OtpModel extends mongoose.Model<Otp> {
@@ -92,10 +89,11 @@ export interface OtpModel extends mongoose.Model<Otp> {
     accountId: any,
     objective: OtpObjective,
     requestId: string,
-    channel: string,
-    verify: boolean,
+    channel: TwilioChannel,
+    verified: boolean,
     receiver?: string,
-    sid?: string
+    sid?: string,
+    expireDate?: Date,
   ): Promise<Otp>;
 }
 
@@ -103,35 +101,37 @@ OtpSchema.statics.generate = async function (
   accountId: any,
   objective: OtpObjective,
   requestId: string,
-  channel: string,
-  verify: boolean,
+  channel: TwilioChannel,
+  verified: boolean,
   receiver?: string,
-  sid?: string
+  sid?: string,
+  expireDate: Date = DateTime.now()
+    .plus({ seconds: Environment.OTP_EXPIRES_IN })
+    .toJSDate(),
 ) {
-  let newRefCode: string;
-  let otpFindingResult;
+  let refCode: string;
+  let refCodeExists: boolean;
   do {
-    newRefCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
-    otpFindingResult = await this.findOne({
+    refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
+    refCodeExists = await this.findOne({
       account: accountId,
       action: objective,
-      refCode: newRefCode,
+      refCode,
     }).exec();
-  } while (otpFindingResult);
-  const now = new Date();
-  const otp = new this({
+  } while (refCodeExists);
+
+  return new this({
     account: accountId,
     action: objective,
-    refCode: newRefCode,
-    requestId: requestId,
+    refCode,
+    requestId,
     retry: 0,
-    channel: channel,
-    isVerify: verify,
-    sid: sid,
-    expireDate: new Date(now.getTime() + Environment.OTP_EXPIRES_IN * 1000),
+    channel,
+    isVerify: verified,
+    sid,
+    expireDate,
     reciever: receiver,
-  });
-  return otp.save();
+  }).save();
 };
 
 OtpSchema.methods.isValid = function () {
@@ -144,4 +144,10 @@ OtpSchema.methods.isValidVerifyMobileOtp = function () {
   return (
     this.action === OtpObjective.VerifyMobile && this.isValid() && this.isVerify
   );
+};
+
+OtpSchema.methods.markVerified = function () {
+  this.isVerify = true;
+  this.refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
+  return this;
 };

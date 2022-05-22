@@ -29,7 +29,7 @@ export class CastcleLocalization {
   static getTemplateLike = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -65,7 +65,7 @@ export class CastcleLocalization {
   static getTemplateComment = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -101,7 +101,7 @@ export class CastcleLocalization {
   static getTemplateFarm = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -137,7 +137,7 @@ export class CastcleLocalization {
   static getTemplateQuote = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -173,7 +173,7 @@ export class CastcleLocalization {
   static getTemplateRecast = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -209,7 +209,7 @@ export class CastcleLocalization {
   static getTemplateReply = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -269,7 +269,7 @@ export class CastcleLocalization {
   static getTemplateTag = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -319,7 +319,7 @@ export class CastcleLocalization {
   static getTemplateLikeComment = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:
@@ -357,7 +357,7 @@ export class CastcleLocalization {
   static getTemplateFollow = (
     language: string,
     displayNames: string[],
-    page = ''
+    page = '',
   ) => {
     switch (language) {
       case LocalizationLang.Thai:

@@ -39,7 +39,7 @@ export class CastcleErrors {
 
   static getLocalizedError<T>(
     code: string,
-    language = 'default'
+    language = 'default',
   ): CastcleError<T> {
     return CastcleErrors[language]?.[code] || CastcleErrors.default[code];
   }

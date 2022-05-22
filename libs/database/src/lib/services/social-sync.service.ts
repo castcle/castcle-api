@@ -38,7 +38,7 @@ export class SocialSyncService {
     @InjectModel('SocialSync')
     private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    private userModel: Model<User>
+    private userModel: Model<User>,
   ) {}
 
   /**
@@ -47,7 +47,7 @@ export class SocialSyncService {
    * @returns {Promise<SocialSync[]>}
    */
   getAutoSyncAccounts = (
-    socialProvider: SocialProvider
+    socialProvider: SocialProvider,
   ): Promise<SocialSync[]> => {
     return this.socialSyncModel
       .find({ active: true, autoPost: true, provider: socialProvider })
@@ -62,7 +62,7 @@ export class SocialSyncService {
    */
   getAutoSyncAccountBySocialId = (
     socialProvider: SocialProvider,
-    socialId: string
+    socialId: string,
   ): Promise<SocialSync> => {
     return this.socialSyncModel
       .findOne({
@@ -82,7 +82,7 @@ export class SocialSyncService {
    */
   getAllSocialSyncBySocial = (
     socialProvider: SocialProvider,
-    socialId: string
+    socialId: string,
   ): Promise<SocialSync[]> => {
     return this.socialSyncModel
       .find()
@@ -169,7 +169,7 @@ export class SocialSyncService {
    */
   getPageByPageIdAndAccountId = (
     { author }: SocialSync,
-    { ownerAccount }: User
+    { ownerAccount }: User,
   ): Promise<User> => {
     return this.userModel
       .findOne({ _id: author.id, ownerAccount: ownerAccount })
@@ -216,12 +216,12 @@ export class SocialSyncService {
    * */
   update = async (
     updateSocialSync: SocialSyncDto,
-    user: User
+    user: User,
   ): Promise<SocialSync> => {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
     const socialSync = socialSyncDoc.find(
-      (x) => x.provider === updateSocialSync.provider
+      (x) => x.provider === updateSocialSync.provider,
     );
 
     if (!socialSync) {
@@ -253,14 +253,14 @@ export class SocialSyncService {
   private async getDeleteSync(
     socialSyncDeleteDto: SocialSyncDeleteDto,
     user: User,
-    unsubscribe = false
+    unsubscribe = false,
   ) {
     const socialSyncDoc = await this.getSocialSyncByUser(user);
     this.logger.log(`find social sync.`);
     const deleteSocialSync = socialSyncDoc.find(
       (x) =>
         x.provider === socialSyncDeleteDto.provider &&
-        x.socialId === socialSyncDeleteDto.socialId
+        x.socialId === socialSyncDeleteDto.socialId,
     );
     if (deleteSocialSync) {
       this.logger.log('delete social sync.');
@@ -279,12 +279,12 @@ export class SocialSyncService {
   delete = async (
     socialSyncDeleteDto: SocialSyncDeleteDto,
     user: User,
-    unsubscribe = false
+    unsubscribe = false,
   ): Promise<SocialSync> => {
     const deleteSocialSync = await this.getDeleteSync(
       socialSyncDeleteDto,
       user,
-      unsubscribe
+      unsubscribe,
     );
     if (deleteSocialSync) {
       deleteSocialSync.visibility = EntityVisibility.Deleted;
@@ -304,12 +304,12 @@ export class SocialSyncService {
   disconnect = async (
     socialSyncDeleteDto: SocialSyncDeleteDto,
     user: User,
-    unsubscribe = false
+    unsubscribe = false,
   ): Promise<SocialSync> => {
     const deleteSocialSync = await this.getDeleteSync(
       socialSyncDeleteDto,
       user,
-      unsubscribe
+      unsubscribe,
     );
     if (deleteSocialSync) {
       return deleteSocialSync.save();

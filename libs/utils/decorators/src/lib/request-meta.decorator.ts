@@ -29,7 +29,7 @@ export class RequestMetadata {
   constructor(
     public ip?: string,
     public userAgent?: string,
-    public source?: string
+    public source?: string,
   ) {}
 }
 
@@ -49,7 +49,7 @@ export class RequestMetadata {
  * ```
  */
 export const RequestMeta: (
-  property?: keyof RequestMetadata
+  property?: keyof RequestMetadata,
 ) => ParameterDecorator = createParamDecorator(
   async (property: keyof RequestMetadata, ctx: ExecutionContext) => {
     const req = ctx.switchToHttp().getRequest<Request>();
@@ -70,5 +70,5 @@ export const RequestMeta: (
     const requestMetadata = new RequestMetadata(ip, userAgent);
 
     return property ? requestMetadata[property] : requestMetadata;
-  }
+  },
 );

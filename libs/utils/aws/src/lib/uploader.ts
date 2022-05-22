@@ -76,7 +76,7 @@ export class Uploader {
     if (prefixType) return `image/${prefixType}`;
     const replaceContent = base64.replace(/^data:\w+\/\w+;base64,/, '');
     const fileType = Uploader.getContentTypeFromFirstCharAt(
-      replaceContent.charAt(0)
+      replaceContent.charAt(0),
     );
     if (fileType === '') return 'image/jpeg';
     //should not happen
@@ -116,7 +116,7 @@ export class Uploader {
    */
   static getFileSavedNameFromOptions = (
     fileType: string,
-    options?: UploadOptions
+    options?: UploadOptions,
   ) => {
     const extensionName =
       options && options.addTime
@@ -140,7 +140,7 @@ export class Uploader {
   uploadBufferToS3 = async (
     buffer: Buffer,
     fileType: string,
-    options?: UploadOptions
+    options?: UploadOptions,
   ) => {
     try {
       const saveName = Uploader.getFileSavedNameFromOptions(fileType, options);

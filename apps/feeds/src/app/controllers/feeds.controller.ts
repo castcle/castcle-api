@@ -63,7 +63,7 @@ export class FeedsController {
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
     private uxEngagementService: UxEngagementService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
   ) {}
 
   @CastcleBasicAuth()
@@ -71,7 +71,7 @@ export class FeedsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async seenFeed(
     @Auth() { account, credential }: Authorizer,
-    @Param() { id }: FeedParam
+    @Param() { id }: FeedParam,
   ) {
     this.suggestionService.seen(account, id, credential);
   }
@@ -81,7 +81,7 @@ export class FeedsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async offScreenFeed(
     @Auth() { account }: Authorizer,
-    @Param() { id }: FeedParam
+    @Param() { id }: FeedParam,
   ) {
     if (account.isGuest) return;
 
@@ -92,19 +92,19 @@ export class FeedsController {
   @Get('guests')
   async getGuestFeed(
     @Req() { $credential }: CredentialRequest,
-    @Query() paginationQuery: FeedQuery
+    @Query() paginationQuery: FeedQuery,
   ) {
     const account = await this.rankerService._accountModel.findById(
-      $credential.account._id
+      $credential.account._id,
     ); // TODO !!! this is hot fix for guest $credential.account;
     const feedItems = await this.rankerService.getGuestFeedItems(
       paginationQuery,
-      account
+      account,
     );
 
     this.uxEngagementService.addReachToContents(
       String(account._id),
-      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
+      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id),
     );
 
     return this.suggestionService.suggest(account.id, feedItems);
@@ -114,10 +114,10 @@ export class FeedsController {
   @Get('members/feed/forYou')
   async getMemberFeed(
     @Req() { $credential }: CredentialRequest,
-    @Query() paginationQuery: FeedQuery
+    @Query() paginationQuery: FeedQuery,
   ) {
     const account = await this.authService.getAccountFromCredential(
-      $credential
+      $credential,
     );
 
     if (account.visibility !== EntityVisibility.Publish) {
@@ -126,12 +126,12 @@ export class FeedsController {
 
     const feedItems = await this.rankerService.getFeeds(
       account,
-      paginationQuery
+      paginationQuery,
     );
 
     this.uxEngagementService.addReachToContents(
       String(account._id),
-      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id)
+      feedItems.payload.map((feed) => (feed.payload as ContentPayloadItem).id),
     );
 
     return this.suggestionService.suggest(account.id, feedItems);
@@ -141,17 +141,17 @@ export class FeedsController {
   @Get('search/recent')
   async getSearchRecent(
     @Auth() { user }: Authorizer,
-    @Query() getSearchRecentDto: GetSearchRecentDto
+    @Query() getSearchRecentDto: GetSearchRecentDto,
   ) {
     const { contents, meta } = await this.contentService.getSearchRecent(
-      getSearchRecentDto
+      getSearchRecentDto,
     );
 
     const { includes, payload } =
       await this.contentService.convertContentsToContentsResponse(
         user,
         contents,
-        getSearchRecentDto.hasRelationshipExpansion
+        getSearchRecentDto.hasRelationshipExpansion,
       );
 
     return ResponseDto.ok({ payload, includes, meta });
@@ -161,22 +161,22 @@ export class FeedsController {
   @Get('search/trends')
   async getSearchTrends(
     @Auth() { account, user }: Authorizer,
-    @Query() getSearchTrendsDto: GetSearchRecentDto
+    @Query() getSearchTrendsDto: GetSearchRecentDto,
   ) {
     const { contents, meta } = await this.contentService.getSearchRecent(
-      getSearchTrendsDto
+      getSearchTrendsDto,
     );
 
     const sortedContents = await this.rankerService.sortContentsByScore(
       account.id,
-      contents
+      contents,
     );
 
     const { includes, payload } =
       await this.contentService.convertContentsToContentsResponse(
         user,
         sortedContents,
-        getSearchTrendsDto.hasRelationshipExpansion
+        getSearchTrendsDto.hasRelationshipExpansion,
       );
 
     return ResponseDto.ok({ payload, includes, meta });

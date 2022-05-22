@@ -52,7 +52,7 @@ export const postAccountSave = async (doc: Account, models: HookModels) => {
       await models.userModel
         .updateOne(
           { ownerAccount: doc._id, type: UserType.PEOPLE },
-          { 'verified.email': true }
+          { 'verified.email': true },
         )
         .exec();
     await models.credentialModel
@@ -65,7 +65,7 @@ export const postAccountSave = async (doc: Account, models: HookModels) => {
           'account.preferences': doc.preferences,
           'account.email': doc.email,
           'account.geolocation': doc.geolocation ? doc.geolocation : null,
-        }
+        },
       )
       .exec();
     return true;

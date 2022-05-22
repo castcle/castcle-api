@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -28,16 +29,18 @@ import {
   CastcleQueryOptions,
   EntityVisibility,
   Meta,
+  NotificationSource,
+  NotificationType,
   PageResponseDto,
   PaginationQuery,
   SortDirection,
-  SyncSocialModelV2,
   UserField,
 } from '../dtos';
 import { UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
 import { ContentService } from './content.service';
+import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -53,7 +56,8 @@ export class UserServiceV2 {
     public _userModel: Model<User>,
     private contentService: ContentService,
     private repositoryService: Repository,
-    private userService: UserService
+    private userService: UserService,
+    private notificationService: NotificationService,
   ) {}
 
   getUser = async (userId: string) => {
@@ -66,7 +70,7 @@ export class UserServiceV2 {
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) {
     if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
@@ -74,7 +78,7 @@ export class UserServiceV2 {
           return user.type === UserType.PAGE
             ? user.toPageResponseV2()
             : await user.toUserResponseV2();
-        })
+        }),
       );
     }
 
@@ -92,30 +96,12 @@ export class UserServiceV2 {
 
     return Promise.all(
       users.map(async (item) => {
-        const syncSocials = userFields?.includes(UserField.SyncSocial)
-          ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
-          : [];
-
-        let syncSocial: SyncSocialModelV2 = {};
-        if (
+        const syncSocials =
           String(item.ownerAccount) === String(viewer.ownerAccount) &&
-          syncSocials.length > 0
-        ) {
-          syncSocials.forEach((item) => {
-            syncSocial[item.provider] = {
-              id: item._id,
-              provider: item.provider,
-              socialId: item.socialId,
-              userName: item.userName,
-              displayName: item.displayName,
-              avatar: item.avatar,
-              active: item.active,
-              autoPost: item.autoPost,
-            };
-          });
-        } else {
-          syncSocial = undefined;
-        }
+          userFields?.includes(UserField.SyncSocial)
+            ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
+            : [];
+
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(item.ownerAccount) === String(viewer.ownerAccount)
             ? await this._accountModel
@@ -138,13 +124,13 @@ export class UserServiceV2 {
                 undefined,
                 undefined,
                 undefined,
-                syncSocial,
-                content?.total
+                syncSocials,
+                content?.total,
               )
             : await item.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
-                syncSocial,
+                syncSocials,
                 balance,
               });
 
@@ -152,7 +138,7 @@ export class UserServiceV2 {
           ? relationships.find(
               ({ followedUser, user }) =>
                 String(user) === String(item.id) &&
-                String(followedUser) === String(viewer?.id)
+                String(followedUser) === String(viewer?.id),
             )
           : undefined;
 
@@ -160,7 +146,7 @@ export class UserServiceV2 {
           ? relationships.find(
               ({ followedUser, user }) =>
                 String(followedUser) === String(item.id) &&
-                String(user) === String(viewer?.id)
+                String(user) === String(viewer?.id),
             )
           : undefined;
 
@@ -169,7 +155,7 @@ export class UserServiceV2 {
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
-      })
+      }),
     );
   }
 
@@ -177,14 +163,14 @@ export class UserServiceV2 {
     user: User,
     targetUser: User,
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) => {
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     const [userResponse] = await this.convertUsersToUserResponsesV2(
       user,
       [targetUser],
       hasRelationshipExpansion,
-      userFields
+      userFields,
     );
 
     return userResponse;
@@ -205,10 +191,35 @@ export class UserServiceV2 {
       user,
       findUser,
       false,
-      [UserField.SyncSocial]
+      [UserField.SyncSocial],
     );
 
     return pages as PageResponseDto[];
+  }
+
+  async followUser(user: User, targetCastcleId: string, account: Account) {
+    const followedUser = await this.repositoryService.findUser({
+      _id: targetCastcleId,
+    });
+
+    if (!followedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    await user.follow(followedUser);
+    await this.notificationService.notifyToUser(
+      {
+        source:
+          followedUser.type === UserType.PEOPLE
+            ? NotificationSource.Profile
+            : NotificationSource.Page,
+        sourceUserId: user._id,
+        type: NotificationType.Follow,
+        profileRef: followedUser._id,
+        account: followedUser.ownerAccount,
+        read: false,
+      },
+      followedUser,
+      account.preferences?.languages[0] || LocalizationLang.English,
+    );
   }
 
   async blockUser(user: User, targetCastcleId: string) {
@@ -229,12 +240,11 @@ export class UserServiceV2 {
             user: user._id,
             followedUser: blockUser._id,
             visibility: EntityVisibility.Publish,
-            following: false,
             blocked: false,
           },
-          $set: { blocking: true },
+          $set: { blocking: true, following: false },
         },
-        { upsert: true, session }
+        { upsert: true, session },
       );
       await this.repositoryService.updateRelationship(
         { followedUser: user._id, user: blockUser._id },
@@ -248,13 +258,13 @@ export class UserServiceV2 {
           },
           $set: { blocked: true },
         },
-        { upsert: true, session }
+        { upsert: true, session },
       );
     });
     session.endSession();
   }
 
-  async unBlockUser(user: User, targetCastcleId: string) {
+  async unblockUser(user: User, targetCastcleId: string) {
     const unblockedUser = await this.repositoryService.findUser({
       _id: targetCastcleId,
     });
@@ -263,31 +273,59 @@ export class UserServiceV2 {
 
     const session = await this._relationshipModel.startSession();
     await session.withTransaction(async () => {
-      await this.repositoryService.updateRelationship(
-        {
-          user: user._id,
-          followedUser: unblockedUser._id,
-          blocking: true,
-        },
-        { $set: { blocking: false } },
-        { session }
-      );
-      await this.repositoryService.updateRelationship(
-        {
-          followedUser: user._id,
-          user: unblockedUser._id,
-          blocked: true,
-        },
-        { $set: { blocked: false } },
-        { session }
-      );
+      const [blockerRelation, blockedRelation] = await Promise.all([
+        this.repositoryService.findRelationship(
+          {
+            user: user._id,
+            followedUser: unblockedUser._id,
+          },
+          { session },
+        ),
+        this.repositoryService.findRelationship(
+          {
+            user: unblockedUser._id,
+            followedUser: user._id,
+          },
+          { session },
+        ),
+      ]);
+
+      if (blockerRelation.following || blockerRelation.blocked) {
+        await this.repositoryService.updateRelationship(
+          { _id: blockerRelation._id },
+          { $set: { blocking: false } },
+          { session },
+        );
+      } else {
+        await this.repositoryService.removeRelationship(
+          { _id: blockerRelation._id },
+          { session },
+        );
+      }
+
+      if (blockedRelation.following || blockedRelation.blocking) {
+        await this.repositoryService.updateRelationship(
+          {
+            followedUser: user._id,
+            user: unblockedUser._id,
+            blocked: true,
+          },
+          { $set: { blocked: false } },
+          { session },
+        );
+      } else {
+        await this.repositoryService.removeRelationship(
+          { _id: blockedRelation._id },
+          { session },
+        );
+      }
     });
     session.endSession();
   }
 
   async getBlockedLookup(
     user: User,
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     const filterQuery = {
       sinceId,
@@ -303,14 +341,14 @@ export class UserServiceV2 {
       .exec();
 
     const userIds = relationships.map(
-      ({ followedUser }) => followedUser as unknown as Types.ObjectId
+      ({ followedUser }) => followedUser as unknown as Types.ObjectId,
     );
 
     return this.getByCriteria(
       user,
       { _id: userIds },
       {},
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -319,29 +357,27 @@ export class UserServiceV2 {
     query: { _id: Types.ObjectId[] },
     queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) => {
     const { items: targetUsers, meta } = await this.getAllByCriteria(
       query,
-      queryOptions
+      queryOptions,
     );
     const users = await this.convertUsersToUserResponsesV2(
       viewer,
       targetUsers,
       hasRelationshipExpansion,
-      userFields
+      userFields,
     );
     return { users, meta };
   };
 
   getAllByCriteria = async (
     filterQuery: { _id: Types.ObjectId[] },
-    queryOptions?: CastcleQueryOptions
+    queryOptions?: CastcleQueryOptions,
   ) => {
     const total = await this.repositoryService.findUserCount(filterQuery);
-
     const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
-
     const users = await this.repositoryService.findUsers(filterQuery, {
       limit: queryOptions.limit,
       skip: queryOptions.page - 1,
@@ -353,4 +389,14 @@ export class UserServiceV2 {
       meta: Meta.fromDocuments(users, total),
     };
   };
+
+  async unfollowUser(user: User, targetCastcleId: string) {
+    const targetUser = await this.repositoryService
+      .findUser({ _id: targetCastcleId })
+      .exec();
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    await user.unfollow(targetUser);
+  }
 }

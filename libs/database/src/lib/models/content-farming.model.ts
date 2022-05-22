@@ -41,7 +41,7 @@ export class ContentFarmingReponse {
     contentFarming: ContentFarming,
     currentBalance: number,
     lockedBalance: number,
-    farmNo: number
+    farmNo: number,
   ) {
     //this.number
     this.number = farmNo;

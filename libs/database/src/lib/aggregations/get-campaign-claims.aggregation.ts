@@ -31,7 +31,7 @@ export type GetCampaignClaimsResponse = Campaign & {
 
 export const pipelineOfGetCampaignClaims = (
   campaignQuery: FilterQuery<Campaign>,
-  accountId: string
+  accountId: string,
 ) => [
   { $match: campaignQuery },
   {
