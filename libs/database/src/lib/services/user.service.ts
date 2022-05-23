@@ -734,7 +734,7 @@ export class UserService {
     const resultTotal = userRelationCount[0]?.total ?? 0;
     return {
       users: this.mergeRelationUser(followingUsersId, users),
-      meta: Meta.fromDocuments(userRelation, resultTotal),
+      meta: Meta.fromDocuments(userRelation, 3),
     };
   }
 

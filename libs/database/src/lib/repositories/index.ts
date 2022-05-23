@@ -90,7 +90,7 @@ type AccountQuery = {
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string | Types.ObjectId[];
+  _id?: string | Types.ObjectId[] | string[];
   accountId?: string;
   type?: UserType;
 };
@@ -457,6 +457,7 @@ export class Repository {
   }
 
   findUsers(filter: UserQuery, queryOptions?: QueryOptions) {
+    console.log(filter._id);
     return this.userModel.find(this.getUserQuery(filter), {}, queryOptions);
   }
 

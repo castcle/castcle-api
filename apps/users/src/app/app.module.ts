@@ -24,9 +24,9 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule, Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
+import { CastcleThrottlerModule } from '@castcle-api/throttler';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { CastcleThrottlerModule } from '@castcle-api/throttler';
 import {
   AwsXRayInterceptor,
   UtilsInterceptorsModule,
@@ -40,6 +40,7 @@ import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
+import { SuggestionServiceV2 } from './services/suggestion.service.v2';
 
 @Module({
   imports: [
@@ -65,6 +66,11 @@ import { SuggestionService } from './services/suggestion.service';
   ],
   providers: [
     SuggestionService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AwsXRayInterceptor,
+    },
+    SuggestionServiceV2,
     {
       provide: APP_INTERCEPTOR,
       useClass: AwsXRayInterceptor,
