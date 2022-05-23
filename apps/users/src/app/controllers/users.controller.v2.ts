@@ -36,12 +36,16 @@ import {
   CommentParam,
   CreateCommentDto,
   ExpansionQuery,
+  GetContentDto,
+  GetContentQuery,
+  GetSourceContentParam,
   GetUserParam,
   LikeCommentDto,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  QuoteCastDto,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
@@ -49,10 +53,6 @@ import {
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateUserDtoV2,
-  GetContentDto,
-  GetSourceContentParam,
-  QuoteCastDto,
-  GetContentQuery,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -80,6 +80,7 @@ import {
 import { Types } from 'mongoose';
 import { TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
+import { SuggestionServiceV2 } from '../services/suggestion.service.v2';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -94,6 +95,7 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
+    private suggestionServiceV2: SuggestionServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
@@ -720,6 +722,15 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.userServiceV2.unfollowUser(user, targetCastcleId);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery,
+  ) {
+    return await this.suggestionServiceV2.suggest(authorizer, query);
   }
 
   @CastcleBasicAuth()

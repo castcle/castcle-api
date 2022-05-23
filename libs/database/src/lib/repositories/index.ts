@@ -90,7 +90,7 @@ type AccountQuery = {
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string | Types.ObjectId[];
+  _id?: string | Types.ObjectId[] | string[];
   accountId?: string;
   type?: UserType;
 };
