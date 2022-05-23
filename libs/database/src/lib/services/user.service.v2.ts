@@ -21,8 +21,9 @@
  * or have any questions.
  */
 import { LocalizationLang } from '@castcle-api/utils/commons';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -40,8 +41,10 @@ import { UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
 import { ContentService } from './content.service';
+import { DataService } from './data.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UserServiceV2 {
@@ -58,6 +61,8 @@ export class UserServiceV2 {
     private repositoryService: Repository,
     private userService: UserService,
     private notificationService: NotificationService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private dataService: DataService,
   ) {}
 
   getUser = async (userId: string) => {
@@ -66,7 +71,7 @@ export class UserServiceV2 {
     return user;
   };
 
-  async convertUsersToUserResponsesV2(
+  private async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
@@ -399,4 +404,96 @@ export class UserServiceV2 {
 
     await user.unfollow(targetUser);
   }
+
+  async suggest(authorizer: Authorizer, pageQuery: PaginationQuery) {
+    let sliceUsers: User[] = [];
+    let users: User[] = [];
+
+    if (pageQuery.sinceId || pageQuery.untilId) {
+      users = await this.querySuggestByCache(authorizer, pageQuery);
+      let currentUserIndex = users.findIndex(
+        (user) => user._id === pageQuery.sinceId,
+      );
+      if (pageQuery.untilId) {
+        currentUserIndex++;
+        sliceUsers = users.slice(
+          currentUserIndex,
+          currentUserIndex + pageQuery.maxResults,
+        );
+      } else {
+        sliceUsers = users.slice(
+          Math.max(currentUserIndex - pageQuery.maxResults, 0),
+          pageQuery.maxResults,
+        );
+      }
+    } else {
+      users = await this.querySuggestByDataScience(authorizer);
+      sliceUsers = users.slice(0, pageQuery.maxResults);
+    }
+
+    const usersConvert = await this.convertUsersToUserResponsesV2(
+      authorizer.user,
+      sliceUsers,
+      pageQuery.userFields?.includes(UserField.Relationships),
+    );
+
+    return {
+      payload: usersConvert,
+      meta: Meta.fromDocuments(sliceUsers),
+    };
+  }
+
+  private async querySuggestByCache(
+    authorizer: Authorizer,
+    pageQuery: PaginationQuery,
+  ) {
+    let suggestUser: { engagements: number; userId: string }[] =
+      await this.cacheManager.get(
+        this._suggestKey(authorizer.credential.accessToken),
+      );
+    let reqUserIndex = suggestUser.findIndex(
+      (user) => user.userId === (pageQuery.untilId ?? pageQuery.sinceId),
+    );
+
+    if (reqUserIndex === -1) return [];
+
+    if (pageQuery.untilId) {
+      reqUserIndex++;
+      suggestUser = suggestUser.slice(reqUserIndex, suggestUser.length);
+    } else {
+      suggestUser = suggestUser.slice(0, reqUserIndex);
+    }
+    const userFiltered = await this.findUsersAndFilter(suggestUser);
+
+    return userFiltered;
+  }
+
+  private async querySuggestByDataScience(authorizer: Authorizer) {
+    const suggestUser = await this.dataService.getFollowingSuggestions(
+      authorizer.account.id,
+    );
+    const userFiltered = await this.findUsersAndFilter(suggestUser);
+    const newSuggest = userFiltered.map((item) => {
+      return suggestUser.find((suggest) => suggest.userId === item.id);
+    });
+    this.cacheManager.set(
+      this._suggestKey(authorizer.credential.accessToken),
+      newSuggest,
+    );
+
+    return userFiltered;
+  }
+
+  private async findUsersAndFilter(
+    suggestUser: { engagements: number; userId: string }[],
+  ) {
+    const userIds = suggestUser.map((item) => item.userId);
+    const usersList = await Promise.all(
+      userIds.map((uid) => this.repositoryService.findUser({ _id: uid })),
+    );
+
+    return usersList.filter(Boolean);
+  }
+
+  _suggestKey = (token: string) => `suggest-v2-${token}`;
 }

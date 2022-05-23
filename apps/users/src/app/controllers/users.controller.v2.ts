@@ -80,7 +80,6 @@ import {
 import { Types } from 'mongoose';
 import { TargetCastcleDto } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
-import { SuggestionServiceV2 } from '../services/suggestion.service.v2';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -95,7 +94,6 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
-    private suggestionServiceV2: SuggestionServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
@@ -730,7 +728,7 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: PaginationQuery,
   ) {
-    return await this.suggestionServiceV2.suggest(authorizer, query);
+    return await this.userServiceV2.suggest(authorizer, query);
   }
 
   @CastcleBasicAuth()

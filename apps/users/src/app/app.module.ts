@@ -40,7 +40,6 @@ import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
-import { SuggestionServiceV2 } from './services/suggestion.service.v2';
 
 @Module({
   imports: [
@@ -66,11 +65,6 @@ import { SuggestionServiceV2 } from './services/suggestion.service.v2';
   ],
   providers: [
     SuggestionService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-    SuggestionServiceV2,
     {
       provide: APP_INTERCEPTOR,
       useClass: AwsXRayInterceptor,
