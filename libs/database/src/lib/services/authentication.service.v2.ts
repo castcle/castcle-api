@@ -578,14 +578,16 @@ export class AuthenticationServiceV2 {
     userAgent?: string;
   }) {
     try {
-      const existingOtp = await this.repository.findOtp({
+      const otp = await this.repository.findOtp({
         channel,
         objective,
         receiver,
       });
 
-      if (existingOtp?.isValid()) return existingOtp;
-      else if (existingOtp) await existingOtp.remove();
+      if (otp?.isValid()) return otp;
+      if (otp?.exceededUsageLimit()) {
+        throw CastcleException.OTP_USAGE_LIMIT_EXCEEDED;
+      }
 
       const user = await this.repository.findUser({ accountId: account._id });
       const { sid } = await this.twilioClient.requestOtp({
@@ -595,19 +597,29 @@ export class AuthenticationServiceV2 {
         receiver,
         config: OtpTemplateMessage.from(objective, user?.displayName),
       });
+      const expiryDate = DateTime.now()
+        .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
+        .toJSDate();
 
-      return this.repository.createOtp({
-        channel,
-        accountId: account._id,
-        objective,
-        requestId: requestedBy,
-        verified: false,
-        receiver,
-        sid,
-        expiryDate: DateTime.now()
-          .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
-          .toJSDate(),
-      });
+      return otp
+        ? otp
+            .set({
+              sid,
+              requestId: requestedBy,
+              expireDate: expiryDate,
+              sentAt: [...otp.sentAt, new Date()],
+            })
+            .save()
+        : this.repository.createOtp({
+            channel,
+            accountId: account._id,
+            objective,
+            requestId: requestedBy,
+            verified: false,
+            receiver,
+            sid,
+            expiryDate,
+          });
     } catch (error) {
       this.logger.error(error, 'requestOtpByEmail');
       if (error.message === TwilioErrorMessage.TOO_MANY_REQUESTS) {
@@ -645,6 +657,7 @@ export class AuthenticationServiceV2 {
 
     if (objective !== OtpObjective.MergeAccount) return { otp };
 
+    await this.linkCredentialToAccount(credential, account);
     const { accessToken } = await this.login(credential, account);
     return { otp, accessToken };
   }
@@ -701,12 +714,10 @@ export class AuthenticationServiceV2 {
       throw CastcleException.INVALID_REF_CODE;
     }
     if (!existingOtp.isValid()) {
-      await existingOtp.remove();
       throw CastcleException.EXPIRED_OTP;
     }
-    if (existingOtp.retry >= Environment.OTP_MAX_RETRIES) {
+    if (existingOtp.exceededMaxRetries()) {
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      await existingOtp.remove();
       throw CastcleException.LOCKED_OTP;
     }
 
@@ -721,7 +732,6 @@ export class AuthenticationServiceV2 {
       this.logger.error(error, 'verifyOtp');
       if (error instanceof CastcleException) throw error;
       await this.twilioClient.cancelOtp(existingOtp.sid);
-      await existingOtp.remove();
       throw CastcleException.EXPIRED_OTP;
     }
   }

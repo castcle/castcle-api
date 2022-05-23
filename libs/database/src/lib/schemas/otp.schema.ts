@@ -49,7 +49,10 @@ class OtpDocument extends CastcleBase {
   @Prop({ required: true })
   expireDate: Date;
 
-  @Prop()
+  @Prop({ default: [] })
+  sentAt: Date[];
+
+  @Prop({ default: 0 })
   retry: number;
 
   @Prop()
@@ -69,6 +72,8 @@ class OtpDocument extends CastcleBase {
 }
 
 export class Otp extends OtpDocument {
+  exceededMaxRetries: () => boolean;
+  exceededUsageLimit: () => boolean;
   isValid: () => boolean;
   isValidVerifyMobileOtp: () => boolean;
   markVerified: () => this;
@@ -131,13 +136,30 @@ OtpSchema.statics.generate = async function (
     sid,
     expireDate,
     reciever: receiver,
+    sentAt: [new Date()],
   }).save();
 };
 
+OtpSchema.methods.exceededMaxRetries = function () {
+  return this.retry > Environment.OTP_MAX_RETRIES;
+};
+
+OtpSchema.methods.exceededUsageLimit = function () {
+  const maxUsage =
+    this.channel === TwilioChannel.EMAIL
+      ? Environment.OTP_EMAIL_MAX_USAGE
+      : Environment.OTP_PHONE_MAX_USAGE;
+  const hours =
+    this.channel === TwilioChannel.EMAIL
+      ? Environment.OTP_EMAIL_MAX_USAGE_HOURS
+      : Environment.OTP_PHONE_MAX_USAGE_HOURS;
+  const sendAfter = DateTime.now().minus({ hours }).toJSDate();
+  const sending = this.sentAt.filter((sentAt) => sentAt >= sendAfter);
+  return sending.length > maxUsage;
+};
+
 OtpSchema.methods.isValid = function () {
-  const now = new Date().getTime();
-  const expireDate = (this as Otp).expireDate.getTime();
-  return expireDate - now >= 0;
+  return this.expireDate >= new Date();
 };
 
 OtpSchema.methods.isValidVerifyMobileOtp = function () {
