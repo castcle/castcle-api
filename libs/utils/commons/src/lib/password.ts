@@ -22,6 +22,7 @@
  */
 
 import * as bcrypt from 'bcryptjs';
+import { customAlphabet } from 'nanoid';
 import { CastcleRegExp } from './regexp';
 
 const saltRounds = 10;
@@ -39,24 +40,11 @@ const verify = (password: string, encryptPassword: string) =>
   bcrypt.compareSync(password, encryptPassword);
 
 /**
- * random a number 0 - 9
- * @returns {number}
- */
-const randomZeroToNine = () => {
-  let randNumber = Math.floor(Math.random() * 10);
-  if (randNumber === 10) randNumber = 9;
-  return randNumber;
-};
-
-/**
  * Random X digits number
- * @param {number} digit
- * @returns {string}
+ * @param {number} digits
  */
-const generateRandomDigits = (digit: number) => {
-  let refCode = '';
-  for (let i = 0; i < digit; i++) refCode += randomZeroToNine();
-  return refCode;
+const generateRandomDigits = (digits: number) => {
+  return customAlphabet('1234567890')(digits);
 };
 
 export const Password = {

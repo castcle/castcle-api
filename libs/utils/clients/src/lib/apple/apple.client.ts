@@ -29,7 +29,7 @@ import {
   AppleSignIn,
   RefreshTokenResponse,
 } from 'apple-sign-in-rest';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 @Injectable()
 export class AppleClient {
@@ -68,7 +68,7 @@ export class AppleClient {
       scope: ['name', 'email'],
       redirectUri: callBackUrl,
       state: new Date().getTime().toString(),
-      nonce: uuidv4(),
+      nonce: nanoid(),
     });
   }
 
