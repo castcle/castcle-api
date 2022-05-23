@@ -144,7 +144,7 @@ export class AdsService {
         campaign: cpm.adsCampignId,
         contents: contentIds,
         cost: {
-          UST: cpm.bidding_cpm,
+          UST: cpm.biddingCpm,
         },
         viewer: mongoose.Types.ObjectId(viewerAccountId),
       });
@@ -491,41 +491,37 @@ export class AdsService {
     const ads = await this._adsCampaignModel
       .aggregate(pipe2AvaialableAdsCampaign())
       .exec();
-    console.log('===--=getAds');
-    console.log(ads);
-    console.log(ads.length);
-
     const releventScore = await this.dataService.personalizeContents(
       accountId,
       ads.map((a) => a.adsRef.$id || a.adsRef.oid),
-    ); // O ?
-    const cpms: AdsCpm[] = [];
-    for (let i = 0; i < ads.length; i++) {
-      cpms[i] = { cpm: ads.length * Environment.ADS_MINIMUM_CPM };
-      if (cpms[i].cpm > ads[i].budgetLeft) cpms[i].cpm = ads[i].budgetLeft;
-      cpms[i].bidding_cpm = cpms[i].cpm;
-      cpms[i].relevance_score =
-        releventScore[ads[i].adsRef.$id || ads[i].adsRef.oid];
-      cpms[i].ranking_score = cpms[i].relevance_score * cpms[i].bidding_cpm;
-      cpms[i].adsCampignId = String(ads[i]._id);
-    }
-    //
-    const sortedCpms = cpms.sort((a, b) =>
-      a.ranking_score < b.ranking_score ? -1 : 1,
     );
-    for (let i = 0; i < sortedCpms.length; i++) {
-      if (i == 0) sortedCpms[i].bidding_cpm = Environment.ADS_MINIMUM_CPM;
-      else {
-        const bid = Math.min(
-          (i + 1) * Environment.ADS_MINIMUM_CPM,
-          sortedCpms[i].bidding_cpm,
-        );
-        sortedCpms[i].bidding_cpm =
-          Math.floor(bid / Environment.ADS_MINIMUM_CPM) *
-          Environment.ADS_MINIMUM_CPM;
-      }
-    }
-    return sortedCpms.reverse(); //most score show up first
+    return ads
+      .sort(
+        (a, b) =>
+          releventScore[b.adsRef.$id || b.adsRef.oid] -
+          releventScore[a.adsRef.$id || a.adsRef.oid],
+      )
+      .map((sortedAds, index) => {
+        const adsCpm: AdsCpm = {
+          cpm:
+            ads.length * Environment.ADS_MINIMUM_CPM > sortedAds.budgetLeft
+              ? sortedAds.budgetLeft
+              : ads.length * Environment.ADS_MINIMUM_CPM,
+        };
+        const bid =
+          index === ads.length - 1
+            ? Environment.ADS_MINIMUM_CPM
+            : Math.min(
+                (ads.length - index) * Environment.ADS_MINIMUM_CPM,
+                adsCpm.cpm,
+              );
+        adsCpm.biddingCpm = bid;
+        adsCpm.relevanceScore =
+          releventScore[sortedAds.adsRef.$id || sortedAds.adsRef.oid];
+        adsCpm.rankingScore = adsCpm.relevanceScore * adsCpm.biddingCpm;
+        adsCpm.adsCampignId = String(sortedAds._id);
+        return adsCpm;
+      });
   };
 
   auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];

@@ -52,14 +52,3 @@ export const mockContents = async (
   }
   return contents;
 };
-
-export const mockPersonalizeContents = async (
-  accontId: string,
-  contentIds: string[],
-) => {
-  const answer = {};
-  contentIds.forEach((id) => {
-    answer[id] = Math.random();
-  });
-  return answer;
-};

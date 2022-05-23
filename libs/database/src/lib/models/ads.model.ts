@@ -20,8 +20,8 @@ export enum AdsPaymentMethod {
 
 export type AdsCpm = {
   cpm?: number;
-  bidding_cpm?: number;
-  relevance_score?: number;
-  ranking_score?: number;
+  biddingCpm?: number;
+  relevanceScore?: number;
+  rankingScore?: number;
   adsCampignId?: string;
 };
