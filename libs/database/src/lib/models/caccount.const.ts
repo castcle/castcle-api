@@ -50,4 +50,7 @@ export const CACCOUNT_NO = {
       },
     },
   },
+  SOCIAL_REWARD: {
+    NO: '9000',
+  },
 };
