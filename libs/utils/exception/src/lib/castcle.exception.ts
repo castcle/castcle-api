@@ -76,6 +76,7 @@ export class CastcleException<T = any> extends Error {
   static NO_PASSWORD_SET = new CastcleException('3024');
   static EMAIL_NOT_FOUND = new CastcleException('3025');
   static MOBILE_NOT_FOUND = new CastcleException('3026');
+  static OTP_USAGE_LIMIT_EXCEEDED = new CastcleException('3027');
   static USER_OR_PAGE_NOT_FOUND = new CastcleException('4001');
   static CAMPAIGN_HAS_NOT_STARTED = new CastcleException('4002');
   static NOT_ELIGIBLE_FOR_CAMPAIGN = new CastcleException('4003');

@@ -100,6 +100,12 @@ export class Environment {
   static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
   /** @default 10 minutes */
   static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EMAIL_EXPIRES_IN) || 10;
+  static OTP_EMAIL_MAX_USAGE = Number(process.env.OTP_EMAIL_MAX_USAGE) || 10;
+  static OTP_EMAIL_MAX_USAGE_HOURS =
+    Number(process.env.OTP_EMAIL_MAX_USAGE_HOURS) || 24;
+  static OTP_PHONE_MAX_USAGE = Number(process.env.OTP_PHONE_MAX_USAGE) || 5;
+  static OTP_PHONE_MAX_USAGE_HOURS =
+    Number(process.env.OTP_PHONE_MAX_USAGE_HOURS) || 24;
   static OTP_MAX_RETRIES = Number(process.env.OTP_MAX_RETRIES) || 3;
 
   // Firebase

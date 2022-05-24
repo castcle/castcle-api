@@ -216,6 +216,11 @@ export const DefaultErrors = {
     code: '3026',
     message: 'Mobile could not be found. Please try again.',
   },
+  '3027': {
+    statusCode: '400',
+    code: '3027',
+    message: 'OTP usage limit exceeded',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
