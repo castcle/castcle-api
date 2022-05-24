@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { Module } from '@nestjs/common';
@@ -45,7 +44,7 @@ import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 
 @Module({
-  imports: [DatabaseModule, CaslModule, CastcleCacheModule],
+  imports: [DatabaseModule, CastcleCacheModule],
   controllers: [],
   providers: [],
   exports: [],
