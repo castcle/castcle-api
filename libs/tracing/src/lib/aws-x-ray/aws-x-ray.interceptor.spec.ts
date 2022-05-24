@@ -23,9 +23,9 @@
 
 import { TracingService } from '@narando/nest-xray';
 import { of, lastValueFrom } from 'rxjs';
-import { AwsXRayInterceptor } from './aws-xray.interceptor';
+import { AwsXRayInterceptor } from './aws-x-ray.interceptor';
 
-describe('#AWSXRayInterceptor', () => {
+describe('#AWS XRayInterceptor', () => {
   const handler = {
     getHandler: jest.fn().mockReturnValue({ name: 'test' }),
   } as any;

@@ -22,39 +22,31 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleCacheModule, Environment } from '@castcle-api/environments';
-import { HealthyModule } from '@castcle-api/healthy';
+import { CastcleCacheModule } from '@castcle-api/environments';
+import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
-import { TracingModule } from '@narando/nest-xray';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesController } from './controllers/pages.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
+import { CastcleTracingModule } from '@castcle-api/tracing';
 
 @Module({
   imports: [
     CastcleCacheModule,
+    CastcleHealthyModule.register({ pathPrefix: 'users' }),
     CastcleThrottlerModule,
+    CastcleTracingModule.forRoot({ serviceName: 'users' }),
     DatabaseModule,
-    HealthyModule,
-    RouterModule.register([{ path: 'users', module: HealthyModule }]),
-    UtilsInterceptorsModule,
     UtilsAwsModule,
     UtilsClientsModule,
-    TracingModule.forRoot({
-      serviceName: 'users',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
+    UtilsInterceptorsModule,
   ],
   controllers: [
     NotificationsController,
@@ -63,12 +55,6 @@ import { SuggestionService } from './services/suggestion.service';
     UsersController,
     UsersControllerV2,
   ],
-  providers: [
-    SuggestionService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
+  providers: [SuggestionService],
 })
 export class AppModule {}

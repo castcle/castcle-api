@@ -26,6 +26,7 @@
       "@castcle-api/healthy": ["libs/healthy/src/index.ts"],
       "@castcle-api/logger": ["libs/logger/src/index.ts"],
       "@castcle-api/throttler": ["libs/throttler/src/index.ts"],
+      "@castcle-api/tracing": ["libs/tracing/src/index.ts"],
       "@castcle-api/utils/aws": ["libs/utils/aws/src/index.ts"],
       "@castcle-api/utils/clients": ["libs/utils/clients/src/index.ts"],
       "@castcle-api/utils/commons": ["libs/utils/commons/src/index.ts"],
