@@ -288,7 +288,7 @@ export class AppService {
         exOtp.isValid() &&
         exOtp.channel === channel &&
         exOtp.action === objective &&
-        exOtp.reciever === receiver
+        exOtp.receiver === receiver
       ) {
         existingOtp = exOtp;
       } else {

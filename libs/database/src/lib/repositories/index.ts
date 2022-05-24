@@ -692,14 +692,16 @@ export class Repository {
   findOtp(dto: {
     channel?: TwilioChannel;
     isValid?: boolean;
+    verified?: boolean;
     objective?: OtpObjective;
     receiver?: string;
   }) {
-    const query: FilterQuery<Otp> = { isVerify: false };
+    const query: FilterQuery<Otp> = { completedAt: { $exists: false } };
 
     if (dto.channel) query.channel = dto.channel;
     if (dto.objective) query.action = dto.objective;
-    if (dto.receiver) query.reciever = dto.receiver;
+    if (dto.receiver) query.receiver = dto.receiver;
+    if (isBoolean(dto.verified)) query.isVerify = dto.verified;
     if (isBoolean(dto.isValid))
       query.expireDate = { [dto.isValid ? '$gte' : '$lt']: new Date() };
 

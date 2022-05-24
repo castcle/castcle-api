@@ -68,14 +68,19 @@ class OtpDocument extends CastcleBase {
   sid: string;
 
   @Prop()
-  reciever: string;
+  receiver: string;
+
+  @Prop()
+  completedAt?: Date;
 }
 
 export class Otp extends OtpDocument {
   exceededMaxRetries: () => boolean;
   exceededUsageLimit: () => boolean;
+  failedToVerify: () => this;
   isValid: () => boolean;
   isValidVerifyMobileOtp: () => boolean;
+  markCompleted: () => this;
   markVerified: () => this;
 }
 
@@ -135,7 +140,7 @@ OtpSchema.statics.generate = async function (
     isVerify: verified,
     sid,
     expireDate,
-    reciever: receiver,
+    receiver,
     sentAt: [new Date()],
   }).save();
 };
@@ -158,6 +163,11 @@ OtpSchema.methods.exceededUsageLimit = function () {
   return sending.length > maxUsage;
 };
 
+OtpSchema.methods.failedToVerify = function () {
+  this.retry += 1;
+  if (this.exceededMaxRetries()) this.isVerify = false;
+};
+
 OtpSchema.methods.isValid = function () {
   return this.expireDate >= new Date();
 };
@@ -168,8 +178,17 @@ OtpSchema.methods.isValidVerifyMobileOtp = function () {
   );
 };
 
+OtpSchema.methods.markCompleted = function () {
+  this.completedAt = new Date();
+  return this;
+};
+
 OtpSchema.methods.markVerified = function () {
   this.isVerify = true;
   this.refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
+  this.expireDate = DateTime.now()
+    .plus({ seconds: Environment.OTP_EXPIRES_IN })
+    .toJSDate();
+
   return this;
 };

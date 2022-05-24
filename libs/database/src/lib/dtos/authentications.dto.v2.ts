@@ -128,3 +128,19 @@ export class VerifyOtpByMobileDto {
   @IsNotEmpty()
   otp: string;
 }
+
+export class ChangePasswordDto {
+  @IsEnum([OtpObjective.ChangePassword, OtpObjective.ForgotPassword])
+  objective: OtpObjective;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  newPassword: string;
+}
