@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule, Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
@@ -50,7 +49,6 @@ import { AppService, SuggestionService } from './services';
     CastcleCacheModule,
     CastcleThrottlerModule,
     DatabaseModule,
-    CaslModule,
     HealthyModule,
     RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,

@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { HealthyModule } from '@castcle-api/healthy';
@@ -40,7 +39,6 @@ import { AuthenticationControllerV2 } from './controllers/authentications.contro
   imports: [
     CastcleThrottlerModule,
     DatabaseModule,
-    CaslModule,
     HealthyModule,
     RouterModule.register([{ path: 'authentications', module: HealthyModule }]),
     UtilsClientsModule,
