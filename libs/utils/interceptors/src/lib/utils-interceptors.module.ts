@@ -34,7 +34,6 @@ import {
   CredentialInterceptor,
   CredentialRequest,
 } from './credential/credential.interceptor';
-import { ExceptionFilter } from './exception/exception.interceptor';
 import {
   HeadersInterceptor,
   HeadersRequest,
@@ -61,6 +60,5 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionFilter,
   IpTrackerInterceptor,
 };

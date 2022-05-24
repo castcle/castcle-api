@@ -23,7 +23,7 @@
 
 import { Configs, Environment } from '@castcle-api/environments';
 import { Documentation } from '@castcle-api/utils/commons';
-import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
@@ -36,7 +36,7 @@ async function bootstrap() {
   Documentation.setup('Analytics', app);
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));
-  app.useGlobalFilters(new ExceptionFilter());
+  app.useGlobalFilters(new CastcleExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors();
   app.enableVersioning({
