@@ -20,30 +20,19 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleException } from './exception';
+import { CastcleErrors } from './errors';
 
-import { Environment } from '@castcle-api/environments';
-import { CastcleException } from '@castcle-api/utils/exception';
-import {
-  Catch,
-  ArgumentsHost,
-  ExceptionFilter as NestExceptionFilter,
-} from '@nestjs/common';
-import { Request, Response } from 'express';
-import { getLanguageFromRequest } from '../util';
+describe('CastcleException', () => {
+  Object.keys(CastcleErrors.default).forEach(
+    (key: keyof typeof CastcleErrors.default) => {
+      it(`should throw ${key} and code ${key} with message '${CastcleErrors.default[key].message}' when called`, () => {
+        const exception = new CastcleException(key);
 
-@Catch(CastcleException)
-export class ExceptionFilter implements NestExceptionFilter {
-  catch(exception: CastcleException, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
-    const response = ctx.getResponse<Response>();
-    const language = ['development', 'localhost'].includes(Environment.NODE_ENV)
-      ? 'dev'
-      : getLanguageFromRequest(request);
-    const localizedException = exception.getLocalizedException(language);
-
-    response
-      .status(localizedException.getStatus())
-      .json(localizedException.getResponse());
-  }
-}
+        expect(() => {
+          throw exception.getLocalizedException();
+        }).toThrowError(exception.message);
+      });
+    },
+  );
+});
