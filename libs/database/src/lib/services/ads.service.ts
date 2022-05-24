@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -29,7 +30,7 @@ import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import {
   GetAdsPriceResponse,
-  pipe2AdsAuctionPrice,
+  pipe2AvaialableAdsCampaign,
 } from '../aggregations/ads.aggregation';
 import {
   ContentPayloadItem,
@@ -44,6 +45,7 @@ import {
 } from '../dtos/ads.dto';
 import {
   AdsBoostStatus,
+  AdsCpm,
   AdsPaymentMethod,
   AdsStatus,
   CACCOUNT_NO,
@@ -137,18 +139,12 @@ export class AdsService {
     const session = await this._adsPlacementModel.startSession();
     try {
       session.startTransaction();
-      const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
-        pipe2AdsAuctionPrice(),
-      );
-      const selectAds = await this.selectAdsFromActiveAds(
-        price[0],
-        viewerAccountId,
-      );
+      const cpm = await this.auctionAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
-        campaign: selectAds,
+        campaign: cpm.adsCampignId,
         contents: contentIds,
         cost: {
-          UST: price[0].price,
+          UST: cpm.biddingCpm,
         },
         viewer: mongoose.Types.ObjectId(viewerAccountId),
       });
@@ -236,9 +232,9 @@ export class AdsService {
    * @param adsRequest
    * @returns
    */
-  validateAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  validateAds = async (user: User, adsRequest: AdsRequestDto) => {
     const balance = await this.taccountService.getAccountBalance(
-      String(account._id),
+      user.id,
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
         : WalletType.PERSONAL,
@@ -255,7 +251,7 @@ export class AdsService {
    * @param adsRequest
    * @returns {AdsCampaign}
    */
-  createAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  createAds = async (user: User, adsRequest: AdsRequestDto) => {
     const adsRef = adsRequest.userId
       ? {
           $ref: 'user',
@@ -265,17 +261,17 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    if (!(await this.validateAds(account, adsRequest)))
+    if (!(await this.validateAds(user, adsRequest)))
       throw CastcleException.INVALID_TRANSACTIONS_DATA;
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
-      owner: account._id,
+      owner: user.ownerAccount,
       objective: adsRequest.objective,
       detail: {
         name: adsRequest.campaignName,
         message: adsRequest.campaignMessage,
-        code: this.getCode(account), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
+        code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
@@ -489,4 +485,44 @@ export class AdsService {
           adsPlacement: adsPlacement,
         };
   };
+
+  getAds = async (accountId: string) => {
+    //select all ads that user Balance > budget
+    const ads = await this._adsCampaignModel
+      .aggregate(pipe2AvaialableAdsCampaign())
+      .exec();
+    const releventScore = await this.dataService.personalizeContents(
+      accountId,
+      ads.map((a) => a.adsRef.$id || a.adsRef.oid),
+    );
+    return ads
+      .sort(
+        (a, b) =>
+          releventScore[b.adsRef.$id || b.adsRef.oid] -
+          releventScore[a.adsRef.$id || a.adsRef.oid],
+      )
+      .map((sortedAds, index) => {
+        const adsCpm: AdsCpm = {
+          cpm:
+            ads.length * Environment.ADS_MINIMUM_CPM > sortedAds.budgetLeft
+              ? sortedAds.budgetLeft
+              : ads.length * Environment.ADS_MINIMUM_CPM,
+        };
+        const bid =
+          index === ads.length - 1
+            ? Environment.ADS_MINIMUM_CPM
+            : Math.min(
+                (ads.length - index) * Environment.ADS_MINIMUM_CPM,
+                adsCpm.cpm,
+              );
+        adsCpm.biddingCpm = bid;
+        adsCpm.relevanceScore =
+          releventScore[sortedAds.adsRef.$id || sortedAds.adsRef.oid];
+        adsCpm.rankingScore = adsCpm.relevanceScore * adsCpm.biddingCpm;
+        adsCpm.adsCampignId = String(sortedAds._id);
+        return adsCpm;
+      });
+  };
+
+  auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
 }

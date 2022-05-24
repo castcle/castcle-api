@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
 import { DataStatistic } from './data-statistic.schema';
 
 /**
@@ -32,10 +33,10 @@ export class AdsStatistic extends DataStatistic {
   @Prop()
   cpm: number;
 
-  @Prop()
+  @Prop({ type: SchemaTypes.Decimal128 })
   dailySpent: number;
 
-  @Prop()
+  @Prop({ type: SchemaTypes.Decimal128 })
   budgetSpent: number;
 
   @Prop()

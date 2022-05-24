@@ -17,3 +17,11 @@ export enum AdsPaymentMethod {
   TOKEN_WALLET = 'token-wallet',
   CREDIT_CARD = 'credit-card',
 }
+
+export type AdsCpm = {
+  cpm?: number;
+  biddingCpm?: number;
+  relevanceScore?: number;
+  rankingScore?: number;
+  adsCampignId?: string;
+};

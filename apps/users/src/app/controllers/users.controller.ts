@@ -552,11 +552,11 @@ export class UsersController {
   @CastcleBasicAuth()
   @Post('me/advertise')
   async createAds(
-    @Auth() { account }: Authorizer,
+    @Auth() { user }: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
     //check if
-    const campaign = await this.adsService.createAds(account, adsRequestDto);
+    const campaign = await this.adsService.createAds(user, adsRequestDto);
     const response = await this.adsService.transformAdsCampaignToAdsResponse(
       campaign,
     );
@@ -931,7 +931,7 @@ export class UsersController {
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
-    if (otp.reciever !== countryCode + mobileNumber)
+    if (otp.receiver !== countryCode + mobileNumber)
       throw CastcleException.INVALID_PHONE_NUMBER;
 
     const isFirstTimeVerification = !user.verified.mobile;

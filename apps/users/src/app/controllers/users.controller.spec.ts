@@ -1271,13 +1271,13 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, adsInput);
     });
     it('should be able to get list ads exist.', async () => {
       const adsResponse = await appController.listAds(
@@ -1341,13 +1341,13 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, adsInput);
     });
     it('should be able to lookup ads detail exist.', async () => {
       const adsResponse = await appController.lookupAds(
@@ -1562,13 +1562,13 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, adsInput);
     });
     describe('#updateAds', () => {
       it('should be able update ads is correct.', async () => {
@@ -1605,7 +1605,7 @@ describe('AppController', () => {
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
-        ads = await adsService.createAds(mocks[0].account, adsInput);
+        ads = await adsService.createAds(mocks[0].user, adsInput);
         await adsService._adsCampaignModel.updateOne(
           { _id: ads._id },
           {

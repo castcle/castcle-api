@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { Action, CaslAbilityFactory } from '@castcle-api/casl';
 import {
   ContentService,
   NotificationService,
@@ -41,7 +40,6 @@ import {
   ResponseDto,
   SaveContentDto,
 } from '@castcle-api/database/dtos';
-import { Content, User } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -83,7 +81,6 @@ export class ContentController {
     private readonly appService: AppService,
     private userService: UserService,
     private contentService: ContentService,
-    private caslAbility: CaslAbilityFactory,
     private notifyService: NotificationService,
   ) {}
 
@@ -92,22 +89,13 @@ export class ContentController {
   @CastcleBasicAuth()
   @Post('feed')
   async createFeedContent(
+    @Auth() authorizer: Authorizer,
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
-    @Req() req: CredentialRequest,
   ) {
-    const ability = this.caslAbility.createForCredential(req.$credential);
-
-    if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
-
     const user = await this.userService.getByIdOrCastcleId(body.castcleId);
-    const authorizedUser = await this.userService.getUserFromCredential(
-      req.$credential,
-    );
 
-    if (String(user.ownerAccount) !== String(authorizedUser.ownerAccount)) {
-      throw CastcleException.FORBIDDEN;
-    }
+    authorizer.requestAccessForAccount(user?.ownerAccount);
 
     const uploadedBody = await this.appService.uploadContentToS3(body, user);
     const content = await this.contentService.createContentFromUser(
@@ -116,7 +104,7 @@ export class ContentController {
     );
 
     return this.contentService.convertContentToContentResponse(
-      authorizedUser,
+      authorizer.user,
       content,
       [],
       hasRelationshipExpansion,
@@ -158,54 +146,31 @@ export class ContentController {
     }
   }
 
-  async _checkPermissionForUpdate(content: Content, req: CredentialRequest) {
-    if (
-      req.$credential.account.isGuest ||
-      !req.$credential.account.activateDate
-    )
-      throw CastcleException.FORBIDDEN;
-    const users = await this.userService.getUserAndPagesFromCredential(
-      req.$credential,
-    );
-    console.log('caslUser', users as User[]);
-    const ability = this.caslAbility.getUserManageContentAbility(
-      users,
-      content,
-    );
-    const result = ability.can(Action.Update, Content);
-    console.log('result', result);
-    /*const result = this.contentService.checkUserPermissionForEditContent(
-      user,
-      content
-    );*/
-    if (result) return true;
-    else throw CastcleException.FORBIDDEN;
-  }
-
   @ApiBody({ type: SaveContentDto })
   @ApiOkResponse({ type: ContentResponse })
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Put(':id')
   async updateContentFromId(
+    @Auth() authorizer: Authorizer,
     @Body(new SaveContentPipe()) body: SaveContentDto,
     @Param('id') id: string,
     @Query() { hasRelationshipExpansion }: ExpansionQuery,
-    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
+    const user = await this.userService.getByIdOrCastcleId(
+      content?.author?.castcleId,
+    );
 
-    await this._checkPermissionForUpdate(content, req);
+    authorizer.requestAccessForAccount(user.ownerAccount);
 
-    const user = await this.userService.getUserFromCredential(req.$credential);
-    const newBody = await this.appService.uploadContentToS3(body, user);
-
+    const dto = await this.appService.uploadContentToS3(body, authorizer.user);
     const updatedContent = await this.contentService.updateContentFromId(
       content._id,
-      newBody,
+      dto,
     );
 
     return this.contentService.convertContentToContentResponse(
-      user,
+      authorizer.user,
       updatedContent,
       [],
       hasRelationshipExpansion,
@@ -217,12 +182,16 @@ export class ContentController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async deleteContentFromId(
+    @Auth() authorizer: Authorizer,
     @Param('id') id: string,
-    @Req() req: CredentialRequest,
   ) {
     const content = await this._getContentIfExist(id);
+    const user = await this.userService.getByIdOrCastcleId(
+      content?.author?.castcleId,
+    );
 
-    await this._checkPermissionForUpdate(content, req);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
     await this.contentService.deleteContentFromId(content._id);
   }
 

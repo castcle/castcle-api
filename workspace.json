@@ -161,29 +161,6 @@
       },
       "tags": []
     },
-    "casl": {
-      "root": "libs/casl",
-      "sourceRoot": "libs/casl/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/casl/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/casl"],
-          "options": {
-            "jestConfig": "libs/casl/jest.config.ts",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
     "database": {
       "root": "libs/database",
       "sourceRoot": "libs/database/src",

@@ -48,17 +48,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Action, CaslAbilityFactory } from '@castcle-api/casl';
-import { Content } from '@castcle-api/database/schemas';
-import { SaveContentPipe } from './../pipes/save-content.pipe';
+import { SaveContentPipe } from '../pipes/save-content.pipe';
 
 @CastcleControllerV2({ path: 'contents' })
 export class ContentControllerV2 {
   private logger = new CastLogger(ContentControllerV2.name);
-  constructor(
-    private contentServiceV2: ContentServiceV2,
-    private caslAbility: CaslAbilityFactory,
-  ) {}
+
+  constructor(private contentServiceV2: ContentServiceV2) {}
 
   @CastcleAuth(CacheKeyName.Contents)
   @Get(':contentId')
@@ -176,10 +172,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Body(new SaveContentPipe()) body: CreateContentDto,
   ) {
-    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
-
-    const ability = this.caslAbility.createForCredential(authorizer.credential);
-    if (!ability.can(Action.Create, Content)) throw CastcleException.FORBIDDEN;
+    authorizer.requireActivation();
 
     return await this.contentServiceV2.createContent(body, authorizer.user);
   }
@@ -191,10 +184,7 @@ export class ContentControllerV2 {
     @Auth() authorizer: Authorizer,
     @Param() { contentId }: GetContentDto,
   ) {
-    if (authorizer.account.isGuest) throw CastcleException.FORBIDDEN;
-
-    const ability = this.caslAbility.createForCredential(authorizer.credential);
-    if (!ability.can(Action.Update, Content)) throw CastcleException.FORBIDDEN;
+    authorizer.requireActivation();
 
     await this.contentServiceV2.deleteContent(contentId, authorizer.user);
   }

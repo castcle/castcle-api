@@ -540,13 +540,13 @@ export class ContentServiceV2 {
     return { quoteContent, engagement };
   };
 
-  createContentFarming = async (contentId: string, accountId: string) => {
+  createContentFarming = async (contentId: string, userId: string) => {
     const balance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.FARM_LOCKED,
     );
 
@@ -556,24 +556,25 @@ export class ContentServiceV2 {
       const session = await this.contentFarmingModel.startSession();
       const contentFarming = await new this.contentFarmingModel({
         content: contentId,
-        account: accountId,
+        user: userId,
         status: ContentFarmingStatus.Farming,
         farmAmount: farmAmount,
         startAt: new Date(),
       });
 
-      await session.withTransaction(async () => {
+      try {
+        session.startTransaction();
         await contentFarming.save();
         await this.taccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
-            account: accountId,
+            user: userId,
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              account: accountId,
+              user: userId,
               value: farmAmount,
             },
           ],
@@ -590,9 +591,12 @@ export class ContentServiceV2 {
             },
           ],
         });
-      });
-      session.endSession();
-      return contentFarming;
+        await session.commitTransaction();
+        return contentFarming;
+      } catch (error) {
+        await session.abortTransaction();
+        throw CastcleException.INTERNAL_SERVER_ERROR;
+      }
     } else {
       //throw error
       throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
@@ -603,11 +607,11 @@ export class ContentServiceV2 {
     contentFarming.status = ContentFarmingStatus.Farming;
     contentFarming.startAt = new Date();
     const balance = await this.taccountService.getAccountBalance(
-      String(contentFarming.account),
+      String(contentFarming.user),
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      String(contentFarming.account),
+      String(contentFarming.user),
       WalletType.FARM_LOCKED,
     );
     if (balance >= (lockBalance + balance) * 0.05) {
@@ -619,13 +623,13 @@ export class ContentServiceV2 {
         await this.taccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              account: String(contentFarming.account),
+              user: String(contentFarming.user),
               value: farmAmount,
             },
           ],
@@ -669,21 +673,21 @@ export class ContentServiceV2 {
     else throw CastcleException.CONTENT_FARMING_LIMIT;
   };
 
-  getContentFarming = async (contentId: string, accountId: string) =>
+  getContentFarming = async (contentId: string, userId: string) =>
     this.contentFarmingModel.findOne({
       content: contentId,
-      account: accountId,
+      user: userId,
     });
 
-  farm = async (contentId: string, accountId: string) => {
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+  farm = async (contentId: string, userId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, userId);
     if (this.checkFarming(contentFarming)) {
       return this.updateContentFarming(contentFarming);
-    } else return this.createContentFarming(contentId, accountId);
+    } else return this.createContentFarming(contentId, userId);
   };
 
-  unfarm = async (contentId: string, accountId: string) => {
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+  unfarm = async (contentId: string, userId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, userId);
     if (
       contentFarming &&
       contentFarming.status === ContentFarmingStatus.Farming
@@ -704,13 +708,13 @@ export class ContentServiceV2 {
         await this.taccountService.transfers({
           from: {
             type: WalletType.FARM_LOCKED,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              account: String(contentFarming.account),
+              user: String(contentFarming.user),
               value: contentFarming.farmAmount,
             },
           ],
@@ -736,10 +740,10 @@ export class ContentServiceV2 {
   };
 
   //for system only
-  expireFarm = async (contentId: string, accountId: string) => {
+  expireFarm = async (contentId: string, userId: string) => {
     //change status
     //move token from lock to personal
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+    const contentFarming = await this.getContentFarming(contentId, userId);
     const session = await this.contentFarmingModel.startSession();
     contentFarming.status = ContentFarmingStatus.Farmed;
     contentFarming.endedAt = new Date();
@@ -756,13 +760,13 @@ export class ContentServiceV2 {
       await this.taccountService.transfers({
         from: {
           type: WalletType.FARM_LOCKED,
-          account: String(contentFarming.account),
+          user: String(contentFarming.user),
           value: contentFarming.farmAmount,
         },
         to: [
           {
             type: WalletType.PERSONAL,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: contentFarming.farmAmount,
           },
         ],
@@ -795,25 +799,25 @@ export class ContentServiceV2 {
     });
     return Promise.all(
       expiresFarmings.map((cf) =>
-        this.expireFarm(String(cf.content), String(cf.account)),
+        this.expireFarm(String(cf.content), String(cf.user)),
       ),
     );
   };
 
   pipeContentFarming = async (
     contentFarming: ContentFarming,
-    accountId: string,
+    userId: string,
   ) => {
     const balance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.FARM_LOCKED,
     );
     const totalContentFarming = await this.contentFarmingModel.count({
-      account: accountId,
+      user: userId,
     });
     return new ContentFarmingReponse(
       contentFarming,
