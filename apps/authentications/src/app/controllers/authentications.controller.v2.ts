@@ -26,6 +26,7 @@ import {
   AuthenticationServiceV2,
 } from '@castcle-api/database';
 import {
+  ChangePasswordDto,
   LoginWithEmailDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
@@ -49,7 +50,14 @@ import {
   TokenInterceptor,
   TokenRequest,
 } from '@castcle-api/utils/interceptors';
-import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   CheckEmailExistDto,
@@ -227,6 +235,23 @@ export class AuthenticationControllerV2 {
       objective: verifyOtpDto.objective,
       expireDate: otp.expireDate,
     };
+  }
+
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @CastcleBasicAuth()
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    return this.authenticationService.changePassword({
+      ...changePasswordDto,
+      requestedBy: $credential.account,
+    });
   }
 
   @CastcleTrack()

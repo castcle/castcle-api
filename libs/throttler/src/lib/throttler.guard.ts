@@ -22,10 +22,12 @@
  */
 
 import { CastcleException } from '@castcle-api/utils/exception';
+import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request } from 'express';
 import { getClientIp } from 'request-ip';
 
+@Injectable()
 export class CastcleThrottlerGuard extends ThrottlerGuard {
   override getTracker(req: Request): string {
     const ip = getClientIp(req as any);

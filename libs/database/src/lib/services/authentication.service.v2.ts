@@ -40,6 +40,7 @@ import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
+  ChangePasswordDto,
   CreateCredentialDto,
   EntityVisibility,
   RegisterWithEmailDto,
@@ -582,6 +583,7 @@ export class AuthenticationServiceV2 {
         channel,
         objective,
         receiver,
+        verified: false,
       });
 
       if (otp?.isValid()) return otp;
@@ -705,6 +707,7 @@ export class AuthenticationServiceV2 {
       channel,
       objective,
       receiver,
+      verified: false,
     });
 
     if (!existingOtp) {
@@ -734,5 +737,48 @@ export class AuthenticationServiceV2 {
       await this.twilioClient.cancelOtp(existingOtp.sid);
       throw CastcleException.EXPIRED_OTP;
     }
+  }
+
+  async changePassword({
+    objective,
+    refCode,
+    email,
+    newPassword,
+    requestedBy,
+  }: ChangePasswordDto & { requestedBy: Account }) {
+    const account = await this.repository.findAccount({ email });
+
+    if (objective === OtpObjective.ForgotPassword && !requestedBy.isGuest) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+    if (
+      objective === OtpObjective.ChangePassword &&
+      String(requestedBy._id) !== account.id
+    ) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+
+    const otp = await this.repository.findOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+    });
+
+    if (!otp?.isVerify) {
+      throw CastcleException.INVALID_REF_CODE;
+    }
+    if (!otp.isValid()) {
+      await otp.updateOne({ isVerify: false, retry: 0 });
+      throw CastcleException.EXPIRED_OTP;
+    }
+    if (otp.refCode !== refCode) {
+      await otp.failedToVerify().save();
+      throw otp.exceededMaxRetries()
+        ? CastcleException.OTP_USAGE_LIMIT_EXCEEDED
+        : CastcleException.INVALID_REF_CODE;
+    }
+
+    await account.changePassword(newPassword);
+    await otp.markVerified().save();
   }
 }
