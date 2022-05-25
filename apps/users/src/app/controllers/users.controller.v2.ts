@@ -159,7 +159,7 @@ export class UsersControllerV2 {
         body.castcleId,
       );
 
-      if (String(userExisting?.id) !== String(user?.id))
+      if (userExisting && String(userExisting?.id) !== String(user?.id))
         throw CastcleException.USER_ID_IS_EXIST;
     }
 
