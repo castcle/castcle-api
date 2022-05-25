@@ -31,7 +31,7 @@ import { YoutubeModule } from './youtube/youtube.module';
 
 @Module({
   imports: [
-    CastcleHealthyModule.register({ pathPrefix: 'auto-posts' }),
+    CastcleHealthyModule.register({ pathPrefix: '' }), // pathPrefix is empty, because app.setGlobalPrefix('auto-posts');
     CastcleTracingModule.forRoot({ serviceName: 'auto-posts' }),
     ScheduleModule.forRoot(),
     FacebookModule,
