@@ -1,5 +1,5 @@
 import { Configs } from '@castcle-api/environments';
-import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/authentications/src/app/app.module';
@@ -61,7 +61,7 @@ export const setupAuthenticationsModule = async () => {
   (authenticationsApp as any) = moduleFixture.createNestApplication();
 
   authenticationsApp.useGlobalPipes(new ValidationPipe());
-  authenticationsApp.useGlobalFilters(new ExceptionFilter());
+  authenticationsApp.useGlobalFilters(new CastcleExceptionFilter());
   authenticationsApp.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,

@@ -24,7 +24,6 @@
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { Module } from '@nestjs/common';
-import { AwsXRayInterceptor } from './aws-xray/aws-xray.interceptor';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
@@ -35,7 +34,6 @@ import {
   CredentialInterceptor,
   CredentialRequest,
 } from './credential/credential.interceptor';
-import { ExceptionFilter } from './exception/exception.interceptor';
 import {
   HeadersInterceptor,
   HeadersRequest,
@@ -62,7 +60,5 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionFilter,
   IpTrackerInterceptor,
-  AwsXRayInterceptor,
 };

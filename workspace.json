@@ -279,6 +279,7 @@
     },
     "queues": "apps/queues",
     "throttler": "libs/throttler",
+    "tracing": "libs/tracing",
     "users": "apps/users",
     "utils-aws": {
       "root": "libs/utils/aws",

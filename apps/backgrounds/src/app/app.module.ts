@@ -23,10 +23,8 @@
 
 import { DatabaseModule } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
-import { TracingModule } from '@narando/nest-xray';
+import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { FirebaseModule } from 'nestjs-firebase';
 import { ContentConsumer } from './consumers/content.consumer';
 import { NotificationConsumer } from './consumers/notification.consumer';
@@ -34,6 +32,7 @@ import { UserConsumer } from './consumers/user.consumer';
 
 @Module({
   imports: [
+    CastcleTracingModule.forRoot({ serviceName: 'backgrounds' }),
     DatabaseModule,
     FirebaseModule.forRoot({
       googleApplicationCredential: {
@@ -44,19 +43,7 @@ import { UserConsumer } from './consumers/user.consumer';
           .replace(/\\n/g, '\n'),
       },
     }),
-    TracingModule.forRoot({
-      serviceName: 'backgrounds',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
   ],
-  providers: [
-    ContentConsumer,
-    NotificationConsumer,
-    UserConsumer,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
+  providers: [ContentConsumer, NotificationConsumer, UserConsumer],
 })
 export class BackgroundModule {}

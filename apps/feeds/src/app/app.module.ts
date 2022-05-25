@@ -22,17 +22,13 @@
  */
 
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleCacheModule, Environment } from '@castcle-api/environments';
-import { HealthyModule } from '@castcle-api/healthy';
+import { CastcleCacheModule } from '@castcle-api/environments';
+import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
+import { CastcleTracingModule } from '@castcle-api/tracing';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { CommentController } from './controllers/comment.controller';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
@@ -47,16 +43,12 @@ import { AppService, SuggestionService } from './services';
 @Module({
   imports: [
     CastcleCacheModule,
+    CastcleHealthyModule.register({ pathPrefix: 'backgrounds' }),
     CastcleThrottlerModule,
+    CastcleTracingModule.forRoot({ serviceName: 'backgrounds' }),
     DatabaseModule,
-    HealthyModule,
-    RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    TracingModule.forRoot({
-      serviceName: 'feeds',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
   ],
   controllers: [
     CommentController,
@@ -69,13 +61,6 @@ import { AppService, SuggestionService } from './services';
     SearchesController,
     CommentControllerV2,
   ],
-  providers: [
-    AppService,
-    SuggestionService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
+  providers: [AppService, SuggestionService],
 })
 export class AppModule {}

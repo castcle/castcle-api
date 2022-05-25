@@ -22,10 +22,10 @@
  */
 import { Environment } from '@castcle-api/environments';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { Password } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DateTime } from 'luxon';
 import * as mongoose from 'mongoose';
+import { customAlphabet } from 'nanoid';
 import { OtpObjective } from '../models';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
@@ -82,6 +82,7 @@ export class Otp extends OtpDocument {
   isValidVerifyMobileOtp: () => boolean;
   markCompleted: () => this;
   markVerified: () => this;
+  regenerate: () => this;
 }
 
 export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
@@ -103,7 +104,6 @@ export interface OtpModel extends mongoose.Model<Otp> {
     verified: boolean,
     receiver?: string,
     sid?: string,
-    expireDate?: Date,
   ): Promise<Otp>;
 }
 
@@ -115,34 +115,31 @@ OtpSchema.statics.generate = async function (
   verified: boolean,
   receiver?: string,
   sid?: string,
-  expireDate: Date = DateTime.now()
-    .plus({ seconds: Environment.OTP_EXPIRES_IN })
-    .toJSDate(),
 ) {
-  let refCode: string;
   let refCodeExists: boolean;
-  do {
-    refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
-    refCodeExists = await this.findOne({
-      account: accountId,
-      action: objective,
-      refCode,
-    }).exec();
-  } while (refCodeExists);
-
-  return new this({
+  const otp = new this({
     account: accountId,
     action: objective,
-    refCode,
     requestId,
     retry: 0,
     channel,
     isVerify: verified,
     sid,
-    expireDate,
     receiver,
     sentAt: [new Date()],
-  }).save();
+  });
+
+  do {
+    otp.regenerate();
+    refCodeExists = await this.findOne({
+      account: accountId,
+      action: objective,
+      refCode: otp.refCode,
+      completedAt: { $exists: false },
+    }).exec();
+  } while (refCodeExists);
+
+  return otp.save();
 };
 
 OtpSchema.methods.exceededMaxRetries = function () {
@@ -166,6 +163,7 @@ OtpSchema.methods.exceededUsageLimit = function () {
 OtpSchema.methods.failedToVerify = function () {
   this.retry += 1;
   if (this.exceededMaxRetries()) this.isVerify = false;
+  return this;
 };
 
 OtpSchema.methods.isValid = function () {
@@ -185,9 +183,18 @@ OtpSchema.methods.markCompleted = function () {
 
 OtpSchema.methods.markVerified = function () {
   this.isVerify = true;
-  this.refCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
+  return this.regenerate();
+};
+
+OtpSchema.methods.regenerate = function () {
+  this.refCode = customAlphabet('1234567890')(Environment.OTP_DIGITS);
   this.expireDate = DateTime.now()
-    .plus({ seconds: Environment.OTP_EXPIRES_IN })
+    .plus({
+      minutes:
+        this.channel === TwilioChannel.EMAIL
+          ? Environment.OTP_EMAIL_EXPIRES_IN
+          : Environment.OTP_PHONE_EXPIRES_IN,
+    })
     .toJSDate();
 
   return this;

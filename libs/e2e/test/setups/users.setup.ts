@@ -1,6 +1,6 @@
 import { Configs } from '@castcle-api/environments';
 import { FacebookClient } from '@castcle-api/utils/clients';
-import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/users/src/app/app.module';
@@ -31,7 +31,7 @@ export const setupUsersModule = async () => {
   (usersApp as any) = moduleFixture.createNestApplication();
 
   usersApp.useGlobalPipes(new ValidationPipe());
-  usersApp.useGlobalFilters(new ExceptionFilter());
+  usersApp.useGlobalFilters(new CastcleExceptionFilter());
   usersApp.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,

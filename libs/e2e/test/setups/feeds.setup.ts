@@ -1,5 +1,5 @@
 import { Configs } from '@castcle-api/environments';
-import { ExceptionFilter } from '@castcle-api/utils/interceptors';
+import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/feeds/src/app/app.module';
@@ -13,7 +13,7 @@ export const setupFeedsModule = async () => {
   (feedsApp as any) = moduleFixture.createNestApplication();
 
   feedsApp.useGlobalPipes(new ValidationPipe());
-  feedsApp.useGlobalFilters(new ExceptionFilter());
+  feedsApp.useGlobalFilters(new CastcleExceptionFilter());
   feedsApp.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
