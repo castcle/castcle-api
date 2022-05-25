@@ -20,11 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { createTransport } from 'nodemailer';
 import {
   CastcleQueryOptions,
   EntityVisibility,
@@ -45,6 +48,17 @@ import { UserService } from './user.service';
 
 @Injectable()
 export class UserServiceV2 {
+  private logger = new CastLogger(UserServiceV2.name);
+  private transporter = createTransport({
+    host: Environment.SMTP_HOST,
+    port: Environment.SMTP_PORT,
+    secure: true,
+    auth: {
+      user: Environment.SMTP_USERNAME,
+      pass: Environment.SMTP_PASSWORD,
+    },
+  });
+
   constructor(
     @InjectModel('Account')
     public _accountModel: Model<Account>,
@@ -398,5 +412,24 @@ export class UserServiceV2 {
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     await user.unfollow(targetUser);
+  }
+
+  async reportUser(user: User, targetCastcleId: string, message: string) {
+    const targetUser = await this.repositoryService.findUser({
+      _id: targetCastcleId,
+    });
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const mail = await this.transporter.sendMail({
+      from: 'castcle-noreply" <no-reply@castcle.com>',
+      subject: `Report user: ${targetUser._id}`,
+      to: Environment.SMTP_ADMIN_EMAIL,
+      text: `User ${targetUser.displayName} (${targetUser._id}) has been reported.
+Reported by: ${user.displayName} (${user._id})
+Message: ${message}`,
+    });
+
+    this.logger.log(`Report has been submitted ${mail.messageId}`);
   }
 }
