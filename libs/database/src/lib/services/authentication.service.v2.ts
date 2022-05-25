@@ -36,7 +36,6 @@ import {
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
-import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
@@ -604,17 +603,14 @@ export class AuthenticationServiceV2 {
         receiver,
         config: OtpTemplateMessage.from(objective, user?.displayName),
       });
-      const expiryDate = DateTime.now()
-        .plus({ minutes: Environment.OTP_EMAIL_EXPIRES_IN })
-        .toJSDate();
 
       return otp
         ? otp
+            .regenerate()
             .set({
               sid,
               requestId: requestedBy,
               retry: 0,
-              expireDate: expiryDate,
               sentAt: [...otp.sentAt, new Date()],
             })
             .save()
@@ -626,7 +622,6 @@ export class AuthenticationServiceV2 {
             verified: false,
             receiver,
             sid,
-            expiryDate,
           });
     } catch (error) {
       this.logger.error(error, 'requestOtpByEmail');
@@ -759,7 +754,7 @@ export class AuthenticationServiceV2 {
     }
     if (
       objective === OtpObjective.ChangePassword &&
-      String(requestedBy._id) !== account.id
+      String(requestedBy._id) !== account?.id
     ) {
       throw CastcleException.INVALID_ACCESS_TOKEN;
     }
@@ -785,6 +780,6 @@ export class AuthenticationServiceV2 {
     }
 
     await account.changePassword(newPassword);
-    await otp.markVerified().save();
+    await otp.markCompleted().save();
   }
 }

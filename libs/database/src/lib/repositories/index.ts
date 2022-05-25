@@ -675,7 +675,6 @@ export class Repository {
     verified: boolean;
     receiver?: string;
     sid?: string;
-    expiryDate?: Date;
   }) {
     return this.otpModel.generate(
       createOtpDto.accountId,
@@ -685,7 +684,6 @@ export class Repository {
       createOtpDto.verified,
       createOtpDto.receiver,
       createOtpDto.sid,
-      createOtpDto.expiryDate,
     );
   }
 
