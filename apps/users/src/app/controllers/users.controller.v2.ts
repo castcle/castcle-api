@@ -125,16 +125,16 @@ export class UsersControllerV2 {
     @Param() { isMe, userId }: GetUserParam,
     @Query() userQuery?: ExpansionQuery,
   ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
-
-    return this.userServiceV2.getById(
-      authorizer.user,
-      user,
-      userQuery?.hasRelationshipExpansion,
-      userQuery?.userFields,
-    );
+    return isMe
+      ? authorizer.user.toUserResponseV2({
+          passwordNotSet: !authorizer.account.password,
+        })
+      : this.userServiceV2.getById(
+          authorizer.user,
+          await this.userServiceV2.getUser(userId),
+          userQuery?.hasRelationshipExpansion,
+          userQuery?.userFields,
+        );
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
