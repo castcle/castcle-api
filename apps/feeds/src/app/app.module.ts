@@ -43,9 +43,9 @@ import { AppService, SuggestionService } from './services';
 @Module({
   imports: [
     CastcleCacheModule,
-    CastcleHealthyModule.register({ pathPrefix: 'backgrounds' }),
+    CastcleHealthyModule.register({ pathPrefix: 'feeds' }),
     CastcleThrottlerModule,
-    CastcleTracingModule.forRoot({ serviceName: 'backgrounds' }),
+    CastcleTracingModule.forRoot({ serviceName: 'feeds' }),
     DatabaseModule,
     UtilsInterceptorsModule,
     UtilsPipesModule,
