@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { CastcleRegExp, RemoveLeadingZero } from '@castcle-api/utils/commons';
 import {
   IsEmail,
   IsEnum,
@@ -81,6 +81,7 @@ export class RequestOtpByMobileDto {
   objective: OtpObjective;
 
   @IsMobilePhone()
+  @RemoveLeadingZero()
   mobileNumber: string;
 
   @IsString()
@@ -114,6 +115,7 @@ export class VerifyOtpByMobileDto {
   objective: OtpObjective;
 
   @IsMobilePhone()
+  @RemoveLeadingZero()
   mobileNumber: string;
 
   @IsString()

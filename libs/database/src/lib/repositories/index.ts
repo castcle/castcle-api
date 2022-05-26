@@ -685,7 +685,7 @@ export class Repository {
     requestId: string;
     channel: TwilioChannel;
     verified: boolean;
-    receiver?: string;
+    receiver: string;
     sid?: string;
   }) {
     return this.otpModel.generate(
@@ -701,7 +701,6 @@ export class Repository {
 
   findOtp(dto: {
     channel?: TwilioChannel;
-    isValid?: boolean;
     verified?: boolean;
     objective?: OtpObjective;
     receiver?: string;
@@ -712,8 +711,6 @@ export class Repository {
     if (dto.objective) query.action = dto.objective;
     if (dto.receiver) query.receiver = dto.receiver;
     if (isBoolean(dto.verified)) query.isVerify = dto.verified;
-    if (isBoolean(dto.isValid))
-      query.expireDate = { [dto.isValid ? '$gte' : '$lt']: new Date() };
 
     return this.otpModel.findOne(query);
   }

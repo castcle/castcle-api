@@ -83,7 +83,7 @@ export const testUsersUpdateMobile = () => {
             'objective must be a valid enum value',
             'refCode must be a string',
             'countryCode must be a string',
-            'mobileNumber must be a string',
+            'mobileNumber must be a phone number',
           ].sort(),
         );
       })
@@ -101,7 +101,10 @@ export const testUsersUpdateMobile = () => {
       })
       .expect(({ body }) => {
         expect(body.message.sort()).toEqual(
-          ['objective must be a valid enum value'].sort(),
+          [
+            'objective must be a valid enum value',
+            'mobileNumber must be a phone number',
+          ].sort(),
         );
       })
       .expect(HttpStatus.BAD_REQUEST);
@@ -114,7 +117,7 @@ export const testUsersUpdateMobile = () => {
         objective: OtpObjective.VerifyMobile,
         refCode: 'ref-code',
         countryCode: 'country-code',
-        mobileNumber: 'mobile-number',
+        mobileNumber: '0801231234',
       })
       .expect(({ body }) => {
         expect(body.message).toEqual(

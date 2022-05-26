@@ -35,11 +35,13 @@ import {
   PageResponseDto,
   PaginationQuery,
   SortDirection,
+  UpdateMobileDto,
   UserField,
 } from '../dtos';
 import { EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
+import { AnalyticService } from './analytic.service';
 import { ContentService } from './content.service';
 import { NotificationService } from './notification.service';
 import { UserService } from './user.service';
@@ -48,18 +50,19 @@ import { UserService } from './user.service';
 export class UserServiceV2 {
   constructor(
     @InjectModel('Account')
-    public _accountModel: Model<Account>,
+    private accountModel: Model<Account>,
     @InjectModel('Relationship')
-    private _relationshipModel: Model<Relationship>,
+    private relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
-    private _socialSyncModel: Model<SocialSync>,
+    private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public _userModel: Model<User>,
+    private userModel: Model<User>,
+    private analyticService: AnalyticService,
     private contentService: ContentService,
+    private mailerService: Mailer,
+    private notificationService: NotificationService,
     private repositoryService: Repository,
     private userService: UserService,
-    private notificationService: NotificationService,
-    private mailerService: Mailer,
   ) {}
 
   getUser = async (userId: string) => {
@@ -87,7 +90,7 @@ export class UserServiceV2 {
     const userIds = users.map((user) => user.id);
 
     const relationships = viewer
-      ? await this._relationshipModel.find({
+      ? await this.relationshipModel.find({
           $or: [
             { user: viewer._id, followedUser: { $in: userIds } },
             { user: { $in: userIds }, followedUser: viewer._id },
@@ -101,14 +104,12 @@ export class UserServiceV2 {
         const syncSocials =
           String(item.ownerAccount) === String(viewer.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
-            ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
+            ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(item.ownerAccount) === String(viewer.ownerAccount)
-            ? await this._accountModel
-                .findOne({ _id: item.ownerAccount })
-                .exec()
+            ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
             : undefined
           : undefined;
 
@@ -233,7 +234,7 @@ export class UserServiceV2 {
 
     if (!blockUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const session = await this._relationshipModel.startSession();
+    const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
       await this.repositoryService.updateRelationship(
         { user: user._id, followedUser: blockUser._id },
@@ -273,7 +274,7 @@ export class UserServiceV2 {
 
     if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const session = await this._relationshipModel.startSession();
+    const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
       const [blockerRelation, blockedRelation] = await Promise.all([
         this.repositoryService.findRelationship(
@@ -449,5 +450,47 @@ export class UserServiceV2 {
       { _id: targetUser._id, displayName: targetUser.displayName },
       message,
     );
+  }
+
+  async updateMobile(
+    account: Account,
+    { objective, refCode, countryCode, mobileNumber }: UpdateMobileDto,
+    ip: string,
+  ) {
+    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const otp = await this.repositoryService.findOtp({
+      objective,
+      receiver: countryCode + mobileNumber,
+    });
+
+    if (!otp?.isVerify) {
+      throw CastcleException.INVALID_REF_CODE;
+    }
+    if (!otp.isValid()) {
+      await otp.updateOne({ isVerify: false, retry: 0 });
+      throw CastcleException.EXPIRED_OTP;
+    }
+    if (otp.refCode !== refCode) {
+      await otp.failedToVerify().save();
+      throw otp.exceededMaxRetries()
+        ? CastcleException.OTP_USAGE_LIMIT_EXCEEDED
+        : CastcleException.INVALID_REF_CODE;
+    }
+
+    await Promise.all([
+      otp.markCompleted().save(),
+      account.set({ mobile: { countryCode, number: mobileNumber } }).save(),
+      this.userModel.updateMany(
+        { ownerAccount: account._id },
+        { 'verified.mobile': true },
+      ),
+      this.analyticService.trackMobileVerification(
+        ip,
+        account.id,
+        countryCode,
+        mobileNumber,
+      ),
+    ]);
   }
 }
