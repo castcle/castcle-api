@@ -11,12 +11,15 @@ import {
   testReplyCommentsFlow,
 } from './modules/feeds';
 import {
+  testBlocksFlow,
   testFollowsFlow,
   testLikesFlow,
   testSyncSocialFlow,
   testUsersReporting,
   testUsersUpdateMobile,
 } from './modules/users';
+import { testQuoteCastsFlow } from './modules/users/quotecasts-flow.spec';
+import { testRecastsFlow } from './modules/users/recasts-flow.spec';
 import {
   closeAuthenticationsModule,
   closeFeedsModule,
@@ -81,6 +84,18 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Like Flow', () => {
       testLikesFlow();
+    });
+
+    describe('- Quote Casts Flow', () => {
+      testQuoteCastsFlow();
+    });
+
+    describe('- Recasts Flow', () => {
+      testRecastsFlow();
+    });
+
+    describe('- Block Flow', () => {
+      testBlocksFlow();
     });
   });
 

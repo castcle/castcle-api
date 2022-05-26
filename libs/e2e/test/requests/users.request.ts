@@ -77,4 +77,16 @@ export class UsersRequest {
     UsersRequest.delete(
       `/v2/users/${userId}/likes-comments/${sourceCommentId}`,
     );
+  static quotecasts = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/quotecasts`);
+  static recast = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/recasts`);
+  static undoRecast = (userId: string, sourceCommentId: string) =>
+    UsersRequest.delete(`/v2/users/${userId}/recasts/${sourceCommentId}`);
+  static blockUser = (userId: string) =>
+    UsersRequest.post(`/v2/users/${userId}/blocking`);
+  static getBlockUser = (userId: string) =>
+    UsersRequest.get(`/v2/users/${userId}/blocking`);
+  static unBlockUser = (userId: string, targetCastcleId: string) =>
+    UsersRequest.delete(`/v2/users/${userId}/blocking/${targetCastcleId}`);
 }
