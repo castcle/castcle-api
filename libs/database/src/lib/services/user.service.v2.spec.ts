@@ -224,11 +224,17 @@ describe('UserServiceV2', () => {
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
-      await userServiceV2.followUser(
-        user1,
-        String(user2._id),
+    });
+    it('should return empty user if user have not followers', async () => {
+      const followers = await userServiceV2.getFollowers(
         user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
       );
+      expect(followers.users).toHaveLength(0);
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
@@ -238,6 +244,11 @@ describe('UserServiceV2', () => {
     });
 
     it('should follow user and create follow relationship', async () => {
+      await userServiceV2.followUser(
+        user1,
+        String(user2._id),
+        user1.ownerAccount,
+      );
       const followRelation = await repository
         .findRelationships({ userId: [user1._id], followedUser: user2._id })
         .exec();
@@ -246,14 +257,30 @@ describe('UserServiceV2', () => {
       expect(followRelation[0].following).toBeTruthy();
     });
 
+    it('should return followers user after create follow relationship', async () => {
+      const followers = await userServiceV2.getFollowers(
+        user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+
+      expect(followers.users.length).toBeGreaterThan(0);
+    });
+
     it('should remove relationship after unfollow user', async () => {
       await userServiceV2.unfollowUser(user1, String(user2._id));
-
-      const followRelation = await repository
-        .findRelationships({ userId: [user1._id], followedUser: user2._id })
-        .exec();
-
-      expect(followRelation).toHaveLength(0);
+      const followers = await userServiceV2.getFollowers(
+        user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followers.users).toHaveLength(0);
     });
   });
 

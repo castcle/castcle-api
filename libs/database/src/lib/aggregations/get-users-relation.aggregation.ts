@@ -35,6 +35,16 @@ export class GetUserRelationParams {
   sortBy?: SortBy;
 }
 
+export class GetUserRelationParamsV2 {
+  userId: Types.ObjectId;
+  limit: number;
+  keyword?: string;
+  sinceId?: string;
+  untilId?: string;
+  userTypes?: string[];
+  sortBy?: string;
+}
+
 export type GetUserRelationResponse = Relationship & {
   user_relation: User[];
 };
@@ -196,5 +206,55 @@ export const pipelineOfUserRelationFollowingCount = (
         $count: 'total',
       },
     ],
+  ];
+};
+
+export const pipelineOfUserRelationFollowersV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowQueryV2(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowersCountV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowQueryV2(params), ...[{ $count: 'total' }]];
+};
+
+const filterTypes = (userTypes?: string[]) => {
+  if (userTypes)
+    return {
+      'user.type': { $in: userTypes },
+    };
+};
+
+const userFollowQueryV2 = (params: GetUserRelationParamsV2) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
+    {
+      $match: {
+        followedUser: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'user.visibility': EntityVisibility.Publish,
+        ...filterTypes(params.userTypes),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    {
+      $sort: params.sortBy || {
+        createdAt: -1,
+      },
+    },
   ];
 };

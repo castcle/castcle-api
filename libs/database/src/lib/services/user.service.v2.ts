@@ -28,9 +28,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
+  GetUserRelationParamsV2,
+  GetUserRelationResponseCount,
+  pipelineOfUserRelationFollowersCountV2,
+  pipelineOfUserRelationFollowersV2,
+} from '../aggregations';
+import {
   CastcleQueryOptions,
+  DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   GetKeywordQuery,
+  GetFollowQuery,
   Meta,
   NotificationSource,
   NotificationType,
@@ -40,6 +48,7 @@ import {
   SortDirection,
   UpdateMobileDto,
   UserField,
+  UserResponseDto,
 } from '../dtos';
 import { CampaignType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
@@ -568,5 +577,77 @@ export class UserServiceV2 {
       payload: userResponses,
       meta: Meta.fromDocuments(userResponses as any),
     });
+  }
+
+  async getFollowers(
+    account: Account,
+    targetUser: User,
+    followQuery: GetFollowQuery,
+  ) {
+    const params: GetUserRelationParamsV2 = {
+      userId: targetUser._id,
+      limit: followQuery.maxResults ?? DEFAULT_QUERY_OPTIONS.limit,
+      sinceId: followQuery.sinceId,
+      untilId: followQuery.untilId,
+      userTypes: followQuery.type,
+      sortBy: followQuery.sort,
+    };
+
+    const [userRelation, userRelationCount, viewer] = await Promise.all([
+      this.repositoryService.aggregateRelationship<Relationship>(
+        pipelineOfUserRelationFollowersV2(params),
+      ),
+
+      this.repositoryService.aggregateRelationship<GetUserRelationResponseCount>(
+        pipelineOfUserRelationFollowersCountV2(params),
+      ),
+
+      this.repositoryService.findUser({ accountId: account._id }),
+    ]);
+
+    console.log({ userRelation });
+    const followingUsersId = userRelation.flatMap(({ _id, user }) => {
+      return {
+        userId: user[0]?._id,
+        relationshipId: _id,
+      };
+    });
+
+    const { users } = await this.getByCriteria(
+      viewer,
+      { _id: followingUsersId.map((f) => f.userId) },
+      {},
+      followQuery.hasRelationshipExpansion,
+    );
+
+    const relationTotal = userRelationCount[0]?.total ?? 0;
+
+    return {
+      users: this.mergeRelationUser(followingUsersId, users),
+      meta: Meta.fromDocuments(userRelation, relationTotal),
+    };
+  }
+
+  mergeRelationUser(
+    followingIds,
+    users,
+  ): (PageResponseDto | UserResponseDto)[] {
+    const relationUsers = [];
+    followingIds.forEach((follower) => {
+      const user = users.find(
+        (user) => String(user.id) === String(follower.userId),
+      );
+
+      if (user) {
+        delete user.id;
+        delete user.linkSocial;
+        relationUsers.push({
+          ...follower,
+          ...user,
+        });
+      }
+    });
+
+    return relationUsers;
   }
 }
