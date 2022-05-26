@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { Account, Credential, User } from '@castcle-api/database/schemas';
+import { Account, Credential, User } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 

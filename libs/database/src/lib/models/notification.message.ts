@@ -23,7 +23,7 @@
 import {
   AndroidMessagePriority,
   PushNotificationPayload,
-} from './../dtos/notification.dto';
+} from '../dtos/notification.dto';
 
 type Aps = {
   alert: string;

@@ -29,7 +29,6 @@ export * from './account.schema-factory';
 export * from './account.schema';
 export * from './analytic.schema';
 export * from './archive-hashtag.schema';
-export * from './author.schema';
 export * from './base.schema';
 export * from './campaign.schema';
 export * from './circle.schema';

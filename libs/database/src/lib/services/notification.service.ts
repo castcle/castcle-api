@@ -35,12 +35,12 @@ import {
 import { NotificationMessage, QueueName, UserType } from '../models';
 import { Credential, Notification, User } from '../schemas';
 import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
-import { AccountDevice } from '../schemas/account-device.schema';
+import { AccountDeviceV1 } from '../schemas/account-device.schema';
 import { Environment } from '@castcle-api/environments';
 import {
   AndroidMessagePriority,
   NotificationSource,
-} from './../dtos/notification.dto';
+} from '../dtos/notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -54,7 +54,7 @@ export class NotificationService {
     @InjectModel('Credential')
     private _credentialModel: Model<Credential>,
     @InjectModel('AccountDevice')
-    private _accountDeviceModel: Model<AccountDevice>,
+    private _accountDeviceModel: Model<AccountDeviceV1>,
     @InjectQueue(QueueName.NOTIFICATION)
     private notificationQueue: Queue<NotificationMessage>,
   ) {}
@@ -367,7 +367,7 @@ export class NotificationService {
   generateNotification = (
     message: string,
     notify: Notification,
-    firebaseToken: AccountDevice[],
+    firebaseToken: AccountDeviceV1[],
     badgeCounts: number,
   ) => {
     return {

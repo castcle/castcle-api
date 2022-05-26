@@ -9,7 +9,7 @@ import {
   userBeta,
   userGamma,
 } from '../../variables';
-import { registerMockUser } from './../../utils/user.utils';
+import { registerMockUser } from '../../utils/user.utils';
 
 export const testLikesFlow = () => {
   let userA = new User({ name: 'likeA' });

@@ -21,23 +21,24 @@
  * or have any questions.
  */
 import {
-  HashtagService,
-  SearchServiceV2,
+  AnalyticService,
   AuthenticationService,
-  UserService,
+  CampaignService,
+  ContentService,
+  CreateHashtag,
+  ExecuteType,
+  generateMockUsers,
+  HashtagService,
+  KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserServiceV2,
-  ContentService,
   NotificationService,
   QueueName,
-  ExecuteType,
-  KeywordType,
-  AnalyticService,
-  CampaignService,
+  SearchServiceV2,
+  UserService,
+  UserServiceV2,
 } from '@castcle-api/database';
-import { CreateHashtag } from '@castcle-api/database/dtos';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';

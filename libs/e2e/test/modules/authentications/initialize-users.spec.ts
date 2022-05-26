@@ -4,7 +4,7 @@ import { guest, userAlpha, userBeta, userModel } from '../../variables';
 import {
   accountActivationModel,
   userGamma,
-} from './../../variables/global.variable';
+} from '../../variables/global.variable';
 
 export const initializeUsers = async () => {
   await AuthenticationsRequest.guestLogin()

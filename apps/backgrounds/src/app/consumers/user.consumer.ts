@@ -22,7 +22,7 @@
  */
 
 import { QueueName, UserService, UserMessage } from '@castcle-api/database';
-import { CastcleQueueAction } from '@castcle-api/database/dtos';
+import { CastcleQueueAction } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { Processor, Process } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';

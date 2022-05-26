@@ -26,9 +26,12 @@ import {
   CampaignService,
   ContentService,
   ContentServiceV2,
+  ContentType,
   DataService,
+  generateMockUsers,
   HashtagService,
   KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -38,7 +41,6 @@ import {
   UserService,
   UserServiceV2,
 } from '@castcle-api/database';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -49,7 +51,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { Mailer } from '@castcle-api/utils/clients';
 import { FeedsControllerV2 } from './feeds.controller.v2';
-import { ContentType } from '@castcle-api/database/dtos';
 
 describe('FeedsControllerV2', () => {
   let mongod: MongoMemoryServer;

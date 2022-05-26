@@ -25,7 +25,7 @@ import {
   ContentService,
   validateObjectId,
 } from '@castcle-api/database';
-import { PaginationQuery } from '@castcle-api/database/dtos';
+import { PaginationQuery } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

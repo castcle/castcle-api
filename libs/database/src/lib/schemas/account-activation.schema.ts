@@ -55,13 +55,13 @@ class AccountActivationDocument extends CastcleBase {
   revocationDate: Date;
 }
 
-export interface AccountActivation extends AccountActivationDocument {
+export interface AccountActivationV1 extends AccountActivationDocument {
   /** @deprecated */
   isVerifyTokenValid(): boolean;
 }
 
 export interface AccountActivationModel
-  extends mongoose.Model<AccountActivation> {
+  extends mongoose.Model<AccountActivationV1> {
   /** @deprecated */
   generateVerifyToken(payload: EmailVerifyToken): {
     verifyToken: string;
@@ -71,7 +71,7 @@ export interface AccountActivationModel
 
 export const AccountActivationSchema = SchemaFactory.createForClass<
   AccountActivationDocument,
-  AccountActivation
+  AccountActivationV1
 >(AccountActivationDocument);
 
 AccountActivationSchema.methods.isVerifyTokenValid = function () {

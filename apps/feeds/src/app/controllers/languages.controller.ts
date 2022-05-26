@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { LanguageService } from '@castcle-api/database';
-import { LanguageResponse } from '@castcle-api/database/dtos';
+import { LanguageResponse } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';

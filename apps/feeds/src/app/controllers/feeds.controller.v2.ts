@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { GetSearchQuery } from '@castcle-api/database/dtos';
+import { GetSearchQuery, ContentServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
@@ -29,7 +29,6 @@ import {
   CastcleAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { ContentServiceV2 } from '@castcle-api/database';
 import { Get, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'feeds' })

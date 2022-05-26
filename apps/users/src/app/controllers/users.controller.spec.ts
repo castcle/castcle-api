@@ -60,8 +60,8 @@ import {
   UpdateUserDto,
   UserField,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
-import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
+} from '@castcle-api/database';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database';
 import {
   Account,
   AdsCampaign,
@@ -70,7 +70,7 @@ import {
   Engagement,
   SocialSync,
   User,
-} from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
 import { Configs } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
