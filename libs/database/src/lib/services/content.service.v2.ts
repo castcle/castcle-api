@@ -905,7 +905,7 @@ export class ContentServiceV2 {
   findCumulativeStats = (contentFarmingCDF: ContentFarmingCDF) => {
     const totalFarmedToken = contentFarmingCDF.contentFarmings.reduce(
       (prev, now) => prev + now.farmAmount,
-      0
+      0,
     );
     const FIX_CONST = 0.9340119642;
     let cumulativeTotal = 0;
@@ -915,12 +915,12 @@ export class ContentServiceV2 {
         item.cdfStat.cumulativeOrder = cumulativeTotal / totalFarmedToken;
         item.cdfStat.cumulativeDistributed = cdf(
           item.cdfStat.cumulativeOrder,
-          Math.E
+          Math.E,
         );
         item.cdfStat.adjustedCumulative =
           item.cdfStat.cumulativeDistributed / FIX_CONST;
         return item;
-      }
+      },
     );
     return contentFarmingCDF;
   };
@@ -937,7 +937,7 @@ export class ContentServiceV2 {
               .adjustedCumulative;
         }
         return item;
-      }
+      },
     );
     return contentFarmingCDF;
   };
@@ -947,7 +947,7 @@ export class ContentServiceV2 {
       contentFarmingCDF.contentFarmings.map((item) => {
         item.markModified('cdfStat');
         return item.save();
-      })
+      }),
     );
   };
 
@@ -958,7 +958,7 @@ export class ContentServiceV2 {
         item = this.findCumulativeStats(item);
         item = this.findWeight(item);
         return this.updateContentFarmingCDFStat(item);
-      })
+      }),
     );
   };
 

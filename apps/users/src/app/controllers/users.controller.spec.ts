@@ -1281,7 +1281,7 @@ describe('AppController', () => {
     });
     it('should be able to get list ads exist.', async () => {
       const adsResponse = await appController.listAds(
-        { account: mocks[0].account as Account } as Authorizer,
+        { user: mocks[0].user as User } as Authorizer,
         {
           maxResults: 100,
           filter: 'week',
@@ -1351,7 +1351,7 @@ describe('AppController', () => {
     });
     it('should be able to lookup ads detail exist.', async () => {
       const adsResponse = await appController.lookupAds(
-        { account: mocks[0].account as Account } as Authorizer,
+        { user: mocks[0].user as User } as Authorizer,
         mockAds._id,
       );
 
