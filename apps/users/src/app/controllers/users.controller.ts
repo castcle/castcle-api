@@ -223,6 +223,7 @@ export class UsersController {
     const adsCampaign = await this.adsService.lookupAds(user, adsId);
     if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
       this.logger.log('Ads campaign not found.');
+      console.log('Ads campaign not found.');
       throw CastcleException.FORBIDDEN;
     }
     return adsCampaign;

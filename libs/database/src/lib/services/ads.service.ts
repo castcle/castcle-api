@@ -347,17 +347,21 @@ export class AdsService {
       updatedAt: campaign.updatedAt,
     } as AdsCampaignResponseDto;
   };
-
-  async getListAds(
-    { _id, ownerAccount }: User,
-    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
-  ) {
+  async _getUserIds(ownerAccount: any, _id: any) {
     const pages = await this._userModel.find({
       ownerAccount: ownerAccount,
       type: UserType.PAGE,
     });
     const ids = pages.map((p) => p._id);
     ids.push(_id);
+    return ids;
+  }
+
+  async getListAds(
+    { _id, ownerAccount }: User,
+    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
+  ) {
+    const ids = await this._getUserIds(ownerAccount, _id);
     const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
       { owner: { $in: ids } },
       {
@@ -384,10 +388,12 @@ export class AdsService {
       .sort({ createdAt: -1, _id: -1 });
   }
 
-  lookupAds({ _id }: User, adsId: string) {
+  async lookupAds({ _id, ownerAccount }: User, adsId: string) {
+    const ids = await this._getUserIds(ownerAccount, _id);
+    ids.push(_id);
     return this._adsCampaignModel
       .findOne({
-        owner: _id,
+        owner: { $in: ids },
         _id: adsId,
       })
       .exec();

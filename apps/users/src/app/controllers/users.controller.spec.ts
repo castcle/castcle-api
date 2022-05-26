@@ -1562,13 +1562,13 @@ describe('AppController', () => {
         },
         to: [
           {
-            user: mocks[0].user,
+            user: mocks[0].pages[0].id,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].user, adsInput);
+      mockAds = await adsService.createAds(mocks[0].pages[0], adsInput);
     });
     describe('#updateAds', () => {
       it('should be able update ads is correct.', async () => {
@@ -1605,7 +1605,7 @@ describe('AppController', () => {
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
-        ads = await adsService.createAds(mocks[0].user, adsInput);
+        ads = await adsService.createAds(mocks[0].pages[0], adsInput);
         await adsService._adsCampaignModel.updateOne(
           { _id: ads._id },
           {
@@ -1616,7 +1616,7 @@ describe('AppController', () => {
           },
         );
         await appController.adsRunning(
-          { credential: mocks[0].credential } as any,
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
@@ -1629,14 +1629,14 @@ describe('AppController', () => {
       it('ads running should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsRunning(
-            { credential: mocks[0].credential } as any,
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads Pause.', async () => {
         await appController.adsPause(
-          { credential: mocks[0].credential } as any,
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
@@ -1649,14 +1649,14 @@ describe('AppController', () => {
       it('ads Pause should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsPause(
-            { credential: mocks[0].credential } as any,
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads End.', async () => {
         await appController.adsEnd(
-          { credential: mocks[0].credential } as any,
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
           ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
@@ -1669,7 +1669,7 @@ describe('AppController', () => {
       it('ads End should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsEnd(
-            { credential: mocks[0].credential } as any,
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
             ads._id,
           ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
