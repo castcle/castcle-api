@@ -36,7 +36,7 @@ export class SocialRewardScheduler {
   constructor(
     private contentService: ContentServiceV2,
     private adsService: AdsService,
-    private queue: Model<Queue>
+    private queue: Model<Queue>,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_10AM)

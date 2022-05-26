@@ -47,16 +47,15 @@ import {
   AdsBoostStatus,
   AdsCpm,
   AdsPaymentMethod,
-  AdsPlacementCampaign,
   AdsPlacementContent,
   AdsSocialReward,
   AdsStatus,
   CACCOUNT_NO,
   DefaultAdsStatistic,
+  UserType,
   WalletType,
 } from '../models';
 import {
-  Account,
   AdsCampaign,
   AdsPlacement,
   Content,
@@ -91,7 +90,7 @@ export class AdsService {
     public taccountService: TAccountService,
     public dataService: DataService,
     @InjectModel('ContentFarming')
-    public _contentFarmingModel: Model<ContentFarming>
+    public _contentFarmingModel: Model<ContentFarming>,
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -139,7 +138,7 @@ export class AdsService {
   };
 
   getAdsPlacementFromAuction = async (
-    contentIds: string[],
+    contentIds: AdsPlacementContent[],
     viewerAccountId: string,
   ) => {
     const session = await this._adsPlacementModel.startSession();
@@ -148,7 +147,7 @@ export class AdsService {
       const cpm = await this.auctionAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
         campaign: cpm.adsCampignId,
-        contents: contentIds,
+        contents: contentIds.map((c) => c.contentId),
         cost: {
           UST: cpm.biddingCpm,
         },
@@ -173,7 +172,7 @@ export class AdsService {
           ({
             contentId: (item.payload as ContentPayloadItem).id,
             authorId: (item.payload as ContentPayloadItem).authorId,
-          } as AdsPlacementContent)
+          } as AdsPlacementContent),
       );
     const adsplacement = await this.getAdsPlacementFromAuction(
       contentIds,
@@ -235,12 +234,12 @@ export class AdsService {
     return feeds;
   };
 
-  getCode = (account: Account) =>
-    `${String(account._id).toUpperCase().slice(19)}${new Date().getTime()}`;
+  getCode = (user: User) =>
+    `${user.id.toUpperCase().slice(19)}${new Date().getTime()}`;
 
   /**
    * Validate if ads owner can create ads or not
-   * @param account
+   * @param user
    * @param adsRequest
    * @returns
    */
@@ -254,12 +253,20 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
+    //have permission to add payment
+    if (adsRequest.userId && user.id !== adsRequest.userId) {
+      const page = await this._userModel.findById(adsRequest.userId);
+      return String(page.ownerAccount) === String(user._id);
+    } else if (adsRequest.contentId) {
+      const content = await this._contentModel.findById(adsRequest.contentId);
+      return String(content.author.id) === String(user._id);
+    }
     return true;
   };
 
   /**
    * Create a ads campaign
-   * @param account
+   * @param user
    * @param adsRequest
    * @returns {AdsCampaign}
    */
@@ -278,7 +285,7 @@ export class AdsService {
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
-      owner: user.ownerAccount,
+      owner: user.id,
       objective: adsRequest.objective,
       detail: {
         name: adsRequest.campaignName,
@@ -342,17 +349,23 @@ export class AdsService {
   };
 
   async getListAds(
-    { _id }: Account,
+    { _id, ownerAccount }: User,
     { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
   ) {
+    const pages = await this._userModel.find({
+      ownerAccount: ownerAccount,
+      type: UserType.PAGE,
+    });
+    const ids = pages.map((p) => p._id);
+    ids.push(_id);
     const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
-      { owner: _id },
+      { owner: { $in: ids } },
       {
         sinceId,
         untilId,
       },
     );
-
+    console.log('filter');
     if (filter && filter !== FilterInterval.All) {
       const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
         timezone,
@@ -371,7 +384,7 @@ export class AdsService {
       .sort({ createdAt: -1, _id: -1 });
   }
 
-  lookupAds({ _id }: Account, adsId: string) {
+  lookupAds({ _id }: User, adsId: string) {
     return this._adsCampaignModel
       .findOne({
         owner: _id,
@@ -434,7 +447,7 @@ export class AdsService {
           //credit ads ownner locked_for ads
           tx = await this.taccountService.transfers({
             from: {
-              account: adsCampaign.owner as unknown as string,
+              user: adsCampaign.owner as unknown as string,
               type:
                 adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
                   ? WalletType.ADS
@@ -443,7 +456,7 @@ export class AdsService {
             },
             to: [
               {
-                type: WalletType.CASTCLE_ADS_LOCKED,
+                type: WalletType.CASTCLE_SOCIAL,
                 value: estAdsCostCAST,
               },
             ],
@@ -461,8 +474,8 @@ export class AdsService {
                   caccountNo:
                     adsCampaign.detail.paymentMethod ===
                     AdsPaymentMethod.ADS_CREDIT
-                      ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-                      : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: estAdsCostCAST,
                 },
               },
@@ -545,7 +558,7 @@ export class AdsService {
   distributeSocialRewardAdsCredit = async () => {
     //assume all conterm farming has been weigh
     const adsIncomeToken = await this.taccountService.getBalance(
-      CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+      CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
     );
     const adsPlacements = await this._adsPlacementModel.find({
       'cost.CAST': { $exits: false },
@@ -575,7 +588,7 @@ export class AdsService {
 
   distributeSocialRewardPersonal = async () => {
     const adsIncomeToken = await this.taccountService.getBalance(
-      CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO
+      CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
     );
     const adsPlacements = await this._adsPlacementModel.find({
       'cost.CAST': { $exits: false },
@@ -606,7 +619,7 @@ export class AdsService {
   distributeAdsReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession
+    session: mongoose.ClientSession,
   ) => {
     //castRate = 1/castActualCost;
 
@@ -643,14 +656,14 @@ export class AdsService {
           },
         ],
       },
-      session
+      session,
     );
   };
 
   distributeContentCreatorReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession
+    session: mongoose.ClientSession,
   ) => {
     //!!! TODO should embed in adsplacement
     const creatorPool = reward.creatorShare + reward.farmingShare;
@@ -665,12 +678,7 @@ export class AdsService {
     const ledgers: any[] = [];
     for (let i = 0; i < adsplacement.contents.length; i++) {
       const currentCfs = cfs.filter(
-        (c) => String(c.content) === adsplacement.contents[i].contentId
-      );
-
-      //contents[i].author.id get author id from this
-      const user = await this._userModel.findById(
-        adsplacement.contents[i].authorId
+        (c) => String(c.content) === adsplacement.contents[i].contentId,
       );
       const rewardPerContent =
         currentCfs.length === 0
@@ -678,7 +686,7 @@ export class AdsService {
           : creatorRewardPerContent *
             (reward.creatorShare / (reward.creatorShare + reward.farmingShare));
       transferTo.push({
-        account: user.ownerAccount.id,
+        user: adsplacement.contents[i].authorId,
         type: WalletType.PERSONAL,
         value: rewardPerContent,
       });
@@ -687,8 +695,8 @@ export class AdsService {
           caccountNo:
             adsplacement.campaign.campaignPaymentType ===
             AdsPaymentMethod.ADS_CREDIT
-              ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-              : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+              ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+              : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
           value: rewardPerContent,
         },
         credit: {
@@ -706,14 +714,14 @@ export class AdsService {
         to: transferTo,
         ledgers: ledgers,
       },
-      session
+      session,
     );
   };
 
   distributeContentFarmingReward = async (
     adsplacement: AdsPlacement,
     reward: AdsSocialReward,
-    session: mongoose.ClientSession
+    session: mongoose.ClientSession,
   ) => {
     const creatorPool = reward.creatorShare + reward.farmingShare;
     const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
@@ -726,7 +734,7 @@ export class AdsService {
 
     for (let j = 0; j < adsplacement.contents.length; j++) {
       const currentCfs = cfs.filter(
-        (c) => String(c.content) === adsplacement.contents[j].contentId
+        (c) => String(c.content) === adsplacement.contents[j].contentId,
       );
       if (currentCfs.length > 0) {
         //has content farming
@@ -739,7 +747,7 @@ export class AdsService {
               (reward.farmingShare + reward.creatorShare)) *
             creatorRewardPerContent;
           transferTo.push({
-            account: String(currentCfs[i].account),
+            user: String(currentCfs[i].user),
             type: WalletType.PERSONAL,
             value: rewardContent,
           });
@@ -748,8 +756,8 @@ export class AdsService {
               caccountNo:
                 adsplacement.campaign.campaignPaymentType ===
                 AdsPaymentMethod.ADS_CREDIT
-                  ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-                  : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+                  ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                  : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
               value: rewardContent,
             },
             credit: {
@@ -763,11 +771,11 @@ export class AdsService {
           {
             isDistributed: true,
           },
-          { session: session }
+          { session: session },
         );
         await this._contentModel.updateMany(
           { _id: { $in: currentCfs.map((c) => c.content) } },
-          { 'farming.isDistributed': true }
+          { 'farming.isDistributed': true },
         );
         await this.taccountService.transfers(
           {
@@ -778,11 +786,11 @@ export class AdsService {
             to: transferTo,
             ledgers: ledgers,
           },
-          session
+          session,
         );
       } else {
         const author = await this._userModel.findById(
-          adsplacement.contents[j].authorId
+          adsplacement.contents[j].authorId,
         );
         await this.taccountService.transfers(
           {
@@ -794,7 +802,7 @@ export class AdsService {
               {
                 type: WalletType.PERSONAL,
                 value: creatorRewardPerContent,
-                account: String(author.ownerAccount),
+                user: author.id,
               },
             ],
             ledgers: [
@@ -803,8 +811,8 @@ export class AdsService {
                   caccountNo:
                     adsplacement.campaign.campaignPaymentType ===
                     AdsPaymentMethod.ADS_CREDIT
-                      ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
-                      : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: creatorRewardPerContent,
                 },
                 credit: {
@@ -814,7 +822,7 @@ export class AdsService {
               },
             ],
           },
-          session
+          session,
         );
       }
     }
