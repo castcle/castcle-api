@@ -102,7 +102,7 @@ export interface OtpModel extends mongoose.Model<Otp> {
     requestId: string,
     channel: TwilioChannel,
     verified: boolean,
-    receiver?: string,
+    receiver: string,
     sid?: string,
   ): Promise<Otp>;
 }
@@ -113,7 +113,7 @@ OtpSchema.statics.generate = async function (
   requestId: string,
   channel: TwilioChannel,
   verified: boolean,
-  receiver?: string,
+  receiver: string,
   sid?: string,
 ) {
   let refCodeExists: boolean;

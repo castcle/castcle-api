@@ -20,11 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { IsNotEmpty, IsString } from 'class-validator';
-import { GetUserParam } from './user.dto';
 
-export class TargetIdParam extends GetUserParam {
-  @IsString()
-  @IsNotEmpty()
-  targetCastcleId: string;
-}
+const nxPreset = require('@nrwl/jest/preset').default;
+
+module.exports = { ...nxPreset };

@@ -56,3 +56,11 @@ const stringToObjectOfStrings = ({ value }: TransformFnParams) => {
 export const TransformSortStringToSortObject = () => {
   return Transform(stringToObjectOfStrings, { toClassOnly: true });
 };
+
+const removeLeadingZero = ({ value }: TransformFnParams) => {
+  return (value as string)?.replace(/^0/, '');
+};
+
+export const RemoveLeadingZero = () => {
+  return Transform(removeLeadingZero, { toClassOnly: true });
+};
