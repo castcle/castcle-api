@@ -25,7 +25,7 @@ import {
 import { EntityVisibility } from '../dtos';
 import { QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountActivation, Credential } from '../schemas';
+import { Account, AccountActivationV1, Credential } from '../schemas';
 import { SignupRequirements } from './authentication.service';
 import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
@@ -95,7 +95,7 @@ describe('Authentication Service', () => {
   });
 
   describe('#Exist', () => {
-    let signupResult: AccountActivation;
+    let signupResult: AccountActivationV1;
     let createAccountResult: {
       accountDocument: Account;
       credentialDocument: Credential;

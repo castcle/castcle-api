@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AcceptPlatform } from './../dtos/common.dto';
+import { AcceptPlatform } from '../dtos/common.dto';
 export class AuthenticationDetail {
   socialId: string;
   socialToken?: string;

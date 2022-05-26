@@ -57,7 +57,7 @@ import { UserService } from './user.service';
 import { TAccountService } from './taccount.service';
 import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
-import { EngagementType } from './../schemas/engagement.schema';
+import { EngagementType } from '../models';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CampaignService } from './campaign.service';
 

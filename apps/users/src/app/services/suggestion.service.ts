@@ -28,10 +28,10 @@ import {
   UserService,
   UserType,
 } from '@castcle-api/database';
-import { SuggestToFollowResponseDto } from '@castcle-api/database/dtos';
+import { SuggestToFollowResponseDto } from '@castcle-api/database';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { Account, Credential } from '@castcle-api/database/schemas';
+import { Account, Credential } from '@castcle-api/database';
 
 type SeenState = {
   seenCount: number;

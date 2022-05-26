@@ -22,7 +22,7 @@
  */
 
 import { AuthenticationService, UserService } from '@castcle-api/database';
-import { Account, Credential, User } from '@castcle-api/database/schemas';
+import { Account, Credential, User } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {

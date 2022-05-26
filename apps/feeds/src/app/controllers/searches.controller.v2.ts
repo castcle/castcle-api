@@ -29,8 +29,11 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
-import { SearchServiceV2 } from '@castcle-api/database';
-import { GetKeywordQuery, GetTopTrendQuery } from '@castcle-api/database/dtos';
+import {
+  SearchServiceV2,
+  GetKeywordQuery,
+  GetTopTrendQuery,
+} from '@castcle-api/database';
 
 @CastcleControllerV2({ path: 'searches' })
 export class SearchesControllerV2 {

@@ -32,7 +32,7 @@ import {
   NotificationResponse,
   NotificationSource,
   RegisterTokenDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

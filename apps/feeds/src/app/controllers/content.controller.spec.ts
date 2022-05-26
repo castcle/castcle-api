@@ -36,9 +36,9 @@ import {
   ContentType,
   SaveContentDto,
   ShortPayload,
-} from '@castcle-api/database/dtos';
-import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import { Content, Credential, User } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { generateMockUsers, MockUserDetail } from '@castcle-api/database';
+import { Content, Credential, User } from '@castcle-api/database';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';

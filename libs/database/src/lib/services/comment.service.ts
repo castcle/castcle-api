@@ -11,11 +11,11 @@ import {
   EntityVisibility,
   ExpansionQuery,
 } from '../dtos';
+import { EngagementType } from '../models';
 import {
   Comment,
   CommentType,
   Engagement,
-  EngagementType,
   User,
   Relationship,
   Revision,

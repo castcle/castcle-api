@@ -8,11 +8,11 @@ import {
   SocialSyncSchema,
   User as UserDocument,
   UserSchema,
-} from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
 import { model } from 'mongoose';
 import { User } from '../models';
-import { CommentSchema } from './../../../database/src/lib/schemas/comment.schema';
-import { ContentSchema } from './../../../database/src/lib/schemas/content.schema';
+import { CommentSchema } from '../../../database/src/lib/schemas/comment.schema';
+import { ContentSchema } from '../../../database/src/lib/schemas/content.schema';
 
 export const campaignModel = model('Campaign', CampaignSchema);
 export const otpModel = model('Otp', OtpSchema);

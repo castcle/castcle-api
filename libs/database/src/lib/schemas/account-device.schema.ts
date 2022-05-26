@@ -4,7 +4,7 @@ import { AcceptPlatform } from '../dtos/common.dto';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
-export class AccountDevice extends CastcleBase {
+export class AccountDeviceV1 extends CastcleBase {
   @Prop({
     type: SchemaTypes.ObjectId,
     ref: 'Account',
@@ -22,7 +22,8 @@ export class AccountDevice extends CastcleBase {
   platform: string;
 }
 
-export const AccountDeviceSchema = SchemaFactory.createForClass(AccountDevice);
+export const AccountDeviceSchema =
+  SchemaFactory.createForClass(AccountDeviceV1);
 
 AccountDeviceSchema.index(
   { account: 1, uuid: 1, platform: 1 },

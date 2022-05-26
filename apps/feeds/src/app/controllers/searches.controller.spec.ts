@@ -29,8 +29,8 @@ import {
   UserService,
   UserType,
 } from '@castcle-api/database';
-import { CreateHashtag } from '@castcle-api/database/dtos';
-import { Credential } from '@castcle-api/database/schemas';
+import { CreateHashtag } from '@castcle-api/database';
+import { Credential } from '@castcle-api/database';
 import { CacheModule } from '@nestjs/common/cache';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';

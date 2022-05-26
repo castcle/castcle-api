@@ -25,7 +25,7 @@ import {
   DEFAULT_QUERY_OPTIONS,
   HashtagResponse,
   LanguageResponse,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';

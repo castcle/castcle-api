@@ -42,8 +42,8 @@ import {
   SocialSyncDto,
   SortDirection,
   UpdatePageDto,
-} from '@castcle-api/database/dtos';
-import { Credential } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { Credential } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

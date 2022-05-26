@@ -1,7 +1,7 @@
 import { ShortPayload } from '../../../../database/src/lib/dtos/content.dto';
 import { User } from '../../models';
 import { CommentRequest, ContentsRequest, UsersRequest } from '../../requests';
-import { registerMockUser } from './../../utils/user.utils';
+import { registerMockUser } from '../../utils/user.utils';
 
 export const testBlocksFlow = () => {
   let userA = new User({ name: 'blockA' });

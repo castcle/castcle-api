@@ -32,7 +32,7 @@ import {
   Link,
   LinkType,
   SaveContentDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';

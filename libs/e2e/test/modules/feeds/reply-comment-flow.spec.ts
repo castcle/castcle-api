@@ -6,7 +6,7 @@ import {
   ContentsRequest,
 } from '../../requests';
 import { userGamma } from '../../variables';
-import { UsersRequest } from './../../requests/users.request';
+import { UsersRequest } from '../../requests/users.request';
 
 export const testReplyCommentsFlow = () => {
   const userA = new User({ name: 'CommentRepA' });

@@ -22,15 +22,9 @@
  */
 
 import { FilterQuery, Types } from 'mongoose';
-import { CastcleMetric } from '../dtos';
+import { Author, CastcleMetric } from '../dtos';
 import { EngagementType } from '../models';
-import {
-  DefaultContent,
-  GuestFeedItem,
-  FeedItem,
-  Content,
-  Author,
-} from '../schemas';
+import { DefaultContent, GuestFeedItem, FeedItem, Content } from '../schemas';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;

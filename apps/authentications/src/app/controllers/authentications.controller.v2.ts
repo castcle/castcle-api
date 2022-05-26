@@ -36,7 +36,7 @@ import {
   SocialConnectDto,
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import {
   Auth,

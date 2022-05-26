@@ -25,8 +25,8 @@ import {
   AcceptPlatform,
   PageResponseDto,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
+import { AccountAuthenIdType } from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';

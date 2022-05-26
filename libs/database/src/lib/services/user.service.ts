@@ -86,7 +86,7 @@ import {
   pipelineOfUserRelationFollowersCount,
   pipelineOfUserRelationFollowing,
   pipelineOfUserRelationFollowingCount,
-} from './../aggregations/get-users-relation.aggregation';
+} from '../aggregations/get-users-relation.aggregation';
 import { ContentService } from './content.service';
 
 @Injectable()
