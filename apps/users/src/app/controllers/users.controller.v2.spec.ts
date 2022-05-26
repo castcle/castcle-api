@@ -45,20 +45,20 @@ import {
 import {
   CommentParam,
   ContentType,
+  GetContentDto,
+  GetContentQuery,
+  GetSourceContentParam,
   GetUserParam,
   NotificationType,
-  GetContentDto,
+  QuoteCastDto,
   ReplyCommentParam,
   ShortPayload,
   UnlikeCommentCastParam,
-  GetSourceContentParam,
-  QuoteCastDto,
-  GetContentQuery,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import { Comment, Content } from '@castcle-api/database/schemas';
 import { Downloader } from '@castcle-api/utils/aws';
-import { FacebookClient } from '@castcle-api/utils/clients';
+import { FacebookClient, Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -107,7 +107,6 @@ describe('UsersControllerV2', () => {
       ],
       controllers: [UsersControllerV2],
       providers: [
-        { provide: DataService, useValue: {} },
         UserServiceV2,
         AuthenticationService,
         ContentService,
@@ -127,6 +126,8 @@ describe('UsersControllerV2', () => {
         ContentServiceV2,
         NotificationServiceV2,
         Repository,
+        { provide: Mailer, useValue: {} },
+        { provide: DataService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

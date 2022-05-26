@@ -22,6 +22,7 @@
  */
 
 import { CastcleBullModule } from '@castcle-api/environments';
+import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule, getQueueToken } from '@nestjs/bull';
@@ -84,6 +85,7 @@ describe('UserServiceV2', () => {
         Repository,
         UserService,
         HashtagService,
+        { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },

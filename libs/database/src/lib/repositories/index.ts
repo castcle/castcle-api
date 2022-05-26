@@ -490,6 +490,18 @@ export class Repository {
     return this.engagementModel.deleteMany(this.getEngagementQuery(filter));
   }
 
+  updateEngagement(
+    filter: EngagementQuery,
+    updateQuery: UpdateQuery<Engagement>,
+    option: QueryOptions,
+  ) {
+    return this.engagementModel.updateOne(
+      this.getEngagementQuery(filter),
+      updateQuery,
+      option,
+    );
+  }
+
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
     return this.relationshipModel.find(
       this.getRelationshipQuery(filter),
