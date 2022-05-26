@@ -2,13 +2,13 @@ const fs = require('fs');
 const { exclude: _, ...swcJestConfig } = JSON.parse(
   fs.readFileSync(
     `${__dirname.split('/').slice(0, -3).join('/')}/.swcrc`,
-    'utf-8'
-  )
+    'utf-8',
+  ),
 );
 
-module.exports = {
+export default {
   displayName: 'utils-commons',
-  preset: '../../../jest.preset.ts',
+  preset: '../../../jest.preset.js',
   setupFiles: ['../../../jest.setup.ts'],
   testEnvironment: 'node',
   transform: {
