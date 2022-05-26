@@ -44,6 +44,16 @@ export class ReportingDto {
   targetContentId?: string;
 }
 
+export class ReportingContentDto {
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+
+  @IsString()
+  @IsNotEmpty()
+  targetContentId?: string;
+}
+
 export class ReportingUserDto {
   @IsString()
   @IsNotEmpty()

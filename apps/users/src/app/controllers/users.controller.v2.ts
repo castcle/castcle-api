@@ -78,7 +78,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { ReportingUserDto, TargetCastcleDto } from '../dtos';
+import {
+  ReportingUserDto,
+  TargetCastcleDto,
+  ReportingContentDto,
+} from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
@@ -750,5 +754,20 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     await this.userServiceV2.reportUser(user, targetCastcleId, message);
+  }
+
+  @Post(':userId/reporting/content')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportContent(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() { message, targetContentId }: ReportingContentDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.userServiceV2.reportContent(user, targetContentId, message);
   }
 }
