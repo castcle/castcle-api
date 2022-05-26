@@ -173,7 +173,7 @@ describe('UsersControllerV2', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await (service as any).userModel.deleteMany({});
     });
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
@@ -343,7 +343,7 @@ describe('UsersControllerV2', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await (service as any).userModel.deleteMany({});
     });
 
     it('replyComment() should be able to reply a comment', async () => {

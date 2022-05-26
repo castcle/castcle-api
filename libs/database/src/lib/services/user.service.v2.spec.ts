@@ -30,6 +30,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
+  AnalyticService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -84,6 +85,7 @@ describe('UserServiceV2', () => {
         Repository,
         UserService,
         HashtagService,
+        AnalyticService,
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
