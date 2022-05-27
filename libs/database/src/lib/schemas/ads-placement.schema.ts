@@ -33,7 +33,7 @@ import {
 @Schema({ timestamps: true })
 export class AdsPlacement extends CastcleBase {
   @Prop({ required: true, type: Array })
-  contents: AdsPlacementContent[]; // array ob objectId
+  contents: AdsPlacementContent[];
 
   @Prop({ required: true, type: Object })
   cost: AdsCost;

@@ -23,10 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { User, CastcleBase } from '.';
+import { User } from './user.schema';
 import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models';
 import { AdsDetail } from './ads-detail.schema';
 import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
+import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })
 export class AdsCampaign extends CastcleBase {
