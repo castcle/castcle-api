@@ -887,7 +887,6 @@ export class ContentServiceV2 {
   };
 
   getUndistributedContentFarmingCDF = async () => {
-    //const prospectContentFarmings = await this.contentFarmingModel.find({isDistributed: {$ne:true}},{ }, {sort: 'startAt:1'} );
     const contents = await this.contentModel.find({
       farming: { $exists: true },
       'farming.isDistributed': { $ne: true },
