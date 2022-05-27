@@ -45,9 +45,11 @@ import {
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
+  GetBalanceResponse,
+  pipelineGetContents,
   pipelineOfGetAvailableId,
+  pipelineOfGetBalance,
 } from '../aggregations';
-import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
 import {
   AccessTokenPayload,
   BlogPayload,
@@ -59,7 +61,7 @@ import {
   ShortPayload,
   Url,
 } from '../dtos';
-import { KeywordType, OtpObjective, UserType } from '../models';
+import { CastcleNumber, KeywordType, OtpObjective, UserType } from '../models';
 import {
   Account,
   Content,
@@ -71,13 +73,11 @@ import {
   Otp,
   OtpModel,
   Relationship,
+  Transaction,
   User,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
-import {
-  NotificationSource,
-  NotificationType,
-} from './../dtos/notification.dto';
+import { NotificationSource, NotificationType } from '../dtos';
 
 type AccountQuery = {
   _id?: string;
@@ -86,6 +86,7 @@ type AccountQuery = {
   socialId?: string;
   mobileCountryCode?: string;
   mobileNumber?: string;
+  referredBy?: string;
 };
 
 type UserQuery = {
@@ -190,6 +191,7 @@ export class Repository {
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     private httpService: HttpService,
   ) {}
@@ -214,6 +216,7 @@ export class Repository {
     if (filter._id) query._id = filter._id;
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
     if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
+    if (filter.referredBy) query.referralBy = filter.referredBy;
     if (filter.mobileCountryCode)
       query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
@@ -819,4 +822,15 @@ export class Repository {
       queryOptions,
     );
   }
+
+  /**
+   * Get account's balance
+   */
+  getBalance = async (dto: { accountId: string }) => {
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(dto.accountId),
+    );
+
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
 }

@@ -59,6 +59,7 @@ import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
 import { EngagementType } from './../schemas/engagement.schema';
 import { Mailer } from '@castcle-api/utils/clients';
+import { CampaignService } from './campaign.service';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -94,6 +95,7 @@ describe('ContentServiceV2', () => {
         DataService,
         UserServiceV2,
         { provide: AnalyticService, useValue: {} },
+        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),

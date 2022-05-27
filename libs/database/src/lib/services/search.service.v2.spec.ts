@@ -45,6 +45,8 @@ import { Types } from 'mongoose';
 import { ExecuteType, KeywordType } from './../models/feed.enum';
 import { ContentService } from './content.service';
 import { Mailer } from '@castcle-api/utils/clients';
+import { CampaignService } from './campaign.service';
+
 describe('SearchServiceV2', () => {
   let mongod: MongoMemoryServer;
   let app: TestingModule;
@@ -74,6 +76,7 @@ describe('SearchServiceV2', () => {
         HashtagService,
         NotificationService,
         { provide: AnalyticService, useValue: {} },
+        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),

@@ -74,7 +74,6 @@ import { HashtagService } from './hashtag.service';
 import { DataService } from './data.service';
 import { Cache } from 'cache-manager';
 import { UserServiceV2 } from './user.service.v2';
-
 import cdf from 'castcle-cdf';
 
 @Injectable()
