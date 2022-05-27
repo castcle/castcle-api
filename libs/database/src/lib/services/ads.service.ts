@@ -255,7 +255,7 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
-    if (user.id !== adsRequest?.userId) {
+    if (adsRequest.userId && user.id !== adsRequest.userId) {
       const page = await this._userModel.findById(adsRequest.userId);
       return String(page.ownerAccount) === String(user._id);
     } else if (adsRequest.contentId) {
