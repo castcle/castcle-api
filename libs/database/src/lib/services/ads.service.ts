@@ -60,6 +60,8 @@ import {
   AdsPlacement,
   Content,
   ContentFarming,
+  MicroTransaction,
+  TLedger,
   toSignedContentPayloadItem,
   User,
 } from '../schemas';
@@ -254,7 +256,7 @@ export class AdsService {
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
     //have permission to add payment
-    if (adsRequest.userId && user.id !== adsRequest.userId) {
+    if (user.id !== adsRequest?.userId) {
       const page = await this._userModel.findById(adsRequest.userId);
       return String(page.ownerAccount) === String(user._id);
     } else if (adsRequest.contentId) {
@@ -561,14 +563,12 @@ export class AdsService {
   auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
 
   distributeSocialRewardAdsCredit = async () => {
-    //assume all conterm farming has been weigh
     const adsIncomeToken = await this.taccountService.getBalance(
       CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
     );
     const adsPlacements = await this._adsPlacementModel.find({
       'cost.CAST': { $exits: false },
     });
-    //gety cost UST in aggregation
     const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
     const castActualCost = totalCost / adsIncomeToken;
     for (let i = 0; i < adsPlacements.length; i++) {
@@ -598,7 +598,6 @@ export class AdsService {
     const adsPlacements = await this._adsPlacementModel.find({
       'cost.CAST': { $exits: false },
     });
-    //gety cost UST in aggregation
     const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
     const castActualCost = totalCost / adsIncomeToken;
     for (let i = 0; i < adsPlacements.length; i++) {
@@ -626,9 +625,6 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession,
   ) => {
-    //castRate = 1/castActualCost;
-
-    //distribute Content Farming
     await this.distributeContentFarmingReward(adsplacement, reward, session);
     await this.distributeContentCreatorReward(adsplacement, reward, session);
     return this.taccountService.transfers(
@@ -670,7 +666,6 @@ export class AdsService {
     reward: AdsSocialReward,
     session: mongoose.ClientSession,
   ) => {
-    //!!! TODO should embed in adsplacement
     const creatorPool = reward.creatorShare + reward.farmingShare;
     const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
     const cfs = await this._contentFarmingModel.find({
@@ -679,8 +674,8 @@ export class AdsService {
       },
     });
 
-    const transferTo: any[] = [];
-    const ledgers: any[] = [];
+    const transferTo: MicroTransaction[] = [];
+    const ledgers: TLedger[] = [];
     for (let i = 0; i < adsplacement.contents.length; i++) {
       const currentCfs = cfs.filter(
         (c) => String(c.content) === adsplacement.contents[i].contentId,
@@ -742,9 +737,8 @@ export class AdsService {
         (c) => String(c.content) === adsplacement.contents[j].contentId,
       );
       if (currentCfs.length > 0) {
-        //has content farming
-        const transferTo: any[] = [];
-        const ledgers: any[] = [];
+        const transferTo: MicroTransaction[] = [];
+        const ledgers: TLedger[] = [];
         for (let i = 0; i < currentCfs.length; i++) {
           const rewardContent =
             currentCfs[i].weight *
@@ -831,7 +825,5 @@ export class AdsService {
         );
       }
     }
-
-    //transfer rewardContent from ads credit lock to cfs[0].account;
   };
 }
