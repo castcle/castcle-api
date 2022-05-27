@@ -255,7 +255,6 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
-    //have permission to add payment
     if (user.id !== adsRequest?.userId) {
       const page = await this._userModel.findById(adsRequest.userId);
       return String(page.ownerAccount) === String(user._id);
