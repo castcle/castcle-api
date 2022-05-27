@@ -369,7 +369,6 @@ export class AdsService {
         untilId,
       },
     );
-    console.log('filter');
     if (filter && filter !== FilterInterval.All) {
       const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
         timezone,

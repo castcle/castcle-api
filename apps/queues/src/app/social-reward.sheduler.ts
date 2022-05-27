@@ -41,18 +41,15 @@ export class SocialRewardScheduler {
 
   @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async distributeSocialReward() {
-    //await this.contentService.expireAllFarmedToken();
-    //check if there is queue command to distribute reward
     const actionQueue = await this.queue.findOne({
       'payload.action': 'distribute-social-reward',
       status: QueueStatus.WAITING,
     });
-    if (actionQueue) {
-      await this.contentService.updateAllUndistributedContentFarming();
-      await this.adsService.distributeSocialRewardAdsCredit();
-      await this.adsService.distributeSocialRewardPersonal();
-      actionQueue.status = QueueStatus.DONE;
-      actionQueue.save();
-    }
+    if (!actionQueue) return;
+    await this.contentService.updateAllUndistributedContentFarming();
+    await this.adsService.distributeSocialRewardAdsCredit();
+    await this.adsService.distributeSocialRewardPersonal();
+    actionQueue.status = QueueStatus.DONE;
+    actionQueue.save();
   }
 }
