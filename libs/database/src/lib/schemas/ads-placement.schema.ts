@@ -23,12 +23,10 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { Account, CastcleBase, Credential } from '.';
-import {
-  AdsCost,
-  AdsPlacementCampaign,
-  AdsPlacementContent,
-} from '../models/ads.model';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+import { Credential } from './credential.schema';
+import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
 
 @Schema({ timestamps: true })
 export class AdsPlacement extends CastcleBase {

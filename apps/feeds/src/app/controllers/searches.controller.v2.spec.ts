@@ -34,6 +34,7 @@ import {
   ExecuteType,
   KeywordType,
   AnalyticService,
+  CampaignService,
 } from '@castcle-api/database';
 import { CreateHashtag } from '@castcle-api/database/dtos';
 import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
@@ -79,6 +80,7 @@ describe('SearchesControllerV2', () => {
         HashtagService,
         NotificationService,
         { provide: AnalyticService, useValue: {} },
+        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),

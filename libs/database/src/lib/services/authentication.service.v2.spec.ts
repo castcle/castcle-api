@@ -27,6 +27,7 @@ import { QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential } from '../schemas';
 import { SignupRequirements } from './authentication.service';
+import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
@@ -56,6 +57,7 @@ describe('Authentication Service', () => {
         ContentService,
         HashtagService,
         Repository,
+        { provide: CampaignService, useValue: {} },
         { provide: FacebookClient, useValue: FacebookClientMock },
         { provide: GoogleClient, useValue: GoogleClientMock },
         { provide: TwitterClient, useValue: TwitterClientMock },

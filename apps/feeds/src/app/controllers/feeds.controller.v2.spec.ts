@@ -23,6 +23,7 @@
 import {
   AnalyticService,
   AuthenticationService,
+  CampaignService,
   ContentService,
   ContentServiceV2,
   DataService,
@@ -79,6 +80,7 @@ describe('FeedsControllerV2', () => {
         UserService,
         UserServiceV2,
         HashtagService,
+        { provide: CampaignService, useValue: {} },
         { provide: TAccountService, useValue: {} },
         { provide: NotificationService, useValue: {} },
         { provide: NotificationServiceV2, useValue: {} },

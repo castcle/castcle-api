@@ -32,6 +32,7 @@ import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AnalyticService,
+  CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -79,14 +80,16 @@ describe('UserServiceV2', () => {
         MongooseForFeatures,
       ],
       providers: [
+        AnalyticService,
         AuthenticationService,
-        NotificationService,
-        ContentService,
         CommentService,
+        ContentService,
+        HashtagService,
+        NotificationService,
         Repository,
         UserService,
-        HashtagService,
-        AnalyticService,
+        UserServiceV2,
+        { provide: CampaignService, useValue: {} },
         { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
@@ -96,8 +99,6 @@ describe('UserServiceV2', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
-        UserService,
-        UserServiceV2,
       ],
     }).compile();
 
