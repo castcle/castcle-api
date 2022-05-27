@@ -699,7 +699,7 @@ export class AdsService {
           value: rewardPerContent,
         },
         credit: {
-          caccountSourceNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
           value: rewardPerContent,
         },
       });
