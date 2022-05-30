@@ -29,7 +29,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { AnyKeys, FilterQuery, Model, Types } from 'mongoose';
-import { createCastcleMeta } from '../database.module';
 import {
   CommentIncludes,
   CommentPayload,
@@ -58,9 +57,14 @@ import {
   Revision,
   User,
 } from '../schemas';
-import { createCastcleFilter, getRelationship } from '../utils/common';
+import {
+  createCastcleFilter,
+  createCastcleMeta,
+  getRelationship,
+} from '../utils/common';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
+
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);

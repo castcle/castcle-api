@@ -25,8 +25,7 @@ import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
 import { Twilio } from 'twilio';
-import { TwilioStatus } from '../..';
-import { TwilioChannel } from './twilio.enum';
+import { TwilioChannel, TwilioStatus } from './twilio.enum';
 
 @Injectable()
 export class TwilioClient {

@@ -23,7 +23,8 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { CastcleBase, Content } from '.';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
 import { DataSchema, DataStatistic } from './data-statistic.schema';
 
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })

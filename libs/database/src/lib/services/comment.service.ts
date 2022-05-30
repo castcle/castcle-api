@@ -3,7 +3,6 @@ import { Image } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
-import { createCastcleMeta } from '../database.module';
 import {
   CastcleQueryOptions,
   CommentPayload,
@@ -21,7 +20,7 @@ import {
   Relationship,
   Revision,
 } from '../schemas';
-import { getRelationship } from '../utils/common';
+import { createCastcleMeta, getRelationship } from '../utils/common';
 
 @Injectable()
 export class CommentService {

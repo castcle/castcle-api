@@ -29,7 +29,8 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ContentPayloadItem, PageResponseDto } from '.';
+import { ContentPayloadItem } from './content.dto';
+import { PageResponseDto } from './user.dto';
 import { FilterInterval, AdsObjective } from '../models';
 import { AdsCampaign } from '../schemas';
 import { PaginationQuery } from './pagination.dto';
