@@ -891,14 +891,10 @@ export class ContentServiceV2 {
       farming: { $exists: true },
       'farming.isDistributed': { $ne: true },
     });
-    const result: ContentFarmingCDF[] = [];
-    contents.forEach((item) => {
-      result.push({
-        contentId: item.id,
-        contentFarmings: item.farming,
-      });
-    });
-    return result;
+    return contents.map<ContentFarmingCDF>((content) => ({
+      contentId: content.id,
+      contentFarmings: content.farming,
+    }));
   };
 
   findCumulativeStats = (contentFarmingCDF: ContentFarmingCDF) => {

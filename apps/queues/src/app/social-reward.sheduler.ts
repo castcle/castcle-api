@@ -50,6 +50,6 @@ export class SocialRewardScheduler {
     await this.adsService.distributeSocialRewardAdsCredit();
     await this.adsService.distributeSocialRewardPersonal();
     actionQueue.status = QueueStatus.DONE;
-    actionQueue.save();
+    await actionQueue.save();
   }
 }
