@@ -342,14 +342,14 @@ export class Repository {
     return new this.accountModel(newAccount).save(queryOptions);
   }
 
-  async createContentImage(body: CreateContentDto, uploader: User) {
+  async createContentImage(body: CreateContentDto, userId: string) {
     if (body.payload.photo && body.payload.photo.contents) {
       const newContents = await Promise.all(
         (body.payload.photo.contents as Url[]).map(async (item) => {
           return Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`,
+            subpath: `contents/${userId}`,
           }).then((r) => r.image);
         }),
       );
@@ -365,7 +365,7 @@ export class Repository {
           {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`,
+            subpath: `contents/${userId}`,
           },
         )
       ).image;
@@ -381,7 +381,7 @@ export class Repository {
               image: await Image.upload(item.image, {
                 addTime: true,
                 sizes: COMMON_SIZE_CONFIGS,
-                subpath: `contents/${uploader._id}`,
+                subpath: `contents/${userId}`,
               }).then((r) => r.image),
             };
           },

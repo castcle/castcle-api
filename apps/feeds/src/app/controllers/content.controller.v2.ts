@@ -168,13 +168,13 @@ export class ContentControllerV2 {
 
   @CastcleBasicAuth()
   @Post('feed')
-  async createFeedContent(
+  createFeedContent(
     @Auth() authorizer: Authorizer,
     @Body(new SaveContentPipe()) body: CreateContentDto,
   ) {
     authorizer.requireActivation();
 
-    return await this.contentServiceV2.createContent(body, authorizer.user);
+    return this.contentServiceV2.createContent(body, authorizer.user);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Contents)

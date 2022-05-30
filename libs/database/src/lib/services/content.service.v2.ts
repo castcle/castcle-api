@@ -981,36 +981,36 @@ export class ContentServiceV2 {
     );
   };
 
-  createContent = async (body: CreateContentDto, user: User) => {
-    const userAccess = await this.repository.findUser({
+  createContent = async (body: CreateContentDto, requestedBy: User) => {
+    const author = await this.repository.findUser({
       _id: body.castcleId,
     });
-    if (!userAccess) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!author) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    if (String(userAccess.ownerAccount) !== String(user.ownerAccount))
+    if (String(author.ownerAccount) !== String(requestedBy.ownerAccount))
       throw CastcleException.FORBIDDEN;
 
-    const convertImage = await this.repository.createContentImage(body, user);
+    const convertImage = await this.repository.createContentImage(
+      body,
+      author._id,
+    );
 
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       body.payload,
     );
 
-    const author = new Author({
-      id: user._id,
-      avatar: user.profile?.images?.avatar || null,
-      castcleId: user.displayId,
-      displayName: user.displayName,
-      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
-      verified: user.verified,
-    });
-
     const newContent = {
-      ...convertImage,
-      author: author,
+      author: new Author({
+        id: author._id,
+        avatar: author.profile?.images?.avatar || null,
+        castcleId: author.displayId,
+        displayName: author.displayName,
+        type: author.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
+        verified: author.verified,
+      }),
       payload: convertImage.payload,
       revisionCount: 0,
-      type: convertImage.type,
+      type: body.type,
       visibility: EntityVisibility.Publish,
       hashtags: hashtags,
     };
