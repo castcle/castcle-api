@@ -792,10 +792,7 @@ export class UserService {
   };
 
   removeAllAccountAuthenIdsFromAccount = (account: Account) => {
-    return this._accountAuthenId.updateMany(
-      { account: account._id },
-      { visibility: EntityVisibility.Deleted },
-    );
+    return this._accountAuthenId.deleteMany({ account: account._id });
   };
 
   removeAllAccountActivationsFromAccount = async (account: Account) => {
