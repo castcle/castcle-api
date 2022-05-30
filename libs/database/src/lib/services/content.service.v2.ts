@@ -903,7 +903,6 @@ export class ContentServiceV2 {
       (item) => {
         item.cdfStat.adjustedFarmPeriod =
           (now.getTime() - item.startAt.getTime()) / 86400000;
-        //item.cdfStat
         item.cdfStat.expoWeight = cdf(item.cdfStat.adjustedFarmPeriod, Math.E);
         item.cdfStat.tokenWeight = item.cdfStat.expoWeight * item.farmAmount;
         return item;
