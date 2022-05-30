@@ -24,6 +24,7 @@
 import { plainToClass } from 'class-transformer';
 import {
   RemoveLeadingZero,
+  TransformKeywordStringToKeywordFilter,
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
   TransformStringToEnum,
@@ -128,5 +129,39 @@ describe('RemoveLeadingZero', () => {
     const target = plainToClass(Target, sortString);
 
     expect(target).toMatchObject({});
+  });
+});
+
+describe('TransformKeywordStringToKeywordFilter', () => {
+  class Target {
+    @TransformKeywordStringToKeywordFilter()
+    keyword: string;
+  }
+
+  it('should return type mention', () => {
+    const keywordString = { keyword: '@mention' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'mention', type: 'mention' },
+    });
+  });
+
+  it('should return type hashtag', () => {
+    const keywordString = { keyword: '#hashtag' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'hashtag', type: 'hashtag' },
+    });
+  });
+
+  it('should return type word', () => {
+    const keywordString = { keyword: 'word' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'word', type: 'word' },
+    });
   });
 });

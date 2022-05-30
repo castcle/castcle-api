@@ -110,7 +110,7 @@ describe('AdsService', () => {
       userService: userService,
     });
     promoteContent = await contentService.createContentFromUser(mocks[0].user, {
-      castcleId: mocks[0].pages[0].id,
+      castcleId: mocks[0].user.id,
       payload: {
         message: 'this is prmote short',
       } as ShortPayload,
@@ -131,7 +131,7 @@ describe('AdsService', () => {
         },
         to: [
           {
-            user: mocks[0].user.id,
+            user: mocks[0].pages[0].id,
             type: WalletType.ADS,
             value: 999999,
           },
@@ -146,7 +146,7 @@ describe('AdsService', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       } as AdsRequestDto;
-      const ads = await service.createAds(mocks[0].user, adsIput);
+      const ads = await service.createAds(mocks[0].pages[0], adsIput);
       expect(ads.detail.dailyBudget).toEqual(adsIput.dailyBudget);
       expect(ads.detail.duration).toEqual(adsIput.duration);
       expect(ads.objective).toEqual(adsIput.objective);
@@ -156,8 +156,21 @@ describe('AdsService', () => {
       expect(ads.adsRef.$id).toEqual(mocks[0].pages[0]._id);
     });
     it('should be able to create ads for promote contents', async () => {
+      await new taccountService._transactionModel({
+        from: {
+          type: WalletType.CASTCLE_TREASURY,
+          value: 999999,
+        },
+        to: [
+          {
+            user: mocks[0].user.id,
+            type: WalletType.ADS,
+            value: 999999,
+          },
+        ],
+      }).save();
       const adsIput = {
-        campaignName: 'Ads2',
+        campaignName: 'Ads--2',
         campaignMessage: 'This is ads',
         contentId: promoteContent.id,
         dailyBudget: 1,
@@ -177,14 +190,14 @@ describe('AdsService', () => {
   });
   describe('#listAds', () => {
     it('should be able to get list ads exist.', async () => {
-      const adsCampaigns = await service.getListAds(mocks[0].account._id, {
+      const adsCampaigns = await service.getListAds(mocks[0].user, {
         maxResults: 100,
         filter: 'week',
         timezone: '+07:00',
       } as AdsQuery);
 
       expect(adsCampaigns.length).toBeGreaterThan(0);
-      expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].account._id));
+      expect(String(adsCampaigns[0].owner)).toBe(String(mocks[0].user._id));
     });
   });
   describe('#lookupAds', () => {
@@ -197,15 +210,16 @@ describe('AdsService', () => {
         duration: 5,
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
+        paymentId: mocks[0].user.id,
       };
-      const ads = await service.createAds(mocks[0].user, adsInput);
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
       const adsCampaign = await service.lookupAds(
-        mocks[0].account._id,
+        mocks[0].pages[0]._id,
         ads._id,
       );
 
       expect(adsCampaign).toBeTruthy();
-      expect(String(adsCampaign.owner)).toBe(String(mocks[0].account._id));
+      expect(String(adsCampaign.owner)).toBe(String(mocks[0].pages[0]._id));
     });
   });
 
@@ -228,7 +242,7 @@ describe('AdsService', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
-      const ads = await service.createAds(mocks[0].user, adsInput);
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.updateAdsById(ads.id, adsUpdate);
       const adsCampaign = await service._adsCampaignModel
         .findById(ads.id)
@@ -253,7 +267,7 @@ describe('AdsService', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
-      const ads = await service.createAds(mocks[0].user, adsInput);
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service.deleteAdsById(ads.id);
       const adsCampaign = await service._adsCampaignModel
         .findById(ads.id)
@@ -273,7 +287,7 @@ describe('AdsService', () => {
         objective: AdsObjective.Engagement,
         paymentMethod: AdsPaymentMethod.ADS_CREDIT,
       };
-      const ads = await service.createAds(mocks[0].user, adsInput);
+      const ads = await service.createAds(mocks[0].pages[0], adsInput);
       await service._adsCampaignModel.updateOne(
         { _id: ads._id },
         {
@@ -377,55 +391,55 @@ describe('AdsService', () => {
         const sortedCpms: AdsCpm[] = await service.getAds(mocks[1].account.id);
         const exptectedCPM = [
           expect.objectContaining({
-            adsCampignId: adsCampaigns[7].id,
+            adsCampaignId: adsCampaigns[7].id,
             //bidding_cpm: 0.013
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[6].id,
+            adsCampaignId: adsCampaigns[6].id,
             //bidding_cpm: 0.012
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[12].id,
+            adsCampaignId: adsCampaigns[12].id,
             //bidding_cpm: 0.011
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[5].id,
+            adsCampaignId: adsCampaigns[5].id,
             //bidding_cpm: 0.01
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[4].id,
+            adsCampaignId: adsCampaigns[4].id,
             //bidding_cpm: 0.009
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[3].id,
+            adsCampaignId: adsCampaigns[3].id,
             //bidding_cpm: 0.008
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[11].id,
+            adsCampaignId: adsCampaigns[11].id,
             //bidding_cpm: 0.007
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[1].id,
+            adsCampaignId: adsCampaigns[1].id,
             //bidding_cpm: 0.006
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[10].id,
+            adsCampaignId: adsCampaigns[10].id,
             //bidding_cpm: 0.005
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[9].id,
+            adsCampaignId: adsCampaigns[9].id,
             //bidding_cpm: 0.004
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[2].id,
+            adsCampaignId: adsCampaigns[2].id,
             //bidding_cpm: 0.003
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[8].id,
+            adsCampaignId: adsCampaigns[8].id,
             //bidding_cpm: 0.002
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[0].id,
+            adsCampaignId: adsCampaigns[0].id,
             ///bidding_cpm: 0.001
           }),
         ];

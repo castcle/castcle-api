@@ -20,3 +20,36 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import {
+  AdsService,
+  ContentServiceV2,
+  QueueStatus,
+} from '@castcle-api/database';
+import { Queue } from '@castcle-api/database/schemas';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Model } from 'mongoose';
+
+@Injectable()
+export class SocialRewardScheduler {
+  constructor(
+    private contentService: ContentServiceV2,
+    private adsService: AdsService,
+    private queue: Model<Queue>,
+  ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async distributeSocialReward() {
+    const actionQueue = await this.queue.findOne({
+      'payload.action': 'distribute-social-reward',
+      status: QueueStatus.WAITING,
+    });
+    if (!actionQueue) return;
+    await this.contentService.updateAllUndistributedContentFarming();
+    await this.adsService.distributeSocialRewardAdsCredit();
+    await this.adsService.distributeSocialRewardPersonal();
+    actionQueue.status = QueueStatus.DONE;
+    await actionQueue.save();
+  }
+}

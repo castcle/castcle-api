@@ -28,6 +28,12 @@ import { Types } from 'mongoose';
 import { User } from './user.schema';
 import { ContentFarmingStatus } from '../models/content-farming.enum';
 
+type CDFStat = {
+  adjustedFarmPeriod: number;
+  expoWeight: number;
+  tokenWeight: number;
+};
+
 @Schema({ timestamps: true })
 export class ContentFarming extends CastcleBase {
   @Prop({ index: true, required: true, type: Types.ObjectId })
@@ -44,6 +50,15 @@ export class ContentFarming extends CastcleBase {
 
   @Prop({ required: true })
   farmAmount: number;
+
+  @Prop()
+  weight?: number;
+
+  @Prop({ type: Object })
+  cdfStat?: CDFStat;
+
+  @Prop()
+  isDistributed?: boolean;
 
   @Prop({ required: true, type: String })
   status: ContentFarmingStatus;

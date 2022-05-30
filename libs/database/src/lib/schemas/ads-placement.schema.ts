@@ -23,19 +23,21 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { Account, AdsCampaign, CastcleBase, Credential } from '.';
-import { AdsCost } from '../models/ads.model';
+import { Account } from './account.schema';
+import { CastcleBase } from './base.schema';
+import { Credential } from './credential.schema';
+import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
 
 @Schema({ timestamps: true })
 export class AdsPlacement extends CastcleBase {
   @Prop({ required: true, type: Array })
-  contents: any[]; // array ob objectId
+  contents: AdsPlacementContent[];
 
   @Prop({ required: true, type: Object })
   cost: AdsCost;
 
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'AdsCampaign' })
-  campaign: AdsCampaign;
+  @Prop({ required: true, type: Object })
+  campaign: AdsPlacementCampaign;
 
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'Account' })
   viewer: Account;

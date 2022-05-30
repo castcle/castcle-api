@@ -20,13 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  TransformKeywordStringToKeywordFilter,
+  TransformStringToEnum,
+} from '@castcle-api/utils/commons';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { KeywordType, SearchType } from '../models';
+import { PaginationQuery } from './pagination.dto';
 
-export * from './ads.aggregation';
-export * from './estimate-content-reaches.aggregation';
-export * from './get-available-id.aggregation';
-export * from './get-balance.aggregation';
-export * from './get-campaign-claims.aggregation';
-export * from './get-contents.aggregation';
-export * from './get-feed-contents.aggregation';
-export * from './get-users-relation.aggregation';
-export * from './notification.aggregation';
+export class GetSearchQuery extends PaginationQuery {
+  @IsNotEmpty()
+  @TransformKeywordStringToKeywordFilter()
+  keyword: {
+    input: string;
+    type: KeywordType;
+  };
+
+  @IsOptional()
+  @IsString()
+  @TransformStringToEnum(SearchType)
+  contentType?: SearchType;
+}

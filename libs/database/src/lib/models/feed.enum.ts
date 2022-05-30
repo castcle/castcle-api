@@ -34,3 +34,14 @@ export enum SearchType {
   PHOTO = 'photo',
   VIDEO = 'video',
 }
+
+export enum KeywordType {
+  Mention = 'mention',
+  Hashtag = 'hashtag',
+  Word = 'word',
+}
+
+export enum ExecuteType {
+  Hashtags = 'hashtags',
+  Users = 'users',
+}

@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
 import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -29,25 +30,29 @@ import { Model, Types } from 'mongoose';
 import {
   CastcleQueryOptions,
   EntityVisibility,
+  GetKeywordQuery,
   Meta,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  ResponseDto,
   SortDirection,
   UpdateMobileDto,
   UserField,
 } from '../dtos';
-import { EngagementType, UserType } from '../models';
+import { CampaignType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
+import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
 import { NotificationService } from './notification.service';
-import { UserService } from './user.service';
 
 @Injectable()
 export class UserServiceV2 {
+  private logger = new CastLogger();
+
   constructor(
     @InjectModel('Account')
     private accountModel: Model<Account>,
@@ -58,20 +63,47 @@ export class UserServiceV2 {
     @InjectModel('User')
     private userModel: Model<User>,
     private analyticService: AnalyticService,
+    private campaignService: CampaignService,
     private contentService: ContentService,
     private mailerService: Mailer,
     private notificationService: NotificationService,
     private repositoryService: Repository,
-    private userService: UserService,
   ) {}
 
   getUser = async (userId: string) => {
-    const user = await this.userService.getByIdOrCastcleId(userId);
+    const user = await this.repositoryService.findUser({ _id: userId });
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     return user;
   };
 
-  private async convertUsersToUserResponsesV2(
+  getUserBlock = async (viewer: User) => {
+    if (!viewer) return [];
+    const isRelationships = await this.repositoryService.findRelationships(
+      {
+        followedUser: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { user: 1 },
+      },
+    );
+
+    const byRelationships = await this.repositoryService.findRelationships(
+      {
+        userId: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { followedUser: 1 },
+      },
+    );
+    return [
+      ...isRelationships.map((item) => item.user),
+      ...byRelationships.map((item) => item.followedUser),
+    ];
+  };
+
+  async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
@@ -118,7 +150,9 @@ export class UserServiceV2 {
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
-          ? await this.userService.getBalance(item)
+          ? await this.repositoryService.getBalance({
+              accountId: String(item.ownerAccount),
+            })
           : undefined;
 
         const userResponse =
@@ -492,5 +526,47 @@ export class UserServiceV2 {
         mobileNumber,
       ),
     ]);
+
+    try {
+      await this.campaignService.claimCampaignsAirdrop(
+        account._id,
+        CampaignType.VERIFY_MOBILE,
+      );
+
+      await this.campaignService.claimCampaignsAirdrop(
+        String(account.referralBy),
+        CampaignType.FRIEND_REFERRAL,
+      );
+    } catch (error: unknown) {
+      this.logger.error(error, `updateMobile:claimAirdrop:error`);
+    }
+  }
+  async getUserByKeyword(
+    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
+    viewer: User,
+  ) {
+    const blocking = await this.getUserBlock(viewer);
+
+    const users = await this.repositoryService.findUsers({
+      execute: blocking,
+      ...query,
+    });
+
+    if (!users.length)
+      return ResponseDto.ok({
+        payload: [],
+        meta: { resultCount: 0 },
+      });
+
+    const userResponses = await this.convertUsersToUserResponsesV2(
+      viewer,
+      users,
+      hasRelationshipExpansion,
+      userFields,
+    );
+    return ResponseDto.ok({
+      payload: userResponses,
+      meta: Meta.fromDocuments(userResponses as any),
+    });
   }
 }

@@ -45,9 +45,11 @@ import {
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
+  GetBalanceResponse,
+  pipelineGetContents,
   pipelineOfGetAvailableId,
+  pipelineOfGetBalance,
 } from '../aggregations';
-import { pipelineGetContents } from '../aggregations/get-contents.aggregation';
 import {
   AccessTokenPayload,
   BlogPayload,
@@ -59,7 +61,7 @@ import {
   ShortPayload,
   Url,
 } from '../dtos';
-import { OtpObjective, UserType } from '../models';
+import { CastcleNumber, KeywordType, OtpObjective, UserType } from '../models';
 import {
   Account,
   Content,
@@ -71,13 +73,11 @@ import {
   Otp,
   OtpModel,
   Relationship,
+  Transaction,
   User,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
-import {
-  NotificationSource,
-  NotificationType,
-} from './../dtos/notification.dto';
+import { NotificationSource, NotificationType } from '../dtos';
 
 type AccountQuery = {
   _id?: string;
@@ -86,6 +86,7 @@ type AccountQuery = {
   socialId?: string;
   mobileCountryCode?: string;
   mobileNumber?: string;
+  referredBy?: string;
 };
 
 type UserQuery = {
@@ -93,6 +94,13 @@ type UserQuery = {
   _id?: string | Types.ObjectId[];
   accountId?: string;
   type?: UserType;
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
+  sinceId?: string;
+  untilId?: string;
+  execute?: string[] | User[];
 };
 
 type EngagementQuery = {
@@ -138,7 +146,7 @@ type NotificationQueryOption = {
 };
 
 type ContentQuery = {
-  _id?: string;
+  _id?: string | string[];
   author?: string;
   originalPost?: string;
   isRecast?: boolean;
@@ -149,15 +157,27 @@ type ContentQuery = {
   maxResults?: number;
   viewer?: User;
   type?: string[];
+  contentType?: string;
   sortBy?: {
     [key: string]: string;
   };
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
+  executeContents?: Content[];
+  decayDays?: number;
+  executeAuthor?: string[] | User[];
 };
 
 type HashtagQuery = {
   tag?: string;
   tags?: string[];
   score?: number;
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
 };
 
 @Injectable()
@@ -171,6 +191,7 @@ export class Repository {
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     private httpService: HttpService,
   ) {}
@@ -195,6 +216,7 @@ export class Repository {
     if (filter._id) query._id = filter._id;
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
     if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
+    if (filter.referredBy) query.referralBy = filter.referredBy;
     if (filter.mobileCountryCode)
       query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
@@ -226,7 +248,9 @@ export class Repository {
       visibility: EntityVisibility.Publish,
     };
 
-    if (filter._id) query._id = Types.ObjectId(filter._id);
+    if (isArray(filter._id))
+      query._id = { $in: (filter._id as any).map((id) => Types.ObjectId(id)) };
+    else if (filter._id) query._id = Types.ObjectId(filter._id as any);
 
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
@@ -235,6 +259,47 @@ export class Repository {
     if (filter.isRecast) query.isRecast = filter.isRecast;
     if (filter.isQuote) query.isQuote = filter.isQuote;
     if (isArray(filter.type)) query.type = { $in: filter.type };
+
+    if (filter.contentType)
+      query[`payload.${filter.contentType}`] = { $exists: true };
+
+    if (filter.keyword) {
+      query.$or = [
+        {
+          'payload.message': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          'author.castcleId': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          'author.displayName': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        { hashtags: filter.keyword.input },
+      ];
+    }
+    if (filter.decayDays) {
+      query.$and = [
+        { createdAt: { $lte: new Date() } },
+        {
+          createdAt: {
+            $gte: new Date(
+              new Date().getTime() - filter.decayDays * 1000 * 86400,
+            ),
+          },
+        },
+      ];
+    }
+    if (filter.executeContents?.length)
+      query._id = { $nin: filter.executeContents };
+
+    if (filter.executeAuthor?.length)
+      query['author.id'] = { $nin: filter.executeAuthor };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -298,6 +363,11 @@ export class Repository {
     if (filter.tags)
       query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
 
+    if (filter.keyword) {
+      query.tag = CastcleRegExp.fromString(filter.keyword.input, {
+        exactMatch: false,
+      });
+    }
     return query;
   };
 
@@ -342,14 +412,14 @@ export class Repository {
     return new this.accountModel(newAccount).save(queryOptions);
   }
 
-  async createContentImage(body: CreateContentDto, uploader: User) {
+  async createContentImage(body: CreateContentDto, userId: string) {
     if (body.payload.photo && body.payload.photo.contents) {
       const newContents = await Promise.all(
         (body.payload.photo.contents as Url[]).map(async (item) => {
           return Image.upload(item.image, {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`,
+            subpath: `contents/${userId}`,
           }).then((r) => r.image);
         }),
       );
@@ -365,7 +435,7 @@ export class Repository {
           {
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
-            subpath: `contents/${uploader._id}`,
+            subpath: `contents/${userId}`,
           },
         )
       ).image;
@@ -381,7 +451,7 @@ export class Repository {
               image: await Image.upload(item.image, {
                 addTime: true,
                 sizes: COMMON_SIZE_CONFIGS,
-                subpath: `contents/${uploader._id}`,
+                subpath: `contents/${userId}`,
               }).then((r) => r.image),
             };
           },
@@ -448,6 +518,30 @@ export class Repository {
     } else if (filter._id) {
       query.displayId = CastcleRegExp.fromString(filter._id as string);
     }
+
+    if (filter.keyword) {
+      query.$or = [
+        {
+          displayId: CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          displayName: CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        { hashtags: filter.keyword.input },
+      ];
+    }
+
+    if (filter.execute) query._id = { $nin: filter.execute };
+
+    if (filter.sinceId || filter.untilId)
+      return createCastcleFilter(query, {
+        sinceId: filter.sinceId,
+        untilId: filter.untilId,
+      });
 
     return query;
   }
@@ -528,8 +622,10 @@ export class Repository {
     return this.contentModel.findOne(this.getContentQuery(filter)).exec();
   }
 
-  findContents(filter: ContentQuery) {
-    return this.contentModel.find(this.getContentQuery(filter)).exec();
+  findContents(filter: ContentQuery, queryOptions?: QueryOptions) {
+    return this.contentModel
+      .find(this.getContentQuery(filter), {}, queryOptions)
+      .exec();
   }
   countContents(filter: ContentQuery) {
     return this.contentModel
@@ -718,4 +814,23 @@ export class Repository {
   accountSession(): Promise<ClientSession> {
     return this.accountModel.startSession();
   }
+
+  findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {
+    return this.hashtagModel.find(
+      this.getHashtagQuery(filter),
+      {},
+      queryOptions,
+    );
+  }
+
+  /**
+   * Get account's balance
+   */
+  getBalance = async (dto: { accountId: string }) => {
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(dto.accountId),
+    );
+
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
 }
