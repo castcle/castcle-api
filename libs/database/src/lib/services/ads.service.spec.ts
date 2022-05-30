@@ -391,55 +391,55 @@ describe('AdsService', () => {
         const sortedCpms: AdsCpm[] = await service.getAds(mocks[1].account.id);
         const exptectedCPM = [
           expect.objectContaining({
-            adsCampignId: adsCampaigns[7].id,
+            adsCampaignId: adsCampaigns[7].id,
             //bidding_cpm: 0.013
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[6].id,
+            adsCampaignId: adsCampaigns[6].id,
             //bidding_cpm: 0.012
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[12].id,
+            adsCampaignId: adsCampaigns[12].id,
             //bidding_cpm: 0.011
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[5].id,
+            adsCampaignId: adsCampaigns[5].id,
             //bidding_cpm: 0.01
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[4].id,
+            adsCampaignId: adsCampaigns[4].id,
             //bidding_cpm: 0.009
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[3].id,
+            adsCampaignId: adsCampaigns[3].id,
             //bidding_cpm: 0.008
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[11].id,
+            adsCampaignId: adsCampaigns[11].id,
             //bidding_cpm: 0.007
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[1].id,
+            adsCampaignId: adsCampaigns[1].id,
             //bidding_cpm: 0.006
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[10].id,
+            adsCampaignId: adsCampaigns[10].id,
             //bidding_cpm: 0.005
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[9].id,
+            adsCampaignId: adsCampaigns[9].id,
             //bidding_cpm: 0.004
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[2].id,
+            adsCampaignId: adsCampaigns[2].id,
             //bidding_cpm: 0.003
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[8].id,
+            adsCampaignId: adsCampaigns[8].id,
             //bidding_cpm: 0.002
           }),
           expect.objectContaining({
-            adsCampignId: adsCampaigns[0].id,
+            adsCampaignId: adsCampaigns[0].id,
             ///bidding_cpm: 0.001
           }),
         ];
