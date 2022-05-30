@@ -29,11 +29,13 @@ import { Model, Types } from 'mongoose';
 import {
   CastcleQueryOptions,
   EntityVisibility,
+  GetKeywordQuery,
   Meta,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  ResponseDto,
   SortDirection,
   UpdateMobileDto,
   UserField,
@@ -71,7 +73,34 @@ export class UserServiceV2 {
     return user;
   };
 
-  private async convertUsersToUserResponsesV2(
+  getUserBlock = async (viewer: User) => {
+    if (!viewer) return [];
+    const isRelationships = await this.repositoryService.findRelationships(
+      {
+        followedUser: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { user: 1 },
+      },
+    );
+
+    const byRelationships = await this.repositoryService.findRelationships(
+      {
+        userId: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { followedUser: 1 },
+      },
+    );
+    return [
+      ...isRelationships.map((item) => item.user),
+      ...byRelationships.map((item) => item.followedUser),
+    ];
+  };
+
+  async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
@@ -492,5 +521,33 @@ export class UserServiceV2 {
         mobileNumber,
       ),
     ]);
+  }
+  async getUserByKeyword(
+    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
+    viewer: User,
+  ) {
+    const blocking = await this.getUserBlock(viewer);
+
+    const users = await this.repositoryService.findUsers({
+      execute: blocking,
+      ...query,
+    });
+
+    if (!users.length)
+      return ResponseDto.ok({
+        payload: [],
+        meta: { resultCount: 0 },
+      });
+
+    const userResponses = await this.convertUsersToUserResponsesV2(
+      viewer,
+      users,
+      hasRelationshipExpansion,
+      userFields,
+    );
+    return ResponseDto.ok({
+      payload: userResponses,
+      meta: Meta.fromDocuments(userResponses as any),
+    });
   }
 }

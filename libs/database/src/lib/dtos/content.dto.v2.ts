@@ -44,6 +44,32 @@ import {
 } from '@castcle-api/utils/commons';
 import { PaginationQuery } from './pagination.dto';
 
+export class ResponseParticipate {
+  user: {
+    id: string;
+    castcleId: string;
+    displayName: string;
+    type: UserType;
+  };
+
+  participate: {
+    liked: boolean;
+    commented: boolean;
+    quoted: boolean;
+    recasted: boolean;
+    reported: boolean;
+  };
+}
+export class GetContentCastDto {
+  contents: Content[];
+  casts?: Content[];
+  authors?: User[];
+  engagements?: Engagement[];
+  metrics?: any[];
+  engagementsOriginal?: Engagement[];
+  metricsOriginal?: any[];
+}
+
 export class GetContentDto {
   @IsString()
   @IsMongoId()
@@ -70,16 +96,6 @@ export class QuoteCastDto extends GetContentDto {
   message: string;
 }
 
-export class GetContentCastDto {
-  contents: Content[];
-  casts?: Content[];
-  authors?: User[];
-  engagements?: Engagement[];
-  metrics?: any[];
-  engagementsOriginal?: Engagement[];
-  metricsOriginal?: any[];
-}
-
 export class CreateContentDto {
   @IsString()
   @IsNotEmpty()
@@ -91,23 +107,6 @@ export class CreateContentDto {
   @IsString()
   @IsNotEmpty()
   castcleId: string;
-}
-
-export class ResponseParticipate {
-  user: {
-    id: string;
-    castcleId: string;
-    displayName: string;
-    type: UserType;
-  };
-
-  participate: {
-    liked: boolean;
-    commented: boolean;
-    quoted: boolean;
-    recasted: boolean;
-    reported: boolean;
-  };
 }
 
 export class GetContentQuery extends PaginationQuery {

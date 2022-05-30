@@ -38,6 +38,7 @@ import {
   ExpansionQuery,
   GetContentDto,
   GetContentQuery,
+  GetKeywordQuery,
   GetSourceContentParam,
   GetUserParam,
   LikeCommentDto,
@@ -139,6 +140,16 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     return this.socialSyncService.sync(user, syncSocialDto);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('by')
+  getUserByKeyword(
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetKeywordQuery,
+  ) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return this.userServiceV2.getUserByKeyword(query, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Users)

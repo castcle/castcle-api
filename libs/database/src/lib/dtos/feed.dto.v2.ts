@@ -20,31 +20,24 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import {
+  TransformKeywordStringToKeywordFilter,
+  TransformStringToEnum,
+} from '@castcle-api/utils/commons';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { KeywordType, SearchType } from '../models';
+import { PaginationQuery } from './pagination.dto';
 
-export * from './account.dto';
-export * from './ads.dto';
-export * from './authentications.dto.v2';
-export * from './comment.dto';
-export * from './comment.dto.v2';
-export * from './common.dto';
-export * from './content.dto';
-export * from './content.dto.v2';
-export * from './country.dto';
-export * from './feed.dto';
-export * from './feed.dto.v2';
-export * from './guest-feed-item.dto';
-export * from './hashtag.dto';
-export * from './language.dto';
-export * from './link-preview.dto';
-export * from './notification.dto';
-export * from './pagination.dto';
-export * from './query.dto';
-export * from './response.dto';
-export * from './search.dto';
-export * from './sync-social.dto';
-export * from './token.dto';
-export * from './user.dto';
-export * from './user.dto.v2';
-export * from './ux.engagement.dto';
-export * from './notification.dto';
-export * from './search.dto.v2';
+export class GetSearchQuery extends PaginationQuery {
+  @IsNotEmpty()
+  @TransformKeywordStringToKeywordFilter()
+  keyword: {
+    input: string;
+    type: KeywordType;
+  };
+
+  @IsOptional()
+  @IsString()
+  @TransformStringToEnum(SearchType)
+  contentType?: SearchType;
+}

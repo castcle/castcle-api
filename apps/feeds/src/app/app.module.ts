@@ -35,9 +35,11 @@ import { ContentController } from './controllers/content.controller';
 import { ContentControllerV2 } from './controllers/content.controller.v2';
 import { CountryController } from './controllers/country.controller';
 import { FeedsController } from './controllers/feeds.controller';
+import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
 import { HashtagsController } from './controllers/hashtags.controller';
 import { LanguagesController } from './controllers/languages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { SearchesControllerV2 } from './controllers/searches.controller.v2';
 import { AppService, SuggestionService } from './services';
 
 @Module({
@@ -60,6 +62,8 @@ import { AppService, SuggestionService } from './services';
     LanguagesController,
     SearchesController,
     CommentControllerV2,
+    FeedsControllerV2,
+    SearchesControllerV2,
   ],
   providers: [AppService, SuggestionService],
 })
