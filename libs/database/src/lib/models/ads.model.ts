@@ -41,5 +41,5 @@ export type AdsCpm = {
   biddingCpm?: number;
   relevanceScore?: number;
   rankingScore?: number;
-  adsCampignId?: string;
+  adsCampaignId?: string;
 };

@@ -897,22 +897,14 @@ export class ContentServiceV2 {
   };
 
   findCumulativeStats = (contentFarmingCDF: ContentFarmingCDF) => {
-    const totalFarmedToken = contentFarmingCDF.contentFarmings.reduce(
-      (prev, now) => prev + now.farmAmount,
-      0,
-    );
-    const FIX_CONST = 0.9340119642;
-    let cumulativeTotal = 0;
+    const now = new Date();
     contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
       (item) => {
-        cumulativeTotal += item.farmAmount;
-        item.cdfStat.cumulativeOrder = cumulativeTotal / totalFarmedToken;
-        item.cdfStat.cumulativeDistributed = cdf(
-          item.cdfStat.cumulativeOrder,
-          Math.E,
-        );
-        item.cdfStat.adjustedCumulative =
-          item.cdfStat.cumulativeDistributed / FIX_CONST;
+        item.cdfStat.adjustedFarmPeriod =
+          (now.getTime() - item.startAt.getTime()) / 86400000;
+        //item.cdfStat
+        item.cdfStat.expoWeight = cdf(item.cdfStat.adjustedFarmPeriod, Math.E);
+        item.cdfStat.tokenWeight = item.cdfStat.expoWeight * item.farmAmount;
         return item;
       },
     );
@@ -920,16 +912,13 @@ export class ContentServiceV2 {
   };
 
   findWeight = (contentFarmingCDF: ContentFarmingCDF) => {
+    const totalExpo = contentFarmingCDF.contentFarmings.reduce(
+      (p, now) => p + now.cdfStat.tokenWeight,
+      0,
+    );
     contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
-      (item, index) => {
-        if (index == 0) {
-          item.weight = item.cdfStat.adjustedCumulative;
-        } else {
-          item.weight =
-            item.cdfStat.adjustedCumulative -
-            contentFarmingCDF.contentFarmings[index - 1].cdfStat
-              .adjustedCumulative;
-        }
+      (item) => {
+        item.weight = item.cdfStat.tokenWeight / totalExpo;
         return item;
       },
     );

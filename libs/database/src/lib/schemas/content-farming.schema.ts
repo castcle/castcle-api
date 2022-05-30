@@ -29,9 +29,9 @@ import { User } from './user.schema';
 import { ContentFarmingStatus } from '../models/content-farming.enum';
 
 type CDFStat = {
-  cumulativeOrder: number;
-  cumulativeDistributed: number;
-  adjustedCumulative: number;
+  adjustedFarmPeriod: number;
+  expoWeight: number;
+  tokenWeight: number;
 };
 
 @Schema({ timestamps: true })

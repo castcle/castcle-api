@@ -148,7 +148,7 @@ export class AdsService {
       session.startTransaction();
       const cpm = await this.auctionAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
-        campaign: cpm.adsCampignId,
+        campaign: cpm.adsCampaignId,
         contents: contentIds.map((c) => c.contentId),
         cost: {
           UST: cpm.biddingCpm,
@@ -554,7 +554,7 @@ export class AdsService {
         adsCpm.relevanceScore =
           releventScore[sortedAds.adsRef.$id || sortedAds.adsRef.oid];
         adsCpm.rankingScore = adsCpm.relevanceScore * adsCpm.biddingCpm;
-        adsCpm.adsCampignId = String(sortedAds._id);
+        adsCpm.adsCampaignId = String(sortedAds._id);
         return adsCpm;
       });
   };
