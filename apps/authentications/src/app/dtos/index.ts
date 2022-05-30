@@ -148,7 +148,7 @@ export class SuggestCastcleIdResponse {
 
 export class ChangePasswordBody {
   @ApiProperty()
-  @IsEnum([OtpObjective.ChangePassword, OtpObjective.ForgotPassword])
+  @IsEnum([OtpObjective.CHANGE_PASSWORD, OtpObjective.FORGOT_PASSWORD])
   objective: OtpObjective;
 
   @ApiProperty()
@@ -164,7 +164,7 @@ export class ChangePasswordBody {
 
 export class VerificationPasswordBody {
   @ApiProperty()
-  @IsEnum([OtpObjective.ChangePassword])
+  @IsEnum([OtpObjective.CHANGE_PASSWORD])
   objective: OtpObjective;
 
   @ApiProperty()

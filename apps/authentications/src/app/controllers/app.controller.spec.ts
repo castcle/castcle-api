@@ -764,7 +764,7 @@ describe('AppController', () => {
         );
         const response = await appController.verificationPassword(
           {
-            objective: OtpObjective.ChangePassword,
+            objective: OtpObjective.CHANGE_PASSWORD,
             password: '2@HelloWorld',
           },
           {
@@ -786,7 +786,7 @@ describe('AppController', () => {
         );
         const response = await appController.changePasswordSubmit(
           {
-            objective: OtpObjective.ChangePassword,
+            objective: OtpObjective.CHANGE_PASSWORD,
             newPassword: '2@BlaBlaBla',
             refCode: genRefCode,
           },
@@ -1214,7 +1214,7 @@ describe('AppController', () => {
     it('should return Exception when get wrong channel', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
-        OtpObjective.ForgotPassword
+        OtpObjective.FORGOT_PASSWORD
       );
       for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
         await exOtp.delete();
@@ -1266,7 +1266,7 @@ describe('AppController', () => {
     it('should return exception when wrong objective', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
-        OtpObjective.ForgotPassword
+        OtpObjective.FORGOT_PASSWORD
       );
       for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
         await exOtp.delete();
@@ -1556,7 +1556,7 @@ describe('AppController', () => {
     it('should return exception when wrong objective', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
-        OtpObjective.ForgotPassword
+        OtpObjective.FORGOT_PASSWORD
       );
       for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
         await exOtp.delete();
@@ -1646,7 +1646,7 @@ describe('AppController', () => {
     it('should return exception when wrong ref code', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
-        OtpObjective.ForgotPassword
+        OtpObjective.FORGOT_PASSWORD
       );
       for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
         await exOtp.delete();
@@ -1687,7 +1687,7 @@ describe('AppController', () => {
     it('should return Exception when invalid otp and return lock otp when over 3 times', async () => {
       const allExistingOtp = await service.getAllOtpFromRequestIdObjective(
         credentialGuest.$credential.account._id,
-        OtpObjective.ForgotPassword
+        OtpObjective.FORGOT_PASSWORD
       );
       for (const { exOtp } of allExistingOtp.map((exOtp) => ({ exOtp }))) {
         await exOtp.delete();

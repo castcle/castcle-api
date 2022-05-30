@@ -64,7 +64,7 @@ export class RegisterWithEmailDto {
 }
 
 export class RequestOtpByEmailDto {
-  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  @IsEnum([OtpObjective.FORGOT_PASSWORD, OtpObjective.MERGE_ACCOUNT])
   objective: OtpObjective;
 
   @IsEmail()
@@ -76,8 +76,20 @@ export class RequestOtpByEmailDto {
   recaptchaToken?: string;
 }
 
+export class RequestOtpForChangingPasswordDto {
+  @IsEnum([OtpObjective.CHANGE_PASSWORD])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  password: string;
+}
+
 export class RequestOtpByMobileDto {
-  @IsEnum([OtpObjective.VerifyMobile])
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
   objective: OtpObjective;
 
   @IsMobilePhone()
@@ -95,7 +107,7 @@ export class RequestOtpByMobileDto {
 }
 
 export class VerifyOtpByEmailDto {
-  @IsEnum([OtpObjective.ForgotPassword, OtpObjective.MergeAccount])
+  @IsEnum([OtpObjective.FORGOT_PASSWORD, OtpObjective.MERGE_ACCOUNT])
   objective: OtpObjective;
 
   @IsEmail()
@@ -111,7 +123,7 @@ export class VerifyOtpByEmailDto {
 }
 
 export class VerifyOtpByMobileDto {
-  @IsEnum([OtpObjective.VerifyMobile])
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
   objective: OtpObjective;
 
   @IsMobilePhone()
@@ -132,7 +144,7 @@ export class VerifyOtpByMobileDto {
 }
 
 export class ChangePasswordDto {
-  @IsEnum([OtpObjective.ChangePassword, OtpObjective.ForgotPassword])
+  @IsEnum([OtpObjective.CHANGE_PASSWORD, OtpObjective.FORGOT_PASSWORD])
   objective: OtpObjective;
 
   @IsString()

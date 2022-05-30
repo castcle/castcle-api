@@ -172,7 +172,9 @@ OtpSchema.methods.isValid = function () {
 
 OtpSchema.methods.isValidVerifyMobileOtp = function () {
   return (
-    this.action === OtpObjective.VerifyMobile && this.isValid() && this.isVerify
+    this.action === OtpObjective.VERIFY_MOBILE &&
+    this.isValid() &&
+    this.isVerify
   );
 };
 
