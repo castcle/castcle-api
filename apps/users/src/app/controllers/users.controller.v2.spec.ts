@@ -31,6 +31,7 @@ import {
   DataService,
   EngagementType,
   HashtagService,
+  KeywordType,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -867,6 +868,59 @@ describe('UsersControllerV2', () => {
       );
 
       expect(contentResp.payload).toHaveLength(7);
+    });
+  });
+
+  describe('getUserByKeyword', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(20, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user by keyword', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const getUserByKeyword = await appController.getUserByKeyword(
+        authorizer,
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'mock-10',
+          },
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(1);
+    });
+
+    it('should get user by keyword is empty', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const getUserByKeyword = await appController.getUserByKeyword(
+        authorizer,
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'empty',
+          },
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(0);
     });
   });
 });

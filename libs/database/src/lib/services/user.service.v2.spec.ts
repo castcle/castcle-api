@@ -44,8 +44,8 @@ import {
   PaginationQuery,
   UserResponseDto,
 } from '../dtos';
-import { generateMockUsers } from '../mocks/user.mocks';
-import { QueueName } from '../models';
+import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
@@ -121,6 +121,28 @@ describe('UserServiceV2', () => {
     });
 
     userDemo = await authService.getUserFromAccount(accountDemo.account);
+  });
+
+  describe('#blockUser', () => {
+    let user1: User;
+    let user2: User;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 10, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
+      await userServiceV2.blockUser(user2, String(user1._id));
+      const blocking = await userServiceV2.getUserBlock(user1);
+
+      expect(blocking).toHaveLength(1);
+      expect(blocking).toContainEqual(user2._id);
+    });
   });
 
   describe('#blockUser', () => {
@@ -250,6 +272,47 @@ describe('UserServiceV2', () => {
       );
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
+    });
+  });
+
+  describe('getUserByKeyword', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(20, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user by keyword', async () => {
+      const getUserByKeyword = await userServiceV2.getUserByKeyword(
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'mock-10',
+          },
+          hasRelationshipExpansion: false,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(1);
+    });
+
+    it('should get user by keyword is empty', async () => {
+      const getUserByKeyword = await userServiceV2.getUserByKeyword(
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'empty',
+          },
+          hasRelationshipExpansion: false,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(0);
     });
   });
 

@@ -27,10 +27,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
+  AnalyticService,
   ContentServiceV2,
+  DataService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  UserServiceV2,
 } from '../database.module';
 import { ContentType, NotificationType, ShortPayload } from '../dtos';
 import {
@@ -39,7 +42,13 @@ import {
   mockContents,
   mockDeposit,
 } from '../mocks';
-import { ContentFarmingStatus, QueueName, WalletType } from '../models';
+import {
+  ContentFarmingStatus,
+  KeywordType,
+  QueueName,
+  SearchType,
+  WalletType,
+} from '../models';
 import { Content, ContentFarming } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -49,6 +58,7 @@ import { TAccountService } from './taccount.service';
 import { Repository } from '../repositories';
 import { HttpModule } from '@nestjs/axios';
 import { EngagementType } from './../schemas/engagement.schema';
+import { Mailer } from '@castcle-api/utils/clients';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -81,6 +91,10 @@ describe('ContentServiceV2', () => {
         NotificationServiceV2,
         TAccountService,
         Repository,
+        DataService,
+        UserServiceV2,
+        { provide: AnalyticService, useValue: {} },
+        { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -124,7 +138,9 @@ describe('ContentServiceV2', () => {
         _id: content._id,
         maxResults: 25,
       });
-      const contentResp = await service.toContentsResponses(bundleContents);
+      const contentResp = await (service as any).toContentsResponses(
+        bundleContents,
+      );
 
       expect(contentResp.payload).toHaveLength(1);
     });
@@ -138,7 +154,9 @@ describe('ContentServiceV2', () => {
         _id: content._id,
         maxResults: 25,
       });
-      const contentResp = await service.toContentResponse(bundleContents);
+      const contentResp = await (service as any).toContentResponse(
+        bundleContents,
+      );
 
       expect(contentResp.payload.id).toEqual(String(content._id));
       expect(contentResp.payload.message).toEqual(
@@ -667,6 +685,85 @@ describe('ContentServiceV2', () => {
       expect(participates[0].participate.quoted).toBeTruthy();
       expect(participates[0].participate.recasted).toBeTruthy();
       expect(participates[0].participate.reported).toBeFalsy();
+    });
+  });
+
+  describe('#getSearchRecent()', () => {
+    it('should get cast is exists.', async () => {
+      const getSearchRecent = await service.getSearchRecent(
+        {
+          keyword: {
+            type: KeywordType.Word,
+            input: 'Hello',
+          },
+          hasRelationshipExpansion: true,
+          maxResults: 25,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getSearchRecent.payload).toHaveLength(25);
+    });
+
+    it('should get cast is not exists.', async () => {
+      const getSearchRecent = await service.getSearchRecent(
+        {
+          keyword: {
+            type: KeywordType.Word,
+            input: 'Hello',
+          },
+          contentType: SearchType.PHOTO,
+          hasRelationshipExpansion: true,
+          maxResults: 25,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getSearchRecent.payload).toHaveLength(25);
+    });
+  });
+
+  describe('#getSearchTrends()', () => {
+    beforeAll(async () => {
+      const contents = await (service as any).repository.findContents(
+        {
+          keyword: {
+            type: KeywordType.Word,
+            input: 'H',
+          },
+          maxResults: 1000,
+          decayDays: 7,
+          executeAuthor: [],
+        },
+        { projection: { _id: 1 } },
+      );
+
+      const contentsObj = {};
+
+      contents.forEach((content) => {
+        contentsObj[content._id] = Math.random();
+      });
+
+      jest
+        .spyOn(service, 'sortContentsByScore')
+        .mockResolvedValueOnce(contentsObj);
+    });
+    it('should get cast is exists.', async () => {
+      const getSearchTrends = await service.getSearchTrends(
+        {
+          keyword: {
+            type: KeywordType.Word,
+            input: 'H',
+          },
+          hasRelationshipExpansion: true,
+          maxResults: 25,
+        },
+        mocksUsers[0].user,
+        mocksUsers[0].account,
+        'testtesttesttesttesttesttesttesttesttest',
+      );
+
+      expect(getSearchTrends.payload).toHaveLength(25);
     });
   });
 

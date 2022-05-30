@@ -233,4 +233,8 @@ export class Environment {
   static CONTENT_FARMING_COOLDOWN_HR = Number(
     process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000,
   ); //hours
+
+  // Setting cache content
+  static LIMIT_CONTENT = Number(process.env.LIMIT_CONTENT) || 2000;
+  static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
 }
