@@ -94,7 +94,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(guest.guestToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.ForgotPassword,
+        objective: OtpObjective.FORGOT_PASSWORD,
         refCode: 'ref-code',
         countryCode: 'country-code',
         mobileNumber: 'mobile-number',
@@ -114,7 +114,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(guest.guestToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.VerifyMobile,
+        objective: OtpObjective.VERIFY_MOBILE,
         refCode: 'ref-code',
         countryCode: 'country-code',
         mobileNumber: '0801231234',
@@ -146,7 +146,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(tempUser.accessToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.VerifyMobile,
+        objective: OtpObjective.VERIFY_MOBILE,
         refCode: 'invalid-ref-code',
         countryCode: tempUser.countryCode,
         mobileNumber: tempUser.randomPhone(),

@@ -22,15 +22,15 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
-import { User } from '.';
+import { SchemaTypes } from 'mongoose';
 import { CastcleBase } from './base.schema';
+import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class Relationship extends CastcleBase {
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'User',
     index: true,
   })
@@ -38,7 +38,7 @@ export class Relationship extends CastcleBase {
 
   @Prop({
     required: true,
-    type: mongoose.Schema.Types.ObjectId,
+    type: SchemaTypes.ObjectId,
     ref: 'User',
     index: true,
   })

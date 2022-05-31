@@ -314,19 +314,19 @@ export class AppService {
       countryCode,
     );
 
-    if (!account && objective !== OtpObjective.VerifyMobile) {
+    if (!account && objective !== OtpObjective.VERIFY_MOBILE) {
       this.logger.error(
         'Can not get Account from mobile : ' + countryCode + mobileNumber,
       );
       throw CastcleException.EMAIL_OR_PHONE_NOT_FOUND;
     }
 
-    if (account && objective === OtpObjective.VerifyMobile) {
+    if (account && objective === OtpObjective.VERIFY_MOBILE) {
       this.logger.error('Duplicate mobile : ' + countryCode + mobileNumber);
       throw CastcleException.MOBILE_NUMBER_ALREADY_EXISTS;
     }
 
-    if (!account && objective === OtpObjective.VerifyMobile) {
+    if (!account && objective === OtpObjective.VERIFY_MOBILE) {
       account = await this.authService.getAccountFromCredential(
         credential.$credential,
       );
@@ -635,8 +635,8 @@ export class AppService {
     if (
       otp &&
       otp.isValid() &&
-      (otp.action === OtpObjective.ChangePassword ||
-        otp.action === OtpObjective.ForgotPassword) &&
+      (otp.action === OtpObjective.CHANGE_PASSWORD ||
+        otp.action === OtpObjective.FORGOT_PASSWORD) &&
       otp.isVerify
     ) {
       this.logger.log('Validate password');
@@ -666,7 +666,7 @@ export class AppService {
     credential: Credential,
     account: Account,
   ) {
-    if (objective === OtpObjective.MergeAccount) {
+    if (objective === OtpObjective.MERGE_ACCOUNT) {
       credential = await this.authService.linkCredentialToAccount(
         credential,
         account,
