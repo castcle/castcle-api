@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { RemoveLeadingZero } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 import {
@@ -27,13 +28,20 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsMobilePhone,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { PageVerified, SocialProvider, UserVerified, Wallet } from '../models';
+import {
+  OtpObjective,
+  PageVerified,
+  SocialProvider,
+  UserVerified,
+  Wallet,
+} from '../models';
 import { CastcleImage, CastcleMeta, Pagination } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 import { Meta } from './response.dto';
@@ -78,6 +86,24 @@ class Link {
 class Counter {
   @ApiProperty()
   count: number;
+}
+
+export type SyncSocialModelV2 = {
+  [provider in SocialProvider]?: SyncSocialDetail;
+};
+
+export class ContactDto {
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 }
 
 export class UserResponseDto {
@@ -147,7 +173,7 @@ export class UserResponseDto {
   };
 
   @ApiProperty()
-  syncSocial: syncSocialDetail[];
+  syncSocial: SyncSocialDetail[] | SyncSocialModelV2;
 
   @ApiProperty()
   casts: number;
@@ -155,6 +181,7 @@ export class UserResponseDto {
   @ApiProperty()
   canUpdateCastcleId: boolean;
 
+  @ApiProperty()
   contact?: ContactDto;
 }
 
@@ -163,7 +190,7 @@ export class linkSocialDetail {
   displayName: string;
 }
 
-export class syncSocialDetail {
+export class SyncSocialDetail {
   id?: string;
   provider: string;
   socialId: string;
@@ -173,6 +200,7 @@ export class syncSocialDetail {
   active: boolean;
   autoPost: boolean;
 }
+
 export class UpdateUserDto {
   @ApiProperty()
   @IsString()
@@ -272,7 +300,7 @@ export class PageResponseDto {
   createdAt: string;
 
   @ApiProperty()
-  syncSocial: syncSocialDetail;
+  syncSocial: SyncSocialDetail;
 
   @ApiProperty()
   casts: number;
@@ -445,18 +473,6 @@ export class GetUserParam {
   @Transform(({ obj }) => obj.userId === 'me')
   isMe = () => this.userId === 'me';
 }
-export class ContactDto {
-  @IsOptional()
-  @IsString()
-  countryCode?: string;
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-}
 
 export class LinkSocialDetail {
   [key: string]: string;
@@ -507,21 +523,28 @@ export class UpdateModelUserDto {
   images?: UserModelImage;
 }
 
-export class SyncSocialModelV2 {
-  @IsOptional()
-  facebook?: syncSocialDetail;
-
-  @IsOptional()
-  twitter?: syncSocialDetail;
-
-  @IsOptional()
-  youtube?: syncSocialDetail;
-
-  @IsOptional()
-  medium?: syncSocialDetail;
-}
-
 export class PagesResponseV2 {
   @ApiProperty()
   payload: PageResponseDto[];
+}
+
+export class TargetIdParam extends GetUserParam {
+  @IsString()
+  @IsNotEmpty()
+  targetCastcleId: string;
+}
+
+export class UpdateMobileDto {
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
+  objective: OtpObjective;
+
+  @IsString()
+  refCode: string;
+
+  @IsString()
+  countryCode: string;
+
+  @IsMobilePhone()
+  @RemoveLeadingZero()
+  mobileNumber: string;
 }

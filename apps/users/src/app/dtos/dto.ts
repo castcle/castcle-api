@@ -21,33 +21,14 @@
  * or have any questions.
  */
 import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
-import { OtpObjective } from '@castcle-api/database/schemas';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class TargetCastcleDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   targetCastcleId: string;
-}
-
-export class UpdateMobileDto {
-  @ApiProperty()
-  @IsEnum([OtpObjective.VerifyMobile])
-  objective: OtpObjective;
-
-  @ApiProperty()
-  @IsString()
-  refCode: string;
-
-  @ApiProperty()
-  @IsString()
-  countryCode: string;
-
-  @ApiProperty()
-  @IsString()
-  mobileNumber: string;
 }
 
 export class UserSettingsDto {

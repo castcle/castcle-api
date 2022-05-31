@@ -48,7 +48,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/apps/authentications"],
           "options": {
-            "jestConfig": "apps/authentications/jest.config.js",
+            "jestConfig": "apps/authentications/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -101,7 +101,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/apps/auto-posts"],
           "options": {
-            "jestConfig": "apps/auto-posts/jest.config.js",
+            "jestConfig": "apps/auto-posts/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -154,30 +154,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/apps/backgrounds"],
           "options": {
-            "jestConfig": "apps/backgrounds/jest.config.js",
-            "passWithNoTests": true
-          }
-        }
-      },
-      "tags": []
-    },
-    "casl": {
-      "root": "libs/casl",
-      "sourceRoot": "libs/casl/src",
-      "projectType": "library",
-      "targets": {
-        "lint": {
-          "executor": "@nrwl/linter:eslint",
-          "options": {
-            "lintFilePatterns": ["libs/casl/**/*.ts"]
-          },
-          "outputs": ["{options.outputFile}"]
-        },
-        "test": {
-          "executor": "@nrwl/jest:jest",
-          "outputs": ["coverage/libs/casl"],
-          "options": {
-            "jestConfig": "libs/casl/jest.config.js",
+            "jestConfig": "apps/backgrounds/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -200,7 +177,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/database"],
           "options": {
-            "jestConfig": "libs/database/jest.config.js",
+            "jestConfig": "libs/database/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -223,7 +200,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/e2e"],
           "options": {
-            "jestConfig": "libs/e2e/jest.config.js",
+            "jestConfig": "libs/e2e/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -246,7 +223,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/environments"],
           "options": {
-            "jestConfig": "libs/environments/jest.config.js",
+            "jestConfig": "libs/environments/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -270,7 +247,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/healthy"],
           "options": {
-            "jestConfig": "libs/healthy/jest.config.js",
+            "jestConfig": "libs/healthy/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -293,7 +270,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/logger"],
           "options": {
-            "jestConfig": "libs/logger/jest.config.js",
+            "jestConfig": "libs/logger/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -301,6 +278,8 @@
       "tags": []
     },
     "queues": "apps/queues",
+    "throttler": "libs/throttler",
+    "tracing": "libs/tracing",
     "users": "apps/users",
     "utils-aws": {
       "root": "libs/utils/aws",
@@ -318,7 +297,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/aws"],
           "options": {
-            "jestConfig": "libs/utils/aws/jest.config.js",
+            "jestConfig": "libs/utils/aws/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -341,7 +320,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/clients"],
           "options": {
-            "jestConfig": "libs/utils/clients/jest.config.js",
+            "jestConfig": "libs/utils/clients/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -364,7 +343,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/commons"],
           "options": {
-            "jestConfig": "libs/utils/commons/jest.config.js",
+            "jestConfig": "libs/utils/commons/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -387,7 +366,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/decorators"],
           "options": {
-            "jestConfig": "libs/utils/decorators/jest.config.js",
+            "jestConfig": "libs/utils/decorators/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -410,7 +389,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/exception"],
           "options": {
-            "jestConfig": "libs/utils/exception/jest.config.js",
+            "jestConfig": "libs/utils/exception/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -433,7 +412,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/interceptors"],
           "options": {
-            "jestConfig": "libs/utils/interceptors/jest.config.js",
+            "jestConfig": "libs/utils/interceptors/jest.config.ts",
             "passWithNoTests": true
           }
         }
@@ -456,7 +435,7 @@
           "executor": "@nrwl/jest:jest",
           "outputs": ["coverage/libs/utils/pipes"],
           "options": {
-            "jestConfig": "libs/utils/pipes/jest.config.js",
+            "jestConfig": "libs/utils/pipes/jest.config.ts",
             "passWithNoTests": true
           }
         }

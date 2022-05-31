@@ -40,9 +40,7 @@ describe('Password', () => {
   describe('#create()', () => {
     it('should create and return encrypted password if it pass the validation', async () => {
       const passPassword = '123456';
-      console.log('before call #create()');
       const encryptPassword = Password.create(passPassword);
-      console.log('after call #create()');
       expect(encryptPassword).toBeDefined();
     });
     it('should be null if password is not pass validation', async () => {
@@ -62,14 +60,12 @@ describe('Password', () => {
       const passPassword = 'verify654321';
       const encryptPassword = Password.hash(passPassword);
       expect(Password.verify('this-is-a-wrong-password', encryptPassword)).toBe(
-        false
+        false,
       );
     });
     it('should return true to P jul password Abcd1@34$ ', async () => {
       const encryptPassword =
         '$2a$10$LF1C5E//QPPvPMQTdAlBqO.r/3DyOvdwHLZMuVMzb3PToLf227J8m';
-      const testPasswordPJul = Password.create('Abcd1@34$');
-      console.log(testPasswordPJul);
       expect(Password.verify('Abcd1@34$', encryptPassword)).toBe(true);
     });
   });

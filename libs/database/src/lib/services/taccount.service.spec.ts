@@ -125,7 +125,7 @@ describe('TAccount Service', () => {
             ],
           },
         },
-      }
+      },
     );
     await caccountModel.updateOne(
       { _id: CHART_OF_ACCOUNT.MINTANDBURN.caccount._id },
@@ -138,7 +138,7 @@ describe('TAccount Service', () => {
             ],
           },
         },
-      }
+      },
     );
 
     transactions.push(
@@ -166,7 +166,7 @@ describe('TAccount Service', () => {
             },
           } as TLedger,
         ],
-      }).save()
+      }).save(),
     );
     transactions.push(
       await new transactionModel({
@@ -193,7 +193,7 @@ describe('TAccount Service', () => {
             },
           } as TLedger,
         ],
-      }).save()
+      }).save(),
     );
   });
 
@@ -207,11 +207,11 @@ describe('TAccount Service', () => {
     });
     it('should get transactions that contain current ledgers', async () => {
       const txs = await service.getLedgers(
-        CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no
+        CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
       );
       expect(txs.length).toEqual(transactions.length);
       expect(txs.map((tx) => tx.id)).toEqual(
-        expect.arrayContaining(transactions.map((t) => t.id))
+        expect.arrayContaining(transactions.map((t) => t.id)),
       );
       //expect(txs[0].id).toBe (transactions.map(t => t.id));
       //expect(txs[1].id).toBeInstanceOf(transactions.map(t => t.id));
@@ -220,7 +220,7 @@ describe('TAccount Service', () => {
       const txs = await service.getLedgers(CHART_OF_ACCOUNT.VAULT.caccount.no);
       expect(txs.length).toEqual(transactions.length);
       expect(txs.map((tx) => tx.id)).toEqual(
-        expect.arrayContaining(transactions.map((t) => t.id))
+        expect.arrayContaining(transactions.map((t) => t.id)),
       );
       //expect(txs[0].id).toBe (transactions.map(t => t.id));
       //expect(txs[1].id).toBeInstanceOf(transactions.map(t => t.id));
@@ -232,10 +232,10 @@ describe('TAccount Service', () => {
     });
     it('should show correct child balance', async () => {
       expect(
-        await service.getBalance(CHART_OF_ACCOUNT.VAULT.caccount.no)
+        await service.getBalance(CHART_OF_ACCOUNT.VAULT.caccount.no),
       ).toEqual(mintValue * 2);
       expect(
-        await service.getBalance(CHART_OF_ACCOUNT.MINTANDBURN.caccount.no)
+        await service.getBalance(CHART_OF_ACCOUNT.MINTANDBURN.caccount.no),
       ).toEqual(mintValue * 2);
     });
   });

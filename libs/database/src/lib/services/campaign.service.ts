@@ -65,7 +65,7 @@ export class CampaignService {
     private queueModel: Model<Queue<ClaimAirdropPayload>>,
     @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<{ queueId: string }>,
-    private taccountService: TAccountService
+    private taccountService: TAccountService,
   ) {}
 
   /**
@@ -91,18 +91,18 @@ export class CampaignService {
     if (!campaign) {
       return this.logger.log(
         JSON.stringify(campaign),
-        'claimContentReachAirdrops:completed'
+        'claimContentReachAirdrops:completed',
       );
     }
 
     if (campaign.rewardBalance > 0) {
       const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
-        pipelineOfEstimateContentReach(campaign)
+        pipelineOfEstimateContentReach(campaign),
       );
 
       this.logger.log(
         JSON.stringify(eligibleAccounts),
-        `getAirdropBalances:${campaign._id}`
+        `getAirdropBalances:${campaign._id}`,
       );
 
       const to = eligibleAccounts.map(({ id, amount }) => {
@@ -121,11 +121,11 @@ export class CampaignService {
         { queueId: queue.id },
         {
           removeOnComplete: true,
-        }
+        },
       );
       this.logger.log(
         JSON.stringify({ campaign, queue }),
-        `claimContentReachAirdrops:submit:queueId-${queue.id}`
+        `claimContentReachAirdrops:submit:queueId-${queue.id}`,
       );
     }
 
@@ -133,7 +133,7 @@ export class CampaignService {
 
     this.logger.log(
       `campaignId: ${campaign.id} updated`,
-      `claimContentReachAirdrops`
+      `claimContentReachAirdrops`,
     );
 
     await this.claimContentReachAirdrops();
@@ -176,7 +176,7 @@ export class CampaignService {
         hasReachedMaxClaims,
         reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
       }),
-      'claimCampaignsAirdrop:init'
+      'claimCampaignsAirdrop:init',
     );
 
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
@@ -195,7 +195,7 @@ export class CampaignService {
       payload: new ClaimAirdropPayload(
         campaign.id,
         [{ account: accountId, type: WalletType.PERSONAL }],
-        account?.mobile
+        account?.mobile,
       ),
     }).save();
 
@@ -203,7 +203,7 @@ export class CampaignService {
       { queueId: queue.id },
       {
         removeOnComplete: true,
-      }
+      },
     );
 
     this.logger.log(
@@ -214,7 +214,7 @@ export class CampaignService {
         hasReachedMaxClaims,
         reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
       }),
-      `claimCampaignAirdrops:submit:queueId-${queue.id}`
+      `claimCampaignAirdrops:submit:queueId-${queue.id}`,
     );
   }
 
@@ -222,7 +222,7 @@ export class CampaignService {
     const queue = await this.queueModel.findById(job.data.queueId);
     this.logger.log(
       JSON.stringify(queue),
-      `processClaimAirdropJob:init:jobId-${job.id}`
+      `processClaimAirdropJob:init:jobId-${job.id}`,
     );
 
     try {
@@ -256,7 +256,7 @@ export class CampaignService {
 
       this.logger.log(
         JSON.stringify(queue),
-        `processClaimAirdropJob:done:jobId-${job.id}`
+        `processClaimAirdropJob:done:jobId-${job.id}`,
       );
     } catch (error: unknown) {
       this.logger.error(error, `processClaimAirdropJob:error:jobId-${job.id}`);
@@ -269,7 +269,7 @@ export class CampaignService {
 
   private async isEligibleForVerifyMobileCampaign(
     account: Account,
-    campaign: Campaign
+    campaign: Campaign,
   ) {
     if (campaign.rewardBalance < campaign.rewardsPerClaim) {
       throw CastcleException.REWARD_IS_NOT_ENOUGH;
@@ -286,7 +286,7 @@ export class CampaignService {
         hasReachedMaxClaims,
         reachedMaxClaims: `${claimsCount}/${campaign.maxClaims}`,
       }),
-      'isEligibleForVerifyMobileCampaign:done'
+      'isEligibleForVerifyMobileCampaign:done',
     );
 
     if (hasReachedMaxClaims) throw CastcleException.REACHED_MAX_CLAIMS;
@@ -294,7 +294,7 @@ export class CampaignService {
 
   private async claimAirdrop(
     campaign: Campaign,
-    claimCampaignsAirdropJob: ClaimAirdropPayload
+    claimCampaignsAirdropJob: ClaimAirdropPayload,
   ) {
     let sumAmount = 0;
     const to = claimCampaignsAirdropJob.to.map(({ account, type, value }) => {
@@ -304,7 +304,7 @@ export class CampaignService {
       const amount = campaign.rewardsPerClaim ?? remaining;
       sumAmount += amount;
       campaign.rewardBalance = CastcleNumber.from(
-        campaign.rewardBalance - amount
+        campaign.rewardBalance - amount,
       ).toNumber();
 
       return { account, type, value: amount };
@@ -325,7 +325,7 @@ export class CampaignService {
                 : CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
             value: item.value,
           },
-        } as TLedger)
+        } as TLedger),
     );
     const transaction = await this.taccountService.transfers({
       from,
@@ -337,7 +337,7 @@ export class CampaignService {
 
     this.logger.log(
       JSON.stringify({ campaign, transaction }),
-      `claimAirdrop:transaction-created:${transaction.id}`
+      `claimAirdrop:transaction-created:${transaction.id}`,
     );
 
     return transaction;
@@ -346,7 +346,7 @@ export class CampaignService {
   async getAirdropBalances(
     accountId: string,
     dateRange: Date,
-    campaignFields: CampaignField[]
+    campaignFields: CampaignField[],
   ) {
     const campaignQuery: FilterQuery<Campaign> = dateRange
       ? {
@@ -357,7 +357,7 @@ export class CampaignService {
 
     const campaigns =
       await this.campaignModel.aggregate<GetCampaignClaimsResponse>(
-        pipelineOfGetCampaignClaims(campaignQuery, accountId)
+        pipelineOfGetCampaignClaims(campaignQuery, accountId),
       );
 
     if (!campaignFields.includes(CampaignField.ESTIMATE_REWARDS)) {
@@ -368,16 +368,16 @@ export class CampaignService {
       if (campaign.type !== CampaignType.CONTENT_REACH) return campaign;
 
       const eligibleAccounts = await this.feedModel.aggregate<EligibleAccount>(
-        pipelineOfEstimateContentReach(campaign, accountId)
+        pipelineOfEstimateContentReach(campaign, accountId),
       );
 
       this.logger.log(
         JSON.stringify(eligibleAccounts),
-        `getAirdropBalances:${campaign._id}:${accountId}`
+        `getAirdropBalances:${campaign._id}:${accountId}`,
       );
 
       const eligibleAccount = eligibleAccounts.find(
-        (eligibleAccount) => String(eligibleAccount.id) === String(accountId)
+        (eligibleAccount) => String(eligibleAccount.id) === String(accountId),
       );
 
       return {

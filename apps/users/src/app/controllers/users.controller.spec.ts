@@ -183,7 +183,7 @@ describe('AppController', () => {
         displayId: 'test1234',
         displayName: 'test',
         password: '1234AbcD',
-      }
+      },
     );
     userAccount = await authService.verifyAccount(accountActivation);
     userCredential = result.credentialDocument;
@@ -229,7 +229,7 @@ describe('AppController', () => {
         {
           userFields: [UserField.LinkSocial, UserField.SyncSocial],
           hasRelationshipExpansion: false,
-        }
+        },
       );
       const user = await service.getUserFromCredential(userCredential);
       expect(response).toBeDefined();
@@ -250,7 +250,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th',
         } as any,
-        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] },
       )) as unknown as UserResponseDto;
       expect(response).toBeDefined();
       expect(response.castcleId).toEqual(user.displayId);
@@ -285,20 +285,20 @@ describe('AppController', () => {
       const responseFull = await appController.updateMyData(
         { $credential: userCredential, $language: 'th' } as any,
         'me',
-        updateDto
+        updateDto,
       );
       expect(responseFull.dob.toISOString()).toEqual(updateDto.dob);
       expect(responseFull.links).toEqual(updateDto.links);
       expect(responseFull.images).toBeDefined();
       expect(responseFull.overview).toEqual(updateDto.overview);
-      const postReponse = await appController.getMyData({
+      const postResponse = await appController.getMyData({
         $credential: userCredential,
         $language: 'th',
       } as any);
-      expect(postReponse).toEqual(responseFull);
+      expect(postResponse).toEqual(responseFull);
     });
 
-    it('should return Exception when update dupplicate castcle id', async () => {
+    it('should return Exception when update duplicate castcle id', async () => {
       const mocks = await generateMockUsers(1, 0, {
         accountService: authService,
         userService: service,
@@ -325,8 +325,8 @@ describe('AppController', () => {
         appController.updateMyData(
           { $credential: userCredential, $language: 'th' } as any,
           'me',
-          updateDto
-        )
+          updateDto,
+        ),
       ).rejects.toEqual(CastcleException.USER_ID_IS_EXIST);
     });
 
@@ -351,7 +351,7 @@ describe('AppController', () => {
       const responseFull = await appController.updateMyData(
         { $credential: userCredential, $language: 'th' } as any,
         'me',
-        updateDto
+        updateDto,
       );
       expect(responseFull.castcleId).toEqual(updateDto.castcleId);
       expect(responseFull.displayName).toEqual(updateDto.displayName);
@@ -362,7 +362,7 @@ describe('AppController', () => {
           $credential: userCredential,
           $language: 'th',
         } as any,
-        { hasRelationshipExpansion: true, userFields: [UserField.Casts] }
+        { hasRelationshipExpansion: true, userFields: [UserField.Casts] },
       )) as unknown as UserResponseDto;
 
       expect(response.canUpdateCastcleId).toEqual(false);
@@ -390,8 +390,8 @@ describe('AppController', () => {
         appController.updateMyData(
           { $credential: userCredential, $language: 'th' } as any,
           'me',
-          updateDto
-        )
+          updateDto,
+        ),
       ).rejects.toEqual(CastcleException.CHANGE_CASTCLE_ID_FAILED);
     });
   });
@@ -423,7 +423,7 @@ describe('AppController', () => {
       for (let i = 0; i < contentDtos.length; i++) {
         const newContent = await contentService.createContentFromUser(
           user,
-          contentDtos[i]
+          contentDtos[i],
         );
         engagementContents[i] = [
           await contentService.likeContent(newContent, user),
@@ -461,7 +461,7 @@ describe('AppController', () => {
         const response = await appController.getUserContents(
           user._id,
           { $credential: userCredential, $language: 'th' } as any,
-          { hasRelationshipExpansion: false }
+          { hasRelationshipExpansion: false },
         );
         expect(response.meta).toEqual(expectedResponse.meta);
       });
@@ -474,7 +474,7 @@ describe('AppController', () => {
         { $credential: userCredential } as any,
         '',
         1,
-        5
+        5,
       );
       expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
@@ -492,7 +492,7 @@ describe('AppController', () => {
         {
           userFields: [UserField.Relationships],
           hasRelationshipExpansion: true,
-        }
+        },
       );
       expect(response.payload.length).toEqual(2);
       expect(response.payload[0].castcleId).toBeDefined();
@@ -521,7 +521,7 @@ describe('AppController', () => {
         } as any,
         {
           targetCastcleId: mocks[1].user._id,
-        }
+        },
       );
     });
     it('should show all user following from the system', async () => {
@@ -534,11 +534,11 @@ describe('AppController', () => {
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
-        }
+        },
       );
       expect(followingResult.payload.length).toEqual(1);
       expect(followingResult.payload[0].castcleId).toEqual(
-        mocks[1].user.displayId
+        mocks[1].user.displayId,
       );
       expect(followingResult.meta).toBeDefined();
     });
@@ -553,11 +553,11 @@ describe('AppController', () => {
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
-        }
+        },
       );
       expect(followerResult.payload.length).toEqual(1);
       expect(followerResult.payload[0].castcleId).toEqual(
-        mocks[0].user.displayId
+        mocks[0].user.displayId,
       );
       expect(followerResult.meta).toBeDefined();
     });
@@ -572,7 +572,7 @@ describe('AppController', () => {
       });
 
       await expect(
-        service.getUserFromCredential(userCredential)
+        service.getUserFromCredential(userCredential),
       ).resolves.toBeNull();
     });
   });
@@ -637,13 +637,13 @@ describe('AppController', () => {
       } as any;
 
       await expect(
-        appController.syncSocial(credentialGuest, defaultRequest)
+        appController.syncSocial(credentialGuest, defaultRequest),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
     it('should return exception when get duplicate social sync', async () => {
       await expect(
-        appController.syncSocial(credential, defaultRequest)
+        appController.syncSocial(credential, defaultRequest),
       ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
 
       const mocksNewUsers = await generateMockUsers(1, 1, {
@@ -667,7 +667,7 @@ describe('AppController', () => {
         active: true,
       };
       await expect(
-        appController.syncSocial(newCredential, newRequest)
+        appController.syncSocial(newCredential, newRequest),
       ).rejects.toEqual(CastcleException.SOCIAL_PROVIDER_IS_EXIST);
     });
 
@@ -682,7 +682,7 @@ describe('AppController', () => {
         active: true,
       };
       await expect(
-        appController.syncSocial(credential, userRequest)
+        appController.syncSocial(credential, userRequest),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -722,16 +722,16 @@ describe('AppController', () => {
       };
       expect(result).toBeDefined();
       expect(result['twitter']).toEqual(
-        expect.objectContaining(expectResult.twitter)
+        expect.objectContaining(expectResult.twitter),
       );
       expect(result['facebook']).toEqual(
-        expect.objectContaining(expectResult.facebook)
+        expect.objectContaining(expectResult.facebook),
       );
     });
 
     it('should get payload all sync social from user', async () => {
       const syncSocialResponse = await appController.getSyncSocialOfArray(
-        credential
+        credential,
       );
 
       expect(syncSocialResponse.payload).toHaveLength(2);
@@ -782,7 +782,7 @@ describe('AppController', () => {
       };
       await appController.updateUserSettings(credentialGuest, req);
       const account = await authService.getAccountFromCredential(
-        userCredential
+        userCredential,
       );
       expect(account.preferences.languages).toEqual(['th', 'en']);
     });
@@ -798,7 +798,7 @@ describe('AppController', () => {
       };
 
       await expect(
-        appController.updateUserSettings(credentialGuest, req)
+        appController.updateUserSettings(credentialGuest, req),
       ).rejects.toEqual(CastcleException.PAYLOAD_TYPE_MISMATCH);
     });
 
@@ -824,7 +824,7 @@ describe('AppController', () => {
       };
 
       await expect(
-        appController.updateUserSettings(credentialGuest, req)
+        appController.updateUserSettings(credentialGuest, req),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -891,7 +891,7 @@ describe('AppController', () => {
         credential,
         {
           hasRelationshipExpansion: true,
-        }
+        },
       );
       expect(result.payload).toBeNull();
     });
@@ -919,7 +919,7 @@ describe('AppController', () => {
         credential,
         {
           hasRelationshipExpansion: true,
-        }
+        },
       );
       expect(result.payload.length).toEqual(2);
     });
@@ -973,7 +973,7 @@ describe('AppController', () => {
       const result = await appController.recastContent(
         mocksUsers[1].user.displayId,
         contentA._id,
-        newCredential
+        newCredential,
       );
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
       expect(result.includes).toBeDefined;
@@ -997,7 +997,7 @@ describe('AppController', () => {
           account: userOwner.ownerAccount,
         },
         userOwner,
-        'th'
+        'th',
       );
 
       expect(notify).toBeUndefined();
@@ -1006,8 +1006,8 @@ describe('AppController', () => {
         appController.recastContent(
           mocksUsers[1].user.displayId,
           contentA._id,
-          newCredential
-        )
+          newCredential,
+        ),
       ).rejects.toEqual(CastcleException.RECAST_IS_EXIST);
     });
   });
@@ -1051,7 +1051,7 @@ describe('AppController', () => {
         user.displayId,
         contentA._id,
         'this is good content',
-        credential
+        credential,
       );
 
       expect(result.payload.referencedCasts.id).toEqual(contentA._id);
@@ -1078,7 +1078,7 @@ describe('AppController', () => {
           displayId: 'test1234',
           displayName: 'test',
           password: '1234AbcD',
-        }
+        },
       );
       userAccount = await authService.verifyAccount(accountActivation);
       userCredential = result.credentialDocument;
@@ -1086,7 +1086,7 @@ describe('AppController', () => {
     it('should create new user that has the info from pageDTO', async () => {
       const newPageResponse = await appController.createPage(
         { $credential: userCredential, $language: 'th' } as any,
-        pageDto
+        pageDto,
       );
       expect(newPageResponse.images.avatar).toBeDefined();
       expect(newPageResponse.displayName).toEqual(pageDto.displayName);
@@ -1132,7 +1132,7 @@ describe('AppController', () => {
 
       const user = await appController._getUser(
         userMock.id,
-        userMock.credential
+        userMock.credential,
       );
 
       await contentService.likeContent(content, user);
@@ -1148,7 +1148,7 @@ describe('AppController', () => {
           account: userOwner.ownerAccount,
         },
         userOwner,
-        'th'
+        'th',
       );
 
       expect(notify).toBeUndefined();
@@ -1162,7 +1162,7 @@ describe('AppController', () => {
 
       const user = await appController._getUser(
         userMock.id,
-        userMock.credential
+        userMock.credential,
       );
 
       await contentService.unLikeContent(content, user);
@@ -1198,6 +1198,7 @@ describe('AppController', () => {
       await new contentService._engagementModel({
         type: 'like',
         user: mockUsers[1].user._id,
+        account: mockUsers[1].user.ownerAccount,
         targetRef: {
           $ref: 'content',
           $id: content.id,
@@ -1218,14 +1219,14 @@ describe('AppController', () => {
           maxResults: 100,
           sinceId: null,
           untilId: null,
-        }
+        },
       );
 
       expect(response.payload).toHaveLength(1);
       expect(response['includes'].users).toHaveLength(1);
       expect(response['meta'].resultCount).toBe(1);
       expect(String(response.payload[0].authorId)).toBe(
-        String(mockUsers[0].user._id)
+        String(mockUsers[0].user._id),
       );
       expect(response.payload[0].message).toBe(content['payload'].message);
     });
@@ -1270,22 +1271,22 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, adsInput);
     });
     it('should be able to get list ads exist.', async () => {
       const adsResponse = await appController.listAds(
-        { account: mocks[0].account as Account } as Authorizer,
+        { user: mocks[0].user as User } as Authorizer,
         {
           maxResults: 100,
           filter: 'week',
           timezone: '+07:00',
-        } as AdsQuery
+        } as AdsQuery,
       );
 
       expect(mockAds.adsRef).not.toBeUndefined();
@@ -1295,10 +1296,10 @@ describe('AppController', () => {
       expect(adsResponse.payload[0].adStatus).toBe(mockAds.status);
       expect(adsResponse.payload[0].duration).toEqual(mockAds.detail.duration);
       expect(adsResponse.payload[0].dailyBudget).toEqual(
-        mockAds.detail.dailyBudget
+        mockAds.detail.dailyBudget,
       );
       expect(adsResponse.payload[0].campaignMessage).toBe(
-        mockAds.detail.message
+        mockAds.detail.message,
       );
     });
     afterAll(() => {
@@ -1340,18 +1341,18 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].user,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].user, adsInput);
     });
     it('should be able to lookup ads detail exist.', async () => {
       const adsResponse = await appController.lookupAds(
-        { account: mocks[0].account as Account } as Authorizer,
-        mockAds._id
+        { user: mocks[0].user as User } as Authorizer,
+        mockAds._id,
       );
 
       expect(mockAds.adsRef).not.toBeUndefined();
@@ -1396,14 +1397,14 @@ describe('AppController', () => {
               link: 'http://www.twitter.com/test2',
             },
           ],
-        }
+        },
       );
 
       const page1 = await service.getByIdOrCastcleId(
-        newPageResponse.payload[0].castcleId
+        newPageResponse.payload[0].castcleId,
       );
       const page2 = await service.getByIdOrCastcleId(
-        newPageResponse.payload[1].castcleId
+        newPageResponse.payload[1].castcleId,
       );
       const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
       const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
@@ -1444,14 +1445,14 @@ describe('AppController', () => {
               link: 'http://www.twitter.com/test2',
             },
           ],
-        }
+        },
       );
 
       const page1 = await service.getByIdOrCastcleId(
-        newPageResponse.payload[0].castcleId
+        newPageResponse.payload[0].castcleId,
       );
       const page2 = await service.getByIdOrCastcleId(
-        newPageResponse.payload[1].castcleId
+        newPageResponse.payload[1].castcleId,
       );
       const syncSocial1 = await socialSyncService.getSocialSyncByUser(page1);
       const syncSocial2 = await socialSyncService.getSocialSyncByUser(page2);
@@ -1497,7 +1498,7 @@ describe('AppController', () => {
               link: 'http://www.facebook.com/test1',
             },
           ],
-        })
+        }),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
   });
@@ -1561,13 +1562,13 @@ describe('AppController', () => {
         },
         to: [
           {
-            account: mocks[0].account,
+            user: mocks[0].pages[0].id,
             type: WalletType.ADS,
             value: 999999,
           },
         ],
       }).save();
-      mockAds = await adsService.createAds(mocks[0].account, adsInput);
+      mockAds = await adsService.createAds(mocks[0].pages[0], adsInput);
     });
     describe('#updateAds', () => {
       it('should be able update ads is correct.', async () => {
@@ -1604,7 +1605,7 @@ describe('AppController', () => {
           objective: AdsObjective.Engagement,
           paymentMethod: AdsPaymentMethod.ADS_CREDIT,
         };
-        ads = await adsService.createAds(mocks[0].account, adsInput);
+        ads = await adsService.createAds(mocks[0].pages[0], adsInput);
         await adsService._adsCampaignModel.updateOne(
           { _id: ads._id },
           {
@@ -1612,11 +1613,11 @@ describe('AppController', () => {
               status: AdsStatus.Approved,
               boostStatus: AdsBoostStatus.Pause,
             },
-          }
+          },
         );
         await appController.adsRunning(
-          { credential: mocks[0].credential } as any,
-          ads._id
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
+          ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
           .findById(ads.id)
@@ -1628,15 +1629,15 @@ describe('AppController', () => {
       it('ads running should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsRunning(
-            { credential: mocks[0].credential } as any,
-            ads._id
-          )
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
+            ads._id,
+          ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads Pause.', async () => {
         await appController.adsPause(
-          { credential: mocks[0].credential } as any,
-          ads._id
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
+          ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
           .findById(ads.id)
@@ -1648,15 +1649,15 @@ describe('AppController', () => {
       it('ads Pause should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsPause(
-            { credential: mocks[0].credential } as any,
-            ads._id
-          )
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
+            ads._id,
+          ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
       it('should be able update ads End.', async () => {
         await appController.adsEnd(
-          { credential: mocks[0].credential } as any,
-          ads._id
+          { credential: mocks[0].credential, user: mocks[0].user } as any,
+          ads._id,
         );
         const adsCampaign = await adsService._adsCampaignModel
           .findById(ads.id)
@@ -1668,9 +1669,9 @@ describe('AppController', () => {
       it('ads End should return Exception when get wrong boost status.', async () => {
         await expect(
           appController.adsEnd(
-            { credential: mocks[0].credential } as any,
-            ads._id
-          )
+            { credential: mocks[0].credential, user: mocks[0].user } as any,
+            ads._id,
+          ),
         ).rejects.toEqual(CastcleException.ADS_BOOST_STATUS_MISMATCH);
       });
     });
@@ -1715,10 +1716,10 @@ describe('AppController', () => {
     it('should update auto post is exist.', async () => {
       await appController.updateAutoPost(
         { credential: userCredential } as any,
-        mockSocialSync._id
+        mockSocialSync._id,
       );
       const social = await socialSyncService.getSocialSyncBySocialId(
-        mockSocialSync._id
+        mockSocialSync._id,
       );
 
       expect(social.autoPost).toEqual(true);
@@ -1752,10 +1753,10 @@ describe('AppController', () => {
     it('should delete auto post is exist.', async () => {
       await appController.updateAutoPost(
         { credential: userCredential } as any,
-        mockSocialSync._id
+        mockSocialSync._id,
       );
       const social = await socialSyncService.getSocialSyncBySocialId(
-        mockSocialSync._id
+        mockSocialSync._id,
       );
 
       expect(social.autoPost).toEqual(true);
@@ -1789,10 +1790,10 @@ describe('AppController', () => {
     it('should delete auto post is exist.', async () => {
       await appController.updateAutoPost(
         { credential: userCredential } as any,
-        mockSocialSync._id
+        mockSocialSync._id,
       );
       const social = await socialSyncService.getSocialSyncBySocialId(
-        mockSocialSync._id
+        mockSocialSync._id,
       );
 
       expect(social.autoPost).toEqual(true);
@@ -1843,11 +1844,11 @@ describe('AppController', () => {
       await appController.connectSyncSocial(
         { credential: userCredential, user: user } as any,
         mockSocialSync._id,
-        payloadSyncSocial
+        payloadSyncSocial,
       );
 
       const social = await (socialSyncService as any).getSocialSyncBySocialId(
-        mockSocialSync._id
+        mockSocialSync._id,
       );
       expect(social.autoPost).toEqual(true);
       expect(social.active).toEqual(true);
@@ -1890,11 +1891,11 @@ describe('AppController', () => {
     it('should update sync social is correct.', async () => {
       await appController.disconnectSyncSocial(
         { credential: userCredential, user: user } as any,
-        mockSocialSync._id
+        mockSocialSync._id,
       );
 
       const social = await socialSyncService.getSocialSyncBySocialId(
-        mockSocialSync._id
+        mockSocialSync._id,
       );
       expect(social.autoPost).toEqual(false);
       expect(social.active).toEqual(false);

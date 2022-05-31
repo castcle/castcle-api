@@ -182,7 +182,7 @@ describe('ContentService', () => {
         castcleId: user.displayId,
       });
       expect((content.payload as ShortPayload).message).toEqual(
-        shortPayload.message
+        shortPayload.message,
       );
       expect(content.type).toEqual(ContentType.Short);
       expect(content.author.id).toEqual(user._id);
@@ -238,16 +238,16 @@ describe('ContentService', () => {
         castcleId: user.displayId,
       });
       expect((result.payload as ShortPayload).message).toEqual(
-        updatePayload.message
+        updatePayload.message,
       );
 
       expect((result.payload as ShortPayload).link).toEqual(updatePayload.link);
       const postContent = await service.getContentFromId(content._id);
       expect((postContent.payload as ShortPayload).message).toEqual(
-        updatePayload.message
+        updatePayload.message,
       );
       expect((postContent.payload as ShortPayload).link).toEqual(
-        updatePayload.link
+        updatePayload.link,
       );
       const revisions = await service.getContentRevisions(postContent);
       expect(postContent.revisionCount).toEqual(revisions.length);
@@ -331,10 +331,10 @@ describe('ContentService', () => {
         },
       });
       expect(
-        contentsInverse.items[contentsInverse.items.length - 2].payload
+        contentsInverse.items[contentsInverse.items.length - 2].payload,
       ).toEqual(shortPayload1);
       expect(
-        contentsInverse.items[contentsInverse.items.length - 1].payload
+        contentsInverse.items[contentsInverse.items.length - 1].payload,
       ).toEqual(shortPayload2);
     });
   });
@@ -420,14 +420,14 @@ describe('ContentService', () => {
       //create user  create content
       for (let i = 0; i < userInfo.length; i++) {
         const createAccResult = await authService.createAccount(
-          userInfo[i].accountRequirement
+          userInfo[i].accountRequirement,
         );
         await authService.signupByEmail(
           createAccResult.accountDocument,
-          userInfo[i].signupRequirement
+          userInfo[i].signupRequirement,
         );
         users[i] = await userService.getUserFromCredential(
-          createAccResult.credentialDocument
+          createAccResult.credentialDocument,
         );
       }
       //userA create a content
@@ -478,7 +478,7 @@ describe('ContentService', () => {
         const resultC = await service.quoteContentFromUser(
           contentB,
           users[2],
-          'this is good content'
+          'this is good content',
         );
         contentC = resultC.quoteContent;
       });
@@ -500,7 +500,7 @@ describe('ContentService', () => {
       beforeAll(async () => {
         //console.log('before comment features');
         const account = await authService.getAccountFromEmail(
-          userInfo[0].signupRequirement.email
+          userInfo[0].signupRequirement.email,
         );
         userA = await authService._userModel
           .findOne({ ownerAccount: account._id })
@@ -527,11 +527,11 @@ describe('ContentService', () => {
           expect(findResult[0].message).toEqual(rootComment.message);
           expect(findResult[0].author._id).toEqual(rootComment.author._id);
           expect(findResult[0].revisionCount).toEqual(
-            rootComment.revisionCount
+            rootComment.revisionCount,
           );
           expect(findResult[0].type).toEqual(rootComment.type);
           expect(findResult[0].targetRef.$id).toEqual(
-            rootComment.targetRef.oid
+            rootComment.targetRef.oid,
           );
         });
         it('should increase engagement.comment of content', async () => {
@@ -561,11 +561,11 @@ describe('ContentService', () => {
           expect(findResult[0].message).toEqual(replyResult.message);
           expect(findResult[0].author._id).toEqual(replyResult.author._id);
           expect(findResult[0].revisionCount).toEqual(
-            replyResult.revisionCount
+            replyResult.revisionCount,
           );
           expect(findResult[0].type).toEqual(replyResult.type);
           expect(findResult[0].targetRef.$id).toEqual(
-            replyResult.targetRef.oid
+            replyResult.targetRef.oid,
           );
           replyComment = findResult[0];
         });
@@ -650,7 +650,7 @@ describe('ContentService', () => {
           expect(postReply.visibility).toEqual(EntityVisibility.Deleted);
           const comments = await commentService.getCommentsByContentId(
             user,
-            contentA._id
+            contentA._id,
           );
           expect(comments.meta.resultCount).toEqual(1);
           expect(comments.payload[0].reply.length).toEqual(0);
@@ -665,7 +665,7 @@ describe('ContentService', () => {
           await service.deleteComment(rootComment);
           const comments = await commentService.getCommentsByContentId(
             user,
-            contentA._id
+            contentA._id,
           );
           expect(comments.meta.resultCount).toEqual(0);
         });
@@ -713,7 +713,7 @@ describe('ContentService', () => {
 
     it('should throw CONTENT_NOT_FOUND when content to report is not found', async () => {
       await expect(
-        service.reportContent(user, null, reportingMessage)
+        service.reportContent(user, null, reportingMessage),
       ).rejects.toThrowError(CastcleException.CONTENT_NOT_FOUND);
     });
 
@@ -760,12 +760,12 @@ describe('ContentService', () => {
     it('should set delete content successful', async () => {
       const resultB = await service.recastContentFromUser(
         contentA,
-        mockUsers[1].user
+        mockUsers[1].user,
       );
       const contentB = resultB.recastContent;
       await service.deleteRecastContentFromOriginalAndAuthor(
         contentA.id,
-        mockUsers[1].user.id
+        mockUsers[1].user.id,
       );
       const postDelete = await service.getContentFromId(contentB.id);
       expect(postDelete).toBeNull();
@@ -788,7 +788,7 @@ describe('ContentService', () => {
       const contentsResponse = await service.convertContentsToContentsResponse(
         user,
         contents,
-        true
+        true,
       );
 
       expect(contentsResponse.includes.users.length).toEqual(1);
@@ -800,7 +800,7 @@ describe('ContentService', () => {
       const contentsResponse = await service.convertContentsToContentsResponse(
         null,
         contents,
-        true
+        true,
       );
 
       expect(contentsResponse.includes.users.length).toEqual(1);
@@ -831,12 +831,12 @@ describe('ContentService', () => {
     it('should set delete content successful', async () => {
       const resultB = await service.recastContentFromUser(
         contentA,
-        mockUsers[1].user
+        mockUsers[1].user,
       );
       const contentB = resultB.recastContent;
       await service.deleteRecastContentFromOriginalAndAuthor(
         contentA.id,
-        mockUsers[1].user.id
+        mockUsers[1].user.id,
       );
       const postDelete = await service.getContentFromId(contentB.id);
       expect(postDelete).toBeNull();
@@ -877,22 +877,22 @@ describe('ContentService', () => {
     it('should get recast content with untilId', async () => {
       const allRecast = await service.getContentFromOriginalPost(
         contentA.id,
-        100
+        100,
       );
       const result = await service.getContentFromOriginalPost(
         contentA.id,
         100,
         null,
-        allRecast.items[1].author.id
+        allRecast.items[1].author.id,
       );
 
       const foundData = result.items.find(
         (x) =>
-          x.author.id.toString() === allRecast.items[2].author.id.toString()
+          x.author.id.toString() === allRecast.items[2].author.id.toString(),
       );
       const findMissing = result.items.find(
         (x) =>
-          x.author.id.toString() === allRecast.items[0].author.id.toString()
+          x.author.id.toString() === allRecast.items[0].author.id.toString(),
       );
       expect(result.items).toBeDefined();
       expect(result.items.length).toEqual(2);
@@ -904,22 +904,22 @@ describe('ContentService', () => {
     it('should get recast content with sinceId', async () => {
       const allRecast = await service.getContentFromOriginalPost(
         contentA.id,
-        100
+        100,
       );
       const result = await service.getContentFromOriginalPost(
         contentA.id,
         100,
         allRecast.items[2].author.id,
-        null
+        null,
       );
 
       const findMissing = result.items.find(
         (x) =>
-          x.author.id.toString() === allRecast.items[2].author.id.toString()
+          x.author.id.toString() === allRecast.items[2].author.id.toString(),
       );
       const foundData = result.items.find(
         (x) =>
-          x.author.id.toString() === allRecast.items[0].author.id.toString()
+          x.author.id.toString() === allRecast.items[0].author.id.toString(),
       );
       expect(result.items).toBeDefined();
       expect(result.items.length).toEqual(2);
@@ -949,6 +949,7 @@ describe('ContentService', () => {
       await new service._engagementModel({
         type: 'like',
         user: mockUsers[1].user._id,
+        account: mockUsers[1].user.ownerAccount,
         targetRef: {
           $ref: 'content',
           $id: content.id,
@@ -962,13 +963,13 @@ describe('ContentService', () => {
         mockUsers[1].user._id,
         null,
         null,
-        100
+        100,
       );
 
       expect(engagement.total).toEqual(1);
       expect(engagement.items).toHaveLength(1);
       expect(String(engagement.items[0].user)).toBe(
-        String(mockUsers[1].user._id)
+        String(mockUsers[1].user._id),
       );
     });
 
@@ -983,11 +984,11 @@ describe('ContentService', () => {
         mockUsers[1].user,
         content as Content[],
         true,
-        engagement.items
+        engagement.items,
       );
       expect(response.payload).toHaveLength(1);
       expect(String(response.payload[0].authorId)).toBe(
-        String(mockUsers[0].user._id)
+        String(mockUsers[0].user._id),
       );
       expect(String(response.payload[0].id)).toBe(String(content[0].id));
       expect(response.payload[0].message).toBe(content[0].payload.message);

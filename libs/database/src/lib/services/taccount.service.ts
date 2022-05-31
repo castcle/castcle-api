@@ -24,7 +24,7 @@
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   GetBalanceResponse,
   pipelineOfGetBalanceFromWalletType,
@@ -38,7 +38,7 @@ import { Transaction } from '../schemas/transaction.schema';
 export class TAccountService {
   constructor(
     @InjectModel('Transaction') public _transactionModel: Model<Transaction>,
-    @InjectModel('CAccount') public _caccountModel: Model<CAccount>
+    @InjectModel('CAccount') public _caccountModel: Model<CAccount>,
   ) {}
 
   getFindQueryForChild(caccount: CAccount) {
@@ -79,10 +79,10 @@ export class TAccountService {
    * Get user's balance
    * @param {string} accountId
    */
-  getAccountBalance = async (accountId: string, walletType: WalletType) => {
+  getAccountBalance = async (userId: string, walletType: WalletType) => {
     const [balance] =
       await this._transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalanceFromWalletType(accountId, walletType)
+        pipelineOfGetBalanceFromWalletType(userId, walletType),
       );
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
@@ -101,11 +101,11 @@ export class TAccountService {
     //debit credit is balance
     const totalDebit = transferDTO.ledgers.reduce(
       (prev, now) => prev + now.debit.value,
-      0
+      0,
     );
     const totalCredit = transferDTO.ledgers.reduce(
       (prev, now) => prev + now.credit.value,
-      0
+      0,
     );
     if (
       !(totalDebit === totalCredit && totalDebit === transferDTO.from.value)
@@ -113,10 +113,10 @@ export class TAccountService {
       return false;
     }
     //validate source balance
-    if (transferDTO.from.account && transferDTO.from.value) {
+    if (transferDTO.from.user && transferDTO.from.value) {
       const accountBalance = await this.getAccountBalance(
-        transferDTO.from.account,
-        transferDTO.from.type
+        transferDTO.from.user,
+        transferDTO.from.type,
       );
       if (
         !(accountBalance >= 0 && accountBalance - transferDTO.from.value >= 0)
@@ -129,10 +129,10 @@ export class TAccountService {
     return true;
   }
 
-  async transfers(transferDTO: TransactionDto) {
+  async transfers(transferDTO: TransactionDto, session?: ClientSession) {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
-      return new this._transactionModel(transferDTO).save();
+      return new this._transactionModel(transferDTO).save({ session: session });
     else throw CastcleException.INVALID_TRANSACTIONS_DATA;
   }
 
@@ -147,8 +147,8 @@ export class TAccountService {
           .filter(
             (t) =>
               caccount.child.findIndex(
-                (childNo) => t.debit.caccountNo === childNo
-              ) >= 0 || caccount.no === t.debit.caccountNo
+                (childNo) => t.debit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.debit.caccountNo,
           )
           .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
       );
@@ -160,8 +160,8 @@ export class TAccountService {
           .filter(
             (t) =>
               caccount.child.findIndex(
-                (childNo) => t.credit.caccountNo === childNo
-              ) >= 0 || caccount.no === t.credit.caccountNo
+                (childNo) => t.credit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.credit.caccountNo,
           )
           .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
       );

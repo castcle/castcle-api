@@ -24,90 +24,81 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Injectable } from '@nestjs/common';
-import * as Twilio from 'twilio';
-import { TwilioChannel } from './twilio.message';
+import { Twilio } from 'twilio';
+import { TwilioChannel, TwilioStatus } from './twilio.enum';
 
 @Injectable()
 export class TwilioClient {
   private logger = new CastLogger(TwilioClient.name);
-  private client = new Twilio.Twilio(
+  private client = new Twilio(
     Environment.TWILIO_ACCOUNT_SID,
-    Environment.TWILIO_AUTH_TOKEN
+    Environment.TWILIO_AUTH_TOKEN,
   );
 
-  async getRateLimitsOTP(
-    ip: string,
-    userAgent: string,
-    countryCode: string,
-    receiver: string,
-    channel: TwilioChannel,
-    account_id: string
-  ) {
-    if (channel == TwilioChannel.Email) {
+  getRateLimitsOTP(dto: {
+    userAgent: string;
+    channel: TwilioChannel;
+    accountId: string;
+    ip?: string;
+    receiver?: string;
+    countryCode?: string;
+  }) {
+    if (dto.channel !== TwilioChannel.SMS) {
       return {
-        session_id: account_id,
-        user_agent: userAgent,
-      };
-    } else if (channel == TwilioChannel.Mobile) {
-      const countries = Environment.TWILIO_COUNTRY_CODE.split(',');
-      const indexOfCountry = countries.indexOf(countryCode);
-      if (indexOfCountry != -1) {
-        return {
-          end_user_ip_address: ip,
-          phone_number: receiver,
-          phone_number_country_code: countryCode,
-          session_id: account_id,
-          user_agent: userAgent,
-        };
-      } else {
-        return {
-          phone_number: receiver,
-          session_id: account_id,
-          user_agent: userAgent,
-        };
-      }
-    } else {
-      return {
-        session_id: account_id,
-        user_agent: userAgent,
+        session_id: dto.accountId,
+        user_agent: dto.userAgent,
       };
     }
+
+    const countries = Environment.TWILIO_COUNTRY_CODES;
+    const countryCodeIncluded = countries.includes(dto.countryCode);
+
+    if (!countryCodeIncluded) {
+      return {
+        end_user_ip_address: dto.ip,
+        phone_number: dto.receiver,
+        phone_number_country_code: dto.countryCode,
+        session_id: dto.accountId,
+        user_agent: dto.userAgent,
+      };
+    }
+
+    return {
+      phone_number: dto.receiver,
+      session_id: dto.accountId,
+      user_agent: dto.userAgent,
+    };
   }
 
-  async requestOtp(
-    ip: string,
-    userAgent: string,
-    countryCode: string,
-    receiver: string,
-    channel: TwilioChannel,
-    config: any,
-    account_id: string
-  ) {
-    const rateLimits = await this.getRateLimitsOTP(
-      ip,
-      userAgent,
-      countryCode,
-      receiver,
-      channel,
-      account_id
-    );
+  async requestOtp(dto: {
+    channel: TwilioChannel;
+    accountId: string;
+    receiver: string;
+    userAgent: string;
+    config: any;
+    ip?: string;
+    countryCode?: string;
+  }) {
+    const rateLimits = this.getRateLimitsOTP(dto);
     this.logger.log(`* [START] requestOtp *`);
-    this.logger.log(`Request otp receiver: ${receiver} channel: ${channel}`);
+    this.logger.log(
+      `Request otp receiver: ${dto.receiver} channel: ${dto.channel}`,
+    );
     this.logger.log(`* [PROCESS] requestOtp: ${JSON.stringify(rateLimits)} *`);
     return this.client.verify
       .services(Environment.TWILIO_OTP_SID)
       .verifications.create({
         rateLimits: rateLimits,
         channelConfiguration: {
-          substitutions: config,
+          substitutions: dto.config,
         },
-        to: receiver,
-        channel: channel,
+        to: dto.receiver,
+        channel: dto.channel,
       })
       .then((verification) => {
         this.logger.log(`* [SUCCESS] requestOtp *`);
         this.logger.log(
-          `${account_id} invoke Twilio Verification SID: ${verification.sid}`
+          `${dto.accountId} invoke Twilio Verification SID: ${verification.sid}`,
         );
         return verification;
       })
@@ -130,17 +121,16 @@ export class TwilioClient {
       });
   }
 
-  async canceledOtp(sid: string) {
-    this.logger.log(`Cancel otp sid: ${sid}`);
+  async cancelOtp(sid: string) {
+    this.logger.log(`Cancel otp sid: ${sid}`, 'cancelOtp');
     return this.client.verify
       .services(Environment.TWILIO_OTP_SID)
       .verifications(sid)
-      .update({ status: 'canceled' })
-      .then((verification) => {
-        return verification;
-      })
+      .update({ status: TwilioStatus.CANCELED })
+      .then(() => true)
       .catch((error) => {
-        throw new Error(error);
+        this.logger.log(error, 'cancelOtp');
+        return false;
       });
   }
 }

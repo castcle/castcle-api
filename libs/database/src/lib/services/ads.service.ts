@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleDate } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
@@ -29,7 +30,7 @@ import * as mongoose from 'mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import {
   GetAdsPriceResponse,
-  pipe2AdsAuctionPrice,
+  pipe2AvaialableAdsCampaign,
 } from '../aggregations/ads.aggregation';
 import {
   ContentPayloadItem,
@@ -44,17 +45,23 @@ import {
 } from '../dtos/ads.dto';
 import {
   AdsBoostStatus,
+  AdsCpm,
   AdsPaymentMethod,
+  AdsPlacementContent,
+  AdsSocialReward,
   AdsStatus,
   CACCOUNT_NO,
   DefaultAdsStatistic,
+  UserType,
   WalletType,
 } from '../models';
 import {
-  Account,
   AdsCampaign,
   AdsPlacement,
   Content,
+  ContentFarming,
+  MicroTransaction,
+  TLedger,
   toSignedContentPayloadItem,
   User,
 } from '../schemas';
@@ -83,7 +90,9 @@ export class AdsService {
     @InjectModel('User')
     public _userModel: Model<User>,
     public taccountService: TAccountService,
-    public dataService: DataService
+    public dataService: DataService,
+    @InjectModel('ContentFarming')
+    public _contentFarmingModel: Model<ContentFarming>,
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -91,25 +100,25 @@ export class AdsService {
   selectContentAds = async (
     adsPrice: GetAdsPriceResponse,
     viewerAccountId: string,
-    allContentAdsIds: string[]
+    allContentAdsIds: string[],
   ) => {
     const contentScore = await this.dataService.personalizeContents(
       viewerAccountId,
-      allContentAdsIds
+      allContentAdsIds,
     );
     if (!(contentScore && Object.keys(contentScore).length > 0)) return null;
     const sortedContentIds = Object.keys(contentScore).sort((a, b) =>
-      contentScore[a] > contentScore[b] ? -1 : 1
+      contentScore[a] > contentScore[b] ? -1 : 1,
     );
     const adsIndex = adsPrice.adsRef.findIndex(
-      (item) => String(item.$id || item.oid) === sortedContentIds[0]
+      (item) => String(item.$id || item.oid) === sortedContentIds[0],
     );
     return adsPrice.ads[adsIndex];
   };
 
   selectAdsFromActiveAds = async (
     adsPrice: GetAdsPriceResponse,
-    viewerAccountId: string
+    viewerAccountId: string,
   ) => {
     const allContentAdsIds = adsPrice.adsRef
       .filter((item) => item.$ref === 'content' || item.namespace === 'content')
@@ -121,7 +130,7 @@ export class AdsService {
       const selectedContentAds = await this.selectContentAds(
         adsPrice,
         viewerAccountId,
-        allContentAdsIds
+        allContentAdsIds,
       );
       return selectedContentAds
         ? selectedContentAds
@@ -131,24 +140,18 @@ export class AdsService {
   };
 
   getAdsPlacementFromAuction = async (
-    contentIds: string[],
-    viewerAccountId: string
+    contentIds: AdsPlacementContent[],
+    viewerAccountId: string,
   ) => {
     const session = await this._adsPlacementModel.startSession();
     try {
       session.startTransaction();
-      const price = await this._adsCampaignModel.aggregate<GetAdsPriceResponse>(
-        pipe2AdsAuctionPrice()
-      );
-      const selectAds = await this.selectAdsFromActiveAds(
-        price[0],
-        viewerAccountId
-      );
+      const cpm = await this.auctionAds(viewerAccountId);
       const adsPlacement = new this._adsPlacementModel({
-        campaign: selectAds,
-        contents: contentIds,
+        campaign: cpm.adsCampaignId,
+        contents: contentIds.map((c) => c.contentId),
         cost: {
-          UST: price[0].price,
+          UST: cpm.biddingCpm,
         },
         viewer: mongoose.Types.ObjectId(viewerAccountId),
       });
@@ -166,13 +169,19 @@ export class AdsService {
   addAdsToFeeds = async (viewerAccountId: string, feeds: FeedItemResponse) => {
     const contentIds = feeds.payload
       .filter((item) => item.type === 'content')
-      .map((item) => (item.payload as ContentPayloadItem).id);
+      .map(
+        (item) =>
+          ({
+            contentId: (item.payload as ContentPayloadItem).id,
+            authorId: (item.payload as ContentPayloadItem).authorId,
+          } as AdsPlacementContent),
+      );
     const adsplacement = await this.getAdsPlacementFromAuction(
       contentIds,
-      viewerAccountId
+      viewerAccountId,
     );
     const campaign = await this._adsCampaignModel.findById(
-      adsplacement.campaign
+      adsplacement.campaign,
     );
     let adsItem: FeedItemPayloadItem;
     if (
@@ -180,7 +189,7 @@ export class AdsService {
       campaign.adsRef.namespace === 'content'
     ) {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
       );
       adsItem = {
         id: adsplacement.id,
@@ -202,7 +211,7 @@ export class AdsService {
       };
     } else {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid
+        campaign.adsRef.$id ? campaign.adsRef.$id : campaign.adsRef.oid,
       );
       adsItem = {
         id: adsplacement.id,
@@ -227,35 +236,42 @@ export class AdsService {
     return feeds;
   };
 
-  getCode = (account: Account) =>
-    `${String(account._id).toUpperCase().slice(19)}${new Date().getTime()}`;
+  getCode = (user: User) =>
+    `${user.id.toUpperCase().slice(19)}${new Date().getTime()}`;
 
   /**
    * Validate if ads owner can create ads or not
-   * @param account
+   * @param user
    * @param adsRequest
    * @returns
    */
-  validateAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  validateAds = async (user: User, adsRequest: AdsRequestDto) => {
     const balance = await this.taccountService.getAccountBalance(
-      String(account._id),
+      user.id,
       adsRequest.paymentMethod === AdsPaymentMethod.ADS_CREDIT
         ? WalletType.ADS
-        : WalletType.PERSONAL
+        : WalletType.PERSONAL,
     );
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
+    if (adsRequest.userId && user.id !== adsRequest.userId) {
+      const page = await this._userModel.findById(adsRequest.userId);
+      return String(page.ownerAccount) === String(user._id);
+    } else if (adsRequest.contentId) {
+      const content = await this._contentModel.findById(adsRequest.contentId);
+      return String(content.author.id) === String(user._id);
+    }
     return true;
   };
 
   /**
    * Create a ads campaign
-   * @param account
+   * @param user
    * @param adsRequest
    * @returns {AdsCampaign}
    */
-  createAds = async (account: Account, adsRequest: AdsRequestDto) => {
+  createAds = async (user: User, adsRequest: AdsRequestDto) => {
     const adsRef = adsRequest.userId
       ? {
           $ref: 'user',
@@ -265,17 +281,17 @@ export class AdsService {
           $ref: 'content',
           $id: new mongoose.Types.ObjectId(adsRequest.contentId),
         };
-    if (!(await this.validateAds(account, adsRequest)))
+    if (!(await this.validateAds(user, adsRequest)))
       throw CastcleException.INVALID_TRANSACTIONS_DATA;
     //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
-      owner: account._id,
+      owner: user.id,
       objective: adsRequest.objective,
       detail: {
         name: adsRequest.campaignName,
         message: adsRequest.campaignMessage,
-        code: this.getCode(account), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
+        code: user._id + Math.random(), //TODO !!! have to change according to biz logic for example ADSPAGE00001  = 1 ads that promote page or it have to linked with owner account from the code
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
@@ -291,12 +307,12 @@ export class AdsService {
     let payload: ContentPayloadItem | PageResponseDto; // = {};
     if (campaign.adsRef.$ref === 'user' || campaign.adsRef.oref === 'user') {
       const page = await this._userModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid,
       );
       payload = page.toPageResponse();
     } else {
       const content = await this._contentModel.findById(
-        campaign.adsRef.$id || campaign.adsRef.oid
+        campaign.adsRef.$id || campaign.adsRef.oid,
       );
       payload = toSignedContentPayloadItem(content);
     }
@@ -332,23 +348,32 @@ export class AdsService {
       updatedAt: campaign.updatedAt,
     } as AdsCampaignResponseDto;
   };
+  async _getUserIds(ownerAccount: any, _id: any) {
+    const pages = await this._userModel.find({
+      ownerAccount: ownerAccount,
+      type: UserType.PAGE,
+    });
+    const ids = pages.map((p) => p._id);
+    ids.push(_id);
+    return ids;
+  }
 
   async getListAds(
-    { _id }: Account,
-    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery
+    { _id, ownerAccount }: User,
+    { sinceId, untilId, maxResults, filter, timezone }: AdsQuery,
   ) {
+    const ids = await this._getUserIds(ownerAccount, _id);
     const filters: FilterQuery<AdsCampaign> = createCastcleFilter(
-      { owner: _id },
+      { owner: { $in: ids } },
       {
         sinceId,
         untilId,
-      }
+      },
     );
-
     if (filter && filter !== FilterInterval.All) {
       const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
         timezone,
-        filter
+        filter,
       );
 
       filters.createdAt = {
@@ -363,10 +388,12 @@ export class AdsService {
       .sort({ createdAt: -1, _id: -1 });
   }
 
-  lookupAds({ _id }: Account, adsId: string) {
+  async lookupAds({ _id, ownerAccount }: User, adsId: string) {
+    const ids = await this._getUserIds(ownerAccount, _id);
+    ids.push(_id);
     return this._adsCampaignModel
       .findOne({
-        owner: _id,
+        owner: { $in: ids },
         _id: adsId,
       })
       .exec();
@@ -384,7 +411,7 @@ export class AdsService {
             duration: adsRequest.duration,
           } as AdsDetail,
         },
-      }
+      },
     );
   }
   async deleteAdsById(adsId: string) {
@@ -401,7 +428,7 @@ export class AdsService {
         $set: {
           boostStatus: adsBoostStatus,
         },
-      }
+      },
     );
   }
 
@@ -414,10 +441,10 @@ export class AdsService {
         if (adsPlacement && !adsPlacement.seenAt) {
           adsPlacement.seenAt = new Date();
           adsPlacement.seenCredential = mongoose.Types.ObjectId(
-            seenByCredentialId
+            seenByCredentialId,
           ) as any;
           const adsCampaign = await this._adsCampaignModel.findById(
-            adsPlacement.campaign
+            adsPlacement.campaign,
           );
           const estAdsCostCAST =
             adsPlacement.cost.UST / mockOracleService.getCastPrice();
@@ -426,7 +453,7 @@ export class AdsService {
           //credit ads ownner locked_for ads
           tx = await this.taccountService.transfers({
             from: {
-              account: adsCampaign.owner as unknown as string,
+              user: adsCampaign.owner as unknown as string,
               type:
                 adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
                   ? WalletType.ADS
@@ -435,7 +462,7 @@ export class AdsService {
             },
             to: [
               {
-                type: WalletType.CASTCLE_ADS_LOCKED,
+                type: WalletType.CASTCLE_SOCIAL,
                 value: estAdsCostCAST,
               },
             ],
@@ -450,7 +477,11 @@ export class AdsService {
                   value: estAdsCostCAST,
                 },
                 credit: {
-                  caccountNo: CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.ADS,
+                  caccountNo:
+                    adsCampaign.detail.paymentMethod ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
                   value: estAdsCostCAST,
                 },
               },
@@ -463,7 +494,7 @@ export class AdsService {
             String(adsCampaign.owner),
             adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
               ? WalletType.ADS
-              : WalletType.PERSONAL
+              : WalletType.PERSONAL,
           );
           //if balance < 1 CAST THen pause ads
           if (
@@ -488,5 +519,310 @@ export class AdsService {
       : {
           adsPlacement: adsPlacement,
         };
+  };
+
+  getAds = async (accountId: string) => {
+    //select all ads that user Balance > budget
+    const ads = await this._adsCampaignModel
+      .aggregate(pipe2AvaialableAdsCampaign())
+      .exec();
+    const releventScore = await this.dataService.personalizeContents(
+      accountId,
+      ads.map((a) => a.adsRef.$id || a.adsRef.oid),
+    );
+    return ads
+      .sort(
+        (a, b) =>
+          releventScore[b.adsRef.$id || b.adsRef.oid] -
+          releventScore[a.adsRef.$id || a.adsRef.oid],
+      )
+      .map((sortedAds, index) => {
+        const adsCpm: AdsCpm = {
+          cpm:
+            ads.length * Environment.ADS_MINIMUM_CPM > sortedAds.budgetLeft
+              ? sortedAds.budgetLeft
+              : ads.length * Environment.ADS_MINIMUM_CPM,
+        };
+        const bid =
+          index === ads.length - 1
+            ? Environment.ADS_MINIMUM_CPM
+            : Math.min(
+                (ads.length - index) * Environment.ADS_MINIMUM_CPM,
+                adsCpm.cpm,
+              );
+        adsCpm.biddingCpm = bid;
+        adsCpm.relevanceScore =
+          releventScore[sortedAds.adsRef.$id || sortedAds.adsRef.oid];
+        adsCpm.rankingScore = adsCpm.relevanceScore * adsCpm.biddingCpm;
+        adsCpm.adsCampaignId = String(sortedAds._id);
+        return adsCpm;
+      });
+  };
+
+  auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
+
+  distributeSocialRewardAdsCredit = async () => {
+    const adsIncomeToken = await this.taccountService.getBalance(
+      CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+    );
+    const adsPlacements = await this._adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+    });
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    const castActualCost = totalCost / adsIncomeToken;
+    for (let i = 0; i < adsPlacements.length; i++) {
+      const adsplacement = adsPlacements[i];
+      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
+      const reward: AdsSocialReward = {
+        adsCost: adsplacement.cost.CAST,
+        castcleShare: 0,
+        creatorShare: 0.5 * adsplacement.cost.CAST,
+        farmingShare: 0.3 * adsplacement.cost.CAST,
+        viewerShare: 0.2 * adsplacement.cost.CAST,
+      };
+      const session = await this._adsPlacementModel.startSession();
+      session.withTransaction(async () => {
+        await this.distributeAdsReward(adsplacement, reward, session);
+        adsplacement.isModified('cost');
+        await adsplacement.save();
+      });
+      session.endSession();
+    }
+  };
+
+  distributeSocialRewardPersonal = async () => {
+    const adsIncomeToken = await this.taccountService.getBalance(
+      CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+    );
+    const adsPlacements = await this._adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+    });
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    const castActualCost = totalCost / adsIncomeToken;
+    for (let i = 0; i < adsPlacements.length; i++) {
+      const adsplacement = adsPlacements[i];
+      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
+      const reward: AdsSocialReward = {
+        adsCost: adsplacement.cost.CAST,
+        castcleShare: 0.3 * adsplacement.cost.CAST,
+        creatorShare: 0.35 * adsplacement.cost.CAST,
+        farmingShare: 0.21 * adsplacement.cost.CAST,
+        viewerShare: 0.14 * adsplacement.cost.CAST,
+      };
+      const session = await this._adsPlacementModel.startSession();
+      session.withTransaction(async () => {
+        await this.distributeAdsReward(adsplacement, reward, session);
+        adsplacement.isModified('cost');
+        await adsplacement.save({ session: session });
+      });
+      session.endSession();
+    }
+  };
+
+  distributeAdsReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession,
+  ) => {
+    await this.distributeContentFarmingReward(adsplacement, reward, session);
+    await this.distributeContentCreatorReward(adsplacement, reward, session);
+    return this.taccountService.transfers(
+      {
+        from: {
+          type: WalletType.CASTCLE_ADS_LOCKED,
+          value: reward.viewerShare,
+        },
+        to: [
+          {
+            account: adsplacement.viewer as unknown as string,
+            type: WalletType.PERSONAL,
+            value: reward.viewerShare,
+          },
+        ],
+        ledgers: [
+          {
+            debit: {
+              caccountNo:
+                adsplacement.campaign.campaignPaymentType ===
+                AdsPaymentMethod.ADS_CREDIT
+                  ? CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.ADS_CREDIT.NO
+                  : CACCOUNT_NO.LIABILITY.LOCKED_TOKEN.PERSONAL.NO,
+              value: reward.viewerShare,
+            },
+            credit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              value: reward.viewerShare,
+            },
+          },
+        ],
+      },
+      session,
+    );
+  };
+
+  distributeContentCreatorReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession,
+  ) => {
+    const creatorPool = reward.creatorShare + reward.farmingShare;
+    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
+    const cfs = await this._contentFarmingModel.find({
+      content: {
+        $in: adsplacement.contents.map((c) => String(c)),
+      },
+    });
+
+    const transferTo: MicroTransaction[] = [];
+    const ledgers: TLedger[] = [];
+    for (let i = 0; i < adsplacement.contents.length; i++) {
+      const currentCfs = cfs.filter(
+        (c) => String(c.content) === adsplacement.contents[i].contentId,
+      );
+      const rewardPerContent =
+        currentCfs.length === 0
+          ? creatorRewardPerContent
+          : creatorRewardPerContent *
+            (reward.creatorShare / (reward.creatorShare + reward.farmingShare));
+      transferTo.push({
+        user: adsplacement.contents[i].authorId,
+        type: WalletType.PERSONAL,
+        value: rewardPerContent,
+      });
+      ledgers.push({
+        debit: {
+          caccountNo:
+            adsplacement.campaign.campaignPaymentType ===
+            AdsPaymentMethod.ADS_CREDIT
+              ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+              : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+          value: rewardPerContent,
+        },
+        credit: {
+          caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+          value: rewardPerContent,
+        },
+      });
+    }
+    return this.taccountService.transfers(
+      {
+        from: {
+          type: WalletType.CASTCLE_ADS_LOCKED,
+          value: reward.creatorShare,
+        },
+        to: transferTo,
+        ledgers: ledgers,
+      },
+      session,
+    );
+  };
+
+  distributeContentFarmingReward = async (
+    adsplacement: AdsPlacement,
+    reward: AdsSocialReward,
+    session: mongoose.ClientSession,
+  ) => {
+    const creatorPool = reward.creatorShare + reward.farmingShare;
+    const creatorRewardPerContent = creatorPool / adsplacement.contents.length;
+
+    const cfs = await this._contentFarmingModel.find({
+      content: {
+        $in: adsplacement.contents.map((c) => String(c)),
+      },
+    });
+
+    for (let j = 0; j < adsplacement.contents.length; j++) {
+      const currentCfs = cfs.filter(
+        (c) => String(c.content) === adsplacement.contents[j].contentId,
+      );
+      if (currentCfs.length > 0) {
+        const transferTo: MicroTransaction[] = [];
+        const ledgers: TLedger[] = [];
+        for (let i = 0; i < currentCfs.length; i++) {
+          const rewardContent =
+            currentCfs[i].weight *
+            (reward.farmingShare /
+              (reward.farmingShare + reward.creatorShare)) *
+            creatorRewardPerContent;
+          transferTo.push({
+            user: String(currentCfs[i].user),
+            type: WalletType.PERSONAL,
+            value: rewardContent,
+          });
+          ledgers.push({
+            debit: {
+              caccountNo:
+                adsplacement.campaign.campaignPaymentType ===
+                AdsPaymentMethod.ADS_CREDIT
+                  ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                  : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+              value: rewardContent,
+            },
+            credit: {
+              caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+              value: rewardContent,
+            },
+          });
+        }
+        await this._contentFarmingModel.updateMany(
+          { _id: { $in: currentCfs.map((c) => c.id) } },
+          {
+            isDistributed: true,
+          },
+          { session: session },
+        );
+        await this._contentModel.updateMany(
+          { _id: { $in: currentCfs.map((c) => c.content) } },
+          { 'farming.isDistributed': true },
+        );
+        await this.taccountService.transfers(
+          {
+            from: {
+              type: WalletType.CASTCLE_ADS_LOCKED,
+              value: reward.farmingShare,
+            },
+            to: transferTo,
+            ledgers: ledgers,
+          },
+          session,
+        );
+      } else {
+        const author = await this._userModel.findById(
+          adsplacement.contents[j].authorId,
+        );
+        await this.taccountService.transfers(
+          {
+            from: {
+              type: WalletType.CASTCLE_ADS_LOCKED,
+              value: creatorRewardPerContent,
+            },
+            to: [
+              {
+                type: WalletType.PERSONAL,
+                value: creatorRewardPerContent,
+                user: author.id,
+              },
+            ],
+            ledgers: [
+              {
+                debit: {
+                  caccountNo:
+                    adsplacement.campaign.campaignPaymentType ===
+                    AdsPaymentMethod.ADS_CREDIT
+                      ? CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO
+                      : CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
+                  value: creatorRewardPerContent,
+                },
+                credit: {
+                  caccountNo: CACCOUNT_NO.LIABILITY.USER_WALLET.PERSONAL,
+                  value: creatorRewardPerContent,
+                },
+              },
+            ],
+          },
+          session,
+        );
+      }
+    }
   };
 }

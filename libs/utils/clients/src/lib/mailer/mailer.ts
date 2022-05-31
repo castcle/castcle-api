@@ -51,7 +51,7 @@ export class Mailer {
         html: getRegistrationHtml(
           toEmail,
           `${verifyLink}?code=${code}`,
-          Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com'
+          Environment.SMTP_ADMIN_EMAIL || 'admin@castcle.com',
         ),
       });
 
@@ -60,4 +60,58 @@ export class Mailer {
       this.logger.error(error, `sendRegistrationEmail:${toEmail}`);
     }
   }
+
+  async sendReportContentEmail(
+    user: UserReport,
+    targetContent: {
+      _id: string;
+      payload: any;
+      author: UserReport;
+    },
+    message: string,
+  ) {
+    try {
+      const info = await this.transporter.sendMail({
+        from: 'castcle-noreply" <no-reply@castcle.com>',
+        subject: `Report content: ${targetContent._id}`,
+        to: Environment.SMTP_ADMIN_EMAIL,
+        text: `Content: ${targetContent._id} has been reported.
+  Author: ${targetContent.author.displayName} (${targetContent.author._id})
+  Body: ${JSON.stringify(targetContent.payload, null, 2)}
+
+  ReportedBy: ${user.displayName} (${user._id})
+  Message: ${message}`,
+      });
+
+      this.logger.log(`Report has been submitted ${info.messageId}`);
+    } catch (error) {
+      this.logger.error(error, `sendReportContentEmail:${targetContent._id}`);
+    }
+  }
+
+  async sendReportUserEmail(
+    user: UserReport,
+    targetUser: UserReport,
+    message: string,
+  ) {
+    try {
+      const info = await this.transporter.sendMail({
+        from: 'castcle-noreply" <no-reply@castcle.com>',
+        subject: `Report user: ${targetUser._id}`,
+        to: Environment.SMTP_ADMIN_EMAIL,
+        text: `User ${targetUser.displayName} (${targetUser._id}) has been reported.
+  Reported by: ${user.displayName} (${user._id})
+  Message: ${message}`,
+      });
+
+      this.logger.log(`Report has been submitted ${info.messageId}`);
+    } catch (error) {
+      this.logger.error(error, `sendReportUserEmail:${targetUser}`);
+    }
+  }
 }
+
+type UserReport = {
+  _id: string;
+  displayName: string;
+};

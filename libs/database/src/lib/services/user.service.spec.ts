@@ -127,10 +127,10 @@ describe('User Service', () => {
   describe('#getUserFromCredential()', () => {
     it('should get user that has the same account id', async () => {
       const userFromCredential = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       expect(userFromCredential.ownerAccount).toEqual(
-        result.accountDocument._id
+        result.accountDocument._id,
       );
     });
   });
@@ -176,23 +176,23 @@ describe('User Service', () => {
         },
       } as UpdateModelUserDto;
       const userFromCredential = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       expect((await userFromCredential.toUserResponse()).dob).toBeNull();
       let updatingUser = await service.updateUser(userFromCredential, {
         dob: partialDTO.dob,
       });
       expect(updatingUser.profile.birthdate.toISOString()).toEqual(
-        partialDTO.dob
+        partialDTO.dob,
       );
       expect((await updatingUser.toUserResponse()).dob.toISOString()).toEqual(
-        partialDTO.dob
+        partialDTO.dob,
       );
       updatingUser = await service.updateUser(userFromCredential, {
         overview: partialDTO.overview,
       });
       expect((await updatingUser.toUserResponse()).overview).toEqual(
-        partialDTO.overview
+        partialDTO.overview,
       );
       updatingUser = await service.updateUser(userFromCredential, {
         images: partialDTO.images,
@@ -202,10 +202,10 @@ describe('User Service', () => {
         },
       });
       expect(updatingUser.profile.images.avatar).toEqual(
-        partialDTO.images.avatar
+        partialDTO.images.avatar,
       );
       expect(updatingUser.profile.images.cover).toEqual(
-        partialDTO.images.cover
+        partialDTO.images.cover,
       );
       expect((await updatingUser.toUserResponse()).images).toBeDefined();
       expect((await updatingUser.toUserResponse()).links).toEqual({
@@ -223,7 +223,7 @@ describe('User Service', () => {
   describe('#createPageFromUser()', () => {
     it('should create a new user that type page from PageDTO', async () => {
       const currentUser = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const page = await service.createPageFromUser(currentUser, {
         displayName: 'new Page',
@@ -236,7 +236,7 @@ describe('User Service', () => {
   describe('#getAllPages()', () => {
     it('should list all created pages', async () => {
       const currentUser = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       expect(allPages.items.length).toEqual(1);
@@ -252,11 +252,11 @@ describe('User Service', () => {
   describe('#getUserPages()', () => {
     it('should list all page that user created', async () => {
       const currentUser = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const ownPages = await service.getUserPages(
         currentUser,
-        DEFAULT_QUERY_OPTIONS
+        DEFAULT_QUERY_OPTIONS,
       );
       expect(ownPages.items.length).toEqual(2);
       expect(ownPages.pagination.limit).toEqual(25);
@@ -270,7 +270,7 @@ describe('User Service', () => {
     };
     beforeAll(async () => {
       currentUser = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       allPages = await service.getAllPages(DEFAULT_CONTENT_QUERY_OPTIONS);
     });
@@ -307,7 +307,7 @@ describe('User Service', () => {
   describe('#unfollow()', () => {
     it('should work the same as follow', async () => {
       const currentUser: User = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const allPages: {
         items: User[];
@@ -328,7 +328,7 @@ describe('User Service', () => {
       //try double unfollow
       await currentUser.unfollow(allPages.items[0]);
       const afterFollowUser2 = await service.getByIdOrCastcleId(
-        currentUser._id
+        currentUser._id,
       );
       expect(afterFollowUser.followedCount).toEqual(0);
       const page2 = await service.getByIdOrCastcleId(allPages.items[0]._id);
@@ -342,7 +342,7 @@ describe('User Service', () => {
   describe('#getFollower()', () => {
     it('should get user detail from followers', async () => {
       const currentUser: User = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const allPages: {
         items: User[];
@@ -356,12 +356,12 @@ describe('User Service', () => {
         {
           maxResults: 5,
           hasRelationshipExpansion: false,
-        }
+        },
       );
 
       expect(followers.users.length).toEqual(1);
       expect(followers.users[0].castcleId).toEqual(
-        (await currentUser.toUserResponse()).castcleId
+        (await currentUser.toUserResponse()).castcleId,
       );
     });
   });
@@ -369,7 +369,7 @@ describe('User Service', () => {
   describe('#getFollowing()', () => {
     it('should get total of following correctly', async () => {
       const currentUser: User = await service.getUserFromCredential(
-        result.credentialDocument
+        result.credentialDocument,
       );
       const allPages = await service.getAllPages(DEFAULT_QUERY_OPTIONS);
       const following = await service.getFollowing(currentUser, currentUser, {
@@ -437,10 +437,10 @@ describe('User Service', () => {
         const accountEntity = await accountModel.findById(account._id);
 
         await expect(
-          service.getByIdOrCastcleId(user._id)
+          service.getByIdOrCastcleId(user._id),
         ).resolves.toBeDefined();
         await expect(
-          service.getByIdOrCastcleId(page._id)
+          service.getByIdOrCastcleId(page._id),
         ).resolves.toBeDefined();
         expect(userEntity.visibility).toEqual(EntityVisibility.Publish);
         expect(pageEntity.visibility).toEqual(EntityVisibility.Publish);
@@ -533,35 +533,35 @@ describe('User Service', () => {
 
     beforeAll(async () => {
       const result = await authService.createAccount(
-        userInfo.accountRequirement
+        userInfo.accountRequirement,
       );
       const accountActiation = await authService.signupByEmail(
         result.accountDocument,
-        userInfo.signupRequirement
+        userInfo.signupRequirement,
       );
       await authService.verifyAccount(accountActiation);
       userA = await service.getUserFromCredential(result.credentialDocument);
       const result2 = await authService.createAccount(
-        userNotDeleteInfo.accountRequirement
+        userNotDeleteInfo.accountRequirement,
       );
       const accountActiation2 = await authService.signupByEmail(
         result2.accountDocument,
-        userNotDeleteInfo.signupRequirement
+        userNotDeleteInfo.signupRequirement,
       );
       await authService.verifyAccount(accountActiation2);
       userNotDelete = await service.getUserFromCredential(
-        result2.credentialDocument
+        result2.credentialDocument,
       );
       //let userA follower UserNotDelete
       await service.follow(userA, userNotDelete);
 
       //overall
       const result3 = await authService.createAccount(
-        userOverAllInfo.accountRequirement
+        userOverAllInfo.accountRequirement,
       );
       const accountActivation3 = await authService.signupByEmail(
         result3.accountDocument,
-        userOverAllInfo.signupRequirement
+        userOverAllInfo.signupRequirement,
       );
       await authService.verifyAccount(accountActivation3);
       accountB = result3.accountDocument;
@@ -606,7 +606,7 @@ describe('User Service', () => {
             message: 'this is short1',
           } as ShortPayload,
           castcleId: userNotDelete.displayId,
-        }
+        },
       );
 
       fixContents[1] = await contentService.createContentFromUser(
@@ -617,13 +617,13 @@ describe('User Service', () => {
             message: 'this is short2',
           } as ShortPayload,
           castcleId: userNotDelete.displayId,
-        }
+        },
       );
 
       testLikeComment = await contentService.createCommentForContent(
         userNotDelete,
         fixContents[0],
-        { message: 'testLikeComment' }
+        { message: 'testLikeComment' },
       );
       await contentService.createCommentForContent(userA, fixContents[0], {
         message: 'test Comment',
@@ -654,23 +654,23 @@ describe('User Service', () => {
     describe('_removeAllEngagements()', () => {
       it('should update like amount of contents', async () => {
         const preContent = await contentService.getContentFromId(
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         const contentPayload = preContent.toContentPayload();
         const preComment = await contentService.getCommentById(
-          testLikeComment._id
+          testLikeComment._id,
         );
         console.debug('_removeAllEngagementsPre', contentPayload);
         expect(contentPayload.liked.count).toEqual(2);
         expect(preComment.engagements.like.count).toEqual(2);
         await service.removeAllEngagementsFromUsers([userA]);
         const postContent = await contentService.getContentFromId(
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         const postContentPayload = postContent.toContentPayload();
         expect(postContentPayload.liked.count).toEqual(1);
         const postComment = await contentService.getCommentById(
-          testLikeComment._id
+          testLikeComment._id,
         );
         expect(postComment.engagements.like.count).toEqual(1);
       });
@@ -684,7 +684,7 @@ describe('User Service', () => {
           {
             maxResults: 5,
             hasRelationshipExpansion: false,
-          }
+          },
         );
         expect(preFollower.users.length).toEqual(2);
         await service.removeAllRelationshipsFromUsers([userA]);
@@ -694,7 +694,7 @@ describe('User Service', () => {
           {
             maxResults: 5,
             hasRelationshipExpansion: false,
-          }
+          },
         );
         expect(postFollower.users.length).toEqual(1);
       });
@@ -704,14 +704,14 @@ describe('User Service', () => {
       it('should flag all comment from user to hidden', async () => {
         const comments = await commentService.getCommentsByContentId(
           userA,
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         expect(comments.payload.length).toEqual(3);
         expect(comments.meta.resultCount).toEqual(3);
         await service.removeAllCommentsFromUsers([userA]);
         const comments2 = await commentService.getCommentsByContentId(
           userA,
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         expect(comments2.meta.resultCount).toEqual(2);
         expect(comments2.payload.length).toEqual(2);
@@ -728,7 +728,7 @@ describe('User Service', () => {
         //remove all comment / follower and engagement
         const comments2 = await commentService.getCommentsByContentId(
           userA,
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         expect(comments2.meta.resultCount).toEqual(1);
         const postFollower = await service.getFollowers(
@@ -737,16 +737,16 @@ describe('User Service', () => {
           {
             maxResults: 5,
             hasRelationshipExpansion: false,
-          }
+          },
         );
         expect(postFollower.users.length).toEqual(0);
         const postContent = await contentService.getContentFromId(
-          fixContents[0]._id
+          fixContents[0]._id,
         );
         const postContentPayload = postContent.toContentPayload();
         expect(postContentPayload.liked.count).toEqual(0);
         const postComment = await contentService.getCommentById(
-          testLikeComment._id
+          testLikeComment._id,
         );
         expect(postComment.engagements.like.count).toEqual(0);
       });
@@ -775,13 +775,13 @@ describe('User Service', () => {
         {
           limit: 5,
           page: 1,
-        }
+        },
       );
       const updatedUser = await service.getByIdOrCastcleId(
-        mocksUsers[0].user._id
+        mocksUsers[0].user._id,
       );
       const updatedUser2 = await service.getByIdOrCastcleId(
-        mocksUsers[1].user._id
+        mocksUsers[1].user._id,
       );
       expect(mentions.users.length).toEqual(5);
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
@@ -796,14 +796,14 @@ describe('User Service', () => {
         {
           limit: 2,
           page: 1,
-        }
+        },
       );
       expect(mentions.users.length).toEqual(2);
       const updatedUser = await service.getByIdOrCastcleId(
-        mocksUsers[0].user._id
+        mocksUsers[0].user._id,
       );
       const updatedUser2 = await service.getByIdOrCastcleId(
-        mocksUsers[1].user._id
+        mocksUsers[1].user._id,
       );
       expect(mentions.users[0]).toEqual(await updatedUser.toUserResponse());
       expect(mentions.users[0].followers.count).toEqual(4);
@@ -833,7 +833,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject(
-        CastcleException.USER_OR_PAGE_NOT_FOUND
+        CastcleException.USER_OR_PAGE_NOT_FOUND,
       );
     });
 
@@ -882,7 +882,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to unblock is not found', async () => {
       await expect(service.blockUser(user1, null)).rejects.toMatchObject(
-        CastcleException.USER_OR_PAGE_NOT_FOUND
+        CastcleException.USER_OR_PAGE_NOT_FOUND,
       );
     });
 
@@ -928,7 +928,7 @@ describe('User Service', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to report is not found', async () => {
       await expect(
-        service.reportUser(user1, null, 'message')
+        service.reportUser(user1, null, 'message'),
       ).rejects.toMatchObject(CastcleException.USER_OR_PAGE_NOT_FOUND);
     });
 
@@ -963,7 +963,7 @@ describe('User Service', () => {
 
     it('should return null when user to find is not found', async () => {
       await expect(
-        service.getByIdOrCastcleId('xxxxxxxxxx')
+        service.getByIdOrCastcleId('xxxxxxxxxx'),
       ).resolves.toBeNull();
     });
 
@@ -971,7 +971,7 @@ describe('User Service', () => {
       const userFromId = await service.getByIdOrCastcleId(String(user._id));
 
       const userFromCastcleId = await service.getByIdOrCastcleId(
-        user.displayId
+        user.displayId,
       );
 
       expect(userFromId).toMatchObject(userFromCastcleId);
@@ -1051,7 +1051,7 @@ describe('User Service', () => {
           links: {
             facebook: 'https://facebook.com/test',
           },
-        }
+        },
       );
       expect(page.type).toEqual('page');
       expect(page.displayId).toEqual('synctest');
@@ -1095,7 +1095,7 @@ describe('User Service', () => {
 
     it('should return exception when can not find user', async () => {
       await expect(
-        service.getUserFromAccountId(result.accountDocument.id)
+        service.getUserFromAccountId(result.accountDocument.id),
       ).rejects.toEqual(CastcleException.USER_OR_PAGE_NOT_FOUND);
     });
   });
@@ -1149,7 +1149,7 @@ describe('User Service', () => {
           links: {
             facebook: 'https://facebook.com/test',
           },
-        }
+        },
       );
     });
     it('should update a user that type page from SocialPageDto', async () => {
@@ -1162,13 +1162,13 @@ describe('User Service', () => {
       } as SocialPageDto;
       const updatePage = await service.updatePageFromSocial(
         page,
-        updatePageDto
+        updatePageDto,
       );
 
       expect(updatePage.displayName).toEqual(updatePageDto.displayName);
       expect(updatePage.profile.overview).toEqual(updatePageDto.overview);
       expect(updatePage.profile.socials.facebook).toEqual(
-        updatePageDto.links.facebook
+        updatePageDto.links.facebook,
       );
     });
   });

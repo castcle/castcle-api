@@ -25,8 +25,14 @@ import { Content } from './content.schema';
 import { CastcleBase } from './base.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { Account } from './account.schema';
+import { User } from './user.schema';
 import { ContentFarmingStatus } from '../models/content-farming.enum';
+
+type CDFStat = {
+  adjustedFarmPeriod: number;
+  expoWeight: number;
+  tokenWeight: number;
+};
 
 @Schema({ timestamps: true })
 export class ContentFarming extends CastcleBase {
@@ -34,7 +40,7 @@ export class ContentFarming extends CastcleBase {
   content: Content | Types.ObjectId;
 
   @Prop({ index: true, required: true, type: Types.ObjectId })
-  account: Account | Types.ObjectId;
+  user: User | Types.ObjectId;
 
   @Prop({ required: true, type: Object })
   startAt: Date;
@@ -44,6 +50,15 @@ export class ContentFarming extends CastcleBase {
 
   @Prop({ required: true })
   farmAmount: number;
+
+  @Prop()
+  weight?: number;
+
+  @Prop({ type: Object })
+  cdfStat?: CDFStat;
+
+  @Prop()
+  isDistributed?: boolean;
 
   @Prop({ required: true, type: String })
   status: ContentFarmingStatus;

@@ -21,13 +21,23 @@
  * or have any questions.
  */
 
-import { AuthenticationServiceV2 } from '@castcle-api/database';
 import {
+  AccountRequirements,
+  AuthenticationServiceV2,
+} from '@castcle-api/database';
+import {
+  ChangePasswordDto,
   LoginWithEmailDto,
   RegisterWithEmailDto,
+  RequestOtpByEmailDto,
+  RequestOtpByMobileDto,
+  RequestOtpForChangingPasswordDto,
   ResponseDto,
   SocialConnectDto,
+  VerifyOtpByEmailDto,
+  VerifyOtpByMobileDto,
 } from '@castcle-api/database/dtos';
+import { Environment } from '@castcle-api/environments';
 import {
   CastcleBasicAuth,
   CastcleControllerV2,
@@ -41,12 +51,25 @@ import {
   TokenInterceptor,
   TokenRequest,
 } from '@castcle-api/utils/interceptors';
-import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseInterceptors,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponseV2,
+  GuestLoginDto,
 } from '../dtos';
+import {
+  GuestInterceptor,
+  GuestRequest,
+} from '../interceptors/guest.interceptor';
 
 @CastcleControllerV2({ path: 'authentications' })
 export class AuthenticationControllerV2 {
@@ -57,7 +80,7 @@ export class AuthenticationControllerV2 {
   async requestEmailOtp(
     @Body() dto: RegisterWithEmailDto,
     @RequestMeta() { ip }: RequestMetadata,
-    @Req() { $credential, hostname }: CredentialRequest
+    @Req() { $credential, hostname }: CredentialRequest,
   ) {
     return this.authenticationService.registerWithEmail($credential, {
       ...dto,
@@ -71,12 +94,12 @@ export class AuthenticationControllerV2 {
   @CastcleTrack()
   loginWithEmail(
     @Body() { email, password }: LoginWithEmailDto,
-    @Req() { $credential }: CredentialRequest
+    @Req() { $credential }: CredentialRequest,
   ) {
     return this.authenticationService.loginWithEmail(
       $credential,
       email,
-      password
+      password,
     );
   }
 
@@ -86,7 +109,7 @@ export class AuthenticationControllerV2 {
   loginWithSocial(
     @Body() socialConnectDto: SocialConnectDto,
     @Req() { $credential }: CredentialRequest,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip, userAgent }: RequestMetadata,
   ) {
     return this.authenticationService.loginWithSocial($credential, {
       ...socialConnectDto,
@@ -106,7 +129,7 @@ export class AuthenticationControllerV2 {
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
     const user = await this.authenticationService.getExistedUserFromCastcleId(
-      body.castcleId
+      body.castcleId,
     );
     return ResponseDto.ok<CheckingResponseV2>({
       payload: {
@@ -125,5 +148,151 @@ export class AuthenticationControllerV2 {
         exist: account ? true : false,
       },
     });
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @Post('request-otp/email')
+  async requestOtpByEmail(
+    @Body() requestOtpDto: RequestOtpByEmailDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpByEmail({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_MOBILE_LIMIT,
+    Environment.RATE_LIMIT_OTP_MOBILE_TTL,
+  )
+  @Post('request-otp/mobile')
+  async requestOtpByMobile(
+    @Body() requestOtpDto: RequestOtpByMobileDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpByMobile({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @Post('verify-password')
+  async requestOtpForChangingPassword(
+    @Body() requestOtpDto: RequestOtpForChangingPasswordDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpForChangingPassword({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @Post('verify-otp/email')
+  async verifyOtpByEmail(
+    @Body() verifyOtpDto: VerifyOtpByEmailDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    const { otp, accessToken } =
+      await this.authenticationService.verifyOtpByEmail({
+        ...verifyOtpDto,
+        credential: $credential,
+      });
+
+    return {
+      refCode: otp.refCode,
+      objective: verifyOtpDto.objective,
+      expireDate: otp.expireDate,
+      accessToken,
+    };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_MOBILE_LIMIT,
+    Environment.RATE_LIMIT_OTP_MOBILE_TTL,
+  )
+  @Post('verify-otp/mobile')
+  async verifyOtpByMobile(
+    @Body() verifyOtpDto: VerifyOtpByMobileDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    const otp = await this.authenticationService.verifyOtpByMobile({
+      ...verifyOtpDto,
+      requestedBy: $credential.account,
+    });
+
+    return {
+      refCode: otp.refCode,
+      objective: verifyOtpDto.objective,
+      expireDate: otp.expireDate,
+    };
+  }
+
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @CastcleBasicAuth()
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    return this.authenticationService.changePassword({
+      ...changePasswordDto,
+      requestedBy: $credential.account,
+    });
+  }
+
+  @CastcleTrack()
+  @UseInterceptors(GuestInterceptor)
+  @Post('guest')
+  async guestLogin(
+    @Req() req: GuestRequest,
+    @Body() { deviceUUID }: GuestLoginDto,
+  ) {
+    const requestOption: AccountRequirements = {
+      deviceUUID,
+      device: req.$device,
+      header: {
+        platform: req.$platform,
+      },
+      languagesPreferences: [req.$language],
+      geolocation: req.$geolocation || null,
+    };
+
+    return await this.authenticationService.guestLogin(requestOption);
   }
 }

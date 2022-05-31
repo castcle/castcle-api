@@ -33,7 +33,7 @@ export class CampaignConsumer {
   constructor(
     @InjectQueue(QueueName.CAMPAIGN)
     private campaignQueue: BullQueue<{ queueId: string }>,
-    private campaignService: CampaignService
+    private campaignService: CampaignService,
   ) {
     this.addQueues();
   }
@@ -42,7 +42,7 @@ export class CampaignConsumer {
     await this.campaignQueue.empty();
 
     const queues = await this.campaignService.getRemainingQueues(
-      QueueTopic.CLAIM_AIRDROP
+      QueueTopic.CLAIM_AIRDROP,
     );
 
     await this.campaignQueue.addBulk(queues);

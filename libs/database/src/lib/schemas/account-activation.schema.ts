@@ -79,17 +79,17 @@ AccountActivationSchema.methods.isVerifyTokenValid = function () {
 };
 
 AccountActivationSchema.statics.generateVerifyToken = function (
-  payload: EmailVerifyToken
+  payload: EmailVerifyToken,
 ) {
   const now = new Date();
   const verifyTokenExpireDate = new Date(
-    now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+    now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
   );
   payload.verifyTokenExpiresTime = verifyTokenExpireDate.toISOString();
   const verifyToken = Token.generateToken(
     payload,
     Environment.JWT_VERIFY_SECRET,
-    Environment.JWT_VERIFY_EXPIRES_IN
+    Environment.JWT_VERIFY_EXPIRES_IN,
   );
   return {
     verifyToken,

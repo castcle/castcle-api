@@ -115,11 +115,11 @@ describe('Ranker Service', () => {
     });
     //let follower follow user
     follower = await userService.getUserFromCredential(
-      followerResult.credentialDocument
+      followerResult.credentialDocument,
     );
     await userService.follow(follower, user);
     followerAccount = await authService.getAccountFromEmail(
-      'sompop2.kulapalanont@gmail.com'
+      'sompop2.kulapalanont@gmail.com',
     );
     console.debug(followerAccount);
   });
@@ -177,7 +177,7 @@ describe('Ranker Service', () => {
         contentIds.map((id, index) => ({
           content: id,
           index: index,
-        }))
+        })),
       );
     });
     it('should create feedItem after create a content', async () => {
@@ -195,24 +195,24 @@ describe('Ranker Service', () => {
           maxResults: 5,
           hasRelationshipExpansion: false,
         },
-        result.accountDocument
+        result.accountDocument,
       );
 
       expect(guestFeeds.payload).toHaveLength(5);
       expect(guestFeeds.payload[0].payload['message']).toEqual(
-        'this is test status'
+        'this is test status',
       );
       expect(guestFeeds.payload[1].payload['message']).toEqual(
-        'this is test status2'
+        'this is test status2',
       );
       expect(guestFeeds.payload[2].payload['message']).toEqual(
-        'this is test status3'
+        'this is test status3',
       );
       expect(guestFeeds.payload[3].payload['message']).toEqual(
-        'this is test status4'
+        'this is test status4',
       );
       expect(guestFeeds.payload[4].payload['message']).toEqual(
-        'this is test status5'
+        'this is test status5',
       );
     });
   });

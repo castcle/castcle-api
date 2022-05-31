@@ -23,14 +23,14 @@
 
 import { Model } from 'mongoose';
 import { CACCOUNT_NO, WalletType } from '../models';
-import { Account, Transaction } from '../schemas';
+import { Transaction, User } from '../schemas';
 
 export const mockDeposit = (
-  account: Account,
+  user: User,
   value: number,
-  transactionModel: Model<Transaction>
+  transactionModel: Model<Transaction>,
 ) => {
-  console.log('mockDeposit', account._id);
+  console.log('mockDeposit', user._id);
   return new transactionModel({
     from: {
       type: WalletType.EXTERNAL_DEPOSIT,
@@ -38,7 +38,7 @@ export const mockDeposit = (
     },
     to: [
       {
-        account: account._id,
+        user: user._id,
         type: WalletType.PERSONAL,
         value: value,
       },

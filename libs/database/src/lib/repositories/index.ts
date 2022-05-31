@@ -26,47 +26,67 @@ import {
   COMMON_SIZE_CONFIGS,
   Image,
 } from '@castcle-api/utils/aws';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isArray, isMongoId } from 'class-validator';
+import { isArray, isBoolean, isMongoId } from 'class-validator';
 import {
   AnyKeys,
+  ClientSession,
   FilterQuery,
   Model,
   QueryOptions,
+  SaveOptions,
   Types,
   UpdateQuery,
 } from 'mongoose';
 import { lastValueFrom, map } from 'rxjs';
 import {
   GetAvailableIdResponse,
+  GetBalanceResponse,
+  pipelineGetContents,
   pipelineOfGetAvailableId,
+  pipelineOfGetBalance,
 } from '../aggregations';
-import { EntityVisibility } from '../dtos';
-import { UserType } from '../models';
+import {
+  AccessTokenPayload,
+  BlogPayload,
+  ContentType,
+  CreateContentDto,
+  CreateCredentialDto,
+  EntityVisibility,
+  RefreshTokenPayload,
+  ShortPayload,
+  Url,
+} from '../dtos';
+import { CastcleNumber, KeywordType, OtpObjective, UserType } from '../models';
 import {
   Account,
   Content,
   Credential,
+  CredentialModel,
   Engagement,
-  Relationship,
-  User,
-  Notification,
   Hashtag,
+  Notification,
+  Otp,
+  OtpModel,
+  Relationship,
+  Transaction,
+  User,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
-import {
-  NotificationSource,
-  NotificationType,
-} from './../dtos/notification.dto';
+import { NotificationSource, NotificationType } from '../dtos';
 
 type AccountQuery = {
   _id?: string;
   email?: string;
   provider?: string;
   socialId?: string;
+  mobileCountryCode?: string;
+  mobileNumber?: string;
+  referredBy?: string;
 };
 
 type UserQuery = {
@@ -74,6 +94,13 @@ type UserQuery = {
   _id?: string | Types.ObjectId[];
   accountId?: string;
   type?: UserType;
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
+  sinceId?: string;
+  untilId?: string;
+  execute?: string[] | User[];
 };
 
 type EngagementQuery = {
@@ -81,14 +108,14 @@ type EngagementQuery = {
   type?: string;
   sinceId?: string;
   untilId?: string;
-  user?: User;
+  user?: User | User[];
   targetRef?: any;
   itemId?: string;
 };
 
 type RelationshipQuery = {
-  userId?: User[];
-  followedUser?: string;
+  userId?: User | User[];
+  followedUser?: User | User[];
   blocking?: boolean;
   sinceId?: string;
   untilId?: string;
@@ -97,6 +124,8 @@ type RelationshipQuery = {
 type CredentialQuery = {
   refreshToken?: string;
   accessToken?: string;
+  deviceUUID?: string;
+  'account.isGuest'?: boolean;
 };
 
 type NotificationQueryOption = {
@@ -117,29 +146,54 @@ type NotificationQueryOption = {
 };
 
 type ContentQuery = {
-  _id?: string;
+  _id?: string | string[];
   author?: string;
   originalPost?: string;
   isRecast?: boolean;
+  isQuote?: boolean;
+  message?: string;
+  sinceId?: string;
+  untilId?: string;
+  maxResults?: number;
+  viewer?: User;
+  type?: string[];
+  contentType?: string;
+  sortBy?: {
+    [key: string]: string;
+  };
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
+  executeContents?: Content[];
+  decayDays?: number;
+  executeAuthor?: string[] | User[];
 };
 
 type HashtagQuery = {
   tag?: string;
   tags?: string[];
   score?: number;
+  keyword?: {
+    input: string;
+    type: KeywordType;
+  };
 };
+
 @Injectable()
 export class Repository {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('Content') private contentModel: Model<Content>,
-    @InjectModel('Credential') private credentialModel: Model<Credential>,
+    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
-    @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
-    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
-    @InjectModel('Hashtag') public hashtagModel: Model<Hashtag>,
-    private httpService: HttpService
+    @InjectModel('Otp') private otpModel: OtpModel,
+    @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
+    @InjectModel('User') private userModel: Model<User>,
+    private httpService: HttpService,
   ) {}
 
   private getBase64FromUrl(url: string) {
@@ -148,7 +202,9 @@ export class Repository {
         .get(url, {
           responseType: 'arraybuffer',
         })
-        .pipe(map(({ data }) => Buffer.from(data, 'binary').toString('base64')))
+        .pipe(
+          map(({ data }) => Buffer.from(data, 'binary').toString('base64')),
+        ),
     );
   }
 
@@ -159,6 +215,10 @@ export class Repository {
 
     if (filter._id) query._id = filter._id;
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
+    if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
+    if (filter.referredBy) query.referralBy = filter.referredBy;
+    if (filter.mobileCountryCode)
+      query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
@@ -174,7 +234,11 @@ export class Repository {
       if (filter.untilId) query.followedUser.$lt = filter.untilId as any;
     }
     if (filter.blocking) query.blocking = filter.blocking;
-    if (filter.userId) query.user = { $in: filter.userId };
+    if (filter.followedUser) query.followedUser = filter.followedUser as any;
+    if (isArray(filter.followedUser))
+      query.followedUser = { $in: filter.followedUser as any };
+    if (filter.userId) query.user = filter.userId as any;
+    if (isArray(filter.userId)) query.user = { $in: filter.userId as any };
 
     return query;
   };
@@ -184,27 +248,83 @@ export class Repository {
       visibility: EntityVisibility.Publish,
     };
 
-    if (filter._id) query._id = filter._id;
+    if (isArray(filter._id))
+      query._id = { $in: (filter._id as any).map((id) => Types.ObjectId(id)) };
+    else if (filter._id) query._id = Types.ObjectId(filter._id as any);
+
+    if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
       query['originalPost._id'] = Types.ObjectId(filter.originalPost);
     if (filter.author) query['author.id'] = filter.author;
     if (filter.isRecast) query.isRecast = filter.isRecast;
+    if (filter.isQuote) query.isQuote = filter.isQuote;
+    if (isArray(filter.type)) query.type = { $in: filter.type };
+
+    if (filter.contentType)
+      query[`payload.${filter.contentType}`] = { $exists: true };
+
+    if (filter.keyword) {
+      query.$or = [
+        {
+          'payload.message': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          'author.castcleId': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          'author.displayName': CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        { hashtags: filter.keyword.input },
+      ];
+    }
+    if (filter.decayDays) {
+      query.$and = [
+        { createdAt: { $lte: new Date() } },
+        {
+          createdAt: {
+            $gte: new Date(
+              new Date().getTime() - filter.decayDays * 1000 * 86400,
+            ),
+          },
+        },
+      ];
+    }
+    if (filter.executeContents?.length)
+      query._id = { $nin: filter.executeContents };
+
+    if (filter.executeAuthor?.length)
+      query['author.id'] = { $nin: filter.executeAuthor };
+
+    if (filter.sinceId || filter.untilId)
+      return createCastcleFilter(query, {
+        sinceId: filter.sinceId,
+        untilId: filter.untilId,
+      });
 
     return query;
   };
 
   private getEngagementQuery = (filter: EngagementQuery) => {
     const query: FilterQuery<Engagement> = {
-      type: filter.type,
+      visibility: EntityVisibility.Publish,
     };
-    if (filter.user) query.user = filter.user;
+    if (filter.type) query.type = filter.type;
+
+    if (filter.user) query.user = filter.user as any;
+    if (isArray(filter.user)) query.user = { $in: filter.user as any };
     if (filter.itemId) query.itemId = filter.itemId;
     if (filter.targetRef)
       query.targetRef = {
         $ref: filter.targetRef.$ref,
-        $id: filter.targetRef.$id,
+        $id: Types.ObjectId(filter.targetRef.$id),
       };
-    if (filter.sinceId && filter.untilId)
+    if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
         sinceId: filter.sinceId,
         untilId: filter.untilId,
@@ -243,6 +363,11 @@ export class Repository {
     if (filter.tags)
       query.tags = { $in: filter.tags.map((tag) => new CastcleName(tag).slug) };
 
+    if (filter.keyword) {
+      query.tag = CastcleRegExp.fromString(filter.keyword.input, {
+        exactMatch: false,
+      });
+    }
     return query;
   };
 
@@ -258,18 +383,85 @@ export class Repository {
     return this.accountModel.find(this.getAccountQuery(filter));
   }
 
-  updateAccount(filter: AccountQuery, updateQuery: UpdateQuery<Account>) {
+  updateAccount(filter: AccountQuery, updateQuery?: UpdateQuery<Account>) {
     return this.accountModel.updateOne(
       this.getAccountQuery(filter),
-      updateQuery
+      updateQuery,
     );
   }
 
   updateCredentials(
     filter: FilterQuery<Credential>,
-    updateQuery: UpdateQuery<Credential>
+    updateQuery?: UpdateQuery<Credential>,
   ) {
     return this.credentialModel.updateMany(filter, updateQuery);
+  }
+  async createAccount(
+    accountRequirements: AnyKeys<Account>,
+    queryOptions?: SaveOptions,
+  ) {
+    const newAccount: Partial<Account> = {
+      isGuest: true,
+      preferences: {
+        languages: accountRequirements['languagesPreferences'],
+      },
+      geolocation: accountRequirements.geolocation,
+      visibility: EntityVisibility.Publish,
+    };
+
+    return new this.accountModel(newAccount).save(queryOptions);
+  }
+
+  async createContentImage(body: CreateContentDto, userId: string) {
+    if (body.payload.photo && body.payload.photo.contents) {
+      const newContents = await Promise.all(
+        (body.payload.photo.contents as Url[]).map(async (item) => {
+          return Image.upload(item.image, {
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${userId}`,
+          }).then((r) => r.image);
+        }),
+      );
+      body.payload.photo.contents = newContents;
+    }
+    if (
+      body.type === ContentType.Blog &&
+      (body.payload as BlogPayload).photo.cover
+    ) {
+      (body.payload as BlogPayload).photo.cover = (
+        await Image.upload(
+          ((body.payload as BlogPayload).photo.cover as Url).image,
+          {
+            addTime: true,
+            sizes: COMMON_SIZE_CONFIGS,
+            subpath: `contents/${userId}`,
+          },
+        )
+      ).image;
+    }
+
+    if ((body.payload as BlogPayload | ShortPayload).link) {
+      const newLink = await Promise.all(
+        ((body.payload as BlogPayload | ShortPayload).link as Url[]).map(
+          async (item) => {
+            if (!item?.image) return item;
+            return {
+              ...item,
+              image: await Image.upload(item.image, {
+                addTime: true,
+                sizes: COMMON_SIZE_CONFIGS,
+                subpath: `contents/${userId}`,
+              }).then((r) => r.image),
+            };
+          },
+        ),
+      );
+
+      (body.payload as any).link = newLink;
+    }
+
+    return body;
   }
 
   async createProfileImage(accountId: string, imageUrl: string) {
@@ -298,11 +490,11 @@ export class Repository {
 
   async createUser(user: AnyKeys<User>) {
     const { suggestCastcleId } = new CastcleName(
-      user.displayId || user.displayName
+      user.displayId || user.displayName,
     );
     const [availableId] =
       await this.userModel.aggregate<GetAvailableIdResponse>(
-        pipelineOfGetAvailableId(suggestCastcleId)
+        pipelineOfGetAvailableId(suggestCastcleId),
       );
 
     user.displayId = availableId?.count
@@ -326,6 +518,30 @@ export class Repository {
     } else if (filter._id) {
       query.displayId = CastcleRegExp.fromString(filter._id as string);
     }
+
+    if (filter.keyword) {
+      query.$or = [
+        {
+          displayId: CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        {
+          displayName: CastcleRegExp.fromString(filter.keyword.input, {
+            exactMatch: false,
+          }),
+        },
+        { hashtags: filter.keyword.input },
+      ];
+    }
+
+    if (filter.execute) query._id = { $nin: filter.execute };
+
+    if (filter.sinceId || filter.untilId)
+      return createCastcleFilter(query, {
+        sinceId: filter.sinceId,
+        untilId: filter.untilId,
+      });
 
     return query;
   }
@@ -364,19 +580,88 @@ export class Repository {
     return new this.engagementModel(engagement).save();
   }
 
+  removeEngagements(filter: EngagementQuery) {
+    return this.engagementModel.deleteMany(this.getEngagementQuery(filter));
+  }
+
+  updateEngagement(
+    filter: EngagementQuery,
+    updateQuery: UpdateQuery<Engagement>,
+    option: QueryOptions,
+  ) {
+    return this.engagementModel.updateOne(
+      this.getEngagementQuery(filter),
+      updateQuery,
+      option,
+    );
+  }
+
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
     return this.relationshipModel.find(
       this.getRelationshipQuery(filter),
       {},
-      queryOptions
+      queryOptions,
     );
   }
+
+  findRelationship(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.findOne(filter, {}, queryOptions);
+  }
+
+  removeRelationship(
+    filter: FilterQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.deleteOne(filter, queryOptions);
+  }
+
   findContent(filter: ContentQuery) {
     return this.contentModel.findOne(this.getContentQuery(filter)).exec();
   }
 
+  findContents(filter: ContentQuery, queryOptions?: QueryOptions) {
+    return this.contentModel
+      .find(this.getContentQuery(filter), {}, queryOptions)
+      .exec();
+  }
+  countContents(filter: ContentQuery) {
+    return this.contentModel
+      .countDocuments(this.getContentQuery(filter))
+      .exec();
+  }
+
+  aggregationContent({ maxResults, sortBy, ...filter }: ContentQuery) {
+    return this.contentModel.aggregate(
+      pipelineGetContents({
+        maxResults,
+        sortBy,
+        viewer: filter.viewer,
+        filter: this.getContentQuery(filter),
+      }),
+    );
+  }
+
+  aggregateRelationship<T = any>(pipeline: any) {
+    return this.relationshipModel.aggregate<T>(pipeline);
+  }
+
   createContent(content: AnyKeys<Content>) {
     return new this.contentModel(content).save();
+  }
+
+  updateContent(
+    filter: ContentQuery,
+    updateQuery?: UpdateQuery<Content>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.contentModel.updateOne(
+      this.getContentQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
   }
 
   findCredential(filter: CredentialQuery) {
@@ -389,7 +674,7 @@ export class Repository {
 
   findNotification(
     filter: NotificationQueryOption,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel
       .findOne(this.getNotificationQuery(filter), {}, queryOptions)
@@ -398,7 +683,7 @@ export class Repository {
 
   findNotifications(
     filter: NotificationQueryOption,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel
       .find(this.getNotificationQuery(filter), {}, queryOptions)
@@ -407,25 +692,25 @@ export class Repository {
 
   updateNotification(
     filter: NotificationQueryOption,
-    updateQuery: UpdateQuery<Notification>,
-    queryOptions?: QueryOptions
+    updateQuery?: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateOne(
       this.getNotificationQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
   updateNotifications(
     filter: NotificationQueryOption,
-    updateQuery: UpdateQuery<Notification>,
-    queryOptions?: QueryOptions
+    updateQuery?: UpdateQuery<Notification>,
+    queryOptions?: QueryOptions,
   ) {
     return this.notificationModel.updateMany(
       this.getNotificationQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
@@ -446,35 +731,110 @@ export class Repository {
       .countDocuments(this.getNotificationQuery(filter))
       .exec();
   }
+
   updateRelationship(
     filter: FilterQuery<Relationship>,
     updateQuery?: UpdateQuery<Relationship>,
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ) {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
 
   removeFromTag(
     filter: HashtagQuery,
-    updateQuery: UpdateQuery<Hashtag>,
-    queryOptions?: QueryOptions
+    updateQuery?: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateOne(
       this.getHashtagQuery(filter),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
 
   removeFromTags(
     tags: string[],
-    updateQuery: UpdateQuery<Hashtag>,
-    queryOptions?: QueryOptions
+    updateQuery?: UpdateQuery<Hashtag>,
+    queryOptions?: QueryOptions,
   ) {
     return this.hashtagModel.updateMany(
       this.getHashtagQuery({ tags }),
       updateQuery,
-      queryOptions
+      queryOptions,
     );
   }
+
+  async createCredential(
+    credential: CreateCredentialDto,
+    queryOptions?: SaveOptions,
+  ) {
+    return new this.credentialModel(credential).save(queryOptions);
+  }
+
+  generateAccessToken(payload: AccessTokenPayload) {
+    return this.credentialModel.generateAccessToken(payload);
+  }
+
+  generateRefreshToken(payload: RefreshTokenPayload) {
+    return this.credentialModel.generateRefreshToken(payload);
+  }
+
+  createOtp(createOtpDto: {
+    accountId: string;
+    objective: OtpObjective;
+    requestId: string;
+    channel: TwilioChannel;
+    verified: boolean;
+    receiver: string;
+    sid?: string;
+  }) {
+    return this.otpModel.generate(
+      createOtpDto.accountId,
+      createOtpDto.objective,
+      createOtpDto.requestId,
+      createOtpDto.channel,
+      createOtpDto.verified,
+      createOtpDto.receiver,
+      createOtpDto.sid,
+    );
+  }
+
+  findOtp(dto: {
+    channel?: TwilioChannel;
+    verified?: boolean;
+    objective?: OtpObjective;
+    receiver?: string;
+  }) {
+    const query: FilterQuery<Otp> = { completedAt: { $exists: false } };
+
+    if (dto.channel) query.channel = dto.channel;
+    if (dto.objective) query.action = dto.objective;
+    if (dto.receiver) query.receiver = dto.receiver;
+    if (isBoolean(dto.verified)) query.isVerify = dto.verified;
+
+    return this.otpModel.findOne(query);
+  }
+
+  accountSession(): Promise<ClientSession> {
+    return this.accountModel.startSession();
+  }
+
+  findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {
+    return this.hashtagModel.find(
+      this.getHashtagQuery(filter),
+      {},
+      queryOptions,
+    );
+  }
+
+  /**
+   * Get account's balance
+   */
+  getBalance = async (dto: { accountId: string }) => {
+    const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
+      pipelineOfGetBalance(dto.accountId),
+    );
+
+    return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
 }

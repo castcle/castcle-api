@@ -20,32 +20,39 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { CastcleDate } from './datetime';
 
 describe('#CastcleDate', () => {
-  CastcleDate.inputDate = new Date('2022-03-02T17:00:00.000Z');
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2022-03-02T17:00:00.000Z'));
+  });
+
   it('should able to convert current date startOf - endOf today.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'today'
+      'today',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-03-02T17:00:00.000Z');
     expect(String(endDate.toISOString())).toBe('2022-03-03T16:59:59.999Z');
   });
+
   it('should able convert current date startOf - endOf week.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'week'
+      'week',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-02-27T17:00:00.000Z');
     expect(String(endDate.toISOString())).toBe('2022-03-06T16:59:59.999Z');
   });
+
   it('should able convert current date startOf - endOf month.', () => {
     const { startDate, endDate } = CastcleDate.convertDateFilterInterval(
       '+07:00',
-      'month'
+      'month',
     );
 
     expect(String(startDate.toISOString())).toBe('2022-02-28T17:00:00.000Z');

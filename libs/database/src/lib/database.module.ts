@@ -31,7 +31,6 @@ import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
-import {} from '..';
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {
@@ -84,6 +83,7 @@ import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
 import { SearchService } from './services/search.service';
+import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
 import { TAccountService } from './services/taccount.service';
@@ -173,7 +173,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.CAMPAIGN },
       { name: QueueName.CONTENT },
       { name: QueueName.NOTIFICATION },
-      { name: QueueName.USER }
+      { name: QueueName.USER },
     ),
     HttpModule,
     MongooseAsyncFeatures,
@@ -205,6 +205,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationServiceV2,
     CommentServiceV2,
     ContentServiceV2,
+    SearchServiceV2,
   ],
   exports: [
     AuthenticationService,
@@ -230,6 +231,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationServiceV2,
     CommentServiceV2,
     ContentServiceV2,
+    SearchServiceV2,
   ],
 })
 export class DatabaseModule {}
@@ -262,4 +264,5 @@ export {
   CommentServiceV2,
   ContentServiceV2,
   validateObjectId,
+  SearchServiceV2,
 };

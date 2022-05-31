@@ -119,7 +119,7 @@ export class Account extends AccountDocument {
 
 AccountSchema.methods.changePassword = function (
   password: string,
-  email?: string
+  email?: string,
 ) {
   const encryptPassword = Password.create(password);
   if (!encryptPassword) return null;
@@ -130,14 +130,14 @@ AccountSchema.methods.changePassword = function (
 };
 
 AccountSchema.methods.verifyPassword = function (password: string) {
-  return Password.verify(password, this.password);
+  return Password.verify(password, this.password || '');
 };
 
 AccountSchema.methods.createActivation = function (
-  type: AccountActivationType
+  type: AccountActivationType,
 ) {
   const verifyTokenExpireDate = new Date(
-    Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+    Date.now() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
   );
   const activation = {
     type,
@@ -148,7 +148,7 @@ AccountSchema.methods.createActivation = function (
         verifyTokenExpiresTime: verifyTokenExpireDate.toISOString(),
       },
       Environment.JWT_VERIFY_SECRET,
-      Environment.JWT_VERIFY_EXPIRES_IN
+      Environment.JWT_VERIFY_EXPIRES_IN,
     ),
   };
   (this.activations ||= []).push(activation);

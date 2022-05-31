@@ -21,18 +21,14 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
-import { Password } from '@castcle-api/utils/commons';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { DateTime } from 'luxon';
 import * as mongoose from 'mongoose';
+import { customAlphabet } from 'nanoid';
+import { OtpObjective } from '../models';
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
-
-export enum OtpObjective {
-  ChangePassword = 'change_password',
-  ForgotPassword = 'forgot_password',
-  VerifyMobile = 'verify_mobile',
-  MergeAccount = 'merge_account',
-}
 
 @Schema({ timestamps: true })
 class OtpDocument extends CastcleBase {
@@ -53,7 +49,10 @@ class OtpDocument extends CastcleBase {
   @Prop({ required: true })
   expireDate: Date;
 
-  @Prop()
+  @Prop({ default: [] })
+  sentAt: Date[];
+
+  @Prop({ default: 0 })
   retry: number;
 
   @Prop()
@@ -69,16 +68,25 @@ class OtpDocument extends CastcleBase {
   sid: string;
 
   @Prop()
-  reciever: string;
+  receiver: string;
+
+  @Prop()
+  completedAt?: Date;
 }
 
 export class Otp extends OtpDocument {
+  exceededMaxRetries: () => boolean;
+  exceededUsageLimit: () => boolean;
+  failedToVerify: () => this;
   isValid: () => boolean;
   isValidVerifyMobileOtp: () => boolean;
+  markCompleted: () => this;
+  markVerified: () => this;
+  regenerate: () => this;
 }
 
 export const OtpSchema = SchemaFactory.createForClass<OtpDocument, Otp>(
-  OtpDocument
+  OtpDocument,
 );
 
 export interface OtpModel extends mongoose.Model<Otp> {
@@ -92,10 +100,10 @@ export interface OtpModel extends mongoose.Model<Otp> {
     accountId: any,
     objective: OtpObjective,
     requestId: string,
-    channel: string,
-    verify: boolean,
-    receiver?: string,
-    sid?: string
+    channel: TwilioChannel,
+    verified: boolean,
+    receiver: string,
+    sid?: string,
   ): Promise<Otp>;
 }
 
@@ -103,45 +111,93 @@ OtpSchema.statics.generate = async function (
   accountId: any,
   objective: OtpObjective,
   requestId: string,
-  channel: string,
-  verify: boolean,
-  receiver?: string,
-  sid?: string
+  channel: TwilioChannel,
+  verified: boolean,
+  receiver: string,
+  sid?: string,
 ) {
-  let newRefCode: string;
-  let otpFindingResult;
-  do {
-    newRefCode = Password.generateRandomDigits(Environment.OTP_DIGITS);
-    otpFindingResult = await this.findOne({
-      account: accountId,
-      action: objective,
-      refCode: newRefCode,
-    }).exec();
-  } while (otpFindingResult);
-  const now = new Date();
+  let refCodeExists: boolean;
   const otp = new this({
     account: accountId,
     action: objective,
-    refCode: newRefCode,
-    requestId: requestId,
+    requestId,
     retry: 0,
-    channel: channel,
-    isVerify: verify,
-    sid: sid,
-    expireDate: new Date(now.getTime() + Environment.OTP_EXPIRES_IN * 1000),
-    reciever: receiver,
+    channel,
+    isVerify: verified,
+    sid,
+    receiver,
+    sentAt: [new Date()],
   });
+
+  do {
+    otp.regenerate();
+    refCodeExists = await this.findOne({
+      account: accountId,
+      action: objective,
+      refCode: otp.refCode,
+      completedAt: { $exists: false },
+    }).exec();
+  } while (refCodeExists);
+
   return otp.save();
 };
 
+OtpSchema.methods.exceededMaxRetries = function () {
+  return this.retry > Environment.OTP_MAX_RETRIES;
+};
+
+OtpSchema.methods.exceededUsageLimit = function () {
+  const maxUsage =
+    this.channel === TwilioChannel.EMAIL
+      ? Environment.OTP_EMAIL_MAX_USAGE
+      : Environment.OTP_PHONE_MAX_USAGE;
+  const hours =
+    this.channel === TwilioChannel.EMAIL
+      ? Environment.OTP_EMAIL_MAX_USAGE_HOURS
+      : Environment.OTP_PHONE_MAX_USAGE_HOURS;
+  const sendAfter = DateTime.now().minus({ hours }).toJSDate();
+  const sending = this.sentAt.filter((sentAt) => sentAt >= sendAfter);
+  return sending.length > maxUsage;
+};
+
+OtpSchema.methods.failedToVerify = function () {
+  this.retry += 1;
+  if (this.exceededMaxRetries()) this.isVerify = false;
+  return this;
+};
+
 OtpSchema.methods.isValid = function () {
-  const now = new Date().getTime();
-  const expireDate = (this as Otp).expireDate.getTime();
-  return expireDate - now >= 0;
+  return this.expireDate >= new Date();
 };
 
 OtpSchema.methods.isValidVerifyMobileOtp = function () {
   return (
-    this.action === OtpObjective.VerifyMobile && this.isValid() && this.isVerify
+    this.action === OtpObjective.VERIFY_MOBILE &&
+    this.isValid() &&
+    this.isVerify
   );
+};
+
+OtpSchema.methods.markCompleted = function () {
+  this.completedAt = new Date();
+  return this;
+};
+
+OtpSchema.methods.markVerified = function () {
+  this.isVerify = true;
+  return this.regenerate();
+};
+
+OtpSchema.methods.regenerate = function () {
+  this.refCode = customAlphabet('1234567890')(Environment.OTP_DIGITS);
+  this.expireDate = DateTime.now()
+    .plus({
+      minutes:
+        this.channel === TwilioChannel.EMAIL
+          ? Environment.OTP_EMAIL_EXPIRES_IN
+          : Environment.OTP_PHONE_EXPIRES_IN,
+    })
+    .toJSDate();
+
+  return this;
 };

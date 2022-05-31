@@ -36,7 +36,7 @@ export class HttpCacheIndividualInterceptor extends CacheInterceptor {
     const cacheManager = this.cacheManager as Cache;
     const cacheKey = this.reflector.get(
       CACHE_KEY_METADATA,
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (cacheKey) {

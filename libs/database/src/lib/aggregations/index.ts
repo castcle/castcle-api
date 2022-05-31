@@ -26,6 +26,7 @@ export * from './estimate-content-reaches.aggregation';
 export * from './get-available-id.aggregation';
 export * from './get-balance.aggregation';
 export * from './get-campaign-claims.aggregation';
+export * from './get-contents.aggregation';
 export * from './get-feed-contents.aggregation';
 export * from './get-users-relation.aggregation';
 export * from './notification.aggregation';

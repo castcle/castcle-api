@@ -21,7 +21,6 @@
  * or have any questions.
  */
 
-import { CaslAbilityFactory } from '@castcle-api/casl';
 import {
   AuthenticationService,
   ContentService,
@@ -47,6 +46,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContentController } from './content.controller';
 import { AppService } from '../services/app.service';
+import { Authorizer } from '@castcle-api/utils/decorators';
 
 describe('ContentController', () => {
   let mongod: MongoMemoryServer;
@@ -58,6 +58,7 @@ describe('ContentController', () => {
   let contentService: ContentService;
   let userCredential: Credential;
   let user: User;
+  let authorizer: Authorizer;
   let payloadId: any;
 
   beforeAll(async () => {
@@ -78,7 +79,6 @@ describe('ContentController', () => {
         UserService,
         AuthenticationService,
         ContentService,
-        CaslAbilityFactory,
         NotificationService,
         HashtagService,
         {
@@ -103,14 +103,13 @@ describe('ContentController', () => {
     jest
       .spyOn(appService, 'uploadContentToS3')
       .mockImplementation(async (body: SaveContentDto) => {
-        //let body: SaveContentDto = JSON.parse(JSON.stringify(refBody));
         if (body.payload.photo && body.payload.photo.contents) {
           body.payload.photo.contents = body.payload.photo.contents.map(
             (item) => {
               return {
                 original: item.image,
               };
-            }
+            },
           );
         }
 
@@ -129,15 +128,18 @@ describe('ContentController', () => {
         displayId: 'test1234',
         displayName: 'test',
         password: '1234AbcD',
-      }
+      },
     );
     await authService.verifyAccount(accountActivation);
     userCredential = await authService.getCredentialFromAccessToken(
-      result.credentialDocument.accessToken
+      result.credentialDocument.accessToken,
     ); //result.credentialDocument;
     user = await service.getUserFromCredential(userCredential);
-    console.debug('======USER FROM TEST=====');
-    console.debug(user);
+    authorizer = new Authorizer(
+      await authService.getAccountFromCredential(userCredential),
+      user,
+      userCredential,
+    );
     await service.createPageFromUser(user, {
       castcleId: 'pageTest',
       displayName: 'pageTest',
@@ -168,16 +170,13 @@ describe('ContentController', () => {
         ],
       } as ShortPayload;
       const result = await contentController.createFeedContent(
+        authorizer,
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Short);
@@ -204,16 +203,13 @@ describe('ContentController', () => {
         },
       } as BlogPayload;
       const result = await contentController.createFeedContent(
+        authorizer,
         {
           payload: blogPayload,
           type: ContentType.Blog,
           castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
       expect(result.payload.id).toBeDefined();
       expect(result.payload.type).toEqual(ContentType.Blog);
@@ -236,7 +232,7 @@ describe('ContentController', () => {
       };
       const newPage = await service.createPageFromCredential(
         userCredential,
-        pageDto
+        pageDto,
       );
       const shortPayload = {
         message: 'อุบกขา',
@@ -248,16 +244,13 @@ describe('ContentController', () => {
         ],
       } as ShortPayload;
       const result = await contentController.createFeedContent(
+        authorizer,
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: newPage.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
       payloadId = result.payload.id;
       expect(result.payload.authorId).toEqual(newPage._id);
@@ -283,16 +276,13 @@ describe('ContentController', () => {
         ],
       } as ShortPayload;
       const actual = await contentController.createFeedContent(
+        authorizer,
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
       console.debug('createResult', actual.payload.authorId);
       const expected = await contentController.getContentFromId(
@@ -301,7 +291,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expected.payload.photo.contents[0].original =
         actual.payload.photo.contents[0].original;
@@ -325,20 +315,18 @@ describe('ContentController', () => {
       } as ShortPayload;
 
       const result = await contentController.createFeedContent(
+        authorizer,
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
 
       const updateContentPayload = { message: 'Hello World' } as ShortPayload;
       const updateResult = await contentController.updateContentFromId(
+        authorizer,
         {
           payload: updateContentPayload,
           type: ContentType.Short,
@@ -346,11 +334,10 @@ describe('ContentController', () => {
         },
         result.payload.id,
         { hasRelationshipExpansion: false },
-        { $credential: userCredential, $language: 'th' } as any
       );
 
       expect(updateResult.payload.message).toEqual(
-        updateContentPayload.message
+        updateContentPayload.message,
       );
 
       const getResult = await contentController.getContentFromId(
@@ -359,7 +346,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
 
       expect(getResult.payload).toEqual(updateResult.payload);
@@ -367,6 +354,7 @@ describe('ContentController', () => {
 
     it('should be able to update page content', async () => {
       const updateResult = await contentController.updateContentFromId(
+        authorizer,
         {
           type: ContentType.Short,
           payload: { message: 'hi bro' },
@@ -374,7 +362,6 @@ describe('ContentController', () => {
         },
         payloadId as string,
         { hasRelationshipExpansion: false },
-        { $credential: userCredential, $language: 'en' } as any
       );
 
       expect(updateResult.payload.message).toEqual('hi bro');
@@ -384,12 +371,12 @@ describe('ContentController', () => {
   describe('deleteContentFromId() ', () => {
     it('it should be able to delete from page', async () => {
       const deleteResult = await contentController.deleteContentFromId(
+        authorizer,
         payloadId as string,
-        { $credential: userCredential, $language: 'th' } as any
       );
       expect(deleteResult).toEqual(undefined);
       const getContentResultService = await contentService.getContentFromId(
-        payloadId as string
+        payloadId as string,
       );
       expect(getContentResultService).toBeNull();
     });
@@ -426,7 +413,7 @@ describe('ContentController', () => {
           $language: 'th',
         } as any,
         contentA.id,
-        { hasRelationshipExpansion: false }
+        { hasRelationshipExpansion: false },
       );
       expect(result).toBeDefined();
       expect(result.payload.length).toEqual(4);
@@ -438,7 +425,7 @@ describe('ContentController', () => {
           $language: 'th',
         } as any,
         contentA.id,
-        { hasRelationshipExpansion: true }
+        { hasRelationshipExpansion: true },
       );
       expect(resultHasRelation).toBeDefined();
       expect(resultHasRelation.payload.length).toEqual(4);
@@ -468,12 +455,13 @@ describe('ContentController', () => {
           } as ShortPayload,
           type: ContentType.Short,
           castcleId: userMock[0].user.displayId,
-        }
+        },
       );
 
       engagement = await new contentService._engagementModel({
         type: 'like',
         user: user.id,
+        account: user.ownerAccount,
         targetRef: {
           $ref: 'content',
           $id: contentMock.id,
@@ -505,7 +493,7 @@ describe('ContentController', () => {
         contentMock.id,
         100,
         null,
-        null
+        null,
       );
 
       if (!userCredential.account.isGuest) {
@@ -516,13 +504,13 @@ describe('ContentController', () => {
         relationUser = await service.getRelationshipData(
           true,
           relationUser,
-          userMock[0].user.id
+          userMock[0].user.id,
         );
       }
 
       for await (const obj of engagements.items) {
         relationStatus = await relationUser.filter(
-          (e) => String(e.followedUser) === String(obj.user.id)
+          (e) => String(e.followedUser) === String(obj.user.id),
         );
 
         if (relationStatus.length) {
@@ -579,16 +567,13 @@ describe('ContentController', () => {
         ],
       } as ShortPayload;
       const actual = await contentController.createFeedContent(
+        authorizer,
         {
           payload: shortPayload,
           type: ContentType.Short,
           castcleId: user.displayId,
         },
         { hasRelationshipExpansion: false },
-        {
-          $credential: userCredential,
-          $language: 'th',
-        } as any
       );
 
       const expected = await contentController.getParticipates(
@@ -596,7 +581,7 @@ describe('ContentController', () => {
         {
           $credential: userCredential,
           $language: 'th',
-        } as any
+        } as any,
       );
       expect(expected.payload[0].user).toBeDefined();
       expect(expected.payload[0].participate).toBeDefined();

@@ -22,6 +22,11 @@
  */
 
 export const DefaultErrors = {
+  '0000': {
+    statusCode: '500',
+    code: '0000',
+    message: 'Sorry, Something went wrong. Please try again',
+  },
   '1001': {
     statusCode: '404',
     code: '1001',
@@ -196,6 +201,26 @@ export const DefaultErrors = {
     code: '3023',
     message: 'Sorry, Boost Status not match. Please try again.',
   },
+  '3024': {
+    statusCode: '400',
+    code: '3024',
+    message: 'Cannot delete account. You have not set a password.',
+  },
+  '3025': {
+    statusCode: '404',
+    code: '3025',
+    message: 'Email could not be found. Please try again.',
+  },
+  '3026': {
+    statusCode: '404',
+    code: '3026',
+    message: 'Mobile could not be found. Please try again.',
+  },
+  '3027': {
+    statusCode: '400',
+    code: '3027',
+    message: 'OTP usage limit exceeded',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',
@@ -275,6 +300,11 @@ export const DefaultErrors = {
     statusCode: '400',
     code: '5010',
     message: 'You have reach your farming limit, please wait 24hrs',
+  },
+  '5011': {
+    statusCode: '400',
+    code: '5011',
+    message: 'You already said that',
   },
   '6001': {
     statusCode: '400',

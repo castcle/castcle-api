@@ -36,26 +36,30 @@ import {
   CommentParam,
   CreateCommentDto,
   ExpansionQuery,
+  GetContentDto,
+  GetContentQuery,
+  GetFollowQuery,
+  GetKeywordQuery,
+  GetSourceContentParam,
   GetUserParam,
   LikeCommentDto,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  QuoteCastDto,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
-  UnblockParam,
+  TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
+  UpdateMobileDto,
   UpdateUserDtoV2,
-  GetContentDto,
-  GetSourceContentParam,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
-import { CastcleDate } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
@@ -63,6 +67,8 @@ import {
   CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
@@ -77,8 +83,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { BlockingDto } from '../dtos';
+import {
+  ReportingUserDto,
+  TargetCastcleDto,
+  ReportingContentDto,
+} from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
+
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -92,7 +103,7 @@ export class UsersControllerV2 {
     private contentServiceV2: ContentServiceV2,
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
-    private suggestionService: SuggestionService
+    private suggestionService: SuggestionService,
   ) {}
 
   private validateObjectId(id: string) {
@@ -102,11 +113,26 @@ export class UsersControllerV2 {
   }
 
   @CastcleBasicAuth()
+  @Put('me/mobile')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateMobile(
+    @Auth() authorizer: Authorizer,
+    @Body() updateMobileDto: UpdateMobileDto,
+    @RequestMeta() { ip }: RequestMetadata,
+  ) {
+    return this.userServiceV2.updateMobile(
+      authorizer.account,
+      updateMobileDto,
+      ip,
+    );
+  }
+
+  @CastcleBasicAuth()
   @Post(':userId/sync-social')
   async syncSocial(
     @Auth() authorizer: Authorizer,
     @Body() syncSocialDto: SyncSocialDtoV2,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -118,22 +144,32 @@ export class UsersControllerV2 {
   }
 
   @CastcleAuth(CacheKeyName.Users)
+  @Get('by')
+  getUserByKeyword(
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetKeywordQuery,
+  ) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return this.userServiceV2.getUserByKeyword(query, authorizer.user);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':userId')
   async getUserById(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Query() userQuery?: ExpansionQuery
+    @Query() userQuery?: ExpansionQuery,
   ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
-
-    return this.userServiceV2.getById(
-      authorizer.user,
-      user,
-      userQuery?.hasRelationshipExpansion,
-      userQuery?.userFields
-    );
+    return isMe
+      ? authorizer.user.toUserResponseV2({
+          passwordNotSet: !authorizer.account.password,
+        })
+      : this.userServiceV2.getById(
+          authorizer.user,
+          await this.userServiceV2.getUser(userId),
+          userQuery?.hasRelationshipExpansion,
+          userQuery?.userFields,
+        );
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -142,7 +178,7 @@ export class UsersControllerV2 {
   async updateMyData(
     @Auth() authorizer: Authorizer,
     @Body() body: UpdateUserDtoV2,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -151,24 +187,26 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     if (body.castcleId) {
-      if (!CastcleDate.verifyUpdateCastcleId(user.displayIdUpdatedAt))
+      if (!user.canUpdateCastcleId())
         throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
       const userExisting = await this.authService.getExistedUserFromCastcleId(
-        body.castcleId
+        body.castcleId,
       );
 
-      if (String(userExisting?.id) !== String(user?.id))
+      if (userExisting && String(userExisting?.id) !== String(user?.id))
         throw CastcleException.USER_ID_IS_EXIST;
     }
 
     const prepareUser = await this.userService.uploadUserInfo(
       body,
-      authorizer.account._id
+      authorizer.account._id,
     );
 
     const updateUser = await this.userService.updateUser(user, prepareUser);
-    return updateUser.toUserResponse();
+    return updateUser.toUserResponseV2(
+      isMe ? { passwordNotSet: !authorizer.account.password } : undefined,
+    );
   }
 
   @CastcleBasicAuth()
@@ -176,7 +214,7 @@ export class UsersControllerV2 {
   async createComment(
     @Auth() authorizer: Authorizer,
     @Body() commentDto: CreateCommentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     this.logger.log('Start comment : ' + JSON.stringify(commentDto));
 
@@ -187,17 +225,17 @@ export class UsersControllerV2 {
     authorizer.requestAccessForAccount(user.ownerAccount);
 
     const content = await this.contentService.getContentById(
-      commentDto.contentId
+      commentDto.contentId,
     );
 
     const comment = await this.contentService.createCommentForContent(
       user,
       content,
-      { message: commentDto.message }
+      { message: commentDto.message },
     );
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id
+      content.author.id,
     );
 
     await this.notificationServiceV2.notifyToUser(
@@ -214,14 +252,14 @@ export class UsersControllerV2 {
         read: false,
       },
       userOwner,
-      authorizer.account.preferences.languages[0]
+      authorizer.account.preferences.languages[0],
     );
 
     const payload = await this.commentService.convertCommentToCommentResponse(
       user,
       comment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
 
     return payload;
@@ -232,12 +270,12 @@ export class UsersControllerV2 {
   async updateComment(
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(
       `Start update comment id: ${sourceCommentId}, body: ${JSON.stringify(
-        updateCommentDto
-      )}`
+        updateCommentDto,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -257,7 +295,7 @@ export class UsersControllerV2 {
       user,
       updatedComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -265,7 +303,7 @@ export class UsersControllerV2 {
   @Delete(':userId/comments/:sourceCommentId')
   async deleteComment(
     @Auth() authorizer: Authorizer,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(`Start delete comment id: ${sourceCommentId})}`);
     const user = isMe
@@ -283,12 +321,12 @@ export class UsersControllerV2 {
   async replyComment(
     @Auth() authorizer: Authorizer,
     @Body() replyCommentBody: UpdateCommentDto,
-    @Param() { sourceCommentId, isMe, userId }: CommentParam
+    @Param() { sourceCommentId, isMe, userId }: CommentParam,
   ) {
     this.logger.log(
       `Start reply comment id: ${sourceCommentId}, body: ${JSON.stringify(
-        replyCommentBody
-      )}`
+        replyCommentBody,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -305,7 +343,7 @@ export class UsersControllerV2 {
     });
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id
+      comment.author._id,
     );
 
     await this.notificationServiceV2.notifyToUser(
@@ -323,14 +361,14 @@ export class UsersControllerV2 {
         read: false,
       },
       userOwner,
-      authorizer.account.preferences.languages[0]
+      authorizer.account.preferences.languages[0],
     );
 
     return await this.commentService.convertCommentToCommentResponse(
       user,
       replyComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -340,12 +378,12 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Body() updateCommentDto: UpdateCommentDto,
     @Param()
-    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam,
   ) {
     this.logger.log(
       `Start update reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId} ,body: ${JSON.stringify(
-        updateCommentDto
-      )}`
+        updateCommentDto,
+      )}`,
     );
     const user = isMe
       ? authorizer.user
@@ -356,7 +394,7 @@ export class UsersControllerV2 {
     this.validateObjectId(replyCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
-      replyCommentId
+      replyCommentId,
     );
     if (
       !comment ||
@@ -369,14 +407,14 @@ export class UsersControllerV2 {
       replyComment,
       {
         message: updateCommentDto.message,
-      }
+      },
     );
 
     return await this.commentService.convertCommentToCommentResponse(
       user,
       updatedComment,
       [],
-      { hasRelationshipExpansion: false }
+      { hasRelationshipExpansion: false },
     );
   }
 
@@ -385,10 +423,10 @@ export class UsersControllerV2 {
   async deleteReplyComment(
     @Auth() authorizer: Authorizer,
     @Param()
-    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam
+    { sourceCommentId, replyCommentId, isMe, userId }: ReplyCommentParam,
   ) {
     this.logger.log(
-      `Start delete reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId}`
+      `Start delete reply comment id: ${sourceCommentId} , reply comment id: ${replyCommentId}`,
     );
     const user = isMe
       ? authorizer.user
@@ -398,7 +436,7 @@ export class UsersControllerV2 {
 
     const comment = await this.contentService.getCommentById(sourceCommentId);
     const replyComment = await this.contentService.getCommentById(
-      replyCommentId
+      replyCommentId,
     );
     if (
       !comment ||
@@ -415,7 +453,7 @@ export class UsersControllerV2 {
   async likeCast(
     @Auth() authorizer: Authorizer,
     @Body() { contentId }: GetContentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -426,12 +464,12 @@ export class UsersControllerV2 {
     const { content } = await this.contentServiceV2.likeCast(
       contentId,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      content
+      content,
     );
 
     if (!feedItem) return;
@@ -439,14 +477,14 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential
+      authorizer.credential,
     );
   }
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':userId/likes-casts/:sourceContentId')
   async unlikeCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -463,7 +501,7 @@ export class UsersControllerV2 {
   async likeCommentCast(
     @Auth() authorizer: Authorizer,
     @Body() { commentId }: LikeCommentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -477,14 +515,14 @@ export class UsersControllerV2 {
     let originalComment: Comment;
     if (comment.type === CommentType.Reply) {
       originalComment = await this.contentService.getCommentById(
-        comment.targetRef.oid
+        comment.targetRef.oid,
       );
       if (!originalComment) throw CastcleException.REQUEST_URL_NOT_FOUND;
     }
     const content = await this.contentService.getContentById(
       comment.type === CommentType.Reply
         ? originalComment.targetRef.oid
-        : comment.targetRef.oid
+        : comment.targetRef.oid,
     );
 
     await this.commentService.likeCommentCast(
@@ -492,12 +530,12 @@ export class UsersControllerV2 {
       comment,
       content,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      content
+      content,
     );
 
     if (!feedItem) return;
@@ -505,7 +543,7 @@ export class UsersControllerV2 {
     await this.suggestionService.seen(
       authorizer.account,
       feedItem._id,
-      authorizer.credential
+      authorizer.credential,
     );
   }
 
@@ -514,7 +552,7 @@ export class UsersControllerV2 {
   @Delete(':userId/likes-comments/:sourceCommentId')
   async unlikeCommentCast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam
+    @Param() { isMe, userId, sourceCommentId }: UnlikeCommentCastParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -539,9 +577,9 @@ export class UsersControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   async blockUser(
     @Auth() authorizer: Authorizer,
-    @Body() { targetCastcleId }: BlockingDto,
+    @Body() { targetCastcleId }: TargetCastcleDto,
     @Param()
-    { isMe, userId }: GetUserParam
+    { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -554,17 +592,17 @@ export class UsersControllerV2 {
   @Delete(':userId/blocking/:targetCastcleId')
   @CastcleBasicAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async unBlockUser(
+  async unblockUser(
     @Auth() authorizer: Authorizer,
     @Param()
-    { targetCastcleId, isMe, userId }: UnblockParam
+    { targetCastcleId, isMe, userId }: TargetIdParam,
   ) {
     const user = isMe
       ? authorizer.user
       : await this.userService.findUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.userServiceV2.unBlockUser(user, targetCastcleId);
+    return this.userServiceV2.unblockUser(user, targetCastcleId);
   }
 
   @CastcleBasicAuth()
@@ -572,7 +610,7 @@ export class UsersControllerV2 {
   async recastContent(
     @Auth() authorizer: Authorizer,
     @Body() { contentId }: GetContentDto,
-    @Param() { isMe, userId }: GetUserParam
+    @Param() { isMe, userId }: GetUserParam,
   ) {
     this.logger.log(`Start recast content id: ${contentId}`);
     const user = isMe
@@ -584,25 +622,25 @@ export class UsersControllerV2 {
     const recast = await this.contentServiceV2.recast(
       contentId,
       user,
-      authorizer.account
+      authorizer.account,
     );
 
     const feedItem = await this.rankerService.getFeedItem(
       authorizer.account,
-      recast.recastContent
+      recast.recastContent,
     );
 
     if (feedItem) {
       await this.suggestionService.seen(
         authorizer.account,
         feedItem._id,
-        authorizer.credential
+        authorizer.credential,
       );
     }
 
-    return this.contentService.convertContentToContentResponse(
+    return await this.contentServiceV2.getRecastPipeline(
+      recast.recastContent._id,
       user,
-      recast.recastContent
     );
   }
 
@@ -612,7 +650,7 @@ export class UsersControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   async undoRecast(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam
+    @Param() { isMe, userId, sourceContentId }: GetSourceContentParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -629,7 +667,7 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() paginationQuery: PaginationQuery,
     @Param()
-    { isMe, userId }: GetUserParam
+    { isMe, userId }: GetUserParam,
   ) {
     const user = isMe
       ? authorizer.user
@@ -637,9 +675,170 @@ export class UsersControllerV2 {
 
     const { users, meta } = await this.userServiceV2.getBlockedLookup(
       user,
-      paginationQuery
+      paginationQuery,
     );
 
     return ResponseDto.ok({ payload: users, meta });
+  }
+
+  @CastcleBasicAuth()
+  @Post(':userId/quotecasts')
+  async quoteContent(
+    @Auth() authorizer: Authorizer,
+    @Body() { contentId, message }: QuoteCastDto,
+    @Param() { isMe, userId }: GetUserParam,
+  ) {
+    this.logger.log(`Start quote cast content id: ${contentId}`);
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    const quotecasts = await this.contentServiceV2.quoteCast(
+      contentId,
+      message,
+      user,
+      authorizer.account,
+    );
+
+    const feedItem = await this.rankerService.getFeedItem(
+      authorizer.account,
+      quotecasts.quoteContent,
+    );
+
+    if (feedItem) {
+      await this.suggestionService.seen(
+        authorizer.account,
+        feedItem._id,
+        authorizer.credential,
+      );
+    }
+
+    return await this.contentServiceV2.getQuoteCastPipeline(
+      quotecasts.quoteContent._id,
+      user,
+    );
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Post(':userId/following')
+  async following(
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() body: TargetCastcleDto,
+    @Auth() authorizer: Authorizer,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    await this.userServiceV2.followUser(
+      user,
+      body.targetCastcleId,
+      user.ownerAccount,
+    );
+  }
+
+  @Delete(':userId/following/:targetCastcleId')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unfollow(
+    @Auth() authorizer: Authorizer,
+    @Param()
+    { targetCastcleId, isMe, userId }: TargetIdParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.unfollowUser(user, targetCastcleId);
+  }
+
+  @CastcleBasicAuth()
+  @Get(':userId/contents')
+  async getContents(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() query: GetContentQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return await this.contentServiceV2.getContents(query, user);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/following')
+  async getUserFollowing(
+    @Param() { isMe, userId }: GetUserParam,
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetFollowQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getFollowing(
+      authorizer.account,
+      user,
+      query,
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/followers')
+  async getUserFollower(
+    @Param() { isMe, userId }: GetUserParam,
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetFollowQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getFollowers(
+      authorizer.account,
+      user,
+      query,
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
+  @Post(':userId/reporting/user')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() { message, targetCastcleId }: ReportingUserDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.userServiceV2.reportUser(user, targetCastcleId, message);
+  }
+
+  @Post(':userId/reporting/content')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportContent(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() { message, targetContentId }: ReportingContentDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.userServiceV2.reportContent(user, targetContentId, message);
   }
 }

@@ -33,7 +33,7 @@ type MockContentOption = {
 export const mockContents = async (
   user: User,
   contentModel: Model<Content>,
-  option?: MockContentOption
+  option?: MockContentOption,
 ) => {
   const amount = option.amount ? option.amount : 1;
   const type = option.type ? option.type : ContentType.Short;

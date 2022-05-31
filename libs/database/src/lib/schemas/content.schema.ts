@@ -43,6 +43,7 @@ import { FeedItem } from './feed-item.schema';
 import { Relationship } from './relationship.schema';
 import { Revision } from './revision.schema';
 import { User } from './user.schema';
+import { isString } from 'class-validator';
 
 const engagementNameMap = {
   like: 'liked',
@@ -62,7 +63,7 @@ const engagementNameMap = {
 const getEngagementObject = (
   doc: ContentDocument,
   engagementType: EngagementType,
-  isEngage: boolean
+  isEngage: boolean,
 ) => {
   //get owner relate engagement
   const engagementObject: ContentEngagement = {
@@ -125,7 +126,7 @@ export class Content extends ContentDocument {
 
 export const signContentPayload = (
   payload: ContentPayloadDto,
-  engagements: Engagement[] = []
+  engagements: Engagement[] = [],
 ) => {
   console.debug('----SIGN CONTENT---');
   console.debug(payload);
@@ -155,7 +156,7 @@ export const signContentPayload = (
     !((payload.payload as BlogPayload).photo.cover as CastcleImage)['isSign']
   ) {
     (payload.payload as BlogPayload).photo.cover = new Image(
-      (payload.payload as BlogPayload).photo.cover as CastcleImage
+      (payload.payload as BlogPayload).photo.cover as CastcleImage,
     ).toSignUrls();
   }
   if ((payload.payload as BlogPayload).link) {
@@ -187,7 +188,7 @@ export const signContentPayload = (
 
 export const transformContentPayloadToV2 = (
   content: ContentPayloadDto,
-  engagements: Engagement[]
+  engagements: Engagement[],
 ) => {
   const contentPayloadItem = {
     id: content.id,
@@ -207,7 +208,7 @@ export const transformContentPayloadToV2 = (
         ? true
         : false,
       commented: engagements.find(
-        (item) => item.type === EngagementType.Comment
+        (item) => item.type === EngagementType.Comment,
       )
         ? true
         : false,
@@ -233,12 +234,12 @@ export const transformContentPayloadToV2 = (
 export const toUnsignedContentPayloadItem = (
   content: Content | ContentDocument,
   engagements: Engagement[] = [],
-  metrics?: CastcleMetric
+  metrics?: CastcleMetric,
 ) => {
   const engage = engagements.filter(
     (engagement) =>
-      String(engagement.targetRef.$id) === String(content.id) ||
-      String(engagement.targetRef.oid) === String(content.id)
+      String(engagement.targetRef.oid) === String(content.id) ||
+      String(engagement.targetRef.oid) === String(content._id),
   );
 
   const result = {
@@ -250,7 +251,12 @@ export const toUnsignedContentPayloadItem = (
     photo: (content.payload as ShortPayload)?.photo,
 
     metrics: metrics
-      ? metrics
+      ? {
+          likeCount: metrics.likeCount,
+          commentCount: metrics.commentCount,
+          quoteCount: metrics.quoteCount,
+          recastCount: metrics.recastCount,
+        }
       : {
           likeCount: content.engagements?.like?.count | 0,
           commentCount: content.engagements?.comment?.count | 0,
@@ -265,8 +271,12 @@ export const toUnsignedContentPayloadItem = (
       reported: engage?.some(({ type }) => type === EngagementType.Report),
     },
 
-    createdAt: content.createdAt.toISOString(),
-    updatedAt: content.updatedAt.toISOString(),
+    createdAt: isString(content.createdAt)
+      ? content.createdAt
+      : content.createdAt.toISOString(),
+    updatedAt: isString(content.updatedAt)
+      ? content.updatedAt
+      : content.updatedAt.toISOString(),
   } as ContentPayloadItem;
   if (content.isRecast || content.isQuote) {
     result.referencedCasts = {
@@ -280,7 +290,7 @@ export const toUnsignedContentPayloadItem = (
 export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
   if (unsignedItem.photo?.contents)
     unsignedItem.photo.contents = unsignedItem.photo.contents.map((item) =>
-      new Image(item).toSignUrls()
+      new Image(item).toSignUrls(),
     );
 
   if (unsignedItem.photo?.cover)
@@ -289,7 +299,12 @@ export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
   if (unsignedItem.link)
     unsignedItem.link = unsignedItem.link.map((item) => {
       if (item.image) {
-        item.image = new Image(item.image as CastcleImage).toSignUrls();
+        return {
+          ...item,
+          image: (item.image = new Image(
+            item.image as CastcleImage,
+          ).toSignUrls()),
+        };
       } else return item;
     });
 
@@ -298,7 +313,7 @@ export const signedContentPayloadItem = (unsignedItem: ContentPayloadItem) => {
 
 export const toSignedContentPayloadItem = (
   content: Content | ContentDocument,
-  engagements: Engagement[] = []
+  engagements: Engagement[] = [],
 ) =>
   signedContentPayloadItem(toUnsignedContentPayloadItem(content, engagements));
 
@@ -308,6 +323,7 @@ export const ContentSchema = SchemaFactory.createForClass<
 >(ContentDocument);
 
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
+ContentSchema.index({ 'originalPost._id': 1 });
 type ContentEngagement =
   | {
       [key: string]: boolean;
@@ -325,14 +341,14 @@ export const ContentSchemaFactory = (
   revisionModel: Model<Revision>,
   feedItemModel: Model<FeedItem>,
   userModel: Model<User>,
-  relationshipModel: Model<Relationship>
+  relationshipModel: Model<Relationship>,
 ): mongoose.Schema<any> => {
   ContentSchema.methods.toContent = function () {
     return new ContentDocument({ author: this.author });
   };
 
   ContentSchema.methods.toUnsignedContentPayload = function (
-    engagements: Engagement[] = []
+    engagements: Engagement[] = [],
   ) {
     const payload = {
       id: this._id,
@@ -355,7 +371,7 @@ export const ContentSchemaFactory = (
       payload[engagementNameMap[key]] = getEngagementObject(
         this,
         key as EngagementType,
-        findEngagement ? true : false
+        findEngagement ? true : false,
       );
     }
     //if it's recast or quotecast
@@ -364,15 +380,15 @@ export const ContentSchemaFactory = (
   };
 
   ContentSchema.methods.toContentPayloadItem = function (
-    engagements: Engagement[] = []
+    engagements: Engagement[] = [],
   ) {
     return signedContentPayloadItem(
-      toUnsignedContentPayloadItem(this, engagements)
+      toUnsignedContentPayloadItem(this, engagements),
     );
   };
 
   ContentSchema.methods.toContentPayload = function (
-    engagements: Engagement[] = []
+    engagements: Engagement[] = [],
   ) {
     //Todo Need to implement recast quote cast later on
     const payload = {
@@ -398,7 +414,7 @@ export const ContentSchemaFactory = (
       payload[engagementNameMap[key]] = getEngagementObject(
         this,
         key as EngagementType,
-        findEngagement ? true : false
+        findEngagement ? true : false,
       );
     }
     //if it's recast or quotecast

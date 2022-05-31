@@ -19,10 +19,12 @@ export class CommentRequest {
   static put = (url: string) => CommentRequest.request('put', url);
 
   static getCommentFromContent = (contentId: string) =>
-    CommentRequest.get(`/v2/contents/${contentId}/comments`);
+    CommentRequest.get(
+      `/v2/contents/${contentId}/comments?userFields=relationships&hasRelationshipExpansion=true`,
+    );
   static getReplyComment = (contentId: string, sourceCommentId: string) =>
     CommentRequest.get(
-      `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`
+      `/v2/contents/${contentId}/comments/${sourceCommentId}/reply`,
     );
   static getCommentLookup = (contentId: string, sourceCommentId: string) =>
     CommentRequest.get(`/v2/contents/${contentId}/comments/${sourceCommentId}`);

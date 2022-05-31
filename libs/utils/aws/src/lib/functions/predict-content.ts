@@ -40,7 +40,7 @@ export const predictContents = (accountId: string, contents: string[]) => {
         console.timeEnd('Spend time on AWS lambda');
 
         err ? reject(err) : resolve(JSON.parse(data.Payload as string).result);
-      }
+      },
     );
   });
 };

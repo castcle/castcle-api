@@ -24,6 +24,7 @@ import { AnalyticService, AuthenticationService } from '@castcle-api/database';
 import { SocialConnectDto } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
@@ -92,7 +93,7 @@ export class AuthenticationController {
   constructor(
     private analyticService: AnalyticService,
     private appService: AppService,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
   ) {}
 
   private logger = new CastLogger(AuthenticationController.name);
@@ -112,7 +113,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async checkEmailExists(
     @Req() req: HeadersRequest,
-    @Body() { email }: CheckEmailExistDto
+    @Body() { email }: CheckEmailExistDto,
   ) {
     if (!this.authService.validateEmail(email))
       throw CastcleException.INVALID_EMAIL;
@@ -143,14 +144,14 @@ export class AuthenticationController {
   @HttpCode(200)
   async login(
     @Req() req: CredentialRequest,
-    @Body() { username, password }: LoginDto
+    @Body() { username, password }: LoginDto,
   ) {
     try {
       const account = await this.authService.getAccountFromEmail(username);
       if (!account) throw CastcleException.INVALID_EMAIL;
       if (await account.verifyPassword(password)) {
         const embedCredentialByDeviceUUID = account.credentials.find(
-          (item) => item.deviceUUID === req.$credential.deviceUUID
+          (item) => item.deviceUUID === req.$credential.deviceUUID,
         );
         if (embedCredentialByDeviceUUID) {
           req.$credential = await this.authService._credentialModel
@@ -163,24 +164,24 @@ export class AuthenticationController {
           account.geolocation = req['$geolocation'];
           req.$credential = await this.authService.linkCredentialToAccount(
             req.$credential,
-            account
+            account,
           );
         }
         console.debug('afterCredential', req.$credential);
         const userProfile = await this.appService.getUserProfile(
-          req.$credential
+          req.$credential,
         );
 
         const accessTokenPayload =
           await this.authService.getAccessTokenPayloadFromCredential(
-            req.$credential
+            req.$credential,
           );
         console.debug('accessTokenPayload', accessTokenPayload);
         const tokenResult: TokenResponse = await req.$credential.renewTokens(
           accessTokenPayload,
           {
             id: account._id as unknown as string,
-          }
+          },
         );
         const result = new LoginResponse();
         result.accessToken = tokenResult.accessToken;
@@ -228,7 +229,7 @@ export class AuthenticationController {
   async guestLogin(@Req() req: GuestRequest, @Body() body: GuestLoginDto) {
     const deviceUUID = body.deviceUUID;
     const credential = await this.authService.getGuestCredentialFromDeviceUUID(
-      deviceUUID
+      deviceUUID,
     );
 
     if (credential) {
@@ -240,9 +241,9 @@ export class AuthenticationController {
         },
         {
           id: credential.account._id as unknown as string,
-        }
+        },
       );
-      //update geolocation if current geolocaiton is not the same from service
+      //update geolocation if current geolocation is not the same from service
       return tokenResult;
     } else {
       const result = await this.authService.createAccount({
@@ -269,12 +270,12 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RequestMeta() { ip }: RequestMetadata
+    @RequestMeta() { ip }: RequestMetadata,
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
       const currentAccount = await this.authService.getAccountFromCredential(
-        req.$credential
+        req.$credential,
       );
       if (!currentAccount?.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
       if (currentAccount?.email === body.payload.email)
@@ -287,7 +288,7 @@ export class AuthenticationController {
         throw CastcleException.INVALID_EMAIL;
       //check if castcleId Exist
       const user = await this.authService.getExistedUserFromCastcleId(
-        body.payload.castcleId
+        body.payload.castcleId,
       );
       //validate password
       this.appService.validatePassword(body.payload.password);
@@ -303,7 +304,7 @@ export class AuthenticationController {
           password: body.payload.password,
           referral: body.referral,
           ip,
-        }
+        },
       );
       await this.analyticService.trackRegistration(ip, currentAccount._id);
       //check if display id exist
@@ -312,20 +313,20 @@ export class AuthenticationController {
       await this.appService.sendRegistrationEmail(
         Host.getHostname(req),
         body.payload.email,
-        accountActivation.verifyToken
+        accountActivation.verifyToken,
       );
       //TODO !!! Need to improve this performance
       //make new token isGuest = false
       req.$credential.account.isGuest = false;
       const accessTokenPayload =
         await this.authService.getAccessTokenPayloadFromCredential(
-          req.$credential
+          req.$credential,
         );
 
       const userProfile = await this.appService.getUserProfile(req.$credential);
       const tokenResult = await req.$credential.renewTokens(
         accessTokenPayload,
-        { id: currentAccount._id as unknown as string }
+        { id: currentAccount._id as unknown as string },
       );
 
       const result = new LoginResponse();
@@ -360,7 +361,7 @@ export class AuthenticationController {
      * should embed  account and user for better performance
      */
     const credential = await this.authService.getCredentialFromRefreshToken(
-      req.$token
+      req.$token,
     );
     if (credential && credential.isRefreshTokenValid()) {
       const userProfile = await this.appService.getUserProfile(credential);
@@ -374,11 +375,11 @@ export class AuthenticationController {
         await this.authService.getAccessTokenPayloadFromCredential(credential);
 
       const newAccessToken = await credential.renewAccessToken(
-        accessTokenPayload
+        accessTokenPayload,
       );
 
       const account = await this.authService.getAccountFromId(
-        credential.account._id
+        credential.account._id,
       );
       return {
         profile: userProfile.profile
@@ -431,15 +432,15 @@ export class AuthenticationController {
   @UseInterceptors(CredentialInterceptor)
   async requestLinkVerify(
     @Req() req: CredentialRequest,
-    @Res() response: Response
+    @Res() response: Response,
   ) {
     const accountActivation =
       await this.authService.getAccountActivationFromCredential(
-        req.$credential
+        req.$credential,
       );
     if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
     const newAccountActivation = await this.authService.revokeAccountActivation(
-      accountActivation
+      accountActivation,
     );
     if (!accountActivation) throw CastcleException.INVALID_REFRESH_TOKEN;
     if (accountActivation.activationDate) {
@@ -450,13 +451,13 @@ export class AuthenticationController {
       return returnObj;
     }
     const account = await this.authService.getAccountFromCredential(
-      req.$credential
+      req.$credential,
     );
     if (!(account && account.email)) throw CastcleException.INVALID_EMAIL;
     this.appService.sendRegistrationEmail(
       Host.getHostname(req),
       account.email,
-      newAccountActivation.verifyToken
+      newAccountActivation.verifyToken,
     );
     response.status(204).send();
     return '';
@@ -469,7 +470,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async checkCastcleIdExists(@Body() body: CheckIdExistDto) {
     const user = await this.authService.getExistedUserFromCastcleId(
-      body.castcleId
+      body.castcleId,
     );
     return {
       message: 'success message',
@@ -490,10 +491,10 @@ export class AuthenticationController {
   @HttpCode(200)
   async verificationOTP(
     @Body() body: VerificationOtpDto,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     this.logger.log(
-      `Start verify OPT channel: ${body.channel} objective: ${body.objective} refCode: ${body.refCode}`
+      `Start verify OPT channel: ${body.channel} objective: ${body.objective} refCode: ${body.refCode}`,
     );
     const { otp, token } = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
@@ -521,17 +522,17 @@ export class AuthenticationController {
   async requestOTP(
     @Body() body: RequestOtpDto,
     @Req() req: CredentialRequest,
-    @RequestMeta() { ip, userAgent, source }: RequestMetadata
+    @RequestMeta() { ip, userAgent, source }: RequestMetadata,
   ) {
     this.logger.log(
-      `Start request OPT channel: ${body.channel} objective: ${body.objective}`
+      `Start request OPT channel: ${body.channel} objective: ${body.objective}`,
     );
     const otp = await this.appService.requestOtpCode(
       body,
       req,
       ip,
       userAgent,
-      source
+      source,
     );
     if (otp && otp.isValid()) {
       const response: otpResponse = {
@@ -566,7 +567,7 @@ export class AuthenticationController {
       this.appService.getCastcleMobileLink(),
       Environment && Environment.SMTP_ADMIN_EMAIL
         ? Environment.SMTP_ADMIN_EMAIL
-        : 'admin@castcle.com'
+        : 'admin@castcle.com',
     );
   }
 
@@ -574,7 +575,7 @@ export class AuthenticationController {
   @Post('suggestCastcleId')
   @HttpCode(200)
   async suggestCastcleId(
-    @Body() { displayName }: SuggestCastcleIdDto
+    @Body() { displayName }: SuggestCastcleIdDto,
   ): Promise<SuggestCastcleIdResponse> {
     const suggestId = await this.authService.suggestCastcleId(displayName);
     return {
@@ -595,20 +596,20 @@ export class AuthenticationController {
   @Post('verificationPassword')
   async verificationPassword(
     @Body() payload: VerificationPasswordBody,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ): Promise<otpResponse> {
     const account = await this.authService.getAccountFromCredential(
-      req.$credential
+      req.$credential,
     );
     //add password checker
     this.appService.validatePassword(payload.password);
-    if (await account.verifyPassword(payload.password)) {
+    if (account.verifyPassword(payload.password)) {
       const otp = await this.authService.generateOtp(
         account,
         payload.objective,
         req.$credential.account._id,
-        '',
-        true
+        TwilioChannel.EMAIL,
+        true,
       );
       return {
         objective: payload.objective,
@@ -629,7 +630,7 @@ export class AuthenticationController {
   @HttpCode(204)
   async changePasswordSubmit(
     @Body() payload: ChangePasswordBody,
-    @Req() req: CredentialRequest
+    @Req() req: CredentialRequest,
   ) {
     this.logger.log(`Start change password refCode: ${payload.refCode}`);
     return this.appService.resetPassword(payload, req);
@@ -640,7 +641,7 @@ export class AuthenticationController {
     /* Creating a type alias for a function that takes a string and returns a string. */
     {
       type: SocialConnectDto,
-    }
+    },
   )
   @ApiOkResponse({
     status: 200,
@@ -652,7 +653,7 @@ export class AuthenticationController {
   async loginWithSocial(
     @Req() req: CredentialRequest,
     @Body() body: SocialConnectDto,
-    @RequestMeta() { ip, userAgent }: RequestMetadata
+    @RequestMeta() { ip, userAgent }: RequestMetadata,
   ) {
     this.logger.log(`login with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
@@ -702,19 +703,19 @@ export class AuthenticationController {
   @Post('connect-with-social')
   async connectWithSocial(
     @Req() req: CredentialRequest,
-    @Body() body: SocialConnectDto
+    @Body() body: SocialConnectDto,
   ) {
     this.logger.log(`connect with social: ${body.provider}`);
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
     const currentAccount = await this.authService.getAccountFromCredential(
-      req.$credential
+      req.$credential,
     );
     if (currentAccount?.isGuest) throw CastcleException.FORBIDDEN;
 
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(
       body.socialId,
-      body.provider
+      body.provider,
     );
     if (socialAccount) {
       this.logger.error(`already connect social: ${body.provider}.`);
@@ -729,7 +730,7 @@ export class AuthenticationController {
       body.authToken ? body.authToken : undefined,
       undefined,
       body.avatar ? body.avatar : undefined,
-      body.displayName ? body.displayName : undefined
+      body.displayName ? body.displayName : undefined,
     );
 
     await this.authService.embedAuthentication(currentAccount, {
@@ -741,7 +742,7 @@ export class AuthenticationController {
 
     const { token, users, account } = await this.appService.socialLogin(
       body,
-      req
+      req,
     );
 
     this.logger.log(`response success.`);
@@ -764,7 +765,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async registerToken(
     @Req() { $credential }: CredentialRequest,
-    @Body() body: RequestTokenDeviceDto
+    @Body() body: RequestTokenDeviceDto,
   ) {
     await this.authService.createAccountDevice({
       accountId: $credential.account._id,
@@ -777,7 +778,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async unregisterToken(
     @Req() { $credential }: CredentialRequest,
-    @Body() body: RequestTokenDeviceDto
+    @Body() body: RequestTokenDeviceDto,
   ) {
     await this.authService.deleteAccountDevice({
       accountId: $credential.account._id,

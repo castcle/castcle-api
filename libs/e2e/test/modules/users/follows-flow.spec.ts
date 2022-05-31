@@ -53,10 +53,10 @@ export const testFollowsFlow = () => {
         expect(body.payload.length).toEqual(2);
         expect(body.meta.resultTotal).toEqual(2);
         expect(
-          body.payload.find((x) => x.castcleId === userBeta.castcleId)
+          body.payload.find((x) => x.castcleId === userBeta.castcleId),
         ).toBeDefined();
         expect(
-          body.payload.find((x) => x.castcleId === userA.castcleId)
+          body.payload.find((x) => x.castcleId === userA.castcleId),
         ).toBeDefined();
       });
   });
@@ -68,10 +68,10 @@ export const testFollowsFlow = () => {
         expect(body.payload.length).toEqual(2);
         expect(body.meta.resultTotal).toEqual(2);
         expect(
-          body.payload.find((x) => x.castcleId === userBeta.castcleId)
+          body.payload.find((x) => x.castcleId === userBeta.castcleId),
         ).toBeDefined();
         expect(
-          body.payload.find((x) => x.castcleId === userA.castcleId)
+          body.payload.find((x) => x.castcleId === userA.castcleId),
         ).toBeDefined();
       });
 
@@ -81,7 +81,7 @@ export const testFollowsFlow = () => {
         expect(body.payload.length).toEqual(1);
         expect(body.meta.resultTotal).toEqual(1);
         expect(
-          body.payload.find((x) => x.castcleId === userAlpha.castcleId)
+          body.payload.find((x) => x.castcleId === userAlpha.castcleId),
         ).toBeDefined();
       });
 
@@ -91,7 +91,7 @@ export const testFollowsFlow = () => {
         expect(body.payload.length).toEqual(1);
         expect(body.meta.resultTotal).toEqual(1);
         expect(
-          body.payload.find((x) => x.castcleId === userAlpha.castcleId)
+          body.payload.find((x) => x.castcleId === userAlpha.castcleId),
         ).toBeDefined();
       });
   });
@@ -99,7 +99,7 @@ export const testFollowsFlow = () => {
   it('STEP 3: Unfollow should unfollow successful', async () => {
     await UsersRequest.unfollow(userBeta.castcleId, userAlpha.castcleId).auth(
       userBeta.accessToken,
-      { type: 'bearer' }
+      { type: 'bearer' },
     );
 
     await UsersRequest.getFollowing(userBeta.castcleId)
@@ -108,7 +108,7 @@ export const testFollowsFlow = () => {
         expect(body.payload.length).toEqual(0);
         expect(body.meta.resultTotal).toEqual(0);
         expect(
-          body.payload.find((x) => x.castcleId === userAlpha.castcleId)
+          body.payload.find((x) => x.castcleId === userAlpha.castcleId),
         ).toBeUndefined();
       });
 

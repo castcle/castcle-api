@@ -1,5 +1,4 @@
 {
-  "root": "apps/analytics",
   "sourceRoot": "apps/analytics/src",
   "projectType": "application",
   "targets": {
@@ -43,7 +42,7 @@
       "executor": "@nrwl/jest:jest",
       "outputs": ["coverage/apps/analytics"],
       "options": {
-        "jestConfig": "apps/analytics/jest.config.js",
+        "jestConfig": "apps/analytics/jest.config.ts",
         "passWithNoTests": true
       }
     }

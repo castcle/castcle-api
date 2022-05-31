@@ -29,7 +29,7 @@ export class Authorizer {
   constructor(
     public account: Account,
     public user: User,
-    public credential: Credential
+    public credential: Credential,
   ) {}
 
   /**
@@ -44,16 +44,30 @@ export class Authorizer {
 
   /**
    * permit if `userId` to access is `me` (case-insensitive) or same as ID of authenticated user
+   * and account is activated
+   * @param {string | ObjectId} accountId account ID to access
+   */
+  requestAccessForContent(accountId: string) {
+    this.requireActivation();
+    this.requestAccessForAccount(accountId);
+  }
+
+  /**
+   * permit if `userId` to access is `me` (case-insensitive) or same as ID of authenticated user
    * @param {string} userId user ID to access
    */
   requestAccessForUser(userId: string) {
-    const isMe = userId.toLowerCase() === 'me';
-    const isSameId = this.user.id === userId;
-    const isSameCastcleId = this.user.displayId === userId;
-
-    if (isMe || isSameId || isSameCastcleId) return;
+    if (userId.toLowerCase() === 'me') return;
+    if (this.user.displayId === userId) return;
+    if (this.user.id === userId) return;
 
     throw CastcleException.FORBIDDEN;
+  }
+
+  requireActivation() {
+    if (this.account.isGuest || !this.account.activateDate) {
+      throw CastcleException.FORBIDDEN;
+    }
   }
 }
 
@@ -64,5 +78,5 @@ export const Auth = createParamDecorator(
     const user = await request.$user;
     const credential = request.$credential;
     return new Authorizer(account, user, credential);
-  }
+  },
 );

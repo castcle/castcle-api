@@ -29,7 +29,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { AnyKeys, FilterQuery, Model, Types } from 'mongoose';
-import { createCastcleMeta } from '../database.module';
 import {
   CommentIncludes,
   CommentPayload,
@@ -58,9 +57,14 @@ import {
   Revision,
   User,
 } from '../schemas';
-import { createCastcleFilter, getRelationship } from '../utils/common';
+import {
+  createCastcleFilter,
+  createCastcleMeta,
+  getRelationship,
+} from '../utils/common';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
+
 @Injectable()
 export class CommentServiceV2 {
   private logger = new CastLogger(CommentServiceV2.name);
@@ -81,7 +85,7 @@ export class CommentServiceV2 {
     public _engagementModel: Model<Engagement>,
     private userService: UserService,
     private notificationServiceV2: NotificationServiceV2,
-    private repository: Repository
+    private repository: Repository,
   ) {}
 
   /**
@@ -137,7 +141,7 @@ export class CommentServiceV2 {
           $inc: {
             score: -1,
           },
-        }
+        },
       )
       .exec();
   };
@@ -154,7 +158,7 @@ export class CommentServiceV2 {
     user: User,
     viewer?: User,
     hasRelationshipExpansion?: boolean,
-    relationships?: Relationship[]
+    relationships?: Relationship[],
   ) {
     return viewer
       ? ({
@@ -171,7 +175,7 @@ export class CommentServiceV2 {
             relationships,
             viewer._id,
             user._id,
-            hasRelationshipExpansion
+            hasRelationshipExpansion,
           ),
         } as IncludeUser)
       : ({
@@ -191,7 +195,7 @@ export class CommentServiceV2 {
     viewer: User,
     comment: Comment,
     engagements: Engagement[],
-    { hasRelationshipExpansion }: ExpansionQuery
+    { hasRelationshipExpansion }: ExpansionQuery,
   ) {
     const users: IncludeUser[] = [];
     const [replies, revisionCount] = await Promise.all([
@@ -231,8 +235,8 @@ export class CommentServiceV2 {
           comment.author,
           viewer,
           hasRelationshipExpansion,
-          relationships
-        )
+          relationships,
+        ),
       );
     }
 
@@ -255,9 +259,9 @@ export class CommentServiceV2 {
           engagementsReply,
           revisionReplyCount,
           [],
-          viewer
+          viewer,
         );
-      })
+      }),
     );
 
     return {
@@ -266,7 +270,7 @@ export class CommentServiceV2 {
         engagements,
         revisionCount,
         replies,
-        viewer
+        viewer,
       ),
       includes: new CommentIncludes({ comments: replyPayload, users }),
     } as CommentResponse;
@@ -288,7 +292,7 @@ export class CommentServiceV2 {
     engagements: Engagement[],
     revisionCount: number,
     replies: Comment[],
-    viewer: User
+    viewer: User,
   ) {
     return {
       id: comment._id,
@@ -307,7 +311,7 @@ export class CommentServiceV2 {
     viewer: User,
     comments: Comment[],
     engagements: Engagement[],
-    { hasRelationshipExpansion }: ExpansionQuery
+    { hasRelationshipExpansion }: ExpansionQuery,
   ) {
     const users: IncludeUser[] = [];
     const commentsIds = comments.map(({ _id }) => _id);
@@ -328,7 +332,7 @@ export class CommentServiceV2 {
             'objectRef.$ref': 'comment',
             'payload.author._id': { $in: commentsAuthorIds },
           },
-          { 'objectRef.$id': true }
+          { 'objectRef.$id': true },
         )
         .exec(),
     ]);
@@ -363,8 +367,8 @@ export class CommentServiceV2 {
               reply.author,
               viewer,
               hasRelationshipExpansion,
-              relationships
-            )
+              relationships,
+            ),
           );
         }
         const revisionReplyCount = await this.revisionModel
@@ -378,14 +382,14 @@ export class CommentServiceV2 {
           engagementsReply,
           revisionReplyCount,
           [],
-          viewer
+          viewer,
         );
-      })
+      }),
     );
 
     const commentPlyload = comments.map((comment) => {
       const revisionCount = revisions.filter(
-        ({ objectRef }) => String(objectRef.$id) === String(comment._id)
+        ({ objectRef }) => String(objectRef.$id) === String(comment._id),
       ).length;
 
       const commentReplies = replies.filter(({ targetRef }) => {
@@ -398,8 +402,8 @@ export class CommentServiceV2 {
             comment.author,
             viewer,
             hasRelationshipExpansion,
-            relationships
-          )
+            relationships,
+          ),
         );
       }
 
@@ -408,7 +412,7 @@ export class CommentServiceV2 {
         engagements,
         revisionCount,
         commentReplies,
-        viewer
+        viewer,
       );
     });
 
@@ -428,7 +432,7 @@ export class CommentServiceV2 {
   getCommentsByContentId = async (
     viewer: User,
     contentId: string,
-    paginationQuery: PaginationQuery
+    paginationQuery: PaginationQuery,
   ) => {
     return this.getComments(viewer, contentId, 'content', paginationQuery);
   };
@@ -443,7 +447,7 @@ export class CommentServiceV2 {
   getReplyCommentsByCommentId = async (
     viewer: User,
     commentId: string,
-    paginationQuery: PaginationQuery
+    paginationQuery: PaginationQuery,
   ) => {
     return this.getComments(viewer, commentId, 'comment', paginationQuery);
   };
@@ -452,7 +456,7 @@ export class CommentServiceV2 {
     viewer: User,
     refId: string,
     refType: string,
-    paginationQuery: PaginationQuery
+    paginationQuery: PaginationQuery,
   ) => {
     let query: FilterQuery<Comment> = {
       targetRef: { $id: mongoose.Types.ObjectId(refId), $ref: refType },
@@ -487,7 +491,7 @@ export class CommentServiceV2 {
       viewer,
       comments,
       engagements,
-      paginationQuery
+      paginationQuery,
     );
 
     return ResponseDto.ok<CommentPayload[], CommentIncludes>({
@@ -548,7 +552,7 @@ export class CommentServiceV2 {
         this.removeEngagementComment(reply);
         this.removeRevision(reply);
         reply.remove();
-      })
+      }),
     );
 
     this.logger.log('Delete comment.');
@@ -560,7 +564,7 @@ export class CommentServiceV2 {
     comment: Comment,
     content: Content,
     user: User,
-    account: Account
+    account: Account,
   ) => {
     const engagement = await this._engagementModel.findOne({
       user: user._id,
@@ -576,6 +580,7 @@ export class CommentServiceV2 {
     await new this._engagementModel({
       type: EngagementType.Like,
       user: user._id,
+      account: user.ownerAccount,
       targetRef: {
         $ref: 'comment',
         $id: comment._id,
@@ -590,7 +595,7 @@ export class CommentServiceV2 {
       return;
 
     const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id
+      comment.author._id,
     );
     const notificationData: CreateNotification = {
       source:
@@ -612,7 +617,7 @@ export class CommentServiceV2 {
     await this.notificationServiceV2.notifyToUser(
       notificationData,
       userOwner,
-      account.preferences.languages[0]
+      account.preferences.languages[0],
     );
 
     return comment;

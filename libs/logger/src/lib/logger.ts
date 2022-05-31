@@ -63,7 +63,7 @@ export class CastLogger extends ConsoleLogger {
         ? message
         : JSON.stringify(message),
       '',
-      this.#formatContext(context)
+      this.#formatContext(context),
     );
   }
 

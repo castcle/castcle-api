@@ -21,10 +21,54 @@
  * or have any questions.
  */
 
-import { IsMongoId, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { GetUserParam } from './user.dto';
-import { PaginationQuery } from './pagination.dto';
 import { IsNotEmpty } from 'class-validator';
+import { Content, Engagement, User } from '../schemas';
+import {
+  BlogPayload,
+  ContentType,
+  ImagePayload,
+  ShortPayload,
+} from './content.dto';
+import { UserType } from '../models';
+import {
+  TransformSortStringToSortObject,
+  TransformStringToArrayOfStrings,
+} from '@castcle-api/utils/commons';
+import { PaginationQuery } from './pagination.dto';
+
+export class ResponseParticipate {
+  user: {
+    id: string;
+    castcleId: string;
+    displayName: string;
+    type: UserType;
+  };
+
+  participate: {
+    liked: boolean;
+    commented: boolean;
+    quoted: boolean;
+    recasted: boolean;
+    reported: boolean;
+  };
+}
+export class GetContentCastDto {
+  contents: Content[];
+  casts?: Content[];
+  authors?: User[];
+  engagements?: Engagement[];
+  metrics?: any[];
+  engagementsOriginal?: Engagement[];
+  metricsOriginal?: any[];
+}
 
 export class GetContentDto {
   @IsString()
@@ -33,12 +77,6 @@ export class GetContentDto {
   contentId: string;
 }
 
-export class GetContentParam extends PaginationQuery {
-  @IsString()
-  @IsMongoId()
-  @IsNotEmpty()
-  contentId: string;
-}
 export class LikeCommentDto {
   @IsString()
   @IsMongoId()
@@ -51,4 +89,34 @@ export class GetSourceContentParam extends GetUserParam {
   @IsMongoId()
   @IsNotEmpty()
   sourceContentId: string;
+}
+export class QuoteCastDto extends GetContentDto {
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+
+export class CreateContentDto {
+  @IsString()
+  @IsNotEmpty()
+  type: ContentType;
+
+  @IsNotEmpty()
+  payload: ShortPayload | BlogPayload | ImagePayload;
+
+  @IsString()
+  @IsNotEmpty()
+  castcleId: string;
+}
+
+export class GetContentQuery extends PaginationQuery {
+  @IsOptional()
+  @IsEnum(ContentType, { each: true })
+  @TransformStringToArrayOfStrings()
+  type?: string;
+
+  @IsOptional()
+  @IsObject()
+  @TransformSortStringToSortObject()
+  sortBy?: string;
 }

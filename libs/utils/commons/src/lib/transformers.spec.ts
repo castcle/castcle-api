@@ -23,6 +23,9 @@
 
 import { plainToClass } from 'class-transformer';
 import {
+  RemoveLeadingZero,
+  TransformKeywordStringToKeywordFilter,
+  TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
   TransformStringToEnum,
 } from './transformers';
@@ -77,5 +80,88 @@ describe('TransformStringToEnum', () => {
     const target = plainToClass(Target, object);
 
     expect(target).toMatchObject({ type: undefined });
+  });
+});
+
+describe('TransformSortStringToSortObject', () => {
+  class Target {
+    @TransformSortStringToSortObject()
+    sortBy: string;
+  }
+
+  it('should return type if it contained in TargetType', () => {
+    const sortString = { sortBy: 'desc(createdAt),asc(updatedAt)' };
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({ sortBy: { createdAt: -1, updatedAt: 1 } });
+  });
+
+  it(`should return undefined if it does not exist`, () => {
+    const sortString = {};
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({});
+  });
+});
+
+describe('RemoveLeadingZero', () => {
+  class Target {
+    @RemoveLeadingZero()
+    mobileNumber: string;
+  }
+
+  it('should remove leading zero in mobile number', () => {
+    const sortString = { mobileNumber: '0801231234' };
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({ mobileNumber: '801231234' });
+  });
+
+  it(`should return the original mobile number if no leading zero in mobile number`, () => {
+    const sortString = { mobileNumber: '801231234' };
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({ mobileNumber: '801231234' });
+  });
+
+  it(`should return if value is null or undefined`, () => {
+    const sortString = {};
+    const target = plainToClass(Target, sortString);
+
+    expect(target).toMatchObject({});
+  });
+});
+
+describe('TransformKeywordStringToKeywordFilter', () => {
+  class Target {
+    @TransformKeywordStringToKeywordFilter()
+    keyword: string;
+  }
+
+  it('should return type mention', () => {
+    const keywordString = { keyword: '@mention' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'mention', type: 'mention' },
+    });
+  });
+
+  it('should return type hashtag', () => {
+    const keywordString = { keyword: '#hashtag' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'hashtag', type: 'hashtag' },
+    });
+  });
+
+  it('should return type word', () => {
+    const keywordString = { keyword: 'word' };
+    const target = plainToClass(Target, keywordString);
+
+    expect(target).toMatchObject({
+      keyword: { input: 'word', type: 'word' },
+    });
   });
 });

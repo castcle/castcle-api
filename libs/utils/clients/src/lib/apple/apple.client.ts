@@ -29,7 +29,7 @@ import {
   AppleSignIn,
   RefreshTokenResponse,
 } from 'apple-sign-in-rest';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 @Injectable()
 export class AppleClient {
@@ -68,7 +68,7 @@ export class AppleClient {
       scope: ['name', 'email'],
       redirectUri: callBackUrl,
       state: new Date().getTime().toString(),
-      nonce: uuidv4(),
+      nonce: nanoid(),
     });
   }
 
@@ -80,7 +80,7 @@ export class AppleClient {
    */
   async verifyToken(
     idToken: string,
-    subject: string
+    subject: string,
   ): Promise<AppleIdTokenType> {
     this.logger.log('Verify apple token.');
     return await this.appleSignIn.verifyIdToken(idToken, {
@@ -98,7 +98,7 @@ export class AppleClient {
     this.logger.log('Refresh apple token.');
     return await this.appleSignIn.refreshAuthorizationToken(
       this.getClientSecret(),
-      refreshToken
+      refreshToken,
     );
   }
 
@@ -110,7 +110,7 @@ export class AppleClient {
    */
   async authorizationToken(
     code: string,
-    redirectUrl: string
+    redirectUrl: string,
   ): Promise<AccessTokenResponse> {
     this.logger.log('validate apple token.');
     return await this.appleSignIn.getAuthorizationToken(
@@ -119,7 +119,7 @@ export class AppleClient {
       {
         // Optional, use the same value which you passed to authorisation URL. In case of iOS you skip the value
         redirectUri: redirectUrl,
-      }
+      },
     );
   }
 }

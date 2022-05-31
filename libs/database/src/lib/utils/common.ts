@@ -38,7 +38,7 @@ import { Relationship } from '../schemas';
  */
 export const createPagination = (
   queryOptions: CastcleQueryOptions,
-  totalDocuments: number
+  totalDocuments: number,
 ): Pagination => {
   const pagination = new Pagination();
   if (!queryOptions) return pagination;
@@ -55,7 +55,7 @@ export const createPagination = (
 
 export const createCastcleMeta = (
   documents: Document[],
-  totalCount?: number
+  totalCount?: number,
 ): CastcleMeta => {
   const meta = new CastcleMeta();
   if (documents && documents.length > 0) {
@@ -84,25 +84,19 @@ export const getRelationship = (
   relationships: Relationship[],
   viewerId: string,
   authorId: string,
-  hasRelationshipExpansion: boolean
+  hasRelationshipExpansion: boolean,
 ) => {
   if (!hasRelationshipExpansion) return {};
-
-  const authorRelationship = relationships.find(
-    ({ followedUser, user }) =>
-      String(user) === String(authorId) &&
-      String(followedUser) === String(viewerId)
-  );
 
   const getterRelationship = relationships.find(
     ({ followedUser, user }) =>
       String(followedUser) === String(authorId) &&
-      String(user) === String(viewerId)
+      String(user) === String(viewerId),
   );
 
   return {
-    blocked: Boolean(getterRelationship?.blocking),
-    blocking: Boolean(authorRelationship?.blocking),
+    blocked: Boolean(getterRelationship?.blocked),
+    blocking: Boolean(getterRelationship?.blocking),
     followed: Boolean(getterRelationship?.following),
   };
 };

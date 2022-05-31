@@ -46,7 +46,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
 
   constructor(
     private authService: AuthenticationService,
-    private httpService: HttpService
+    private httpService: HttpService,
   ) {}
 
   async intercept(context: ExecutionContext, next: CallHandler) {
@@ -57,21 +57,21 @@ export class IpTrackerInterceptor implements NestInterceptor {
       request.$geolocation = await lastValueFrom(
         this.httpService
           .get<{ countryCode: string; continentCode: string }>(
-            this.#getIPUrl(request.$ip)
+            this.#getIPUrl(request.$ip),
           )
           .pipe(
             map(({ data }) => {
               this.#logger.log(
                 JSON.stringify(data),
-                `${request.$ip}:get-geolocation`
+                `${request.$ip}:get-geolocation`,
               );
 
               return {
                 continentCode: data.continentCode.toLowerCase(),
                 countryCode: data.countryCode.toLowerCase(),
               };
-            })
-          )
+            }),
+          ),
       );
     } catch (error: unknown) {
       this.#logger.error(error, `${request.$ip}:get-geolocation`);
@@ -82,14 +82,14 @@ export class IpTrackerInterceptor implements NestInterceptor {
         ? (request as CredentialRequest).$credential
         : request.body?.deviceUUID
         ? await this.authService.getGuestCredentialFromDeviceUUID(
-            request.body.deviceUUID
+            request.body.deviceUUID,
           )
         : await this.authService.getCredentialFromAccessToken(
-            getTokenFromRequest(request)
+            getTokenFromRequest(request),
           );
 
       const account = await this.authService.getAccountFromCredential(
-        credential
+        credential,
       );
 
       await account.set({ geolocation: request.$geolocation }).save();
@@ -99,7 +99,7 @@ export class IpTrackerInterceptor implements NestInterceptor {
 
       this.#logger.log(
         JSON.stringify(account),
-        `${request.$ip}:update-geolocation`
+        `${request.$ip}:update-geolocation`,
       );
     } catch (error: unknown) {
       this.#logger.error(error, `${request.$ip}:update-geolocation`);

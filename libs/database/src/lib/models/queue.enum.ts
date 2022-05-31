@@ -26,6 +26,7 @@ export enum QueueName {
   CONTENT = 'content',
   NOTIFICATION = 'notification',
   USER = 'user',
+  SOCIAL_REWARD = 'social-reward',
 }
 
 export enum QueueStatus {
@@ -36,4 +37,6 @@ export enum QueueStatus {
 
 export enum QueueTopic {
   CLAIM_AIRDROP = 'claim-airdrop',
+  DISTRIBUTE_SOCIAL_REWARD = 'distribute-social-reward',
+  UPDATE_CONTENT_FARMING = 'update-content-farming',
 }

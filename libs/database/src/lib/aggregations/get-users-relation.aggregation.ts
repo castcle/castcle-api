@@ -35,6 +35,16 @@ export class GetUserRelationParams {
   sortBy?: SortBy;
 }
 
+export class GetUserRelationParamsV2 {
+  userId: Types.ObjectId;
+  limit: number;
+  keyword?: string;
+  sinceId?: string;
+  untilId?: string;
+  userTypes?: string[];
+  sortBy?: string;
+}
+
 export type GetUserRelationResponse = Relationship & {
   user_relation: User[];
 };
@@ -44,7 +54,7 @@ export type GetUserRelationResponseCount = {
 };
 
 export const pipelineOfUserRelationMentions = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     {
@@ -135,13 +145,13 @@ const userFollowQuery = (params: GetUserRelationParams) => {
 };
 
 export const pipelineOfUserRelationFollowers = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [...userFollowQuery(params), ...[{ $limit: params.limit }]];
 };
 
 export const pipelineOfUserRelationFollowersCount = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     ...userFollowQuery(params),
@@ -181,13 +191,13 @@ const userFollowingQuery = (params: GetUserRelationParams) => {
 };
 
 export const pipelineOfUserRelationFollowing = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [...userFollowingQuery(params), ...[{ $limit: params.limit }]];
 };
 
 export const pipelineOfUserRelationFollowingCount = (
-  params: GetUserRelationParams
+  params: GetUserRelationParams,
 ) => {
   return [
     ...userFollowingQuery(params),
@@ -197,4 +207,97 @@ export const pipelineOfUserRelationFollowingCount = (
       },
     ],
   ];
+};
+
+const userFollowingQueryV2 = (params: GetUserRelationParamsV2) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'followedUser',
+        foreignField: '_id',
+        as: 'followedUser',
+      },
+    },
+    {
+      $match: {
+        user: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'followedUser.visibility': EntityVisibility.Publish,
+        ...filterUserTypes('followedUser.type', params.userTypes),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    {
+      $sort: params.sortBy || {
+        createdAt: -1,
+      },
+    },
+  ];
+};
+
+export const pipelineOfUserRelationFollowingV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowingQueryV2(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowingCountV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowingQueryV2(params), ...[{ $count: 'total' }]];
+};
+
+export const pipelineOfUserRelationFollowersV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowQueryV2(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowersCountV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowQueryV2(params), ...[{ $count: 'total' }]];
+};
+
+const userFollowQueryV2 = (params: GetUserRelationParamsV2) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
+    {
+      $match: {
+        followedUser: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'user.visibility': EntityVisibility.Publish,
+        ...filterUserTypes('user.type', params.userTypes),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    {
+      $sort: params.sortBy || {
+        createdAt: -1,
+      },
+    },
+  ];
+};
+
+const filterUserTypes = (key: string, userTypes?: string[]) => {
+  if (userTypes)
+    return {
+      key: { $in: userTypes },
+    };
 };

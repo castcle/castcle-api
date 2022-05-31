@@ -181,7 +181,7 @@ describe('Twitter Service', () => {
         .mockResolvedValueOnce([]);
 
       await expect(
-        twitterService.syncTwittersTweets(syncAccount)
+        twitterService.syncTwittersTweets(syncAccount),
       ).resolves.not.toThrow();
     });
   });
@@ -194,7 +194,7 @@ describe('Twitter Service', () => {
       } as TweetUserTimelineV2Paginator);
 
       await expect(
-        twitterService.getTimelineByUserId('userId', '1')
+        twitterService.getTimelineByUserId('userId', '1'),
       ).resolves.not.toThrow();
     });
   });
@@ -209,7 +209,7 @@ describe('Twitter Service', () => {
     it('should filter quoted tweets', async () => {
       const contents = await twitterService.convertTimelineToContents(
         author.id,
-        timeline
+        timeline,
       );
 
       expect(contents.length).toEqual(1);
@@ -242,7 +242,7 @@ describe('Twitter Service', () => {
             },
           ],
           meta,
-        }
+        },
       );
 
       expect(contents[0].payload).toEqual({

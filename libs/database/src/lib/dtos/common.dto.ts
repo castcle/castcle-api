@@ -73,7 +73,6 @@ export enum AcceptPlatform {
 }
 
 export enum CastcleQueueAction {
-  Deleting = 'deleting',
   UpdateProfile = 'updateProfile',
 }
 

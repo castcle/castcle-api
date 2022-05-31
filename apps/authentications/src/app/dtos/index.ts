@@ -20,15 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { OtpObjective } from '@castcle-api/database';
 import {
   AcceptPlatform,
   PageResponseDto,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
-import {
-  AccountAuthenIdType,
-  OtpObjective,
-} from '@castcle-api/database/schemas';
+import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -149,7 +148,7 @@ export class SuggestCastcleIdResponse {
 
 export class ChangePasswordBody {
   @ApiProperty()
-  @IsEnum([OtpObjective.ChangePassword, OtpObjective.ForgotPassword])
+  @IsEnum([OtpObjective.CHANGE_PASSWORD, OtpObjective.FORGOT_PASSWORD])
   objective: OtpObjective;
 
   @ApiProperty()
@@ -165,7 +164,7 @@ export class ChangePasswordBody {
 
 export class VerificationPasswordBody {
   @ApiProperty()
-  @IsEnum([OtpObjective.ChangePassword])
+  @IsEnum([OtpObjective.CHANGE_PASSWORD])
   objective: OtpObjective;
 
   @ApiProperty()
@@ -233,7 +232,7 @@ export class RequestOtpDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  channel: string;
+  channel: TwilioChannel;
 
   @ApiProperty()
   @IsNotEmptyObject()

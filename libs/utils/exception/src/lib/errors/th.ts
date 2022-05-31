@@ -22,6 +22,11 @@
  */
 
 export const ThErrors = {
+  '0000': {
+    statusCode: '500',
+    code: '0000',
+    message: 'Sorry, Something went wrong. Please try again',
+  },
   '1001': {
     statusCode: '404',
     code: '1001',

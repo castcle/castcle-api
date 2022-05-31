@@ -31,6 +31,7 @@ import {
   DataService,
   EngagementType,
   HashtagService,
+  KeywordType,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -45,18 +46,20 @@ import {
 import {
   CommentParam,
   ContentType,
+  GetContentDto,
+  GetContentQuery,
+  GetSourceContentParam,
   GetUserParam,
   NotificationType,
-  GetContentDto,
+  QuoteCastDto,
   ReplyCommentParam,
   ShortPayload,
   UnlikeCommentCastParam,
-  GetSourceContentParam,
 } from '@castcle-api/database/dtos';
 import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
 import { Comment, Content } from '@castcle-api/database/schemas';
 import { Downloader } from '@castcle-api/utils/aws';
-import { FacebookClient } from '@castcle-api/utils/clients';
+import { FacebookClient, Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -105,7 +108,6 @@ describe('UsersControllerV2', () => {
       ],
       controllers: [UsersControllerV2],
       providers: [
-        { provide: DataService, useValue: {} },
         UserServiceV2,
         AuthenticationService,
         ContentService,
@@ -125,6 +127,8 @@ describe('UsersControllerV2', () => {
         ContentServiceV2,
         NotificationServiceV2,
         Repository,
+        { provide: Mailer, useValue: {} },
+        { provide: DataService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -171,14 +175,14 @@ describe('UsersControllerV2', () => {
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await (service as any).userModel.deleteMany({});
     });
     it('createComment() should be able to create a comment content', async () => {
       const user = mocksUsers[1].user;
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       comment = await appController.createComment(
         authorizer,
@@ -186,7 +190,7 @@ describe('UsersControllerV2', () => {
           message: 'hello',
           contentId: content._id,
         },
-        { userId: user.id } as GetUserParam
+        { userId: user.id } as GetUserParam,
       );
 
       expect(comment.payload).toBeDefined();
@@ -198,7 +202,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       await expect(
         appController.createComment(
@@ -207,8 +211,8 @@ describe('UsersControllerV2', () => {
             message: 'hello',
             contentId: '624a7c01df5d0069d04655da',
           },
-          { userId: user.id } as GetUserParam
-        )
+          { userId: user.id } as GetUserParam,
+        ),
       ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
     });
 
@@ -217,7 +221,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       const updateComment = await appController.updateComment(
         authorizer,
@@ -225,7 +229,7 @@ describe('UsersControllerV2', () => {
         {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
-        } as CommentParam
+        } as CommentParam,
       );
       expect(updateComment.payload).toBeDefined();
     });
@@ -235,13 +239,13 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       await expect(
         appController.updateComment(authorizer, { message: 'zup edit' }, {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
-        } as CommentParam)
+        } as CommentParam),
       ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
     });
 
@@ -250,7 +254,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       replyComment = await appController.replyComment(
         authorizer,
@@ -260,7 +264,7 @@ describe('UsersControllerV2', () => {
         {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
-        } as CommentParam
+        } as CommentParam,
       );
 
       expect(replyComment.payload).toBeDefined();
@@ -272,13 +276,13 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       await expect(
         appController.deleteComment(authorizer, {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
-        } as CommentParam)
+        } as CommentParam),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -287,18 +291,18 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       await appController.deleteComment(authorizer, {
         userId: user.displayId,
         sourceCommentId: comment.payload.id,
       } as CommentParam);
       const resultComment = await contentService.getCommentById(
-        comment.payload.id
+        comment.payload.id,
       );
 
       const resultReply = await contentService.getCommentById(
-        replyComment.payload.id
+        replyComment.payload.id,
       );
       expect(resultComment).toBeNull();
       expect(resultReply).toBeNull();
@@ -328,7 +332,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       comment = await appController.createComment(
         authorizer,
@@ -336,12 +340,12 @@ describe('UsersControllerV2', () => {
           message: 'hello',
           contentId: content._id,
         },
-        { userId: user.id } as GetUserParam
+        { userId: user.id } as GetUserParam,
       );
     });
 
     afterAll(async () => {
-      await service._userModel.deleteMany({});
+      await (service as any).userModel.deleteMany({});
     });
 
     it('replyComment() should be able to reply a comment', async () => {
@@ -349,7 +353,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       replyComment = await appController.replyComment(
         authorizer,
@@ -359,7 +363,7 @@ describe('UsersControllerV2', () => {
         {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
-        } as CommentParam
+        } as CommentParam,
       );
 
       expect(replyComment.payload).toBeDefined();
@@ -371,7 +375,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       await expect(
         appController.replyComment(
@@ -382,8 +386,8 @@ describe('UsersControllerV2', () => {
           {
             userId: user.displayId,
             sourceCommentId: '624a7c01df5d0069d04655da',
-          } as CommentParam
-        )
+          } as CommentParam,
+        ),
       ).rejects.toEqual(CastcleException.CONTENT_NOT_FOUND);
     });
 
@@ -392,7 +396,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       const updateReplyComment = await appController.updateReplyComment(
         authorizer,
@@ -401,7 +405,7 @@ describe('UsersControllerV2', () => {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
-        } as ReplyCommentParam
+        } as ReplyCommentParam,
       );
       expect(updateReplyComment.payload).toBeDefined();
     });
@@ -411,14 +415,14 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       await expect(
         appController.updateReplyComment(authorizer, { message: 'zup edit' }, {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
-        } as ReplyCommentParam)
+        } as ReplyCommentParam),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -427,14 +431,14 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[1].account,
         user,
-        mocksUsers[1].credential
+        mocksUsers[1].credential,
       );
       await expect(
         appController.deleteReplyComment(authorizer, {
           userId: user.displayId,
           sourceCommentId: comment.payload.id,
           replyCommentId: replyComment.payload.id,
-        } as ReplyCommentParam)
+        } as ReplyCommentParam),
       ).rejects.toEqual(CastcleException.FORBIDDEN);
     });
 
@@ -443,7 +447,7 @@ describe('UsersControllerV2', () => {
       const authorizer = new Authorizer(
         mocksUsers[2].account,
         user,
-        mocksUsers[2].credential
+        mocksUsers[2].credential,
       );
       await appController.deleteReplyComment(authorizer, {
         userId: user.displayId,
@@ -451,11 +455,11 @@ describe('UsersControllerV2', () => {
         replyCommentId: replyComment.payload.id,
       } as ReplyCommentParam);
       const resultComment = await contentService.getCommentById(
-        comment.payload.id
+        comment.payload.id,
       );
 
       const resultReply = await contentService.getCommentById(
-        replyComment.payload.id
+        replyComment.payload.id,
       );
       expect(resultComment).toBeDefined();
       expect(resultReply).toBeNull();
@@ -493,7 +497,7 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[1].account,
           mocksUsers[1].user,
-          mocksUsers[1].credential
+          mocksUsers[1].credential,
         );
         await appController.likeCast(authorizer, { contentId: content._id }, {
           userId: mocksUsers[1].user._id,
@@ -519,14 +523,14 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[2].account,
           mocksUsers[2].user,
-          mocksUsers[2].credential
+          mocksUsers[2].credential,
         );
         await appController.likeCommentCast(
           authorizer,
           { commentId: comment._id },
           {
             userId: mocksUsers[2].user._id,
-          } as GetUserParam
+          } as GetUserParam,
         );
 
         const engagement = await contentService._engagementModel.findOne({
@@ -546,7 +550,7 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[3].account,
           mocksUsers[3].user,
-          mocksUsers[3].credential
+          mocksUsers[3].credential,
         );
 
         await appController.likeCommentCast(
@@ -554,7 +558,7 @@ describe('UsersControllerV2', () => {
           { commentId: reply._id },
           {
             userId: mocksUsers[3].user._id,
-          } as GetUserParam
+          } as GetUserParam,
         );
 
         const engagement = await contentService._engagementModel.findOne({
@@ -610,7 +614,7 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[1].account,
           mocksUsers[1].user,
-          mocksUsers[1].credential
+          mocksUsers[1].credential,
         );
         await appController.unlikeCast(authorizer, {
           userId: mocksUsers[1].user._id,
@@ -633,7 +637,7 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[2].account,
           mocksUsers[2].user,
-          mocksUsers[2].credential
+          mocksUsers[2].credential,
         );
         await appController.unlikeCommentCast(authorizer, {
           userId: mocksUsers[2].user._id,
@@ -654,7 +658,7 @@ describe('UsersControllerV2', () => {
         const authorizer = new Authorizer(
           mocksUsers[3].account,
           mocksUsers[3].user,
-          mocksUsers[3].credential
+          mocksUsers[3].credential,
         );
         await appController.unlikeCommentCast(authorizer, {
           userId: mocksUsers[3].user._id,
@@ -672,14 +676,30 @@ describe('UsersControllerV2', () => {
         expect(engagement).toBeNull();
       });
     });
+  });
+  describe('#recast', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
 
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
     describe('#recast', () => {
       describe('#recastContent()', () => {
         it('should recast is correct.', async () => {
           const authorizer = new Authorizer(
             mocksUsers[1].account,
             mocksUsers[1].user,
-            mocksUsers[1].credential
+            mocksUsers[1].credential,
           );
           const recast = await appController.recastContent(
             authorizer,
@@ -688,7 +708,7 @@ describe('UsersControllerV2', () => {
             } as GetContentDto,
             {
               userId: mocksUsers[1].user._id,
-            } as GetUserParam
+            } as GetUserParam,
           );
 
           const engagement = await (
@@ -717,7 +737,7 @@ describe('UsersControllerV2', () => {
           const authorizer = new Authorizer(
             mocksUsers[2].account,
             mocksUsers[2].user,
-            mocksUsers[2].credential
+            mocksUsers[2].credential,
           );
           const recast = await appController.recastContent(
             authorizer,
@@ -726,18 +746,18 @@ describe('UsersControllerV2', () => {
             } as GetContentDto,
             {
               userId: mocksUsers[2].user._id,
-            } as GetUserParam
+            } as GetUserParam,
           );
 
           await appController.undoRecast(authorizer, {
             userId: mocksUsers[2].user._id,
-            sourceContentId: recast.payload.id,
+            sourceContentId: content._id,
           } as GetSourceContentParam);
 
           const findContent = await (
             service as any
           ).repositoryService.findContent({
-            _id: recast.payload.id,
+            originalPost: content._id,
             author: mocksUsers[2].user._id,
           });
 
@@ -745,10 +765,7 @@ describe('UsersControllerV2', () => {
             service as any
           ).repositoryService.findEngagement({
             user: mocksUsers[2].user._id,
-            targetRef: {
-              $ref: 'content',
-              $id: content._id,
-            },
+            itemId: recast.payload.id,
             type: EngagementType.Recast,
           });
 
@@ -756,6 +773,154 @@ describe('UsersControllerV2', () => {
           expect(engagement).toBeNull();
         });
       });
+    });
+  });
+
+  describe('#quoteContent()', () => {
+    let mocksUsers: MockUserDetail[];
+    let content: Content;
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const user = mocksUsers[0].user;
+      content = await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
+    it('should quote cast is correct.', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const quotecast = await appController.quoteContent(
+        authorizer,
+        {
+          contentId: content._id,
+          message: 'quote cast',
+        } as QuoteCastDto,
+        {
+          userId: mocksUsers[1].user._id,
+        } as GetUserParam,
+      );
+
+      const engagement = await (
+        service as any
+      ).repositoryService.findEngagement({
+        user: mocksUsers[1].user._id,
+        targetRef: {
+          $ref: 'content',
+          $id: content._id,
+        },
+        type: EngagementType.Quote,
+      });
+
+      expect(engagement.user).toEqual(mocksUsers[1].user._id);
+      expect(String(engagement.itemId)).toEqual(quotecast.payload.id);
+      expect(engagement.targetRef.oid).toEqual(content._id);
+      expect(engagement.type).toEqual(EngagementType.Quote);
+
+      expect(quotecast.payload.authorId).toEqual(mocksUsers[1].user._id);
+      expect(quotecast.payload.referencedCasts.id).toEqual(content._id);
+      expect(quotecast.includes.casts[0].id).toEqual(String(content._id));
+    });
+  });
+
+  describe('#getContents()', () => {
+    let mocksUsers: MockUserDetail[];
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(4, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const user = mocksUsers[0].user;
+      await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+      await contentService.createContentFromUser(user, {
+        payload: { message: 'hi v2' },
+        type: ContentType.Short,
+        castcleId: user.displayId,
+      });
+    });
+    it('should get cast is exists.', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const contentResp = await appController.getContents(
+        authorizer,
+        {
+          userId: mocksUsers[1].user._id,
+        } as GetUserParam,
+        { hasRelationshipExpansion: false } as GetContentQuery,
+      );
+
+      expect(contentResp.payload).toHaveLength(7);
+    });
+  });
+
+  describe('getUserByKeyword', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(20, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user by keyword', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const getUserByKeyword = await appController.getUserByKeyword(
+        authorizer,
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'mock-10',
+          },
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(1);
+    });
+
+    it('should get user by keyword is empty', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const getUserByKeyword = await appController.getUserByKeyword(
+        authorizer,
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'empty',
+          },
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(0);
     });
   });
 });

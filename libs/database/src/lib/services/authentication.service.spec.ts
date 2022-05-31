@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Environment } from '@castcle-api/environments';
+import { TwilioChannel } from '@castcle-api/utils/clients';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -33,8 +34,8 @@ import {
   MongooseForFeatures,
   UserService,
 } from '../database.module';
-import { EntityVisibility } from '../dtos/common.dto';
-import { QueueName } from '../models';
+import { EntityVisibility } from '../dtos';
+import { OtpObjective, QueueName } from '../models';
 import {
   Account,
   AccountActivation,
@@ -42,7 +43,6 @@ import {
   AccountAuthenIdType,
   Credential,
   Otp,
-  OtpObjective,
   User,
 } from '../schemas';
 import {
@@ -173,20 +173,20 @@ describe('Authentication Service', () => {
       it(`expire date should be in the next ${Environment.JWT_VERIFY_EXPIRES_IN} seconds`, () => {
         const now = new Date();
         const expectedExpireDate = new Date(
-          now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000
+          now.getTime() + Environment.JWT_VERIFY_EXPIRES_IN * 1000,
         );
 
         const result = service._generateEmailVerifyToken({
           id: 'randomid',
         });
         expect(result.verifyTokenExpireDate.getMinutes()).toEqual(
-          expectedExpireDate.getMinutes()
+          expectedExpireDate.getMinutes(),
         );
         expect(result.verifyTokenExpireDate.getHours()).toEqual(
-          expectedExpireDate.getHours()
+          expectedExpireDate.getHours(),
         );
         expect(result.verifyTokenExpireDate.getDay()).toEqual(
-          expectedExpireDate.getDay()
+          expectedExpireDate.getDay(),
         );
       });
     });
@@ -219,16 +219,16 @@ describe('Authentication Service', () => {
         expect(createAccountResult.accountDocument.createdAt).toBeDefined();
         //check credential
         expect(
-          createAccountResult.credentialDocument.accessToken
+          createAccountResult.credentialDocument.accessToken,
         ).toBeDefined();
         expect(
-          createAccountResult.credentialDocument.accessTokenExpireDate
+          createAccountResult.credentialDocument.accessTokenExpireDate,
         ).toBeDefined();
         expect(
-          createAccountResult.credentialDocument.refreshToken
+          createAccountResult.credentialDocument.refreshToken,
         ).toBeDefined();
         expect(
-          createAccountResult.credentialDocument.refreshTokenExpireDate
+          createAccountResult.credentialDocument.refreshTokenExpireDate,
         ).toBeDefined();
         expect(createAccountResult.credentialDocument.createdAt).toBeDefined();
         expect(createAccountResult.credentialDocument.updatedAt).toBeDefined();
@@ -239,13 +239,13 @@ describe('Authentication Service', () => {
       it('should contain all valid tokens', () => {
         console.log(createAccountResult.credentialDocument.account);
         expect(
-          createAccountResult.credentialDocument.account.visibility
+          createAccountResult.credentialDocument.account.visibility,
         ).toEqual(EntityVisibility.Publish);
         expect(
-          createAccountResult.credentialDocument.isAccessTokenValid()
+          createAccountResult.credentialDocument.isAccessTokenValid(),
         ).toBe(true);
         expect(
-          createAccountResult.credentialDocument.isRefreshTokenValid()
+          createAccountResult.credentialDocument.isRefreshTokenValid(),
         ).toBe(true);
         //}
       });
@@ -263,13 +263,13 @@ describe('Authentication Service', () => {
         expect(credentialFromAccessToken).toBeDefined();
         expect(
           await service.verifyAccessToken(
-            createAccountResult.credentialDocument.accessToken
-          )
+            createAccountResult.credentialDocument.accessToken,
+          ),
         ).toEqual(credentialFromAccessToken.isAccessTokenValid());
         expect(
           await service.verifyAccessToken(
-            createAccountResult.credentialDocument.accessToken
-          )
+            createAccountResult.credentialDocument.accessToken,
+          ),
         ).toBe(true);
       });
       it('should return false if credential not found ', async () => {
@@ -285,15 +285,15 @@ describe('Authentication Service', () => {
     describe('#getGuestCredentialFromDeviceUUID', () => {
       it('should return credential document when call a function from newly create Account device UUID', async () => {
         const resultCredential = await service.getGuestCredentialFromDeviceUUID(
-          newDeviceUUID
+          newDeviceUUID,
         );
         expect(resultCredential._id).toEqual(
-          createAccountResult.credentialDocument._id
+          createAccountResult.credentialDocument._id,
         );
       });
       it('should return null if there is not found deviceUUID', async () => {
         const resultCredential = await service.getGuestCredentialFromDeviceUUID(
-          'NOPEEE'
+          'NOPEEE',
         );
         expect(resultCredential).toBeNull();
       });
@@ -302,10 +302,10 @@ describe('Authentication Service', () => {
     describe('#getCredentialFromRefreshToken()', () => {
       it('should return credential with newly create Account refresh token', async () => {
         const resultCredential = await service.getCredentialFromRefreshToken(
-          createAccountResult.credentialDocument.refreshToken
+          createAccountResult.credentialDocument.refreshToken,
         );
         expect(resultCredential._id).toEqual(
-          createAccountResult.credentialDocument._id
+          createAccountResult.credentialDocument._id,
         );
       });
     });
@@ -313,10 +313,10 @@ describe('Authentication Service', () => {
     describe('#getCredentialFromAccessToken()', () => {
       it('should return credential with newly create Account refresh token', async () => {
         const resultCredential = await service.getCredentialFromAccessToken(
-          createAccountResult.credentialDocument.accessToken
+          createAccountResult.credentialDocument.accessToken,
         );
         expect(resultCredential._id).toEqual(
-          createAccountResult.credentialDocument._id
+          createAccountResult.credentialDocument._id,
         );
       });
     });
@@ -337,7 +337,7 @@ describe('Authentication Service', () => {
             displayName: 'People',
             email: signupRequirements.email,
             password: signupRequirements.password,
-          }
+          },
         );
       });
       it('should create an accountActivation', () => {
@@ -369,7 +369,7 @@ describe('Authentication Service', () => {
       });
       it('should found an account that have email match', async () => {
         const newlyInsertEmail = `${Math.ceil(
-          Math.random() * 1000
+          Math.random() * 1000,
         )}@testinsert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
@@ -389,7 +389,7 @@ describe('Authentication Service', () => {
       it('should create account activation with verification token', async () => {
         const accountActivation = await service.createAccountActivation(
           createAccountResult.accountDocument,
-          'email'
+          'email',
         );
         expect(accountActivation).toBeDefined();
         expect(accountActivation.verifyToken).toBeDefined();
@@ -415,10 +415,10 @@ describe('Authentication Service', () => {
             displayName: 'Dudeee',
             email: signupRequirements.email,
             password: signupRequirements.password,
-          }
+          },
         );
         afterSaveAccount = await service._accountModel.findById(
-          createAccountResult.accountDocument._id
+          createAccountResult.accountDocument._id,
         );
         afterSaveUser = await userService.getByIdOrCastcleId('dudethisisnew');
       });
@@ -429,7 +429,7 @@ describe('Authentication Service', () => {
       });
       it('should encrypt the password of the new account', () => {
         expect(afterSaveAccount.password !== signupRequirements.password).toBe(
-          true
+          true,
         );
       });
       it('should create a user ', () => {
@@ -449,7 +449,7 @@ describe('Authentication Service', () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
             id: 'randomId',
-          }
+          },
         );
         accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
@@ -466,7 +466,7 @@ describe('Authentication Service', () => {
       it('should change status of account from isGuest to false and have activationDate', async () => {
         expect(createAccountResult.accountDocument.isGuest).toBe(false);
         expect(
-          createAccountResult.accountDocument.activateDate
+          createAccountResult.accountDocument.activateDate,
         ).not.toBeDefined();
         expect(afterVerifyAccount.activateDate).toBeDefined();
         const postCredential = await service._credentialModel
@@ -487,7 +487,7 @@ describe('Authentication Service', () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {
             id: 'randomId',
-          }
+          },
         );
         const accountActivation = await new service._accountActivationModel({
           account: createAccountResult.accountDocument._id,
@@ -497,7 +497,7 @@ describe('Authentication Service', () => {
         }).save();
         expect(accountActivation.revocationDate).not.toBeDefined();
         const newActivation = await service.revokeAccountActivation(
-          accountActivation
+          accountActivation,
         );
         expect(newActivation.verifyToken).toBeDefined();
         expect(tokenResult.verifyToken).not.toEqual(newActivation.verifyToken);
@@ -516,11 +516,11 @@ describe('Authentication Service', () => {
           languagesPreferences: ['en', 'en'],
         });
         expect(randomAcc.accountDocument._id).not.toEqual(
-          createAccountResult.accountDocument._id
+          createAccountResult.accountDocument._id,
         );
         const newCredential = await service.linkCredentialToAccount(
           randomAcc.credentialDocument,
-          createAccountResult.accountDocument
+          createAccountResult.accountDocument,
         );
         expect(newCredential._id).toEqual(randomAcc.credentialDocument._id);
         expect(newCredential.account).toEqual({
@@ -575,30 +575,30 @@ describe('Authentication Service', () => {
         });
         signupResult = await service.signupBySocial(
           mockAccountResult.accountDocument,
-          signupRequirements
+          signupRequirements,
         );
       });
       it('should create user and authen social correctly', async () => {
         const afterSaveUser = await service.getUserFromAccountId(
-          mockAccountResult.credentialDocument
+          mockAccountResult.credentialDocument,
         );
         const accountSocial = await service.getAccountAuthenIdFromSocialId(
           signupRequirements.socialId,
-          signupRequirements.provider
+          signupRequirements.provider,
         );
 
         expect(signupResult).toBeDefined();
         expect(signupRequirements.displayName).toEqual(
-          afterSaveUser[0].displayName
+          afterSaveUser[0].displayName,
         );
         expect('dudeeemock').toEqual(afterSaveUser[0].displayId);
         expect(signupRequirements.provider).toEqual(accountSocial.type);
         expect(signupRequirements.socialId).toEqual(accountSocial.socialId);
         expect(signupRequirements.avatar.original).toEqual(
-          afterSaveUser[0].profile.images.avatar.original
+          afterSaveUser[0].profile.images.avatar.original,
         );
         expect(signupRequirements.displayName).toEqual(
-          afterSaveUser[0].displayName
+          afterSaveUser[0].displayName,
         );
         expect(signupRequirements.socialToken).toEqual('testtoken');
       });
@@ -612,12 +612,12 @@ describe('Authentication Service', () => {
           AccountAuthenIdType.Twitter,
           socialId,
           'testtoken',
-          'secret'
+          'secret',
         );
 
         const accountSocial = await service.getAccountAuthenIdFromSocialId(
           socialId,
-          AccountAuthenIdType.Twitter
+          AccountAuthenIdType.Twitter,
         );
 
         expect(result).toBeDefined();
@@ -635,16 +635,16 @@ describe('Authentication Service', () => {
           AccountAuthenIdType.Facebook,
           fbsocialId,
           'testtoken',
-          ''
+          '',
         );
 
         const accountSocialTw = await service.getAccountAuthenIdFromSocialId(
           twsocialId,
-          AccountAuthenIdType.Twitter
+          AccountAuthenIdType.Twitter,
         );
         const accountSocialFb = await service.getAccountAuthenIdFromSocialId(
           fbsocialId,
-          AccountAuthenIdType.Facebook
+          AccountAuthenIdType.Facebook,
         );
 
         expect(accountSocialTw).toBeDefined();
@@ -662,7 +662,7 @@ describe('Authentication Service', () => {
       });
       it('should found an account that have email match', async () => {
         const newlyInsertEmail = `${Math.ceil(
-          Math.random() * 1000
+          Math.random() * 1000,
         )}@testinsert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
@@ -691,7 +691,7 @@ describe('Authentication Service', () => {
 
       beforeAll(async () => {
         const newlyInsertEmail = `${Math.ceil(
-          Math.random() * 1000
+          Math.random() * 1000,
         )}@test-insert.com`;
         const newAccount = new service._accountModel({
           email: newlyInsertEmail,
@@ -708,10 +708,10 @@ describe('Authentication Service', () => {
         account = await newAccount.save();
         otp = await service.generateOtp(
           account,
-          OtpObjective.ForgotPassword,
+          OtpObjective.FORGOT_PASSWORD,
           account.id,
-          'email',
-          false
+          TwilioChannel.EMAIL,
+          false,
         );
       });
 
@@ -728,7 +728,7 @@ describe('Authentication Service', () => {
       it('should found otp document that match with request id and objective', async () => {
         const result = await service.getAllOtpFromRequestIdObjective(
           account.id,
-          OtpObjective.ForgotPassword
+          OtpObjective.FORGOT_PASSWORD,
         );
         expect(result).toBeDefined();
       });
@@ -736,7 +736,7 @@ describe('Authentication Service', () => {
       it('should found otp document that match with request id and ref code', async () => {
         const result = await service.getOtpFromRequestIdRefCode(
           account.id,
-          otp.refCode
+          otp.refCode,
         );
         expect(result).toBeDefined();
       });
@@ -756,7 +756,7 @@ describe('Authentication Service', () => {
         const result = await service.changePassword(
           account,
           otp,
-          'test1234@!gbn'
+          'test1234@!gbn',
         );
         expect(result).toBeDefined();
       });

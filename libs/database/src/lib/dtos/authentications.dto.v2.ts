@@ -21,14 +21,17 @@
  * or have any questions.
  */
 
-import { CastcleRegExp } from '@castcle-api/utils/commons';
+import { CastcleRegExp, RemoveLeadingZero } from '@castcle-api/utils/commons';
 import {
   IsEmail,
+  IsEnum,
+  IsMobilePhone,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
+import { OtpObjective } from '../models';
 
 export class LoginWithEmailDto {
   @IsEmail()
@@ -58,4 +61,100 @@ export class RegisterWithEmailDto {
   @IsOptional()
   @IsString()
   referral?: string;
+}
+
+export class RequestOtpByEmailDto {
+  @IsEnum([OtpObjective.FORGOT_PASSWORD, OtpObjective.MERGE_ACCOUNT])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
+}
+
+export class RequestOtpForChangingPasswordDto {
+  @IsEnum([OtpObjective.CHANGE_PASSWORD])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  password: string;
+}
+
+export class RequestOtpByMobileDto {
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  @RemoveLeadingZero()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  recaptchaToken?: string;
+}
+
+export class VerifyOtpByEmailDto {
+  @IsEnum([OtpObjective.FORGOT_PASSWORD, OtpObjective.MERGE_ACCOUNT])
+  objective: OtpObjective;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class VerifyOtpByMobileDto {
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
+  objective: OtpObjective;
+
+  @IsMobilePhone()
+  @RemoveLeadingZero()
+  mobileNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  countryCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class ChangePasswordDto {
+  @IsEnum([OtpObjective.CHANGE_PASSWORD, OtpObjective.FORGOT_PASSWORD])
+  objective: OtpObjective;
+
+  @IsString()
+  @IsNotEmpty()
+  refCode: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @Matches(CastcleRegExp.PASSWORD_PATTERN)
+  newPassword: string;
 }

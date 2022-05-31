@@ -21,50 +21,27 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
-import { Environment } from '@castcle-api/environments';
-import { HealthyModule } from '@castcle-api/healthy';
+import { CastcleHealthyModule } from '@castcle-api/healthy';
+import { CastcleThrottlerModule } from '@castcle-api/throttler';
+import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsAwsModule } from '@castcle-api/utils/aws';
 import { UtilsClientsModule } from '@castcle-api/utils/clients';
-import { CastcleThrottlerGuard } from '@castcle-api/utils/exception';
-import { AwsXRayInterceptor } from '@castcle-api/utils/interceptors';
-import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { AuthenticationController } from './controllers/app.controller';
 import { AuthenticationControllerV2 } from './controllers/authentications.controller.v2';
 
 @Module({
   imports: [
+    CastcleHealthyModule.register({ pathPrefix: 'authentications' }),
+    CastcleThrottlerModule,
+    CastcleTracingModule.forRoot({ serviceName: 'authentications' }),
     DatabaseModule,
-    CaslModule,
-    HealthyModule,
-    RouterModule.register([{ path: 'authentications', module: HealthyModule }]),
     UtilsClientsModule,
     UtilsAwsModule,
-    ThrottlerModule.forRoot({
-      ttl: Environment.RATE_LIMIT_TTL,
-      limit: Environment.RATE_LIMIT_LIMIT,
-    }),
-    TracingModule.forRoot({
-      serviceName: 'authentications',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
   ],
   controllers: [AuthenticationController, AuthenticationControllerV2],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: CastcleThrottlerGuard,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -131,7 +131,7 @@ export class UserService {
     public _userModel: Model<User>,
     @InjectQueue(QueueName.USER)
     private userQueue: Queue<UserMessage>,
-    private contentService: ContentService
+    private contentService: ContentService,
   ) {}
 
   getUserFromCredential = (credential: Credential) =>
@@ -167,7 +167,7 @@ export class UserService {
    */
   getBalance = async (user: User) => {
     const [balance] = await this.transactionModel.aggregate<GetBalanceResponse>(
-      pipelineOfGetBalance(String(user.ownerAccount))
+      pipelineOfGetBalance(String(user.ownerAccount)),
     );
 
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
@@ -175,7 +175,7 @@ export class UserService {
 
   getUserFromAccountId = async (
     accountId: string,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) => {
     const account = await this._accountModel.findById(accountId).exec();
     const user = await this._userModel
@@ -205,7 +205,7 @@ export class UserService {
             return await this._socialSyncModel
               .find({ 'author.id': p.id })
               .exec();
-          })
+          }),
         )
       ).flat();
     }
@@ -244,7 +244,7 @@ export class UserService {
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) {
     if (!hasRelationshipExpansion && !userFields) {
       return Promise.all(
@@ -252,7 +252,7 @@ export class UserService {
           return user.type === UserType.PAGE
             ? user.toPageResponse()
             : await user.toUserResponse();
-        })
+        }),
       );
     }
 
@@ -284,7 +284,7 @@ export class UserService {
                 undefined,
                 undefined,
                 syncSocial,
-                content?.total
+                content?.total,
               )
             : await u.toUserResponse({ casts: content?.total });
 
@@ -292,7 +292,7 @@ export class UserService {
           ? relationships.find(
               ({ followedUser, user }) =>
                 String(user) === String(u.id) &&
-                String(followedUser) === String(viewer?.id)
+                String(followedUser) === String(viewer?.id),
             )
           : undefined;
 
@@ -300,7 +300,7 @@ export class UserService {
           ? relationships.find(
               ({ followedUser, user }) =>
                 String(followedUser) === String(u.id) &&
-                String(user) === String(viewer?.id)
+                String(user) === String(viewer?.id),
             )
           : undefined;
 
@@ -309,7 +309,7 @@ export class UserService {
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
-      })
+      }),
     );
   }
 
@@ -318,7 +318,7 @@ export class UserService {
     id: string,
     type?: UserType,
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) => {
     const targetUser = await this.getByIdOrCastcleId(id, type);
 
@@ -328,7 +328,7 @@ export class UserService {
       user,
       [targetUser],
       hasRelationshipExpansion,
-      userFields
+      userFields,
     );
 
     return userResponse;
@@ -342,7 +342,7 @@ export class UserService {
       maxResults,
       sinceId,
       untilId,
-    }: GetSearchUsersDto
+    }: GetSearchUsersDto,
   ) {
     const queryOptions = { ...DEFAULT_QUERY_OPTIONS, limit: maxResults };
     const query = createFilterQuery<User>(sinceId, untilId);
@@ -355,13 +355,13 @@ export class UserService {
       user,
       query,
       queryOptions,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
   async getBlockedUsers(
     user: User,
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery
+    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     const query: FilterQuery<Relationship> = {};
 
@@ -387,7 +387,7 @@ export class UserService {
       user,
       { _id: userIds },
       {},
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   }
 
@@ -396,7 +396,7 @@ export class UserService {
     query: FilterQuery<User>,
     queryOptions?: CastcleQueryOptions,
     hasRelationshipExpansion = false,
-    userFields?: UserField[]
+    userFields?: UserField[],
   ) => {
     const {
       items: targetUsers,
@@ -408,7 +408,7 @@ export class UserService {
       viewer,
       targetUsers,
       hasRelationshipExpansion,
-      userFields
+      userFields,
     );
 
     return { pagination, users, meta };
@@ -443,7 +443,7 @@ export class UserService {
 
   updateUser = (
     user: User,
-    { images, links, contact, ...updateUserDto }: UpdateModelUserDto
+    { images, links, contact, ...updateUserDto }: UpdateModelUserDto,
   ) => {
     if (!user.profile) user.profile = {};
     if (updateUserDto.castcleId) user.displayId = updateUserDto.castcleId;
@@ -490,7 +490,7 @@ export class UserService {
       },
       {
         removeOnComplete: true,
-      }
+      },
     );
 
     return user.save();
@@ -520,7 +520,7 @@ export class UserService {
 
   createPageFromCredential = async (
     credential: Credential,
-    pageDto: PageDto
+    pageDto: PageDto,
   ) => {
     const user = await this.getUserFromCredential(credential);
     return this.createPageFromUser(user, pageDto);
@@ -543,7 +543,7 @@ export class UserService {
    */
   getAllByCriteria = async (
     query: FilterQuery<User>,
-    queryOptions?: CastcleQueryOptions
+    queryOptions?: CastcleQueryOptions,
   ) => {
     const filterQuery = { ...query, visibility: EntityVisibility.Publish };
     const total = await this._userModel.countDocuments(filterQuery);
@@ -587,7 +587,7 @@ export class UserService {
     //.limit(queryOptions.limit); TODO !!! hack
     const pagination = createPagination(
       queryOptions,
-      await this._userModel.countDocuments(filter)
+      await this._userModel.countDocuments(filter),
     );
     let items: User[];
     if (queryOptions.sortBy.type === 'desc')
@@ -618,7 +618,7 @@ export class UserService {
     targetUser: User,
     followQuery: PaginationQuery,
     sortBy?: SortBy,
-    userType?: string
+    userType?: string,
   ) => {
     this.logger.log('Build followers query.');
     const params: GetUserRelationParams = {
@@ -633,27 +633,27 @@ export class UserService {
     const pipelineCount = pipelineOfUserRelationFollowersCount(params);
     this.logger.log(
       JSON.stringify(pipeline),
-      ' pipelineOfUserRelationFollowers:aggregate'
+      ' pipelineOfUserRelationFollowers:aggregate',
     );
     this.logger.log(
       JSON.stringify(pipelineCount),
-      ' pipelineOfUserRelationFollowersCount:aggregate'
+      ' pipelineOfUserRelationFollowersCount:aggregate',
     );
     const userRelation =
       await this._relationshipModel.aggregate<GetUserRelationResponse>(
-        pipeline
+        pipeline,
       );
 
     const userRelationCount =
       await this._relationshipModel.aggregate<GetUserRelationResponseCount>(
-        pipelineCount
+        pipelineCount,
       );
 
     return this.buildRelationResponse(
       userRelation,
       userRelationCount,
       followQuery,
-      viewer
+      viewer,
     );
   };
 
@@ -662,7 +662,7 @@ export class UserService {
     targetUser: User,
     followQuery: PaginationQuery,
     sortBy?: SortBy,
-    userType?: string
+    userType?: string,
   ) => {
     this.logger.log('Build following query.');
     const params: GetUserRelationParams = {
@@ -677,27 +677,27 @@ export class UserService {
     const pipelineCount = pipelineOfUserRelationFollowingCount(params);
     this.logger.log(
       JSON.stringify(pipeline),
-      ' pipelineOfUserRelationFollowing:aggregate'
+      ' pipelineOfUserRelationFollowing:aggregate',
     );
     this.logger.log(
       JSON.stringify(pipelineCount),
-      ' pipelineOfUserRelationFollowingCount:aggregate'
+      ' pipelineOfUserRelationFollowingCount:aggregate',
     );
     const userRelation =
       await this._relationshipModel.aggregate<GetUserRelationResponse>(
-        pipeline
+        pipeline,
       );
 
     const userRelationCount =
       await this._relationshipModel.aggregate<GetUserRelationResponseCount>(
-        pipelineCount
+        pipelineCount,
       );
 
     return this.buildRelationResponse(
       userRelation,
       userRelationCount,
       followQuery,
-      viewer
+      viewer,
     );
   };
 
@@ -705,7 +705,7 @@ export class UserService {
     userRelation: GetUserRelationResponse[],
     userRelationCount: GetUserRelationResponseCount[],
     followQuery: PaginationQuery,
-    viewer: User
+    viewer: User,
   ) {
     const followingUsersId = userRelation.flatMap((u) =>
       u.user_relation.flatMap((r) => {
@@ -713,11 +713,11 @@ export class UserService {
           userId: mongoose.Types.ObjectId(r._id),
           id: u._id,
         };
-      })
+      }),
     );
 
     const hasRelationship = followQuery.userFields?.includes(
-      UserField.Relationships
+      UserField.Relationships,
     );
 
     this.logger.log('get user from following list');
@@ -728,7 +728,7 @@ export class UserService {
         _id: { $in: followingUsersId.map((f) => f.userId) },
       },
       undefined,
-      hasRelationship
+      hasRelationship,
     );
 
     const resultTotal = userRelationCount[0]?.total ?? 0;
@@ -776,17 +776,7 @@ export class UserService {
 
       this.logger.log(
         JSON.stringify(deactivateResults),
-        `deactivate:success:account-${account._id}`
-      );
-
-      this.userQueue.add(
-        {
-          id: account,
-          action: CastcleQueueAction.Deleting,
-        },
-        {
-          removeOnComplete: true,
-        }
+        `deactivate:success:account-${account._id}`,
       );
     } catch (error: unknown) {
       this.logger.error(error, `deactivate:error:account-${account._id}`);
@@ -797,26 +787,23 @@ export class UserService {
   removeReferralCountParentAccountFromAccount = (account: Account) => {
     return this._accountModel.updateOne(
       { _id: account.referralBy },
-      { $inc: { referralCount: -1 } }
+      { $inc: { referralCount: -1 } },
     );
   };
 
   removeAllAccountAuthenIdsFromAccount = (account: Account) => {
-    return this._accountAuthenId.updateMany(
-      { account: account._id },
-      { visibility: EntityVisibility.Deleted }
-    );
+    return this._accountAuthenId.deleteMany({ account: account._id });
   };
 
   removeAllAccountActivationsFromAccount = async (account: Account) => {
     return await Promise.all([
       this.activationModel.updateMany(
         { account: account._id },
-        { visibility: EntityVisibility.Deleted }
+        { visibility: EntityVisibility.Deleted },
       ),
       this._accountModel.updateMany(
         { account: account._id },
-        { 'activations.$.visibility': EntityVisibility.Deleted }
+        { 'activations.$.visibility': EntityVisibility.Deleted },
       ),
     ]);
   };
@@ -824,14 +811,14 @@ export class UserService {
   removeAllAccountReferralFromAccount = (account: Account) => {
     return this._accountReferral.updateMany(
       { $or: [{ referrerAccount: account }, { referringAccount: account }] },
-      { visibility: EntityVisibility.Deleted }
+      { visibility: EntityVisibility.Deleted },
     );
   };
 
   removeAllCommentsFromUsers = (users: User[]) => {
     return this.commentModel.updateMany(
       { 'author._id': { $in: users.map((user) => user._id) } },
-      { visibility: EntityVisibility.Deleted }
+      { visibility: EntityVisibility.Deleted },
     );
   };
 
@@ -850,7 +837,7 @@ export class UserService {
     return Promise.all<UpdateWriteOpResult | Content>([
       this.hashtagModel.updateMany(
         { tag: { $in: hashtags }, score: { $gt: 0 } },
-        { $inc: { score: -1 } }
+        { $inc: { score: -1 } },
       ),
       ...$deletedContents,
     ]);
@@ -859,6 +846,7 @@ export class UserService {
   removeAllEngagementsFromUsers = async (users: User[]) => {
     const engagements = await this.engagementModel.find({
       user: { $in: users.map((user) => user._id) },
+      visibility: { $ne: EntityVisibility.Deleted },
     });
 
     const $deletedEngagements = engagements.map((engagement) => {
@@ -872,14 +860,11 @@ export class UserService {
     return Promise.all([
       this._accountModel.updateOne(
         { _id: account._id },
-        {
-          visibility: EntityVisibility.Deleted,
-          queueAction: CastcleQueueAction.Deleting,
-        }
+        { visibility: EntityVisibility.Deleted },
       ),
       this._userModel.updateMany(
         { ownerAccount: account._id },
-        { visibility: EntityVisibility.Deleted }
+        { visibility: EntityVisibility.Deleted },
       ),
     ]);
   };
@@ -889,17 +874,8 @@ export class UserService {
       {
         $or: [{ user: { $in: users } }, { followedUser: { $in: users } }],
       },
-      { visibility: EntityVisibility.Deleted }
+      { visibility: EntityVisibility.Deleted },
     );
-  };
-
-  /**
-   * Deactivate one account by id
-   * @param id
-   */
-  deactivateBackground = async (accountId: any) => {
-    const account = await this._accountModel.findById(accountId).exec();
-    await this.deactivate(account);
   };
 
   reactivate = async (user: User) => {
@@ -915,7 +891,7 @@ export class UserService {
 
     await this._accountModel.updateOne(
       { _id: user.ownerAccount },
-      { visibility: EntityVisibility.Publish }
+      { visibility: EntityVisibility.Publish },
     );
 
     return user.save();
@@ -934,7 +910,7 @@ export class UserService {
     keyword: string,
     queryOption: CastcleQueryOptions,
     hasRelationshipExpansion = false,
-    excludeUserId?: Types.ObjectId[]
+    excludeUserId?: Types.ObjectId[],
   ) => {
     const query = {
       displayId: { $regex: new RegExp('^' + keyword.toLowerCase(), 'i') },
@@ -950,7 +926,7 @@ export class UserService {
       user,
       query,
       queryOption,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
   };
 
@@ -966,7 +942,7 @@ export class UserService {
     user: User,
     keyword: string,
     queryOption: CastcleQueryOptions,
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
   ) => {
     const pipeline = pipelineOfUserRelationMentions({
       userId: user._id,
@@ -976,15 +952,15 @@ export class UserService {
 
     this.logger.log(
       JSON.stringify(pipeline),
-      ' getUserRelationSearch:aggregate'
+      ' getUserRelationSearch:aggregate',
     );
     const userRelation =
       await this._relationshipModel.aggregate<GetUserRelationResponse>(
-        pipeline
+        pipeline,
       );
 
     const followingUsersId = userRelation.flatMap((u) =>
-      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id))
+      u.user_relation.flatMap((r) => mongoose.Types.ObjectId(r._id)),
     );
 
     const query = {
@@ -996,7 +972,7 @@ export class UserService {
       user,
       query,
       queryOption,
-      hasRelationshipExpansion
+      hasRelationshipExpansion,
     );
     return {
       followingUserId: followingUsersId,
@@ -1021,7 +997,7 @@ export class UserService {
             },
             $set: { blocking: true },
           },
-          { upsert: true }
+          { upsert: true },
         )
         .exec(),
       this._relationshipModel
@@ -1037,7 +1013,7 @@ export class UserService {
             },
             $set: { blocked: true },
           },
-          { upsert: true }
+          { upsert: true },
         )
         .exec(),
     ]);
@@ -1054,7 +1030,7 @@ export class UserService {
             followedUser: unblockedUser._id,
             blocking: true,
           },
-          { $set: { blocking: false } }
+          { $set: { blocking: false } },
         )
         .exec(),
       this._relationshipModel
@@ -1064,7 +1040,7 @@ export class UserService {
             user: unblockedUser._id,
             blocked: true,
           },
-          { $set: { blocked: false } }
+          { $set: { blocked: false } },
         )
         .exec(),
     ]);
@@ -1089,7 +1065,7 @@ Message: ${message}`,
     user: User,
     accountId: string,
     countryCode: string,
-    mobileNumber: string
+    mobileNumber: string,
   ) => {
     const account = await this._accountModel.findById(accountId);
 
@@ -1111,7 +1087,7 @@ Message: ${message}`,
           preferences: {
             languages: languageCode,
           },
-        }
+        },
       )
       .exec();
   };
@@ -1119,7 +1095,7 @@ Message: ${message}`,
   getIncludesUsers = async (
     viewerAccount: Account,
     authors: Author[],
-    hasRelationshipExpansion = false
+    hasRelationshipExpansion = false,
   ) => {
     const viewer = await this._userModel.findOne({
       ownerAccount: viewerAccount._id,
@@ -1152,13 +1128,13 @@ Message: ${message}`,
       const authorRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(user) === String(author.id) &&
-          String(followedUser) === String(viewer?.id)
+          String(followedUser) === String(viewer?.id),
       );
 
       const getterRelationship = relationships.find(
         ({ followedUser, user }) =>
           String(followedUser) === String(author.id) &&
-          String(user) === String(viewer?.id)
+          String(user) === String(viewer?.id),
       );
 
       const blocked = Boolean(getterRelationship?.blocking);
@@ -1172,7 +1148,7 @@ Message: ${message}`,
   getRelationshipData = async (
     hasRelationshipExpansion: boolean,
     relationUserId: any[],
-    viewerId: string
+    viewerId: string,
   ) => {
     return hasRelationshipExpansion
       ? await this._relationshipModel.find({
@@ -1201,7 +1177,7 @@ Message: ${message}`,
     if (accountRef) {
       const userRef = this.getByIdOrCastcleId(
         accountRef.referrerDisplayId,
-        UserType.PEOPLE
+        UserType.PEOPLE,
       );
       this.logger.log('Success get referrer.');
       return userRef;
@@ -1215,7 +1191,7 @@ Message: ${message}`,
     accountId: Account,
     maxResults: number,
     sinceId?: string,
-    untilId?: string
+    untilId?: string,
   ) => {
     let filter: FilterQuery<AccountReferral> = {
       referrerAccount: accountId,
@@ -1240,9 +1216,9 @@ Message: ${message}`,
         result.push(
           await (
             await this.getUserFromAccountId(x.referringAccount._id)
-          ).user
-        )
-      )
+          ).user,
+        ),
+      ),
     );
     this.logger.log('Success get referee.');
 
@@ -1260,7 +1236,7 @@ Message: ${message}`,
    */
   async uploadUserInfo(
     body: UpdateUserDto,
-    accountId: string
+    accountId: string,
   ): Promise<UpdateModelUserDto> {
     this.logger.debug(`uploading info avatar-${accountId}`);
     this.logger.debug(body);

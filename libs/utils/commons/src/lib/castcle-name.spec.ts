@@ -27,7 +27,7 @@ describe('CastcleName', () => {
   describe('#convertToSlug()', () => {
     it('should remove all space and lower all character', () => {
       expect(CastcleName.convertToSlug('This Is Sparta')).toEqual(
-        'thisissparta'
+        'thisissparta',
       );
     });
   });
@@ -55,7 +55,7 @@ describe('CastcleName', () => {
       expect(CastcleName.isValidName('@Abcr3')).toEqual(false);
       expect(CastcleName.isValidName('abv')).toEqual(false);
       expect(CastcleName.isValidName('abcde6789101112131415169')).toEqual(
-        false
+        false,
       );
     });
   });

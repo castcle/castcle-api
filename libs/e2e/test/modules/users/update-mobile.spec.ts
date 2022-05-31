@@ -1,4 +1,4 @@
-import { OtpObjective } from '@castcle-api/database/schemas';
+import { OtpObjective } from '@castcle-api/database';
 import { HttpStatus } from '@nestjs/common';
 import { Response } from 'supertest';
 import { User } from '../../models';
@@ -48,7 +48,7 @@ export const testUsersUpdateMobile = () => {
       retry: 0,
       isVerify: true,
       expireDate: new Date(new Date().getTime() + 10_000),
-      reciever: tempUser.countryCode + tempUser.phone,
+      receiver: tempUser.countryCode + tempUser.phone,
     }).save();
 
     updateMobileResponse = await UsersRequest.updateMobile()
@@ -67,7 +67,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .expect(({ body }) => {
         expect(body.message).toEqual(
-          'Sorry, Something went wrong. Please try again.'
+          'Sorry, Something went wrong. Please try again.',
         );
       })
       .expect(HttpStatus.UNAUTHORIZED);
@@ -83,8 +83,8 @@ export const testUsersUpdateMobile = () => {
             'objective must be a valid enum value',
             'refCode must be a string',
             'countryCode must be a string',
-            'mobileNumber must be a string',
-          ].sort()
+            'mobileNumber must be a phone number',
+          ].sort(),
         );
       })
       .expect(HttpStatus.BAD_REQUEST);
@@ -94,14 +94,17 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(guest.guestToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.ForgotPassword,
+        objective: OtpObjective.FORGOT_PASSWORD,
         refCode: 'ref-code',
         countryCode: 'country-code',
         mobileNumber: 'mobile-number',
       })
       .expect(({ body }) => {
         expect(body.message.sort()).toEqual(
-          ['objective must be a valid enum value'].sort()
+          [
+            'objective must be a valid enum value',
+            'mobileNumber must be a phone number',
+          ].sort(),
         );
       })
       .expect(HttpStatus.BAD_REQUEST);
@@ -111,14 +114,14 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(guest.guestToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.VerifyMobile,
+        objective: OtpObjective.VERIFY_MOBILE,
         refCode: 'ref-code',
         countryCode: 'country-code',
-        mobileNumber: 'mobile-number',
+        mobileNumber: '0801231234',
       })
       .expect(({ body }) => {
         expect(body.message).toEqual(
-          'Can not access the data. Please try again.'
+          'Can not access the data. Please try again.',
         );
       })
       .expect(HttpStatus.FORBIDDEN);
@@ -143,7 +146,7 @@ export const testUsersUpdateMobile = () => {
     return UsersRequest.updateMobile()
       .auth(tempUser.accessToken, { type: 'bearer' })
       .send({
-        objective: OtpObjective.VerifyMobile,
+        objective: OtpObjective.VERIFY_MOBILE,
         refCode: 'invalid-ref-code',
         countryCode: tempUser.countryCode,
         mobileNumber: tempUser.randomPhone(),

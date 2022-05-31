@@ -21,16 +21,21 @@
  * or have any questions.
  */
 
+import { CastcleBullModule } from '@castcle-api/environments';
+import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
-import { getQueueToken } from '@nestjs/bull';
+import { BullModule, getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
+  AnalyticService,
+  CampaignService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
+  NotificationService,
   UserService,
   UserServiceV2,
 } from '../database.module';
@@ -40,8 +45,8 @@ import {
   PaginationQuery,
   UserResponseDto,
 } from '../dtos';
-import { generateMockUsers } from '../mocks/user.mocks';
-import { QueueName } from '../models';
+import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
@@ -70,15 +75,22 @@ describe('UserServiceV2', () => {
         HttpModule,
         MongooseModule.forRoot(mongod.getUri(), { useCreateIndex: true }),
         MongooseAsyncFeatures,
+        CastcleBullModule,
+        BullModule.registerQueue({ name: QueueName.NOTIFICATION }),
         MongooseForFeatures,
       ],
       providers: [
+        AnalyticService,
         AuthenticationService,
-        ContentService,
         CommentService,
+        ContentService,
+        HashtagService,
+        NotificationService,
         Repository,
         UserService,
-        HashtagService,
+        UserServiceV2,
+        { provide: CampaignService, useValue: {} },
+        { provide: Mailer, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -87,8 +99,6 @@ describe('UserServiceV2', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
-        UserService,
-        UserServiceV2,
       ],
     }).compile();
 
@@ -125,13 +135,35 @@ describe('UserServiceV2', () => {
 
       user1 = mocksUsers[0].user;
       user2 = mocksUsers[1].user;
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
+      await userServiceV2.blockUser(user2, String(user1._id));
+      const blocking = await userServiceV2.getUserBlock(user1);
+
+      expect(blocking).toHaveLength(1);
+      expect(blocking).toContainEqual(user2._id);
+    });
+  });
+
+  describe('#blockUser', () => {
+    let user1: User;
+    let user2: User;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 10, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
 
       await userServiceV2.blockUser(user1, String(user2._id));
     });
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await expect(userServiceV2.blockUser(user1, 'undefined')).rejects.toBe(
-        CastcleException.USER_OR_PAGE_NOT_FOUND
+        CastcleException.USER_OR_PAGE_NOT_FOUND,
       );
     });
 
@@ -165,9 +197,8 @@ describe('UserServiceV2', () => {
       expect(blockerUser[0].following).toBeFalsy();
     });
 
-    it('should unblock user and update blocking relationship', async () => {
-      await userServiceV2.unBlockUser(user1, String(user2._id));
-
+    it('should unblock user and remove blocking relationship', async () => {
+      await userServiceV2.unblockUser(user1, String(user2._id));
       const [blockedUser, blockerUser] = await Promise.all([
         repository
           .findRelationships({ userId: [user2._id], followedUser: user1._id })
@@ -177,14 +208,103 @@ describe('UserServiceV2', () => {
           .exec(),
       ]);
 
-      expect(blockerUser).not.toBeNull();
-      expect(blockedUser).not.toBeNull();
+      expect(blockerUser).toHaveLength(0);
+      expect(blockedUser).toHaveLength(0);
+    });
+  });
 
-      expect(blockedUser[0].blocked).toBeFalsy();
-      expect(blockedUser[0].following).toBeFalsy();
+  describe('#follow', () => {
+    let user1: User;
+    let user2: User;
+    beforeAll(async () => {
+      const mocksUsers = await generateMockUsers(2, 10, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
 
-      expect(blockerUser[0].blocking).toBeFalsy();
-      expect(blockerUser[0].following).toBeFalsy();
+      user1 = mocksUsers[0].user;
+      user2 = mocksUsers[1].user;
+    });
+    it('should return empty user if user have not followers', async () => {
+      const followers = await userServiceV2.getFollowers(
+        user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followers.users).toHaveLength(0);
+    });
+
+    it('should throw USER_OR_PAGE_NOT_FOUND when user to follow is not found', async () => {
+      await expect(
+        userServiceV2.followUser(user1, 'undefined', user1.ownerAccount),
+      ).rejects.toBe(CastcleException.USER_OR_PAGE_NOT_FOUND);
+    });
+
+    it('should follow user and create follow relationship', async () => {
+      await userServiceV2.followUser(
+        user1,
+        String(user2._id),
+        user1.ownerAccount,
+      );
+      const followRelation = await repository
+        .findRelationships({ userId: [user1._id], followedUser: user2._id })
+        .exec();
+
+      expect(followRelation).not.toBeNull();
+      expect(followRelation[0].following).toBeTruthy();
+    });
+
+    it('should return user1 is following user2 after follow', async () => {
+      const followingUser = await userServiceV2.getFollowing(
+        user1.ownerAccount,
+        user1,
+        {
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followingUser).not.toBeNull();
+      expect((followingUser.users[0] as any).userId).toEqual(user2._id);
+    });
+
+    it('should return followers user after create follow relationship', async () => {
+      const followers = await userServiceV2.getFollowers(
+        user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+
+      expect(followers.users.length).toBeGreaterThan(0);
+    });
+
+    it('should remove relationship after unfollow user', async () => {
+      await userServiceV2.unfollowUser(user1, String(user2._id));
+      const followers = await userServiceV2.getFollowers(
+        user1.ownerAccount,
+        user2,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followers.users).toHaveLength(0);
+    });
+
+    it('should return empty after user1 unfollow user2', async () => {
+      const followingUser = await userServiceV2.getFollowing(
+        user1.ownerAccount,
+        user1,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followingUser.users).toHaveLength(0);
     });
   });
 
@@ -200,10 +320,51 @@ describe('UserServiceV2', () => {
         {
           castcleId: accountDemo.account.id,
           displayName: 'sp002',
-        }
+        },
       );
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
+    });
+  });
+
+  describe('getUserByKeyword', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(20, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user by keyword', async () => {
+      const getUserByKeyword = await userServiceV2.getUserByKeyword(
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'mock-10',
+          },
+          hasRelationshipExpansion: false,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(1);
+    });
+
+    it('should get user by keyword is empty', async () => {
+      const getUserByKeyword = await userServiceV2.getUserByKeyword(
+        {
+          maxResults: 25,
+          keyword: {
+            type: KeywordType.Mention,
+            input: 'empty',
+          },
+          hasRelationshipExpansion: false,
+        },
+        mocksUsers[0].user,
+      );
+
+      expect(getUserByKeyword.payload).toHaveLength(0);
     });
   });
 
