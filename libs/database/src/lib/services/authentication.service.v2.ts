@@ -591,7 +591,7 @@ export class AuthenticationServiceV2 {
       if (otp?.isValid() && otp.exceededMaxRetries()) {
         throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
       }
-      if (otp?.isValid() && !otp.exceededMaxRetries()) {
+      if (otp?.isValid() && !otp.isVerify) {
         return otp;
       }
 
@@ -608,6 +608,7 @@ export class AuthenticationServiceV2 {
         ? otp
             .regenerate()
             .set({
+              isVerify: false,
               sid,
               requestId: requestedBy,
               retry: 0,
