@@ -523,35 +523,6 @@ export class AuthenticationServiceV2 {
     });
   }
 
-  async requestOtpForChangingPassword({
-    email,
-    password,
-    objective,
-    requestedBy,
-    userAgent,
-  }: RequestOtpForChangingPasswordDto & {
-    requestedBy: Account;
-    userAgent?: string;
-  }) {
-    const account = await this.repository.findAccount({ email });
-    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
-    if (account.id === requestedBy.id) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
-    }
-    if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_PASSWORD;
-    }
-
-    return this.requestOtp({
-      channel: TwilioChannel.EMAIL,
-      objective,
-      receiver: email,
-      account,
-      requestedBy: requestedBy._id,
-      userAgent,
-    });
-  }
-
   async requestOtpByMobile({
     countryCode,
     mobileNumber,
@@ -612,7 +583,6 @@ export class AuthenticationServiceV2 {
         channel,
         objective,
         receiver,
-        verified: false,
       });
 
       if (otp?.exceededUsageLimit()) {
@@ -768,6 +738,59 @@ export class AuthenticationServiceV2 {
       await this.twilioClient.cancelOtp(existingOtp.sid);
       throw CastcleException.EXPIRED_OTP;
     }
+  }
+
+  async requestOtpForChangingPassword({
+    email,
+    password,
+    objective,
+    requestedBy,
+  }: RequestOtpForChangingPasswordDto & { requestedBy: Account }) {
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+    if (account.id !== requestedBy.id) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+    if (!account.verifyPassword(password)) {
+      throw CastcleException.INVALID_PASSWORD;
+    }
+
+    const otp = await this.repository.findOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      verified: true,
+    });
+
+    if (!otp) {
+      return this.repository.createOtp({
+        channel: TwilioChannel.EMAIL,
+        accountId: account.id,
+        objective,
+        requestId: requestedBy._id,
+        verified: true,
+        receiver: email,
+      });
+    }
+
+    if (otp.exceededUsageLimit()) {
+      throw CastcleException.OTP_USAGE_LIMIT_EXCEEDED;
+    }
+    if (otp.isValid() && otp.exceededMaxRetries()) {
+      throw CastcleException.TWILIO_MAX_LIMIT;
+    }
+    if (otp.isValid() && !otp.exceededMaxRetries()) {
+      return otp;
+    }
+
+    return otp
+      .regenerate()
+      .set({
+        requestId: requestedBy,
+        retry: 0,
+        sentAt: [...otp.sentAt, new Date()],
+      })
+      .save();
   }
 
   async changePassword({
