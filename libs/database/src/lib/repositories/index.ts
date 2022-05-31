@@ -76,11 +76,15 @@ import {
   Credential,
   CredentialModel,
   Engagement,
+  FeedItem,
   Hashtag,
   Notification,
   Otp,
   OtpModel,
   Relationship,
+  Revision,
+  Comment,
+  SocialSync,
   Transaction,
   User,
 } from '../schemas';
@@ -115,7 +119,7 @@ type EngagementQuery = {
   type?: string;
   sinceId?: string;
   untilId?: string;
-  user?: User | User[];
+  user?: User | User[] | Types.ObjectId;
   targetRef?: any;
   itemId?: string;
 };
@@ -193,11 +197,15 @@ export class Repository {
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
+    @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
+    @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
+    @InjectModel('Revision') private revisionModel: Model<Revision>,
+    @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
     private httpService: HttpService,
@@ -589,6 +597,14 @@ export class Repository {
     return this.userModel.countDocuments(filter);
   }
 
+  updateUser(
+    filter: UserQuery,
+    user: UpdateQuery<User>,
+    option?: QueryOptions,
+  ) {
+    return this.userModel.updateOne(filter, user, option);
+  }
+
   findEngagement(filter: EngagementQuery, queryOptions?: QueryOptions) {
     return this.engagementModel
       .findOne(this.getEngagementQuery(filter), {}, queryOptions)
@@ -625,6 +641,16 @@ export class Repository {
       updateQuery,
       option,
     );
+  }
+
+  updateEngagements(
+    filter: EngagementQuery,
+    updateQuery: UpdateQuery<Engagement>,
+    option?: QueryOptions,
+  ) {
+    return this.engagementModel
+      .updateMany(this.getEngagementQuery(filter), updateQuery, option)
+      .exec();
   }
 
   findRelationships(filter: RelationshipQuery, queryOptions?: QueryOptions) {
@@ -693,6 +719,16 @@ export class Repository {
       updateQuery,
       queryOptions,
     );
+  }
+
+  updateContents(
+    filter: ContentQuery,
+    updateQuery?: UpdateQuery<Content>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.contentModel
+      .updateMany(this.getContentQuery(filter), updateQuery, queryOptions)
+      .exec();
   }
 
   findCredential(filter: CredentialQuery) {
@@ -846,6 +882,33 @@ export class Repository {
 
   accountSession(): Promise<ClientSession> {
     return this.accountModel.startSession();
+  }
+
+  userSession(): Promise<ClientSession> {
+    return this.userModel.startSession();
+  }
+
+  updateComments(
+    filter: FilterQuery<Comment>,
+    comment: UpdateQuery<Comment>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.commentModel.updateMany(filter, comment, queryOptions).exec();
+  }
+
+  deleteSocialSyncs(
+    filter: FilterQuery<SocialSync>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.socialSyncModel.deleteMany(filter, queryOptions);
+  }
+
+  deleteFeedItems(filter: FilterQuery<FeedItem>, queryOptions?: QueryOptions) {
+    return this.feedItemModel.deleteMany(filter, queryOptions);
+  }
+
+  deleteRevisions(filter: FilterQuery<Revision>, queryOptions?: QueryOptions) {
+    return this.revisionModel.deleteMany(filter, queryOptions);
   }
 
   findHashtags(filter: HashtagQuery, queryOptions?: QueryOptions) {

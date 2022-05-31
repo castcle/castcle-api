@@ -62,7 +62,7 @@ import { NotificationService } from './notification.service';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger();
+  private logger = new CastLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Account')
@@ -551,6 +551,70 @@ export class UserServiceV2 {
     } catch (error: unknown) {
       this.logger.error(error, `updateMobile:claimAirdrop:error`);
     }
+  }
+
+  async deletePage(account: Account, pageId: string, password: string) {
+    if (!account.verifyPassword(password))
+      throw CastcleException.INVALID_PASSWORD;
+
+    this.logger.log('find page.');
+    const page = await this.repositoryService.findUser({
+      type: UserType.PAGE,
+      _id: pageId,
+    });
+
+    if (!page) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    if (String(page.ownerAccount) !== String(account._id)) {
+      this.logger.warn('page owner is not same as account.');
+      throw CastcleException.FORBIDDEN;
+    }
+
+    this.logger.log('find sync socials.');
+    await this.repositoryService.updateComments(
+      { 'author._id': Types.ObjectId(pageId) },
+      { visibility: EntityVisibility.Deleted },
+    );
+
+    const session = await this.repositoryService.userSession();
+    await session.withTransaction(async () => {
+      await Promise.all([
+        this.repositoryService.updateUser(
+          { _id: pageId },
+          { visibility: EntityVisibility.Publish },
+          { session },
+        ),
+        this.repositoryService.updateEngagements(
+          { user: Types.ObjectId(pageId) },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.repositoryService.updateContents(
+          { author: Types.ObjectId(pageId) },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.repositoryService.updateComments(
+          { 'author.id': Types.ObjectId(pageId) },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.repositoryService.deleteFeedItems(
+          { author: Types.ObjectId(pageId) },
+          { session },
+        ),
+        this.repositoryService.deleteRevisions(
+          { author: Types.ObjectId(pageId) },
+          { session },
+        ),
+        this.repositoryService.deleteSocialSyncs(
+          { 'author.id': Types.ObjectId(pageId) },
+          { session },
+        ),
+      ]);
+      await session.commitTransaction();
+      session.endSession();
+    });
   }
   async getUserByKeyword(
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
