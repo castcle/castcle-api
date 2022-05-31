@@ -209,6 +209,49 @@ export const pipelineOfUserRelationFollowingCount = (
   ];
 };
 
+const userFollowingQueryV2 = (params: GetUserRelationParamsV2) => {
+  return [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'followedUser',
+        foreignField: '_id',
+        as: 'followedUser',
+      },
+    },
+    {
+      $match: {
+        user: params.userId,
+        visibility: EntityVisibility.Publish,
+        following: true,
+        'followedUser.visibility': EntityVisibility.Publish,
+        ...filterUserTypes('followedUser.type', params.userTypes),
+        ...filterId({
+          sinceId: params.sinceId,
+          untilId: params.untilId,
+        }),
+      },
+    },
+    {
+      $sort: params.sortBy || {
+        createdAt: -1,
+      },
+    },
+  ];
+};
+
+export const pipelineOfUserRelationFollowingV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowingQueryV2(params), ...[{ $limit: params.limit }]];
+};
+
+export const pipelineOfUserRelationFollowingCountV2 = (
+  params: GetUserRelationParamsV2,
+) => {
+  return [...userFollowingQueryV2(params), ...[{ $count: 'total' }]];
+};
+
 export const pipelineOfUserRelationFollowersV2 = (
   params: GetUserRelationParamsV2,
 ) => {
@@ -219,13 +262,6 @@ export const pipelineOfUserRelationFollowersCountV2 = (
   params: GetUserRelationParamsV2,
 ) => {
   return [...userFollowQueryV2(params), ...[{ $count: 'total' }]];
-};
-
-const filterTypes = (userTypes?: string[]) => {
-  if (userTypes)
-    return {
-      'user.type': { $in: userTypes },
-    };
 };
 
 const userFollowQueryV2 = (params: GetUserRelationParamsV2) => {
@@ -244,7 +280,7 @@ const userFollowQueryV2 = (params: GetUserRelationParamsV2) => {
         visibility: EntityVisibility.Publish,
         following: true,
         'user.visibility': EntityVisibility.Publish,
-        ...filterTypes(params.userTypes),
+        ...filterUserTypes('user.type', params.userTypes),
         ...filterId({
           sinceId: params.sinceId,
           untilId: params.untilId,
@@ -257,4 +293,11 @@ const userFollowQueryV2 = (params: GetUserRelationParamsV2) => {
       },
     },
   ];
+};
+
+const filterUserTypes = (key: string, userTypes?: string[]) => {
+  if (userTypes)
+    return {
+      key: { $in: userTypes },
+    };
 };

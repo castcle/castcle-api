@@ -257,6 +257,18 @@ describe('UserServiceV2', () => {
       expect(followRelation[0].following).toBeTruthy();
     });
 
+    it('should return user1 is following user2 after follow', async () => {
+      const followingUser = await userServiceV2.getFollowing(
+        user1.ownerAccount,
+        user1,
+        {
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followingUser).not.toBeNull();
+      expect((followingUser.users[0] as any).userId).toEqual(user2._id);
+    });
+
     it('should return followers user after create follow relationship', async () => {
       const followers = await userServiceV2.getFollowers(
         user1.ownerAccount,
@@ -281,6 +293,18 @@ describe('UserServiceV2', () => {
         },
       );
       expect(followers.users).toHaveLength(0);
+    });
+
+    it('should return empty after user1 unfollow user2', async () => {
+      const followingUser = await userServiceV2.getFollowing(
+        user1.ownerAccount,
+        user1,
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: true,
+        },
+      );
+      expect(followingUser.users).toHaveLength(0);
     });
   });
 

@@ -773,6 +773,26 @@ export class UsersControllerV2 {
   }
 
   @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/following')
+  async getUserFollowing(
+    @Param() { isMe, userId }: GetUserParam,
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetFollowQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getFollowing(
+      authorizer.account,
+      user,
+      query,
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':userId/followers')
   async getUserFollower(
     @Param() { isMe, userId }: GetUserParam,

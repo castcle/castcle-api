@@ -120,15 +120,3 @@ export class GetContentQuery extends PaginationQuery {
   @TransformSortStringToSortObject()
   sortBy?: string;
 }
-
-export class GetFollowQuery extends PaginationQuery {
-  @IsOptional()
-  @IsEnum(UserType, { each: true })
-  @TransformStringToArrayOfStrings()
-  type?: string[];
-
-  @IsOptional()
-  @IsObject()
-  @TransformSortStringToSortObject()
-  sort?: string;
-}
