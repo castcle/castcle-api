@@ -31,6 +31,7 @@ import {
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
+  RequestOtpForChangingPasswordDto,
   ResponseDto,
   SocialConnectDto,
   VerifyOtpByEmailDto,
@@ -183,6 +184,27 @@ export class AuthenticationControllerV2 {
   ) {
     const { refCode, expireDate } =
       await this.authenticationService.requestOtpByMobile({
+        ...requestOtpDto,
+        ...requestMetadata,
+        requestedBy: $credential.account,
+      });
+
+    return { refCode, objective: requestOtpDto.objective, expireDate };
+  }
+
+  @CastcleBasicAuth()
+  @Throttle(
+    Environment.RATE_LIMIT_OTP_EMAIL_LIMIT,
+    Environment.RATE_LIMIT_OTP_EMAIL_TTL,
+  )
+  @Post('verify-password')
+  async requestOtpForChangingPassword(
+    @Body() requestOtpDto: RequestOtpForChangingPasswordDto,
+    @Req() { $credential }: CredentialRequest,
+    @RequestMeta() requestMetadata: RequestMetadata,
+  ) {
+    const { refCode, expireDate } =
+      await this.authenticationService.requestOtpForChangingPassword({
         ...requestOtpDto,
         ...requestMetadata,
         requestedBy: $credential.account,

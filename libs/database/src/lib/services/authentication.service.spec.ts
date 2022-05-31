@@ -708,7 +708,7 @@ describe('Authentication Service', () => {
         account = await newAccount.save();
         otp = await service.generateOtp(
           account,
-          OtpObjective.ForgotPassword,
+          OtpObjective.FORGOT_PASSWORD,
           account.id,
           TwilioChannel.EMAIL,
           false,
@@ -728,7 +728,7 @@ describe('Authentication Service', () => {
       it('should found otp document that match with request id and objective', async () => {
         const result = await service.getAllOtpFromRequestIdObjective(
           account.id,
-          OtpObjective.ForgotPassword,
+          OtpObjective.FORGOT_PASSWORD,
         );
         expect(result).toBeDefined();
       });

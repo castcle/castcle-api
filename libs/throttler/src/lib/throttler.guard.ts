@@ -29,22 +29,41 @@ import { getClientIp } from 'request-ip';
 
 @Injectable()
 export class CastcleThrottlerGuard extends ThrottlerGuard {
+  override throwThrottlingException(): void {
+    throw CastcleException.RATE_LIMIT_REQUEST;
+  }
+
   override getTracker(req: Request): string {
     const ip = getClientIp(req as any);
     const userAgent = req.get('User-Agent');
     const defaultTracker = `${ip}-${userAgent}`;
 
-    if (/[request|verify]-otp\/[mobile|email]/.test(req.path)) {
-      const { objective, email, mobileNumber } = req.body;
-      return [defaultTracker, objective, email, mobileNumber]
-        .filter(Boolean)
-        .join('-');
-    }
-
-    return defaultTracker;
+    return [defaultTracker, ...this.getTrackers(req.path, req.body)].join('-');
   }
 
-  override throwThrottlingException(): void {
-    throw CastcleException.RATE_LIMIT_REQUEST;
+  private getTrackers(path: string, body: Record<string, string>) {
+    if (path.includes('request-otp/email')) {
+      return [body.objective, body.email];
+    }
+    if (path.includes('request-otp/mobile')) {
+      return [body.objective, body.mobileNumber];
+    }
+    if (path.includes('verify-otp/email')) {
+      return [body.objective, body.email];
+    }
+    if (path.includes('verify-otp/mobile')) {
+      return [body.objective, body.mobileNumber];
+    }
+    if (path.includes('change-password')) {
+      return [body.objective, body.email];
+    }
+    if (path.includes('verify-password')) {
+      return [body.objective, body.email];
+    }
+    if (path.includes('me/mobile')) {
+      return [body.objective, body.mobileNumber];
+    }
+
+    return [];
   }
 }

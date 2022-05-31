@@ -535,7 +535,7 @@ export class TargetIdParam extends GetUserParam {
 }
 
 export class UpdateMobileDto {
-  @IsEnum([OtpObjective.VerifyMobile])
+  @IsEnum([OtpObjective.VERIFY_MOBILE])
   objective: OtpObjective;
 
   @IsString()

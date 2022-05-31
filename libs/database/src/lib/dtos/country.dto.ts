@@ -22,8 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { SortDirection } from '.';
-import { CastcleQueryOptions } from './common.dto';
+import { CastcleQueryOptions, SortDirection } from './common.dto';
 
 export class CountryPayloadDto {
   @ApiProperty()

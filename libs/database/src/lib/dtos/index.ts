@@ -31,6 +31,7 @@ export * from './content.dto';
 export * from './content.dto.v2';
 export * from './country.dto';
 export * from './feed.dto';
+export * from './follow.dto';
 export * from './feed.dto.v2';
 export * from './guest-feed-item.dto';
 export * from './hashtag.dto';

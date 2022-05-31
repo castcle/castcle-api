@@ -644,6 +644,10 @@ export class Repository {
     );
   }
 
+  aggregateRelationship<T = any>(pipeline: any) {
+    return this.relationshipModel.aggregate<T>(pipeline);
+  }
+
   createContent(content: AnyKeys<Content>) {
     return new this.contentModel(content).save();
   }
