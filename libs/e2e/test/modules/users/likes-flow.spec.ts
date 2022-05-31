@@ -1,12 +1,7 @@
 import * as mongoose from 'mongoose';
 import { ShortPayload } from '../../../../database/src/lib/dtos/content.dto';
 import { User } from '../../models';
-import {
-  AuthenticationsRequest,
-  CommentRequest,
-  ContentsRequest,
-  UsersRequest,
-} from '../../requests';
+import { CommentRequest, ContentsRequest, UsersRequest } from '../../requests';
 import {
   commentModel,
   contentModel,
@@ -14,33 +9,7 @@ import {
   userBeta,
   userGamma,
 } from '../../variables';
-
-const registerMockUSer = async (user: User) => {
-  await AuthenticationsRequest.guestLogin()
-    .send({ deviceUUID: user.deviceUUID })
-    .expect(({ body }) => {
-      expect(body.accessToken).toBeDefined();
-      expect(body.refreshToken).toBeDefined();
-
-      user.guestToken = body.accessToken;
-    });
-
-  await AuthenticationsRequest.register()
-    .auth(user.guestToken, { type: 'bearer' })
-    .send(user.toRegisterPayload())
-    .expect(async ({ body }) => {
-      expect(body.message).toBeUndefined();
-      expect(body.accessToken).toBeDefined();
-      expect(body.profile.id).toBeDefined();
-      expect(body.profile.castcleId).toEqual(user.castcleId);
-      expect(body.profile.displayName).toEqual(user.displayName);
-      expect(body.profile.email).toEqual(user.email);
-
-      user.accessToken = body.accessToken;
-      user.id = body.profile.id;
-    });
-  return user;
-};
+import { registerMockUser } from './../../utils/user.utils';
 
 export const testLikesFlow = () => {
   let userA = new User({ name: 'likeA' });
@@ -50,9 +19,9 @@ export const testLikesFlow = () => {
   let commentId;
   let replyCommentId;
   beforeAll(async () => {
-    userA = await registerMockUSer(userA);
-    userB = await registerMockUSer(userB);
-    userC = await registerMockUSer(userC);
+    userA = await registerMockUser(userA);
+    userB = await registerMockUser(userB);
+    userC = await registerMockUser(userC);
 
     const shortPayload = {
       message: 'Hi Castcle test like',

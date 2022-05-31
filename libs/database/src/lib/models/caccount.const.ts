@@ -50,4 +50,13 @@ export const CACCOUNT_NO = {
       },
     },
   },
+  SOCIAL_REWARD: {
+    NO: '9000',
+    PERSONAL: {
+      NO: '9100',
+    },
+    ADS_CREDIT: {
+      NO: '9200',
+    },
+  },
 };

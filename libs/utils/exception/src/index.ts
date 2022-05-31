@@ -21,4 +21,5 @@
  * or have any questions.
  */
 
-export * from './lib/castcle.exception';
+export * from './lib/exception';
+export * from './lib/exception.filter';

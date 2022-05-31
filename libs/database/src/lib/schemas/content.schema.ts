@@ -43,6 +43,7 @@ import { FeedItem } from './feed-item.schema';
 import { Relationship } from './relationship.schema';
 import { Revision } from './revision.schema';
 import { User } from './user.schema';
+import { isString } from 'class-validator';
 
 const engagementNameMap = {
   like: 'liked',
@@ -249,12 +250,19 @@ export const toUnsignedContentPayloadItem = (
     link: (content.payload as ShortPayload)?.link,
     photo: (content.payload as ShortPayload)?.photo,
 
-    metrics: metrics || {
-      likeCount: content.engagements?.like?.count | 0,
-      commentCount: content.engagements?.comment?.count | 0,
-      quoteCount: content.engagements?.quote?.count | 0,
-      recastCount: content.engagements?.recast?.count | 0,
-    },
+    metrics: metrics
+      ? {
+          likeCount: metrics.likeCount,
+          commentCount: metrics.commentCount,
+          quoteCount: metrics.quoteCount,
+          recastCount: metrics.recastCount,
+        }
+      : {
+          likeCount: content.engagements?.like?.count | 0,
+          commentCount: content.engagements?.comment?.count | 0,
+          quoteCount: content.engagements?.quote?.count | 0,
+          recastCount: content.engagements?.recast?.count | 0,
+        },
     participate: {
       liked: engage.some(({ type }) => type === EngagementType.Like),
       commented: engage.some(({ type }) => type === EngagementType.Comment),
@@ -263,8 +271,12 @@ export const toUnsignedContentPayloadItem = (
       reported: engage?.some(({ type }) => type === EngagementType.Report),
     },
 
-    createdAt: content.createdAt.toISOString(),
-    updatedAt: content.updatedAt.toISOString(),
+    createdAt: isString(content.createdAt)
+      ? content.createdAt
+      : content.createdAt.toISOString(),
+    updatedAt: isString(content.updatedAt)
+      ? content.updatedAt
+      : content.updatedAt.toISOString(),
   } as ContentPayloadItem;
   if (content.isRecast || content.isQuote) {
     result.referencedCasts = {

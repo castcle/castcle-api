@@ -21,10 +21,21 @@
  * or have any questions.
  */
 
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
+import { RouterModule } from '@nestjs/core';
 import { HealthyController } from './healthy.controller';
 
-@Module({
-  controllers: [HealthyController],
-})
-export class HealthyModule {}
+@Module({})
+export class CastcleHealthyModule {
+  static register(options: { pathPrefix: string }): DynamicModule {
+    return {
+      module: CastcleHealthyModule,
+      controllers: [HealthyController],
+      imports: [
+        RouterModule.register([
+          { path: options.pathPrefix, module: CastcleHealthyModule },
+        ]),
+      ],
+    };
+  }
+}

@@ -63,16 +63,12 @@ import {
   SocialSyncDto,
   SortDirection,
   TargetIdParam,
+  UpdateMobileDto,
   UpdateUserDto,
   UserField,
   UserResponseDto,
 } from '@castcle-api/database/dtos';
-import {
-  Account,
-  Credential,
-  SocialSync,
-  User,
-} from '@castcle-api/database/schemas';
+import { Credential, SocialSync, User } from '@castcle-api/database/schemas';
 import { CacheKeyName, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -121,7 +117,6 @@ import {
   GetAirdropBalancesStatus,
   ReportingDto,
   TargetCastcleDto,
-  UpdateMobileDto,
   UserRefereeResponse,
   UserReferrerResponse,
   UserSettingsDto,
@@ -224,10 +219,11 @@ export class UsersController {
     return now - blockUpdate >= 0;
   };
 
-  _verifyAdsApprove = async (account: Account, adsId: string) => {
-    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+  _verifyAdsApprove = async (user: User, adsId: string) => {
+    const adsCampaign = await this.adsService.lookupAds(user, adsId);
     if (!adsCampaign || adsCampaign.status !== AdsStatus.Approved) {
       this.logger.log('Ads campaign not found.');
+      console.log('Ads campaign not found.');
       throw CastcleException.FORBIDDEN;
     }
     return adsCampaign;
@@ -552,11 +548,11 @@ export class UsersController {
   @CastcleBasicAuth()
   @Post('me/advertise')
   async createAds(
-    @Auth() { account }: Authorizer,
+    @Auth() { user }: Authorizer,
     @Body() adsRequestDto: AdsRequestDto,
   ) {
     //check if
-    const campaign = await this.adsService.createAds(account, adsRequestDto);
+    const campaign = await this.adsService.createAds(user, adsRequestDto);
     const response = await this.adsService.transformAdsCampaignToAdsResponse(
       campaign,
     );
@@ -931,7 +927,7 @@ export class UsersController {
     );
 
     if (!otp?.isValidVerifyMobileOtp()) throw CastcleException.INVALID_REF_CODE;
-    if (otp.reciever !== countryCode + mobileNumber)
+    if (otp.receiver !== countryCode + mobileNumber)
       throw CastcleException.INVALID_PHONE_NUMBER;
 
     const isFirstTimeVerification = !user.verified.mobile;
@@ -1572,8 +1568,8 @@ export class UsersController {
 
   @CastcleBasicAuth()
   @Get('me/advertise')
-  async listAds(@Auth() { account }: Authorizer, @Query() adsQuery: AdsQuery) {
-    const adsCampaigns = await this.adsService.getListAds(account, adsQuery);
+  async listAds(@Auth() { user }: Authorizer, @Query() adsQuery: AdsQuery) {
+    const adsCampaigns = await this.adsService.getListAds(user, adsQuery);
     if (!adsCampaigns) return { payload: null };
     const adsResponses = await Promise.all(
       adsCampaigns.map((adsCampaign) =>
@@ -1592,8 +1588,8 @@ export class UsersController {
    */
   @CastcleBasicAuth()
   @Get('me/advertise/:id')
-  async lookupAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
-    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+  async lookupAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(user, adsId);
     if (!adsCampaign) return;
     return this.adsService.transformAdsCampaignToAdsResponse(adsCampaign);
   }
@@ -1608,11 +1604,11 @@ export class UsersController {
   @CastcleBasicAuth()
   @Put('me/advertise/:id')
   async updateAds(
-    @Auth() { account }: Authorizer,
+    @Auth() { user }: Authorizer,
     @Param('id') adsId: string,
     @Body() adsRequest: AdsRequestDto,
   ) {
-    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+    const adsCampaign = await this.adsService.lookupAds(user, adsId);
     if (!adsCampaign) {
       throw CastcleException.FORBIDDEN;
     }
@@ -1628,8 +1624,8 @@ export class UsersController {
 
   @CastcleBasicAuth()
   @Delete('me/advertise/:id')
-  async deleteAds(@Auth() { account }: Authorizer, @Param('id') adsId: string) {
-    const adsCampaign = await this.adsService.lookupAds(account, adsId);
+  async deleteAds(@Auth() { user }: Authorizer, @Param('id') adsId: string) {
+    const adsCampaign = await this.adsService.lookupAds(user, adsId);
     if (!adsCampaign) {
       throw CastcleException.FORBIDDEN;
     }
@@ -1979,12 +1975,12 @@ export class UsersController {
   @CastcleBasicAuth()
   @Post('me/advertise/:id/running')
   async adsRunning(
-    @Auth() { credential }: Authorizer,
+    @Auth() { user, credential }: Authorizer,
     @Param('id') adsId: string,
   ) {
     this.logger.log(`Start running ads.`);
-    const account = await this.validateGuestAccount(credential);
-    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+    await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(user, adsId);
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Pause) {
       this.logger.log(
@@ -2004,12 +2000,12 @@ export class UsersController {
   @CastcleBasicAuth()
   @Post('me/advertise/:id/pause')
   async adsPause(
-    @Auth() { credential }: Authorizer,
+    @Auth() { credential, user }: Authorizer,
     @Param('id') adsId: string,
   ) {
     this.logger.log(`Start pause ads.`);
-    const account = await this.validateGuestAccount(credential);
-    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+    await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(user, adsId);
 
     if (adsCampaign.boostStatus !== AdsBoostStatus.Running) {
       this.logger.log(
@@ -2028,10 +2024,13 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleBasicAuth()
   @Post('me/advertise/:id/end')
-  async adsEnd(@Auth() { credential }: Authorizer, @Param('id') adsId: string) {
+  async adsEnd(
+    @Auth() { credential, user }: Authorizer,
+    @Param('id') adsId: string,
+  ) {
     this.logger.log(`Start end ads.`);
-    const account = await this.validateGuestAccount(credential);
-    const adsCampaign = await this._verifyAdsApprove(account, adsId);
+    await this.validateGuestAccount(credential);
+    const adsCampaign = await this._verifyAdsApprove(user, adsId);
 
     if (
       !(

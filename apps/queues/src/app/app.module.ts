@@ -32,6 +32,7 @@ import {
   CastcleBullModule,
   CastcleMongooseModule,
 } from '@castcle-api/environments';
+import { CastcleTracingModule } from '@castcle-api/tracing';
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -42,8 +43,9 @@ import { ContentFarmingScheduler } from './content-farming.sheduler';
 @Module({
   imports: [
     CastcleBullModule,
-    DatabaseModule,
     CastcleMongooseModule,
+    CastcleTracingModule.forRoot({ serviceName: 'queues' }),
+    DatabaseModule,
     BullModule.registerQueue(
       { name: QueueName.CONTENT },
       { name: QueueName.CAMPAIGN },

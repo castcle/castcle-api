@@ -21,6 +21,12 @@
  * or have any questions.
  */
 
+enum KeywordType {
+  Mention = 'mention',
+  Hashtag = 'hashtag',
+  Word = 'word',
+}
+
 import { Transform, TransformFnParams } from 'class-transformer';
 import { isEnum, isString } from 'class-validator';
 
@@ -55,4 +61,38 @@ const stringToObjectOfStrings = ({ value }: TransformFnParams) => {
 
 export const TransformSortStringToSortObject = () => {
   return Transform(stringToObjectOfStrings, { toClassOnly: true });
+};
+
+const removeLeadingZero = ({ value }: TransformFnParams) => {
+  return (value as string)?.replace(/^0/, '');
+};
+
+export const RemoveLeadingZero = () => {
+  return Transform(removeLeadingZero, { toClassOnly: true });
+};
+
+const stringToArrayKeywordOfStrings = ({ value }: TransformFnParams) => {
+  let keyword = {};
+  if (value.charAt(0) === '@') {
+    keyword = {
+      input: value.slice(1),
+      type: KeywordType.Mention,
+    };
+  } else if (value.charAt(0) === '#') {
+    keyword = {
+      input: value.slice(1),
+      type: KeywordType.Hashtag,
+    };
+  } else {
+    keyword = {
+      input: value.trim(),
+      type: KeywordType.Word,
+    };
+  }
+
+  return Object.keys(keyword).length ? keyword : undefined;
+};
+
+export const TransformKeywordStringToKeywordFilter = () => {
+  return Transform(stringToArrayKeywordOfStrings, { toClassOnly: true });
 };

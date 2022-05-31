@@ -21,44 +21,36 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
-import { CastcleCacheModule, Environment } from '@castcle-api/environments';
-import { HealthyModule } from '@castcle-api/healthy';
+import { CastcleCacheModule } from '@castcle-api/environments';
+import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleThrottlerModule } from '@castcle-api/throttler';
-import {
-  AwsXRayInterceptor,
-  UtilsInterceptorsModule,
-} from '@castcle-api/utils/interceptors';
+import { CastcleTracingModule } from '@castcle-api/tracing';
+import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
-import { TracingModule } from '@narando/nest-xray';
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, RouterModule } from '@nestjs/core';
 import { CommentController } from './controllers/comment.controller';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
 import { ContentControllerV2 } from './controllers/content.controller.v2';
 import { CountryController } from './controllers/country.controller';
 import { FeedsController } from './controllers/feeds.controller';
+import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
 import { HashtagsController } from './controllers/hashtags.controller';
 import { LanguagesController } from './controllers/languages.controller';
 import { SearchesController } from './controllers/searches.controller';
+import { SearchesControllerV2 } from './controllers/searches.controller.v2';
 import { AppService, SuggestionService } from './services';
 
 @Module({
   imports: [
     CastcleCacheModule,
+    CastcleHealthyModule.register({ pathPrefix: 'feeds' }),
     CastcleThrottlerModule,
+    CastcleTracingModule.forRoot({ serviceName: 'feeds' }),
     DatabaseModule,
-    CaslModule,
-    HealthyModule,
-    RouterModule.register([{ path: 'feeds', module: HealthyModule }]),
     UtilsInterceptorsModule,
     UtilsPipesModule,
-    TracingModule.forRoot({
-      serviceName: 'feeds',
-      daemonAddress: Environment.AWS_XRAY_DAEMON_ADDRESS,
-    }),
   ],
   controllers: [
     CommentController,
@@ -70,14 +62,9 @@ import { AppService, SuggestionService } from './services';
     LanguagesController,
     SearchesController,
     CommentControllerV2,
+    FeedsControllerV2,
+    SearchesControllerV2,
   ],
-  providers: [
-    AppService,
-    SuggestionService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AwsXRayInterceptor,
-    },
-  ],
+  providers: [AppService, SuggestionService],
 })
 export class AppModule {}

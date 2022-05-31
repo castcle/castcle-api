@@ -36,7 +36,7 @@ const isTokenValid = (token: string, secret: string) => {
     jwt.verify(token, secret);
     return true;
   } catch (error) {
-    console.log('error', error);
+    console.error('error', error);
     return false;
   }
 };

@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -50,6 +50,7 @@ import {
   CreateContentDto,
   EntityVisibility,
   GetContentCastDto,
+  GetSearchQuery,
   Meta,
   NotificationSource,
   NotificationType,
@@ -60,13 +61,20 @@ import {
 } from '../dtos';
 import { Types } from 'mongoose';
 import { TAccountService } from './taccount.service';
-import { ContentFarmingReponse } from '../models/content-farming.model';
+import {
+  ContentFarmingCDF,
+  ContentFarmingReponse,
+} from '../models/content-farming.model';
 import { Repository } from '../repositories';
-import { Environment } from '@castcle-api/environments';
+import { CacheStore, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { HashtagService } from './hashtag.service';
+import { DataService } from './data.service';
+import { Cache } from 'cache-manager';
+import { UserServiceV2 } from './user.service.v2';
+import cdf from 'castcle-cdf';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -82,9 +90,12 @@ export class ContentServiceV2 {
     private hashtagService: HashtagService,
     @InjectQueue(QueueName.CONTENT)
     private contentQueue: Queue<ContentMessage>,
+    private dataService: DataService,
+    private userServiceV2: UserServiceV2,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  toContentsResponses = async (
+  private toContentsResponses = async (
     bundleContents: GetContentCastDto,
     hasRelationshipExpansion?: boolean,
     viewer?: User,
@@ -160,7 +171,7 @@ export class ContentServiceV2 {
     } as ResponseDto;
   };
 
-  toContentResponse = async (
+  private toContentResponse = async (
     bundleContents: GetContentCastDto,
     hasRelationshipExpansion?: boolean,
     viewer?: User,
@@ -202,7 +213,7 @@ export class ContentServiceV2 {
       );
       return new Author(author as any).toIncludeUser({
         blocked: hasRelationshipExpansion
-          ? relationshipUser?.blocking ?? false
+          ? relationshipUser?.blocked ?? false
           : undefined,
         blocking: hasRelationshipExpansion
           ? relationshipUser?.blocking ?? false
@@ -232,6 +243,76 @@ export class ContentServiceV2 {
         users: includesUsers,
       }),
     } as ResponseDto;
+  };
+
+  sortContentsByScore = async (accountId: string, contents: Content[]) => {
+    const contentIds = contents.map((content) => content._id);
+    const score = await this.dataService.personalizeContents(
+      accountId,
+      contentIds,
+    );
+
+    return score;
+  };
+
+  private getContentMore = (
+    contents: GetContentCastDto,
+    contentsMore: GetContentCastDto,
+  ) => {
+    contents.contents = [...contents.contents, ...contentsMore.contents];
+
+    contents.casts = [
+      ...contents.casts,
+      ...contentsMore.casts.filter((cast) =>
+        contents.casts.find((item) => String(cast._id) !== String(item._id)),
+      ),
+    ];
+
+    contents.authors = [
+      ...contents.authors,
+      ...contentsMore.authors.filter((author) =>
+        contents.authors.find(
+          (item) => String(author._id) !== String(item._id),
+        ),
+      ),
+    ];
+
+    contents.engagements = [
+      ...contents.engagements,
+      ...contentsMore.engagements.filter((engagement) =>
+        contents.engagements.find(
+          (item) => String(engagement._id) !== String(item._id),
+        ),
+      ),
+    ];
+
+    contents.engagementsOriginal = [
+      ...contents.engagementsOriginal,
+      ...contentsMore.engagementsOriginal.filter((engagementOriginal) =>
+        contents.engagementsOriginal.find(
+          (item) => String(engagementOriginal._id) !== String(item._id),
+        ),
+      ),
+    ];
+
+    contents.metrics = [
+      ...contents.metrics,
+      ...contentsMore.metrics.filter((metric) =>
+        contents.metrics.find(
+          (item) => String(metric._id) !== String(item._id),
+        ),
+      ),
+    ];
+
+    contents.metricsOriginal = [
+      ...contents.metricsOriginal,
+      ...contentsMore.metricsOriginal.filter((metricOriginal) =>
+        contents.metricsOriginal.find(
+          (item) => String(metricOriginal._id) !== String(item._id),
+        ),
+      ),
+    ];
+    return contents;
   };
 
   likeCast = async (contentId: string, user: User, account: Account) => {
@@ -318,23 +399,23 @@ export class ContentServiceV2 {
   };
 
   getRecastPipeline = async (contentId: string, user: User) => {
-    const [bundleContents] = await this.repository.aggregationContent({
+    const [contents] = await this.repository.aggregationContent({
       viewer: user,
       _id: contentId,
       isRecast: true,
     });
 
-    return this.toContentResponse(bundleContents);
+    return this.toContentResponse(contents);
   };
 
   getQuoteCastPipeline = async (contentId: string, user: User) => {
-    const [bundleContents] = await this.repository.aggregationContent({
+    const [contents] = await this.repository.aggregationContent({
       viewer: user,
       _id: contentId,
       isQuote: true,
     });
 
-    return this.toContentResponse(bundleContents);
+    return this.toContentResponse(contents);
   };
 
   recast = async (contentId: string, user: User, account: Account) => {
@@ -540,13 +621,13 @@ export class ContentServiceV2 {
     return { quoteContent, engagement };
   };
 
-  createContentFarming = async (contentId: string, accountId: string) => {
+  createContentFarming = async (contentId: string, userId: string) => {
     const balance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.FARM_LOCKED,
     );
 
@@ -556,24 +637,25 @@ export class ContentServiceV2 {
       const session = await this.contentFarmingModel.startSession();
       const contentFarming = await new this.contentFarmingModel({
         content: contentId,
-        account: accountId,
+        user: userId,
         status: ContentFarmingStatus.Farming,
         farmAmount: farmAmount,
         startAt: new Date(),
       });
 
-      await session.withTransaction(async () => {
+      try {
+        session.startTransaction();
         await contentFarming.save();
         await this.taccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
-            account: accountId,
+            user: userId,
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              account: accountId,
+              user: userId,
               value: farmAmount,
             },
           ],
@@ -590,9 +672,12 @@ export class ContentServiceV2 {
             },
           ],
         });
-      });
-      session.endSession();
-      return contentFarming;
+        await session.commitTransaction();
+        return contentFarming;
+      } catch (error) {
+        await session.abortTransaction();
+        throw CastcleException.INTERNAL_SERVER_ERROR;
+      }
     } else {
       //throw error
       throw CastcleException.CONTENT_FARMING_NOT_AVAIABLE_BALANCE;
@@ -603,11 +688,11 @@ export class ContentServiceV2 {
     contentFarming.status = ContentFarmingStatus.Farming;
     contentFarming.startAt = new Date();
     const balance = await this.taccountService.getAccountBalance(
-      String(contentFarming.account),
+      String(contentFarming.user),
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      String(contentFarming.account),
+      String(contentFarming.user),
       WalletType.FARM_LOCKED,
     );
     if (balance >= (lockBalance + balance) * 0.05) {
@@ -619,13 +704,13 @@ export class ContentServiceV2 {
         await this.taccountService.transfers({
           from: {
             type: WalletType.PERSONAL,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: farmAmount,
           },
           to: [
             {
               type: WalletType.FARM_LOCKED,
-              account: String(contentFarming.account),
+              user: String(contentFarming.user),
               value: farmAmount,
             },
           ],
@@ -669,21 +754,21 @@ export class ContentServiceV2 {
     else throw CastcleException.CONTENT_FARMING_LIMIT;
   };
 
-  getContentFarming = async (contentId: string, accountId: string) =>
+  getContentFarming = async (contentId: string, userId: string) =>
     this.contentFarmingModel.findOne({
       content: contentId,
-      account: accountId,
+      user: userId,
     });
 
-  farm = async (contentId: string, accountId: string) => {
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+  farm = async (contentId: string, userId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, userId);
     if (this.checkFarming(contentFarming)) {
       return this.updateContentFarming(contentFarming);
-    } else return this.createContentFarming(contentId, accountId);
+    } else return this.createContentFarming(contentId, userId);
   };
 
-  unfarm = async (contentId: string, accountId: string) => {
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+  unfarm = async (contentId: string, userId: string) => {
+    const contentFarming = await this.getContentFarming(contentId, userId);
     if (
       contentFarming &&
       contentFarming.status === ContentFarmingStatus.Farming
@@ -704,13 +789,13 @@ export class ContentServiceV2 {
         await this.taccountService.transfers({
           from: {
             type: WalletType.FARM_LOCKED,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: contentFarming.farmAmount,
           },
           to: [
             {
               type: WalletType.PERSONAL,
-              account: String(contentFarming.account),
+              user: String(contentFarming.user),
               value: contentFarming.farmAmount,
             },
           ],
@@ -736,10 +821,10 @@ export class ContentServiceV2 {
   };
 
   //for system only
-  expireFarm = async (contentId: string, accountId: string) => {
+  expireFarm = async (contentId: string, userId: string) => {
     //change status
     //move token from lock to personal
-    const contentFarming = await this.getContentFarming(contentId, accountId);
+    const contentFarming = await this.getContentFarming(contentId, userId);
     const session = await this.contentFarmingModel.startSession();
     contentFarming.status = ContentFarmingStatus.Farmed;
     contentFarming.endedAt = new Date();
@@ -756,13 +841,13 @@ export class ContentServiceV2 {
       await this.taccountService.transfers({
         from: {
           type: WalletType.FARM_LOCKED,
-          account: String(contentFarming.account),
+          user: String(contentFarming.user),
           value: contentFarming.farmAmount,
         },
         to: [
           {
             type: WalletType.PERSONAL,
-            account: String(contentFarming.account),
+            user: String(contentFarming.user),
             value: contentFarming.farmAmount,
           },
         ],
@@ -795,25 +880,84 @@ export class ContentServiceV2 {
     });
     return Promise.all(
       expiresFarmings.map((cf) =>
-        this.expireFarm(String(cf.content), String(cf.account)),
+        this.expireFarm(String(cf.content), String(cf.user)),
       ),
+    );
+  };
+
+  getUndistributedContentFarmingCDF = async () => {
+    const contents = await this.contentModel.find({
+      farming: { $exists: true },
+      'farming.isDistributed': { $ne: true },
+    });
+    return contents.map<ContentFarmingCDF>((content) => ({
+      contentId: content.id,
+      contentFarmings: content.farming,
+    }));
+  };
+
+  findCumulativeStats = (contentFarmingCDF: ContentFarmingCDF) => {
+    const now = new Date();
+    contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
+      (item) => {
+        item.cdfStat.adjustedFarmPeriod =
+          (now.getTime() - item.startAt.getTime()) / 86400000;
+        item.cdfStat.expoWeight = cdf(item.cdfStat.adjustedFarmPeriod, Math.E);
+        item.cdfStat.tokenWeight = item.cdfStat.expoWeight * item.farmAmount;
+        return item;
+      },
+    );
+    return contentFarmingCDF;
+  };
+
+  findWeight = (contentFarmingCDF: ContentFarmingCDF) => {
+    const totalExpo = contentFarmingCDF.contentFarmings.reduce(
+      (p, now) => p + now.cdfStat.tokenWeight,
+      0,
+    );
+    contentFarmingCDF.contentFarmings = contentFarmingCDF.contentFarmings.map(
+      (item) => {
+        item.weight = item.cdfStat.tokenWeight / totalExpo;
+        return item;
+      },
+    );
+    return contentFarmingCDF;
+  };
+
+  updateContentFarmingCDFStat = (contentFarmingCDF: ContentFarmingCDF) => {
+    return Promise.all(
+      contentFarmingCDF.contentFarmings.map((item) => {
+        item.markModified('cdfStat');
+        return item.save();
+      }),
+    );
+  };
+
+  updateAllUndistributedContentFarming = async () => {
+    const contentFarmingCDFs = await this.getUndistributedContentFarmingCDF();
+    return Promise.all(
+      contentFarmingCDFs.map((item) => {
+        item = this.findCumulativeStats(item);
+        item = this.findWeight(item);
+        return this.updateContentFarmingCDFStat(item);
+      }),
     );
   };
 
   pipeContentFarming = async (
     contentFarming: ContentFarming,
-    accountId: string,
+    userId: string,
   ) => {
     const balance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.PERSONAL,
     );
     const lockBalance = await this.taccountService.getAccountBalance(
-      accountId,
+      userId,
       WalletType.FARM_LOCKED,
     );
     const totalContentFarming = await this.contentFarmingModel.count({
-      account: accountId,
+      user: userId,
     });
     return new ContentFarmingReponse(
       contentFarming,
@@ -913,7 +1057,7 @@ export class ContentServiceV2 {
     viewer?: User,
   ) => {
     this.logger.log('Start get quote cast');
-    const [bundleContents] = await this.repository.aggregationContent({
+    const [contents] = await this.repository.aggregationContent({
       viewer: viewer,
       originalPost: contentId,
       maxResults: query.maxResults,
@@ -922,17 +1066,8 @@ export class ContentServiceV2 {
       isQuote: true,
     });
 
-    if (!bundleContents.contents.length)
-      return ResponseDto.ok({
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      });
-
-    this.logger.log('Success get quote cast');
-
     return this.toContentsResponses(
-      bundleContents,
+      contents,
       query.hasRelationshipExpansion,
       viewer,
     );
@@ -942,23 +1077,12 @@ export class ContentServiceV2 {
     { hasRelationshipExpansion, ...query }: PaginationQuery,
     viewer?: User,
   ) => {
-    const [bundleContents] = await this.repository.aggregationContent({
+    const [contents] = await this.repository.aggregationContent({
       viewer,
       ...query,
     });
 
-    if (!bundleContents.contents.length)
-      return ResponseDto.ok({
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      });
-
-    return this.toContentsResponses(
-      bundleContents,
-      hasRelationshipExpansion,
-      viewer,
-    );
+    return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
   };
 
   getContent = async (
@@ -966,47 +1090,43 @@ export class ContentServiceV2 {
     viewer?: User,
     hasRelationshipExpansion?: boolean,
   ) => {
-    const [bundleContents] = await this.repository.aggregationContent({
+    const [contents] = await this.repository.aggregationContent({
       viewer: viewer,
       _id: contentId,
     });
-    return this.toContentResponse(
-      bundleContents,
-      hasRelationshipExpansion,
-      viewer,
-    );
+    return this.toContentResponse(contents, hasRelationshipExpansion, viewer);
   };
 
-  createContent = async (body: CreateContentDto, user: User) => {
-    const userAccess = await this.repository.findUser({
+  createContent = async (body: CreateContentDto, requestedBy: User) => {
+    const author = await this.repository.findUser({
       _id: body.castcleId,
     });
-    if (!userAccess) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (!author) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    if (String(userAccess.ownerAccount) !== String(user.ownerAccount))
+    if (String(author.ownerAccount) !== String(requestedBy.ownerAccount))
       throw CastcleException.FORBIDDEN;
 
-    const convertImage = await this.repository.createContentImage(body, user);
+    const convertImage = await this.repository.createContentImage(
+      body,
+      author._id,
+    );
 
     const hashtags = this.hashtagService.extractHashtagFromContentPayload(
       body.payload,
     );
 
-    const author = new Author({
-      id: user._id,
-      avatar: user.profile?.images?.avatar || null,
-      castcleId: user.displayId,
-      displayName: user.displayName,
-      type: user.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
-      verified: user.verified,
-    });
-
     const newContent = {
-      ...convertImage,
-      author: author,
+      author: new Author({
+        id: author._id,
+        avatar: author.profile?.images?.avatar || null,
+        castcleId: author.displayId,
+        displayName: author.displayName,
+        type: author.type === UserType.PAGE ? UserType.PAGE : UserType.PEOPLE,
+        verified: author.verified,
+      }),
       payload: convertImage.payload,
       revisionCount: 0,
-      type: convertImage.type,
+      type: body.type,
       visibility: EntityVisibility.Publish,
       hashtags: hashtags,
     };
@@ -1087,5 +1207,148 @@ export class ContentServiceV2 {
     });
 
     return userParticipates as ResponseParticipate[];
+  };
+
+  getSearchRecent = async (
+    { hasRelationshipExpansion, ...query }: GetSearchQuery,
+    viewer?: User,
+  ) => {
+    const blocking = await this.userServiceV2.getUserBlock(viewer);
+
+    let [contents] = await this.repository.aggregationContent({
+      viewer,
+      executeAuthor: blocking,
+      ...query,
+    });
+    if (
+      contents.contents.length &&
+      contents.contents.length < query.maxResults
+    ) {
+      const [contentsMore] = await this.repository.aggregationContent({
+        viewer,
+        maxResults: query.maxResults - contents.contents.length,
+        executeContents: contents.contents.map((content) => content._id),
+        executeAuthor: blocking,
+      });
+
+      contents = this.getContentMore(contents, contentsMore);
+    }
+
+    return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
+  };
+  getSearchTrends = async (
+    { hasRelationshipExpansion, maxResults, ...query }: GetSearchQuery,
+    viewer: User,
+    account: Account,
+    token: string,
+  ) => {
+    const blocking = await this.userServiceV2.getUserBlock(viewer);
+
+    const contentKey = CacheStore.ofTrendsSearch(
+      `${query.keyword.input}${
+        query.contentType ? `-${query.contentType}` : ''
+      }`,
+    );
+    const scoreKey = CacheStore.ofTrendsSearch(
+      `${query.keyword.input}${
+        query.contentType ? `-${query.contentType}` : ''
+      }`,
+      token,
+    );
+
+    let contentScore = (await this.cacheManager.get(scoreKey))
+      ? JSON.parse(await this.cacheManager.get(scoreKey))
+      : undefined;
+
+    let contentsId = (await this.cacheManager.get(contentKey))
+      ? JSON.parse(await this.cacheManager.get(contentKey))
+      : undefined;
+
+    if (!contentsId) {
+      contentsId = await this.repository.findContents(
+        {
+          ...query,
+          maxResults: Environment.LIMIT_CONTENT,
+          decayDays: Environment.DECAY_DAY_CONTENT,
+          executeAuthor: blocking,
+        },
+        { projection: { _id: 1 } },
+      );
+
+      await this.cacheManager.set(contentKey, JSON.stringify(contentsId));
+    } else {
+      const sortId = Object.keys(contentScore).sort(
+        (a, b) => contentScore[b] - contentScore[a],
+      );
+      if (!(query.sinceId || query.untilId)) {
+        contentsId.length =
+          sortId.length > maxResults ? maxResults : sortId.length;
+      } else {
+        if (query.sinceId) {
+          const index = sortId.findIndex((id) => id === query.sinceId);
+          if (index > -1) {
+            contentsId = sortId.slice(index, contentsId);
+          }
+        }
+        if (query.untilId) {
+          const index = sortId.findIndex((id) => id === query.untilId);
+          if (index > 0) {
+            contentsId = sortId.slice(index + 1 - maxResults, index + 1);
+          }
+        }
+      }
+    }
+
+    if (!contentScore) {
+      contentScore = await this.sortContentsByScore(account._id, contentsId);
+      await this.cacheManager.set(scoreKey, JSON.stringify(contentScore));
+
+      const sortId = Object.keys(contentScore).sort(
+        (a, b) => contentScore[b] - contentScore[a],
+      );
+      contentsId.length =
+        sortId.length > maxResults ? maxResults : sortId.length;
+    }
+
+    let [contents] = await this.repository.aggregationContent({
+      viewer,
+      maxResults: maxResults,
+      _id: contentsId.map((content) => content?._id ?? content),
+      executeAuthor: blocking,
+      ...query,
+    });
+
+    contents.contents = contents.contents.sort(
+      (a, b) => contentScore[b._id] - contentScore[a._id],
+    );
+
+    if (!contents.contents)
+      return ResponseDto.ok({
+        payload: [],
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      });
+
+    if (contents.contents.length && contents.contents.length < maxResults) {
+      const [contentsMore] = await this.repository.aggregationContent({
+        viewer,
+        maxResults: maxResults - contents.contents.length,
+        executeContents: contents.contents.map((content) => content._id),
+        decayDays: Environment.DECAY_DAY_CONTENT,
+        executeAuthor: blocking,
+      });
+
+      const score = await this.sortContentsByScore(
+        account._id,
+        contentsMore.contents,
+      );
+
+      contentsMore.contents = contents.contents.sort(
+        (a, b) => score[b._id] - score[a._id],
+      );
+
+      contents = this.getContentMore(contents, contentsMore);
+    }
+    return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
   };
 }

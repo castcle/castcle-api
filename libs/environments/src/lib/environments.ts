@@ -93,16 +93,13 @@ export class Environment {
    * @default 8
    */
   static OTP_DIGITS = Number(process.env.OTP_DIGITS) || 8;
-  /**
-   * second for otp to expire
-   * @default 60 seconds
-   */
-  static OTP_EXPIRES_IN = Number(process.env.OTP_EXPIRES_IN) || 60;
   /** @default 10 minutes */
   static OTP_EMAIL_EXPIRES_IN = Number(process.env.OTP_EMAIL_EXPIRES_IN) || 10;
   static OTP_EMAIL_MAX_USAGE = Number(process.env.OTP_EMAIL_MAX_USAGE) || 10;
   static OTP_EMAIL_MAX_USAGE_HOURS =
     Number(process.env.OTP_EMAIL_MAX_USAGE_HOURS) || 24;
+  /** @default 10 minutes */
+  static OTP_PHONE_EXPIRES_IN = Number(process.env.OTP_PHONE_EXPIRES_IN) || 10;
   static OTP_PHONE_MAX_USAGE = Number(process.env.OTP_PHONE_MAX_USAGE) || 5;
   static OTP_PHONE_MAX_USAGE_HOURS =
     Number(process.env.OTP_PHONE_MAX_USAGE_HOURS) || 24;
@@ -210,7 +207,7 @@ export class Environment {
     Number(process.env.CASTCLE_ID_ALLOW_UPDATE_DAYS) || 60;
 
   // ADS
-  static ADS_MINIMUM_CPM = process.env.ADS_MINIMUM_CPM || 0.01;
+  static ADS_MINIMUM_CPM = Number(process.env.ADS_MINIMUM_CPM) || 0.001;
   static ADS_MINIMUM_FEED_VIEW = process.env.ADS_MINIMUM_FEED_VIEW || 6;
   static ADS_MINIMUM_FEED_COOL_DOWN =
     process.env.ADS_MINIMUM_FEED_COOL_DOWN || 15000;
@@ -236,4 +233,8 @@ export class Environment {
   static CONTENT_FARMING_COOLDOWN_HR = Number(
     process.env.CONTENT_FARMING_COOLDOWN_HR || 1 / 60 / 1000,
   ); //hours
+
+  // Setting cache content
+  static LIMIT_CONTENT = Number(process.env.LIMIT_CONTENT) || 2000;
+  static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
 }

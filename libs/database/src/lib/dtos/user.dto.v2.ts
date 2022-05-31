@@ -20,11 +20,16 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { IsNotEmpty, IsString } from 'class-validator';
-import { GetUserParam } from './user.dto';
+import { TransformKeywordStringToKeywordFilter } from '@castcle-api/utils/commons';
+import { IsNotEmpty } from 'class-validator';
+import { KeywordType } from '../models';
+import { PaginationQuery } from './pagination.dto';
 
-export class TargetIdParam extends GetUserParam {
-  @IsString()
+export class GetKeywordQuery extends PaginationQuery {
   @IsNotEmpty()
-  targetCastcleId: string;
+  @TransformKeywordStringToKeywordFilter()
+  keyword: {
+    input: string;
+    type: KeywordType;
+  };
 }

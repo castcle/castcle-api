@@ -24,7 +24,7 @@
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { ClientSession, FilterQuery, Model } from 'mongoose';
 import {
   GetBalanceResponse,
   pipelineOfGetBalanceFromWalletType,
@@ -79,10 +79,10 @@ export class TAccountService {
    * Get user's balance
    * @param {string} accountId
    */
-  getAccountBalance = async (accountId: string, walletType: WalletType) => {
+  getAccountBalance = async (userId: string, walletType: WalletType) => {
     const [balance] =
       await this._transactionModel.aggregate<GetBalanceResponse>(
-        pipelineOfGetBalanceFromWalletType(accountId, walletType),
+        pipelineOfGetBalanceFromWalletType(userId, walletType),
       );
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
@@ -113,9 +113,9 @@ export class TAccountService {
       return false;
     }
     //validate source balance
-    if (transferDTO.from.account && transferDTO.from.value) {
+    if (transferDTO.from.user && transferDTO.from.value) {
       const accountBalance = await this.getAccountBalance(
-        transferDTO.from.account,
+        transferDTO.from.user,
         transferDTO.from.type,
       );
       if (
@@ -129,10 +129,10 @@ export class TAccountService {
     return true;
   }
 
-  async transfers(transferDTO: TransactionDto) {
+  async transfers(transferDTO: TransactionDto, session?: ClientSession) {
     //check if balance available
     if (await this.validateTransfer(transferDTO))
-      return new this._transactionModel(transferDTO).save();
+      return new this._transactionModel(transferDTO).save({ session: session });
     else throw CastcleException.INVALID_TRANSACTIONS_DATA;
   }
 

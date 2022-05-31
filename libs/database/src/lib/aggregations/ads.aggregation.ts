@@ -99,4 +99,23 @@ export const pipe2AdsAuctionPrice = () => {
   ];
 };
 
+export const pipe2AvaialableAdsCampaign = () => [
+  {
+    $addFields: {
+      budgetLeft: {
+        $subtract: ['$detail.dailyBudget', '$statistics.dailySpent'],
+      },
+    },
+  },
+  {
+    $match: {
+      $expr: {
+        $gt: ['$budgetLeft', 0],
+      },
+      boostStatus: 'running',
+      'adsRef.$ref': 'content',
+    },
+  },
+];
+
 export const pipe2AdsAuctionAggregate = mockPipe2AdsAuctionAggregate; //will change once proof aggregate

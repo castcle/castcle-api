@@ -36,23 +36,25 @@ import {
   CommentParam,
   CreateCommentDto,
   ExpansionQuery,
+  GetContentDto,
+  GetContentQuery,
+  GetKeywordQuery,
+  GetSourceContentParam,
   GetUserParam,
   LikeCommentDto,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  QuoteCastDto,
   ReplyCommentParam,
   ResponseDto,
   SyncSocialDtoV2,
   TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
+  UpdateMobileDto,
   UpdateUserDtoV2,
-  GetContentDto,
-  GetSourceContentParam,
-  QuoteCastDto,
-  GetContentQuery,
 } from '@castcle-api/database/dtos';
 import { Comment, CommentType } from '@castcle-api/database/schemas';
 import { CacheKeyName } from '@castcle-api/environments';
@@ -64,6 +66,8 @@ import {
   CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
+  RequestMeta,
+  RequestMetadata,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
@@ -78,8 +82,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { TargetCastcleDto } from '../dtos';
+import {
+  ReportingUserDto,
+  TargetCastcleDto,
+  ReportingContentDto,
+} from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
+
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
@@ -103,6 +112,21 @@ export class UsersControllerV2 {
   }
 
   @CastcleBasicAuth()
+  @Put('me/mobile')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateMobile(
+    @Auth() authorizer: Authorizer,
+    @Body() updateMobileDto: UpdateMobileDto,
+    @RequestMeta() { ip }: RequestMetadata,
+  ) {
+    return this.userServiceV2.updateMobile(
+      authorizer.account,
+      updateMobileDto,
+      ip,
+    );
+  }
+
+  @CastcleBasicAuth()
   @Post(':userId/sync-social')
   async syncSocial(
     @Auth() authorizer: Authorizer,
@@ -119,22 +143,32 @@ export class UsersControllerV2 {
   }
 
   @CastcleAuth(CacheKeyName.Users)
+  @Get('by')
+  getUserByKeyword(
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetKeywordQuery,
+  ) {
+    authorizer.requestAccessForAccount(authorizer.account._id);
+    return this.userServiceV2.getUserByKeyword(query, authorizer.user);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
   @Get(':userId')
   async getUserById(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
     @Query() userQuery?: ExpansionQuery,
   ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
-
-    return this.userServiceV2.getById(
-      authorizer.user,
-      user,
-      userQuery?.hasRelationshipExpansion,
-      userQuery?.userFields,
-    );
+    return isMe
+      ? authorizer.user.toUserResponseV2({
+          passwordNotSet: !authorizer.account.password,
+        })
+      : this.userServiceV2.getById(
+          authorizer.user,
+          await this.userServiceV2.getUser(userId),
+          userQuery?.hasRelationshipExpansion,
+          userQuery?.userFields,
+        );
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -159,7 +193,7 @@ export class UsersControllerV2 {
         body.castcleId,
       );
 
-      if (String(userExisting?.id) !== String(user?.id))
+      if (userExisting && String(userExisting?.id) !== String(user?.id))
         throw CastcleException.USER_ID_IS_EXIST;
     }
 
@@ -735,5 +769,35 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(authorizer.account._id);
     return await this.contentServiceV2.getContents(query, user);
+  }
+
+  @Post(':userId/reporting/user')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportUser(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() { message, targetCastcleId }: ReportingUserDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.userServiceV2.reportUser(user, targetCastcleId, message);
+  }
+
+  @Post(':userId/reporting/content')
+  @CastcleBasicAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportContent(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Body() { message, targetContentId }: ReportingContentDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.userServiceV2.reportContent(user, targetContentId, message);
   }
 }

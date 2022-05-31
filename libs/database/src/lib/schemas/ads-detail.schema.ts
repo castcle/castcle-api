@@ -22,6 +22,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes } from 'mongoose';
 import { AdsPaymentMethod } from '../models';
 
 /**
@@ -38,7 +39,7 @@ export class AdsDetail {
   @Prop()
   code: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: SchemaTypes.Decimal128 })
   dailyBudget: number;
 
   @Prop({ required: true })

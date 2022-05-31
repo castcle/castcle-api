@@ -20,6 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastLogger } from '@castcle-api/logger';
+import { Mailer } from '@castcle-api/utils/clients';
 import { LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
@@ -28,45 +30,80 @@ import { Model, Types } from 'mongoose';
 import {
   CastcleQueryOptions,
   EntityVisibility,
+  GetKeywordQuery,
   Meta,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
+  ResponseDto,
   SortDirection,
+  UpdateMobileDto,
   UserField,
 } from '../dtos';
-import { UserType } from '../models';
+import { CampaignType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, SocialSync, User } from '../schemas';
+import { AnalyticService } from './analytic.service';
+import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
 import { NotificationService } from './notification.service';
-import { UserService } from './user.service';
 
 @Injectable()
 export class UserServiceV2 {
+  private logger = new CastLogger();
+
   constructor(
     @InjectModel('Account')
-    public _accountModel: Model<Account>,
+    private accountModel: Model<Account>,
     @InjectModel('Relationship')
-    private _relationshipModel: Model<Relationship>,
+    private relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
-    private _socialSyncModel: Model<SocialSync>,
+    private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
-    public _userModel: Model<User>,
+    private userModel: Model<User>,
+    private analyticService: AnalyticService,
+    private campaignService: CampaignService,
     private contentService: ContentService,
-    private repositoryService: Repository,
-    private userService: UserService,
+    private mailerService: Mailer,
     private notificationService: NotificationService,
+    private repositoryService: Repository,
   ) {}
 
   getUser = async (userId: string) => {
-    const user = await this.userService.getByIdOrCastcleId(userId);
+    const user = await this.repositoryService.findUser({ _id: userId });
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     return user;
   };
 
-  private async convertUsersToUserResponsesV2(
+  getUserBlock = async (viewer: User) => {
+    if (!viewer) return [];
+    const isRelationships = await this.repositoryService.findRelationships(
+      {
+        followedUser: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { user: 1 },
+      },
+    );
+
+    const byRelationships = await this.repositoryService.findRelationships(
+      {
+        userId: viewer._id,
+        blocking: true,
+      },
+      {
+        projection: { followedUser: 1 },
+      },
+    );
+    return [
+      ...isRelationships.map((item) => item.user),
+      ...byRelationships.map((item) => item.followedUser),
+    ];
+  };
+
+  async convertUsersToUserResponsesV2(
     viewer: User | null,
     users: User[],
     hasRelationshipExpansion = false,
@@ -85,7 +122,7 @@ export class UserServiceV2 {
     const userIds = users.map((user) => user.id);
 
     const relationships = viewer
-      ? await this._relationshipModel.find({
+      ? await this.relationshipModel.find({
           $or: [
             { user: viewer._id, followedUser: { $in: userIds } },
             { user: { $in: userIds }, followedUser: viewer._id },
@@ -99,14 +136,12 @@ export class UserServiceV2 {
         const syncSocials =
           String(item.ownerAccount) === String(viewer.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
-            ? await this._socialSyncModel.find({ 'author.id': item.id }).exec()
+            ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
           ? String(item.ownerAccount) === String(viewer.ownerAccount)
-            ? await this._accountModel
-                .findOne({ _id: item.ownerAccount })
-                .exec()
+            ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
             : undefined
           : undefined;
 
@@ -115,7 +150,9 @@ export class UserServiceV2 {
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
-          ? await this.userService.getBalance(item)
+          ? await this.repositoryService.getBalance({
+              accountId: String(item.ownerAccount),
+            })
           : undefined;
 
         const userResponse =
@@ -231,7 +268,7 @@ export class UserServiceV2 {
 
     if (!blockUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const session = await this._relationshipModel.startSession();
+    const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
       await this.repositoryService.updateRelationship(
         { user: user._id, followedUser: blockUser._id },
@@ -271,7 +308,7 @@ export class UserServiceV2 {
 
     if (!unblockedUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
-    const session = await this._relationshipModel.startSession();
+    const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
       const [blockerRelation, blockedRelation] = await Promise.all([
         this.repositoryService.findRelationship(
@@ -398,5 +435,138 @@ export class UserServiceV2 {
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     await user.unfollow(targetUser);
+  }
+
+  async reportContent(user: User, targetContentId: string, message: string) {
+    const targetContent = await this.repositoryService.findContent({
+      _id: targetContentId,
+    });
+
+    if (!targetContent) throw CastcleException.CONTENT_NOT_FOUND;
+
+    const engagementFilter = {
+      user: user._id,
+      targetRef: { $ref: 'content', $id: targetContent._id },
+      type: EngagementType.Report,
+    };
+
+    await this.repositoryService
+      .updateEngagement(
+        engagementFilter,
+        { ...engagementFilter, visibility: EntityVisibility.Publish },
+        { upsert: true },
+      )
+      .exec();
+
+    await this.mailerService.sendReportContentEmail(
+      { _id: user._id, displayName: user.displayName },
+      {
+        _id: targetContent._id,
+        payload: targetContent.payload,
+        author: {
+          _id: targetContent.author.id,
+          displayName: targetContent.author.displayName,
+        },
+      },
+      message,
+    );
+  }
+
+  async reportUser(user: User, targetCastcleId: string, message: string) {
+    const targetUser = await this.repositoryService.findUser({
+      _id: targetCastcleId,
+    });
+
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    await this.mailerService.sendReportUserEmail(
+      { _id: user._id, displayName: user.displayName },
+      { _id: targetUser._id, displayName: targetUser.displayName },
+      message,
+    );
+  }
+
+  async updateMobile(
+    account: Account,
+    { objective, refCode, countryCode, mobileNumber }: UpdateMobileDto,
+    ip: string,
+  ) {
+    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const otp = await this.repositoryService.findOtp({
+      objective,
+      receiver: countryCode + mobileNumber,
+    });
+
+    if (!otp?.isVerify) {
+      throw CastcleException.INVALID_REF_CODE;
+    }
+    if (!otp.isValid()) {
+      await otp.updateOne({ isVerify: false, retry: 0 });
+      throw CastcleException.EXPIRED_OTP;
+    }
+    if (otp.refCode !== refCode) {
+      await otp.failedToVerify().save();
+      throw otp.exceededMaxRetries()
+        ? CastcleException.OTP_USAGE_LIMIT_EXCEEDED
+        : CastcleException.INVALID_REF_CODE;
+    }
+
+    await Promise.all([
+      otp.markCompleted().save(),
+      account.set({ mobile: { countryCode, number: mobileNumber } }).save(),
+      this.userModel.updateMany(
+        { ownerAccount: account._id },
+        { 'verified.mobile': true },
+      ),
+      this.analyticService.trackMobileVerification(
+        ip,
+        account.id,
+        countryCode,
+        mobileNumber,
+      ),
+    ]);
+
+    try {
+      await this.campaignService.claimCampaignsAirdrop(
+        account._id,
+        CampaignType.VERIFY_MOBILE,
+      );
+
+      await this.campaignService.claimCampaignsAirdrop(
+        String(account.referralBy),
+        CampaignType.FRIEND_REFERRAL,
+      );
+    } catch (error: unknown) {
+      this.logger.error(error, `updateMobile:claimAirdrop:error`);
+    }
+  }
+  async getUserByKeyword(
+    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
+    viewer: User,
+  ) {
+    const blocking = await this.getUserBlock(viewer);
+
+    const users = await this.repositoryService.findUsers({
+      execute: blocking,
+      ...query,
+    });
+
+    if (!users.length)
+      return ResponseDto.ok({
+        payload: [],
+        meta: { resultCount: 0 },
+      });
+
+    const userResponses = await this.convertUsersToUserResponsesV2(
+      viewer,
+      users,
+      hasRelationshipExpansion,
+      userFields,
+    );
+    return ResponseDto.ok({
+      payload: userResponses,
+      meta: Meta.fromDocuments(userResponses as any),
+    });
   }
 }

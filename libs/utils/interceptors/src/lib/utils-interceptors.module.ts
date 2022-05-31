@@ -21,11 +21,9 @@
  * or have any questions.
  */
 
-import { CaslModule } from '@castcle-api/casl';
 import { DatabaseModule } from '@castcle-api/database';
 import { CastcleCacheModule } from '@castcle-api/environments';
 import { Module } from '@nestjs/common';
-import { AwsXRayInterceptor } from './aws-xray/aws-xray.interceptor';
 import { HttpCacheClearInterceptor } from './cache/http.cache.clear.intercepter';
 import { HttpCacheIndividualInterceptor } from './cache/http.cache.individual.interceptor';
 import {
@@ -36,7 +34,6 @@ import {
   CredentialInterceptor,
   CredentialRequest,
 } from './credential/credential.interceptor';
-import { ExceptionFilter } from './exception/exception.interceptor';
 import {
   HeadersInterceptor,
   HeadersRequest,
@@ -45,7 +42,7 @@ import { IpTrackerInterceptor } from './ip-tracker/ip-tracker.interceptor';
 import { TokenInterceptor, TokenRequest } from './token/token.interceptor';
 
 @Module({
-  imports: [DatabaseModule, CaslModule, CastcleCacheModule],
+  imports: [DatabaseModule, CastcleCacheModule],
   controllers: [],
   providers: [],
   exports: [],
@@ -63,7 +60,5 @@ export {
   HttpCacheSharedInterceptor,
   HttpCacheSharedWithQueryInterceptor,
   HttpCacheClearInterceptor,
-  ExceptionFilter,
   IpTrackerInterceptor,
-  AwsXRayInterceptor,
 };
