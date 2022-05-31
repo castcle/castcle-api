@@ -32,13 +32,15 @@ import {
   GetUserRelationResponseCount,
   pipelineOfUserRelationFollowersCountV2,
   pipelineOfUserRelationFollowersV2,
+  pipelineOfUserRelationFollowingV2,
+  pipelineOfUserRelationFollowingCountV2,
 } from '../aggregations';
 import {
   CastcleQueryOptions,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
-  GetKeywordQuery,
   GetFollowQuery,
+  GetKeywordQuery,
   Meta,
   NotificationSource,
   NotificationType,
@@ -579,6 +581,52 @@ export class UserServiceV2 {
     });
   }
 
+  async getFollowing(
+    account: Account,
+    targetUser: User,
+    followQuery: GetFollowQuery,
+  ) {
+    const params: GetUserRelationParamsV2 = {
+      userId: targetUser._id,
+      limit: followQuery.maxResults ?? DEFAULT_QUERY_OPTIONS.limit,
+      sinceId: followQuery.sinceId,
+      untilId: followQuery.untilId,
+      userTypes: followQuery.type,
+      sortBy: followQuery.sort,
+    };
+
+    const [userRelation, userRelationCount, viewer] = await Promise.all([
+      this.repositoryService.aggregateRelationship<Relationship>(
+        pipelineOfUserRelationFollowingV2(params),
+      ),
+      this.repositoryService.aggregateRelationship<GetUserRelationResponseCount>(
+        pipelineOfUserRelationFollowingCountV2(params),
+      ),
+      this.repositoryService.findUser({ accountId: account._id }),
+    ]);
+
+    const followingUsersId = userRelation.flatMap(({ _id, followedUser }) => {
+      return {
+        userId: followedUser[0]?._id,
+        relationshipId: _id,
+      };
+    });
+
+    const { users } = await this.getByCriteria(
+      viewer,
+      { _id: followingUsersId.map((f) => f.userId) },
+      {},
+      followQuery.hasRelationshipExpansion,
+    );
+
+    const relationTotal = userRelationCount[0]?.total ?? 0;
+
+    return {
+      users: this.mergeRelationUser(followingUsersId, users),
+      meta: Meta.fromDocuments(userRelation, relationTotal),
+    };
+  }
+
   async getFollowers(
     account: Account,
     targetUser: User,
@@ -605,7 +653,6 @@ export class UserServiceV2 {
       this.repositoryService.findUser({ accountId: account._id }),
     ]);
 
-    console.log({ userRelation });
     const followingUsersId = userRelation.flatMap(({ _id, user }) => {
       return {
         userId: user[0]?._id,
