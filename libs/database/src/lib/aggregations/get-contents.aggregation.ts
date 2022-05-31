@@ -292,7 +292,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$_id',
-                userId: query.viewer._id,
+                userId: query.viewer?._id,
               },
               pipeline: [
                 {
@@ -326,7 +326,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$originalPost._id',
-                userId: query.viewer._id,
+                userId: query.viewer?._id,
               },
               pipeline: [
                 {

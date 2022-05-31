@@ -39,6 +39,8 @@ import {
 } from '@castcle-api/database/dtos';
 import { Environment } from '@castcle-api/environments';
 import {
+  Auth,
+  Authorizer,
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
@@ -199,15 +201,15 @@ export class AuthenticationControllerV2 {
   )
   @Post('verify-password')
   async requestOtpForChangingPassword(
+    @Auth() { account }: Authorizer,
     @Body() requestOtpDto: RequestOtpForChangingPasswordDto,
-    @Req() { $credential }: CredentialRequest,
     @RequestMeta() requestMetadata: RequestMetadata,
   ) {
     const { refCode, expireDate } =
       await this.authenticationService.requestOtpForChangingPassword({
         ...requestOtpDto,
         ...requestMetadata,
-        requestedBy: $credential.account,
+        requestedBy: account,
       });
 
     return { refCode, objective: requestOtpDto.objective, expireDate };
