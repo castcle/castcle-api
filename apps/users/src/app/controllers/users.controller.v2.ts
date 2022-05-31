@@ -38,6 +38,7 @@ import {
   ExpansionQuery,
   GetContentDto,
   GetContentQuery,
+  GetFollowQuery,
   GetKeywordQuery,
   GetSourceContentParam,
   GetUserParam,
@@ -769,6 +770,26 @@ export class UsersControllerV2 {
 
     authorizer.requestAccessForAccount(authorizer.account._id);
     return await this.contentServiceV2.getContents(query, user);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/followers')
+  async getUserFollower(
+    @Param() { isMe, userId }: GetUserParam,
+    @Auth() authorizer: Authorizer,
+    @Query() query: GetFollowQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    const { users, meta } = await this.userServiceV2.getFollowers(
+      authorizer.account,
+      user,
+      query,
+    );
+
+    return ResponseDto.ok({ payload: users, meta });
   }
 
   @Post(':userId/reporting/user')

@@ -774,6 +774,7 @@ export class UsersController {
       )}`,
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
+
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     const { users, meta } = await this.userService.getFollowers(
