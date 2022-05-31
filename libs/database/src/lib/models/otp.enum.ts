@@ -22,8 +22,8 @@
  */
 
 export enum OtpObjective {
-  ChangePassword = 'change_password',
-  ForgotPassword = 'forgot_password',
-  VerifyMobile = 'verify_mobile',
-  MergeAccount = 'merge_account',
+  CHANGE_PASSWORD = 'change_password',
+  FORGOT_PASSWORD = 'forgot_password',
+  MERGE_ACCOUNT = 'merge_account',
+  VERIFY_MOBILE = 'verify_mobile',
 }

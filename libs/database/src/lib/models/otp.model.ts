@@ -26,7 +26,7 @@ import { OtpObjective } from './otp.enum';
 export class OtpTemplateMessage {
   static from(objective: OtpObjective, username = '') {
     switch (objective) {
-      case OtpObjective.ForgotPassword:
+      case OtpObjective.FORGOT_PASSWORD:
         return {
           twilio_name: username,
           twilio_message_body:

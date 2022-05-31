@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleImage } from '.';
+import { CastcleImage } from './common.dto';
 import { PageVerified, UserVerified } from '../models';
 
 export interface AccessTokenPayload {

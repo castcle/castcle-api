@@ -45,6 +45,7 @@ import {
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
+  RequestOtpForChangingPasswordDto,
   SocialConnectDto,
   UserAccessTokenPayload,
   VerifyOtpByEmailDto,
@@ -522,6 +523,35 @@ export class AuthenticationServiceV2 {
     });
   }
 
+  async requestOtpForChangingPassword({
+    email,
+    password,
+    objective,
+    requestedBy,
+    userAgent,
+  }: RequestOtpForChangingPasswordDto & {
+    requestedBy: Account;
+    userAgent?: string;
+  }) {
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+    if (account.id === requestedBy.id) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+    if (!account.verifyPassword(password)) {
+      throw CastcleException.INVALID_PASSWORD;
+    }
+
+    return this.requestOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      account,
+      requestedBy: requestedBy._id,
+      userAgent,
+    });
+  }
+
   async requestOtpByMobile({
     countryCode,
     mobileNumber,
@@ -658,7 +688,7 @@ export class AuthenticationServiceV2 {
       account,
     });
 
-    if (objective !== OtpObjective.MergeAccount) return { otp };
+    if (objective !== OtpObjective.MERGE_ACCOUNT) return { otp };
 
     await this.linkCredentialToAccount(credential, account);
     const { accessToken } = await this.login(credential, account);
@@ -749,11 +779,11 @@ export class AuthenticationServiceV2 {
   }: ChangePasswordDto & { requestedBy: Account }) {
     const account = await this.repository.findAccount({ email });
 
-    if (objective === OtpObjective.ForgotPassword && !requestedBy.isGuest) {
+    if (objective === OtpObjective.FORGOT_PASSWORD && !requestedBy.isGuest) {
       throw CastcleException.INVALID_ACCESS_TOKEN;
     }
     if (
-      objective === OtpObjective.ChangePassword &&
+      objective === OtpObjective.CHANGE_PASSWORD &&
       String(requestedBy._id) !== account?.id
     ) {
       throw CastcleException.INVALID_ACCESS_TOKEN;
