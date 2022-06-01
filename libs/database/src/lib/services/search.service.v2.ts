@@ -35,7 +35,7 @@ import {
 import { User } from '../schemas';
 import { UserServiceV2 } from './user.service.v2';
 import { Hashtag } from './../schemas/hashtag.schema';
-import { ExecuteType } from './../models/feed.enum';
+import { ExcludeType } from './../models/feed.enum';
 import { Repository } from './../repositories/index';
 
 @Injectable()
@@ -71,16 +71,19 @@ export class SearchServiceV2 {
     let hashtag = [];
     let users = [];
 
-    if (!exclude?.includes(ExecuteType.Hashtags))
+    if (!exclude?.includes(ExcludeType.Hashtags))
       hashtag = await this.repository.findHashtags(
         {},
         { limit: +limit, sort: { score: -1 } },
       );
 
-    if (!exclude?.includes(ExecuteType.Users)) {
-      const blocking = await this.userServiceV2.getUserBlock(viewer);
+    if (!exclude?.includes(ExcludeType.Users)) {
+      const blocking = await this.userServiceV2.getUserRelationships(
+        viewer,
+        true,
+      );
       users = await this.repository.findUsers(
-        { execute: blocking },
+        { excludeRelationship: blocking },
         { limit: +limit, sort: { followCount: -1 } },
       );
     }
@@ -105,11 +108,14 @@ export class SearchServiceV2 {
       { limit: +limit, sort: { score: -1 } },
     );
 
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     const users = await this.repository.findUsers(
       {
-        execute: blocking,
+        excludeRelationship: blocking,
         keyword: keyword,
       },
       { limit: +limit, sort: { followCount: -1 } },
@@ -137,12 +143,28 @@ export class SearchServiceV2 {
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
-    const users = await this.repository.findUsers({
-      execute: blocking,
-      ...query,
-    });
+    const following = await this.userServiceV2.getUserRelationships(
+      viewer,
+      false,
+    );
+
+    const users = await this.repository.findUsers(
+      {
+        excludeRelationship: blocking,
+        _id: following,
+        ...query,
+      },
+      {
+        sort: {
+          followCount: -1,
+        },
+      },
+    );
 
     if (!users.length)
       return ResponseDto.ok({
@@ -163,10 +185,13 @@ export class SearchServiceV2 {
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     const users = await this.repository.findUsers({
-      execute: blocking,
+      excludeRelationship: blocking,
       ...query,
     });
 

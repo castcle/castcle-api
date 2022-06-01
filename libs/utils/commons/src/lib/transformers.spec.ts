@@ -24,7 +24,7 @@
 import { plainToClass } from 'class-transformer';
 import {
   RemoveLeadingZero,
-  TransformKeywordStringToKeywordFilter,
+  TransformStringToKeyword,
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
   TransformStringToEnum,
@@ -132,9 +132,9 @@ describe('RemoveLeadingZero', () => {
   });
 });
 
-describe('TransformKeywordStringToKeywordFilter', () => {
+describe('TransformStringToKeyword', () => {
   class Target {
-    @TransformKeywordStringToKeywordFilter()
+    @TransformStringToKeyword()
     keyword: string;
   }
 

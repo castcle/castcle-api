@@ -41,7 +41,7 @@ export enum KeywordType {
   Word = 'word',
 }
 
-export enum ExecuteType {
+export enum ExcludeType {
   Hashtags = 'hashtags',
   Users = 'users',
 }
