@@ -22,6 +22,7 @@
  */
 
 import { CastcleException } from '@castcle-api/utils/exception';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
@@ -39,8 +40,8 @@ import {
   EntityVisibility,
   Pagination,
 } from '../dtos/common.dto';
-import { PageDto, UpdateModelUserDto } from '../dtos/user.dto';
-import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { PageDto, SocialPageDto, UpdateModelUserDto } from '../dtos/user.dto';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { QueueName, WalletType } from '../models';
 import {
   Account,
@@ -55,8 +56,6 @@ import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
-import { SocialPageDto } from '../dtos/user.dto';
-import { getQueueToken } from '@nestjs/bull';
 
 describe('User Service', () => {
   let mongod: MongoMemoryReplSet;

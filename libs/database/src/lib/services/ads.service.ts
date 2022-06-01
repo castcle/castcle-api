@@ -55,6 +55,7 @@ import {
   UserType,
   WalletType,
 } from '../models';
+import { FilterInterval } from '../models/ads.enum';
 import {
   AdsCampaign,
   AdsPlacement,
@@ -62,12 +63,11 @@ import {
   ContentFarming,
   MicroTransaction,
   TLedger,
-  toSignedContentPayloadItem,
   User,
+  toSignedContentPayloadItem,
 } from '../schemas';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
-import { FilterInterval } from '../models/ads.enum';
 import { DataService } from './data.service';
 import { TAccountService } from './taccount.service';
 

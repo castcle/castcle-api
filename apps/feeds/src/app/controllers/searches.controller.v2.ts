@@ -21,6 +21,11 @@
  * or have any questions.
  */
 
+import {
+  GetKeywordQuery,
+  GetTopTrendQuery,
+  SearchServiceV2,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
@@ -29,11 +34,6 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { Get, Query } from '@nestjs/common';
-import {
-  SearchServiceV2,
-  GetKeywordQuery,
-  GetTopTrendQuery,
-} from '@castcle-api/database';
 
 @CastcleControllerV2({ path: 'searches' })
 export class SearchesControllerV2 {

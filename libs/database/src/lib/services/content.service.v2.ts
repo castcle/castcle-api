@@ -20,29 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { CacheStore, Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  CACCOUNT_NO,
-  ContentFarmingStatus,
-  ContentMessage,
-  ContentMessageEvent,
-  EngagementType,
-  QueueName,
-  UserType,
-  WalletType,
-} from '../models';
-import {
-  Account,
-  Content,
-  ContentFarming,
-  signedContentPayloadItem,
-  toUnsignedContentPayloadItem,
-  User,
-} from '../schemas';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { NotificationServiceV2 } from './notification.service.v2';
+import { Queue } from 'bull';
+import { Cache } from 'cache-manager';
+import cdf from 'castcle-cdf';
+import { Model, Types } from 'mongoose';
 import {
   Author,
   CastcleIncludes,
@@ -59,22 +47,34 @@ import {
   ResponseParticipate,
   ShortPayload,
 } from '../dtos';
-import { Types } from 'mongoose';
-import { TAccountService } from './taccount.service';
+import {
+  CACCOUNT_NO,
+  ContentFarmingStatus,
+  ContentMessage,
+  ContentMessageEvent,
+  EngagementType,
+  QueueName,
+  UserType,
+  WalletType,
+} from '../models';
 import {
   ContentFarmingCDF,
   ContentFarmingReponse,
 } from '../models/content-farming.model';
 import { Repository } from '../repositories';
-import { CacheStore, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { HashtagService } from './hashtag.service';
+import {
+  Account,
+  Content,
+  ContentFarming,
+  User,
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+} from '../schemas';
 import { DataService } from './data.service';
-import { Cache } from 'cache-manager';
+import { HashtagService } from './hashtag.service';
+import { NotificationServiceV2 } from './notification.service.v2';
+import { TAccountService } from './taccount.service';
 import { UserServiceV2 } from './user.service.v2';
-import cdf from 'castcle-cdf';
 
 @Injectable()
 export class ContentServiceV2 {

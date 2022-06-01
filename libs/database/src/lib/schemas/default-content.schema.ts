@@ -21,9 +21,9 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { SchemaTypes, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class DefaultContent extends CastcleBase {

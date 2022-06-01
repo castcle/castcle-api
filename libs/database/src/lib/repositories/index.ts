@@ -57,6 +57,8 @@ import {
   CreateContentDto,
   CreateCredentialDto,
   EntityVisibility,
+  NotificationSource,
+  NotificationType,
   RefreshTokenPayload,
   ShortPayload,
   Url,
@@ -83,7 +85,6 @@ import {
   User,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
-import { NotificationSource, NotificationType } from '../dtos';
 
 type AccountQuery = {
   _id?: string;
@@ -725,11 +726,9 @@ export class Repository {
     updateQuery?: UpdateQuery<Notification>,
     queryOptions?: QueryOptions,
   ) {
-    return this.notificationModel.updateOne(
-      this.getNotificationQuery(filter),
-      updateQuery,
-      queryOptions,
-    );
+    return this.notificationModel
+      .updateOne(this.getNotificationQuery(filter), updateQuery, queryOptions)
+      .exec();
   }
 
   updateNotifications(

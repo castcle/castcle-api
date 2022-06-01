@@ -21,22 +21,22 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthenticationService } from './authentication.service';
-import { ContentService } from './content.service';
-import { Account, Credential } from '../schemas';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  MongooseForFeatures,
   MongooseAsyncFeatures,
+  MongooseForFeatures,
   UserService,
 } from '../database.module';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { UxEngagementService } from './uxengagement.service';
-import { HashtagService } from './hashtag.service';
-import { CacheModule } from '@nestjs/common';
-import { getQueueToken } from '@nestjs/bull';
 import { QueueName } from '../models';
+import { Account, Credential } from '../schemas';
+import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
+import { HashtagService } from './hashtag.service';
+import { UxEngagementService } from './uxengagement.service';
 
 describe('UxEngagement Service', () => {
   let mongod: MongoMemoryServer;

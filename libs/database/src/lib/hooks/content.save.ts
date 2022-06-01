@@ -22,9 +22,9 @@
  */
 
 import { Model } from 'mongoose';
-import { EntityVisibility } from '../dtos/common.dto';
 import * as mongoose from 'mongoose';
-import { Content, User, Revision, Relationship, FeedItem } from '../schemas';
+import { EntityVisibility } from '../dtos/common.dto';
+import { Content, FeedItem, Relationship, Revision, User } from '../schemas';
 
 type HookModels = {
   revisionModel: Model<Revision>;

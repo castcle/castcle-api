@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { HttpModule } from '@nestjs/axios';
+import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccessTokenResponse,
   AppleIdTokenType,
   RefreshTokenResponse,
 } from 'apple-sign-in-rest';
-import { HttpModule } from '@nestjs/axios';
-import { Test, TestingModule } from '@nestjs/testing';
 import { AppleClient } from './apple.client';
 
 export class AppleClientMock {

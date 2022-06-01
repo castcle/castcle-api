@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import { Request } from 'express';
 import { CastcleException } from '@castcle-api/utils/exception';
+import { Request } from 'express';
 
 export const getTokenFromRequest = (request: Request) => {
   const token = request.headers.authorization?.split(' ')?.[1];

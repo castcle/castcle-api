@@ -20,11 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import {
   AnalyticService,
   AuthenticationService,
@@ -34,18 +37,14 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
-import { generateMockUsers, MockUserDetail } from '../mocks';
 import { CreateHashtag } from '../dtos/hashtag.dto';
+import { MockUserDetail, generateMockUsers } from '../mocks';
+import { ExcludeType, KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
+import { CampaignService } from './campaign.service';
+import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { SearchServiceV2 } from './search.service.v2';
-import { getQueueToken } from '@nestjs/bull';
-import { QueueName } from '../models';
-import { Types } from 'mongoose';
-import { ExcludeType, KeywordType } from './../models/feed.enum';
-import { ContentService } from './content.service';
-import { Mailer } from '@castcle-api/utils/clients';
-import { CampaignService } from './campaign.service';
 
 describe('SearchServiceV2', () => {
   let mongod: MongoMemoryServer;

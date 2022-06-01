@@ -22,16 +22,11 @@
  */
 import {
   AuthenticationService,
-  ContentService,
-  getSocialPrefix,
-  SocialSyncService,
-  UserService,
-  UserType,
-} from '@castcle-api/database';
-import {
   ContentResponse,
+  ContentService,
   ContentsResponse,
   CreatePageSocialDto,
+  Credential,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   GetContentsDto,
@@ -40,10 +35,13 @@ import {
   PagesResponse,
   SocialPageDto,
   SocialSyncDto,
+  SocialSyncService,
   SortDirection,
   UpdatePageDto,
+  UserService,
+  UserType,
+  getSocialPrefix,
 } from '@castcle-api/database';
-import { Credential } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

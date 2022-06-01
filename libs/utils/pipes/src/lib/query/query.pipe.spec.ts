@@ -22,7 +22,7 @@
  */
 
 import { DEFAULT_QUERY_OPTIONS } from '@castcle-api/database';
-import { LimitPipe, LIMIT_MAX, PagePipe, SortByPipe } from './query.pipe';
+import { LIMIT_MAX, LimitPipe, PagePipe, SortByPipe } from './query.pipe';
 
 describe('SortByPipe', () => {
   let pipe: SortByPipe;

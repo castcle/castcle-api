@@ -25,7 +25,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { connect, disconnect, model, Types } from 'mongoose';
+import { Types, connect, disconnect, model } from 'mongoose';
 import {
   CampaignService,
   MongooseAsyncFeatures,

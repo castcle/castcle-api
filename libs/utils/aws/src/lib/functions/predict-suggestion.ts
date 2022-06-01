@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import * as AWS from 'aws-sdk';
 import { Configs } from '@castcle-api/environments';
+import * as AWS from 'aws-sdk';
 
 type SuggestionType = {
   statusCode: number;

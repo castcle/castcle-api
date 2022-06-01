@@ -32,11 +32,10 @@ import {
   ResponseDto,
   TopTrendsResponseDto,
 } from '../dtos';
-import { User } from '../schemas';
+import { ExcludeType } from '../models';
+import { Repository } from '../repositories';
+import { Hashtag, User } from '../schemas';
 import { UserServiceV2 } from './user.service.v2';
-import { Hashtag } from './../schemas/hashtag.schema';
-import { ExcludeType } from './../models/feed.enum';
-import { Repository } from './../repositories/index';
 
 @Injectable()
 export class SearchServiceV2 {

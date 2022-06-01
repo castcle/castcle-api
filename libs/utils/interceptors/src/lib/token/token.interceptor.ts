@@ -22,11 +22,11 @@
  */
 import { CallHandler, ExecutionContext, Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import * as util from '../util';
 import {
   HeadersInterceptor,
   HeadersRequest,
 } from '../headers/headers.interceptor';
+import * as util from '../util';
 
 export interface TokenRequest extends HeadersRequest {
   $token: string;

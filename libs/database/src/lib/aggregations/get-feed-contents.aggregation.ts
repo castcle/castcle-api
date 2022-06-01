@@ -24,7 +24,7 @@
 import { FilterQuery, Types } from 'mongoose';
 import { Author, CastcleMetric } from '../dtos';
 import { EngagementType } from '../models';
-import { DefaultContent, GuestFeedItem, FeedItem, Content } from '../schemas';
+import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;

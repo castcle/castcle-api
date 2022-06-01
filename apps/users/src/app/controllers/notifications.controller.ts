@@ -22,16 +22,14 @@
  */
 
 import {
-  createCastcleMeta,
-  NotificationService,
-  UserService,
-} from '@castcle-api/database';
-import {
   NotificationBadgesResponse,
   NotificationQuery,
   NotificationResponse,
+  NotificationService,
   NotificationSource,
   RegisterTokenDto,
+  UserService,
+  createCastcleMeta,
 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
