@@ -145,13 +145,13 @@ export class UserServiceV2 {
     return Promise.all(
       users.map(async (item) => {
         const syncSocials =
-          String(item.ownerAccount) === String(viewer.ownerAccount) &&
+          String(item.ownerAccount) === String(viewer?.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
             ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(item.ownerAccount) === String(viewer.ownerAccount)
+          ? String(item.ownerAccount) === String(viewer?.ownerAccount)
             ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
             : undefined
           : undefined;
