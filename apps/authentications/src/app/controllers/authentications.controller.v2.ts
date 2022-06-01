@@ -36,6 +36,7 @@ import {
   VerifyOtpByMobileDto,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
+import { Host } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
@@ -294,5 +295,18 @@ export class AuthenticationControllerV2 {
     };
 
     return await this.authenticationService.guestLogin(requestOption);
+  }
+
+  @CastcleBasicAuth()
+  @Post('request-link/email')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  requestVerificationLink(
+    @Auth() { account }: Authorizer,
+    @Req() req: CredentialRequest,
+  ) {
+    return this.authenticationService.requestVerificationLink(
+      account,
+      Host.getHostname(req),
+    );
   }
 }
