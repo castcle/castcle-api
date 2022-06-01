@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import * as AWS from 'aws-sdk';
 import { Configs } from '@castcle-api/environments';
+import * as AWS from 'aws-sdk';
 
 export const predictContents = (accountId: string, contents: string[]) => {
   const lambda = new AWS.Lambda({ region: 'us-east-1' });

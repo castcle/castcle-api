@@ -21,8 +21,13 @@
  * or have any questions.
  */
 
-import { AuthenticationService, UserService } from '@castcle-api/database';
-import { Account, Credential, User } from '@castcle-api/database';
+import {
+  Account,
+  AuthenticationService,
+  Credential,
+  User,
+  UserService,
+} from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {

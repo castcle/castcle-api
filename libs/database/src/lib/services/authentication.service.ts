@@ -41,15 +41,15 @@ import {
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
 import {
+  AccountRequirements,
   EventName,
   OtpObjective,
-  AccountRequirements,
   UserType,
 } from '../models';
 import {
   Account,
-  AccountActivationV1,
   AccountActivationModel,
+  AccountActivationV1,
   AccountAuthenId,
   AccountAuthenIdType,
   AccountReferral,

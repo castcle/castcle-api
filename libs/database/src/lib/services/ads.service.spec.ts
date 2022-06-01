@@ -35,7 +35,7 @@ import {
   TAccountService,
 } from '../database.module';
 import { AdsQuery, AdsRequestDto, ContentType, ShortPayload } from '../dtos';
-import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import {
   AdsBoostStatus,
   AdsCpm,

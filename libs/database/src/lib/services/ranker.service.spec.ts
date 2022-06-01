@@ -20,21 +20,21 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { RankerService } from './ranker.service';
-import { ContentService } from './content.service';
-import { UserService } from './user.service';
-import { AuthenticationService } from './authentication.service';
-import { Account, Content, Credential, User } from '../schemas';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
 import { ContentType, ShortPayload } from '../dtos';
-import { HashtagService } from './hashtag.service';
-import { CacheModule } from '@nestjs/common';
-import { DataService } from './data.service';
-import { getQueueToken } from '@nestjs/bull';
 import { QueueName } from '../models';
+import { Account, Content, Credential, User } from '../schemas';
+import { AuthenticationService } from './authentication.service';
+import { ContentService } from './content.service';
+import { DataService } from './data.service';
+import { HashtagService } from './hashtag.service';
+import { RankerService } from './ranker.service';
+import { UserService } from './user.service';
 
 describe('Ranker Service', () => {
   let mongod: MongoMemoryServer;

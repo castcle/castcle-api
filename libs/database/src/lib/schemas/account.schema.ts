@@ -21,9 +21,10 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CastcleBase } from './base.schema';
+import { Environment } from '@castcle-api/environments';
 import { Password, Token } from '@castcle-api/utils/commons';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
 import {
   AccountActivation,
   AccountActivationType,
@@ -31,9 +32,7 @@ import {
   AccountCampaigns,
   AccountDevice,
 } from '../models';
-
-import { SchemaTypes, Types } from 'mongoose';
-import { Environment } from '@castcle-api/environments';
+import { CastcleBase } from './base.schema';
 
 export enum AccountRole {
   Member = 'member',

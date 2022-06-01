@@ -23,7 +23,7 @@
 
 import { Account, Credential, User } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 
 export class Authorizer {
   constructor(

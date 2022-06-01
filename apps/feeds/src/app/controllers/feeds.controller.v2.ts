@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { GetSearchQuery, ContentServiceV2 } from '@castcle-api/database';
+import { ContentServiceV2, GetSearchQuery } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,

@@ -24,10 +24,10 @@
 import { plainToClass } from 'class-transformer';
 import {
   RemoveLeadingZero,
-  TransformStringToKeyword,
   TransformSortStringToSortObject,
   TransformStringToArrayOfStrings,
   TransformStringToEnum,
+  TransformStringToKeyword,
 } from './transformers';
 
 describe('TransformStringToArrayOfStrings', () => {

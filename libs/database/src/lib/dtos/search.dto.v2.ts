@@ -22,8 +22,8 @@
  */
 
 import {
-  TransformStringToKeyword,
   TransformStringToArrayOfStrings,
+  TransformStringToKeyword,
 } from '@castcle-api/utils/commons';
 import {
   IsEnum,

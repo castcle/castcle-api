@@ -21,10 +21,10 @@
  * or have any questions.
  */
 
-import { UserService } from '../services/user.service';
-import { AuthenticationService } from '../services/authentication.service';
-import { Account, Credential, User } from '../schemas';
 import { PageDto } from '../dtos/user.dto';
+import { Account, Credential, User } from '../schemas';
+import { AuthenticationService } from '../services/authentication.service';
+import { UserService } from '../services/user.service';
 
 type Models = {
   userService: UserService;

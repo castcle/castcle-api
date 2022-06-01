@@ -22,8 +22,8 @@
  */
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Hashtag } from './hashtag.schema';
 import { CastcleBase } from './base.schema';
+import { Hashtag } from './hashtag.schema';
 
 @Schema({ timestamps: true })
 export class ArchiveHashtag extends CastcleBase {

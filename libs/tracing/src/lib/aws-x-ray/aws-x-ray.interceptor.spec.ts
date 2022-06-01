@@ -22,7 +22,7 @@
  */
 
 import { TracingService } from '@narando/nest-xray';
-import { of, lastValueFrom } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
 import { AwsXRayInterceptor } from './aws-x-ray.interceptor';
 
 describe('#AWS XRayInterceptor', () => {

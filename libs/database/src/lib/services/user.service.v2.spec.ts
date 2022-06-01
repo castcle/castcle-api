@@ -45,7 +45,7 @@ import {
   PaginationQuery,
   UserResponseDto,
 } from '../dtos';
-import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential, User } from '../schemas';

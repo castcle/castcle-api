@@ -32,8 +32,8 @@ import {
   GetUserRelationResponseCount,
   pipelineOfUserRelationFollowersCountV2,
   pipelineOfUserRelationFollowersV2,
-  pipelineOfUserRelationFollowingV2,
   pipelineOfUserRelationFollowingCountV2,
+  pipelineOfUserRelationFollowingV2,
 } from '../aggregations';
 import {
   CastcleQueryOptions,

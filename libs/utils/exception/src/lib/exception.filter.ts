@@ -22,9 +22,9 @@
  */
 
 import { Environment } from '@castcle-api/environments';
-import { CastcleException } from './exception';
-import { Catch, ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { CastcleException } from './exception';
 
 @Catch(CastcleException)
 export class CastcleExceptionFilter implements ExceptionFilter {

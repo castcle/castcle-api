@@ -27,7 +27,6 @@ import {
   ContentService,
   CreateHashtag,
   ExcludeType,
-  generateMockUsers,
   HashtagService,
   KeywordType,
   MockUserDetail,
@@ -38,7 +37,10 @@ import {
   SearchServiceV2,
   UserService,
   UserServiceV2,
+  generateMockUsers,
 } from '@castcle-api/database';
+import { Mailer } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -47,9 +49,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Types } from 'mongoose';
-import { Authorizer } from '@castcle-api/utils/decorators';
 import { SearchesControllerV2 } from './searches.controller.v2';
-import { Mailer } from '@castcle-api/utils/clients';
 
 describe('SearchesControllerV2', () => {
   let mongod: MongoMemoryServer;

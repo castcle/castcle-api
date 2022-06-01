@@ -30,7 +30,7 @@ import { UtilsClientsModule } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bull';
 import { Global, Module } from '@nestjs/common';
-import { getModelToken, MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { QueueName } from './models';
 import { Repository } from './repositories';
 import {

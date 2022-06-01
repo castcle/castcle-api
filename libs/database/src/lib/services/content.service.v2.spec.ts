@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationServiceV2 } from './notification.service.v2';
+import { Mailer } from '@castcle-api/utils/clients';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -37,28 +38,27 @@ import {
 } from '../database.module';
 import { ContentType, NotificationType, ShortPayload } from '../dtos';
 import {
-  generateMockUsers,
   MockUserDetail,
+  generateMockUsers,
   mockContents,
   mockDeposit,
 } from '../mocks';
 import {
   ContentFarmingStatus,
+  EngagementType,
   KeywordType,
   QueueName,
   WalletType,
 } from '../models';
+import { Repository } from '../repositories';
 import { Content, ContentFarming } from '../schemas';
 import { AuthenticationService } from './authentication.service';
+import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
-import { UserService } from './user.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
-import { Repository } from '../repositories';
-import { HttpModule } from '@nestjs/axios';
-import { EngagementType } from '../models';
-import { Mailer } from '@castcle-api/utils/clients';
-import { CampaignService } from './campaign.service';
+import { UserService } from './user.service';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;

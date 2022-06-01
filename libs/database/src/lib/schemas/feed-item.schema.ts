@@ -23,11 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
+import { FeedAggregator, FeedAnalytics } from '../models';
 import { Account } from './account.schema';
-import { Credential } from './credential.schema';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { FeedAggregator, FeedAnalytics } from '../models';
+import { Credential } from './credential.schema';
 
 @Schema({ timestamps: true })
 export class FeedItem extends CastcleBase {

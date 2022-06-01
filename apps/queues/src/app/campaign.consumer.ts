@@ -24,7 +24,7 @@
 import { CampaignService, QueueName, QueueTopic } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { Job, Queue as BullQueue } from 'bull';
+import { Queue as BullQueue, Job } from 'bull';
 
 @Processor(QueueName.CAMPAIGN)
 export class CampaignConsumer {

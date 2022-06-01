@@ -23,10 +23,10 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Hashtag } from './hashtag.schema';
+import { CastcleBase } from './base.schema';
 import { Comment } from './comment.schema';
 import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
+import { Hashtag } from './hashtag.schema';
 
 @Schema({ timestamps: true })
 export class HashtagItem extends CastcleBase {

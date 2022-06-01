@@ -20,6 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { TracingService } from '@narando/nest-xray';
 import {
   CallHandler,
   ExecutionContext,
@@ -27,7 +28,6 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { catchError, tap } from 'rxjs';
-import { TracingService } from '@narando/nest-xray';
 
 @Injectable()
 export class AwsXRayInterceptor implements NestInterceptor {

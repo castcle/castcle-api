@@ -23,26 +23,27 @@
 import {
   AuthenticationService,
   CommentServiceV2,
+  Content,
   ContentService,
+  ContentType,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
   NotificationServiceV2,
   QueueName,
+  User,
   UserService,
+  generateMockUsers,
 } from '@castcle-api/database';
-import { ContentType } from '@castcle-api/database';
-import { generateMockUsers } from '@castcle-api/database';
-import { Content, User } from '@castcle-api/database';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { CommentControllerV2 } from './comment.controller.v2';
-import { Repository } from 'libs/database/src/lib/repositories';
-import { HttpModule } from '@nestjs/axios';
 
 describe('CommentControllerV2', () => {
   let mongod: MongoMemoryServer;

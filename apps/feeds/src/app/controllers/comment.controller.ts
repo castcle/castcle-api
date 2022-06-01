@@ -22,6 +22,28 @@
  */
 
 import {
+  AuthenticationService,
+  CommentService,
+  ContentService,
+  DEFAULT_QUERY_OPTIONS,
+  ExpansionQuery,
+  NotificationService,
+  NotificationSource,
+  NotificationType,
+  RankerService,
+  UserService,
+  UserType,
+} from '@castcle-api/database';
+import { CacheKeyName } from '@castcle-api/environments';
+import {
+  CastcleAuth,
+  CastcleBasicAuth,
+  CastcleController,
+} from '@castcle-api/utils/decorators';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { CredentialRequest } from '@castcle-api/utils/interceptors';
+import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
+import {
   Body,
   Delete,
   Get,
@@ -32,38 +54,14 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import {
-  AuthenticationService,
-  ContentService,
-  NotificationService,
-  CommentService,
-  UserService,
-  UserType,
-  RankerService,
-} from '@castcle-api/database';
-import {
-  DEFAULT_QUERY_OPTIONS,
-  ExpansionQuery,
-  NotificationSource,
-  NotificationType,
-} from '@castcle-api/database';
-import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { CastcleException } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';
-import { LimitPipe, PagePipe, SortByPipe } from '@castcle-api/utils/pipes';
 import {
   CreateCommentBody,
   EditCommentBody,
   LikeCommentBody,
   ReplyCommentBody,
 } from '../dtos/comment.dto';
-import {
-  CastcleController,
-  CastcleAuth,
-  CastcleBasicAuth,
-} from '@castcle-api/utils/decorators';
 import { SuggestionService } from '../services/suggestion.service';
-import { CacheKeyName } from '@castcle-api/environments';
 
 @CastcleController({ path: 'contents', version: '1.0' })
 export class CommentController {

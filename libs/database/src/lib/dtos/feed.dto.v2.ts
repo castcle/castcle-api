@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import {
-  TransformStringToKeyword,
   TransformStringToEnum,
+  TransformStringToKeyword,
 } from '@castcle-api/utils/commons';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { KeywordType, SearchType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 

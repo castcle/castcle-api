@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { Configs } from '@castcle-api/environments';
+import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import {
@@ -31,7 +32,6 @@ import {
 import { Account } from './account.schema';
 import { CastcleBase } from './base.schema';
 import { User } from './user.schema';
-import { Image } from '@castcle-api/utils/aws';
 @Schema({ timestamps: true })
 class NotificationDocument extends CastcleBase {
   @Prop({ required: true, type: String, index: true })

@@ -22,16 +22,17 @@
  */
 
 import {
+  Account,
   AdsService,
+  Credential,
   DataService,
   RankerService,
+  SuggestToFollowResponseDto,
   UserService,
   UserType,
 } from '@castcle-api/database';
-import { SuggestToFollowResponseDto } from '@castcle-api/database';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { Account, Credential } from '@castcle-api/database';
 
 type SeenState = {
   seenCount: number;

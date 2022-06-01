@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { TransformStringToEnum } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { Account } from '../schemas';
-import { CastcleImage, CastcleMeta } from './common.dto';
 import { CastcleBase } from '../schemas/base.schema';
-import { TransformStringToEnum } from '@castcle-api/utils/commons';
+import { CastcleImage, CastcleMeta } from './common.dto';
 import { PaginationQuery } from './pagination.dto';
 
 export enum NotificationType {

@@ -1,8 +1,8 @@
 import {
-  TransformStringToArrayOfStrings,
   TransformSortStringToSortObject,
+  TransformStringToArrayOfStrings,
 } from '@castcle-api/utils/commons';
-import { IsOptional, IsEnum, IsObject } from 'class-validator';
+import { IsEnum, IsObject, IsOptional } from 'class-validator';
 import { UserType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 
