@@ -36,6 +36,7 @@ import {
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
@@ -835,5 +836,38 @@ export class AuthenticationServiceV2 {
 
     await account.changePassword(newPassword);
     await otp.markCompleted().save();
+  }
+
+  async requestVerificationLink(account: Account, hostname: string) {
+    const activation = account.activations?.find(
+      ({ type }) => type === AccountActivationType.EMAIL,
+    );
+
+    if (!activation) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (activation.activationDate) CastcleException.EMAIL_ALREADY_VERIFIED;
+
+    const tokenExpiryDate = DateTime.local().plus({
+      seconds: Environment.JWT_VERIFY_EXPIRES_IN,
+    });
+    const tokenPayload = {
+      id: account.id,
+      expiryDate: tokenExpiryDate.toString(),
+    };
+
+    activation.revocationDate = new Date();
+    activation.verifyTokenExpireDate = tokenExpiryDate.toJSDate();
+    activation.verifyToken = Token.generateToken(
+      tokenPayload,
+      Environment.JWT_VERIFY_SECRET,
+      Environment.JWT_VERIFY_EXPIRES_IN,
+    );
+
+    account.markModified('activations');
+    await account.save();
+    await this.mailer.sendRegistrationEmail(
+      hostname,
+      account.email,
+      activation.verifyToken,
+    );
   }
 }
