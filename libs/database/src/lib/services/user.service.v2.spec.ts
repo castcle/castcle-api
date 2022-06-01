@@ -124,7 +124,7 @@ describe('UserServiceV2', () => {
     userDemo = await authService.getUserFromAccount(accountDemo.account);
   });
 
-  describe('#blockUser', () => {
+  describe('#getUserRelationships', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
@@ -139,7 +139,7 @@ describe('UserServiceV2', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await userServiceV2.blockUser(user2, String(user1._id));
-      const blocking = await userServiceV2.getUserBlock(user1);
+      const blocking = await userServiceV2.getUserRelationships(user1, true);
 
       expect(blocking).toHaveLength(1);
       expect(blocking).toContainEqual(user2._id);

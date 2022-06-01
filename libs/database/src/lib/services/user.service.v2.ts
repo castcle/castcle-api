@@ -87,12 +87,12 @@ export class UserServiceV2 {
     return user;
   };
 
-  getUserBlock = async (viewer: User) => {
+  getUserRelationships = async (viewer: User, blocking: boolean) => {
     if (!viewer) return [];
     const isRelationships = await this.repositoryService.findRelationships(
       {
         followedUser: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { user: 1 },
@@ -102,15 +102,15 @@ export class UserServiceV2 {
     const byRelationships = await this.repositoryService.findRelationships(
       {
         userId: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { followedUser: 1 },
       },
     );
     return [
-      ...isRelationships.map((item) => item.user),
-      ...byRelationships.map((item) => item.followedUser),
+      ...isRelationships.map((item) => item.user._id),
+      ...byRelationships.map((item) => item.followedUser._id),
     ];
   };
 
@@ -556,10 +556,10 @@ export class UserServiceV2 {
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
-    const blocking = await this.getUserBlock(viewer);
+    const blocking = await this.getUserRelationships(viewer, true);
 
     const users = await this.repositoryService.findUsers({
-      execute: blocking,
+      excludeRelationship: blocking,
       ...query,
     });
 

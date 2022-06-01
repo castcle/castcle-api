@@ -37,24 +37,20 @@ export class FeedsControllerV2 {
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('search/recent')
-  async getSearchRecent(
+  getSearchRecent(
     @Auth() authorizer: Authorizer,
     @Query() query: GetSearchQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    return await this.contentServiceV2.getSearchRecent(query, authorizer.user);
+    return this.contentServiceV2.getSearchRecent(query, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('search/trends')
-  async getSearchTrends(
+  getSearchTrends(
     @Auth() authorizer: Authorizer,
     @Query() query: GetSearchQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    return await this.contentServiceV2.getSearchTrends(
+    return this.contentServiceV2.getSearchTrends(
       query,
       authorizer.user,
       authorizer.account,

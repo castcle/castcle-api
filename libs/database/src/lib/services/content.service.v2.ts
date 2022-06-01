@@ -122,14 +122,15 @@ export class ContentServiceV2 {
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
-    const relationships = hasRelationshipExpansion
-      ? await this.repository
-          .findRelationships({
-            userId: viewer._id,
-            followedUser: usersId,
-          })
-          .exec()
-      : [];
+    const relationships =
+      viewer && hasRelationshipExpansion
+        ? await this.repository
+            .findRelationships({
+              userId: viewer._id,
+              followedUser: usersId,
+            })
+            .exec()
+        : [];
 
     const includesUsers = bundleContents.authors.map((author) => {
       const relationshipUser = relationships?.find(
@@ -197,14 +198,15 @@ export class ContentServiceV2 {
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
-    const relationships = hasRelationshipExpansion
-      ? await this.repository
-          .findRelationships({
-            userId: viewer._id,
-            followedUser: usersId,
-          })
-          .exec()
-      : [];
+    const relationships =
+      viewer && hasRelationshipExpansion
+        ? await this.repository
+            .findRelationships({
+              userId: viewer._id,
+              followedUser: usersId,
+            })
+            .exec()
+        : [];
 
     const includesUsers = bundleContents.authors.map((author) => {
       const relationshipUser = relationships?.find(
@@ -1213,13 +1215,17 @@ export class ContentServiceV2 {
     { hasRelationshipExpansion, ...query }: GetSearchQuery,
     viewer?: User,
   ) => {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     let [contents] = await this.repository.aggregationContent({
       viewer,
-      executeAuthor: blocking,
+      excludeAuthor: blocking,
       ...query,
     });
+
     if (
       contents.contents.length &&
       contents.contents.length < query.maxResults
@@ -1227,8 +1233,9 @@ export class ContentServiceV2 {
       const [contentsMore] = await this.repository.aggregationContent({
         viewer,
         maxResults: query.maxResults - contents.contents.length,
-        executeContents: contents.contents.map((content) => content._id),
-        executeAuthor: blocking,
+        excludeContents: contents.contents.map((content) => content._id),
+        excludeAuthor: blocking,
+        contentType: query.contentType,
       });
 
       contents = this.getContentMore(contents, contentsMore);
@@ -1242,7 +1249,10 @@ export class ContentServiceV2 {
     account: Account,
     token: string,
   ) => {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     const contentKey = CacheStore.ofTrendsSearch(
       `${query.keyword.input}${
@@ -1270,7 +1280,7 @@ export class ContentServiceV2 {
           ...query,
           maxResults: Environment.LIMIT_CONTENT,
           decayDays: Environment.DECAY_DAY_CONTENT,
-          executeAuthor: blocking,
+          excludeAuthor: blocking,
         },
         { projection: { _id: 1 } },
       );
@@ -1314,7 +1324,8 @@ export class ContentServiceV2 {
       viewer,
       maxResults: maxResults,
       _id: contentsId.map((content) => content?._id ?? content),
-      executeAuthor: blocking,
+      excludeAuthor: blocking,
+      contentType: query.contentType,
       ...query,
     });
 
@@ -1333,9 +1344,9 @@ export class ContentServiceV2 {
       const [contentsMore] = await this.repository.aggregationContent({
         viewer,
         maxResults: maxResults - contents.contents.length,
-        executeContents: contents.contents.map((content) => content._id),
+        excludeContents: contents.contents.map((content) => content._id),
         decayDays: Environment.DECAY_DAY_CONTENT,
-        executeAuthor: blocking,
+        excludeAuthor: blocking,
       });
 
       const score = await this.sortContentsByScore(

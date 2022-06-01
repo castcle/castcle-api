@@ -46,7 +46,6 @@ import {
   ContentFarmingStatus,
   KeywordType,
   QueueName,
-  SearchType,
   WalletType,
 } from '../models';
 import { Content, ContentFarming } from '../schemas';
@@ -696,7 +695,7 @@ describe('ContentServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'Hello',
+            input: 'H',
           },
           hasRelationshipExpansion: true,
           maxResults: 25,
@@ -712,9 +711,8 @@ describe('ContentServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'Hello',
+            input: 'H',
           },
-          contentType: SearchType.PHOTO,
           hasRelationshipExpansion: true,
           maxResults: 25,
         },

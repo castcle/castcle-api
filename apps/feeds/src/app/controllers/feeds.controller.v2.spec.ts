@@ -141,9 +141,10 @@ describe('FeedsControllerV2', () => {
       );
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
-          type: KeywordType.Mention,
+          type: KeywordType.Word,
           input: 'h',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -161,6 +162,7 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Mention,
           input: 'test',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -174,11 +176,11 @@ describe('FeedsControllerV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'hello',
+            input: 'h',
           },
           maxResults: 20,
           decayDays: 7,
-          executeAuthor: [],
+          excludeAuthor: [],
         },
         { projection: { _id: 1 } },
       );
@@ -202,11 +204,11 @@ describe('FeedsControllerV2', () => {
       const getSearchTrends = await controller.getSearchTrends(authorizer, {
         keyword: {
           type: KeywordType.Mention,
-          input: 'hello',
+          input: 'h',
         },
         hasRelationshipExpansion: true,
       });
-      expect(getSearchTrends.payload).toHaveLength(20);
+      expect(getSearchTrends.payload).toHaveLength(0);
     });
   });
 });

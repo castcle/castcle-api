@@ -20,14 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { TransformKeywordStringToKeywordFilter } from '@castcle-api/utils/commons';
+import { TransformStringToKeyword } from '@castcle-api/utils/commons';
 import { IsNotEmpty } from 'class-validator';
 import { KeywordType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 
 export class GetKeywordQuery extends PaginationQuery {
   @IsNotEmpty()
-  @TransformKeywordStringToKeywordFilter()
+  @TransformStringToKeyword()
   keyword: {
     input: string;
     type: KeywordType;

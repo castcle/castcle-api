@@ -45,7 +45,6 @@ export class SearchesControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: GetKeywordQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
     return this.searchServiceV2.getSearchByKeyword(query, authorizer.user);
   }
 
@@ -55,17 +54,15 @@ export class SearchesControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: GetKeywordQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
     return this.searchServiceV2.getByKeyword(query, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Users)
-  @Get('me/mentions')
+  @Get('mentions')
   getUserMentions(
     @Auth() authorizer: Authorizer,
     @Query() query: GetKeywordQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
     return this.searchServiceV2.getUserMentions(query, authorizer.user);
   }
 
@@ -75,7 +72,6 @@ export class SearchesControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() query: GetTopTrendQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
     return this.searchServiceV2.getTopTrends(query, authorizer.user);
   }
 }
