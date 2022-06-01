@@ -39,9 +39,9 @@ import {
   Link,
   LinkType,
   SaveContentDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
-import { SocialSync } from '@castcle-api/database/schemas';
+import { SocialSync } from '@castcle-api/database';
 
 @Injectable()
 export class TwitterService {

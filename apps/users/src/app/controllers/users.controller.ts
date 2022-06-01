@@ -67,8 +67,10 @@ import {
   UpdateUserDto,
   UserField,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
-import { Credential, SocialSync, User } from '@castcle-api/database/schemas';
+  Credential,
+  SocialSync,
+  User,
+} from '@castcle-api/database';
 import { CacheKeyName, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

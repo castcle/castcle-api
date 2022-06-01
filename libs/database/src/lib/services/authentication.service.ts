@@ -48,7 +48,7 @@ import {
 } from '../models';
 import {
   Account,
-  AccountActivation,
+  AccountActivationV1,
   AccountActivationModel,
   AccountAuthenId,
   AccountAuthenIdType,
@@ -60,7 +60,7 @@ import {
   OtpModel,
   User,
 } from '../schemas';
-import { AccountDevice } from './../schemas/account-device.schema';
+import { AccountDeviceV1 } from '../schemas/account-device.schema';
 import { UserService } from './user.service';
 
 export interface SignupRequirements {
@@ -105,7 +105,7 @@ export class AuthenticationService {
     @InjectModel('AccountReferral')
     public _accountReferral: Model<AccountReferral>,
     @InjectModel('AccountDevice')
-    private _accountDeviceModel: Model<AccountDevice>,
+    private _accountDeviceModel: Model<AccountDeviceV1>,
     private userService: UserService,
   ) {}
 
@@ -340,7 +340,7 @@ export class AuthenticationService {
     else return false;
   }
 
-  async verifyAccount(accountActivation: AccountActivation) {
+  async verifyAccount(accountActivation: AccountActivationV1) {
     const now = new Date();
     accountActivation.activationDate = now;
     await accountActivation.save();
@@ -451,7 +451,7 @@ export class AuthenticationService {
     return accountActivation.save();
   }
 
-  revokeAccountActivation(accountActivation: AccountActivation) {
+  revokeAccountActivation(accountActivation: AccountActivationV1) {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: accountActivation.account as unknown as string,
     });

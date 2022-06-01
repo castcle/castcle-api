@@ -46,7 +46,7 @@ import {
   ExpansionQuery,
   NotificationSource,
   NotificationType,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { ApiBody } from '@nestjs/swagger';

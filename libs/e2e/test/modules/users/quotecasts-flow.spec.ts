@@ -1,8 +1,8 @@
-import { ShortPayload } from '@castcle-api/database/dtos';
+import { ShortPayload } from '@castcle-api/database';
 import { User } from '../../models';
 import { ContentsRequest, UsersRequest } from '../../requests';
 import { registerMockUser } from '../../utils/user.utils';
-import { userGamma } from './../../variables/global.variable';
+import { userGamma } from '../../variables/global.variable';
 
 export const testQuoteCastsFlow = () => {
   let userA = new User({ name: 'quoteCastA' });

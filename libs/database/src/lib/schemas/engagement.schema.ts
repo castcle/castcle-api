@@ -31,15 +31,6 @@ import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
 import { Account } from './account.schema';
 
-export enum EngagementType {
-  Like = 'like',
-  Recast = 'recast',
-  Quote = 'quote',
-  Comment = 'comment',
-  Report = 'report',
-  Seen = 'seen',
-}
-
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {
   @Prop({

@@ -21,10 +21,9 @@
  * or have any questions.
  */
 
+import { DEFAULT_CONTENT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
+import { EngagementType } from '../models';
 import { User } from '../schemas';
-import { EngagementType } from './../schemas/engagement.schema';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
-import { EntityVisibility } from './../dtos/common.dto';
 
 type GetContentFilter = {
   [key: string]: string;

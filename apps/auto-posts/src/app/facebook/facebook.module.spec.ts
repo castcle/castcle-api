@@ -22,7 +22,7 @@
  */
 
 import { QueueName, SocialProvider, UserType } from '@castcle-api/database';
-import { SocialSync, User } from '@castcle-api/database/schemas';
+import { SocialSync, User } from '@castcle-api/database';
 import { Image } from '@castcle-api/utils/aws';
 import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';

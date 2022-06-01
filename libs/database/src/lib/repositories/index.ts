@@ -61,7 +61,13 @@ import {
   ShortPayload,
   Url,
 } from '../dtos';
-import { CastcleNumber, KeywordType, OtpObjective, UserType } from '../models';
+import {
+  CastcleNumber,
+  KeywordType,
+  OtpObjective,
+  SearchType,
+  UserType,
+} from '../models';
 import {
   Account,
   Content,
@@ -93,14 +99,14 @@ type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[];
   accountId?: string;
-  type?: UserType;
+  excludeRelationship?: string[] | User[];
   keyword?: {
     input: string;
     type: KeywordType;
   };
   sinceId?: string;
+  type?: UserType;
   untilId?: string;
-  execute?: string[] | User[];
 };
 
 type EngagementQuery = {
@@ -148,26 +154,26 @@ type NotificationQueryOption = {
 type ContentQuery = {
   _id?: string | string[];
   author?: string;
-  originalPost?: string;
-  isRecast?: boolean;
-  isQuote?: boolean;
-  message?: string;
-  sinceId?: string;
-  untilId?: string;
-  maxResults?: number;
-  viewer?: User;
-  type?: string[];
   contentType?: string;
-  sortBy?: {
-    [key: string]: string;
-  };
+  decayDays?: number;
+  excludeAuthor?: string[] | User[];
+  excludeContents?: Content[];
+  isQuote?: boolean;
+  isRecast?: boolean;
   keyword?: {
     input: string;
     type: KeywordType;
   };
-  executeContents?: Content[];
-  decayDays?: number;
-  executeAuthor?: string[] | User[];
+  maxResults?: number;
+  message?: string;
+  originalPost?: string;
+  sinceId?: string;
+  type?: string[];
+  sortBy?: {
+    [key: string]: string;
+  };
+  untilId?: string;
+  viewer?: User;
 };
 
 type HashtagQuery = {
@@ -260,29 +266,44 @@ export class Repository {
     if (filter.isQuote) query.isQuote = filter.isQuote;
     if (isArray(filter.type)) query.type = { $in: filter.type };
 
-    if (filter.contentType)
+    if (filter.keyword?.input) {
+      if (filter.keyword.type === KeywordType.Hashtag) {
+        query.hashtags = filter.keyword.input;
+      } else if (filter.keyword.type === KeywordType.Mention) {
+        query.$or = [
+          {
+            'author.castcleId': CastcleRegExp.fromString(filter.keyword.input, {
+              exactMatch: false,
+            }),
+          },
+          {
+            'author.displayName': CastcleRegExp.fromString(
+              filter.keyword.input,
+              {
+                exactMatch: false,
+              },
+            ),
+          },
+        ];
+      } else {
+        query['payload.message'] = CastcleRegExp.fromString(
+          filter.keyword.input,
+          {
+            exactMatch: false,
+          },
+        );
+      }
+    }
+
+    if (filter.contentType) {
       query[`payload.${filter.contentType}`] = { $exists: true };
 
-    if (filter.keyword) {
-      query.$or = [
-        {
-          'payload.message': CastcleRegExp.fromString(filter.keyword.input, {
-            exactMatch: false,
-          }),
-        },
-        {
-          'author.castcleId': CastcleRegExp.fromString(filter.keyword.input, {
-            exactMatch: false,
-          }),
-        },
-        {
-          'author.displayName': CastcleRegExp.fromString(filter.keyword.input, {
-            exactMatch: false,
-          }),
-        },
-        { hashtags: filter.keyword.input },
-      ];
+      if (filter.contentType === SearchType.PHOTO)
+        query[`payload.${filter.contentType}.contents`] = {
+          $not: { $size: 0 },
+        };
     }
+
     if (filter.decayDays) {
       query.$and = [
         { createdAt: { $lte: new Date() } },
@@ -295,11 +316,11 @@ export class Repository {
         },
       ];
     }
-    if (filter.executeContents?.length)
-      query._id = { $nin: filter.executeContents };
+    if (filter.excludeContents?.length)
+      query._id = { $nin: filter.excludeContents };
 
-    if (filter.executeAuthor?.length)
-      query['author.id'] = { $nin: filter.executeAuthor };
+    if (filter.excludeAuthor?.length)
+      query['author.id'] = { $nin: filter.excludeAuthor };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -511,15 +532,27 @@ export class Repository {
 
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;
+    let andId = [];
+
     if (isMongoId(String(filter._id))) {
-      query._id = filter._id;
+      andId = [{ _id: filter._id }];
     } else if (isArray(filter._id)) {
-      query._id = { $in: filter._id };
+      andId = [{ _id: { $in: filter._id } }];
     } else if (filter._id) {
-      query.displayId = CastcleRegExp.fromString(filter._id as string);
+      andId = [
+        {
+          displayId: CastcleRegExp.fromString(filter._id as string),
+        },
+      ];
     }
 
-    if (filter.keyword) {
+    if (filter.excludeRelationship) {
+      andId = [...andId, { _id: { $nin: filter.excludeRelationship } }];
+    }
+
+    if (andId.length) query.$and = andId;
+
+    if (filter.keyword?.input) {
       query.$or = [
         {
           displayId: CastcleRegExp.fromString(filter.keyword.input, {
@@ -531,11 +564,8 @@ export class Repository {
             exactMatch: false,
           }),
         },
-        { hashtags: filter.keyword.input },
       ];
     }
-
-    if (filter.execute) query._id = { $nin: filter.execute };
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {

@@ -45,10 +45,10 @@ import {
   NotificationSource,
   NotificationType,
   NotificationRef,
-} from './../dtos/notification.dto';
+} from '../dtos/notification.dto';
 import { Environment } from '@castcle-api/environments';
 import { CastcleDate } from '@castcle-api/utils/commons';
-import { NotificationLandingPage } from './../dtos/notification.dto';
+import { NotificationLandingPage } from '../dtos/notification.dto';
 
 jest.mock('@castcle-api/environments');
 

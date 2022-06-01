@@ -55,7 +55,7 @@ import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { UserService } from './user.service';
-import { SocialPageDto } from './../dtos/user.dto';
+import { SocialPageDto } from '../dtos/user.dto';
 import { getQueueToken } from '@nestjs/bull';
 
 describe('User Service', () => {

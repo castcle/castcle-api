@@ -5,7 +5,7 @@ import {
   relationshipModel,
   userAlpha,
   userBeta,
-} from './../../variables/global.variable';
+} from '../../variables/global.variable';
 
 export const testFollowsFlow = () => {
   const userA = new User({ name: 'followA' });

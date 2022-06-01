@@ -21,23 +21,24 @@
  * or have any questions.
  */
 import {
-  HashtagService,
-  SearchServiceV2,
+  AnalyticService,
   AuthenticationService,
-  UserService,
+  CampaignService,
+  ContentService,
+  CreateHashtag,
+  ExcludeType,
+  generateMockUsers,
+  HashtagService,
+  KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
-  UserServiceV2,
-  ContentService,
   NotificationService,
   QueueName,
-  ExecuteType,
-  KeywordType,
-  AnalyticService,
-  CampaignService,
+  SearchServiceV2,
+  UserService,
+  UserServiceV2,
 } from '@castcle-api/database';
-import { CreateHashtag } from '@castcle-api/database/dtos';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -57,6 +58,7 @@ describe('SearchesControllerV2', () => {
   let hashtagService: HashtagService;
   let authService: AuthenticationService;
   let userService: UserService;
+  let userServiceV2: UserServiceV2;
   let mocksUsers: MockUserDetail[];
 
   beforeAll(async () => {
@@ -100,6 +102,7 @@ describe('SearchesControllerV2', () => {
     authService = app.get(AuthenticationService);
     hashtagService = app.get<HashtagService>(HashtagService);
     userService = app.get(UserService);
+    userServiceV2 = app.get(UserServiceV2);
 
     controller = app.get<SearchesControllerV2>(SearchesControllerV2);
 
@@ -154,7 +157,7 @@ describe('SearchesControllerV2', () => {
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
         limit: 10,
-        exclude: [ExecuteType.Hashtags],
+        exclude: [ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
@@ -170,7 +173,7 @@ describe('SearchesControllerV2', () => {
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
         limit: 10,
-        exclude: [ExecuteType.Users],
+        exclude: [ExcludeType.Users],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(10);
@@ -185,7 +188,7 @@ describe('SearchesControllerV2', () => {
       );
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
-        exclude: [ExecuteType.Users, ExecuteType.Hashtags],
+        exclude: [ExcludeType.Users, ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
@@ -238,6 +241,13 @@ describe('SearchesControllerV2', () => {
   });
 
   describe('getUserMentions', () => {
+    beforeAll(async () => {
+      await userServiceV2.followUser(
+        mocksUsers[1].user,
+        mocksUsers[0].user._id,
+        mocksUsers[1].account,
+      );
+    });
     it('should get user by keyword', async () => {
       const authorizer = new Authorizer(
         mocksUsers[0].account,
@@ -246,10 +256,9 @@ describe('SearchesControllerV2', () => {
       );
 
       const getUserMentions = await controller.getUserMentions(authorizer, {
-        maxResults: 25,
         keyword: {
           type: KeywordType.Mention,
-          input: 'mock-10',
+          input: 'm',
         },
         hasRelationshipExpansion: false,
       });

@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { SaveContentDto, ShortPayload } from '@castcle-api/database/dtos';
+import { SaveContentDto, ShortPayload } from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable, PipeTransform } from '@nestjs/common';
 

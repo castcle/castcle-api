@@ -24,9 +24,9 @@
 import {
   AdsService,
   ContentServiceV2,
+  Queue,
   QueueStatus,
 } from '@castcle-api/database';
-import { Queue } from '@castcle-api/database/schemas';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model } from 'mongoose';

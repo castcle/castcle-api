@@ -26,9 +26,12 @@ import {
   CampaignService,
   ContentService,
   ContentServiceV2,
+  ContentType,
   DataService,
+  generateMockUsers,
   HashtagService,
   KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -38,7 +41,6 @@ import {
   UserService,
   UserServiceV2,
 } from '@castcle-api/database';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -49,7 +51,6 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { Mailer } from '@castcle-api/utils/clients';
 import { FeedsControllerV2 } from './feeds.controller.v2';
-import { ContentType } from '@castcle-api/database/dtos';
 
 describe('FeedsControllerV2', () => {
   let mongod: MongoMemoryServer;
@@ -140,9 +141,10 @@ describe('FeedsControllerV2', () => {
       );
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
-          type: KeywordType.Mention,
+          type: KeywordType.Word,
           input: 'h',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -160,6 +162,7 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Mention,
           input: 'test',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -173,11 +176,11 @@ describe('FeedsControllerV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'hello',
+            input: 'h',
           },
           maxResults: 20,
           decayDays: 7,
-          executeAuthor: [],
+          excludeAuthor: [],
         },
         { projection: { _id: 1 } },
       );
@@ -201,11 +204,11 @@ describe('FeedsControllerV2', () => {
       const getSearchTrends = await controller.getSearchTrends(authorizer, {
         keyword: {
           type: KeywordType.Mention,
-          input: 'hello',
+          input: 'h',
         },
         hasRelationshipExpansion: true,
       });
-      expect(getSearchTrends.payload).toHaveLength(20);
+      expect(getSearchTrends.payload).toHaveLength(0);
     });
   });
 });

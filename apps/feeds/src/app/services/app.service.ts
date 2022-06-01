@@ -27,12 +27,12 @@ import {
   ContentType,
   SaveContentDto,
   Url,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { User } from '@castcle-api/database/schemas';
+import { User } from '@castcle-api/database';
 
 @Injectable()
 export class AppService {

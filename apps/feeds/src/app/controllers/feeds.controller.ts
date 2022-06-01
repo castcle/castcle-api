@@ -33,7 +33,7 @@ import {
   FeedQuery,
   GetSearchRecentDto,
   ResponseDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
