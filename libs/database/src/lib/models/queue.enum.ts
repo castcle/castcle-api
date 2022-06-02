@@ -30,6 +30,7 @@ export enum QueueName {
 }
 
 export enum QueueStatus {
+  CANCELLED = 'cancelled',
   DONE = 'done',
   FAILED = 'failed',
   WAITING = 'waiting',

@@ -64,14 +64,20 @@ import {
   Url,
 } from '../dtos';
 import {
+  AdsBoostStatus,
   CastcleNumber,
   KeywordType,
   OtpObjective,
+  QueueStatus,
   SearchType,
   UserType,
 } from '../models';
 import {
   Account,
+  AccountDeviceV1,
+  AccountActivationModel as ActivationModel,
+  AdsCampaign,
+  AccountAuthenId as AuthenId,
   Comment,
   Content,
   Credential,
@@ -82,11 +88,14 @@ import {
   Notification,
   Otp,
   OtpModel,
+  Queue,
+  AccountReferral as Referral,
   Relationship,
   Revision,
   SocialSync,
   Transaction,
   User,
+  UxEngagement,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 
@@ -194,20 +203,32 @@ type HashtagQuery = {
 @Injectable()
 export class Repository {
   constructor(
-    @InjectModel('Account') private accountModel: Model<Account>,
-    @InjectModel('Comment') private commentModel: Model<Comment>,
-    @InjectModel('Content') private contentModel: Model<Content>,
+    /** @deprecated */
+    @InjectModel('AccountActivation') private activationModel: ActivationModel,
+    /** @deprecated */
+    @InjectModel('AccountAuthenId') private authenIdModel: Model<AuthenId>,
+    /** @deprecated */
+    @InjectModel('AccountDevice') private deviceModel: Model<AccountDeviceV1>,
+    /** @deprecated */
+    @InjectModel('AccountReferral') private referralModel: Model<Referral>,
+    /** @deprecated */
     @InjectModel('Credential') private credentialModel: CredentialModel,
+    @InjectModel('Account') private accountModel: Model<Account>,
+    @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
+    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
+    @InjectModel('Queue') private queueModel: Model<Queue>,
     @InjectModel('Relationship') private relationshipModel: Model<Relationship>,
     @InjectModel('Revision') private revisionModel: Model<Revision>,
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     private httpService: HttpService,
   ) {}
 
@@ -344,10 +365,10 @@ export class Repository {
     const query: FilterQuery<Engagement> = {
       visibility: EntityVisibility.Publish,
     };
-    if (filter.type) query.type = filter.type;
 
-    if (filter.user) query.user = filter.user as any;
+    if (filter.type) query.type = filter.type;
     if (isArray(filter.user)) query.user = { $in: filter.user as any };
+    else if (filter.user) query.user = filter.user as any;
     if (filter.itemId) query.itemId = filter.itemId;
     if (filter.targetRef)
       query.targetRef = {
@@ -628,8 +649,14 @@ export class Repository {
     return new this.engagementModel(engagement).save();
   }
 
-  removeEngagements(filter: EngagementQuery) {
-    return this.engagementModel.deleteMany(this.getEngagementQuery(filter));
+  async deleteEngagements(filter: EngagementQuery) {
+    const filterQuery = this.getEngagementQuery(filter);
+    const engagements = await this.engagementModel.find(filterQuery);
+    const $deletedEngagements = engagements.map((engagement) => {
+      return engagement.set({ visibility: EntityVisibility.Deleted }).save();
+    });
+
+    return Promise.all($deletedEngagements);
   }
 
   updateEngagement(
@@ -675,18 +702,6 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) {
     return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
-  }
-
-  updateRelationships(
-    filter: RelationshipQuery,
-    updateQuery?: UpdateQuery<Relationship>,
-    queryOptions?: QueryOptions,
-  ) {
-    return this.relationshipModel.updateMany(
-      this.getRelationshipQuery(filter),
-      updateQuery,
-      queryOptions,
-    );
   }
 
   removeRelationship(
@@ -750,6 +765,24 @@ export class Repository {
     return this.contentModel
       .updateMany(this.getContentQuery(filter), updateQuery, queryOptions)
       .exec();
+  }
+
+  async deleteContents(filterQuery: FilterQuery<Content>) {
+    const contents = await this.contentModel.find(filterQuery);
+    const hashtags: string[] = [];
+    const $deletedContents = contents.map((content) => {
+      hashtags.push(...(content.hashtags || []));
+
+      return content.set({ visibility: EntityVisibility.Deleted }).save();
+    });
+
+    await Promise.all([
+      this.hashtagModel.updateMany(
+        { tag: { $in: hashtags }, score: { $gt: 0 } },
+        { $inc: { score: -1 } },
+      ),
+      ...$deletedContents,
+    ]);
   }
 
   findCredential(filter: CredentialQuery) {
@@ -903,10 +936,6 @@ export class Repository {
     return this.accountModel.startSession();
   }
 
-  userSession(): Promise<ClientSession> {
-    return this.userModel.startSession();
-  }
-
   updateComments(
     filter: FilterQuery<Comment>,
     comment: UpdateQuery<Comment>,
@@ -953,8 +982,78 @@ export class Repository {
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
+  async deleteCastcleAccount(account: Account) {
+    const users = await this.userModel.find({});
+    const userIds = users.map((user) => user._id);
+    const $v1Delete = [
+      this.activationModel.deleteMany({ account: account._id }),
+      this.authenIdModel.deleteMany({ account: account._id }),
+      this.credentialModel.deleteMany({ account: account._id }),
+      this.deviceModel.deleteMany({ account: account._id }),
+      this.referralModel.updateMany(
+        {
+          $or: [
+            { referrerAccount: account._id },
+            { referringAccount: account._id },
+          ],
+        },
+        { $set: { visibility: EntityVisibility.Deleted } },
+      ),
+    ];
+
+    const $hardDelete = [
+      this.commentModel.deleteMany({ 'author._id': { $in: userIds } }),
+      this.notificationModel.deleteMany({ account: account._id }),
+      this.otpModel.deleteMany({
+        receiver: {
+          $in: [
+            account.email,
+            account.mobile.countryCode + account.mobile.number,
+          ],
+        },
+      }),
+      this.socialSyncModel.deleteMany({ account: account._id }),
+      this.feedItemModel.deleteMany({ author: account._id }),
+      this.relationshipModel.deleteMany({
+        $or: [
+          { followedUser: { $in: userIds } },
+          { following: { $in: userIds } },
+        ],
+      }),
+      this.revisionModel.deleteMany({ 'payload.author.id': { $in: userIds } }),
+      this.uxEngagementModel.deleteMany({ account: account._id }),
+    ];
+
+    const $softDelete = [
+      account.set({ visibility: EntityVisibility.Deleted }).save(),
+      this.adsCampaignModel.updateMany(
+        { owner: { $in: userIds } },
+        { boostStatus: AdsBoostStatus.End },
+      ),
+      this.deleteContents({ 'author._id': { $in: userIds } }),
+      this.deleteEngagements({ user: userIds }),
+      this.queueModel.updateMany(
+        { 'payload.to.account': account._id },
+        { status: QueueStatus.CANCELLED, endedAt: new Date() },
+      ),
+      this.userModel.updateMany(
+        { _id: { $in: userIds } },
+        { visibility: EntityVisibility.Deleted },
+      ),
+    ];
+
+    await Promise.all([...$v1Delete, ...$hardDelete, ...$softDelete]);
+
+    if (account.referralBy) {
+      await this.accountModel.updateOne(
+        { _id: account.referralBy },
+        { $inc: { referralCount: -1 } },
+      );
+    }
+  }
+
   async deletePage(pageId: Types.ObjectId) {
-    const session = await this.userSession();
+    const session = await this.userModel.startSession();
     await session.withTransaction(async () => {
       await Promise.all([
         this.updateUser(
@@ -962,26 +1061,11 @@ export class Repository {
           { visibility: EntityVisibility.Deleted },
           { session },
         ),
-        this.updateEngagements(
-          { user: pageId },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.updateRelationships(
-          { userId: pageId },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.updateRelationships(
-          { followedUser: pageId },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.updateContents(
-          { author: pageId },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
+        this.relationshipModel.deleteMany({
+          $or: [{ followedUser: pageId as any }, { following: pageId as any }],
+        }),
+        this.deleteContents({ 'author._id': pageId }),
+        this.deleteEngagements({ user: pageId }),
         this.deleteComments({ 'author._id': pageId }, { session }),
         this.deleteFeedItems({ author: pageId }, { session }),
         this.deleteRevisions({ author: pageId }, { session }),

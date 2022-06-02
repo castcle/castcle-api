@@ -111,8 +111,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
-  ContentLikeBody,
-  DeleteUserDto,
+  DeleteUserDtoV1,
   GetAirdropBalancesQuery,
   GetAirdropBalancesStatus,
   ReportingDto,
@@ -486,13 +485,13 @@ export class UsersController {
   }
 
   @ApiResponse({ status: 204 })
-  @ApiBody({ type: DeleteUserDto })
+  @ApiBody({ type: DeleteUserDtoV1 })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMyData(
     @Auth() { account, user }: Authorizer,
-    @Body() { channel, payload: { password } }: DeleteUserDto,
+    @Body() { channel, payload: { password } }: DeleteUserDtoV1,
   ) {
     if (!user) throw CastcleException.INVALID_ACCESS_TOKEN;
     if (!account.password) throw CastcleException.NO_PASSWORD_SET;
@@ -1475,9 +1474,6 @@ export class UsersController {
   @ApiResponse({
     status: 204,
   })
-  @ApiBody({
-    type: ContentLikeBody,
-  })
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Post(':id/likes')
   @HttpCode(204)
@@ -1542,9 +1538,6 @@ export class UsersController {
 
   @ApiResponse({
     status: 204,
-  })
-  @ApiBody({
-    type: ContentLikeBody,
   })
   @CastcleClearCacheAuth(CacheKeyName.Contents)
   @Delete(':id/likes/:source_content_id')

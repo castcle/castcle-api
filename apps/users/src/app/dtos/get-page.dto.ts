@@ -21,6 +21,10 @@
  * or have any questions.
  */
 
-export class ContentLikeBody {
-  castcleId: string;
+import { IsNotEmpty, IsString } from 'class-validator';
+
+export class GetPageParam {
+  @IsString()
+  @IsNotEmpty()
+  pageId: string;
 }

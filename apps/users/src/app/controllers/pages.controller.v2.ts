@@ -37,7 +37,7 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
-import { DeletePageDto, GetPageParam } from '../dtos';
+import { DeleteUserDto, GetPageParam } from '../dtos';
 
 @CastcleControllerV2({ path: 'pages' })
 export class PagesControllerV2 {
@@ -55,7 +55,7 @@ export class PagesControllerV2 {
   async deletePage(
     @Auth() { account }: Authorizer,
     @Param() { pageId }: GetPageParam,
-    @Body() { password }: DeletePageDto,
+    @Body() { password }: DeleteUserDto,
   ) {
     await this.userServiceV2.deletePage(account, pageId, password);
   }
