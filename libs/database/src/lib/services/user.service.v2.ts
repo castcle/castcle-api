@@ -62,7 +62,7 @@ import { NotificationService } from './notification.service';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger();
+  private logger = new CastLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Account')
@@ -552,6 +552,26 @@ export class UserServiceV2 {
       this.logger.error(error, `updateMobile:claimAirdrop:error`);
     }
   }
+
+  async deletePage(account: Account, pageId: string, password: string) {
+    const page = await this.repositoryService.findUser({
+      type: UserType.PAGE,
+      _id: pageId,
+    });
+
+    if (!page) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    if (String(page.ownerAccount) !== String(account._id)) {
+      this.logger.warn('page owner is not same as account.');
+      throw CastcleException.FORBIDDEN;
+    }
+
+    if (!account.verifyPassword(password))
+      throw CastcleException.INVALID_PASSWORD;
+
+    await this.repositoryService.deletePage(Types.ObjectId(pageId));
+  }
+
   async getUserByKeyword(
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
