@@ -112,6 +112,7 @@ import {
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import {
   DeleteUserDtoV1,
+  FollowingQuery,
   GetAirdropBalancesQuery,
   GetAirdropBalancesStatus,
   ReportingDto,
@@ -663,6 +664,7 @@ export class UsersController {
   })
   @CastcleClearCacheAuth(CacheKeyName.Users)
   @Post(':id/following')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async following(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
@@ -759,17 +761,15 @@ export class UsersController {
   async getUserFollower(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query() query: PaginationQuery,
+    @Query() query: FollowingQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('type')
-    userTypeOption?: UserType,
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get followers ${id}, page query:${JSON.stringify(
         query,
       )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
-        userTypeOption,
+        query.type,
       )}`,
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
@@ -781,7 +781,7 @@ export class UsersController {
       user,
       query,
       sortByOption,
-      userTypeOption,
+      query.type,
     );
 
     return { payload: users, meta };
@@ -795,17 +795,15 @@ export class UsersController {
   async getUserFollowing(
     @Param('id') id: string,
     @Req() req: CredentialRequest,
-    @Query() query: PaginationQuery,
+    @Query() query: FollowingQuery,
     @Query('sortBy', SortByPipe)
     sortByOption = DEFAULT_CONTENT_QUERY_OPTIONS.sortBy,
-    @Query('type')
-    userTypeOption?: UserType,
   ): Promise<FollowResponse> {
     this.logger.log(
       `Start get following ${id}, page query:${JSON.stringify(
         query,
       )}, sort:${JSON.stringify(sortByOption)}, type:${JSON.stringify(
-        userTypeOption,
+        query.type,
       )}`,
     );
     const { user, viewer } = await this._getUserAndViewer(id, req.$credential);
@@ -816,7 +814,7 @@ export class UsersController {
       user,
       query,
       sortByOption,
-      userTypeOption,
+      query.type,
     );
     return { payload: users, meta };
   }

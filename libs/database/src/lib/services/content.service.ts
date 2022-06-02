@@ -284,9 +284,7 @@ export class ContentService {
     if (!content) return;
 
     this.logger.log('delete engagement.');
-    await this._engagementModel
-      .findOneAndRemove({ itemId: content._id })
-      .exec();
+    await this._engagementModel.deleteOne({ itemId: content._id }).exec();
     if (content.hashtags) {
       this.hashtagService.removeFromTags(content.hashtags);
     }
