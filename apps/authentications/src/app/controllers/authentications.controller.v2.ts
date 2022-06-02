@@ -24,8 +24,6 @@
 import {
   AccountRequirements,
   AuthenticationServiceV2,
-} from '@castcle-api/database';
-import {
   ChangePasswordDto,
   LoginWithEmailDto,
   RegisterWithEmailDto,
@@ -36,9 +34,12 @@ import {
   SocialConnectDto,
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
+import { Host } from '@castcle-api/utils/commons';
 import {
+  Auth,
+  Authorizer,
   CastcleBasicAuth,
   CastcleControllerV2,
   CastcleTrack,
@@ -199,15 +200,15 @@ export class AuthenticationControllerV2 {
   )
   @Post('verify-password')
   async requestOtpForChangingPassword(
+    @Auth() { account }: Authorizer,
     @Body() requestOtpDto: RequestOtpForChangingPasswordDto,
-    @Req() { $credential }: CredentialRequest,
     @RequestMeta() requestMetadata: RequestMetadata,
   ) {
     const { refCode, expireDate } =
       await this.authenticationService.requestOtpForChangingPassword({
         ...requestOtpDto,
         ...requestMetadata,
-        requestedBy: $credential.account,
+        requestedBy: account,
       });
 
     return { refCode, objective: requestOtpDto.objective, expireDate };
@@ -294,5 +295,18 @@ export class AuthenticationControllerV2 {
     };
 
     return await this.authenticationService.guestLogin(requestOption);
+  }
+
+  @CastcleBasicAuth()
+  @Post('request-link/email')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  requestVerificationLink(
+    @Auth() { account }: Authorizer,
+    @Req() req: CredentialRequest,
+  ) {
+    return this.authenticationService.requestVerificationLink(
+      account,
+      Host.getHostname(req),
+    );
   }
 }

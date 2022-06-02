@@ -23,7 +23,7 @@
 import {
   DEFAULT_QUERY_OPTIONS,
   NotificationSource,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { Injectable, PipeTransform } from '@nestjs/common';
 
 //TODO !!! need to move this to somewhere else

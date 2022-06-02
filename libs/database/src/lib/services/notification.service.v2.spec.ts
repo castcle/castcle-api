@@ -20,11 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationServiceV2 } from './notification.service.v2';
+import { Environment } from '@castcle-api/environments';
+import { CastcleDate } from '@castcle-api/utils/commons';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   MongooseAsyncFeatures,
@@ -32,23 +35,20 @@ import {
   NotificationService,
 } from '../database.module';
 import { AcceptPlatform, ContentType } from '../dtos';
-import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import {
+  NotificationLandingPage,
+  NotificationRef,
+  NotificationSource,
+  NotificationType,
+} from '../dtos/notification.dto';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { QueueName } from '../models';
 import { Comment, Content, Notification } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
-import { Repository } from 'libs/database/src/lib/repositories';
-import { HttpModule } from '@nestjs/axios';
-import {
-  NotificationSource,
-  NotificationType,
-  NotificationRef,
-} from './../dtos/notification.dto';
-import { Environment } from '@castcle-api/environments';
-import { CastcleDate } from '@castcle-api/utils/commons';
-import { NotificationLandingPage } from './../dtos/notification.dto';
 
 jest.mock('@castcle-api/environments');
 

@@ -20,13 +20,13 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { OtpObjective } from '@castcle-api/database';
 import {
   AcceptPlatform,
+  AccountAuthenIdType,
+  OtpObjective,
   PageResponseDto,
   UserResponseDto,
-} from '@castcle-api/database/dtos';
-import { AccountAuthenIdType } from '@castcle-api/database/schemas';
+} from '@castcle-api/database';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleRegExp } from '@castcle-api/utils/commons';
 import { ApiProperty } from '@nestjs/swagger';

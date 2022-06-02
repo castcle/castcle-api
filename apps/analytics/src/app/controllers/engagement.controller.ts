@@ -21,16 +21,15 @@
  * or have any questions.
  */
 
-import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
-import { UxEngagementBody } from '@castcle-api/database/dtos';
+import { UxEngagementBody, UxEngagementService } from '@castcle-api/database';
+import { CastcleController } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import {
   CredentialInterceptor,
   CredentialRequest,
 } from '@castcle-api/utils/interceptors';
-import { UxEngagementService } from '@castcle-api/database';
+import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
 import { ApiBody, ApiResponse } from '@nestjs/swagger';
-import { CastcleController } from '@castcle-api/utils/decorators';
 
 @CastcleController({ path: 'engagements', version: '1.0' })
 export class EngagementController {

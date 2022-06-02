@@ -21,13 +21,13 @@
  * or have any questions.
  */
 
+import { Configs } from '@castcle-api/environments';
 import {
-  applyDecorators,
   Controller,
   ControllerOptions,
   VERSION_NEUTRAL,
+  applyDecorators,
 } from '@nestjs/common';
-import { Configs } from '@castcle-api/environments';
 import { ApiHeader } from '@nestjs/swagger';
 
 export function CastcleController(options: ControllerOptions) {

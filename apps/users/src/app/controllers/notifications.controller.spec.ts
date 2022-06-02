@@ -23,19 +23,18 @@
 import {
   AuthenticationService,
   ContentService,
+  Credential,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
-  QueueName,
-  UserService,
-} from '@castcle-api/database';
-import {
   NotificationSource,
   NotificationType,
+  QueueName,
   RegisterTokenDto,
-} from '@castcle-api/database/dtos';
-import { Credential, User } from '@castcle-api/database/schemas';
+  User,
+  UserService,
+} from '@castcle-api/database';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common/cache';

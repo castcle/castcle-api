@@ -20,11 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CountryService } from '@castcle-api/database';
 import {
   CountryResponse,
+  CountryService,
   DEFAULT_COUNTRY_QUERY_OPTIONS,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';

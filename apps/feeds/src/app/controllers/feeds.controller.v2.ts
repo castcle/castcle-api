@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { GetSearchQuery } from '@castcle-api/database/dtos';
+import { ContentServiceV2, GetSearchQuery } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
@@ -29,7 +29,6 @@ import {
   CastcleAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { ContentServiceV2 } from '@castcle-api/database';
 import { Get, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'feeds' })
@@ -38,24 +37,20 @@ export class FeedsControllerV2 {
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('search/recent')
-  async getSearchRecent(
+  getSearchRecent(
     @Auth() authorizer: Authorizer,
     @Query() query: GetSearchQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    return await this.contentServiceV2.getSearchRecent(query, authorizer.user);
+    return this.contentServiceV2.getSearchRecent(query, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('search/trends')
-  async getSearchTrends(
+  getSearchTrends(
     @Auth() authorizer: Authorizer,
     @Query() query: GetSearchQuery,
   ) {
-    authorizer.requestAccessForAccount(authorizer.account._id);
-
-    return await this.contentServiceV2.getSearchTrends(
+    return this.contentServiceV2.getSearchTrends(
       query,
       authorizer.user,
       authorizer.account,

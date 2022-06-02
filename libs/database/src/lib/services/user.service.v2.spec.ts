@@ -45,7 +45,7 @@ import {
   PaginationQuery,
   UserResponseDto,
 } from '../dtos';
-import { generateMockUsers, MockUserDetail } from '../mocks/user.mocks';
+import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
 import { Account, AccountActivation, Credential, User } from '../schemas';
@@ -124,7 +124,7 @@ describe('UserServiceV2', () => {
     userDemo = await authService.getUserFromAccount(accountDemo.account);
   });
 
-  describe('#blockUser', () => {
+  describe('#getUserRelationships', () => {
     let user1: User;
     let user2: User;
     beforeAll(async () => {
@@ -139,7 +139,7 @@ describe('UserServiceV2', () => {
 
     it('should throw USER_OR_PAGE_NOT_FOUND when user to block is not found', async () => {
       await userServiceV2.blockUser(user2, String(user1._id));
-      const blocking = await userServiceV2.getUserBlock(user1);
+      const blocking = await userServiceV2.getUserRelationships(user1, true);
 
       expect(blocking).toHaveLength(1);
       expect(blocking).toContainEqual(user2._id);
@@ -308,20 +308,31 @@ describe('UserServiceV2', () => {
     });
   });
 
-  describe('#getMyPages', () => {
+  describe('#pages', () => {
     it('should return undefined when user have no page', async () => {
       const result = await userServiceV2.getMyPages(userDemo);
       expect(result[0]).toBeUndefined();
     });
 
+    it('should return page when user create page', async () => {
+      const page = await userServiceV2.createPage(userDemo, {
+        castcleId: 'testNewPage',
+        displayName: 'testNewPage',
+      });
+
+      expect(page).toBeDefined();
+    });
+
+    it('should return error when castcleId exist', async () => {
+      expect(
+        userServiceV2.createPage(userDemo, {
+          castcleId: 'testNewPage',
+          displayName: 'testNewPage',
+        }),
+      ).rejects.toThrowError(CastcleException.PAGE_IS_EXIST);
+    });
+
     it('should return page of user when created', async () => {
-      await userServiceV1.createPageFromCredential(
-        guestDemo.credentialDocument,
-        {
-          castcleId: accountDemo.account.id,
-          displayName: 'sp002',
-        },
-      );
       const pages = await userServiceV2.getMyPages(userDemo);
       expect(pages[0]).toBeDefined();
     });

@@ -8,6 +8,11 @@ jobs:
     name: Lint and Build Project
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 4096
+          swap-size-mb: 8192
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
@@ -50,4 +55,27 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: rm -rf node_modules && npm ci
       - name: Test Project
-        run: npm run test:all
+        run: npm run test:all -- --exclude=e2e
+
+  e2e:
+    name: Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-e2e-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf node_modules && npm ci
+      - name: Test E2E
+        run: npx nx test e2e --silent

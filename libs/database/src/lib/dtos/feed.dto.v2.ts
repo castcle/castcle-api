@@ -21,16 +21,16 @@
  * or have any questions.
  */
 import {
-  TransformKeywordStringToKeywordFilter,
   TransformStringToEnum,
+  TransformStringToKeyword,
 } from '@castcle-api/utils/commons';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { KeywordType, SearchType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 
 export class GetSearchQuery extends PaginationQuery {
   @IsNotEmpty()
-  @TransformKeywordStringToKeywordFilter()
+  @TransformStringToKeyword()
   keyword: {
     input: string;
     type: KeywordType;

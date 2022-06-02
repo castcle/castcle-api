@@ -32,8 +32,8 @@ import {
   GetUserRelationResponseCount,
   pipelineOfUserRelationFollowersCountV2,
   pipelineOfUserRelationFollowersV2,
-  pipelineOfUserRelationFollowingV2,
   pipelineOfUserRelationFollowingCountV2,
+  pipelineOfUserRelationFollowingV2,
 } from '../aggregations';
 import {
   CastcleQueryOptions,
@@ -44,6 +44,7 @@ import {
   Meta,
   NotificationSource,
   NotificationType,
+  PageDto,
   PageResponseDto,
   PaginationQuery,
   ResponseDto,
@@ -62,7 +63,7 @@ import { NotificationService } from './notification.service';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger();
+  private logger = new CastLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Account')
@@ -87,12 +88,12 @@ export class UserServiceV2 {
     return user;
   };
 
-  getUserBlock = async (viewer: User) => {
+  getUserRelationships = async (viewer: User, blocking: boolean) => {
     if (!viewer) return [];
     const isRelationships = await this.repositoryService.findRelationships(
       {
         followedUser: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { user: 1 },
@@ -102,15 +103,15 @@ export class UserServiceV2 {
     const byRelationships = await this.repositoryService.findRelationships(
       {
         userId: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { followedUser: 1 },
       },
     );
     return [
-      ...isRelationships.map((item) => item.user),
-      ...byRelationships.map((item) => item.followedUser),
+      ...isRelationships.map((item) => item.user._id),
+      ...byRelationships.map((item) => item.followedUser._id),
     ];
   };
 
@@ -143,39 +144,39 @@ export class UserServiceV2 {
       : [];
 
     return Promise.all(
-      users.map(async (item) => {
+      users.map(async (user) => {
         const syncSocials =
-          String(item.ownerAccount) === String(viewer.ownerAccount) &&
+          String(user.ownerAccount) === String(viewer?.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
-            ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
+            ? await this.socialSyncModel.find({ 'author.id': user.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(item.ownerAccount) === String(viewer.ownerAccount)
-            ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
+          ? String(user.ownerAccount) === String(viewer?.ownerAccount)
+            ? await this.accountModel.findOne({ _id: user.ownerAccount }).exec()
             : undefined
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(item.id)
+          ? await this.contentService.getContentsFromUser(user.id)
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
           ? await this.repositoryService.getBalance({
-              accountId: String(item.ownerAccount),
+              accountId: String(user.ownerAccount),
             })
           : undefined;
 
         const userResponse =
-          item.type === UserType.PAGE
-            ? item.toPageResponseV2(
+          user.type === UserType.PAGE
+            ? user.toPageResponseV2(
                 undefined,
                 undefined,
                 undefined,
                 syncSocials,
                 content?.total,
               )
-            : await item.toUserResponseV2({
+            : await user.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
                 syncSocials,
@@ -185,7 +186,7 @@ export class UserServiceV2 {
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(user) === String(item.id) &&
+                String(user) === String(user.id) &&
                 String(followedUser) === String(viewer?.id),
             )
           : undefined;
@@ -193,7 +194,7 @@ export class UserServiceV2 {
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(followedUser) === String(item.id) &&
+                String(followedUser) === String(user.id) &&
                 String(user) === String(viewer?.id),
             )
           : undefined;
@@ -552,14 +553,34 @@ export class UserServiceV2 {
       this.logger.error(error, `updateMobile:claimAirdrop:error`);
     }
   }
+
+  async deletePage(account: Account, pageId: string, password: string) {
+    const page = await this.repositoryService.findUser({
+      type: UserType.PAGE,
+      _id: pageId,
+    });
+
+    if (!page) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    if (String(page.ownerAccount) !== String(account._id)) {
+      this.logger.warn('page owner is not same as account.');
+      throw CastcleException.FORBIDDEN;
+    }
+
+    if (!account.verifyPassword(password))
+      throw CastcleException.INVALID_PASSWORD;
+
+    await this.repositoryService.deletePage(Types.ObjectId(pageId));
+  }
+
   async getUserByKeyword(
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
-    const blocking = await this.getUserBlock(viewer);
+    const blocking = await this.getUserRelationships(viewer, true);
 
     const users = await this.repositoryService.findUsers({
-      execute: blocking,
+      excludeRelationship: blocking,
       ...query,
     });
 
@@ -696,5 +717,28 @@ export class UserServiceV2 {
     });
 
     return relationUsers;
+  }
+
+  async createPage(user: User, body: PageDto) {
+    const pageIsExist = await this.repositoryService.findUser({
+      _id: body.castcleId,
+    });
+
+    if (pageIsExist) throw CastcleException.PAGE_IS_EXIST;
+
+    const page = await this.repositoryService.createUser({
+      ownerAccount: user.ownerAccount,
+      type: UserType.PAGE,
+      displayId: body.castcleId,
+      displayName: body.displayName,
+    });
+
+    const convertPage = await this.convertUsersToUserResponsesV2(
+      null,
+      [page],
+      false,
+    );
+
+    return convertPage[0];
   }
 }

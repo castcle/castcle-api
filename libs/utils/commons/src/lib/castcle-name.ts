@@ -22,11 +22,11 @@
  */
 import {
   BANNED_NAMES,
-  RESERVE_NAMES,
-  RANDOM_ADJECTIVE,
-  RANDOM_SUBJECTS,
   LENGTH_MAX,
   LENGTH_MIN,
+  RANDOM_ADJECTIVE,
+  RANDOM_SUBJECTS,
+  RESERVE_NAMES,
 } from './configs/names';
 
 export class CastcleName {

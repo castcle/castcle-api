@@ -20,12 +20,12 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { HashtagService } from '@castcle-api/database';
 import {
   DEFAULT_QUERY_OPTIONS,
   HashtagResponse,
+  HashtagService,
   LanguageResponse,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleAuth, CastcleController } from '@castcle-api/utils/decorators';

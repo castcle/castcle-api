@@ -24,11 +24,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { preCommentSave, postCommentSave } from '../hooks/comment.save';
+import { postCommentSave, preCommentSave } from '../hooks/comment.save';
 import { CastcleBase } from './base.schema';
 import { Content } from './content.schema';
-import { User } from './user.schema';
 import { Revision } from './revision.schema';
+import { User } from './user.schema';
 
 export enum CommentType {
   Comment = 'comment',

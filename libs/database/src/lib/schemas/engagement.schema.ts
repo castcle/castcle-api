@@ -24,21 +24,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { User } from './user.schema';
-import { Comment } from './comment.schema';
-import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
 import { EntityVisibility } from '../dtos/common.dto';
 import { Account } from './account.schema';
-
-export enum EngagementType {
-  Like = 'like',
-  Recast = 'recast',
-  Quote = 'quote',
-  Comment = 'comment',
-  Report = 'report',
-  Seen = 'seen',
-}
+import { CastcleBase } from './base.schema';
+import { Comment } from './comment.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
 
 @Schema({ timestamps: true })
 export class Engagement extends CastcleBase {

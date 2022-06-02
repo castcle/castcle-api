@@ -23,27 +23,27 @@
 
 import { Configs, Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
+import { Image } from '@castcle-api/utils/aws';
 import { CastcleDate, CastcleLocalization } from '@castcle-api/utils/commons';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
-import { User, Notification, Account } from '../schemas';
-import { QueueName, NotificationMessage, UserType } from '../models';
+import { pipelineNotificationBadge } from '../aggregations';
 import {
-  CreateNotification,
-  NotificationType,
-  NotificationSource,
   AndroidMessagePriority,
+  CreateNotification,
+  NotificationLandingPage,
+  NotificationPayloadDto,
   NotificationQuery,
   NotificationRef,
-  NotificationLandingPage,
-  SoundDeviceDefault,
+  NotificationSource,
+  NotificationType,
   PushNotificationPayload,
-  NotificationPayloadDto,
+  SoundDeviceDefault,
 } from '../dtos';
-import { pipelineNotificationBadge } from '../aggregations';
+import { NotificationMessage, QueueName, UserType } from '../models';
 import { Repository } from '../repositories';
-import { Image } from '@castcle-api/utils/aws';
+import { Account, Notification, User } from '../schemas';
 
 @Injectable()
 export class NotificationServiceV2 {

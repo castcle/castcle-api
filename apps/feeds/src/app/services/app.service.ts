@@ -21,18 +21,18 @@
  * or have any questions.
  */
 
-import { UserService } from '@castcle-api/database';
 import {
   BlogPayload,
   ContentType,
   SaveContentDto,
   Url,
-} from '@castcle-api/database/dtos';
+  User,
+  UserService,
+} from '@castcle-api/database';
+import { COMMON_SIZE_CONFIGS, Image } from '@castcle-api/utils/aws';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
-import { Image, COMMON_SIZE_CONFIGS } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
-import { User } from '@castcle-api/database/schemas';
 
 @Injectable()
 export class AppService {

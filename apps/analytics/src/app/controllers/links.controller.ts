@@ -21,8 +21,7 @@
  * or have any questions.
  */
 
-import { AnalyticService } from '@castcle-api/database';
-import { Analytic } from '@castcle-api/database/schemas';
+import { Analytic, AnalyticService } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
 import { RequestMeta, RequestMetadata } from '@castcle-api/utils/decorators';
 import { Controller, Get, Query, Res } from '@nestjs/common';

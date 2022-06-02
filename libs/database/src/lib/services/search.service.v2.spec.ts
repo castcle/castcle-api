@@ -20,11 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
+import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { Types } from 'mongoose';
 import {
   AnalyticService,
   AuthenticationService,
@@ -34,18 +37,14 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
-import { generateMockUsers, MockUserDetail } from '../mocks';
 import { CreateHashtag } from '../dtos/hashtag.dto';
+import { MockUserDetail, generateMockUsers } from '../mocks';
+import { ExcludeType, KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
+import { CampaignService } from './campaign.service';
+import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
 import { SearchServiceV2 } from './search.service.v2';
-import { getQueueToken } from '@nestjs/bull';
-import { QueueName } from '../models';
-import { Types } from 'mongoose';
-import { ExecuteType, KeywordType } from './../models/feed.enum';
-import { ContentService } from './content.service';
-import { Mailer } from '@castcle-api/utils/clients';
-import { CampaignService } from './campaign.service';
 
 describe('SearchServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -55,6 +54,7 @@ describe('SearchServiceV2', () => {
   let authService: AuthenticationService;
   let userService: UserService;
   let mocksUsers: MockUserDetail[];
+  let userServiceV2: UserServiceV2;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -97,6 +97,7 @@ describe('SearchServiceV2', () => {
     hashtagService = app.get<HashtagService>(HashtagService);
     service = app.get<SearchServiceV2>(SearchServiceV2);
     userService = app.get(UserService);
+    userServiceV2 = app.get(UserServiceV2);
 
     mocksUsers = await generateMockUsers(20, 0, {
       userService: userService,
@@ -135,7 +136,7 @@ describe('SearchServiceV2', () => {
     it('should get top trend exclude hashtags', async () => {
       const getTopTrends = await service.getTopTrends({
         limit: 10,
-        exclude: [ExecuteType.Hashtags],
+        exclude: [ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
@@ -145,7 +146,7 @@ describe('SearchServiceV2', () => {
     it('should get top trend exclude users', async () => {
       const getTopTrends = await service.getTopTrends({
         limit: 10,
-        exclude: [ExecuteType.Users],
+        exclude: [ExcludeType.Users],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(10);
@@ -154,7 +155,7 @@ describe('SearchServiceV2', () => {
 
     it('should get empty top trend with exclude all', async () => {
       const getTopTrends = await service.getTopTrends({
-        exclude: [ExecuteType.Users, ExecuteType.Hashtags],
+        exclude: [ExcludeType.Users, ExcludeType.Hashtags],
       });
       expect(getTopTrends.hashtags.length).toEqual(0);
       expect(getTopTrends.users.length).toEqual(0);
@@ -240,13 +241,19 @@ describe('SearchServiceV2', () => {
   });
 
   describe('getUserMentions', () => {
+    beforeAll(async () => {
+      await userServiceV2.followUser(
+        mocksUsers[1].user,
+        mocksUsers[0].user._id,
+        mocksUsers[1].account,
+      );
+    });
     it('should get user by keyword', async () => {
       const getUserMentions = await service.getUserMentions(
         {
-          maxResults: 25,
           keyword: {
             type: KeywordType.Mention,
-            input: 'mock-10',
+            input: 'm',
           },
           hasRelationshipExpansion: false,
         },

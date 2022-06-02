@@ -26,9 +26,11 @@ import {
   CampaignService,
   ContentService,
   ContentServiceV2,
+  ContentType,
   DataService,
   HashtagService,
   KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
@@ -37,8 +39,10 @@ import {
   TAccountService,
   UserService,
   UserServiceV2,
+  generateMockUsers,
 } from '@castcle-api/database';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
+import { Mailer } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -46,10 +50,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Authorizer } from '@castcle-api/utils/decorators';
-import { Mailer } from '@castcle-api/utils/clients';
 import { FeedsControllerV2 } from './feeds.controller.v2';
-import { ContentType } from '@castcle-api/database/dtos';
 
 describe('FeedsControllerV2', () => {
   let mongod: MongoMemoryServer;
@@ -76,10 +77,10 @@ describe('FeedsControllerV2', () => {
         ContentService,
         ContentServiceV2,
         DataService,
+        HashtagService,
         Repository,
         UserService,
         UserServiceV2,
-        HashtagService,
         { provide: CampaignService, useValue: {} },
         { provide: TAccountService, useValue: {} },
         { provide: NotificationService, useValue: {} },
@@ -140,9 +141,10 @@ describe('FeedsControllerV2', () => {
       );
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
-          type: KeywordType.Mention,
+          type: KeywordType.Word,
           input: 'h',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -160,6 +162,7 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Mention,
           input: 'test',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -173,11 +176,11 @@ describe('FeedsControllerV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'hello',
+            input: 'h',
           },
           maxResults: 20,
           decayDays: 7,
-          executeAuthor: [],
+          excludeAuthor: [],
         },
         { projection: { _id: 1 } },
       );
@@ -201,11 +204,11 @@ describe('FeedsControllerV2', () => {
       const getSearchTrends = await controller.getSearchTrends(authorizer, {
         keyword: {
           type: KeywordType.Mention,
-          input: 'hello',
+          input: 'h',
         },
         hasRelationshipExpansion: true,
       });
-      expect(getSearchTrends.payload).toHaveLength(20);
+      expect(getSearchTrends.payload).toHaveLength(0);
     });
   });
 });

@@ -22,14 +22,18 @@
  */
 
 import {
+  TransformSortStringToSortObject,
+  TransformStringToArrayOfStrings,
+} from '@castcle-api/utils/commons';
+import {
   IsEnum,
   IsMongoId,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { GetUserParam } from './user.dto';
-import { IsNotEmpty } from 'class-validator';
+import { UserType } from '../models';
 import { Content, Engagement, User } from '../schemas';
 import {
   BlogPayload,
@@ -37,12 +41,8 @@ import {
   ImagePayload,
   ShortPayload,
 } from './content.dto';
-import { UserType } from '../models';
-import {
-  TransformSortStringToSortObject,
-  TransformStringToArrayOfStrings,
-} from '@castcle-api/utils/commons';
 import { PaginationQuery } from './pagination.dto';
+import { GetUserParam } from './user.dto';
 
 export class ResponseParticipate {
   user: {

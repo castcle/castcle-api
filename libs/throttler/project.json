@@ -1,7 +1,20 @@
 {
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/throttler/src",
   "projectType": "library",
   "targets": {
+    "build": {
+      "executor": "@nrwl/js:swc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/throttler",
+        "tsConfig": "libs/throttler/tsconfig.lib.json",
+        "packageJson": "libs/throttler/package.json",
+        "main": "libs/throttler/src/index.ts",
+        "assets": ["libs/throttler/*.md"],
+        "swcrc": ".swcrc"
+      }
+    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

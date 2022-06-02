@@ -20,8 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { AnalyticService, AuthenticationService } from '@castcle-api/database';
-import { SocialConnectDto } from '@castcle-api/database/dtos';
+import {
+  AnalyticService,
+  AuthenticationService,
+  SocialConnectDto,
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { TwilioChannel } from '@castcle-api/utils/clients';
@@ -50,8 +53,8 @@ import {
   Req,
   Res,
   UseInterceptors,
-  Version,
   VERSION_NEUTRAL,
+  Version,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -72,7 +75,6 @@ import {
   GuestLoginDto,
   LoginDto,
   LoginResponse,
-  otpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
@@ -82,6 +84,7 @@ import {
   TokenResponse,
   VerificationOtpDto,
   VerificationPasswordBody,
+  otpResponse,
 } from '../dtos';
 import {
   GuestInterceptor,

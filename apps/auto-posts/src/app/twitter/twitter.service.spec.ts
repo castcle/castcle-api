@@ -21,17 +21,17 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import { ContentService, SocialSyncService } from '@castcle-api/database';
-import { TwitterService } from './twitter.service';
+import { CastLogger } from '@castcle-api/logger';
+import { Downloader, Image } from '@castcle-api/utils/aws';
+import { Test, TestingModule } from '@nestjs/testing';
 import {
   ReferencedTweetV2,
   TweetEntitiesV2,
   TweetUserTimelineV2Paginator,
   TwitterApiv2,
 } from 'twitter-api-v2';
-import { Downloader, Image } from '@castcle-api/utils/aws';
-import { CastLogger } from '@castcle-api/logger';
+import { TwitterService } from './twitter.service';
 
 jest.mock('twitter-api-v2');
 jest.mock('@castcle-api/utils/aws');

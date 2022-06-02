@@ -23,14 +23,11 @@
 
 import {
   NotificationQuery,
-  NotificationSourceQuery,
-} from '@castcle-api/database/dtos';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
-import {
-  createCastcleMeta,
   NotificationServiceV2,
+  NotificationSourceQuery,
+  createCastcleMeta,
 } from '@castcle-api/database';
+import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
@@ -38,7 +35,8 @@ import {
   CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CacheKeyName } from '@castcle-api/environments';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'notifications' })
 export class NotificationsControllerV2 {

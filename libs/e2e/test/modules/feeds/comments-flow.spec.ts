@@ -1,9 +1,9 @@
 import { ShortPayload } from '../../../../database/src/lib/dtos/content.dto';
 import { User } from '../../models';
 import { AuthenticationsRequest, ContentsRequest } from '../../requests';
+import { CommentRequest } from '../../requests/comment.request';
+import { UsersRequest } from '../../requests/users.request';
 import { userGamma } from '../../variables';
-import { CommentRequest } from './../../requests/comment.request';
-import { UsersRequest } from './../../requests/users.request';
 
 export const testCommentsFlow = () => {
   const userA = new User({ name: 'CommentA' });

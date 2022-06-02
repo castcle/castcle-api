@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Size, Image } from './image';
+import { Image, Size } from './image';
 describe('Image Unit Test', () => {
   describe('#_getNewSameRatioSize()', () => {
     it('should resize stuff with the same ratio ', () => {

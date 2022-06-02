@@ -21,17 +21,17 @@
  * or have any questions.
  */
 import {
+  Account,
   AuthenticationService,
-  getSocialPrefix,
+  Credential,
+  DEFAULT_QUERY_OPTIONS,
+  Otp,
   OtpObjective,
   OtpTemplateMessage,
-  UserService,
-} from '@castcle-api/database';
-import {
-  DEFAULT_QUERY_OPTIONS,
   SocialConnectDto,
-} from '@castcle-api/database/dtos';
-import { Account, Credential, Otp } from '@castcle-api/database/schemas';
+  UserService,
+  getSocialPrefix,
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {

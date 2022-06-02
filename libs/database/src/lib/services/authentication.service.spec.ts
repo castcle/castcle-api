@@ -38,7 +38,7 @@ import { EntityVisibility } from '../dtos';
 import { OtpObjective, QueueName } from '../models';
 import {
   Account,
-  AccountActivation,
+  AccountActivationV1,
   AccountAuthenId,
   AccountAuthenIdType,
   Credential,
@@ -322,7 +322,7 @@ describe('Authentication Service', () => {
     });
 
     describe('#getExistedUserFromCastcleId', () => {
-      let signupResult: AccountActivation;
+      let signupResult: AccountActivationV1;
       const signupRequirements: SignupRequirements = {
         displayId: 'people',
         displayName: 'People',
@@ -398,7 +398,7 @@ describe('Authentication Service', () => {
     });
 
     describe('#signupByEmail()', () => {
-      let signupResult: AccountActivation;
+      let signupResult: AccountActivationV1;
       let afterSaveAccount: Account;
       let afterSaveUser: User;
       const signupRequirements: SignupRequirements = {
@@ -441,10 +441,10 @@ describe('Authentication Service', () => {
     });
 
     describe('#verifyAccount()', () => {
-      let accountActivation: AccountActivation;
+      let accountActivation: AccountActivationV1;
       let beforeVerifyAccount;
       let afterVerifyAccount: Account;
-      let afterAccountActivation: AccountActivation;
+      let afterAccountActivation: AccountActivationV1;
       beforeAll(async () => {
         const tokenResult = service._accountActivationModel.generateVerifyToken(
           {

@@ -36,6 +36,7 @@ import {
 import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { Types } from 'mongoose';
 import {
   AccessTokenPayload,
@@ -523,35 +524,6 @@ export class AuthenticationServiceV2 {
     });
   }
 
-  async requestOtpForChangingPassword({
-    email,
-    password,
-    objective,
-    requestedBy,
-    userAgent,
-  }: RequestOtpForChangingPasswordDto & {
-    requestedBy: Account;
-    userAgent?: string;
-  }) {
-    const account = await this.repository.findAccount({ email });
-    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
-    if (account.id === requestedBy.id) {
-      throw CastcleException.INVALID_ACCESS_TOKEN;
-    }
-    if (!account.verifyPassword(password)) {
-      throw CastcleException.INVALID_PASSWORD;
-    }
-
-    return this.requestOtp({
-      channel: TwilioChannel.EMAIL,
-      objective,
-      receiver: email,
-      account,
-      requestedBy: requestedBy._id,
-      userAgent,
-    });
-  }
-
   async requestOtpByMobile({
     countryCode,
     mobileNumber,
@@ -612,7 +584,6 @@ export class AuthenticationServiceV2 {
         channel,
         objective,
         receiver,
-        verified: false,
       });
 
       if (otp?.exceededUsageLimit()) {
@@ -621,7 +592,7 @@ export class AuthenticationServiceV2 {
       if (otp?.isValid() && otp.exceededMaxRetries()) {
         throw CastcleException.TWILIO_TOO_MANY_REQUESTS;
       }
-      if (otp?.isValid() && !otp.exceededMaxRetries()) {
+      if (otp?.isValid() && !otp.isVerify) {
         return otp;
       }
 
@@ -638,6 +609,7 @@ export class AuthenticationServiceV2 {
         ? otp
             .regenerate()
             .set({
+              isVerify: false,
               sid,
               requestId: requestedBy,
               retry: 0,
@@ -770,6 +742,59 @@ export class AuthenticationServiceV2 {
     }
   }
 
+  async requestOtpForChangingPassword({
+    email,
+    password,
+    objective,
+    requestedBy,
+  }: RequestOtpForChangingPasswordDto & { requestedBy: Account }) {
+    const account = await this.repository.findAccount({ email });
+    if (!account) throw CastcleException.EMAIL_NOT_FOUND;
+    if (account.id !== requestedBy.id) {
+      throw CastcleException.INVALID_ACCESS_TOKEN;
+    }
+    if (!account.verifyPassword(password)) {
+      throw CastcleException.INVALID_PASSWORD;
+    }
+
+    const otp = await this.repository.findOtp({
+      channel: TwilioChannel.EMAIL,
+      objective,
+      receiver: email,
+      verified: true,
+    });
+
+    if (!otp) {
+      return this.repository.createOtp({
+        channel: TwilioChannel.EMAIL,
+        accountId: account.id,
+        objective,
+        requestId: requestedBy._id,
+        verified: true,
+        receiver: email,
+      });
+    }
+
+    if (otp.exceededUsageLimit()) {
+      throw CastcleException.OTP_USAGE_LIMIT_EXCEEDED;
+    }
+    if (otp.isValid() && otp.exceededMaxRetries()) {
+      throw CastcleException.TWILIO_MAX_LIMIT;
+    }
+    if (otp.isValid() && !otp.exceededMaxRetries()) {
+      return otp;
+    }
+
+    return otp
+      .regenerate()
+      .set({
+        requestId: requestedBy,
+        retry: 0,
+        sentAt: [...otp.sentAt, new Date()],
+      })
+      .save();
+  }
+
   async changePassword({
     objective,
     refCode,
@@ -811,5 +836,38 @@ export class AuthenticationServiceV2 {
 
     await account.changePassword(newPassword);
     await otp.markCompleted().save();
+  }
+
+  async requestVerificationLink(account: Account, hostname: string) {
+    const activation = account.activations?.find(
+      ({ type }) => type === AccountActivationType.EMAIL,
+    );
+
+    if (!activation) throw CastcleException.INVALID_ACCESS_TOKEN;
+    if (activation.activationDate) CastcleException.EMAIL_ALREADY_VERIFIED;
+
+    const tokenExpiryDate = DateTime.local().plus({
+      seconds: Environment.JWT_VERIFY_EXPIRES_IN,
+    });
+    const tokenPayload = {
+      id: account.id,
+      expiryDate: tokenExpiryDate.toString(),
+    };
+
+    activation.revocationDate = new Date();
+    activation.verifyTokenExpireDate = tokenExpiryDate.toJSDate();
+    activation.verifyToken = Token.generateToken(
+      tokenPayload,
+      Environment.JWT_VERIFY_SECRET,
+      Environment.JWT_VERIFY_EXPIRES_IN,
+    );
+
+    account.markModified('activations');
+    await account.save();
+    await this.mailer.sendRegistrationEmail(
+      hostname,
+      account.email,
+      activation.verifyToken,
+    );
   }
 }

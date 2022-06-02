@@ -20,29 +20,17 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
+import { CacheStore, Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
+import { CastcleException } from '@castcle-api/utils/exception';
+import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  CACCOUNT_NO,
-  ContentFarmingStatus,
-  ContentMessage,
-  ContentMessageEvent,
-  EngagementType,
-  QueueName,
-  UserType,
-  WalletType,
-} from '../models';
-import {
-  Account,
-  Content,
-  ContentFarming,
-  signedContentPayloadItem,
-  toUnsignedContentPayloadItem,
-  User,
-} from '../schemas';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { NotificationServiceV2 } from './notification.service.v2';
+import { Queue } from 'bull';
+import { Cache } from 'cache-manager';
+import cdf from 'castcle-cdf';
+import { Model, Types } from 'mongoose';
 import {
   Author,
   CastcleIncludes,
@@ -59,22 +47,34 @@ import {
   ResponseParticipate,
   ShortPayload,
 } from '../dtos';
-import { Types } from 'mongoose';
-import { TAccountService } from './taccount.service';
+import {
+  CACCOUNT_NO,
+  ContentFarmingStatus,
+  ContentMessage,
+  ContentMessageEvent,
+  EngagementType,
+  QueueName,
+  UserType,
+  WalletType,
+} from '../models';
 import {
   ContentFarmingCDF,
   ContentFarmingReponse,
 } from '../models/content-farming.model';
 import { Repository } from '../repositories';
-import { CacheStore, Environment } from '@castcle-api/environments';
-import { CastLogger } from '@castcle-api/logger';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { HashtagService } from './hashtag.service';
+import {
+  Account,
+  Content,
+  ContentFarming,
+  User,
+  signedContentPayloadItem,
+  toUnsignedContentPayloadItem,
+} from '../schemas';
 import { DataService } from './data.service';
-import { Cache } from 'cache-manager';
+import { HashtagService } from './hashtag.service';
+import { NotificationServiceV2 } from './notification.service.v2';
+import { TAccountService } from './taccount.service';
 import { UserServiceV2 } from './user.service.v2';
-import cdf from 'castcle-cdf';
 
 @Injectable()
 export class ContentServiceV2 {
@@ -122,14 +122,15 @@ export class ContentServiceV2 {
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
-    const relationships = hasRelationshipExpansion
-      ? await this.repository
-          .findRelationships({
-            userId: viewer._id,
-            followedUser: usersId,
-          })
-          .exec()
-      : [];
+    const relationships =
+      viewer && hasRelationshipExpansion
+        ? await this.repository
+            .findRelationships({
+              userId: viewer._id,
+              followedUser: usersId,
+            })
+            .exec()
+        : [];
 
     const includesUsers = bundleContents.authors.map((author) => {
       const relationshipUser = relationships?.find(
@@ -197,14 +198,15 @@ export class ContentServiceV2 {
 
     const usersId = bundleContents.authors.map((item) => item._id);
 
-    const relationships = hasRelationshipExpansion
-      ? await this.repository
-          .findRelationships({
-            userId: viewer._id,
-            followedUser: usersId,
-          })
-          .exec()
-      : [];
+    const relationships =
+      viewer && hasRelationshipExpansion
+        ? await this.repository
+            .findRelationships({
+              userId: viewer._id,
+              followedUser: usersId,
+            })
+            .exec()
+        : [];
 
     const includesUsers = bundleContents.authors.map((author) => {
       const relationshipUser = relationships?.find(
@@ -1213,13 +1215,17 @@ export class ContentServiceV2 {
     { hasRelationshipExpansion, ...query }: GetSearchQuery,
     viewer?: User,
   ) => {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     let [contents] = await this.repository.aggregationContent({
       viewer,
-      executeAuthor: blocking,
+      excludeAuthor: blocking,
       ...query,
     });
+
     if (
       contents.contents.length &&
       contents.contents.length < query.maxResults
@@ -1227,8 +1233,9 @@ export class ContentServiceV2 {
       const [contentsMore] = await this.repository.aggregationContent({
         viewer,
         maxResults: query.maxResults - contents.contents.length,
-        executeContents: contents.contents.map((content) => content._id),
-        executeAuthor: blocking,
+        excludeContents: contents.contents.map((content) => content._id),
+        excludeAuthor: blocking,
+        contentType: query.contentType,
       });
 
       contents = this.getContentMore(contents, contentsMore);
@@ -1242,7 +1249,10 @@ export class ContentServiceV2 {
     account: Account,
     token: string,
   ) => {
-    const blocking = await this.userServiceV2.getUserBlock(viewer);
+    const blocking = await this.userServiceV2.getUserRelationships(
+      viewer,
+      true,
+    );
 
     const contentKey = CacheStore.ofTrendsSearch(
       `${query.keyword.input}${
@@ -1270,7 +1280,7 @@ export class ContentServiceV2 {
           ...query,
           maxResults: Environment.LIMIT_CONTENT,
           decayDays: Environment.DECAY_DAY_CONTENT,
-          executeAuthor: blocking,
+          excludeAuthor: blocking,
         },
         { projection: { _id: 1 } },
       );
@@ -1299,7 +1309,7 @@ export class ContentServiceV2 {
       }
     }
 
-    if (!contentScore) {
+    if (!contentScore && !account.isGuest) {
       contentScore = await this.sortContentsByScore(account._id, contentsId);
       await this.cacheManager.set(scoreKey, JSON.stringify(contentScore));
 
@@ -1314,13 +1324,15 @@ export class ContentServiceV2 {
       viewer,
       maxResults: maxResults,
       _id: contentsId.map((content) => content?._id ?? content),
-      executeAuthor: blocking,
+      excludeAuthor: blocking,
+      contentType: query.contentType,
       ...query,
     });
 
-    contents.contents = contents.contents.sort(
-      (a, b) => contentScore[b._id] - contentScore[a._id],
-    );
+    if (!account.isGuest)
+      contents.contents = contents.contents.sort(
+        (a, b) => contentScore[b._id] - contentScore[a._id],
+      );
 
     if (!contents.contents)
       return ResponseDto.ok({
@@ -1333,19 +1345,21 @@ export class ContentServiceV2 {
       const [contentsMore] = await this.repository.aggregationContent({
         viewer,
         maxResults: maxResults - contents.contents.length,
-        executeContents: contents.contents.map((content) => content._id),
+        excludeContents: contents.contents.map((content) => content._id),
         decayDays: Environment.DECAY_DAY_CONTENT,
-        executeAuthor: blocking,
+        excludeAuthor: blocking,
       });
 
-      const score = await this.sortContentsByScore(
-        account._id,
-        contentsMore.contents,
-      );
+      if (!account.isGuest) {
+        const score = await this.sortContentsByScore(
+          account._id,
+          contentsMore.contents,
+        );
 
-      contentsMore.contents = contents.contents.sort(
-        (a, b) => score[b._id] - score[a._id],
-      );
+        contentsMore.contents = contents.contents.sort(
+          (a, b) => score[b._id] - score[a._id],
+        );
+      }
 
       contents = this.getContentMore(contents, contentsMore);
     }

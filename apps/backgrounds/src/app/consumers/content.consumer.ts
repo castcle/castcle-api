@@ -29,7 +29,7 @@ import {
   QueueName,
 } from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { Processor, Process } from '@nestjs/bull';
+import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 
 @Processor(QueueName.CONTENT)
