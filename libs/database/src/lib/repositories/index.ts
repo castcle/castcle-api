@@ -84,6 +84,7 @@ import {
   AdsPlacement,
   CAccount,
   CAccountNature,
+  Comment,
   Content,
   Credential,
   CredentialModel,
