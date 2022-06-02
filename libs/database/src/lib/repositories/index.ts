@@ -522,6 +522,7 @@ export class Repository {
     const { suggestCastcleId } = new CastcleName(
       user.displayId || user.displayName,
     );
+
     const [availableId] =
       await this.userModel.aggregate<GetAvailableIdResponse>(
         pipelineOfGetAvailableId(suggestCastcleId),

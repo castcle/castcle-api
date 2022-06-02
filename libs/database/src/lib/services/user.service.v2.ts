@@ -44,6 +44,7 @@ import {
   Meta,
   NotificationSource,
   NotificationType,
+  PageDto,
   PageResponseDto,
   PaginationQuery,
   ResponseDto,
@@ -716,5 +717,28 @@ export class UserServiceV2 {
     });
 
     return relationUsers;
+  }
+
+  async createPage(user: User, body: PageDto) {
+    const pageIsExist = await this.repositoryService.findUser({
+      _id: body.castcleId,
+    });
+
+    if (pageIsExist) throw CastcleException.PAGE_IS_EXIST;
+
+    const page = await this.repositoryService.createUser({
+      ownerAccount: user.ownerAccount,
+      type: UserType.PAGE,
+      displayId: body.castcleId,
+      displayName: body.displayName,
+    });
+
+    const convertPage = await this.convertUsersToUserResponsesV2(
+      null,
+      [page],
+      false,
+    );
+
+    return convertPage[0];
   }
 }
