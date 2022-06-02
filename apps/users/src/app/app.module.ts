@@ -33,6 +33,7 @@ import { Module } from '@nestjs/common';
 import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationsControllerV2 } from './controllers/notifications.controller.v2';
 import { PagesController } from './controllers/pages.controller';
+import { PagesControllerV2 } from './controllers/pages.controller.v2';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
@@ -52,6 +53,7 @@ import { SuggestionService } from './services/suggestion.service';
     NotificationsController,
     NotificationsControllerV2,
     PagesController,
+    PagesControllerV2,
     UsersController,
     UsersControllerV2,
   ],
