@@ -20,20 +20,34 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { UserServiceV2 } from '@castcle-api/database';
+import { PageDto, UserServiceV2 } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
+  CastcleBasicAuth,
   CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Body, Delete, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import {
+  Body,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { DeletePageDto, GetPageParam } from '../dtos';
 
 @CastcleControllerV2({ path: 'pages' })
 export class PagesControllerV2 {
   constructor(private userServiceV2: UserServiceV2) {}
+
+  @CastcleBasicAuth()
+  @Post()
+  async createPage(@Auth() authorizer: Authorizer, @Body() body: PageDto) {
+    return this.userServiceV2.createPage(authorizer.user, body);
+  }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
