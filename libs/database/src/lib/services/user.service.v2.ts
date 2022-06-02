@@ -145,37 +145,37 @@ export class UserServiceV2 {
     return Promise.all(
       users.map(async (user) => {
         const syncSocials =
-          String(item.ownerAccount) === String(viewer?.ownerAccount) &&
+          String(user.ownerAccount) === String(viewer?.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
-            ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
+            ? await this.socialSyncModel.find({ 'author.id': user.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(item.ownerAccount) === String(viewer?.ownerAccount)
-            ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
+          ? String(user.ownerAccount) === String(viewer?.ownerAccount)
+            ? await this.accountModel.findOne({ _id: user.ownerAccount }).exec()
             : undefined
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(item.id)
+          ? await this.contentService.getContentsFromUser(user.id)
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
           ? await this.repositoryService.getBalance({
-              accountId: String(item.ownerAccount),
+              accountId: String(user.ownerAccount),
             })
           : undefined;
 
         const userResponse =
-          item.type === UserType.PAGE
-            ? item.toPageResponseV2(
+          user.type === UserType.PAGE
+            ? user.toPageResponseV2(
                 undefined,
                 undefined,
                 undefined,
                 syncSocials,
                 content?.total,
               )
-            : await item.toUserResponseV2({
+            : await user.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
                 syncSocials,
@@ -185,7 +185,7 @@ export class UserServiceV2 {
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(user) === String(item.id) &&
+                String(user) === String(user.id) &&
                 String(followedUser) === String(viewer?.id),
             )
           : undefined;
@@ -193,7 +193,7 @@ export class UserServiceV2 {
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user }) =>
-                String(followedUser) === String(item.id) &&
+                String(followedUser) === String(user.id) &&
                 String(user) === String(viewer?.id),
             )
           : undefined;
