@@ -1309,7 +1309,7 @@ export class ContentServiceV2 {
       }
     }
 
-    if (!contentScore) {
+    if (!contentScore && !account.isGuest) {
       contentScore = await this.sortContentsByScore(account._id, contentsId);
       await this.cacheManager.set(scoreKey, JSON.stringify(contentScore));
 
@@ -1329,9 +1329,10 @@ export class ContentServiceV2 {
       ...query,
     });
 
-    contents.contents = contents.contents.sort(
-      (a, b) => contentScore[b._id] - contentScore[a._id],
-    );
+    if (!account.isGuest)
+      contents.contents = contents.contents.sort(
+        (a, b) => contentScore[b._id] - contentScore[a._id],
+      );
 
     if (!contents.contents)
       return ResponseDto.ok({
@@ -1349,14 +1350,16 @@ export class ContentServiceV2 {
         excludeAuthor: blocking,
       });
 
-      const score = await this.sortContentsByScore(
-        account._id,
-        contentsMore.contents,
-      );
+      if (!account.isGuest) {
+        const score = await this.sortContentsByScore(
+          account._id,
+          contentsMore.contents,
+        );
 
-      contentsMore.contents = contents.contents.sort(
-        (a, b) => score[b._id] - score[a._id],
-      );
+        contentsMore.contents = contents.contents.sort(
+          (a, b) => score[b._id] - score[a._id],
+        );
+      }
 
       contents = this.getContentMore(contents, contentsMore);
     }
