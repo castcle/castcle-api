@@ -143,7 +143,7 @@ export class UserServiceV2 {
       : [];
 
     return Promise.all(
-      users.map(async (item) => {
+      users.map(async (user) => {
         const syncSocials =
           String(item.ownerAccount) === String(viewer?.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
