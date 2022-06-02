@@ -23,9 +23,9 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
+import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
 import { CastcleBase } from './base.schema';
 import { Credential } from './credential.schema';
-import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
 import { User } from './user.schema';
 
 @Schema({ timestamps: true })

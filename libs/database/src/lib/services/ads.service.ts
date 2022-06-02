@@ -52,6 +52,7 @@ import {
   AdsStatus,
   CACCOUNT_NO,
   DefaultAdsStatistic,
+  FilterInterval,
   UserType,
   WalletType,
 } from '../models';
