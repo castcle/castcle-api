@@ -57,4 +57,9 @@ export class SocialRewardScheduler {
     actionQueue.status = QueueStatus.DONE;
     await actionQueue.save();
   }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async updateAdsStatus() {
+    await this.adsService.updateAllAdsStatus();
+  }
 }
