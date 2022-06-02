@@ -41,15 +41,15 @@ import {
   UserAccessTokenPayload,
 } from '../dtos/token.dto';
 import {
+  AccountRequirements,
   EventName,
   OtpObjective,
-  AccountRequirements,
   UserType,
 } from '../models';
 import {
   Account,
-  AccountActivationV1,
   AccountActivationModel,
+  AccountActivationV1,
   AccountAuthenId,
   AccountAuthenIdType,
   AccountReferral,
@@ -455,20 +455,6 @@ export class AuthenticationService {
     const emailTokenResult = this._generateEmailVerifyToken({
       id: accountActivation.account as unknown as string,
     });
-
-    this._accountModel
-      .updateOne(
-        {
-          _id: accountActivation.account,
-          'activations.verifyToken': emailTokenResult.verifyToken,
-        },
-        {
-          $set: {
-            'activations.$.revocationDate': new Date(),
-          },
-        },
-      )
-      .exec();
 
     accountActivation.revocationDate = new Date();
     accountActivation.verifyToken = emailTokenResult.verifyToken;

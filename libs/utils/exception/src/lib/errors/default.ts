@@ -221,6 +221,11 @@ export const DefaultErrors = {
     code: '3027',
     message: 'OTP usage limit exceeded',
   },
+  '3028': {
+    statusCode: '400',
+    code: '3028',
+    message: 'This email has been verified.',
+  },
   '4001': {
     statusCode: '404',
     code: '4001',

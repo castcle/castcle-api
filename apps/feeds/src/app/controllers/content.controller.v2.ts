@@ -20,10 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { ContentServiceV2, EngagementType } from '@castcle-api/database';
 
 import {
+  ContentServiceV2,
   CreateContentDto,
+  EngagementType,
   GetContentDto,
   PaginationQuery,
 } from '@castcle-api/database';

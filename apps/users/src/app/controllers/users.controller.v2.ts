@@ -22,18 +22,12 @@
  */
 import {
   AuthenticationService,
+  Comment,
+  CommentParam,
   CommentServiceV2,
+  CommentType,
   ContentService,
   ContentServiceV2,
-  NotificationServiceV2,
-  RankerService,
-  SocialSyncServiceV2,
-  UserService,
-  UserServiceV2,
-  UserType,
-} from '@castcle-api/database';
-import {
-  CommentParam,
   CreateCommentDto,
   ExpansionQuery,
   GetContentDto,
@@ -43,21 +37,26 @@ import {
   GetSourceContentParam,
   GetUserParam,
   LikeCommentDto,
+  NotificationServiceV2,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
   QuoteCastDto,
+  RankerService,
   ReplyCommentParam,
   ResponseDto,
+  SocialSyncServiceV2,
   SyncSocialDtoV2,
   TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateMobileDto,
   UpdateUserDtoV2,
+  UserService,
+  UserServiceV2,
+  UserType,
 } from '@castcle-api/database';
-import { Comment, CommentType } from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -84,9 +83,9 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
+  ReportingContentDto,
   ReportingUserDto,
   TargetCastcleDto,
-  ReportingContentDto,
 } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 

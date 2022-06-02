@@ -10,9 +10,9 @@ import {
   UserSchema,
 } from '@castcle-api/database';
 import { model } from 'mongoose';
-import { User } from '../models';
 import { CommentSchema } from '../../../database/src/lib/schemas/comment.schema';
 import { ContentSchema } from '../../../database/src/lib/schemas/content.schema';
+import { User } from '../models';
 
 export const campaignModel = model('Campaign', CampaignSchema);
 export const otpModel = model('Otp', OtpSchema);

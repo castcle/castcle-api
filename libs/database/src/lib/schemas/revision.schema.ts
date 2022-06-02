@@ -23,8 +23,8 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
-import { Content } from './content.schema';
 import { Comment } from './comment.schema';
+import { Content } from './content.schema';
 
 @Schema({ timestamps: true })
 export class Revision extends CastcleBase {

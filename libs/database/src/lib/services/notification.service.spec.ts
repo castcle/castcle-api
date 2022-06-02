@@ -34,7 +34,7 @@ import {
   RegisterTokenDto,
 } from '../dtos/notification.dto';
 import { QueueName } from '../models';
-import { User, Account, Credential } from '../schemas';
+import { Account, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';

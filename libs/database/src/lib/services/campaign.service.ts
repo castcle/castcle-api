@@ -26,15 +26,15 @@ import { CastcleException } from '@castcle-api/utils/exception';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Job, Queue as BullQueue } from 'bull';
-import { FeedItem, TLedger } from '../schemas';
+import { Queue as BullQueue, Job } from 'bull';
 import { FilterQuery, Model } from 'mongoose';
 import {
   EligibleAccount,
-  pipelineOfGetCampaignClaims,
   GetCampaignClaimsResponse,
   pipelineOfEstimateContentReach,
+  pipelineOfGetCampaignClaims,
 } from '../aggregations';
+import { CampaignField } from '../dtos';
 import {
   CACCOUNT_NO,
   CampaignStatus,
@@ -46,9 +46,8 @@ import {
   QueueTopic,
 } from '../models';
 import { WalletType } from '../models/wallet.enum';
-import { Account, Campaign, Queue } from '../schemas';
+import { Account, Campaign, FeedItem, Queue, TLedger } from '../schemas';
 import { TAccountService } from './taccount.service';
-import { CampaignField } from '../dtos';
 
 @Injectable()
 export class CampaignService {

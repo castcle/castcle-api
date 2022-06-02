@@ -16,9 +16,9 @@ import {
   Comment,
   CommentType,
   Engagement,
-  User,
   Relationship,
   Revision,
+  User,
 } from '../schemas';
 import { createCastcleMeta, getRelationship } from '../utils/common';
 

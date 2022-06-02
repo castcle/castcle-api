@@ -21,10 +21,14 @@
  * or have any questions.
  */
 
-import { QueueName, UserService, UserMessage } from '@castcle-api/database';
-import { CastcleQueueAction } from '@castcle-api/database';
+import {
+  CastcleQueueAction,
+  QueueName,
+  UserMessage,
+  UserService,
+} from '@castcle-api/database';
 import { CastLogger } from '@castcle-api/logger';
-import { Processor, Process } from '@nestjs/bull';
+import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Job } from 'bull';
 

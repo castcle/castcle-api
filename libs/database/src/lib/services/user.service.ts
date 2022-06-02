@@ -45,10 +45,16 @@ import {
   pipelineOfUserRelationMentions,
 } from '../aggregations';
 import {
+  GetUserRelationParams,
+  GetUserRelationResponseCount,
+  pipelineOfUserRelationFollowersCount,
+  pipelineOfUserRelationFollowing,
+  pipelineOfUserRelationFollowingCount,
+} from '../aggregations/get-users-relation.aggregation';
+import {
   Author,
   CastcleQueryOptions,
   CastcleQueueAction,
-  createFilterQuery,
   DEFAULT_QUERY_OPTIONS,
   EntityVisibility,
   GetSearchUsersDto,
@@ -62,6 +68,7 @@ import {
   UpdateUserDto,
   UserField,
   UserModelImage,
+  createFilterQuery,
 } from '../dtos';
 import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
 import {
@@ -80,13 +87,6 @@ import {
   User,
 } from '../schemas';
 import { createCastcleFilter, createPagination } from '../utils/common';
-import {
-  GetUserRelationParams,
-  GetUserRelationResponseCount,
-  pipelineOfUserRelationFollowersCount,
-  pipelineOfUserRelationFollowing,
-  pipelineOfUserRelationFollowingCount,
-} from '../aggregations/get-users-relation.aggregation';
 import { ContentService } from './content.service';
 
 @Injectable()

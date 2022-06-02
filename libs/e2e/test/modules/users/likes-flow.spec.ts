@@ -2,6 +2,7 @@ import * as mongoose from 'mongoose';
 import { ShortPayload } from '../../../../database/src/lib/dtos/content.dto';
 import { User } from '../../models';
 import { CommentRequest, ContentsRequest, UsersRequest } from '../../requests';
+import { registerMockUser } from '../../utils/user.utils';
 import {
   commentModel,
   contentModel,
@@ -9,7 +10,6 @@ import {
   userBeta,
   userGamma,
 } from '../../variables';
-import { registerMockUser } from '../../utils/user.utils';
 
 export const testLikesFlow = () => {
   let userA = new User({ name: 'likeA' });

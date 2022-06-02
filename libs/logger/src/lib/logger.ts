@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 import { Environment } from '@castcle-api/environments';
+import { ConsoleLogger, ConsoleLoggerOptions, LogLevel } from '@nestjs/common';
 
 export class CastLogger extends ConsoleLogger {
   timer: Record<string, number> = {};
