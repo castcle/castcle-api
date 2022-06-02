@@ -72,6 +72,7 @@ import {
 } from '../models';
 import {
   Account,
+  Comment,
   Content,
   Credential,
   CredentialModel,
@@ -83,7 +84,6 @@ import {
   OtpModel,
   Relationship,
   Revision,
-  Comment,
   SocialSync,
   Transaction,
   User,
@@ -125,8 +125,8 @@ type EngagementQuery = {
 };
 
 type RelationshipQuery = {
-  userId?: User | User[];
-  followedUser?: User | User[];
+  userId?: User | User[] | Types.ObjectId;
+  followedUser?: User | User[] | Types.ObjectId;
   blocking?: boolean;
   sinceId?: string;
   untilId?: string;
@@ -142,7 +142,7 @@ type CredentialQuery = {
 type NotificationQueryOption = {
   _id?: string;
   account?: Account;
-  user?: User;
+  user?: User | Types.ObjectId;
   source?: NotificationSource;
   sinceId?: string;
   untilId?: string;
@@ -158,7 +158,7 @@ type NotificationQueryOption = {
 
 type ContentQuery = {
   _id?: string | string[];
-  author?: string;
+  author?: string | Types.ObjectId;
   contentType?: string;
   decayDays?: number;
   excludeAuthor?: string[] | User[];
@@ -195,9 +195,9 @@ type HashtagQuery = {
 export class Repository {
   constructor(
     @InjectModel('Account') private accountModel: Model<Account>,
+    @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Content') private contentModel: Model<Content>,
     @InjectModel('Credential') private credentialModel: CredentialModel,
-    @InjectModel('Comment') private commentModel: Model<Comment>,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
@@ -668,6 +668,26 @@ export class Repository {
     return this.relationshipModel.findOne(filter, {}, queryOptions);
   }
 
+  updateRelationship(
+    filter: FilterQuery<Relationship>,
+    updateQuery?: UpdateQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
+  }
+
+  updateRelationships(
+    filter: RelationshipQuery,
+    updateQuery?: UpdateQuery<Relationship>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.relationshipModel.updateMany(
+      this.getRelationshipQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
+  }
+
   removeRelationship(
     filter: FilterQuery<Relationship>,
     queryOptions?: QueryOptions,
@@ -783,8 +803,14 @@ export class Repository {
     return this.notificationModel.deleteOne(this.getNotificationQuery(filter));
   }
 
-  deleteNotifications(filter: NotificationQueryOption) {
-    return this.notificationModel.deleteMany(this.getNotificationQuery(filter));
+  deleteNotifications(
+    filter: NotificationQueryOption,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.notificationModel.deleteMany(
+      this.getNotificationQuery(filter),
+      queryOptions,
+    );
   }
 
   aggregationNotification(pipeline: any[]) {
@@ -795,14 +821,6 @@ export class Repository {
     return this.notificationModel
       .countDocuments(this.getNotificationQuery(filter))
       .exec();
-  }
-
-  updateRelationship(
-    filter: FilterQuery<Relationship>,
-    updateQuery?: UpdateQuery<Relationship>,
-    queryOptions?: QueryOptions,
-  ) {
-    return this.relationshipModel.updateOne(filter, updateQuery, queryOptions);
   }
 
   removeFromTag(
@@ -896,6 +914,10 @@ export class Repository {
     return this.commentModel.updateMany(filter, comment, queryOptions).exec();
   }
 
+  deleteComments(filter: FilterQuery<Comment>, queryOptions?: QueryOptions) {
+    return this.commentModel.deleteMany(filter, queryOptions).exec();
+  }
+
   deleteSocialSyncs(
     filter: FilterQuery<SocialSync>,
     queryOptions?: QueryOptions,
@@ -929,4 +951,44 @@ export class Repository {
 
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
+
+  async deletePage(pageId: Types.ObjectId) {
+    const session = await this.userSession();
+    await session.withTransaction(async () => {
+      await Promise.all([
+        this.updateUser(
+          { _id: String(pageId) },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.updateEngagements(
+          { user: pageId },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.updateRelationships(
+          { userId: pageId },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.updateRelationships(
+          { followedUser: pageId },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.updateContents(
+          { author: pageId },
+          { visibility: EntityVisibility.Deleted },
+          { session },
+        ),
+        this.deleteComments({ 'author._id': pageId }, { session }),
+        this.deleteFeedItems({ author: pageId }, { session }),
+        this.deleteRevisions({ author: pageId }, { session }),
+        this.deleteSocialSyncs({ 'author.id': pageId }, { session }),
+        this.deleteNotifications({ user: pageId }, { session }),
+      ]);
+      await session.commitTransaction();
+      session.endSession();
+    });
+  }
 }

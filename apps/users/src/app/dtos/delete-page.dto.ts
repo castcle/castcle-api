@@ -30,3 +30,9 @@ export class DeletePageDto {
   @ApiProperty()
   password: string;
 }
+
+export class GetPageParam {
+  @IsString()
+  @IsNotEmpty()
+  pageId: string;
+}

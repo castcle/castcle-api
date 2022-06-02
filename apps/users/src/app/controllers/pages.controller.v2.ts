@@ -29,7 +29,7 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { Body, Delete, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { DeletePageDto } from '../dtos';
+import { DeletePageDto, GetPageParam } from '../dtos';
 
 @CastcleControllerV2({ path: 'pages' })
 export class PagesControllerV2 {
@@ -37,12 +37,12 @@ export class PagesControllerV2 {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @CastcleClearCacheAuth(CacheKeyName.Pages)
-  @Delete(':id')
+  @Delete(':pageId')
   async deletePage(
-    @Auth() authorizer: Authorizer,
-    @Param('id') id: string,
+    @Auth() { account }: Authorizer,
+    @Param() { pageId }: GetPageParam,
     @Body() { password }: DeletePageDto,
   ) {
-    await this.userServiceV2.deletePage(authorizer.account, id, password);
+    await this.userServiceV2.deletePage(account, pageId, password);
   }
 }

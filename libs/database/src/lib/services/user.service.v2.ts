@@ -554,10 +554,6 @@ export class UserServiceV2 {
   }
 
   async deletePage(account: Account, pageId: string, password: string) {
-    if (!account.verifyPassword(password))
-      throw CastcleException.INVALID_PASSWORD;
-
-    this.logger.log('find page.');
     const page = await this.repositoryService.findUser({
       type: UserType.PAGE,
       _id: pageId,
@@ -570,52 +566,12 @@ export class UserServiceV2 {
       throw CastcleException.FORBIDDEN;
     }
 
-    this.logger.log('find sync socials.');
-    await this.repositoryService.updateComments(
-      { 'author._id': Types.ObjectId(pageId) },
-      { visibility: EntityVisibility.Deleted },
-    );
+    if (!account.verifyPassword(password))
+      throw CastcleException.INVALID_PASSWORD;
 
-    const session = await this.repositoryService.userSession();
-    await session.withTransaction(async () => {
-      await Promise.all([
-        this.repositoryService.updateUser(
-          { _id: pageId },
-          { visibility: EntityVisibility.Publish },
-          { session },
-        ),
-        this.repositoryService.updateEngagements(
-          { user: Types.ObjectId(pageId) },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.repositoryService.updateContents(
-          { author: Types.ObjectId(pageId) },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.repositoryService.updateComments(
-          { 'author.id': Types.ObjectId(pageId) },
-          { visibility: EntityVisibility.Deleted },
-          { session },
-        ),
-        this.repositoryService.deleteFeedItems(
-          { author: Types.ObjectId(pageId) },
-          { session },
-        ),
-        this.repositoryService.deleteRevisions(
-          { author: Types.ObjectId(pageId) },
-          { session },
-        ),
-        this.repositoryService.deleteSocialSyncs(
-          { 'author.id': Types.ObjectId(pageId) },
-          { session },
-        ),
-      ]);
-      await session.commitTransaction();
-      session.endSession();
-    });
+    await this.repositoryService.deletePage(Types.ObjectId(pageId));
   }
+
   async getUserByKeyword(
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
