@@ -22,6 +22,7 @@
  */
 
 import {
+  AdsPaymentMethod,
   AdsService,
   ContentServiceV2,
   Queue,
@@ -47,8 +48,12 @@ export class SocialRewardScheduler {
     });
     if (!actionQueue) return;
     await this.contentService.updateAllUndistributedContentFarming();
-    await this.adsService.distributeSocialRewardAdsCredit();
-    await this.adsService.distributeSocialRewardPersonal();
+    await this.adsService.distributeAllSocialRewardByType(
+      AdsPaymentMethod.ADS_CREDIT,
+    );
+    await this.adsService.distributeAllSocialRewardByType(
+      AdsPaymentMethod.CREDIT_CARD,
+    );
     actionQueue.status = QueueStatus.DONE;
     await actionQueue.save();
   }
