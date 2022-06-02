@@ -12,7 +12,7 @@
         "packageJson": "libs/logger/package.json",
         "main": "libs/logger/src/index.ts",
         "assets": ["libs/logger/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {

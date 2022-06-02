@@ -12,7 +12,7 @@
         "packageJson": "libs/database/package.json",
         "main": "libs/database/src/index.ts",
         "assets": ["libs/database/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {
