@@ -34,9 +34,11 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AnalyticService,
   CampaignService,
+  DataService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  SuggestionServiceV2,
   UserService,
   UserServiceV2,
 } from '../database.module';
@@ -49,7 +51,7 @@ import {
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountActivationV1, Credential, User } from '../schemas';
+import { Account, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -64,9 +66,11 @@ describe('UserServiceV2', () => {
     accountDocument: Account;
     credentialDocument: Credential;
   };
-  let accountDemo: AccountActivationV1;
+  let accountDemo: any;
   let userDemo: User;
   let repository: Repository;
+  let dataService: DataService;
+  let suggestServiceV2: SuggestionServiceV2;
 
   beforeAll(async () => {
     mongod = await MongoMemoryReplSet.create();
@@ -85,9 +89,11 @@ describe('UserServiceV2', () => {
         AuthenticationService,
         CommentService,
         ContentService,
+        DataService,
         HashtagService,
         NotificationService,
         Repository,
+        SuggestionServiceV2,
         UserService,
         UserServiceV2,
         { provide: CampaignService, useValue: {} },
@@ -103,10 +109,14 @@ describe('UserServiceV2', () => {
       ],
     }).compile();
 
+    dataService = module.get<DataService>(DataService);
+    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
     userServiceV2 = module.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = module.get<UserService>(UserService);
+    dataService = module.get<DataService>(DataService);
     repository = module.get<Repository>(Repository);
     authService = module.get<AuthenticationService>(AuthenticationService);
+    suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
       languagesPreferences: ['th', 'th'],
@@ -412,6 +422,75 @@ describe('UserServiceV2', () => {
       expect(createQRCode.exports.thumbnail).toMatch(/base64/g);
       expect(createQRCode.exports.medium).toMatch(/base64/g);
       expect(createQRCode.exports.large).toMatch(/base64/g);
+    });
+  });
+
+  describe('#suggest', () => {
+    let mockUsers: MockUserDetail[];
+    let authorizer: any;
+
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(3, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      jest.spyOn(dataService, 'getFollowingSuggestions').mockResolvedValue([
+        {
+          userId: mockUsers[0].user._id,
+          engagements: 200,
+        },
+        {
+          userId: mockUsers[1].user._id,
+          engagements: 50,
+        },
+      ]);
+
+      authorizer = {
+        account: mockUsers[2].account,
+        user: mockUsers[2].user,
+        credential: mockUsers[2].credential,
+      };
+    });
+
+    it('should return suggest user by datascience and cache to redis', async () => {
+      const usersFiltered = await (
+        suggestServiceV2 as any
+      ).querySuggestByDataScience(
+        authorizer.user.ownerAccount._id,
+        authorizer.credential.accessToken,
+      );
+      expect(usersFiltered).toEqual([mockUsers[0].user, mockUsers[1].user]);
+    });
+
+    it('should return next value of untilId', async () => {
+      const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
+        authorizer.credential.accessToken,
+        {
+          untilId: mockUsers[0].user.id,
+          hasRelationshipExpansion: false,
+        },
+      );
+      expect(usersFiltered).toEqual([mockUsers[1].user]);
+    });
+
+    it('should return previous value of sinceId', async () => {
+      const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
+        authorizer.credential.accessToken,
+        {
+          sinceId: mockUsers[1].user.id,
+          hasRelationshipExpansion: false,
+        },
+      );
+      expect(usersFiltered).toEqual([mockUsers[0].user]);
+    });
+
+    it('should return empty array if userId not exist in suggest user', async () => {
+      const usersFiltered = await (suggestServiceV2 as any).querySuggestByCache(
+        authorizer.credential.accessToken,
+        { untilId: 'undefined', hasRelationshipExpansion: false },
+      );
+      expect(usersFiltered).toHaveLength(0);
     });
   });
 

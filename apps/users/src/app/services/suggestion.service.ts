@@ -77,7 +77,6 @@ export class SuggestionService {
 
   _seenKey = (accountId: string) => `${accountId}-seen`;
   _seenAdsKey = (accountId: string) => `${accountId}-ads-seen`;
-
   _resetSeen = (setting: SeenState, seenKey: string) =>
     this.cacheManager.set(
       seenKey,
