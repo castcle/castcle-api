@@ -36,9 +36,13 @@ describe('Castcle E2E Tests', () => {
 
   beforeAll(async () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
-    (global as any).mongoUri = mongoMemoryReplSet.getUri();
+    global.mongoUri = mongoMemoryReplSet.getUri();
 
-    await connect(mongoMemoryReplSet.getUri('test'));
+    await connect(mongoMemoryReplSet.getUri('test'), {
+      useCreateIndex: true,
+      useFindAndModify: false,
+      useNewUrlParser: true,
+    });
     await setupAuthenticationsModule();
     await initializeUsers();
     await setupUsersModule();

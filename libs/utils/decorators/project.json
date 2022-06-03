@@ -12,7 +12,7 @@
         "packageJson": "libs/utils/decorators/package.json",
         "main": "libs/utils/decorators/src/index.ts",
         "assets": ["libs/utils/decorators/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {

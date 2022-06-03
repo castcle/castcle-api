@@ -83,6 +83,7 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
+  DeleteUserDto,
   ReportingContentDto,
   ReportingUserDto,
   TargetCastcleDto,
@@ -109,6 +110,16 @@ export class UsersControllerV2 {
     this.logger.log(`Validate is object id: ${id}`);
     const ObjectId = Types.ObjectId;
     if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMyData(
+    @Auth() { account }: Authorizer,
+    @Body() { password }: DeleteUserDto,
+  ) {
+    return this.userServiceV2.deleteCastcleAccount(account, password);
   }
 
   @CastcleBasicAuth()

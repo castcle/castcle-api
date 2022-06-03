@@ -15,5 +15,12 @@
   "module": {
     "type": "commonjs",
     "noInterop": true
-  }
+  },
+  "exclude": [
+    ".*.spec.ts$",
+    ".*.e2e-spec.ts$",
+    "jest.config.ts",
+    "jest.setup.ts",
+    ".*.js$"
+  ]
 }

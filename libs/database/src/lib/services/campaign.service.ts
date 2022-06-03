@@ -155,7 +155,7 @@ export class CampaignService {
       { $unwind: { path: '$payload.to' } },
       {
         $match: {
-          status: { $ne: QueueStatus.FAILED },
+          status: { $nin: [QueueStatus.CANCELLED, QueueStatus.FAILED] },
           'payload.to.account': accountId,
           'payload.campaignId': campaign.id,
           'payload.topic': QueueTopic.CLAIM_AIRDROP,

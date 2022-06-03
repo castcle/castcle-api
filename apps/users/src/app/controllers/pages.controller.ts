@@ -79,7 +79,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { DeletePageDto } from '../dtos';
+import { DeleteUserDto } from '../dtos';
 
 @CastcleController({ path: 'pages', version: '1.0' })
 export class PagesController {
@@ -273,7 +273,7 @@ export class PagesController {
   async deletePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Body() deletePageDto: DeletePageDto,
+    @Body() deletePageDto: DeleteUserDto,
   ) {
     try {
       const page = await this._getOwnPageByIdOrCastcleId(id, req);

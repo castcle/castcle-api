@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { authenticationsApp } from '../variables';
+import { apps } from '../variables';
 
 export class AuthenticationsRequest {
   static headers = {
@@ -10,7 +10,7 @@ export class AuthenticationsRequest {
   };
 
   static request = (method: string, url: string): request.Test =>
-    request(authenticationsApp.getHttpServer())
+    request(apps.authentications.getHttpServer())
       [method](url)
       .set(AuthenticationsRequest.headers);
 
