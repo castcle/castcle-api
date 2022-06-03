@@ -102,7 +102,7 @@ describe('SearchesControllerV2', () => {
     authService = app.get(AuthenticationService);
     hashtagService = app.get<HashtagService>(HashtagService);
     userService = app.get(UserService);
-    userServiceV2 = app.get(UserServiceV2);
+    userServiceV2 = app.get<UserServiceV2>(UserServiceV2);
 
     controller = app.get<SearchesControllerV2>(SearchesControllerV2);
 
@@ -125,11 +125,6 @@ describe('SearchesControllerV2', () => {
     for (let i = 0; i < 20; i++) {
       await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
     }
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 
   describe('#getTopTrends', () => {
@@ -329,5 +324,10 @@ describe('SearchesControllerV2', () => {
 
       expect(getSearchByKeyword.payload).toHaveLength(0);
     });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await mongod.stop();
   });
 });

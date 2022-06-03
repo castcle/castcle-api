@@ -127,11 +127,6 @@ describe('FeedsControllerV2', () => {
     }
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
-  });
-
   describe('#getSearchRecent', () => {
     it('should get all recent search', async () => {
       const authorizer = new Authorizer(
@@ -210,5 +205,11 @@ describe('FeedsControllerV2', () => {
       });
       expect(getSearchTrends.payload).toHaveLength(0);
     });
+  });
+  afterAll(async () => {
+    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
+    await (contentServiceV2 as any).repository.userModel.deleteMany({});
+    await app.close();
+    await mongod.stop();
   });
 });

@@ -23,6 +23,7 @@
 
 import { CastcleBullModule } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
+import { CastcleQRCode } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule, getQueueToken } from '@nestjs/bull';
@@ -48,7 +49,7 @@ import {
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountActivation, Credential, User } from '../schemas';
+import { Account, AccountActivationV1, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
@@ -63,7 +64,7 @@ describe('UserServiceV2', () => {
     accountDocument: Account;
     credentialDocument: Credential;
   };
-  let accountDemo: AccountActivation;
+  let accountDemo: AccountActivationV1;
   let userDemo: User;
   let repository: Repository;
 
@@ -376,6 +377,41 @@ describe('UserServiceV2', () => {
       );
 
       expect(getUserByKeyword.payload).toHaveLength(0);
+    });
+  });
+
+  describe('createQRCode', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+      jest.spyOn(CastcleQRCode, 'generateQRCodeStandard').mockResolvedValue({
+        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+      });
+
+      jest.spyOn(CastcleQRCode, 'generateQRCodeExport').mockResolvedValue({
+        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
+      });
+    });
+    it('should get user by keyword', async () => {
+      const createQRCode = await userServiceV2.createQRCode(
+        'castcleChain',
+        mocksUsers[0].user,
+      );
+
+      expect(createQRCode.standards.thumbnail).toMatch(/base64/g);
+      expect(createQRCode.standards.medium).toMatch(/base64/g);
+      expect(createQRCode.standards.large).toMatch(/base64/g);
+
+      expect(createQRCode.exports.thumbnail).toMatch(/base64/g);
+      expect(createQRCode.exports.medium).toMatch(/base64/g);
+      expect(createQRCode.exports.large).toMatch(/base64/g);
     });
   });
 

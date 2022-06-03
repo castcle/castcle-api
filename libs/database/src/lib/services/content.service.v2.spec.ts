@@ -768,6 +768,10 @@ describe('ContentServiceV2', () => {
   });
 
   afterAll(async () => {
+    await (service as any).repository.contentModel.deleteMany({});
+    await (service as any).repository.userModel.deleteMany({});
+    await (service as any).repository.notificationModel.deleteMany({});
+    await (service as any).repository.engagementModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });
