@@ -1282,14 +1282,21 @@ export class ContentServiceV2 {
           decayDays: Environment.DECAY_DAY_CONTENT,
           excludeAuthor: blocking,
         },
-        { projection: { _id: 1 } },
+        {
+          projection: { _id: 1 },
+          sort: {
+            createdAt: -1,
+          },
+        },
       );
 
       await this.cacheManager.set(contentKey, JSON.stringify(contentsId));
     } else {
-      const sortId = Object.keys(contentScore).sort(
-        (a, b) => contentScore[b] - contentScore[a],
-      );
+      const sortId = account.isGuest
+        ? contentsId.map((content) => content._id)
+        : Object.keys(contentScore).sort(
+            (a, b) => contentScore[b] - contentScore[a],
+          );
       if (!(query.sinceId || query.untilId)) {
         contentsId.length =
           sortId.length > maxResults ? maxResults : sortId.length;
