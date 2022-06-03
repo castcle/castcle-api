@@ -12,7 +12,7 @@
         "packageJson": "libs/healthy/package.json",
         "main": "libs/healthy/src/index.ts",
         "assets": ["libs/healthy/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {

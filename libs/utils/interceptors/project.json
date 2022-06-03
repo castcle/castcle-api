@@ -12,7 +12,7 @@
         "packageJson": "libs/utils/interceptors/package.json",
         "main": "libs/utils/interceptors/src/index.ts",
         "assets": ["libs/utils/interceptors/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {

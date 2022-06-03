@@ -4,7 +4,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/authentications/src/app/app.module';
 import { TwilioClient } from '../../../utils/clients/src/lib/twilio/twilio.client';
-import { authenticationsApp } from '../variables';
+import { apps } from '../variables';
 
 export const setupAuthenticationsModule = async () => {
   const twilioClient = {
@@ -58,18 +58,17 @@ export const setupAuthenticationsModule = async () => {
     .useValue(twilioClient)
     .compile();
 
-  (authenticationsApp as any) = moduleFixture.createNestApplication();
-
-  authenticationsApp.useGlobalPipes(new ValidationPipe());
-  authenticationsApp.useGlobalFilters(new CastcleExceptionFilter());
-  authenticationsApp.enableVersioning({
+  apps.authentications = moduleFixture.createNestApplication();
+  apps.authentications.useGlobalPipes(new ValidationPipe());
+  apps.authentications.useGlobalFilters(new CastcleExceptionFilter());
+  apps.authentications.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await authenticationsApp.init();
+  await apps.authentications.init();
 };
 
 export const closeAuthenticationsModule = () => {
-  return authenticationsApp.close();
+  return apps.authentications.close();
 };

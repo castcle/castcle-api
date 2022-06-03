@@ -35,7 +35,7 @@ describe('App Module', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryReplSet.create();
-    (global as any).mongoUri = mongo.getUri();
+    global.mongoUri = mongo.getUri();
 
     const module = await Test.createTestingModule({
       imports: [AppModule],

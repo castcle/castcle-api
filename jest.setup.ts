@@ -7,7 +7,7 @@ jest.mock('libs/environments/src/lib/factories', () => ({
   getBullModuleOptions: () => ({ redis: {} }),
   getCacheModuleOptions: () => ({ store: 'memory', ttl: 1000 }),
   getMongooseModuleOptions: () => ({
-    uri: (global as any).mongoUri,
+    uri: global.mongoUri,
     useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,

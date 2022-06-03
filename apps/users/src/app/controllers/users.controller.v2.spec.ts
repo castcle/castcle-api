@@ -712,9 +712,7 @@ describe('UsersControllerV2', () => {
             } as GetUserParam,
           );
 
-          const engagement = await (
-            service as any
-          ).repositoryService.findEngagement({
+          const engagement = await (service as any).repository.findEngagement({
             user: mocksUsers[1].user._id,
             targetRef: {
               $ref: 'content',
@@ -755,16 +753,12 @@ describe('UsersControllerV2', () => {
             sourceContentId: content._id,
           } as GetSourceContentParam);
 
-          const findContent = await (
-            service as any
-          ).repositoryService.findContent({
+          const findContent = await (service as any).repository.findContent({
             originalPost: content._id,
             author: mocksUsers[2].user._id,
           });
 
-          const engagement = await (
-            service as any
-          ).repositoryService.findEngagement({
+          const engagement = await (service as any).repository.findEngagement({
             user: mocksUsers[2].user._id,
             itemId: recast.payload.id,
             type: EngagementType.Recast,
@@ -811,9 +805,7 @@ describe('UsersControllerV2', () => {
         } as GetUserParam,
       );
 
-      const engagement = await (
-        service as any
-      ).repositoryService.findEngagement({
+      const engagement = await (service as any).repository.findEngagement({
         user: mocksUsers[1].user._id,
         targetRef: {
           $ref: 'content',
