@@ -22,19 +22,26 @@
  */
 
 import { Type } from 'class-transformer';
-import { IsNotEmptyObject, IsString, ValidateNested } from 'class-validator';
-
-class DeleteUserPayload {
-  @IsString()
-  password: string;
-}
+import {
+  IsNotEmpty,
+  IsNotEmptyObject,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class DeleteUserDto {
   @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class DeleteUserDtoV1 {
+  @IsString()
+  @IsNotEmpty()
   channel: string;
 
-  @Type(() => DeleteUserPayload)
+  @Type(() => DeleteUserDto)
   @ValidateNested()
   @IsNotEmptyObject()
-  payload: DeleteUserPayload;
+  payload: DeleteUserDto;
 }

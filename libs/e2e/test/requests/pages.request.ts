@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { pagesApp } from '../variables';
+import { apps } from '../variables';
 
 export class PageRequest {
   static headers = {
@@ -10,7 +10,7 @@ export class PageRequest {
   };
 
   static request = (method: string, url: string): request.Test =>
-    request(pagesApp.getHttpServer())[method](url).set(PageRequest.headers);
+    request(apps.pages.getHttpServer())[method](url).set(PageRequest.headers);
 
   static delete = (url: string) => PageRequest.request('delete', url);
   static get = (url: string) => PageRequest.request('get', url);

@@ -12,7 +12,7 @@
         "packageJson": "libs/utils/exception/package.json",
         "main": "libs/utils/exception/src/index.ts",
         "assets": ["libs/utils/exception/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {

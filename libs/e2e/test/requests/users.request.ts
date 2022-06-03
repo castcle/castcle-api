@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { usersApp } from '../variables';
+import { apps } from '../variables';
 
 export class UsersRequest {
   static headers = {
@@ -10,7 +10,7 @@ export class UsersRequest {
   };
 
   static request = (method: string, url: string): request.Test =>
-    request(usersApp.getHttpServer())[method](url).set(UsersRequest.headers);
+    request(apps.users.getHttpServer())[method](url).set(UsersRequest.headers);
 
   static delete = (url: string) => UsersRequest.request('delete', url);
   static get = (url: string) => UsersRequest.request('get', url);

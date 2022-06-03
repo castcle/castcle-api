@@ -1163,7 +1163,7 @@ export class ContentServiceV2 {
     );
 
     if (content.isRecast || content.isQuote)
-      await this.repository.removeEngagements({ itemId: content._id });
+      await this.repository.deleteEngagements({ itemId: content._id });
 
     if (content.hashtags)
       await this.repository.removeFromTags(content.hashtags, {

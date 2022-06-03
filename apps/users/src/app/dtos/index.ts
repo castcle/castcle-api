@@ -21,9 +21,8 @@
  * or have any questions.
  */
 
-export * from './content.dto';
-export * from './delete-page.dto';
 export * from './delete-user.dto';
 export * from './dto';
 export * from './get-airdrop-balances.dto';
+export * from './get-page.dto';
 export * from './reporting.dto';

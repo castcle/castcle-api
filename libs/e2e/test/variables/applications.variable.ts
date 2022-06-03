@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 
-export let authenticationsApp: INestApplication;
-export let usersApp: INestApplication;
-export let pagesApp: INestApplication;
-export let feedsApp: INestApplication;
+export const apps: {
+  authentications?: INestApplication;
+  feeds?: INestApplication;
+  pages?: INestApplication;
+  users?: INestApplication;
+} = {};

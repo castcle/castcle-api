@@ -12,7 +12,7 @@
         "packageJson": "libs/utils/commons/package.json",
         "main": "libs/utils/commons/src/index.ts",
         "assets": ["libs/utils/commons/*.md"],
-        "swcrc": ".swcrc"
+        "swcrc": ".swcrc.base"
       }
     },
     "lint": {
