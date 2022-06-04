@@ -20,9 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import { LocalizationLang } from '@castcle-api/utils/commons';
+import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -47,6 +48,7 @@ import {
   PageDto,
   PageResponseDto,
   PaginationQuery,
+  QRCodeResponseDto,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
@@ -746,5 +748,21 @@ export class UserServiceV2 {
     );
 
     return convertPage[0];
+  }
+
+  async createQRCode(chainId: string, user: User) {
+    const standardsQrcode = await CastcleQRCode.generateQRCodeStandard(
+      `${Environment.REDIRECT_QR_CODE_URL}${chainId}|${user.displayId}`,
+    );
+
+    const exportsQrcode = await CastcleQRCode.generateQRCodeExport(
+      standardsQrcode.medium,
+      user.displayId,
+    );
+
+    return {
+      standards: standardsQrcode,
+      exports: exportsQrcode,
+    } as QRCodeResponseDto;
   }
 }

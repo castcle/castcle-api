@@ -117,11 +117,6 @@ describe('CommentServiceV2', () => {
     });
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
-  });
-
   describe('#convertCommentToCommentResponse', () => {
     it('should return comment in type of CommentResponse', async () => {
       const user = mocksUsers[0].user;
@@ -497,5 +492,11 @@ describe('CommentServiceV2', () => {
         String(reply._id),
       );
     });
+  });
+  afterAll(async () => {
+    await (service as any).repository.notificationModel.deleteMany({});
+    await (service as any).repository.engagementModel.deleteMany({});
+    await app.close();
+    await mongod.stop();
   });
 });
