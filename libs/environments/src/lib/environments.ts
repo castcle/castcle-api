@@ -237,4 +237,8 @@ export class Environment {
   // Setting cache content
   static LIMIT_CONTENT = Number(process.env.LIMIT_CONTENT) || 2000;
   static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
+
+  //  Generate QRCode
+  static QR_THEME = process.env.QR_THEME || 'dark';
+  static REDIRECT_QR_CODE_URL = process.env.REDIRECT_QR_CODE_URL || '';
 }

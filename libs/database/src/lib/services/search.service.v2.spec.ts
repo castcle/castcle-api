@@ -99,7 +99,7 @@ describe('SearchServiceV2', () => {
     userService = app.get(UserService);
     userServiceV2 = app.get(UserServiceV2);
 
-    mocksUsers = await generateMockUsers(20, 0, {
+    mocksUsers = await generateMockUsers(10, 0, {
       userService: userService,
       accountService: authService,
     });
@@ -115,22 +115,17 @@ describe('SearchServiceV2', () => {
       await hashtagService.create(newHashtag);
     };
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 10; i++) {
       await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
     }
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 
   describe('#getTopTrends', () => {
     it('should get all top trend', async () => {
       const getTopTrends = await service.getTopTrends({ limit: 100 });
 
-      expect(getTopTrends.hashtags).toHaveLength(20);
-      expect(getTopTrends.users).toHaveLength(20);
+      expect(getTopTrends.hashtags).toHaveLength(10);
+      expect(getTopTrends.users).toHaveLength(10);
     });
 
     it('should get top trend exclude hashtags', async () => {
@@ -284,10 +279,9 @@ describe('SearchServiceV2', () => {
     it('should get user by keyword', async () => {
       const getSearchByKeyword = await service.getSearchByKeyword(
         {
-          maxResults: 25,
           keyword: {
-            type: KeywordType.Mention,
-            input: 'mock-10',
+            type: KeywordType.Word,
+            input: 'mock-2',
           },
           hasRelationshipExpansion: false,
         },
@@ -300,9 +294,8 @@ describe('SearchServiceV2', () => {
     it('should get user by keyword is empty', async () => {
       const getSearchByKeyword = await service.getSearchByKeyword(
         {
-          maxResults: 25,
           keyword: {
-            type: KeywordType.Mention,
+            type: KeywordType.Word,
             input: 'empty',
           },
           hasRelationshipExpansion: false,
@@ -312,5 +305,12 @@ describe('SearchServiceV2', () => {
 
       expect(getSearchByKeyword.payload).toHaveLength(0);
     });
+  });
+
+  afterAll(async () => {
+    await (service as any).repository.hashtagModel.deleteMany({});
+    await (service as any).repository.userModel.deleteMany({});
+    await app.close();
+    await mongod.stop();
   });
 });

@@ -21,13 +21,37 @@
  * or have any questions.
  */
 
-export * from './lib/castcle-name';
-export * from './lib/castcle-qrcode';
-export * from './lib/datetime';
-export * from './lib/documentation';
-export * from './lib/host';
-export * from './lib/localization';
-export * from './lib/password';
-export * from './lib/regexp';
-export * from './lib/token';
-export * from './lib/transformers';
+import {
+  GetCastcleDto,
+  UserService,
+  UserServiceV2,
+} from '@castcle-api/database';
+import { CacheKeyName } from '@castcle-api/environments';
+import {
+  Auth,
+  Authorizer,
+  CastcleAuth,
+  CastcleControllerV2,
+} from '@castcle-api/utils/decorators';
+import { Get, Param } from '@nestjs/common';
+
+@CastcleControllerV2({ path: 'qr-codes' })
+export class QRCodeControllerV2 {
+  constructor(
+    private userService: UserService,
+    private userServiceV2: UserServiceV2,
+  ) {}
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':chainId/:userId')
+  async createQRCode(
+    @Auth() authorizer: Authorizer,
+    @Param() { chainId, userId }: GetCastcleDto,
+  ) {
+    const user = await this.userService.findUser(userId);
+
+    authorizer.requestAccessForAccount(user.ownerAccount);
+
+    return this.userServiceV2.createQRCode(chainId, user);
+  }
+}

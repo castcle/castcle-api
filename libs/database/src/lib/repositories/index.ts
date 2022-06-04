@@ -113,6 +113,7 @@ type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[];
   accountId?: string;
+  castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
     input: string;
@@ -597,6 +598,8 @@ export class Repository {
         },
       ];
     }
+
+    if (filter.castcleId) query.displayId = filter.castcleId;
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {

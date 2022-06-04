@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { TransformStringToKeyword } from '@castcle-api/utils/commons';
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { KeywordType } from '../models';
 import { PaginationQuery } from './pagination.dto';
-
+import { GetUserParam } from './user.dto';
 export class GetKeywordQuery extends PaginationQuery {
   @IsNotEmpty()
   @TransformStringToKeyword()
@@ -32,4 +32,20 @@ export class GetKeywordQuery extends PaginationQuery {
     input: string;
     type: KeywordType;
   };
+}
+
+export class GetCastcleDto extends GetUserParam {
+  @IsNotEmpty()
+  @IsString()
+  chainId: string;
+}
+
+class QRCodeImage {
+  thumbnail: string;
+  medium: string;
+  large: string;
+}
+export class QRCodeResponseDto {
+  standards: QRCodeImage;
+  exports: QRCodeImage;
 }

@@ -1,7 +1,12 @@
 import { Environment } from '@castcle-api/environments';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { AVATAR_SIZE_CONFIGS, COMMON_SIZE_CONFIGS } from '../config';
+import {
+  AVATAR_SIZE_CONFIGS,
+  COMMON_SIZE_CONFIGS,
+  QRCODE_EXPORT_SIZE_CONFIGS,
+  QRCODE_STANDARD_SIZE_CONFIGS,
+} from '../config';
 import { Downloader } from './downloader';
 import { predictContents, predictSuggestion } from './functions';
 import { Image, ImageUploadOptions } from './image';
@@ -26,6 +31,8 @@ export {
   Downloader,
   AVATAR_SIZE_CONFIGS,
   COMMON_SIZE_CONFIGS,
+  QRCODE_EXPORT_SIZE_CONFIGS,
+  QRCODE_STANDARD_SIZE_CONFIGS,
   ImageUploadOptions,
   predictContents,
   predictSuggestion,
