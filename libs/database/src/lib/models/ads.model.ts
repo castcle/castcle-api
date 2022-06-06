@@ -18,13 +18,31 @@ export enum AdsPaymentMethod {
   CREDIT_CARD = 'credit-card',
 }
 
-export type AdsSocialReward = {
+export class AdsSocialReward {
   adsCost: number;
   castcleShare: number;
   viewerShare: number;
   creatorShare: number;
   farmingShare: number;
-};
+
+  constructor(paymentType: AdsPaymentMethod, cost: AdsCost) {
+    switch (paymentType) {
+      case AdsPaymentMethod.ADS_CREDIT:
+        this.adsCost = cost.CAST;
+        this.castcleShare = 0;
+        this.creatorShare = 0.5 * cost.CAST;
+        this.farmingShare = 0.3 * cost.CAST;
+        this.viewerShare = 0.2 * cost.CAST;
+        break;
+      default:
+        this.adsCost = cost.CAST;
+        this.castcleShare = 0.3 * cost.CAST;
+        this.creatorShare = 0.35 * cost.CAST;
+        this.farmingShare = 0.21 * cost.CAST;
+        this.viewerShare = 0.14 * cost.CAST;
+    }
+  }
+}
 
 export type AdsPlacementContent = {
   contentId: string;

@@ -65,6 +65,8 @@ import {
 } from '../dtos';
 import {
   AdsBoostStatus,
+  AdsPaymentMethod,
+  CACCOUNT_NO,
   CastcleNumber,
   KeywordType,
   OtpObjective,
@@ -77,7 +79,10 @@ import {
   AccountDeviceV1,
   AccountActivationModel as ActivationModel,
   AdsCampaign,
+  AdsPlacement,
   AccountAuthenId as AuthenId,
+  CAccount,
+  CAccountNature,
   Comment,
   Content,
   Credential,
@@ -229,6 +234,8 @@ export class Repository {
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
+    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     private httpService: HttpService,
   ) {}
@@ -983,6 +990,94 @@ export class Repository {
     );
 
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
+  };
+
+  getFindQueryForChild = (caccount: CAccount) => {
+    const orQuery = [
+      {
+        'ledgers.debit.caccountNo': caccount.no,
+      },
+      {
+        'ledgers.credit.caccountNo': caccount.no,
+      },
+    ];
+    if (caccount.child)
+      caccount.child.forEach((childNo) => {
+        orQuery.push({
+          'ledgers.debit.caccountNo': childNo,
+        });
+        orQuery.push({
+          'ledgers.credit.caccountNo': childNo,
+        });
+      });
+    return orQuery;
+  };
+
+  findTransactionsOfCAccount = (caccount: CAccount) => {
+    const orQuery = this.getFindQueryForChild(caccount);
+    const findFilter: FilterQuery<Transaction> = {
+      $or: orQuery,
+    };
+    return this.transactionModel.find(findFilter);
+  };
+
+  findCAccountByCaccountNO = (caccountNo: string) =>
+    this.caccountModel.findOne({ no: caccountNo });
+
+  getTAccountBalance = async (caccountNo: string) => {
+    //get account First
+    const caccount = await this.caccountModel.findOne({ no: caccountNo });
+    const txs = await this.findTransactionsOfCAccount(caccount);
+    const allDebit = txs.reduce((totalDebit, currentTx) => {
+      return (
+        totalDebit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.debit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.debit.caccountNo,
+          )
+          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+      );
+    }, 0);
+    const allCredit = txs.reduce((totalCredit, currentTx) => {
+      return (
+        totalCredit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.credit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.credit.caccountNo,
+          )
+          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+      );
+    }, 0);
+    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    else return allCredit - allDebit;
+  };
+
+  getUndistributedAdsplacements = async (
+    paymentOptions?: AdsPaymentMethod,
+  ): Promise<AdsPlacement[]> => {
+    if (!paymentOptions)
+      return this.adsPlacementModel.find({
+        'cost.CAST': { $exits: false },
+      });
+    return this.adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+      'campaign.campaignPaymentType': paymentOptions,
+    });
+  };
+
+  getCastUSDDistributeRate = async () => {
+    const collectedCast = await this.getTAccountBalance(
+      CACCOUNT_NO.SOCIAL_REWARD.NO,
+    );
+    const adsPlacements = await this.getUndistributedAdsplacements();
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    return collectedCast / totalCost;
   };
 
   async deleteCastcleAccount(account: Account) {
