@@ -46,7 +46,7 @@ export class CastcleQRCode {
     backgroundColor: '#17191A',
     castcleId: 'Castcle ID',
     fontFamily: 'Sarabun sans-serif',
-    fontSize: '${this.configQRCode.fontSize}',
+    fontSize: '54px',
     height: '720px',
     logo: 'https://s3.castcle.com/assets/castcle-logo-light.png',
     primaryColor: '#FFFFFF',
@@ -78,6 +78,9 @@ export class CastcleQRCode {
         secondaryColor: '#01D2FF',
       };
     }
+
+    console.log(this.configQRCode);
+
     const templateQRCodeExport = `
     <html>
       <head>
