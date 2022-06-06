@@ -41,6 +41,7 @@ class ConfigQRCode {
   title: string;
   width: string;
 }
+
 export class CastcleQRCode {
   private static configQRCode: ConfigQRCode = {
     backgroundColor: '#17191A',
@@ -54,6 +55,11 @@ export class CastcleQRCode {
     title: 'Castcle Decentralized Social Media',
     width: '1280px',
   };
+
+  static generateQRCodeText(inputsText: string[]) {
+    return inputsText ? inputsText.join('|') : null;
+  }
+
   static async generateQRCodeStandard(inputText: string) {
     const standardQRCode = await Promise.all(
       QRCODE_STANDARD_SIZE_CONFIGS.map(async (size) => {
@@ -68,6 +74,7 @@ export class CastcleQRCode {
 
     return Object.assign({}, ...standardQRCode);
   }
+
   static async generateQRCodeExport(inputQRCode: string, castcleId: string) {
     if (Environment.QR_THEME !== 'dark') {
       this.configQRCode = {
@@ -78,8 +85,6 @@ export class CastcleQRCode {
         secondaryColor: '#01D2FF',
       };
     }
-
-    console.log(this.configQRCode);
 
     const templateQRCodeExport = `
     <html>
