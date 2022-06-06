@@ -187,17 +187,17 @@ export class UserServiceV2 {
 
         const targetRelationship = hasRelationshipExpansion
           ? relationships.find(
-              ({ followedUser, user }) =>
-                String(user) === String(user.id) &&
+              ({ followedUser, user: userRelation }) =>
+                String(userRelation) === String(user.id) &&
                 String(followedUser) === String(viewer?.id),
             )
           : undefined;
 
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
-              ({ followedUser, user }) =>
+              ({ followedUser, user: userRelation }) =>
                 String(followedUser) === String(user.id) &&
-                String(user) === String(viewer?.id),
+                String(userRelation) === String(viewer?.id),
             )
           : undefined;
 
