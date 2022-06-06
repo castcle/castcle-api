@@ -24,6 +24,18 @@
 import { CastcleQRCode } from './castcle-qrcode';
 
 describe('#CastcleQRCode', () => {
+  describe('generateQRCodeText', () => {
+    it('should create qrcode standard is correct.', async () => {
+      const qrcodeText = await CastcleQRCode.generateQRCodeText([
+        'test',
+        'test',
+        'test',
+      ]);
+
+      expect(qrcodeText).toEqual('test|test|test');
+    });
+  });
+
   describe('generateQRCodeStandard', () => {
     beforeAll(async () => {
       jest.spyOn(CastcleQRCode, 'generateQRCodeStandard').mockResolvedValue({

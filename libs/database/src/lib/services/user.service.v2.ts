@@ -751,8 +751,14 @@ export class UserServiceV2 {
   }
 
   async createQRCode(chainId: string, user: User) {
+    const qrcodeParams = CastcleQRCode.generateQRCodeText([
+      chainId,
+      user._id,
+      user.displayId,
+    ]);
+
     const standardsQrcode = await CastcleQRCode.generateQRCodeStandard(
-      `${Environment.REDIRECT_QR_CODE_URL}${chainId}|${user.displayId}`,
+      `${Environment.REDIRECT_QR_CODE_URL}${qrcodeParams}`,
     );
 
     const exportsQrcode = await CastcleQRCode.generateQRCodeExport(
