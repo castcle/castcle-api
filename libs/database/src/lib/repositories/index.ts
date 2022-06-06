@@ -1081,7 +1081,7 @@ export class Repository {
   };
 
   async deleteCastcleAccount(account: Account) {
-    const users = await this.userModel.find({});
+    const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
     const $v1Delete = [
       this.activationModel.deleteMany({ account: account._id }),
