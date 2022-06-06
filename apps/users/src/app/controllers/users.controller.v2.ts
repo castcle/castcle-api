@@ -47,6 +47,7 @@ import {
   ReplyCommentParam,
   ResponseDto,
   SocialSyncServiceV2,
+  SuggestionServiceV2,
   SyncSocialDtoV2,
   TargetIdParam,
   UnlikeCommentCastParam,
@@ -104,6 +105,7 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
+    private suggestionServiceV2: SuggestionServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
@@ -767,6 +769,19 @@ export class UsersControllerV2 {
     return this.userServiceV2.unfollowUser(user, targetCastcleId);
   }
 
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery,
+  ) {
+    return this.suggestionServiceV2.suggest(
+      authorizer.user,
+      authorizer.credential.accessToken,
+      query,
+    );
+  }
+
   @CastcleBasicAuth()
   @Get(':userId/contents')
   async getContents(
@@ -779,7 +794,7 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getContents(query, user);
+    return this.contentServiceV2.getContents(query, user);
   }
 
   @CastcleAuth(CacheKeyName.Users)

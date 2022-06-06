@@ -111,7 +111,7 @@ type AccountQuery = {
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string | Types.ObjectId[];
+  _id?: string | Types.ObjectId[] | string[];
   accountId?: string;
   castcleId?: string;
   excludeRelationship?: string[] | User[];
@@ -1065,7 +1065,7 @@ export class Repository {
           { session },
         ),
         this.relationshipModel.deleteMany({
-          $or: [{ followedUser: pageId as any }, { following: pageId as any }],
+          $or: [{ followedUser: pageId as any }, { user: pageId as any }],
         }),
         this.deleteContents({ 'author._id': pageId }),
         this.deleteEngagements({ user: pageId }),
