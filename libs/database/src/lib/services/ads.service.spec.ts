@@ -20,7 +20,7 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -45,6 +45,7 @@ import {
   QueueName,
   WalletType,
 } from '../models';
+import { Repository } from '../repositories';
 import { AdsCampaign, Content } from '../schemas';
 import { AdsService } from './ads.service';
 import { AuthenticationService } from './authentication.service';
@@ -67,6 +68,7 @@ describe('AdsService', () => {
     app = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
+        HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
         MongooseForFeatures,
@@ -78,6 +80,7 @@ describe('AdsService', () => {
         ContentService,
         TAccountService,
         HashtagService,
+        Repository,
         {
           provide: DataService,
           useValue: {
