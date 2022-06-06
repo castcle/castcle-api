@@ -84,7 +84,6 @@ import {
   CAccount,
   CAccountNature,
   Comment,
-  Comment,
   Content,
   Credential,
   CredentialModel,
