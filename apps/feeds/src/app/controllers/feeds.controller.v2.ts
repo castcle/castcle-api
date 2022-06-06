@@ -21,19 +21,28 @@
  * or have any questions.
  */
 
-import { ContentServiceV2, GetSearchQuery } from '@castcle-api/database';
+import {
+  ContentServiceV2,
+  GetSearchQuery,
+  SuggestionServiceV2,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import {
   Auth,
   Authorizer,
   CastcleAuth,
+  CastcleBasicAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Get, Query } from '@nestjs/common';
+import { Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { FeedParam } from '../dtos';
 
 @CastcleControllerV2({ path: 'feeds' })
 export class FeedsControllerV2 {
-  constructor(private contentServiceV2: ContentServiceV2) {}
+  constructor(
+    private contentServiceV2: ContentServiceV2,
+    private suggestionServiceV2: SuggestionServiceV2,
+  ) {}
 
   @CastcleAuth(CacheKeyName.Feeds)
   @Get('search/recent')
@@ -56,5 +65,15 @@ export class FeedsControllerV2 {
       authorizer.account,
       authorizer.credential.accessToken,
     );
+  }
+
+  @CastcleBasicAuth()
+  @Post(':id/seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async seenFeed(
+    @Auth() { account, credential }: Authorizer,
+    @Param() { id }: FeedParam,
+  ) {
+    this.suggestionServiceV2.seen(account, id, credential);
   }
 }
