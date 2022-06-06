@@ -100,6 +100,7 @@ import {
   SocialSync,
   Transaction,
   User,
+  UxEngagement,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 
@@ -235,6 +236,7 @@ export class Repository {
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
+    @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     private httpService: HttpService,
   ) {}
 
