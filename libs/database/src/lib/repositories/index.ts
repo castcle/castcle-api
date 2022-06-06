@@ -79,11 +79,11 @@ import {
   AccountDeviceV1,
   AccountActivationModel as ActivationModel,
   AdsCampaign,
-  AccountAuthenId as AuthenId,
-  Comment,
   AdsPlacement,
+  AccountAuthenId as AuthenId,
   CAccount,
   CAccountNature,
+  Comment,
   Comment,
   Content,
   Credential,
@@ -101,7 +101,6 @@ import {
   SocialSync,
   Transaction,
   User,
-  UxEngagement,
 } from '../schemas';
 import { createCastcleFilter } from '../utils/common';
 
