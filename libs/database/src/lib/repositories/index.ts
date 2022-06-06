@@ -1065,7 +1065,7 @@ export class Repository {
           { session },
         ),
         this.relationshipModel.deleteMany({
-          $or: [{ followedUser: pageId as any }, { following: pageId as any }],
+          $or: [{ followedUser: pageId as any }, { user: pageId as any }],
         }),
         this.deleteContents({ 'author._id': pageId }),
         this.deleteEngagements({ user: pageId }),
