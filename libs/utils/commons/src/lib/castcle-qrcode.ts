@@ -204,14 +204,14 @@ export class CastcleQRCode {
           resolve(!err ? buffer.toString('base64') : undefined);
         });
     });
-    this.logger.log(JSON.stringify(exportBase64), 'Start exportBase64');
+    this.logger.log(JSON.stringify(true), 'Start exportBase64');
 
     if (!exportBase64) return;
 
     const buffer = Buffer.from(exportBase64 as string, 'base64');
     const sharpImage = sharp(buffer);
 
-    this.logger.log(JSON.stringify(buffer), 'Buffer');
+    this.logger.log(JSON.stringify(true), 'Buffer');
 
     const metaData = await sharpImage.metadata();
     const exportsQRCode = await Promise.all(
@@ -221,7 +221,7 @@ export class CastcleQRCode {
           .toFormat(metaData.format, { quality: 100 })
           .toBuffer();
 
-        this.logger.log(JSON.stringify(newImage), 'Buffer resize');
+        this.logger.log(JSON.stringify(true), 'Buffer resize');
 
         return {
           [size.name]: `data:image/png;base64,${newImage.toString('base64')}`,
