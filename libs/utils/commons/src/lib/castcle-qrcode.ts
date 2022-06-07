@@ -197,7 +197,7 @@ export class CastcleQRCode {
           border: '0',
         })
         .toBuffer(async (err: string, buffer: Buffer) => {
-          this.logger.log(JSON.stringify(`${err}`), 'Error html convert');
+          this.logger.error(err, 'Error html convert');
           resolve(!err ? buffer.toString('base64') : undefined);
         });
     });
