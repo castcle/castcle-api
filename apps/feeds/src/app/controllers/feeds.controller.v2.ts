@@ -74,6 +74,6 @@ export class FeedsControllerV2 {
     @Auth() { account, credential }: Authorizer,
     @Param() { id }: FeedParam,
   ) {
-    this.suggestionServiceV2.seen(account, id, credential);
+    await this.suggestionServiceV2.seen(account, id, credential);
   }
 }
