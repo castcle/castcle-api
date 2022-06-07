@@ -187,9 +187,6 @@ export class CastcleQRCode {
     </html>
     `;
 
-    this.logger.log(JSON.stringify(templateQRCodeExport), 'Template HTML');
-    this.logger.log(JSON.stringify(this.configQRCode), 'Config QR Code');
-
     const exportBase64 = await new Promise((resolve) => {
       htmlPdf
         .create(templateQRCodeExport, {
@@ -200,19 +197,15 @@ export class CastcleQRCode {
           border: '0',
         })
         .toBuffer(async (err: string, buffer: Buffer) => {
-          this.logger.log(JSON.stringify(err), 'Error html convert');
+          this.logger.error(err, 'Error html convert');
           resolve(!err ? buffer.toString('base64') : undefined);
         });
     });
-    this.logger.log(JSON.stringify(true), 'Start exportBase64');
 
     if (!exportBase64) return;
 
     const buffer = Buffer.from(exportBase64 as string, 'base64');
     const sharpImage = sharp(buffer);
-
-    this.logger.log(JSON.stringify(true), 'Buffer');
-
     const metaData = await sharpImage.metadata();
     const exportsQRCode = await Promise.all(
       QRCODE_EXPORT_SIZE_CONFIGS.map(async (size) => {
@@ -220,15 +213,11 @@ export class CastcleQRCode {
           .resize(size.width, size.height)
           .toFormat(metaData.format, { quality: 100 })
           .toBuffer();
-
-        this.logger.log(JSON.stringify(true), 'Buffer resize');
-
         return {
           [size.name]: `data:image/png;base64,${newImage.toString('base64')}`,
         };
       }),
     );
-    this.logger.log(JSON.stringify(exportsQRCode), 'Success exportBase64');
     return Object.assign({}, ...exportsQRCode);
   }
 }
