@@ -1077,14 +1077,15 @@ export class ContentServiceV2 {
 
   getContents = async (
     { hasRelationshipExpansion, ...query }: PaginationQuery,
-    viewer?: User,
+    user?: User,
   ) => {
     const [contents] = await this.repository.aggregationContent({
-      viewer,
+      viewer: user,
+      author: user?._id,
       ...query,
     });
 
-    return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
+    return this.toContentsResponses(contents, hasRelationshipExpansion, user);
   };
 
   getContent = async (

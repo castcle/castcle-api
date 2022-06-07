@@ -178,7 +178,7 @@ export const pipelineOfGetGuestFeedContents = ({
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Quote] },
@@ -187,7 +187,7 @@ export const pipelineOfGetGuestFeedContents = ({
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Recast] },
