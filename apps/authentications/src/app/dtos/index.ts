@@ -257,7 +257,7 @@ export class VerificationOtpDto extends RequestOtpDto {
   otp: string;
 }
 
-export class otpResponse {
+export class OtpResponse {
   @ApiProperty()
   objective: string;
 

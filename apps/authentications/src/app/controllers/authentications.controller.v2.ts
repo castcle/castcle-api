@@ -66,6 +66,7 @@ import {
   CheckIdExistDto,
   CheckingResponseV2,
   GuestLoginDto,
+  OtpResponse,
 } from '../dtos';
 import {
   GuestInterceptor,
@@ -169,7 +170,11 @@ export class AuthenticationControllerV2 {
         requestedBy: $credential.account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -190,7 +195,11 @@ export class AuthenticationControllerV2 {
         requestedBy: $credential.account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -211,7 +220,11 @@ export class AuthenticationControllerV2 {
         requestedBy: account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -233,9 +246,9 @@ export class AuthenticationControllerV2 {
     return {
       refCode: otp.refCode,
       objective: verifyOtpDto.objective,
-      expireDate: otp.expireDate,
+      expiresTime: otp.expireDate.toISOString(),
       accessToken,
-    };
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -256,8 +269,8 @@ export class AuthenticationControllerV2 {
     return {
       refCode: otp.refCode,
       objective: verifyOtpDto.objective,
-      expireDate: otp.expireDate,
-    };
+      expiresTime: otp.expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @Throttle(
