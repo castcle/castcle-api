@@ -23,7 +23,7 @@
 
 export * from './lib/cache-key';
 export * from './lib/cache-keys';
+export * from './lib/cache';
 export * from './lib/configs';
 export * from './lib/environments';
 export * from './lib/modules';
-export * from './lib/cache';

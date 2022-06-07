@@ -22,6 +22,12 @@
  */
 
 export const CastcleCacheKey = {
+  ofSeen(accountId: string) {
+    return `seen-${accountId}`;
+  },
+  ofSeenAds(accountId: string) {
+    return `seen-ads-${accountId}`;
+  },
   ofSuggestUser(token: string) {
     return `suggest-user-${token}`;
   },

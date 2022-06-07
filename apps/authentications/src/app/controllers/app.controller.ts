@@ -75,6 +75,7 @@ import {
   GuestLoginDto,
   LoginDto,
   LoginResponse,
+  OtpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
@@ -84,7 +85,6 @@ import {
   TokenResponse,
   VerificationOtpDto,
   VerificationPasswordBody,
-  otpResponse,
 } from '../dtos';
 import {
   GuestInterceptor,
@@ -486,7 +486,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @CastcleBasicAuth()
   @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 secs
@@ -501,7 +501,7 @@ export class AuthenticationController {
     );
     const { otp, token } = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
-      const response: otpResponse = {
+      const response: OtpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
@@ -516,7 +516,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @CastcleBasicAuth()
   @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
@@ -538,7 +538,7 @@ export class AuthenticationController {
       source,
     );
     if (otp && otp.isValid()) {
-      const response: otpResponse = {
+      const response: OtpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
@@ -593,14 +593,14 @@ export class AuthenticationController {
   })
   @ApiResponse({
     status: 201,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('verificationPassword')
   async verificationPassword(
     @Body() payload: VerificationPasswordBody,
     @Req() req: CredentialRequest,
-  ): Promise<otpResponse> {
+  ): Promise<OtpResponse> {
     const account = await this.authService.getAccountFromCredential(
       req.$credential,
     );
