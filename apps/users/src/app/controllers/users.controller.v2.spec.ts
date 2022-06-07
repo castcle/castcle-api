@@ -852,19 +852,19 @@ describe('UsersControllerV2', () => {
     });
     it('should get cast is exists.', async () => {
       const authorizer = new Authorizer(
-        mocksUsers[1].account,
-        mocksUsers[1].user,
-        mocksUsers[1].credential,
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
       );
       const contentResp = await appController.getContents(
         authorizer,
         {
-          userId: mocksUsers[1].user._id,
+          userId: mocksUsers[0].user._id,
         } as GetUserParam,
         { hasRelationshipExpansion: false } as GetContentQuery,
       );
 
-      expect(contentResp.payload).toHaveLength(7);
+      expect(contentResp.payload).toHaveLength(2);
     });
   });
 

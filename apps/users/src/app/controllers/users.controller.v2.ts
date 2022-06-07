@@ -794,6 +794,7 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(authorizer.account._id);
+
     return this.contentServiceV2.getContents(query, user);
   }
 

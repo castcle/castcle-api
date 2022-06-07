@@ -581,7 +581,7 @@ describe('ContentServiceV2', () => {
         { hasRelationshipExpansion: false },
         mocksUsers[1].user,
       );
-      expect(contentResp.payload).toHaveLength(25);
+      expect(contentResp.payload).toHaveLength(2);
     });
   });
 

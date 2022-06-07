@@ -252,7 +252,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Quote] },
@@ -261,7 +261,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Recast] },
