@@ -43,6 +43,7 @@ import {
   ChangePasswordDto,
   CreateCredentialDto,
   EntityVisibility,
+  RegisterFirebaseDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
@@ -868,6 +869,62 @@ export class AuthenticationServiceV2 {
       hostname,
       account.email,
       activation.verifyToken,
+    );
+  }
+
+  async createAccountDevice(body: RegisterFirebaseDto, account: Account) {
+    const devices = account?.devices?.find(
+      (device) =>
+        body.uuid === device.uuid && body.platform === device.platform,
+    );
+
+    if (devices) {
+      await this.repository.updateAccount(
+        {
+          _id: account._id,
+          uuid: body.uuid,
+          platform: body.platform,
+        },
+        {
+          $set: {
+            'devices.$.firebaseToken': body.firebaseToken,
+          },
+        },
+      );
+    } else {
+      await this.repository.updateAccount(
+        {
+          _id: account._id,
+        },
+        {
+          $addToSet: {
+            devices: {
+              uuid: body.uuid,
+              platform: body.platform,
+              firebaseToken: body.firebaseToken,
+            },
+          },
+        },
+      );
+    }
+  }
+
+  async deleteAccountDevice(body: RegisterFirebaseDto, account: Account) {
+    await this.repository.updateAccount(
+      {
+        _id: account._id,
+        uuid: body.uuid,
+        platform: body.platform,
+      },
+      {
+        $pull: {
+          devices: {
+            uuid: body.uuid,
+            platform: body.platform,
+            firebaseToken: body.firebaseToken,
+          },
+        },
+      },
     );
   }
 }

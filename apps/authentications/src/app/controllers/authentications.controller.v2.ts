@@ -26,6 +26,7 @@ import {
   AuthenticationServiceV2,
   ChangePasswordDto,
   LoginWithEmailDto,
+  RegisterFirebaseDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
@@ -54,6 +55,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -321,5 +323,24 @@ export class AuthenticationControllerV2 {
       account,
       Host.getHostname(req),
     );
+  }
+
+  @CastcleBasicAuth()
+  @Post('register/notification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  registerToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    this.authenticationService.createAccountDevice(body, account);
+  }
+
+  @CastcleBasicAuth()
+  @Delete('register/notification')
+  deleteToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    this.authenticationService.deleteAccountDevice(body, account);
   }
 }
