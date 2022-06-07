@@ -185,14 +185,6 @@ export class UserServiceV2 {
                 balance,
               });
 
-        const targetRelationship = hasRelationshipExpansion
-          ? relationships.find(
-              ({ followedUser, user: userRelation }) =>
-                String(userRelation) === String(user.id) &&
-                String(followedUser) === String(viewer?.id),
-            )
-          : undefined;
-
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
               ({ followedUser, user: userRelation }) =>
@@ -201,8 +193,8 @@ export class UserServiceV2 {
             )
           : undefined;
 
-        userResponse.blocked = Boolean(getterRelationship?.blocking);
-        userResponse.blocking = Boolean(targetRelationship?.blocking);
+        userResponse.blocked = Boolean(getterRelationship?.blocked);
+        userResponse.blocking = Boolean(getterRelationship?.blocking);
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
