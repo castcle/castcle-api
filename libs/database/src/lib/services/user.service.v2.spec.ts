@@ -32,13 +32,16 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
+  AdsService,
   AnalyticService,
   CampaignService,
   DataService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  RankerService,
   SuggestionServiceV2,
+  TAccountService,
   UserService,
   UserServiceV2,
 } from '../database.module';
@@ -85,6 +88,7 @@ describe('UserServiceV2', () => {
         MongooseForFeatures,
       ],
       providers: [
+        AdsService,
         AnalyticService,
         AuthenticationService,
         CommentService,
@@ -92,8 +96,10 @@ describe('UserServiceV2', () => {
         DataService,
         HashtagService,
         NotificationService,
+        RankerService,
         Repository,
         SuggestionServiceV2,
+        TAccountService,
         UserService,
         UserServiceV2,
         { provide: CampaignService, useValue: {} },

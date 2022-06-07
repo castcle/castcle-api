@@ -26,18 +26,78 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { Meta, PaginationQuery, UserField } from '../dtos';
 import { Repository } from '../repositories';
-import { User } from '../schemas';
+import { Account, Credential, User } from '../schemas';
+import { AdsService } from './ads.service';
 import { DataService } from './data.service';
+import { RankerService } from './ranker.service';
 import { UserServiceV2 } from './user.service.v2';
 
 @Injectable()
 export class SuggestionServiceV2 {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private rankerService: RankerService,
+    private adsService: AdsService,
     private dataService: DataService,
     private userServiceV2: UserServiceV2,
     private repository: Repository,
   ) {}
+
+  async seen(account: Account, id: string, credential: Credential) {
+    await Promise.all([
+      this.rankerService.seenFeedItem(account, id, credential),
+      this.adsService.seenAds(id, credential.id),
+    ]);
+
+    const accountId = account.id;
+    const cacheSeen: string = await this.cacheManager.get(
+      CastcleCacheKey.ofSeen(accountId),
+    );
+
+    if (!cacheSeen) {
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeen(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    } else {
+      const currentSeen: SeenState = JSON.parse(cacheSeen);
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeen(accountId),
+        JSON.stringify({
+          ...currentSeen,
+          seenCount: currentSeen.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    }
+
+    const cacheSeenAds: string = await this.cacheManager.get(
+      CastcleCacheKey.ofSeenAds(accountId),
+    );
+
+    if (!cacheSeenAds) {
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeenAds(accountId),
+        JSON.stringify({
+          seenCount: 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    } else {
+      const currentSeenAds: SeenState = JSON.parse(cacheSeenAds);
+      this.cacheManager.set(
+        CastcleCacheKey.ofSeenAds(accountId),
+        JSON.stringify({
+          ...currentSeenAds,
+          seenCount: currentSeenAds.seenCount + 1,
+          lastSeen: new Date(),
+        } as SeenState),
+      );
+    }
+  }
 
   async suggest(user: User, accessKey: string, pageQuery: PaginationQuery) {
     let sliceUsers: User[] = [];
@@ -136,3 +196,9 @@ export class SuggestionServiceV2 {
     return sortedUser.filter(Boolean);
   }
 }
+
+type SeenState = {
+  seenCount: number;
+  lastSeen?: Date;
+  lastSuggestion?: Date;
+};

@@ -422,7 +422,6 @@ export class RankerService {
     feedItemId: string,
     credential: Credential,
   ) => {
-    console.log(account, feedItemId);
     this._feedItemModel
       .updateOne(
         {
