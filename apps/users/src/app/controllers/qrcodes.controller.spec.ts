@@ -30,13 +30,13 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
+  QRCodeImageSize,
   QueueName,
   UserService,
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleQRCode } from '@castcle-api/utils/commons';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
@@ -107,38 +107,25 @@ describe('QRCodeControllerV2', () => {
   });
 
   describe('createQRCode', () => {
-    beforeAll(() => {
-      jest.spyOn(CastcleQRCode, 'generateQRCodeStandard').mockResolvedValue({
-        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-      });
-
-      jest.spyOn(CastcleQRCode, 'generateQRCodeExport').mockResolvedValue({
-        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-      });
-    });
     it('should return QRCodeResponseDto', async () => {
       const authorizer = new Authorizer(
         mocksUsers[0].account,
         mocksUsers[0].user,
         mocksUsers[0].credential,
       );
-      const createQRCode = await appController.createQRCode(authorizer, {
-        chainId: 'test',
-        userId: mocksUsers[0].user._id,
-        isMe: mocksUsers[0].user._id,
-      });
+      const createQRCode = await appController.createQRCode(
+        authorizer,
+        {
+          chainId: 'test',
+          userId: mocksUsers[0].user._id,
+          isMe: mocksUsers[0].user._id,
+        },
+        {
+          size: QRCodeImageSize.Thumbnail,
+        },
+      );
 
-      expect(createQRCode.standards.thumbnail).toMatch(/base64/g);
-      expect(createQRCode.standards.medium).toMatch(/base64/g);
-      expect(createQRCode.standards.large).toMatch(/base64/g);
-
-      expect(createQRCode.exports.thumbnail).toMatch(/base64/g);
-      expect(createQRCode.exports.medium).toMatch(/base64/g);
-      expect(createQRCode.exports.large).toMatch(/base64/g);
+      expect(createQRCode.payload).toMatch(/base64/g);
     });
   });
   afterAll(async () => {

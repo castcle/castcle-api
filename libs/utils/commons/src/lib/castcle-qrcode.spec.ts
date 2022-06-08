@@ -36,40 +36,31 @@ describe('#CastcleQRCode', () => {
     });
   });
 
-  describe('generateQRCodeStandard', () => {
+  describe('generateQRCode', () => {
     beforeAll(async () => {
-      jest.spyOn(CastcleQRCode, 'generateQRCodeStandard').mockResolvedValue({
-        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-      });
+      jest
+        .spyOn(CastcleQRCode, 'generateQRCode')
+        .mockResolvedValue('data:image/png;base64,iVBORw0KGgoAAAAN');
     });
-    it('should create qrcode standard is correct.', async () => {
-      const createQRCode = await CastcleQRCode.generateQRCodeStandard('test');
-
-      expect(createQRCode.thumbnail).toMatch(/base64/g);
-      expect(createQRCode.medium).toMatch(/base64/g);
-      expect(createQRCode.large).toMatch(/base64/g);
-    });
-  });
-
-  describe('generateQRCodeExport', () => {
-    beforeAll(async () => {
-      jest.spyOn(CastcleQRCode, 'generateQRCodeExport').mockResolvedValue({
-        thumbnail: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        medium: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-        large: 'data:image/png;base64,iVBORw0KGgoAAAAN',
-      });
-    });
-    it('should create qrcode standard is correct.', async () => {
-      const createQRCodeExport = await CastcleQRCode.generateQRCodeExport(
-        'data:image/png;base64,iVBORw0KGgoAAAAN',
+    it('should create qrcode size equal thumbnail', async () => {
+      const createQRCode = await CastcleQRCode.generateQRCode(
         'test',
+        'thumbnail',
       );
 
-      expect(createQRCodeExport.thumbnail).toMatch(/base64/g);
-      expect(createQRCodeExport.medium).toMatch(/base64/g);
-      expect(createQRCodeExport.large).toMatch(/base64/g);
+      expect(createQRCode).toMatch(/base64/g);
+    });
+
+    it('should create qrcode size equal medium', async () => {
+      const createQRCode = await CastcleQRCode.generateQRCode('test', 'medium');
+
+      expect(createQRCode).toMatch(/base64/g);
+    });
+
+    it('should create qrcode size equal large', async () => {
+      const createQRCode = await CastcleQRCode.generateQRCode('test', 'large');
+
+      expect(createQRCode).toMatch(/base64/g);
     });
   });
 });

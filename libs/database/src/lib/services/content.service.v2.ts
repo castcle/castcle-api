@@ -1245,7 +1245,13 @@ export class ContentServiceV2 {
     return this.toContentsResponses(contents, hasRelationshipExpansion, viewer);
   };
   getSearchTrends = async (
-    { hasRelationshipExpansion, maxResults, ...query }: GetSearchQuery,
+    {
+      hasRelationshipExpansion,
+      maxResults,
+      sinceId,
+      untilId,
+      ...query
+    }: GetSearchQuery,
     viewer: User,
     account: Account,
     token: string,
@@ -1292,46 +1298,55 @@ export class ContentServiceV2 {
       );
 
       await this.cacheManager.set(contentKey, JSON.stringify(contentsId));
-    } else {
-      const sortId = account.isGuest
-        ? contentsId.map((content) => content._id)
-        : Object.keys(contentScore).sort(
-            (a, b) => contentScore[b] - contentScore[a],
-          );
-      if (!(query.sinceId || query.untilId)) {
-        contentsId.length =
-          sortId.length > maxResults ? maxResults : sortId.length;
-      } else {
-        if (query.sinceId) {
-          const index = sortId.findIndex((id) => id === query.sinceId);
-          if (index > -1) {
-            contentsId = sortId.slice(index, contentsId);
-          }
-        }
-        if (query.untilId) {
-          const index = sortId.findIndex((id) => id === query.untilId);
-          if (index > 0) {
-            contentsId = sortId.slice(index + 1 - maxResults, index + 1);
-          }
-        }
-      }
     }
 
     if (!contentScore && !account.isGuest) {
       contentScore = await this.sortContentsByScore(account._id, contentsId);
       await this.cacheManager.set(scoreKey, JSON.stringify(contentScore));
+    }
 
-      const sortId = Object.keys(contentScore).sort(
-        (a, b) => contentScore[b] - contentScore[a],
-      );
+    if (!contentsId.length)
+      return ResponseDto.ok({
+        payload: [],
+        includes: { casts: [], users: [] },
+        meta: { resultCount: 0 },
+      });
+
+    contentsId =
+      contentScore && !account.isGuest
+        ? contentsId.sort(
+            (a, b) => contentScore[String(b._id)] - contentScore[String(a._id)],
+          )
+        : contentsId;
+
+    if (!(sinceId || untilId)) {
       contentsId.length =
-        sortId.length > maxResults ? maxResults : sortId.length;
+        contentsId.length > maxResults ? maxResults : contentsId.length;
+    } else {
+      if (sinceId) {
+        const index = contentsId.findIndex(
+          (content) => String(content._id) === String(sinceId),
+        );
+
+        if (index > -1) {
+          contentsId = contentsId.slice(maxResults - 1 - index, index + 1);
+        }
+      }
+
+      if (untilId) {
+        const index = contentsId.findIndex(
+          (content) => String(content._id) === String(untilId),
+        );
+        if (index > -1) {
+          contentsId = contentsId.slice(index + 1, index + 1 + maxResults);
+        }
+      }
     }
 
     let [contents] = await this.repository.aggregationContent({
       viewer,
       maxResults: maxResults,
-      _id: contentsId.map((content) => content?._id ?? content),
+      _id: contentsId.map((content) => content._id),
       excludeAuthor: blocking,
       contentType: query.contentType,
       ...query,
@@ -1339,15 +1354,8 @@ export class ContentServiceV2 {
 
     if (!account.isGuest)
       contents.contents = contents.contents.sort(
-        (a, b) => contentScore[b._id] - contentScore[a._id],
+        (a, b) => contentScore[String(b._id)] - contentScore[String(a._id)],
       );
-
-    if (!contents.contents)
-      return ResponseDto.ok({
-        payload: [],
-        includes: { casts: [], users: [] },
-        meta: { resultCount: 0 },
-      });
 
     if (contents.contents.length && contents.contents.length < maxResults) {
       const [contentsMore] = await this.repository.aggregationContent({
@@ -1364,8 +1372,8 @@ export class ContentServiceV2 {
           contentsMore.contents,
         );
 
-        contentsMore.contents = contents.contents.sort(
-          (a, b) => score[b._id] - score[a._id],
+        contentsMore.contents = contentsMore.contents.sort(
+          (a, b) => score[String(b._id)] - score[String(a._id)],
         );
       }
 
