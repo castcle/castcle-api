@@ -241,6 +241,37 @@ export class AuthenticationServiceV2 {
     return { registered: false, ...registration };
   }
 
+  async connectWithSocial(
+    credential: Credential,
+    account: Account,
+    { avatar, provider, socialId, authToken }: SocialConnectDto,
+  ) {
+    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const socialConnected = await this.repository.findAccount({
+      provider,
+      socialId,
+    });
+
+    if (socialConnected) throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
+    if (provider === AccountAuthenIdType.Facebook) {
+      const profile = await this.facebookClient.getFacebookProfile(authToken);
+      if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
+    } else if (provider === AccountAuthenIdType.Twitter) {
+      const [token, secret] = authToken.split('|');
+      const profile = await this.twitterClient.verifyCredentials(token, secret);
+      if (socialId !== profile.id_str) {
+        throw CastcleException.INVALID_AUTH_TOKEN;
+      }
+    }
+
+    await account
+      .set({ [`authentications.${provider}`]: { socialId, avatar } })
+      .save();
+
+    return this.login(credential, account);
+  }
+
   async getRefreshToken(refreshToken: string) {
     const credential = await this.repository.findCredential({ refreshToken });
     if (!credential?.isRefreshTokenValid())

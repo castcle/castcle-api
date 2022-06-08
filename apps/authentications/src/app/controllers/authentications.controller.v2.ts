@@ -120,6 +120,21 @@ export class AuthenticationControllerV2 {
     });
   }
 
+  @Post('connect-with-social')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  connectWithSocial(
+    @Auth() { account }: Authorizer,
+    @Body() socialConnectDto: SocialConnectDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    return this.authenticationService.connectWithSocial(
+      $credential,
+      account,
+      socialConnectDto,
+    );
+  }
+
   @UseInterceptors(TokenInterceptor)
   @Post('refresh-token')
   async refreshToken(@Req() req: TokenRequest) {
