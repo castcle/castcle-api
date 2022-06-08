@@ -113,12 +113,17 @@ describe('QRCodeControllerV2', () => {
         mocksUsers[0].user,
         mocksUsers[0].credential,
       );
-      const createQRCode = await appController.createQRCode(authorizer, {
-        chainId: 'test',
-        userId: mocksUsers[0].user._id,
-        isMe: mocksUsers[0].user._id,
-        size: QRCodeImageSize.Thumbnail,
-      });
+      const createQRCode = await appController.createQRCode(
+        authorizer,
+        {
+          chainId: 'test',
+          userId: mocksUsers[0].user._id,
+          isMe: mocksUsers[0].user._id,
+        },
+        {
+          size: QRCodeImageSize.Thumbnail,
+        },
+      );
 
       expect(createQRCode.payload).toMatch(/base64/g);
     });
