@@ -38,6 +38,7 @@ import { FeedsController } from './controllers/feeds.controller';
 import { FeedsControllerV2 } from './controllers/feeds.controller.v2';
 import { HashtagsController } from './controllers/hashtags.controller';
 import { LanguagesController } from './controllers/languages.controller';
+import { MetaDataControllerV2 } from './controllers/metadatas.controller.v2';
 import { SearchesController } from './controllers/searches.controller';
 import { SearchesControllerV2 } from './controllers/searches.controller.v2';
 import { AppService, SuggestionService } from './services';
@@ -54,15 +55,16 @@ import { AppService, SuggestionService } from './services';
   ],
   controllers: [
     CommentController,
+    CommentControllerV2,
     ContentController,
     ContentControllerV2,
     CountryController,
     FeedsController,
+    FeedsControllerV2,
     HashtagsController,
     LanguagesController,
+    MetaDataControllerV2,
     SearchesController,
-    CommentControllerV2,
-    FeedsControllerV2,
     SearchesControllerV2,
   ],
   providers: [AppService, SuggestionService],
