@@ -31,7 +31,7 @@ import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isArray, isBoolean, isMongoId } from 'class-validator';
+import { isArray, isBoolean, isMongoId, isString } from 'class-validator';
 import {
   AnyKeys,
   ClientSession,
@@ -293,8 +293,15 @@ export class Repository {
     };
 
     if (isArray(filter._id))
-      query._id = { $in: (filter._id as any).map((id) => Types.ObjectId(id)) };
-    else if (filter._id) query._id = Types.ObjectId(filter._id as any);
+      query._id = {
+        $in: (filter._id as any).map((id) =>
+          isString(id) ? Types.ObjectId(id) : id,
+        ),
+      };
+    else if (filter._id)
+      query._id = isString(filter._id)
+        ? Types.ObjectId(filter._id as any)
+        : filter._id;
 
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
