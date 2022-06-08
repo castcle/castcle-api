@@ -408,7 +408,7 @@ describe('UserServiceV2', () => {
       const createQRCode = await userServiceV2.createQRCode(
         'castcleChain',
         QRCodeImageSize.Thumbnail,
-        mocksUsers[0].user,
+        mocksUsers[0].user._id,
       );
 
       expect(createQRCode.payload).toMatch(/base64/g);

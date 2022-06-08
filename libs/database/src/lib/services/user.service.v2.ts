@@ -742,8 +742,9 @@ export class UserServiceV2 {
     return convertPage[0];
   }
 
-  async createQRCode(chainId: string, size: string, user: User) {
-    console.log(size);
+  async createQRCode(chainId: string, size: string, userId: string) {
+    const user = await this.repository.findUser({ _id: userId });
+
     const qrcodeParams = CastcleQRCode.generateQRCodeText([
       chainId,
       user._id,
