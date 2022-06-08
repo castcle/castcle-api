@@ -995,6 +995,14 @@ export class Repository {
     return this.socialSyncModel.deleteMany(filter, queryOptions);
   }
 
+  updateFeedItem(
+    filter: FilterQuery<FeedItem>,
+    feedItem: UpdateQuery<FeedItem>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+  }
+
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
     return this.socialSyncModel
       .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
