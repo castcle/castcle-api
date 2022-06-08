@@ -46,9 +46,3 @@ export const QRCODE_STANDARD_SIZE_CONFIGS: Size[] = [
   { name: 'medium', width: 690, height: 690 },
   { name: 'large', width: 1024, height: 1024 },
 ];
-
-export const QRCODE_EXPORT_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 426, height: 240 },
-  { name: 'medium', width: 853, height: 480 },
-  { name: 'large', width: 1280, height: 720 },
-];

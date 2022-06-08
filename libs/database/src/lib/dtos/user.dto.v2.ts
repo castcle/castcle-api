@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { TransformStringToKeyword } from '@castcle-api/utils/commons';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { KeywordType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 import { GetUserParam } from './user.dto';
@@ -34,18 +34,20 @@ export class GetKeywordQuery extends PaginationQuery {
   };
 }
 
-export class GetCastcleDto extends GetUserParam {
+export enum QRCodeImageSize {
+  Thumbnail = 'thumbnail',
+  Medium = 'medium',
+  Large = 'large',
+}
+export class GetChianDto extends GetUserParam {
   @IsNotEmpty()
   @IsString()
   chainId: string;
 }
 
-class QRCodeImage {
-  thumbnail: string;
-  medium: string;
-  large: string;
-}
-export class QRCodeResponseDto {
-  standards: QRCodeImage;
-  exports: QRCodeImage;
+export class GetSizeDto {
+  @IsOptional()
+  @IsString()
+  @IsEnum(QRCodeImageSize)
+  size: string;
 }

@@ -48,7 +48,7 @@ import {
   PageDto,
   PageResponseDto,
   PaginationQuery,
-  QRCodeResponseDto,
+  QRCodeImageSize,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
@@ -742,25 +742,19 @@ export class UserServiceV2 {
     return convertPage[0];
   }
 
-  async createQRCode(chainId: string, user: User) {
+  async createQRCode(chainId: string, size: string, user: User) {
+    console.log(size);
     const qrcodeParams = CastcleQRCode.generateQRCodeText([
       chainId,
       user._id,
       user.displayId,
     ]);
 
-    const standardsQrcode = await CastcleQRCode.generateQRCodeStandard(
-      `${Environment.REDIRECT_QR_CODE_URL}${qrcodeParams}`,
-    );
-
-    const exportsQrcode = await CastcleQRCode.generateQRCodeExport(
-      standardsQrcode.medium,
-      user.displayId,
-    );
-
-    return {
-      standards: standardsQrcode,
-      exports: exportsQrcode,
-    } as QRCodeResponseDto;
+    return ResponseDto.ok({
+      payload: await CastcleQRCode.generateQRCode(
+        `${Environment.QR_CODE_REDIRECT_URL}${qrcodeParams}`,
+        size ?? QRCodeImageSize.Thumbnail,
+      ),
+    });
   }
 }

@@ -22,7 +22,8 @@
  */
 
 import {
-  GetCastcleDto,
+  GetChianDto,
+  GetSizeDto,
   UserService,
   UserServiceV2,
 } from '@castcle-api/database';
@@ -33,7 +34,7 @@ import {
   CastcleAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { Get, Param } from '@nestjs/common';
+import { Get, Param, Query } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'qr-codes' })
 export class QRCodeControllerV2 {
@@ -46,12 +47,13 @@ export class QRCodeControllerV2 {
   @Get(':chainId/:userId')
   async createQRCode(
     @Auth() authorizer: Authorizer,
-    @Param() { chainId, userId }: GetCastcleDto,
+    @Param() { chainId, userId }: GetChianDto,
+    @Query() { size }: GetSizeDto,
   ) {
     const user = await this.userService.findUser(userId);
 
-    authorizer.requestAccessForAccount(user.ownerAccount);
+    authorizer.requireActivation();
 
-    return this.userServiceV2.createQRCode(chainId, user);
+    return this.userServiceV2.createQRCode(chainId, size, user);
   }
 }

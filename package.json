@@ -58,7 +58,6 @@
     "fast-xml-parser": "^4.0.8",
     "firebase-admin": "^10.2.0",
     "googleapis": "^100.0.0",
-    "html-pdf": "^3.0.1",
     "jsonwebtoken": "^8.5.1",
     "link-preview-js": "^2.1.15",
     "luxon": "^2.4.0",
