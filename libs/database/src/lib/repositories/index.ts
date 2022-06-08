@@ -86,11 +86,13 @@ import {
   CAccountNature,
   Comment,
   Content,
+  Country,
   Credential,
   CredentialModel,
   Engagement,
   FeedItem,
   Hashtag,
+  Language,
   Notification,
   Otp,
   OtpModel,
@@ -227,14 +229,18 @@ export class Repository {
     /** @deprecated */
     @InjectModel('AccountReferral') private referralModel: Model<Referral>,
     /** @deprecated */
-    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Account') private accountModel: Model<Account>,
     @InjectModel('AdsCampaign') private adsCampaignModel: Model<AdsCampaign>,
-    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
+    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('Comment') private commentModel: Model<Comment>,
+    @InjectModel('Content') private contentModel: Model<Content>,
+    @InjectModel('Country') private countryModel: Model<Country>,
+    @InjectModel('Credential') private credentialModel: CredentialModel,
     @InjectModel('Engagement') private engagementModel: Model<Engagement>,
     @InjectModel('FeedItem') private feedItemModel: Model<FeedItem>,
     @InjectModel('Hashtag') private hashtagModel: Model<Hashtag>,
+    @InjectModel('Language') private languageModel: Model<Language>,
     @InjectModel('Notification') private notificationModel: Model<Notification>,
     @InjectModel('Otp') private otpModel: OtpModel,
     @InjectModel('Queue') private queueModel: Model<Queue>,
@@ -243,8 +249,6 @@ export class Repository {
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
-    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
-    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     private httpService: HttpService,
   ) {}
@@ -1220,6 +1224,14 @@ export class Repository {
       await session.commitTransaction();
       session.endSession();
     });
+  }
+
+  findLanguages(filter?: FilterQuery<Language>, queryOptions?: QueryOptions) {
+    return this.languageModel.find(filter, queryOptions);
+  }
+
+  findCountries(filter?: FilterQuery<Country>, queryOptions?: QueryOptions) {
+    return this.countryModel.find(filter, queryOptions);
   }
 
   async getPublicUsers({
