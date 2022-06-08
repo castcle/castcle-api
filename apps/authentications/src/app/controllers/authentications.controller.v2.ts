@@ -328,19 +328,20 @@ export class AuthenticationControllerV2 {
   @CastcleBasicAuth()
   @Post('register/notification')
   @HttpCode(HttpStatus.NO_CONTENT)
-  registerToken(
+  async registerToken(
     @Auth() { account }: Authorizer,
     @Body() body: RegisterFirebaseDto,
   ) {
-    this.authenticationService.createAccountDevice(body, account);
+    await this.authenticationService.createAccountDevice(body, account);
   }
 
   @CastcleBasicAuth()
   @Delete('register/notification')
-  deleteToken(
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteToken(
     @Auth() { account }: Authorizer,
     @Body() body: RegisterFirebaseDto,
   ) {
-    this.authenticationService.deleteAccountDevice(body, account);
+    await this.authenticationService.deleteAccountDevice(body, account);
   }
 }

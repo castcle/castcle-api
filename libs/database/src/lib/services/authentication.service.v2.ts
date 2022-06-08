@@ -873,40 +873,21 @@ export class AuthenticationServiceV2 {
   }
 
   async createAccountDevice(body: RegisterFirebaseDto, account: Account) {
-    const devices = account?.devices?.find(
+    const device = account.devices?.find(
       (device) =>
         body.uuid === device.uuid && body.platform === device.platform,
     );
 
-    if (devices) {
-      await this.repository.updateAccount(
-        {
-          _id: account._id,
-          uuid: body.uuid,
-          platform: body.platform,
-        },
-        {
-          $set: {
-            'devices.$.firebaseToken': body.firebaseToken,
-          },
-        },
-      );
-    } else {
-      await this.repository.updateAccount(
-        {
-          _id: account._id,
-        },
-        {
-          $addToSet: {
-            devices: {
-              uuid: body.uuid,
-              platform: body.platform,
-              firebaseToken: body.firebaseToken,
-            },
-          },
-        },
-      );
-    }
+    if (device) device.firebaseToken = body.firebaseToken;
+    else
+      (account.devices ||= []).push({
+        uuid: body.uuid,
+        platform: body.platform,
+        firebaseToken: body.firebaseToken,
+      });
+
+    account.markModified('devices');
+    await account.save();
   }
 
   async deleteAccountDevice(body: RegisterFirebaseDto, account: Account) {
