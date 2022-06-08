@@ -239,6 +239,5 @@ export class Environment {
   static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
 
   //  Generate QRCode
-  static QR_THEME = process.env.QR_THEME || 'dark';
-  static REDIRECT_QR_CODE_URL = process.env.REDIRECT_QR_CODE_URL || '';
+  static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
 }
