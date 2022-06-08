@@ -1102,21 +1102,11 @@ export class Repository {
     const $hardDelete = [
       this.commentModel.deleteMany({ 'author._id': { $in: userIds } }),
       this.notificationModel.deleteMany({ account: account._id }),
-      this.otpModel.deleteMany({
-        receiver: {
-          $in: [
-            account.email,
-            account.mobile.countryCode + account.mobile.number,
-          ],
-        },
-      }),
+      this.otpModel.deleteMany({ account: account._id }),
       this.socialSyncModel.deleteMany({ account: account._id }),
       this.feedItemModel.deleteMany({ author: account._id }),
       this.relationshipModel.deleteMany({
-        $or: [
-          { followedUser: { $in: userIds } },
-          { following: { $in: userIds } },
-        ],
+        $or: [{ followedUser: { $in: userIds } }, { user: { $in: userIds } }],
       }),
       this.revisionModel.deleteMany({ 'payload.author.id': { $in: userIds } }),
       this.uxEngagementModel.deleteMany({ account: account._id }),
@@ -1131,7 +1121,7 @@ export class Repository {
       this.deleteContents({ 'author._id': { $in: userIds } }),
       this.deleteEngagements({ user: userIds }),
       this.queueModel.updateMany(
-        { 'payload.to.account': account._id },
+        { 'payload.to.account': account._id, status: QueueStatus.WAITING },
         { status: QueueStatus.CANCELLED, endedAt: new Date() },
       ),
       this.userModel.updateMany(
