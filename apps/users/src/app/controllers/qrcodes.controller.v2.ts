@@ -54,6 +54,6 @@ export class QRCodeControllerV2 {
 
     authorizer.requireActivation();
 
-    return this.userServiceV2.createQRCode(chainId, size, user);
+    return this.userServiceV2.createQRCode(chainId, size, user._id);
   }
 }
