@@ -112,6 +112,8 @@ type AccountQuery = {
   mobileCountryCode?: string;
   mobileNumber?: string;
   referredBy?: string;
+  uuid?: string;
+  platform?: string;
 };
 
 type UserQuery = {
@@ -266,6 +268,9 @@ export class Repository {
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
+
+    if (filter.uuid) query['devices.uuid'] = filter.uuid;
+    if (filter.platform) query['devices.platform'] = filter.platform;
     return query;
   }
 
