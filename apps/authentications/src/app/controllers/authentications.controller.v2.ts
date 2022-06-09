@@ -26,6 +26,7 @@ import {
   AuthenticationServiceV2,
   ChangePasswordDto,
   LoginWithEmailDto,
+  RegisterFirebaseDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
@@ -54,6 +55,7 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -118,6 +120,21 @@ export class AuthenticationControllerV2 {
       ip,
       userAgent,
     });
+  }
+
+  @Post('connect-with-social')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  connectWithSocial(
+    @Auth() { account }: Authorizer,
+    @Body() socialConnectDto: SocialConnectDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    return this.authenticationService.connectWithSocial(
+      $credential,
+      account,
+      socialConnectDto,
+    );
   }
 
   @UseInterceptors(TokenInterceptor)
@@ -321,5 +338,25 @@ export class AuthenticationControllerV2 {
       account,
       Host.getHostname(req),
     );
+  }
+
+  @CastcleBasicAuth()
+  @Post('register/notification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async registerToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    await this.authenticationService.createAccountDevice(body, account);
+  }
+
+  @CastcleBasicAuth()
+  @Delete('register/notification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    await this.authenticationService.deleteAccountDevice(body, account);
   }
 }

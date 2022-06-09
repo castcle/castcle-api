@@ -28,7 +28,7 @@ import { SchemaTypes, Types } from 'mongoose';
 import {
   AccountActivation,
   AccountActivationType,
-  AccountAuthentication,
+  AccountAuthentications,
   AccountCampaigns,
   AccountDevice,
 } from '../models';
@@ -81,7 +81,7 @@ class AccountDocument extends CastcleBase {
   credentials: ICredential[];
 
   @Prop({ type: Object })
-  authentications: AccountAuthentication;
+  authentications: AccountAuthentications;
 
   @Prop({ select: false })
   campaigns?: AccountCampaigns;

@@ -32,6 +32,7 @@ import {
   Matches,
 } from 'class-validator';
 import { OtpObjective } from '../models';
+import { AcceptPlatform } from './common.dto';
 
 export class LoginWithEmailDto {
   @IsEmail()
@@ -157,4 +158,19 @@ export class ChangePasswordDto {
   @IsString()
   @Matches(CastcleRegExp.PASSWORD_PATTERN)
   newPassword: string;
+}
+
+export class RegisterFirebaseDto {
+  @IsString()
+  @IsNotEmpty()
+  firebaseToken: string;
+
+  @IsString()
+  @IsNotEmpty()
+  uuid: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(AcceptPlatform)
+  platform: AcceptPlatform;
 }
