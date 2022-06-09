@@ -13,7 +13,7 @@ import {
   UserResponseDto,
 } from '../dtos';
 import {
-  AccountAuthentication,
+  AccountAuthentications,
   SocialProvider,
   UserType,
   UserVerified,
@@ -108,7 +108,7 @@ type UserResponseOptionV2 = {
   followed?: boolean;
   balance?: number;
   mobile?: { countryCode: string; number: string };
-  linkSocial?: AccountAuthentication;
+  linkSocial?: AccountAuthentications;
   syncSocials?: SocialSync[];
   casts?: number;
 };
