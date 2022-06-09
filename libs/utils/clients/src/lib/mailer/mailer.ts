@@ -40,9 +40,9 @@ export class Mailer {
     },
   });
 
-  async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
+  async sendRegistrationEmail(hostUrl: string, toEmail: string, code: string) {
     try {
-      const verifyLink = `${hostname}/authentications/verify`;
+      const verifyLink = `${hostUrl}/v2/authentications/verify/email`;
       const info = await this.transporter.sendMail({
         from: 'castcle-noreply" <no-reply@castcle.com>',
         subject: 'Welcome to Castcle',
@@ -55,7 +55,9 @@ export class Mailer {
         ),
       });
 
-      this.logger.log(`Email is send ${info.messageId} ${info}`);
+      this.logger.log(
+        `Email is send ${info.messageId} ${JSON.stringify(info)}`,
+      );
     } catch (error) {
       this.logger.error(error, `sendRegistrationEmail:${toEmail}`);
     }
