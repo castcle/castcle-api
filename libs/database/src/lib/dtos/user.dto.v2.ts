@@ -57,10 +57,6 @@ export class GetSizeDto {
   @IsEnum(QRCodeImageSize)
   size: string;
 }
-export class QRCodeResponseDto {
-  standards: QRCodeImage;
-  exports: QRCodeImage;
-}
 
 export class GetSyncSocialParam extends GetUserParam {
   @IsString()
