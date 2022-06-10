@@ -5,7 +5,7 @@ import {
   relationshipModel,
   userAlpha,
   userBeta,
-} from './../../variables/global.variable';
+} from '../../variables/global.variable';
 
 export const testFollowsFlow = () => {
   const userA = new User({ name: 'followA' });
@@ -42,14 +42,16 @@ export const testFollowsFlow = () => {
 
     await UsersRequest.followUser(userBeta.castcleId)
       .auth(userBeta.accessToken, { type: 'bearer' })
-      .send(request);
+      .send(request)
+      .expect(204);
     await UsersRequest.followUser(userA.castcleId)
       .auth(userA.accessToken, { type: 'bearer' })
-      .send(request);
+      .send(request)
+      .expect(204);
 
     await UsersRequest.getFollowers(userAlpha.castcleId)
       .auth(userAlpha.accessToken, { type: 'bearer' })
-      .expect(async ({ body }) => {
+      .expect(({ body }) => {
         expect(body.payload.length).toEqual(2);
         expect(body.meta.resultTotal).toEqual(2);
         expect(

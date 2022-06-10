@@ -9,10 +9,18 @@
       "legacyDecorator": true,
       "decoratorMetadata": true
     },
-    "target": "es2018"
+    "externalHelpers": true,
+    "target": "es2020"
   },
   "module": {
     "type": "commonjs",
     "noInterop": true
-  }
+  },
+  "exclude": [
+    ".*.spec.ts$",
+    ".*.e2e-spec.ts$",
+    "jest.config.ts",
+    "jest.setup.ts",
+    ".*.js$"
+  ]
 }

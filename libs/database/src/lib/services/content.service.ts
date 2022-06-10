@@ -37,9 +37,8 @@ import {
   CommentDto,
   ContentPayloadItem,
   ContentResponse,
-  ContentsResponse,
   ContentType,
-  createFilterQuery,
+  ContentsResponse,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   EntityVisibility,
   GetSearchRecentDto,
@@ -49,6 +48,7 @@ import {
   ShortPayload,
   SortDirection,
   UpdateCommentDto,
+  createFilterQuery,
 } from '../dtos';
 import {
   ContentMessage,
@@ -67,8 +67,8 @@ import {
   GuestFeedItem,
   Relationship,
   Revision,
-  toSignedContentPayloadItem,
   User,
+  toSignedContentPayloadItem,
 } from '../schemas';
 import {
   createCastcleFilter,
@@ -284,9 +284,7 @@ export class ContentService {
     if (!content) return;
 
     this.logger.log('delete engagement.');
-    await this._engagementModel
-      .findOneAndRemove({ itemId: content._id })
-      .exec();
+    await this._engagementModel.deleteOne({ itemId: content._id }).exec();
     if (content.hashtags) {
       this.hashtagService.removeFromTags(content.hashtags);
     }

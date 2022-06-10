@@ -20,9 +20,14 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleMeta, UserResponseDto } from '@castcle-api/database/dtos';
+import {
+  CastcleMeta,
+  PaginationQuery,
+  UserResponseDto,
+  UserType,
+} from '@castcle-api/database';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class TargetCastcleDto {
   @ApiProperty()
@@ -47,4 +52,10 @@ export class UserRefereeResponse {
   payload: UserResponseDto[];
   @ApiProperty()
   meta: CastcleMeta;
+}
+
+export class FollowingQuery extends PaginationQuery {
+  @IsOptional()
+  @IsString()
+  type?: UserType;
 }

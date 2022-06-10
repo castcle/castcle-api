@@ -22,19 +22,21 @@
  */
 
 import {
+  AcceptPlatform,
+  AccountAuthenIdType,
   AnalyticService,
   AuthenticationService,
   ContentService,
+  Credential,
   HashtagService,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   OtpObjective,
   QueueName,
   UserService,
+  generateMockUsers,
 } from '@castcle-api/database';
-import { AcceptPlatform } from '@castcle-api/database/dtos';
-import { generateMockUsers, MockUserDetail } from '@castcle-api/database/mocks';
-import { AccountAuthenIdType, Credential } from '@castcle-api/database/schemas';
 import { Downloader, Image } from '@castcle-api/utils/aws';
 import {
   AppleClient,
@@ -50,6 +52,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Repository } from 'libs/database/src/lib/repositories';
 import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { AppleClientMock } from 'libs/utils/clients/src/lib/apple/apple.client.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
@@ -58,10 +61,9 @@ import { TelegramClientMock } from 'libs/utils/clients/src/lib/telegram/telegram
 import { TwilioClientMock } from 'libs/utils/clients/src/lib/twilio/twilio.client.spec';
 import { TwitterClientMock } from 'libs/utils/clients/src/lib/twitter/twitter.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { AuthenticationController } from './app.controller';
 import { AppService } from '../app.service';
 import { LoginResponse, TokenResponse } from '../dtos';
-import { Repository } from 'libs/database/src/lib/repositories';
+import { AuthenticationController } from './app.controller';
 
 const mockResponse: any = {
   json: jest.fn(),
@@ -749,6 +751,7 @@ describe('AppController', () => {
             $token: credentialGuest.accessToken,
           } as any,
           mockResponse,
+          {},
         );
         const postAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);

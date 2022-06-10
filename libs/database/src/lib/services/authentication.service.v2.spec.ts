@@ -22,10 +22,11 @@ import {
   MongooseAsyncFeatures,
   MongooseForFeatures,
 } from '../database.module';
-import { EntityVisibility } from '../dtos';
+import { AcceptPlatform, EntityVisibility } from '../dtos';
+import { MockUserDetail, generateMockUsers } from '../mocks';
 import { QueueName } from '../models';
 import { Repository } from '../repositories';
-import { Account, AccountActivation, Credential } from '../schemas';
+import { Account, AccountActivationV1, Credential } from '../schemas';
 import { SignupRequirements } from './authentication.service';
 import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
@@ -95,7 +96,7 @@ describe('Authentication Service', () => {
   });
 
   describe('#Exist', () => {
-    let signupResult: AccountActivation;
+    let signupResult: AccountActivationV1;
     let createAccountResult: {
       accountDocument: Account;
       credentialDocument: Credential;
@@ -173,6 +174,94 @@ describe('Authentication Service', () => {
         const newAccountResult = await newAccount.save();
         const result = await service.getAccountFromEmail(newlyInsertEmail);
         expect(result._id).toEqual(newAccountResult._id);
+      });
+    });
+
+    describe('Account Devices', () => {
+      let mocksUsers: MockUserDetail[];
+      beforeAll(async () => {
+        mocksUsers = await generateMockUsers(1, 0, {
+          userService: userService,
+          accountService: serviceV1,
+        });
+      });
+      describe('#createAccountDevice', () => {
+        it('should create firebase token devices is not exists', async () => {
+          await service.createAccountDevice(
+            {
+              uuid: 'testuuidios',
+              firebaseToken: 'testfrebasetoken',
+              platform: AcceptPlatform.IOS,
+            },
+            mocksUsers[0].account,
+          );
+
+          const account = await (service as any).repository.findAccount({
+            _id: mocksUsers[0].account._id,
+          });
+          mocksUsers[0].account = account;
+
+          expect(account.devices).toHaveLength(1);
+        });
+
+        it('should create firebase token devices is exists', async () => {
+          await service.createAccountDevice(
+            {
+              uuid: 'testuuidandroid',
+              firebaseToken: 'testfrebasetoken',
+              platform: AcceptPlatform.Android,
+            },
+            mocksUsers[0].account,
+          );
+
+          const account = await (service as any).repository.findAccount({
+            _id: mocksUsers[0].account._id,
+          });
+          mocksUsers[0].account = account;
+
+          expect(account.devices).toHaveLength(2);
+        });
+
+        it('should create new firebase token platform android', async () => {
+          const newToken = 'testfrebasetokennew';
+          await service.createAccountDevice(
+            {
+              uuid: 'testuuidandroid',
+              firebaseToken: newToken,
+              platform: AcceptPlatform.Android,
+            },
+            mocksUsers[0].account,
+          );
+
+          const account = await (service as any).repository.findAccount({
+            _id: mocksUsers[0].account._id,
+          });
+
+          const device = account.devices.find(
+            (device) => device.platform === AcceptPlatform.Android,
+          );
+
+          expect(device.uuid).toEqual('testuuidandroid');
+          expect(device.firebaseToken).toEqual(newToken);
+        });
+      });
+      describe('#deleteAccountDevice', () => {
+        it('should delete devices ios platform', async () => {
+          await service.deleteAccountDevice(
+            {
+              uuid: 'testuuidios',
+              firebaseToken: 'testfrebasetoken',
+              platform: AcceptPlatform.IOS,
+            },
+            mocksUsers[0].account,
+          );
+
+          const account = await (service as any).repository.findAccount({
+            _id: mocksUsers[0].account._id,
+          });
+
+          expect(account.devices).toHaveLength(1);
+        });
       });
     });
 

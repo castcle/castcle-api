@@ -24,7 +24,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LanguagePayloadDto } from '../dtos/language.dto';
-import { Language } from './../schemas';
+import { Language } from '../schemas';
 
 @Injectable()
 export class LanguageService {

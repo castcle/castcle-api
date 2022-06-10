@@ -22,11 +22,12 @@
  */
 
 import {
+  AdsPaymentMethod,
   AdsService,
   ContentServiceV2,
+  Queue,
   QueueStatus,
 } from '@castcle-api/database';
-import { Queue } from '@castcle-api/database/schemas';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model } from 'mongoose';
@@ -47,9 +48,18 @@ export class SocialRewardScheduler {
     });
     if (!actionQueue) return;
     await this.contentService.updateAllUndistributedContentFarming();
-    await this.adsService.distributeSocialRewardAdsCredit();
-    await this.adsService.distributeSocialRewardPersonal();
+    await this.adsService.distributeAllSocialRewardByType(
+      AdsPaymentMethod.ADS_CREDIT,
+    );
+    await this.adsService.distributeAllSocialRewardByType(
+      AdsPaymentMethod.CREDIT_CARD,
+    );
     actionQueue.status = QueueStatus.DONE;
     await actionQueue.save();
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async updateAdsStatus() {
+    await this.adsService.updateAllAdsStatus();
   }
 }

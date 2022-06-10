@@ -3,25 +3,24 @@ import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/users/src/app/app.module';
-import { pagesApp } from '../variables';
+import { apps } from '../variables';
 
 export const setupPagesModule = async () => {
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
 
-  (pagesApp as any) = moduleFixture.createNestApplication();
-
-  pagesApp.useGlobalPipes(new ValidationPipe());
-  pagesApp.useGlobalFilters(new CastcleExceptionFilter());
-  pagesApp.enableVersioning({
+  apps.pages = moduleFixture.createNestApplication();
+  apps.pages.useGlobalPipes(new ValidationPipe());
+  apps.pages.useGlobalFilters(new CastcleExceptionFilter());
+  apps.pages.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await pagesApp.init();
+  await apps.pages.init();
 };
 
 export const closePagesModule = () => {
-  return pagesApp.close();
+  return apps.pages.close();
 };

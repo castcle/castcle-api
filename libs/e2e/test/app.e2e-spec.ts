@@ -18,6 +18,7 @@ import {
   testUsersReporting,
   testUsersUpdateMobile,
 } from './modules/users';
+import { testUsersDeleteUser } from './modules/users/delete-user.spec';
 import { testQuoteCastsFlow } from './modules/users/quotecasts-flow.spec';
 import { testRecastsFlow } from './modules/users/recasts-flow.spec';
 import {
@@ -36,9 +37,13 @@ describe('Castcle E2E Tests', () => {
 
   beforeAll(async () => {
     mongoMemoryReplSet = await MongoMemoryReplSet.create();
-    (global as any).mongoUri = mongoMemoryReplSet.getUri();
+    global.mongoUri = mongoMemoryReplSet.getUri();
 
-    await connect(mongoMemoryReplSet.getUri('test'));
+    await connect(mongoMemoryReplSet.getUri('test'), {
+      useCreateIndex: true,
+      useFindAndModify: false,
+      useNewUrlParser: true,
+    });
     await setupAuthenticationsModule();
     await initializeUsers();
     await setupUsersModule();
@@ -96,6 +101,10 @@ describe('Castcle E2E Tests', () => {
 
     describe('- Block Flow', () => {
       testBlocksFlow();
+    });
+
+    describe('- Delete User', () => {
+      testUsersDeleteUser();
     });
   });
 

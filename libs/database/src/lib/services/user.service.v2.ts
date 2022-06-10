@@ -20,9 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import { LocalizationLang } from '@castcle-api/utils/commons';
+import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -32,8 +33,8 @@ import {
   GetUserRelationResponseCount,
   pipelineOfUserRelationFollowersCountV2,
   pipelineOfUserRelationFollowersV2,
-  pipelineOfUserRelationFollowingV2,
   pipelineOfUserRelationFollowingCountV2,
+  pipelineOfUserRelationFollowingV2,
 } from '../aggregations';
 import {
   CastcleQueryOptions,
@@ -44,8 +45,10 @@ import {
   Meta,
   NotificationSource,
   NotificationType,
+  PageDto,
   PageResponseDto,
   PaginationQuery,
+  QRCodeImageSize,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
@@ -62,7 +65,7 @@ import { NotificationService } from './notification.service';
 
 @Injectable()
 export class UserServiceV2 {
-  private logger = new CastLogger();
+  private logger = new CastLogger(UserServiceV2.name);
 
   constructor(
     @InjectModel('Account')
@@ -78,39 +81,39 @@ export class UserServiceV2 {
     private contentService: ContentService,
     private mailerService: Mailer,
     private notificationService: NotificationService,
-    private repositoryService: Repository,
+    private repository: Repository,
   ) {}
 
   getUser = async (userId: string) => {
-    const user = await this.repositoryService.findUser({ _id: userId });
+    const user = await this.repository.findUser({ _id: userId });
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     return user;
   };
 
-  getUserBlock = async (viewer: User) => {
+  getUserRelationships = async (viewer: User, blocking: boolean) => {
     if (!viewer) return [];
-    const isRelationships = await this.repositoryService.findRelationships(
+    const isRelationships = await this.repository.findRelationships(
       {
         followedUser: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { user: 1 },
       },
     );
 
-    const byRelationships = await this.repositoryService.findRelationships(
+    const byRelationships = await this.repository.findRelationships(
       {
         userId: viewer._id,
-        blocking: true,
+        blocking,
       },
       {
         projection: { followedUser: 1 },
       },
     );
     return [
-      ...isRelationships.map((item) => item.user),
-      ...byRelationships.map((item) => item.followedUser),
+      ...isRelationships.map((item) => item.user._id),
+      ...byRelationships.map((item) => item.followedUser._id),
     ];
   };
 
@@ -143,63 +146,55 @@ export class UserServiceV2 {
       : [];
 
     return Promise.all(
-      users.map(async (item) => {
+      users.map(async (user) => {
         const syncSocials =
-          String(item.ownerAccount) === String(viewer.ownerAccount) &&
+          String(user.ownerAccount) === String(viewer?.ownerAccount) &&
           userFields?.includes(UserField.SyncSocial)
-            ? await this.socialSyncModel.find({ 'author.id': item.id }).exec()
+            ? await this.socialSyncModel.find({ 'author.id': user.id }).exec()
             : [];
 
         const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(item.ownerAccount) === String(viewer.ownerAccount)
-            ? await this.accountModel.findOne({ _id: item.ownerAccount }).exec()
+          ? String(user.ownerAccount) === String(viewer?.ownerAccount)
+            ? await this.accountModel.findOne({ _id: user.ownerAccount }).exec()
             : undefined
           : undefined;
 
         const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(item.id)
+          ? await this.contentService.getContentsFromUser(user.id)
           : undefined;
 
         const balance = userFields?.includes(UserField.Wallet)
-          ? await this.repositoryService.getBalance({
-              accountId: String(item.ownerAccount),
+          ? await this.repository.getBalance({
+              accountId: String(user.ownerAccount),
             })
           : undefined;
 
         const userResponse =
-          item.type === UserType.PAGE
-            ? item.toPageResponseV2(
+          user.type === UserType.PAGE
+            ? user.toPageResponseV2(
                 undefined,
                 undefined,
                 undefined,
                 syncSocials,
                 content?.total,
               )
-            : await item.toUserResponseV2({
+            : await user.toUserResponseV2({
                 casts: content?.total,
                 linkSocial: linkSocial?.authentications,
                 syncSocials,
                 balance,
               });
 
-        const targetRelationship = hasRelationshipExpansion
-          ? relationships.find(
-              ({ followedUser, user }) =>
-                String(user) === String(item.id) &&
-                String(followedUser) === String(viewer?.id),
-            )
-          : undefined;
-
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
-              ({ followedUser, user }) =>
-                String(followedUser) === String(item.id) &&
-                String(user) === String(viewer?.id),
+              ({ followedUser, user: userRelation }) =>
+                String(followedUser) === String(user.id) &&
+                String(userRelation) === String(viewer?.id),
             )
           : undefined;
 
-        userResponse.blocked = Boolean(getterRelationship?.blocking);
-        userResponse.blocking = Boolean(targetRelationship?.blocking);
+        userResponse.blocked = Boolean(getterRelationship?.blocked);
+        userResponse.blocking = Boolean(getterRelationship?.blocking);
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
@@ -234,7 +229,7 @@ export class UserServiceV2 {
       accountId: user.ownerAccount._id,
       type: UserType.PAGE,
     };
-    const findUser = await this.repositoryService.findUsers(filterQuery);
+    const findUser = await this.repository.findUsers(filterQuery);
     const pages = await this.convertUsersToUserResponsesV2(
       user,
       findUser,
@@ -246,7 +241,7 @@ export class UserServiceV2 {
   }
 
   async followUser(user: User, targetCastcleId: string, account: Account) {
-    const followedUser = await this.repositoryService.findUser({
+    const followedUser = await this.repository.findUser({
       _id: targetCastcleId,
     });
 
@@ -271,7 +266,7 @@ export class UserServiceV2 {
   }
 
   async blockUser(user: User, targetCastcleId: string) {
-    const blockUser = await this.repositoryService
+    const blockUser = await this.repository
       .findUser({
         _id: targetCastcleId,
       })
@@ -281,7 +276,7 @@ export class UserServiceV2 {
 
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
-      await this.repositoryService.updateRelationship(
+      await this.repository.updateRelationship(
         { user: user._id, followedUser: blockUser._id },
         {
           $setOnInsert: {
@@ -294,7 +289,7 @@ export class UserServiceV2 {
         },
         { upsert: true, session },
       );
-      await this.repositoryService.updateRelationship(
+      await this.repository.updateRelationship(
         { followedUser: user._id, user: blockUser._id },
         {
           $setOnInsert: {
@@ -313,7 +308,7 @@ export class UserServiceV2 {
   }
 
   async unblockUser(user: User, targetCastcleId: string) {
-    const unblockedUser = await this.repositoryService.findUser({
+    const unblockedUser = await this.repository.findUser({
       _id: targetCastcleId,
     });
 
@@ -322,14 +317,14 @@ export class UserServiceV2 {
     const session = await this.relationshipModel.startSession();
     await session.withTransaction(async () => {
       const [blockerRelation, blockedRelation] = await Promise.all([
-        this.repositoryService.findRelationship(
+        this.repository.findRelationship(
           {
             user: user._id,
             followedUser: unblockedUser._id,
           },
           { session },
         ),
-        this.repositoryService.findRelationship(
+        this.repository.findRelationship(
           {
             user: unblockedUser._id,
             followedUser: user._id,
@@ -339,20 +334,20 @@ export class UserServiceV2 {
       ]);
 
       if (blockerRelation.following || blockerRelation.blocked) {
-        await this.repositoryService.updateRelationship(
+        await this.repository.updateRelationship(
           { _id: blockerRelation._id },
           { $set: { blocking: false } },
           { session },
         );
       } else {
-        await this.repositoryService.removeRelationship(
+        await this.repository.removeRelationship(
           { _id: blockerRelation._id },
           { session },
         );
       }
 
       if (blockedRelation.following || blockedRelation.blocking) {
-        await this.repositoryService.updateRelationship(
+        await this.repository.updateRelationship(
           {
             followedUser: user._id,
             user: unblockedUser._id,
@@ -362,7 +357,7 @@ export class UserServiceV2 {
           { session },
         );
       } else {
-        await this.repositoryService.removeRelationship(
+        await this.repository.removeRelationship(
           { _id: blockedRelation._id },
           { session },
         );
@@ -382,7 +377,7 @@ export class UserServiceV2 {
       blocking: true,
     };
 
-    const relationships = await this.repositoryService
+    const relationships = await this.repository
       .findRelationships(filterQuery)
       .sort({ followedUser: SortDirection.DESC })
       .limit(maxResults)
@@ -424,9 +419,9 @@ export class UserServiceV2 {
     filterQuery: { _id: Types.ObjectId[] },
     queryOptions?: CastcleQueryOptions,
   ) => {
-    const total = await this.repositoryService.findUserCount(filterQuery);
+    const total = await this.repository.findUserCount(filterQuery);
     const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
-    const users = await this.repositoryService.findUsers(filterQuery, {
+    const users = await this.repository.findUsers(filterQuery, {
       limit: queryOptions.limit,
       skip: queryOptions.page - 1,
       sort: { [queryOptions.sortBy?.field ?? 'updatedAt']: sortKey },
@@ -439,7 +434,7 @@ export class UserServiceV2 {
   };
 
   async unfollowUser(user: User, targetCastcleId: string) {
-    const targetUser = await this.repositoryService
+    const targetUser = await this.repository
       .findUser({ _id: targetCastcleId })
       .exec();
 
@@ -449,7 +444,7 @@ export class UserServiceV2 {
   }
 
   async reportContent(user: User, targetContentId: string, message: string) {
-    const targetContent = await this.repositoryService.findContent({
+    const targetContent = await this.repository.findContent({
       _id: targetContentId,
     });
 
@@ -461,7 +456,7 @@ export class UserServiceV2 {
       type: EngagementType.Report,
     };
 
-    await this.repositoryService
+    await this.repository
       .updateEngagement(
         engagementFilter,
         { ...engagementFilter, visibility: EntityVisibility.Publish },
@@ -484,7 +479,7 @@ export class UserServiceV2 {
   }
 
   async reportUser(user: User, targetCastcleId: string, message: string) {
-    const targetUser = await this.repositoryService.findUser({
+    const targetUser = await this.repository.findUser({
       _id: targetCastcleId,
     });
 
@@ -504,7 +499,7 @@ export class UserServiceV2 {
   ) {
     if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
 
-    const otp = await this.repositoryService.findOtp({
+    const otp = await this.repository.findOtp({
       objective,
       receiver: countryCode + mobileNumber,
     });
@@ -552,14 +547,40 @@ export class UserServiceV2 {
       this.logger.error(error, `updateMobile:claimAirdrop:error`);
     }
   }
+
+  async deleteCastcleAccount(account: Account, password: string) {
+    if (!account.verifyPassword(password)) {
+      throw CastcleException.INVALID_PASSWORD;
+    }
+
+    await this.repository.deleteCastcleAccount(account);
+  }
+
+  async deletePage(account: Account, pageId: string, password: string) {
+    const page = await this.repository.findUser({
+      type: UserType.PAGE,
+      _id: pageId,
+    });
+
+    if (!page) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+    if (String(page.ownerAccount) !== String(account._id)) {
+      throw CastcleException.FORBIDDEN;
+    }
+    if (!account.verifyPassword(password)) {
+      throw CastcleException.INVALID_PASSWORD;
+    }
+
+    await this.repository.deletePage(page._id);
+  }
+
   async getUserByKeyword(
     { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
-    const blocking = await this.getUserBlock(viewer);
+    const blocking = await this.getUserRelationships(viewer, true);
 
-    const users = await this.repositoryService.findUsers({
-      execute: blocking,
+    const users = await this.repository.findUsers({
+      excludeRelationship: blocking,
       ...query,
     });
 
@@ -596,13 +617,13 @@ export class UserServiceV2 {
     };
 
     const [userRelation, userRelationCount, viewer] = await Promise.all([
-      this.repositoryService.aggregateRelationship<Relationship>(
+      this.repository.aggregateRelationship<Relationship>(
         pipelineOfUserRelationFollowingV2(params),
       ),
-      this.repositoryService.aggregateRelationship<GetUserRelationResponseCount>(
+      this.repository.aggregateRelationship<GetUserRelationResponseCount>(
         pipelineOfUserRelationFollowingCountV2(params),
       ),
-      this.repositoryService.findUser({ accountId: account._id }),
+      this.repository.findUser({ accountId: account._id }),
     ]);
 
     const followingUsersId = userRelation.flatMap(({ _id, followedUser }) => {
@@ -642,15 +663,15 @@ export class UserServiceV2 {
     };
 
     const [userRelation, userRelationCount, viewer] = await Promise.all([
-      this.repositoryService.aggregateRelationship<Relationship>(
+      this.repository.aggregateRelationship<Relationship>(
         pipelineOfUserRelationFollowersV2(params),
       ),
 
-      this.repositoryService.aggregateRelationship<GetUserRelationResponseCount>(
+      this.repository.aggregateRelationship<GetUserRelationResponseCount>(
         pipelineOfUserRelationFollowersCountV2(params),
       ),
 
-      this.repositoryService.findUser({ accountId: account._id }),
+      this.repository.findUser({ accountId: account._id }),
     ]);
 
     const followingUsersId = userRelation.flatMap(({ _id, user }) => {
@@ -696,5 +717,45 @@ export class UserServiceV2 {
     });
 
     return relationUsers;
+  }
+
+  async createPage(user: User, body: PageDto) {
+    const pageIsExist = await this.repository.findUser({
+      _id: body.castcleId,
+    });
+
+    if (pageIsExist) throw CastcleException.PAGE_IS_EXIST;
+
+    const page = await this.repository.createUser({
+      ownerAccount: user.ownerAccount,
+      type: UserType.PAGE,
+      displayId: body.castcleId,
+      displayName: body.displayName,
+    });
+
+    const convertPage = await this.convertUsersToUserResponsesV2(
+      null,
+      [page],
+      false,
+    );
+
+    return convertPage[0];
+  }
+
+  async createQRCode(chainId: string, size: string, userId: string) {
+    const user = await this.repository.findUser({ _id: userId });
+
+    const qrcodeParams = CastcleQRCode.generateQRCodeText([
+      chainId,
+      user._id,
+      user.displayId,
+    ]);
+
+    return ResponseDto.ok({
+      payload: await CastcleQRCode.generateQRCode(
+        `${Environment.QR_CODE_REDIRECT_URL}${qrcodeParams}`,
+        size ?? QRCodeImageSize.Thumbnail,
+      ),
+    });
   }
 }

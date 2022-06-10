@@ -23,6 +23,7 @@
 import { Configs } from '@castcle-api/environments';
 import { Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { isString } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { CastcleImage, CastcleMetric } from '../dtos/common.dto';
@@ -43,7 +44,6 @@ import { FeedItem } from './feed-item.schema';
 import { Relationship } from './relationship.schema';
 import { Revision } from './revision.schema';
 import { User } from './user.schema';
-import { isString } from 'class-validator';
 
 const engagementNameMap = {
   like: 'liked',

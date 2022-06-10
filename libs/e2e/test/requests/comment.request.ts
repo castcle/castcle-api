@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import { feedsApp } from '../variables';
+import { apps } from '../variables';
 
 export class CommentRequest {
   static headers = {
@@ -10,7 +10,9 @@ export class CommentRequest {
   };
 
   static request = (method: string, url: string): request.Test =>
-    request(feedsApp.getHttpServer())[method](url).set(CommentRequest.headers);
+    request(apps.feeds.getHttpServer())
+      [method](url)
+      .set(CommentRequest.headers);
 
   static delete = (url: string) => CommentRequest.request('delete', url);
   static get = (url: string) => CommentRequest.request('get', url);

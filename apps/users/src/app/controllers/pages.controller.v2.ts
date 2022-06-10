@@ -20,13 +20,43 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { PageDto, UserServiceV2 } from '@castcle-api/database';
+import { CacheKeyName } from '@castcle-api/environments';
+import {
+  Auth,
+  Authorizer,
+  CastcleBasicAuth,
+  CastcleClearCacheAuth,
+  CastcleControllerV2,
+} from '@castcle-api/utils/decorators';
+import {
+  Body,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
+import { DeleteUserDto, GetPageParam } from '../dtos';
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+@CastcleControllerV2({ path: 'pages' })
+export class PagesControllerV2 {
+  constructor(private userServiceV2: UserServiceV2) {}
 
-export class DeletePageDto {
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty()
-  password: string;
+  @CastcleBasicAuth()
+  @Post()
+  async createPage(@Auth() authorizer: Authorizer, @Body() body: PageDto) {
+    return this.userServiceV2.createPage(authorizer.user, body);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @CastcleClearCacheAuth(CacheKeyName.Pages)
+  @Delete(':pageId')
+  async deletePage(
+    @Auth() { account }: Authorizer,
+    @Param() { pageId }: GetPageParam,
+    @Body() { password }: DeleteUserDto,
+  ) {
+    await this.userServiceV2.deletePage(account, pageId, password);
+  }
 }

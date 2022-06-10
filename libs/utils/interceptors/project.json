@@ -1,0 +1,35 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/utils/interceptors/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:swc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/utils/interceptors",
+        "tsConfig": "libs/utils/interceptors/tsconfig.lib.json",
+        "packageJson": "libs/utils/interceptors/package.json",
+        "main": "libs/utils/interceptors/src/index.ts",
+        "assets": ["libs/utils/interceptors/*.md"],
+        "swcrc": ".swcrc.base"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/utils/interceptors/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/utils/interceptors"],
+      "options": {
+        "jestConfig": "libs/utils/interceptors/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

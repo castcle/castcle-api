@@ -22,17 +22,16 @@
  */
 
 import {
+  Account,
   AdsService,
+  Credential,
   DataService,
+  FeedItemPayloadItem,
+  FeedItemResponse,
   RankerService,
   UserService,
   UserType,
 } from '@castcle-api/database';
-import {
-  FeedItemPayloadItem,
-  FeedItemResponse,
-} from '@castcle-api/database/dtos';
-import { Account, Credential } from '@castcle-api/database/schemas';
 import { Configs, Environment } from '@castcle-api/environments';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';

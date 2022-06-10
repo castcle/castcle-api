@@ -21,11 +21,11 @@
  * or have any questions.
  */
 
-import { SearchService } from '@castcle-api/database';
 import {
   DEFAULT_TOP_TREND_QUERY_OPTIONS,
+  SearchService,
   TopTrendsResponse,
-} from '@castcle-api/database/dtos';
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { CastcleController } from '@castcle-api/utils/decorators';

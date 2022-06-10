@@ -4,16 +4,16 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DateTime } from 'luxon';
 import { Model, SchemaTypes } from 'mongoose';
 import {
-  SearchFollowsResponseDto,
+  Author,
   CastcleImage,
   EntityVisibility,
-  Author,
   PageResponseDto,
-  UserResponseDto,
+  SearchFollowsResponseDto,
   UserContact,
+  UserResponseDto,
 } from '../dtos';
 import {
-  AccountAuthentication,
+  AccountAuthentications,
   SocialProvider,
   UserType,
   UserVerified,
@@ -108,7 +108,7 @@ type UserResponseOptionV2 = {
   followed?: boolean;
   balance?: number;
   mobile?: { countryCode: string; number: string };
-  linkSocial?: AccountAuthentication;
+  linkSocial?: AccountAuthentications;
   syncSocials?: SocialSync[];
   casts?: number;
 };

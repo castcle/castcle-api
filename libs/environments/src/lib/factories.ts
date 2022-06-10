@@ -46,6 +46,7 @@ export const getCacheModuleOptions = (): CacheModuleOptions => ({
 export const getMongooseModuleOptions = (): MongooseModuleOptions => ({
   uri: Environment.DB_URI,
   useCreateIndex: true,
+  useFindAndModify: false,
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

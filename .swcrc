@@ -9,7 +9,8 @@
       "legacyDecorator": true,
       "decoratorMetadata": true
     },
-    "target": "es2018"
+    "externalHelpers": true,
+    "target": "es2020"
   },
   "module": {
     "type": "commonjs",

@@ -20,8 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { CastcleException } from './exception';
 import { CastcleErrors } from './errors';
+import { CastcleException } from './exception';
 
 describe('CastcleException', () => {
   Object.keys(CastcleErrors.default).forEach(

@@ -21,10 +21,9 @@
  * or have any questions.
  */
 
+import { DEFAULT_CONTENT_QUERY_OPTIONS, EntityVisibility } from '../dtos';
+import { EngagementType } from '../models';
 import { User } from '../schemas';
-import { EngagementType } from './../schemas/engagement.schema';
-import { DEFAULT_CONTENT_QUERY_OPTIONS } from './../dtos/content.dto';
-import { EntityVisibility } from './../dtos/common.dto';
 
 type GetContentFilter = {
   [key: string]: string;
@@ -253,7 +252,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Quote] },
@@ -262,7 +261,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Recast] },
@@ -292,7 +291,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$_id',
-                userId: query.viewer._id,
+                userId: query.viewer?._id,
               },
               pipeline: [
                 {
@@ -326,7 +325,7 @@ export const pipelineGetContents = (query: GetContentsQuery) => {
               from: 'engagements',
               let: {
                 contentId: '$originalPost._id',
-                userId: query.viewer._id,
+                userId: query.viewer?._id,
               },
               pipeline: [
                 {

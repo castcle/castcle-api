@@ -34,14 +34,14 @@ import {
 } from '../aggregations';
 import {
   Author,
-  PaginationQuery,
-  FeedItemPayloadItem,
   CastcleIncludes,
-  FeedItemResponse,
   CastcleMeta,
+  CastcleMetric,
+  FeedItemPayloadItem,
+  FeedItemResponse,
   FeedQuery,
   Meta,
-  CastcleMetric,
+  PaginationQuery,
 } from '../dtos';
 import { FeedAggregatorName, FeedAnalyticSource, UserType } from '../models';
 import {
@@ -53,9 +53,9 @@ import {
   FeedItem,
   GuestFeedItem,
   Relationship,
+  User,
   signedContentPayloadItem,
   toUnsignedContentPayloadItem,
-  User,
 } from '../schemas';
 import { createCastcleFilter, createCastcleMeta } from '../utils/common';
 import { DataService } from './data.service';
@@ -422,7 +422,6 @@ export class RankerService {
     feedItemId: string,
     credential: Credential,
   ) => {
-    console.log(account, feedItemId);
     this._feedItemModel
       .updateOne(
         {

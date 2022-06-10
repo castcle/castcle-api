@@ -22,16 +22,17 @@
  */
 
 import {
+  Account,
   AdsService,
+  Credential,
   DataService,
   RankerService,
+  SuggestToFollowResponseDto,
   UserService,
   UserType,
 } from '@castcle-api/database';
-import { SuggestToFollowResponseDto } from '@castcle-api/database/dtos';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { Account, Credential } from '@castcle-api/database/schemas';
 
 type SeenState = {
   seenCount: number;
@@ -76,7 +77,6 @@ export class SuggestionService {
 
   _seenKey = (accountId: string) => `${accountId}-seen`;
   _seenAdsKey = (accountId: string) => `${accountId}-ads-seen`;
-
   _resetSeen = (setting: SeenState, seenKey: string) =>
     this.cacheManager.set(
       seenKey,

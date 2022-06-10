@@ -22,8 +22,8 @@
  */
 
 import {
-  TransformKeywordStringToKeywordFilter,
   TransformStringToArrayOfStrings,
+  TransformStringToKeyword,
 } from '@castcle-api/utils/commons';
 import {
   IsEnum,
@@ -31,7 +31,7 @@ import {
   IsNumberString,
   IsOptional,
 } from 'class-validator';
-import { ExecuteType, KeywordType } from '../models';
+import { ExcludeType, KeywordType } from '../models';
 import { PageResponseDto, UserResponseDto } from './user.dto';
 
 export class GetTopTrendQuery {
@@ -41,7 +41,7 @@ export class GetTopTrendQuery {
 
   @IsOptional()
   @TransformStringToArrayOfStrings()
-  @IsEnum(ExecuteType, { each: true })
+  @IsEnum(ExcludeType, { each: true })
   exclude?: string[];
 }
 
@@ -51,7 +51,7 @@ export class GetByQuery {
   limit?: number;
 
   @IsNotEmpty()
-  @TransformKeywordStringToKeywordFilter()
+  @TransformStringToKeyword()
   keyword: {
     input: string;
     type: KeywordType;

@@ -21,17 +21,17 @@
  * or have any questions.
  */
 import {
+  Account,
   AuthenticationService,
-  getSocialPrefix,
+  Credential,
+  DEFAULT_QUERY_OPTIONS,
+  Otp,
   OtpObjective,
   OtpTemplateMessage,
-  UserService,
-} from '@castcle-api/database';
-import {
-  DEFAULT_QUERY_OPTIONS,
   SocialConnectDto,
-} from '@castcle-api/database/dtos';
-import { Account, Credential, Otp } from '@castcle-api/database/schemas';
+  UserService,
+  getSocialPrefix,
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -42,7 +42,6 @@ import {
 } from '@castcle-api/utils/aws';
 import { TwilioChannel, TwilioClient } from '@castcle-api/utils/clients';
 import { Password } from '@castcle-api/utils/commons';
-import { RequestMetadata } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { CredentialRequest } from '@castcle-api/utils/interceptors';
 import { HttpService } from '@nestjs/axios';
@@ -83,19 +82,8 @@ export class AppService {
   _uploadImage = (base64: string, options?: ImageUploadOptions) =>
     Image.upload(base64, options);
 
-  /**
-   * Get ENV and return castcle mobile deep link url
-   * @returns {string}
-   */
-  getCastcleMobileLink = () => {
-    return (
-      Environment.LINK_VERIFIED_EMAIL ||
-      'https://links.castcle.com/verified-email'
-    );
-  };
-
-  async sendRegistrationEmail(hostname: string, toEmail: string, code: string) {
-    const verifyLink = `${hostname}/authentications/verify`;
+  async sendRegistrationEmail(hostUrl: string, toEmail: string, code: string) {
+    const verifyLink = `${hostUrl}/authentications/verify`;
     const info = await this.transporter.sendMail({
       from: 'castcle-noreply" <no-reply@castcle.com>',
       subject: 'Welcome to Castcle',
@@ -130,7 +118,7 @@ export class AppService {
   async socialLogin(
     body: SocialConnectDto,
     req: CredentialRequest,
-    { ip }: RequestMetadata = {},
+    { ip }: { ip?: string } = {},
   ) {
     this.logger.log('get AccountAuthenIdFromSocialId');
     const socialAccount = await this.authService.getAccountAuthenIdFromSocialId(

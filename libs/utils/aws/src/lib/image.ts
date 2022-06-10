@@ -25,7 +25,7 @@ import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
 import * as sharp from 'sharp';
 import * as Configs from '../config';
-import { Uploader, UploadOptions } from './uploader';
+import { UploadOptions, Uploader } from './uploader';
 
 const OriginalSuffix = 'original';
 

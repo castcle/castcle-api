@@ -23,16 +23,14 @@
 
 import {
   ContentService,
-  SocialProvider,
-  SocialSyncService,
-} from '@castcle-api/database';
-import {
   ContentType,
   GetLinkPreview,
   Link,
   LinkType,
   SaveContentDto,
-} from '@castcle-api/database/dtos';
+  SocialProvider,
+  SocialSyncService,
+} from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';

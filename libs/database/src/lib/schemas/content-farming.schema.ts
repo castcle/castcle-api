@@ -21,12 +21,12 @@
  * or have any questions.
  */
 
-import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { User } from './user.schema';
 import { ContentFarmingStatus } from '../models/content-farming.enum';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
 
 type CDFStat = {
   adjustedFarmPeriod: number;

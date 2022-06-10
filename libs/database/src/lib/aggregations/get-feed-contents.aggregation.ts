@@ -22,15 +22,9 @@
  */
 
 import { FilterQuery, Types } from 'mongoose';
-import { CastcleMetric } from '../dtos';
+import { Author, CastcleMetric } from '../dtos';
 import { EngagementType } from '../models';
-import {
-  DefaultContent,
-  GuestFeedItem,
-  FeedItem,
-  Content,
-  Author,
-} from '../schemas';
+import { Content, DefaultContent, FeedItem, GuestFeedItem } from '../schemas';
 
 export class GetFeedContentsResponse {
   _id: Types.ObjectId;
@@ -184,7 +178,7 @@ export const pipelineOfGetGuestFeedContents = ({
                         },
                       },
                     },
-                    quotedCount: {
+                    quoteCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Quote] },
@@ -193,7 +187,7 @@ export const pipelineOfGetGuestFeedContents = ({
                         },
                       },
                     },
-                    recastedCount: {
+                    recastCount: {
                       $sum: {
                         $cond: {
                           if: { $eq: ['$type', EngagementType.Recast] },

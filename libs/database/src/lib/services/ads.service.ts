@@ -52,9 +52,11 @@ import {
   AdsStatus,
   CACCOUNT_NO,
   DefaultAdsStatistic,
+  FilterInterval,
   UserType,
   WalletType,
 } from '../models';
+import { Repository } from '../repositories/index';
 import {
   AdsCampaign,
   AdsPlacement,
@@ -62,12 +64,11 @@ import {
   ContentFarming,
   MicroTransaction,
   TLedger,
-  toSignedContentPayloadItem,
   User,
+  toSignedContentPayloadItem,
 } from '../schemas';
 import { AdsDetail } from '../schemas/ads-detail.schema';
 import { createCastcleFilter } from '../utils/common';
-import { FilterInterval } from './../models/ads.enum';
 import { DataService } from './data.service';
 import { TAccountService } from './taccount.service';
 
@@ -93,6 +94,7 @@ export class AdsService {
     public dataService: DataService,
     @InjectModel('ContentFarming')
     public _contentFarmingModel: Model<ContentFarming>,
+    private repository: Repository,
   ) {}
 
   private logger = new CastLogger(AdsService.name);
@@ -147,13 +149,17 @@ export class AdsService {
     try {
       session.startTransaction();
       const cpm = await this.auctionAds(viewerAccountId);
+      const user = await this.repository.findUser({
+        accountId: viewerAccountId,
+        type: UserType.PEOPLE,
+      });
       const adsPlacement = new this._adsPlacementModel({
         campaign: cpm.adsCampaignId,
         contents: contentIds.map((c) => c.contentId),
         cost: {
           UST: cpm.biddingCpm,
         },
-        viewer: mongoose.Types.ObjectId(viewerAccountId),
+        viewer: user._id,
       });
       this.logger.log('##Creating ads placement');
       this.logger.log(adsPlacement);
@@ -265,6 +271,15 @@ export class AdsService {
     return true;
   };
 
+  updateAllAdsStatus = async () => {
+    const runningCampaigns = await this._adsCampaignModel.find({
+      boostStatus: AdsBoostStatus.Running,
+    });
+    //update daily Spent
+
+    runningCampaigns[0].statistics.dailySpent = 0;
+  };
+
   /**
    * Create a ads campaign
    * @param user
@@ -283,7 +298,6 @@ export class AdsService {
         };
     if (!(await this.validateAds(user, adsRequest)))
       throw CastcleException.INVALID_TRANSACTIONS_DATA;
-    //TODO !!! have to validate if account have enough balance
     const campaign = new this._adsCampaignModel({
       adsRef: adsRef,
       owner: user.id,
@@ -490,6 +504,7 @@ export class AdsService {
           await adsPlacement.save();
           adsCampaign.statistics.budgetSpent += adsPlacement.cost.UST;
           adsCampaign.statistics.dailySpent += adsPlacement.cost.UST;
+          adsCampaign.statistics.lastSeenAt = new Date();
           const adsOwnerBalance = await this.taccountService.getAccountBalance(
             String(adsCampaign.owner),
             adsCampaign.detail.paymentMethod === AdsPaymentMethod.ADS_CREDIT
@@ -561,59 +576,20 @@ export class AdsService {
 
   auctionAds = async (accountId: string) => (await this.getAds(accountId))[0];
 
-  distributeSocialRewardAdsCredit = async () => {
-    const adsIncomeToken = await this.taccountService.getBalance(
-      CACCOUNT_NO.SOCIAL_REWARD.ADS_CREDIT.NO,
+  distributeAllSocialRewardByType = async (paymentType: AdsPaymentMethod) => {
+    const castRate = await this.repository.getCastUSDDistributeRate();
+    const adsPlacements = await this.repository.getUndistributedAdsplacements(
+      paymentType,
     );
-    const adsPlacements = await this._adsPlacementModel.find({
-      'cost.CAST': { $exits: false },
-    });
-    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
-    const castActualCost = totalCost / adsIncomeToken;
     for (let i = 0; i < adsPlacements.length; i++) {
-      const adsplacement = adsPlacements[i];
-      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
-      const reward: AdsSocialReward = {
-        adsCost: adsplacement.cost.CAST,
-        castcleShare: 0,
-        creatorShare: 0.5 * adsplacement.cost.CAST,
-        farmingShare: 0.3 * adsplacement.cost.CAST,
-        viewerShare: 0.2 * adsplacement.cost.CAST,
-      };
+      const adsplacement = adsPlacements[i]; //sometimes use forEach there would be a bug in await
+      adsplacement.cost.CAST = adsplacement.cost.UST * castRate;
+      const reward = new AdsSocialReward(paymentType, adsplacement.cost);
       const session = await this._adsPlacementModel.startSession();
       session.withTransaction(async () => {
         await this.distributeAdsReward(adsplacement, reward, session);
         adsplacement.isModified('cost');
         await adsplacement.save();
-      });
-      session.endSession();
-    }
-  };
-
-  distributeSocialRewardPersonal = async () => {
-    const adsIncomeToken = await this.taccountService.getBalance(
-      CACCOUNT_NO.SOCIAL_REWARD.PERSONAL.NO,
-    );
-    const adsPlacements = await this._adsPlacementModel.find({
-      'cost.CAST': { $exits: false },
-    });
-    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
-    const castActualCost = totalCost / adsIncomeToken;
-    for (let i = 0; i < adsPlacements.length; i++) {
-      const adsplacement = adsPlacements[i];
-      adsplacement.cost.CAST = adsplacement.cost.UST / castActualCost;
-      const reward: AdsSocialReward = {
-        adsCost: adsplacement.cost.CAST,
-        castcleShare: 0.3 * adsplacement.cost.CAST,
-        creatorShare: 0.35 * adsplacement.cost.CAST,
-        farmingShare: 0.21 * adsplacement.cost.CAST,
-        viewerShare: 0.14 * adsplacement.cost.CAST,
-      };
-      const session = await this._adsPlacementModel.startSession();
-      session.withTransaction(async () => {
-        await this.distributeAdsReward(adsplacement, reward, session);
-        adsplacement.isModified('cost');
-        await adsplacement.save({ session: session });
       });
       session.endSession();
     }
@@ -629,12 +605,12 @@ export class AdsService {
     return this.taccountService.transfers(
       {
         from: {
-          type: WalletType.CASTCLE_ADS_LOCKED,
+          type: WalletType.CASTCLE_SOCIAL,
           value: reward.viewerShare,
         },
         to: [
           {
-            account: adsplacement.viewer as unknown as string,
+            user: adsplacement.user as unknown as string,
             type: WalletType.PERSONAL,
             value: reward.viewerShare,
           },
@@ -707,7 +683,7 @@ export class AdsService {
     return this.taccountService.transfers(
       {
         from: {
-          type: WalletType.CASTCLE_ADS_LOCKED,
+          type: WalletType.CASTCLE_SOCIAL,
           value: reward.creatorShare,
         },
         to: transferTo,
@@ -778,7 +754,7 @@ export class AdsService {
         await this.taccountService.transfers(
           {
             from: {
-              type: WalletType.CASTCLE_ADS_LOCKED,
+              type: WalletType.CASTCLE_SOCIAL,
               value: reward.farmingShare,
             },
             to: transferTo,
@@ -793,7 +769,7 @@ export class AdsService {
         await this.taccountService.transfers(
           {
             from: {
-              type: WalletType.CASTCLE_ADS_LOCKED,
+              type: WalletType.CASTCLE_SOCIAL,
               value: creatorRewardPerContent,
             },
             to: [

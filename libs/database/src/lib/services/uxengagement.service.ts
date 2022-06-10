@@ -27,7 +27,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
 import { UxEngagementBody, UxEngagementDto } from '../dtos/ux.engagement.dto';
-import { Account, UxEngagement, DsContentReach } from '../schemas';
+import { Account, DsContentReach, UxEngagement } from '../schemas';
 
 @Injectable()
 export class UxEngagementService {

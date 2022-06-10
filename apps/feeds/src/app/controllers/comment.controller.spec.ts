@@ -21,26 +21,30 @@
  * or have any questions.
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import {
+  AuthenticationService,
   CommentService,
+  Content,
   ContentService,
+  ContentType,
+  Credential,
   HashtagService,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
   QueueName,
   RankerService,
+  ShortPayload,
+  User,
+  UserService,
 } from '@castcle-api/database';
-import { MongooseModule } from '@nestjs/mongoose';
-import { UserService, AuthenticationService } from '@castcle-api/database';
-import { CommentController } from './comment.controller';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Content, Credential, User } from '@castcle-api/database/schemas';
-import { ContentType, ShortPayload } from '@castcle-api/database/dtos';
-import { CacheModule } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SuggestionService } from '../services/suggestion.service';
+import { CommentController } from './comment.controller';
 
 export class RankingMock {}
 

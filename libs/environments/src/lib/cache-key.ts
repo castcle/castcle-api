@@ -20,8 +20,15 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Request } from 'express';
-export const Host = {
-  getHostname: (req: Request, port?: number) =>
-    port ? `https://${req.hostname}:${port}` : `https://${req.hostname}`,
+
+export const CastcleCacheKey = {
+  ofSeen(accountId: string) {
+    return `seen-${accountId}`;
+  },
+  ofSeenAds(accountId: string) {
+    return `seen-ads-${accountId}`;
+  },
+  ofSuggestUser(token: string) {
+    return `suggest-user-${token}`;
+  },
 };

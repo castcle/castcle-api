@@ -21,10 +21,10 @@
  * or have any questions.
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Content } from './content.schema';
-import { CastcleBase } from './base.schema';
-import { User } from './user.schema';
 import { SchemaTypes, Types } from 'mongoose';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
 
 export enum GuestFeedItemType {
   Content = 'content',

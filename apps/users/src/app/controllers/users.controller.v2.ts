@@ -22,18 +22,12 @@
  */
 import {
   AuthenticationService,
+  Comment,
+  CommentParam,
   CommentServiceV2,
+  CommentType,
   ContentService,
   ContentServiceV2,
-  NotificationServiceV2,
-  RankerService,
-  SocialSyncServiceV2,
-  UserService,
-  UserServiceV2,
-  UserType,
-} from '@castcle-api/database';
-import {
-  CommentParam,
   CreateCommentDto,
   ExpansionQuery,
   GetContentDto,
@@ -41,23 +35,30 @@ import {
   GetFollowQuery,
   GetKeywordQuery,
   GetSourceContentParam,
+  GetSyncSocialParam,
   GetUserParam,
   LikeCommentDto,
+  NotificationServiceV2,
   NotificationSource,
   NotificationType,
   PageResponseDto,
   PaginationQuery,
   QuoteCastDto,
+  RankerService,
   ReplyCommentParam,
   ResponseDto,
+  SocialSyncServiceV2,
+  SuggestionServiceV2,
   SyncSocialDtoV2,
   TargetIdParam,
   UnlikeCommentCastParam,
   UpdateCommentDto,
   UpdateMobileDto,
   UpdateUserDtoV2,
-} from '@castcle-api/database/dtos';
-import { Comment, CommentType } from '@castcle-api/database/schemas';
+  UserService,
+  UserServiceV2,
+  UserType,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -84,9 +85,10 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
+  DeleteUserDto,
+  ReportingContentDto,
   ReportingUserDto,
   TargetCastcleDto,
-  ReportingContentDto,
 } from '../dtos';
 import { SuggestionService } from '../services/suggestion.service';
 
@@ -104,12 +106,23 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
+    private suggestionServiceV2: SuggestionServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
     this.logger.log(`Validate is object id: ${id}`);
     const ObjectId = Types.ObjectId;
     if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.Users)
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMyData(
+    @Auth() { account }: Authorizer,
+    @Body() { password }: DeleteUserDto,
+  ) {
+    return this.userServiceV2.deleteCastcleAccount(account, password);
   }
 
   @CastcleBasicAuth()
@@ -757,6 +770,19 @@ export class UsersControllerV2 {
     return this.userServiceV2.unfollowUser(user, targetCastcleId);
   }
 
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery,
+  ) {
+    return this.suggestionServiceV2.suggest(
+      authorizer.user,
+      authorizer.credential.accessToken,
+      query,
+    );
+  }
+
   @CastcleBasicAuth()
   @Get(':userId/contents')
   async getContents(
@@ -769,7 +795,8 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getContents(query, user);
+
+    return this.contentServiceV2.getContents(query, user);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -840,5 +867,45 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     await this.userServiceV2.reportContent(user, targetContentId, message);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Post(':userId/sync-social/:syncSocialId/auto-post')
+  async activeAutoPost(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.socialSyncService.setAutoPost(syncSocialId, user._id, true);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete(':userId/sync-social/:syncSocialId/auto-post')
+  async inactiveAutoPost(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.socialSyncService.setAutoPost(syncSocialId, user._id, false);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete(':userId/sync-social/:syncSocialId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async disconnectSocialSync(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.socialSyncService.disconnectSocialSync(syncSocialId, user._id);
   }
 }

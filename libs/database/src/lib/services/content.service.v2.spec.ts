@@ -20,7 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { NotificationServiceV2 } from './notification.service.v2';
+import { Mailer } from '@castcle-api/utils/clients';
+import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -37,29 +38,27 @@ import {
 } from '../database.module';
 import { ContentType, NotificationType, ShortPayload } from '../dtos';
 import {
-  generateMockUsers,
   MockUserDetail,
+  generateMockUsers,
   mockContents,
   mockDeposit,
 } from '../mocks';
 import {
   ContentFarmingStatus,
+  EngagementType,
   KeywordType,
   QueueName,
-  SearchType,
   WalletType,
 } from '../models';
+import { Repository } from '../repositories';
 import { Content, ContentFarming } from '../schemas';
 import { AuthenticationService } from './authentication.service';
+import { CampaignService } from './campaign.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
-import { UserService } from './user.service';
+import { NotificationServiceV2 } from './notification.service.v2';
 import { TAccountService } from './taccount.service';
-import { Repository } from '../repositories';
-import { HttpModule } from '@nestjs/axios';
-import { EngagementType } from './../schemas/engagement.schema';
-import { Mailer } from '@castcle-api/utils/clients';
-import { CampaignService } from './campaign.service';
+import { UserService } from './user.service';
 
 describe('ContentServiceV2', () => {
   let mongod: MongoMemoryServer;
@@ -582,7 +581,7 @@ describe('ContentServiceV2', () => {
         { hasRelationshipExpansion: false },
         mocksUsers[1].user,
       );
-      expect(contentResp.payload).toHaveLength(25);
+      expect(contentResp.payload).toHaveLength(2);
     });
   });
 
@@ -696,7 +695,7 @@ describe('ContentServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'Hello',
+            input: 'H',
           },
           hasRelationshipExpansion: true,
           maxResults: 25,
@@ -712,9 +711,8 @@ describe('ContentServiceV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'Hello',
+            input: 'H',
           },
-          contentType: SearchType.PHOTO,
           hasRelationshipExpansion: true,
           maxResults: 25,
         },
@@ -770,6 +768,10 @@ describe('ContentServiceV2', () => {
   });
 
   afterAll(async () => {
+    await (service as any).repository.contentModel.deleteMany({});
+    await (service as any).repository.userModel.deleteMany({});
+    await (service as any).repository.notificationModel.deleteMany({});
+    await (service as any).repository.engagementModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

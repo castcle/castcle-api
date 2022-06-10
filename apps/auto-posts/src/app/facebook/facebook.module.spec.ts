@@ -21,12 +21,17 @@
  * or have any questions.
  */
 
-import { QueueName, SocialProvider, UserType } from '@castcle-api/database';
-import { SocialSync, User } from '@castcle-api/database/schemas';
+import {
+  QueueName,
+  SocialProvider,
+  SocialSync,
+  User,
+  UserType,
+} from '@castcle-api/database';
 import { Image } from '@castcle-api/utils/aws';
 import { getQueueToken } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { getModelToken, MongooseModule } from '@nestjs/mongoose';
+import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getLinkPreview } from 'link-preview-js';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';

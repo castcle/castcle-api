@@ -21,27 +21,25 @@
  * or have any questions.
  */
 
-import { Injectable } from '@nestjs/common';
-import TwitterApi, {
-  Tweetv2TimelineResult as TweetTimelineResult,
-} from 'twitter-api-v2';
-import { Environment } from '@castcle-api/environments';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import {
-  ContentService,
-  SocialProvider,
-  SocialSyncService,
-} from '@castcle-api/database';
-import { CastLogger } from '@castcle-api/logger';
 import {
   Author,
+  ContentService,
   ContentType,
   Link,
   LinkType,
   SaveContentDto,
-} from '@castcle-api/database/dtos';
+  SocialProvider,
+  SocialSync,
+  SocialSyncService,
+} from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
+import { CastLogger } from '@castcle-api/logger';
 import { COMMON_SIZE_CONFIGS, Downloader, Image } from '@castcle-api/utils/aws';
-import { SocialSync } from '@castcle-api/database/schemas';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import TwitterApi, {
+  Tweetv2TimelineResult as TweetTimelineResult,
+} from 'twitter-api-v2';
 
 @Injectable()
 export class TwitterService {

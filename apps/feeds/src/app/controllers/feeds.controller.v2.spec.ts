@@ -21,24 +21,31 @@
  * or have any questions.
  */
 import {
+  AdsService,
   AnalyticService,
   AuthenticationService,
   CampaignService,
   ContentService,
   ContentServiceV2,
+  ContentType,
   DataService,
   HashtagService,
   KeywordType,
+  MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
   NotificationServiceV2,
   QueueName,
+  RankerService,
+  SuggestionServiceV2,
   TAccountService,
   UserService,
   UserServiceV2,
+  generateMockUsers,
 } from '@castcle-api/database';
-import { MockUserDetail, generateMockUsers } from '@castcle-api/database/mocks';
+import { Mailer } from '@castcle-api/utils/clients';
+import { Authorizer } from '@castcle-api/utils/decorators';
 import { HttpModule } from '@nestjs/axios';
 import { getQueueToken } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/common';
@@ -46,10 +53,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'libs/database/src/lib/repositories';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Authorizer } from '@castcle-api/utils/decorators';
-import { Mailer } from '@castcle-api/utils/clients';
 import { FeedsControllerV2 } from './feeds.controller.v2';
-import { ContentType } from '@castcle-api/database/dtos';
 
 describe('FeedsControllerV2', () => {
   let mongod: MongoMemoryServer;
@@ -72,20 +76,23 @@ describe('FeedsControllerV2', () => {
       ],
       controllers: [FeedsControllerV2],
       providers: [
+        AdsService,
         AuthenticationService,
         ContentService,
         ContentServiceV2,
         DataService,
+        HashtagService,
+        RankerService,
         Repository,
+        SuggestionServiceV2,
         UserService,
         UserServiceV2,
-        HashtagService,
+        { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
-        { provide: TAccountService, useValue: {} },
+        { provide: Mailer, useValue: {} },
         { provide: NotificationService, useValue: {} },
         { provide: NotificationServiceV2, useValue: {} },
-        { provide: AnalyticService, useValue: {} },
-        { provide: Mailer, useValue: {} },
+        { provide: TAccountService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -126,11 +133,6 @@ describe('FeedsControllerV2', () => {
     }
   });
 
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
-  });
-
   describe('#getSearchRecent', () => {
     it('should get all recent search', async () => {
       const authorizer = new Authorizer(
@@ -140,9 +142,10 @@ describe('FeedsControllerV2', () => {
       );
       const getSearchRecent = await controller.getSearchRecent(authorizer, {
         keyword: {
-          type: KeywordType.Mention,
+          type: KeywordType.Word,
           input: 'h',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -160,6 +163,7 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Mention,
           input: 'test',
         },
+        maxResults: 20,
         hasRelationshipExpansion: true,
       });
 
@@ -173,11 +177,11 @@ describe('FeedsControllerV2', () => {
         {
           keyword: {
             type: KeywordType.Word,
-            input: 'hello',
+            input: 'h',
           },
           maxResults: 20,
           decayDays: 7,
-          executeAuthor: [],
+          excludeAuthor: [],
         },
         { projection: { _id: 1 } },
       );
@@ -201,11 +205,17 @@ describe('FeedsControllerV2', () => {
       const getSearchTrends = await controller.getSearchTrends(authorizer, {
         keyword: {
           type: KeywordType.Mention,
-          input: 'hello',
+          input: 'h',
         },
         hasRelationshipExpansion: true,
       });
-      expect(getSearchTrends.payload).toHaveLength(20);
+      expect(getSearchTrends.payload).toHaveLength(0);
     });
+  });
+  afterAll(async () => {
+    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
+    await (contentServiceV2 as any).repository.userModel.deleteMany({});
+    await app.close();
+    await mongod.stop();
   });
 });

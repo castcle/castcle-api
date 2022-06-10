@@ -4,7 +4,7 @@ import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../../../apps/users/src/app/app.module';
-import { usersApp } from '../variables';
+import { apps } from '../variables';
 
 export const setupUsersModule = async () => {
   const facebookClient = {
@@ -28,18 +28,17 @@ export const setupUsersModule = async () => {
     .useValue(facebookClient)
     .compile();
 
-  (usersApp as any) = moduleFixture.createNestApplication();
-
-  usersApp.useGlobalPipes(new ValidationPipe());
-  usersApp.useGlobalFilters(new CastcleExceptionFilter());
-  usersApp.enableVersioning({
+  apps.users = moduleFixture.createNestApplication();
+  apps.users.useGlobalPipes(new ValidationPipe());
+  apps.users.useGlobalFilters(new CastcleExceptionFilter());
+  apps.users.enableVersioning({
     type: VersioningType.HEADER,
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  await usersApp.init();
+  await apps.users.init();
 };
 
 export const closeUsersModule = () => {
-  return usersApp.close();
+  return apps.users.close();
 };

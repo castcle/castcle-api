@@ -29,11 +29,11 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ContentPayloadItem } from './content.dto';
-import { PageResponseDto } from './user.dto';
-import { FilterInterval, AdsObjective } from '../models';
+import { AdsObjective, FilterInterval } from '../models';
 import { AdsCampaign } from '../schemas';
+import { ContentPayloadItem } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
+import { PageResponseDto } from './user.dto';
 
 export class AdsAuctionAggregateDto {
   campaign: AdsCampaign;

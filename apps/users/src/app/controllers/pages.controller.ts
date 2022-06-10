@@ -22,16 +22,11 @@
  */
 import {
   AuthenticationService,
-  ContentService,
-  getSocialPrefix,
-  SocialSyncService,
-  UserService,
-  UserType,
-} from '@castcle-api/database';
-import {
   ContentResponse,
+  ContentService,
   ContentsResponse,
   CreatePageSocialDto,
+  Credential,
   DEFAULT_CONTENT_QUERY_OPTIONS,
   DEFAULT_QUERY_OPTIONS,
   GetContentsDto,
@@ -40,10 +35,13 @@ import {
   PagesResponse,
   SocialPageDto,
   SocialSyncDto,
+  SocialSyncService,
   SortDirection,
   UpdatePageDto,
-} from '@castcle-api/database/dtos';
-import { Credential } from '@castcle-api/database/schemas';
+  UserService,
+  UserType,
+  getSocialPrefix,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
@@ -81,7 +79,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { DeletePageDto } from '../dtos';
+import { DeleteUserDto } from '../dtos';
 
 @CastcleController({ path: 'pages', version: '1.0' })
 export class PagesController {
@@ -275,7 +273,7 @@ export class PagesController {
   async deletePage(
     @Req() req: CredentialRequest,
     @Param('id') id: string,
-    @Body() deletePageDto: DeletePageDto,
+    @Body() deletePageDto: DeleteUserDto,
   ) {
     try {
       const page = await this._getOwnPageByIdOrCastcleId(id, req);
