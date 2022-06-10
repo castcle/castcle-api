@@ -28,7 +28,6 @@ import {
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
   CastcleController,
@@ -273,7 +272,7 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RequestMeta() { ip }: RequestMetadata,
+    @RequestMeta() { hostUrl, ip }: RequestMetadata,
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -314,7 +313,7 @@ export class AuthenticationController {
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
       await this.appService.sendRegistrationEmail(
-        Host.getHostname(req),
+        hostUrl,
         body.payload.email,
         accountActivation.verifyToken,
       );
@@ -436,6 +435,7 @@ export class AuthenticationController {
   async requestLinkVerify(
     @Req() req: CredentialRequest,
     @Res() response: Response,
+    @RequestMeta() { hostUrl }: RequestMetadata,
   ) {
     const accountActivation =
       await this.authService.getAccountActivationFromCredential(
@@ -458,7 +458,7 @@ export class AuthenticationController {
     );
     if (!(account && account.email)) throw CastcleException.INVALID_EMAIL;
     this.appService.sendRegistrationEmail(
-      Host.getHostname(req),
+      hostUrl,
       account.email,
       newAccountActivation.verifyToken,
     );
@@ -565,13 +565,7 @@ export class AuthenticationController {
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken(token);
 
-    return getEmailVerificationHtml(
-      email,
-      this.appService.getCastcleMobileLink(),
-      Environment && Environment.SMTP_ADMIN_EMAIL
-        ? Environment.SMTP_ADMIN_EMAIL
-        : 'admin@castcle.com',
-    );
+    return getEmailVerificationHtml(email);
   }
 
   @ApiOkResponse({ type: SuggestCastcleIdResponse })
@@ -662,7 +656,7 @@ export class AuthenticationController {
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
     const { token, users, account, isNewUser } =
-      await this.appService.socialLogin(body, req, { ip, userAgent });
+      await this.appService.socialLogin(body, req, { ip });
 
     if (isNewUser) {
       await this.analyticService.trackRegistration(ip, userAgent);

@@ -285,7 +285,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithEmail(
     credential: Credential,
-    dto: RegisterWithEmailDto & { hostname: string; ip: string },
+    dto: RegisterWithEmailDto & { hostUrl: string; ip: string },
   ) {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
@@ -317,7 +317,7 @@ export class AuthenticationServiceV2 {
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
     await this.mailer.sendRegistrationEmail(
-      dto.hostname,
+      dto.hostUrl,
       account.email,
       activation.verifyToken,
     );
@@ -870,13 +870,15 @@ export class AuthenticationServiceV2 {
     await otp.markCompleted().save();
   }
 
-  async requestVerificationLink(account: Account, hostname: string) {
+  async requestVerificationLink(account: Account, hostUrl: string) {
     const activation = account.activations?.find(
       ({ type }) => type === AccountActivationType.EMAIL,
     );
 
     if (!activation) throw CastcleException.INVALID_ACCESS_TOKEN;
-    if (activation.activationDate) CastcleException.EMAIL_ALREADY_VERIFIED;
+    if (activation.activationDate) {
+      throw CastcleException.EMAIL_ALREADY_VERIFIED;
+    }
 
     const tokenExpiryDate = DateTime.local().plus({
       seconds: Environment.JWT_VERIFY_EXPIRES_IN,
@@ -897,10 +899,37 @@ export class AuthenticationServiceV2 {
     account.markModified('activations');
     await account.save();
     await this.mailer.sendRegistrationEmail(
-      hostname,
+      hostUrl,
       account.email,
       activation.verifyToken,
     );
+  }
+
+  async verifyEmail(activationToken: string) {
+    const account = await this.repository.findAccount({ activationToken });
+    const now = new Date();
+    const activation = account?.activations?.find(
+      (activation) =>
+        activation.type === AccountActivationType.EMAIL &&
+        activation.verifyToken === activationToken &&
+        activation.verifyTokenExpireDate > now &&
+        !activation.activationDate,
+    );
+
+    if (!activation) throw CastcleException.INVALID_REFRESH_TOKEN;
+
+    activation.activationDate = now;
+    account.activateDate = now;
+    account.isGuest = false;
+    account.markModified('activations');
+
+    return Promise.all([
+      account.save(),
+      this.repository.updateUser(
+        { accountId: account._id },
+        { 'verified.email': true },
+      ),
+    ]);
   }
 
   async createAccountDevice(body: RegisterFirebaseDto, account: Account) {

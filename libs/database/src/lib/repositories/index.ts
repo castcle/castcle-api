@@ -114,6 +114,7 @@ type AccountQuery = {
   referredBy?: string;
   uuid?: string;
   platform?: string;
+  activationToken?: string;
 };
 
 type UserQuery = {
@@ -263,14 +264,16 @@ export class Repository {
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
     if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
     if (filter.referredBy) query.referralBy = filter.referredBy;
+    if (filter.uuid) query['devices.uuid'] = filter.uuid;
+    if (filter.platform) query['devices.platform'] = filter.platform;
     if (filter.mobileCountryCode)
       query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
+    if (filter.activationToken)
+      query['activations.verifyToken'] = filter.activationToken;
 
-    if (filter.uuid) query['devices.uuid'] = filter.uuid;
-    if (filter.platform) query['devices.platform'] = filter.platform;
     return query;
   }
 
