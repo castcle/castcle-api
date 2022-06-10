@@ -21,7 +21,13 @@
  * or have any questions.
  */
 import { TransformStringToKeyword } from '@castcle-api/utils/commons';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { KeywordType } from '../models';
 import { PaginationQuery } from './pagination.dto';
 import { GetUserParam } from './user.dto';
@@ -50,4 +56,11 @@ export class GetSizeDto {
   @IsString()
   @IsEnum(QRCodeImageSize)
   size: string;
+}
+
+export class GetSyncSocialParam extends GetUserParam {
+  @IsString()
+  @IsNotEmpty()
+  @IsMongoId()
+  syncSocialId: string;
 }
