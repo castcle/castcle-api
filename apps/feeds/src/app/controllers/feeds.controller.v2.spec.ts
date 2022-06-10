@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import {
+  AdsService,
   AnalyticService,
   AuthenticationService,
   CampaignService,
@@ -36,6 +37,8 @@ import {
   NotificationService,
   NotificationServiceV2,
   QueueName,
+  RankerService,
+  SuggestionServiceV2,
   TAccountService,
   UserService,
   UserServiceV2,
@@ -73,20 +76,23 @@ describe('FeedsControllerV2', () => {
       ],
       controllers: [FeedsControllerV2],
       providers: [
+        AdsService,
         AuthenticationService,
         ContentService,
         ContentServiceV2,
         DataService,
         HashtagService,
+        RankerService,
         Repository,
+        SuggestionServiceV2,
         UserService,
         UserServiceV2,
+        { provide: AnalyticService, useValue: {} },
         { provide: CampaignService, useValue: {} },
-        { provide: TAccountService, useValue: {} },
+        { provide: Mailer, useValue: {} },
         { provide: NotificationService, useValue: {} },
         { provide: NotificationServiceV2, useValue: {} },
-        { provide: AnalyticService, useValue: {} },
-        { provide: Mailer, useValue: {} },
+        { provide: TAccountService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -125,11 +131,6 @@ describe('FeedsControllerV2', () => {
         mocksUsers[0].user,
       );
     }
-  });
-
-  afterAll(async () => {
-    await app.close();
-    await mongod.stop();
   });
 
   describe('#getSearchRecent', () => {
@@ -210,5 +211,11 @@ describe('FeedsControllerV2', () => {
       });
       expect(getSearchTrends.payload).toHaveLength(0);
     });
+  });
+  afterAll(async () => {
+    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
+    await (contentServiceV2 as any).repository.userModel.deleteMany({});
+    await app.close();
+    await mongod.stop();
   });
 });

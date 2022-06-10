@@ -28,7 +28,6 @@ import {
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { TwilioChannel } from '@castcle-api/utils/clients';
-import { Host } from '@castcle-api/utils/commons';
 import {
   CastcleBasicAuth,
   CastcleController,
@@ -75,6 +74,7 @@ import {
   GuestLoginDto,
   LoginDto,
   LoginResponse,
+  OtpResponse,
   RefreshTokenResponse,
   RegisterByEmailDto,
   RequestOtpDto,
@@ -84,7 +84,6 @@ import {
   TokenResponse,
   VerificationOtpDto,
   VerificationPasswordBody,
-  otpResponse,
 } from '../dtos';
 import {
   GuestInterceptor,
@@ -273,7 +272,7 @@ export class AuthenticationController {
   async register(
     @Req() req: CredentialRequest,
     @Body() body: RegisterByEmailDto,
-    @RequestMeta() { ip }: RequestMetadata,
+    @RequestMeta() { hostUrl, ip }: RequestMetadata,
   ) {
     if (body.channel === 'email') {
       //check if this account already sign up
@@ -314,7 +313,7 @@ export class AuthenticationController {
       //send an email
       console.log('send email with token => ', accountActivation.verifyToken);
       await this.appService.sendRegistrationEmail(
-        Host.getHostname(req),
+        hostUrl,
         body.payload.email,
         accountActivation.verifyToken,
       );
@@ -436,6 +435,7 @@ export class AuthenticationController {
   async requestLinkVerify(
     @Req() req: CredentialRequest,
     @Res() response: Response,
+    @RequestMeta() { hostUrl }: RequestMetadata,
   ) {
     const accountActivation =
       await this.authService.getAccountActivationFromCredential(
@@ -458,7 +458,7 @@ export class AuthenticationController {
     );
     if (!(account && account.email)) throw CastcleException.INVALID_EMAIL;
     this.appService.sendRegistrationEmail(
-      Host.getHostname(req),
+      hostUrl,
       account.email,
       newAccountActivation.verifyToken,
     );
@@ -486,7 +486,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @CastcleBasicAuth()
   @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 secs
@@ -501,7 +501,7 @@ export class AuthenticationController {
     );
     const { otp, token } = await this.appService.verificationOTP(body, req);
     if (otp && otp.isValid()) {
-      const response: otpResponse = {
+      const response: OtpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
@@ -516,7 +516,7 @@ export class AuthenticationController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @CastcleBasicAuth()
   @Throttle(Environment.RATE_LIMIT_OTP_LIMIT, Environment.RATE_LIMIT_OTP_TTL) //limit 1 ttl 60 se
@@ -538,7 +538,7 @@ export class AuthenticationController {
       source,
     );
     if (otp && otp.isValid()) {
-      const response: otpResponse = {
+      const response: OtpResponse = {
         objective: body.objective,
         refCode: otp.refCode,
         expiresTime: otp.expireDate.toISOString(),
@@ -565,13 +565,7 @@ export class AuthenticationController {
     } as TokenRequest);
     const email = await this.authService.getEmailFromVerifyToken(token);
 
-    return getEmailVerificationHtml(
-      email,
-      this.appService.getCastcleMobileLink(),
-      Environment && Environment.SMTP_ADMIN_EMAIL
-        ? Environment.SMTP_ADMIN_EMAIL
-        : 'admin@castcle.com',
-    );
+    return getEmailVerificationHtml(email);
   }
 
   @ApiOkResponse({ type: SuggestCastcleIdResponse })
@@ -593,14 +587,14 @@ export class AuthenticationController {
   })
   @ApiResponse({
     status: 201,
-    type: otpResponse,
+    type: OtpResponse,
   })
   @UseInterceptors(CredentialInterceptor)
   @Post('verificationPassword')
   async verificationPassword(
     @Body() payload: VerificationPasswordBody,
     @Req() req: CredentialRequest,
-  ): Promise<otpResponse> {
+  ): Promise<OtpResponse> {
     const account = await this.authService.getAccountFromCredential(
       req.$credential,
     );
@@ -662,7 +656,7 @@ export class AuthenticationController {
     this.logger.log(`payload: ${JSON.stringify(body)}`);
 
     const { token, users, account, isNewUser } =
-      await this.appService.socialLogin(body, req, { ip, userAgent });
+      await this.appService.socialLogin(body, req, { ip });
 
     if (isNewUser) {
       await this.analyticService.trackRegistration(ip, userAgent);

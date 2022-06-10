@@ -40,3 +40,9 @@ export const COMMON_SIZE_CONFIGS: Size[] = [
   { name: 'large', width: 1280, height: 720 },
   { name: 'fullHd', width: 1920, height: 1080 },
 ];
+
+export const QRCODE_STANDARD_SIZE_CONFIGS: Size[] = [
+  { name: 'thumbnail', width: 250, height: 250 },
+  { name: 'medium', width: 690, height: 690 },
+  { name: 'large', width: 1024, height: 1024 },
+];

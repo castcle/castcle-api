@@ -22,11 +22,13 @@
  */
 
 import { FacebookClient } from '@castcle-api/utils/clients';
+import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EntityVisibility, SyncSocialDtoV2 } from '../dtos';
 import { SocialProvider } from '../models';
+import { Repository } from '../repositories';
 import { SocialSync, User } from '../schemas';
 
 @Injectable()
@@ -34,6 +36,7 @@ export class SocialSyncServiceV2 {
   constructor(
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     private facebookClient: FacebookClient,
+    private repository: Repository,
   ) {}
 
   async sync(user: User, socialSyncDto: SyncSocialDtoV2) {
@@ -78,5 +81,38 @@ export class SocialSyncServiceV2 {
     }
 
     await socialSync.delete();
+  }
+  async setAutoPost(syncSocialId: string, userId: string, isAutoPost: boolean) {
+    const socialSync = await this.repository.findSocialSync({
+      _id: syncSocialId,
+      authorId: userId,
+    });
+
+    if (!socialSync) throw CastcleException.FORBIDDEN;
+
+    socialSync.autoPost = isAutoPost;
+    await socialSync.save();
+
+    return {
+      id: socialSync._id,
+      provider: socialSync.provider,
+      socialId: socialSync.socialId,
+      userName: socialSync.userName,
+      displayName: socialSync.displayName,
+      avatar: socialSync.avatar,
+      active: socialSync.active,
+      autoPost: socialSync.autoPost,
+    };
+  }
+
+  async disconnectSocialSync(syncSocialId: string, userId: string) {
+    const socialSync = await this.repository.findSocialSync({
+      _id: syncSocialId,
+      authorId: userId,
+    });
+
+    if (!socialSync) throw CastcleException.FORBIDDEN;
+
+    await this.unsync(socialSync);
   }
 }

@@ -43,6 +43,7 @@ import {
   ChangePasswordDto,
   CreateCredentialDto,
   EntityVisibility,
+  RegisterFirebaseDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
@@ -241,6 +242,37 @@ export class AuthenticationServiceV2 {
     return { registered: false, ...registration };
   }
 
+  async connectWithSocial(
+    credential: Credential,
+    account: Account,
+    { avatar, provider, socialId, authToken }: SocialConnectDto,
+  ) {
+    if (account.isGuest) throw CastcleException.INVALID_ACCESS_TOKEN;
+
+    const socialConnected = await this.repository.findAccount({
+      provider,
+      socialId,
+    });
+
+    if (socialConnected) throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
+    if (provider === AccountAuthenIdType.Facebook) {
+      const profile = await this.facebookClient.getFacebookProfile(authToken);
+      if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
+    } else if (provider === AccountAuthenIdType.Twitter) {
+      const [token, secret] = authToken.split('|');
+      const profile = await this.twitterClient.verifyCredentials(token, secret);
+      if (socialId !== profile.id_str) {
+        throw CastcleException.INVALID_AUTH_TOKEN;
+      }
+    }
+
+    await account
+      .set({ [`authentications.${provider}`]: { socialId, avatar } })
+      .save();
+
+    return this.login(credential, account);
+  }
+
   async getRefreshToken(refreshToken: string) {
     const credential = await this.repository.findCredential({ refreshToken });
     if (!credential?.isRefreshTokenValid())
@@ -253,7 +285,7 @@ export class AuthenticationServiceV2 {
 
   async registerWithEmail(
     credential: Credential,
-    dto: RegisterWithEmailDto & { hostname: string; ip: string },
+    dto: RegisterWithEmailDto & { hostUrl: string; ip: string },
   ) {
     const [account, emailAlreadyExists, castcleIdAlreadyExists] =
       await Promise.all([
@@ -285,7 +317,7 @@ export class AuthenticationServiceV2 {
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
     await this.mailer.sendRegistrationEmail(
-      dto.hostname,
+      dto.hostUrl,
       account.email,
       activation.verifyToken,
     );
@@ -838,13 +870,15 @@ export class AuthenticationServiceV2 {
     await otp.markCompleted().save();
   }
 
-  async requestVerificationLink(account: Account, hostname: string) {
+  async requestVerificationLink(account: Account, hostUrl: string) {
     const activation = account.activations?.find(
       ({ type }) => type === AccountActivationType.EMAIL,
     );
 
     if (!activation) throw CastcleException.INVALID_ACCESS_TOKEN;
-    if (activation.activationDate) CastcleException.EMAIL_ALREADY_VERIFIED;
+    if (activation.activationDate) {
+      throw CastcleException.EMAIL_ALREADY_VERIFIED;
+    }
 
     const tokenExpiryDate = DateTime.local().plus({
       seconds: Environment.JWT_VERIFY_EXPIRES_IN,
@@ -865,9 +899,73 @@ export class AuthenticationServiceV2 {
     account.markModified('activations');
     await account.save();
     await this.mailer.sendRegistrationEmail(
-      hostname,
+      hostUrl,
       account.email,
       activation.verifyToken,
+    );
+  }
+
+  async verifyEmail(activationToken: string) {
+    const account = await this.repository.findAccount({ activationToken });
+    const now = new Date();
+    const activation = account?.activations?.find(
+      (activation) =>
+        activation.type === AccountActivationType.EMAIL &&
+        activation.verifyToken === activationToken &&
+        activation.verifyTokenExpireDate > now &&
+        !activation.activationDate,
+    );
+
+    if (!activation) throw CastcleException.INVALID_REFRESH_TOKEN;
+
+    activation.activationDate = now;
+    account.activateDate = now;
+    account.isGuest = false;
+    account.markModified('activations');
+
+    return Promise.all([
+      account.save(),
+      this.repository.updateUser(
+        { accountId: account._id },
+        { 'verified.email': true },
+      ),
+    ]);
+  }
+
+  async createAccountDevice(body: RegisterFirebaseDto, account: Account) {
+    const device = account.devices?.find(
+      (device) =>
+        body.uuid === device.uuid && body.platform === device.platform,
+    );
+
+    if (device) device.firebaseToken = body.firebaseToken;
+    else
+      (account.devices ||= []).push({
+        uuid: body.uuid,
+        platform: body.platform,
+        firebaseToken: body.firebaseToken,
+      });
+
+    account.markModified('devices');
+    await account.save();
+  }
+
+  async deleteAccountDevice(body: RegisterFirebaseDto, account: Account) {
+    await this.repository.updateAccount(
+      {
+        _id: account._id,
+        uuid: body.uuid,
+        platform: body.platform,
+      },
+      {
+        $pull: {
+          devices: {
+            uuid: body.uuid,
+            platform: body.platform,
+            firebaseToken: body.firebaseToken,
+          },
+        },
+      },
     );
   }
 }

@@ -581,7 +581,7 @@ describe('ContentServiceV2', () => {
         { hasRelationshipExpansion: false },
         mocksUsers[1].user,
       );
-      expect(contentResp.payload).toHaveLength(25);
+      expect(contentResp.payload).toHaveLength(2);
     });
   });
 
@@ -768,6 +768,10 @@ describe('ContentServiceV2', () => {
   });
 
   afterAll(async () => {
+    await (service as any).repository.contentModel.deleteMany({});
+    await (service as any).repository.userModel.deleteMany({});
+    await (service as any).repository.notificationModel.deleteMany({});
+    await (service as any).repository.engagementModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

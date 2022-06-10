@@ -86,6 +86,7 @@ import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
 import { SocialSyncServiceV2 } from './services/social-sync.service.v2';
+import { SuggestionServiceV2 } from './services/suggestion.service.v2';
 import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
@@ -202,6 +203,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SearchServiceV2,
     SocialSyncService,
     SocialSyncServiceV2,
+    SuggestionServiceV2,
     TAccountService,
     UserService,
     UserServiceV2,
@@ -228,6 +230,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     SearchServiceV2,
     SocialSyncService,
     SocialSyncServiceV2,
+    SuggestionServiceV2,
     TAccountService,
     UserService,
     UserServiceV2,
@@ -260,6 +263,7 @@ export {
   SearchServiceV2,
   SocialSyncService,
   SocialSyncServiceV2,
+  SuggestionServiceV2,
   TAccountService,
   UserService,
   UserServiceV2,

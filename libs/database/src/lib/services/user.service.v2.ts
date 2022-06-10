@@ -20,9 +20,10 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import { LocalizationLang } from '@castcle-api/utils/commons';
+import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -47,6 +48,7 @@ import {
   PageDto,
   PageResponseDto,
   PaginationQuery,
+  QRCodeImageSize,
   ResponseDto,
   SortDirection,
   UpdateMobileDto,
@@ -183,24 +185,16 @@ export class UserServiceV2 {
                 balance,
               });
 
-        const targetRelationship = hasRelationshipExpansion
-          ? relationships.find(
-              ({ followedUser, user }) =>
-                String(user) === String(user.id) &&
-                String(followedUser) === String(viewer?.id),
-            )
-          : undefined;
-
         const getterRelationship = hasRelationshipExpansion
           ? relationships.find(
-              ({ followedUser, user }) =>
+              ({ followedUser, user: userRelation }) =>
                 String(followedUser) === String(user.id) &&
-                String(user) === String(viewer?.id),
+                String(userRelation) === String(viewer?.id),
             )
           : undefined;
 
-        userResponse.blocked = Boolean(getterRelationship?.blocking);
-        userResponse.blocking = Boolean(targetRelationship?.blocking);
+        userResponse.blocked = Boolean(getterRelationship?.blocked);
+        userResponse.blocking = Boolean(getterRelationship?.blocking);
         userResponse.followed = Boolean(getterRelationship?.following);
 
         return userResponse;
@@ -746,5 +740,22 @@ export class UserServiceV2 {
     );
 
     return convertPage[0];
+  }
+
+  async createQRCode(chainId: string, size: string, userId: string) {
+    const user = await this.repository.findUser({ _id: userId });
+
+    const qrcodeParams = CastcleQRCode.generateQRCodeText([
+      chainId,
+      user._id,
+      user.displayId,
+    ]);
+
+    return ResponseDto.ok({
+      payload: await CastcleQRCode.generateQRCode(
+        `${Environment.QR_CODE_REDIRECT_URL}${qrcodeParams}`,
+        size ?? QRCodeImageSize.Thumbnail,
+      ),
+    });
   }
 }

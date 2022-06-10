@@ -31,7 +31,7 @@ import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isArray, isBoolean, isMongoId } from 'class-validator';
+import { isArray, isBoolean, isMongoId, isString } from 'class-validator';
 import {
   AnyKeys,
   ClientSession,
@@ -65,6 +65,8 @@ import {
 } from '../dtos';
 import {
   AdsBoostStatus,
+  AdsPaymentMethod,
+  CACCOUNT_NO,
   CastcleNumber,
   KeywordType,
   OtpObjective,
@@ -77,7 +79,10 @@ import {
   AccountDeviceV1,
   AccountActivationModel as ActivationModel,
   AdsCampaign,
+  AdsPlacement,
   AccountAuthenId as AuthenId,
+  CAccount,
+  CAccountNature,
   Comment,
   Content,
   Credential,
@@ -107,12 +112,16 @@ type AccountQuery = {
   mobileCountryCode?: string;
   mobileNumber?: string;
   referredBy?: string;
+  uuid?: string;
+  platform?: string;
+  activationToken?: string;
 };
 
 type UserQuery = {
   /** Mongo ID or castcle ID */
-  _id?: string | Types.ObjectId[];
+  _id?: string | Types.ObjectId[] | string[];
   accountId?: string;
+  castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
     input: string;
@@ -200,6 +209,11 @@ type HashtagQuery = {
   };
 };
 
+type SocialSyncQuery = {
+  _id?: string;
+  authorId?: string;
+};
+
 @Injectable()
 export class Repository {
   constructor(
@@ -228,6 +242,8 @@ export class Repository {
     @InjectModel('SocialSync') private socialSyncModel: Model<SocialSync>,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('CAccount') private caccountModel: Model<CAccount>,
+    @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     private httpService: HttpService,
   ) {}
@@ -253,11 +269,16 @@ export class Repository {
     if (filter.email) query.email = CastcleRegExp.fromString(filter.email);
     if (filter.mobileNumber) query['mobile.number'] = filter.mobileNumber;
     if (filter.referredBy) query.referralBy = filter.referredBy;
+    if (filter.uuid) query['devices.uuid'] = filter.uuid;
+    if (filter.platform) query['devices.platform'] = filter.platform;
     if (filter.mobileCountryCode)
       query['mobile.countryCode'] = filter.mobileCountryCode;
     if (filter.provider && filter.socialId) {
       query[`authentications.${filter.provider}.socialId`] = filter.socialId;
     }
+    if (filter.activationToken)
+      query['activations.verifyToken'] = filter.activationToken;
+
     return query;
   }
 
@@ -285,8 +306,15 @@ export class Repository {
     };
 
     if (isArray(filter._id))
-      query._id = { $in: (filter._id as any).map((id) => Types.ObjectId(id)) };
-    else if (filter._id) query._id = Types.ObjectId(filter._id as any);
+      query._id = {
+        $in: (filter._id as any).map((id) =>
+          isString(id) ? Types.ObjectId(id) : id,
+        ),
+      };
+    else if (filter._id)
+      query._id = isString(filter._id)
+        ? Types.ObjectId(filter._id as any)
+        : filter._id;
 
     if (filter.message) query['payload.message'] = filter.message;
     if (filter.originalPost)
@@ -422,6 +450,16 @@ export class Repository {
     return query;
   };
 
+  private getSocialSyncQuery(filter: SocialSyncQuery) {
+    const query: FilterQuery<SocialSync> = {};
+    if (filter._id)
+      query._id = isString(filter._id)
+        ? Types.ObjectId(filter._id)
+        : filter._id;
+    if (filter.authorId) query['author.id'] = filter.authorId;
+
+    return query;
+  }
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -597,6 +635,8 @@ export class Repository {
         },
       ];
     }
+
+    if (filter.castcleId) query.displayId = filter.castcleId;
 
     if (filter.sinceId || filter.untilId)
       return createCastcleFilter(query, {
@@ -955,6 +995,24 @@ export class Repository {
     return this.socialSyncModel.deleteMany(filter, queryOptions);
   }
 
+  findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
+    return this.socialSyncModel
+      .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  updateSocialSync(
+    filter: SocialSyncQuery,
+    updateQuery: UpdateQuery<SocialSync>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.socialSyncModel.updateOne(
+      this.getSocialSyncQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
+  }
+
   deleteFeedItems(filter: FilterQuery<FeedItem>, queryOptions?: QueryOptions) {
     return this.feedItemModel.deleteMany(filter, queryOptions);
   }
@@ -982,8 +1040,96 @@ export class Repository {
     return CastcleNumber.from(balance?.total?.toString()).toNumber();
   };
 
+  getFindQueryForChild = (caccount: CAccount) => {
+    const orQuery = [
+      {
+        'ledgers.debit.caccountNo': caccount.no,
+      },
+      {
+        'ledgers.credit.caccountNo': caccount.no,
+      },
+    ];
+    if (caccount.child)
+      caccount.child.forEach((childNo) => {
+        orQuery.push({
+          'ledgers.debit.caccountNo': childNo,
+        });
+        orQuery.push({
+          'ledgers.credit.caccountNo': childNo,
+        });
+      });
+    return orQuery;
+  };
+
+  findTransactionsOfCAccount = (caccount: CAccount) => {
+    const orQuery = this.getFindQueryForChild(caccount);
+    const findFilter: FilterQuery<Transaction> = {
+      $or: orQuery,
+    };
+    return this.transactionModel.find(findFilter);
+  };
+
+  findCAccountByCaccountNO = (caccountNo: string) =>
+    this.caccountModel.findOne({ no: caccountNo });
+
+  getTAccountBalance = async (caccountNo: string) => {
+    //get account First
+    const caccount = await this.caccountModel.findOne({ no: caccountNo });
+    const txs = await this.findTransactionsOfCAccount(caccount);
+    const allDebit = txs.reduce((totalDebit, currentTx) => {
+      return (
+        totalDebit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.debit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.debit.caccountNo,
+          )
+          .reduce((sumDebit, now) => now.debit.value + sumDebit, 0)
+      );
+    }, 0);
+    const allCredit = txs.reduce((totalCredit, currentTx) => {
+      return (
+        totalCredit +
+        currentTx.ledgers
+          .filter(
+            (t) =>
+              caccount.child.findIndex(
+                (childNo) => t.credit.caccountNo === childNo,
+              ) >= 0 || caccount.no === t.credit.caccountNo,
+          )
+          .reduce((sumCredit, now) => now.debit.value + sumCredit, 0)
+      );
+    }, 0);
+    if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
+    else return allCredit - allDebit;
+  };
+
+  getUndistributedAdsplacements = async (
+    paymentOptions?: AdsPaymentMethod,
+  ): Promise<AdsPlacement[]> => {
+    if (!paymentOptions)
+      return this.adsPlacementModel.find({
+        'cost.CAST': { $exits: false },
+      });
+    return this.adsPlacementModel.find({
+      'cost.CAST': { $exits: false },
+      'campaign.campaignPaymentType': paymentOptions,
+    });
+  };
+
+  getCastUSDDistributeRate = async () => {
+    const collectedCast = await this.getTAccountBalance(
+      CACCOUNT_NO.SOCIAL_REWARD.NO,
+    );
+    const adsPlacements = await this.getUndistributedAdsplacements();
+    const totalCost = adsPlacements.reduce((a, b) => a + b.cost.UST, 0);
+    return collectedCast / totalCost;
+  };
+
   async deleteCastcleAccount(account: Account) {
-    const users = await this.userModel.find({});
+    const users = await this.userModel.find({ ownerAccount: account._id });
     const userIds = users.map((user) => user._id);
     const $v1Delete = [
       this.activationModel.deleteMany({ account: account._id }),
@@ -1004,21 +1150,11 @@ export class Repository {
     const $hardDelete = [
       this.commentModel.deleteMany({ 'author._id': { $in: userIds } }),
       this.notificationModel.deleteMany({ account: account._id }),
-      this.otpModel.deleteMany({
-        receiver: {
-          $in: [
-            account.email,
-            account.mobile.countryCode + account.mobile.number,
-          ],
-        },
-      }),
+      this.otpModel.deleteMany({ account: account._id }),
       this.socialSyncModel.deleteMany({ account: account._id }),
       this.feedItemModel.deleteMany({ author: account._id }),
       this.relationshipModel.deleteMany({
-        $or: [
-          { followedUser: { $in: userIds } },
-          { following: { $in: userIds } },
-        ],
+        $or: [{ followedUser: { $in: userIds } }, { user: { $in: userIds } }],
       }),
       this.revisionModel.deleteMany({ 'payload.author.id': { $in: userIds } }),
       this.uxEngagementModel.deleteMany({ account: account._id }),
@@ -1033,7 +1169,7 @@ export class Repository {
       this.deleteContents({ 'author._id': { $in: userIds } }),
       this.deleteEngagements({ user: userIds }),
       this.queueModel.updateMany(
-        { 'payload.to.account': account._id },
+        { 'payload.to.account': account._id, status: QueueStatus.WAITING },
         { status: QueueStatus.CANCELLED, endedAt: new Date() },
       ),
       this.userModel.updateMany(
@@ -1062,7 +1198,7 @@ export class Repository {
           { session },
         ),
         this.relationshipModel.deleteMany({
-          $or: [{ followedUser: pageId as any }, { following: pageId as any }],
+          $or: [{ followedUser: pageId as any }, { user: pageId as any }],
         }),
         this.deleteContents({ 'author._id': pageId }),
         this.deleteEngagements({ user: pageId }),

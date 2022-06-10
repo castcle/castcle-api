@@ -35,6 +35,7 @@ import {
   GetFollowQuery,
   GetKeywordQuery,
   GetSourceContentParam,
+  GetSyncSocialParam,
   GetUserParam,
   LikeCommentDto,
   NotificationServiceV2,
@@ -47,6 +48,7 @@ import {
   ReplyCommentParam,
   ResponseDto,
   SocialSyncServiceV2,
+  SuggestionServiceV2,
   SyncSocialDtoV2,
   TargetIdParam,
   UnlikeCommentCastParam,
@@ -104,6 +106,7 @@ export class UsersControllerV2 {
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
     private suggestionService: SuggestionService,
+    private suggestionServiceV2: SuggestionServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
@@ -767,6 +770,19 @@ export class UsersControllerV2 {
     return this.userServiceV2.unfollowUser(user, targetCastcleId);
   }
 
+  @CastcleAuth(CacheKeyName.Users)
+  @Get('me/suggestion-follow')
+  async suggestToFollow(
+    @Auth() authorizer: Authorizer,
+    @Query() query: PaginationQuery,
+  ) {
+    return this.suggestionServiceV2.suggest(
+      authorizer.user,
+      authorizer.credential.accessToken,
+      query,
+    );
+  }
+
   @CastcleBasicAuth()
   @Get(':userId/contents')
   async getContents(
@@ -779,7 +795,8 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return await this.contentServiceV2.getContents(query, user);
+
+    return this.contentServiceV2.getContents(query, user);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -850,5 +867,45 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     await this.userServiceV2.reportContent(user, targetContentId, message);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Post(':userId/sync-social/:syncSocialId/auto-post')
+  async activeAutoPost(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.socialSyncService.setAutoPost(syncSocialId, user._id, true);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete(':userId/sync-social/:syncSocialId/auto-post')
+  async inactiveAutoPost(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.socialSyncService.setAutoPost(syncSocialId, user._id, false);
+  }
+
+  @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
+  @Delete(':userId/sync-social/:syncSocialId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async disconnectSocialSync(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId, syncSocialId }: GetSyncSocialParam,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    await this.socialSyncService.disconnectSocialSync(syncSocialId, user._id);
   }
 }

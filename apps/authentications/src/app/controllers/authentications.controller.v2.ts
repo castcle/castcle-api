@@ -26,6 +26,7 @@ import {
   AuthenticationServiceV2,
   ChangePasswordDto,
   LoginWithEmailDto,
+  RegisterFirebaseDto,
   RegisterWithEmailDto,
   RequestOtpByEmailDto,
   RequestOtpByMobileDto,
@@ -36,7 +37,6 @@ import {
   VerifyOtpByMobileDto,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { Host } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
@@ -54,18 +54,23 @@ import {
 } from '@castcle-api/utils/interceptors';
 import {
   Body,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { getEmailVerificationHtml } from '../configs';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
   CheckingResponseV2,
   GuestLoginDto,
+  OtpResponse,
 } from '../dtos';
 import {
   GuestInterceptor,
@@ -80,12 +85,12 @@ export class AuthenticationControllerV2 {
   @Post('register-with-email')
   async requestEmailOtp(
     @Body() dto: RegisterWithEmailDto,
-    @RequestMeta() { ip }: RequestMetadata,
-    @Req() { $credential, hostname }: CredentialRequest,
+    @RequestMeta() { ip, hostUrl }: RequestMetadata,
+    @Req() { $credential }: CredentialRequest,
   ) {
     return this.authenticationService.registerWithEmail($credential, {
       ...dto,
-      hostname,
+      hostUrl,
       ip,
     });
   }
@@ -117,6 +122,21 @@ export class AuthenticationControllerV2 {
       ip,
       userAgent,
     });
+  }
+
+  @Post('connect-with-social')
+  @CastcleBasicAuth()
+  @CastcleTrack()
+  connectWithSocial(
+    @Auth() { account }: Authorizer,
+    @Body() socialConnectDto: SocialConnectDto,
+    @Req() { $credential }: CredentialRequest,
+  ) {
+    return this.authenticationService.connectWithSocial(
+      $credential,
+      account,
+      socialConnectDto,
+    );
   }
 
   @UseInterceptors(TokenInterceptor)
@@ -169,7 +189,11 @@ export class AuthenticationControllerV2 {
         requestedBy: $credential.account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -190,7 +214,11 @@ export class AuthenticationControllerV2 {
         requestedBy: $credential.account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -211,7 +239,11 @@ export class AuthenticationControllerV2 {
         requestedBy: account,
       });
 
-    return { refCode, objective: requestOtpDto.objective, expireDate };
+    return {
+      refCode,
+      objective: requestOtpDto.objective,
+      expiresTime: expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -233,9 +265,9 @@ export class AuthenticationControllerV2 {
     return {
       refCode: otp.refCode,
       objective: verifyOtpDto.objective,
-      expireDate: otp.expireDate,
+      expiresTime: otp.expireDate.toISOString(),
       accessToken,
-    };
+    } as OtpResponse;
   }
 
   @CastcleBasicAuth()
@@ -256,8 +288,8 @@ export class AuthenticationControllerV2 {
     return {
       refCode: otp.refCode,
       objective: verifyOtpDto.objective,
-      expireDate: otp.expireDate,
-    };
+      expiresTime: otp.expireDate.toISOString(),
+    } as OtpResponse;
   }
 
   @Throttle(
@@ -302,11 +334,35 @@ export class AuthenticationControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   requestVerificationLink(
     @Auth() { account }: Authorizer,
-    @Req() req: CredentialRequest,
+    @RequestMeta() { hostUrl }: RequestMetadata,
   ) {
-    return this.authenticationService.requestVerificationLink(
-      account,
-      Host.getHostname(req),
-    );
+    return this.authenticationService.requestVerificationLink(account, hostUrl);
+  }
+
+  @Get('verify/email')
+  async verifyEmail(@Query() { code }: Record<string, string>) {
+    const [account] = await this.authenticationService.verifyEmail(code);
+
+    return getEmailVerificationHtml(account.email);
+  }
+
+  @CastcleBasicAuth()
+  @Post('register/notification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async registerToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    await this.authenticationService.createAccountDevice(body, account);
+  }
+
+  @CastcleBasicAuth()
+  @Delete('register/notification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteToken(
+    @Auth() { account }: Authorizer,
+    @Body() body: RegisterFirebaseDto,
+  ) {
+    await this.authenticationService.deleteAccountDevice(body, account);
   }
 }

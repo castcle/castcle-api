@@ -21,35 +21,27 @@
  * or have any questions.
  */
 
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes } from 'mongoose';
-import { AdsCost, AdsPlacementCampaign, AdsPlacementContent } from '../models';
-import { CastcleBase } from './base.schema';
-import { Credential } from './credential.schema';
-import { User } from './user.schema';
+import { CastLogger } from '@castcle-api/logger';
+import { QRCODE_STANDARD_SIZE_CONFIGS } from '@castcle-api/utils/aws';
+import * as QRCode from 'qrcode';
 
-@Schema({ timestamps: true })
-export class AdsPlacement extends CastcleBase {
-  @Prop({ required: true, type: Array })
-  contents: AdsPlacementContent[];
+export class CastcleQRCode {
+  private static logger = new CastLogger(CastcleQRCode.name);
 
-  @Prop({ required: true, type: Object })
-  cost: AdsCost;
+  static generateQRCodeText(inputsText: string[]) {
+    return inputsText ? inputsText.join('|') : null;
+  }
 
-  @Prop({ required: true, type: Object })
-  campaign: AdsPlacementCampaign;
+  static async generateQRCode(inputText: string, size: string) {
+    this.logger.log(`Generate QR Code size : ${size}`);
 
-  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User' })
-  user: User;
+    const { width } = QRCODE_STANDARD_SIZE_CONFIGS.find(
+      ({ name }) => name === size,
+    );
 
-  @Prop({ type: Object })
-  engagements: { [key: string]: number };
-
-  @Prop()
-  seenAt?: Date; //crucial use for calculate ads-fee / redistribute reward
-
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'Credential' })
-  seenCredential?: Credential;
+    return QRCode.toDataURL(inputText, {
+      width: width,
+      margin: 4,
+    });
+  }
 }
-
-export const AdsPlacementSchema = SchemaFactory.createForClass(AdsPlacement);
