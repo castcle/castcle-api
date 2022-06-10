@@ -1,8 +1,12 @@
+import { Environment } from '@castcle-api/environments';
+
 export const getEmailVerificationHtml = (
   email: string,
-  castcleLink: string,
-  supportEmail: string,
-) => `<body style="margin:0;">
+  castcleLink: string = Environment.LINK_VERIFIED_EMAIL,
+  supportEmail: string = Environment.SMTP_ADMIN_EMAIL,
+) => `
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body style="margin:0;">
 <!-- Embedded HTML code sent along with email begins here -->
 
 <!-- Google Fonts Import -->
@@ -11,7 +15,7 @@ export const getEmailVerificationHtml = (
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400&family=Sarabun&display=swap" rel="stylesheet">
 <!-- End of Google Fonts Import -->
 
-<div style="width: 100%; background-color: #22252c; text-align: center;">
+<div style="width: 100%; height: calc(100% - 95px); background-color: #22252c; display: flex; align-items: center; justify-content: center;">
   <div style="display: inline-block; max-width: 400px; margin: 30px;">
     <table cellspacing="0" cellpadding="0" style="color: #e4e4e4; font-family: Kanit, sans-serif;">
       <tr>

@@ -42,7 +42,7 @@ export class Environment {
   static DB_URI = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME}?retryWrites=true&w=majority`;
 
   // Mail Service
-  static SMTP_ADMIN_EMAIL = process.env.SMTP_ADMIN_EMAIL;
+  static SMTP_ADMIN_EMAIL = process.env.SMTP_ADMIN_EMAIL || 'admin@castcle.com';
   static SMTP_USERNAME = process.env.SMTP_USERNAME;
   static SMTP_PASSWORD = process.env.SMTP_PASSWORD;
   static SMTP_HOST = process.env.SMTP_HOST;
@@ -169,7 +169,9 @@ export class Environment {
 
   // Links
   static LINK_INVITE_FRIENDS = process.env.LINK_INVITE_FRIENDS;
-  static LINK_VERIFIED_EMAIL = process.env.LINK_VERIFIED_EMAIL;
+  static LINK_VERIFIED_EMAIL =
+    process.env.LINK_VERIFIED_EMAIL ||
+    'https://links.castcle.com/verified-email';
 
   /**
    * Number of digits after the decimal point

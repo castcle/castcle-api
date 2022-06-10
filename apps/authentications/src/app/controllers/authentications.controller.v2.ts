@@ -37,7 +37,6 @@ import {
   VerifyOtpByMobileDto,
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
-import { Host } from '@castcle-api/utils/commons';
 import {
   Auth,
   Authorizer,
@@ -56,13 +55,16 @@ import {
 import {
   Body,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { getEmailVerificationHtml } from '../configs';
 import {
   CheckEmailExistDto,
   CheckIdExistDto,
@@ -83,12 +85,12 @@ export class AuthenticationControllerV2 {
   @Post('register-with-email')
   async requestEmailOtp(
     @Body() dto: RegisterWithEmailDto,
-    @RequestMeta() { ip }: RequestMetadata,
-    @Req() { $credential, hostname }: CredentialRequest,
+    @RequestMeta() { ip, hostUrl }: RequestMetadata,
+    @Req() { $credential }: CredentialRequest,
   ) {
     return this.authenticationService.registerWithEmail($credential, {
       ...dto,
-      hostname,
+      hostUrl,
       ip,
     });
   }
@@ -332,12 +334,16 @@ export class AuthenticationControllerV2 {
   @HttpCode(HttpStatus.NO_CONTENT)
   requestVerificationLink(
     @Auth() { account }: Authorizer,
-    @Req() req: CredentialRequest,
+    @RequestMeta() { hostUrl }: RequestMetadata,
   ) {
-    return this.authenticationService.requestVerificationLink(
-      account,
-      Host.getHostname(req),
-    );
+    return this.authenticationService.requestVerificationLink(account, hostUrl);
+  }
+
+  @Get('verify/email')
+  async verifyEmail(@Query() { code }: Record<string, string>) {
+    const [account] = await this.authenticationService.verifyEmail(code);
+
+    return getEmailVerificationHtml(account.email);
   }
 
   @CastcleBasicAuth()

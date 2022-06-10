@@ -751,6 +751,7 @@ describe('AppController', () => {
             $token: credentialGuest.accessToken,
           } as any,
           mockResponse,
+          {},
         );
         const postAccountActivationToken =
           await service.getAccountActivationFromCredential(credentialGuest);
