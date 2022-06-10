@@ -209,6 +209,11 @@ type HashtagQuery = {
   };
 };
 
+type SocialSyncQuery = {
+  _id?: string;
+  authorId?: string;
+};
+
 @Injectable()
 export class Repository {
   constructor(
@@ -445,6 +450,16 @@ export class Repository {
     return query;
   };
 
+  private getSocialSyncQuery(filter: SocialSyncQuery) {
+    const query: FilterQuery<SocialSync> = {};
+    if (filter._id)
+      query._id = isString(filter._id)
+        ? Types.ObjectId(filter._id)
+        : filter._id;
+    if (filter.authorId) query['author.id'] = filter.authorId;
+
+    return query;
+  }
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -978,6 +993,24 @@ export class Repository {
     queryOptions?: QueryOptions,
   ) {
     return this.socialSyncModel.deleteMany(filter, queryOptions);
+  }
+
+  findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
+    return this.socialSyncModel
+      .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  updateSocialSync(
+    filter: SocialSyncQuery,
+    updateQuery: UpdateQuery<SocialSync>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.socialSyncModel.updateOne(
+      this.getSocialSyncQuery(filter),
+      updateQuery,
+      queryOptions,
+    );
   }
 
   deleteFeedItems(filter: FilterQuery<FeedItem>, queryOptions?: QueryOptions) {

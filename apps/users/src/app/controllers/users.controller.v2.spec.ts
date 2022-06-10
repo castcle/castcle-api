@@ -35,6 +35,7 @@ import {
   ContentType,
   DataService,
   EngagementType,
+  EntityVisibility,
   GetContentDto,
   GetContentQuery,
   GetSourceContentParam,
@@ -52,6 +53,7 @@ import {
   RankerService,
   ReplyCommentParam,
   ShortPayload,
+  SocialProvider,
   SocialSyncServiceV2,
   SuggestionServiceV2,
   TAccountService,
@@ -84,6 +86,7 @@ describe('UsersControllerV2', () => {
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userServiceV1: UserService;
+  let socialSyncService: SocialSyncServiceV2;
 
   beforeAll(async () => {
     const DownloaderProvider = {
@@ -155,6 +158,7 @@ describe('UsersControllerV2', () => {
     service = app.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
+    socialSyncService = app.get<SocialSyncServiceV2>(SocialSyncServiceV2);
     contentService = app.get<ContentService>(ContentService);
     appController = app.get<UsersControllerV2>(UsersControllerV2);
   });
@@ -918,6 +922,67 @@ describe('UsersControllerV2', () => {
       );
 
       expect(getUserByKeyword.payload).toHaveLength(0);
+    });
+    afterAll(async () => {
+      await userServiceV1._accountModel.deleteMany({});
+      await userServiceV1._userModel.deleteMany({});
+    });
+  });
+
+  describe('Social Sync', () => {
+    let mocksUsers: MockUserDetail[];
+    let syncId;
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+      const newSync = await new (socialSyncService as any).socialSyncModel({
+        socialId: 'socialid',
+        provider: SocialProvider.Facebook,
+        userName: 'username',
+        displayName: 'displayName',
+        avatar: '',
+        active: true,
+        autoPost: false,
+        account: mocksUsers[0].user.ownerAccount,
+        author: { id: mocksUsers[0].user.id },
+        visibility: EntityVisibility.Publish,
+      }).save();
+
+      syncId = newSync._id;
+    });
+
+    it('should update sync social auto post equal true', async () => {
+      const socialSync = await (socialSyncService as any).setAutoPost(
+        syncId,
+        String(mocksUsers[0].user._id),
+        true,
+      );
+
+      expect(socialSync.autoPost).toEqual(true);
+    });
+    it('should update sync social auto post equal false', async () => {
+      const socialSync = await (socialSyncService as any).setAutoPost(
+        syncId,
+        String(mocksUsers[0].user._id),
+        false,
+      );
+
+      expect(socialSync.autoPost).toEqual(false);
+    });
+
+    it('should delete sync social', async () => {
+      await (socialSyncService as any).disconnectSocialSync(
+        syncId,
+        String(mocksUsers[0].user._id),
+      );
+
+      const socialSync = await (
+        socialSyncService as any
+      ).repository.findSocialSync({ _id: syncId });
+
+      expect(socialSync).toBeNull();
     });
   });
 });
