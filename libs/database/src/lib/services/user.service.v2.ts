@@ -764,18 +764,19 @@ export class UserServiceV2 {
   }
 
   async updatePDPA(date: string, account: Account) {
+    const pdpaDate = Environment.PDPA_ACCEPT_DATE.split(',');
+    if (!pdpaDate[date]) throw CastcleException.INVALID_DATE;
+
     if (account.pdpa) {
       account.pdpa[date] = true;
     } else {
-      const pdpaDate = Environment.PDPA_ACCEPT_DATE.split(',').map((date) => {
+      pdpaDate.map((date) => {
         return {
           [date]: true,
         };
       });
       account.pdpa = Object.assign({}, ...pdpaDate);
     }
-
-    console.log(account);
 
     account.markModified('pdpa');
     await account.save();
@@ -785,6 +786,5 @@ export class UserServiceV2 {
     return user.toUserResponseV2({
       pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
     });
-    // }
   }
 }
