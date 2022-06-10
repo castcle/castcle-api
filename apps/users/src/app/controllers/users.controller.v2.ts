@@ -32,6 +32,7 @@ import {
   ExpansionQuery,
   GetContentDto,
   GetContentQuery,
+  GetDateDto,
   GetFollowQuery,
   GetKeywordQuery,
   GetSourceContentParam,
@@ -907,5 +908,14 @@ export class UsersControllerV2 {
       : await this.userService.findUser(userId);
 
     await this.socialSyncService.disconnectSocialSync(syncSocialId, user._id);
+  }
+
+  @Post('me/pdpa')
+  @CastcleBasicAuth()
+  async updatePDPA(
+    @Auth() authorizer: Authorizer,
+    @Query() { date }: GetDateDto,
+  ) {
+    return this.userServiceV2.updatePDPA(date, authorizer.account);
   }
 }

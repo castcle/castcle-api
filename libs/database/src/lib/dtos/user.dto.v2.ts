@@ -64,3 +64,9 @@ export class GetSyncSocialParam extends GetUserParam {
   @IsMongoId()
   syncSocialId: string;
 }
+
+export class GetDateDto {
+  @IsNotEmpty()
+  @IsString()
+  date: string;
+}

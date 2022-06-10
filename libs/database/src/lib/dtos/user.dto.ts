@@ -183,6 +183,8 @@ export class UserResponseDto {
 
   @ApiProperty()
   contact?: ContactDto;
+
+  pdpa?: boolean;
 }
 
 export class linkSocialDetail {
@@ -309,6 +311,8 @@ export class PageResponseDto {
   canUpdateCastcleId: boolean;
 
   contact?: UserContact;
+
+  pdpa?: boolean;
 }
 
 export class UpdatePageDto {
