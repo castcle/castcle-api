@@ -765,7 +765,8 @@ export class UserServiceV2 {
 
   async updatePDPA(date: string, account: Account) {
     const pdpaDate = Environment.PDPA_ACCEPT_DATE.split(',');
-    if (!pdpaDate[date]) throw CastcleException.INVALID_DATE;
+
+    if (!pdpaDate.includes(date)) throw CastcleException.INVALID_DATE;
 
     if (account.pdpa) {
       account.pdpa[date] = true;
