@@ -72,8 +72,6 @@ export class UserServiceV2 {
   private logger = new CastLogger(UserServiceV2.name);
 
   constructor(
-    @InjectModel('Account')
-    private accountModel: Model<Account>,
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
     @InjectModel('SocialSync')
@@ -157,11 +155,11 @@ export class UserServiceV2 {
             ? await this.socialSyncModel.find({ 'author.id': user.id }).exec()
             : [];
 
-        const linkSocial = userFields?.includes(UserField.LinkSocial)
-          ? String(user.ownerAccount) === String(viewer?.ownerAccount)
-            ? await this.accountModel.findOne({ _id: user.ownerAccount }).exec()
-            : undefined
-          : undefined;
+        const account =
+          userFields?.includes(UserField.LinkSocial) &&
+          String(user.ownerAccount) === String(viewer?.ownerAccount)
+            ? await this.repository.findAccount({ _id: user.ownerAccount })
+            : undefined;
 
         const content = userFields?.includes(UserField.Casts)
           ? await this.contentService.getContentsFromUser(user.id)
@@ -184,7 +182,7 @@ export class UserServiceV2 {
               )
             : await user.toUserResponseV2({
                 casts: content?.total,
-                linkSocial: linkSocial?.authentications,
+                authentications: account?.authentications,
                 syncSocials,
                 balance,
               });

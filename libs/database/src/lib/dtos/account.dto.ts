@@ -21,7 +21,7 @@
  * or have any questions.
  */
 import { Types } from 'mongoose';
-import { AccountAuthenIdType } from '../schemas';
+import { AuthenticationProvider } from '../models';
 import { AcceptPlatform, EntityVisibility } from './common.dto';
 
 export class SaveCredentialDto {
@@ -73,7 +73,7 @@ export class CreateAccountDeviceDto {
   platform: AcceptPlatform;
 }
 export class SocialContentDto {
-  provider: AccountAuthenIdType;
+  provider: AuthenticationProvider;
   socialId: string;
   socialToken?: string;
   avatar?: string;

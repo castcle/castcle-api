@@ -26,14 +26,6 @@ import * as mongoose from 'mongoose';
 import { Account } from '../schemas';
 import { CastcleBase } from './base.schema';
 
-export enum AccountAuthenIdType {
-  Twitter = 'twitter',
-  Facebook = 'facebook',
-  Google = 'google',
-  Telegram = 'telegram',
-  Apple = 'apple',
-}
-
 @Schema({ timestamps: true })
 export class AccountAuthenId extends CastcleBase {
   @Prop({

@@ -56,18 +56,13 @@ import {
 import {
   AccountActivationType,
   AccountRequirements,
+  AuthenticationProvider,
   OtpObjective,
   OtpTemplateMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import {
-  Account,
-  AccountAuthenIdType,
-  AccountRole,
-  Credential,
-  User,
-} from '../schemas';
+import { Account, AccountRole, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
@@ -169,6 +164,7 @@ export class AuthenticationServiceV2 {
       refreshToken,
       profile: await user?.toUserResponseV2({
         passwordNotSet: !account.password,
+        authentications: account.authentications,
         pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
       }),
       pages: user && pages.map((page) => page.toPageResponseV2()),
@@ -198,11 +194,11 @@ export class AuthenticationServiceV2 {
     const { email, socialId, provider, ip, userAgent, authToken } =
       socialConnectDto;
 
-    if (provider === AccountAuthenIdType.Facebook) {
+    if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
       if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
       socialConnectDto.displayName ||= profile.name;
-    } else if (provider === AccountAuthenIdType.Twitter) {
+    } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {
@@ -260,10 +256,10 @@ export class AuthenticationServiceV2 {
     });
 
     if (socialConnected) throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
-    if (provider === AccountAuthenIdType.Facebook) {
+    if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
       if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
-    } else if (provider === AccountAuthenIdType.Twitter) {
+    } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {

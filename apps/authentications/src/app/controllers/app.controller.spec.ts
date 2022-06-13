@@ -23,8 +23,8 @@
 
 import {
   AcceptPlatform,
-  AccountAuthenIdType,
   AnalyticService,
+  AuthenticationProvider,
   AuthenticationService,
   ContentService,
   Credential,
@@ -822,7 +822,7 @@ describe('AppController', () => {
       const result = await appController.loginWithSocial(
         credentialGuest,
         {
-          provider: AccountAuthenIdType.Facebook,
+          provider: AuthenticationProvider.FACEBOOK,
           socialId: '109364223',
           displayName: 'test facebook',
           avatar: '',
@@ -833,7 +833,7 @@ describe('AppController', () => {
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
-        AccountAuthenIdType.Facebook,
+        AuthenticationProvider.FACEBOOK,
       );
 
       const activation = await service.getAccountActivationFromCredential(
@@ -867,7 +867,7 @@ describe('AppController', () => {
       await appController.loginWithSocial(
         newCredentialGuest,
         {
-          provider: AccountAuthenIdType.Google,
+          provider: AuthenticationProvider.GOOGLE,
           socialId: '109364223777',
           authToken: 'auth-token',
         },
@@ -875,7 +875,7 @@ describe('AppController', () => {
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223777',
-        AccountAuthenIdType.Google,
+        AuthenticationProvider.GOOGLE,
       );
       const user = await userService.getUserAndPagesFromAccountId(
         accountSocial.account._id,
@@ -893,7 +893,7 @@ describe('AppController', () => {
       const result = await appController.loginWithSocial(
         newCredentialGuest,
         {
-          provider: AccountAuthenIdType.Facebook,
+          provider: AuthenticationProvider.FACEBOOK,
           socialId: '109364223',
           displayName: 'test facebook',
           avatar: '',
@@ -904,7 +904,7 @@ describe('AppController', () => {
       );
       const accountSocial = await service.getAccountAuthenIdFromSocialId(
         '109364223',
-        AccountAuthenIdType.Facebook,
+        AuthenticationProvider.FACEBOOK,
       );
 
       expect(result).toBeDefined();
@@ -923,7 +923,7 @@ describe('AppController', () => {
         appController.loginWithSocial(
           newCredentialGuest,
           {
-            provider: AccountAuthenIdType.Twitter,
+            provider: AuthenticationProvider.TWITTER,
             socialId: '01234567892388',
             displayName: 'test twitter',
             avatar: '',
@@ -954,10 +954,10 @@ describe('AppController', () => {
     it('should create new social connect map to user ', async () => {
       const beforeConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
-        AccountAuthenIdType.Facebook,
+        AuthenticationProvider.FACEBOOK,
       );
       const result = await appController.connectWithSocial(credential, {
-        provider: AccountAuthenIdType.Facebook,
+        provider: AuthenticationProvider.FACEBOOK,
         socialId: '10936456',
         displayName: 'test facebook',
         avatar: '',
@@ -966,7 +966,7 @@ describe('AppController', () => {
       });
       const afterConnect = await service.getAccountAuthenIdFromSocialId(
         '10936456',
-        AccountAuthenIdType.Facebook,
+        AuthenticationProvider.FACEBOOK,
       );
 
       expect(beforeConnect).toBeNull();
@@ -981,7 +981,7 @@ describe('AppController', () => {
     it('should return Exception when use duplicate social id', async () => {
       await expect(
         appController.connectWithSocial(credential, {
-          provider: AccountAuthenIdType.Facebook,
+          provider: AuthenticationProvider.FACEBOOK,
           socialId: '10936456',
           displayName: 'test facebook',
           avatar: '',
@@ -1000,7 +1000,7 @@ describe('AppController', () => {
       );
       await expect(
         appController.connectWithSocial(guest, {
-          provider: AccountAuthenIdType.Facebook,
+          provider: AuthenticationProvider.FACEBOOK,
           socialId: '10936456',
           displayName: 'test facebook',
           avatar: '',

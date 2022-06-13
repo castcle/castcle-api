@@ -105,7 +105,7 @@ import {
 import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
-  _id?: string;
+  _id?: any;
   email?: string;
   provider?: string;
   socialId?: string;

@@ -42,6 +42,7 @@ import {
 } from '../dtos/token.dto';
 import {
   AccountRequirements,
+  AuthenticationProvider,
   EventName,
   OtpObjective,
   UserType,
@@ -51,7 +52,6 @@ import {
   AccountActivationModel,
   AccountActivationV1,
   AccountAuthenId,
-  AccountAuthenIdType,
   AccountReferral,
   Analytic,
   Credential,
@@ -75,7 +75,7 @@ export interface SignupRequirements {
 export interface SignupSocialRequirements {
   displayName: string;
   socialId: string;
-  provider: AccountAuthenIdType;
+  provider: AuthenticationProvider;
   avatar: CastcleImage;
   socialToken: string;
   socialSecretToken: string;
@@ -123,12 +123,12 @@ export class AuthenticationService {
   /**
    * get account document from social id and social type
    * @param {string} socialUserId social user id
-   * @param {AccountAuthenIdType} provider enum social type
+   * @param {AuthenticationProvider} provider enum social type
    * @returns {AccountAuthenId}
    */
   getAccountAuthenIdFromSocialId = (
     socialUserId: string,
-    provider: AccountAuthenIdType,
+    provider: AuthenticationProvider,
   ) =>
     this._accountAuthenId
       .findOne({ socialId: socialUserId, type: provider })
@@ -752,7 +752,7 @@ export class AuthenticationService {
   /**
    * create new account from social
    * @param {Account} account
-   * @param {AccountAuthenIdType} provider
+   * @param {AuthenticationProvider} provider
    * @param {string} socialUserId
    * @param {string} socialUserToken
    * @param {string} socialSecretToken
@@ -762,7 +762,7 @@ export class AuthenticationService {
    */
   async createAccountAuthenId(
     account: Account,
-    provider: AccountAuthenIdType,
+    provider: AuthenticationProvider,
     socialUserId: string,
     socialUserToken?: string,
     socialSecretToken?: string,

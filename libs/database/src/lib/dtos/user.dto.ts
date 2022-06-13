@@ -36,6 +36,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
+  AuthenticationProvider,
   OtpObjective,
   PageVerified,
   SocialProvider,
@@ -87,10 +88,6 @@ class Counter {
   @ApiProperty()
   count: number;
 }
-
-export type SyncSocialModelV2 = {
-  [provider in SocialProvider]?: SyncSocialDetail;
-};
 
 export class ContactDto {
   @IsOptional()
@@ -165,15 +162,10 @@ export class UserResponseDto {
   };
 
   @ApiProperty()
-  linkSocial: {
-    facebook?: linkSocialDetail | null;
-    twitter?: linkSocialDetail | null;
-    google?: linkSocialDetail | null;
-    apple?: linkSocialDetail | null;
-  };
+  linkSocial: LinkedSocials;
 
   @ApiProperty()
-  syncSocial: SyncSocialDetail[] | SyncSocialModelV2;
+  syncSocial: SyncSocial[] | SyncSocials;
 
   @ApiProperty()
   casts: number;
@@ -187,12 +179,15 @@ export class UserResponseDto {
   pdpa?: boolean;
 }
 
-export class linkSocialDetail {
+type LinkedSocials = Partial<Record<AuthenticationProvider, LinkedSocial>>;
+
+class LinkedSocial {
   socialId: string;
-  displayName: string;
 }
 
-export class SyncSocialDetail {
+type SyncSocials = Partial<Record<SocialProvider, SyncSocial>>;
+
+class SyncSocial {
   id?: string;
   provider: string;
   socialId: string;
@@ -302,7 +297,7 @@ export class PageResponseDto {
   createdAt: string;
 
   @ApiProperty()
-  syncSocial: SyncSocialDetail;
+  syncSocial: SyncSocial;
 
   @ApiProperty()
   casts: number;
