@@ -399,7 +399,7 @@ export class AuthenticationServiceV2 {
     ip: string,
   ) {
     const referrer =
-      (await this.repository.findUser({ _id: referrerId })) ||
+      (await this.repository.findAccount({ _id: referrerId })) ||
       (await this.analyticService.getReferrer(ip));
 
     if (!referrer) return;

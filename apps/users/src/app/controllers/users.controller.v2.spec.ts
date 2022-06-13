@@ -25,6 +25,7 @@ import {
   AdsService,
   AnalyticService,
   AuthenticationService,
+  AuthenticationServiceV2,
   CampaignService,
   Comment,
   CommentParam,
@@ -65,7 +66,13 @@ import {
 } from '@castcle-api/database';
 import { Environment } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
-import { FacebookClient, Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -87,6 +94,7 @@ describe('UsersControllerV2', () => {
   let appController: UsersControllerV2;
   let service: UserServiceV2;
   let authService: AuthenticationService;
+  let authServiceV2: AuthenticationServiceV2;
   let contentService: ContentService;
   let userServiceV1: UserService;
   let socialSyncService: SocialSyncServiceV2;
@@ -119,6 +127,7 @@ describe('UsersControllerV2', () => {
         { provide: DataService, useValue: {} },
         UserServiceV2,
         AuthenticationService,
+        AuthenticationServiceV2,
         ContentService,
         HashtagService,
         SocialSyncServiceV2,
@@ -139,7 +148,10 @@ describe('UsersControllerV2', () => {
         ContentServiceV2,
         NotificationServiceV2,
         Repository,
-        { provide: Mailer, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         { provide: DataService, useValue: {} },
         {
           provide: getQueueToken(QueueName.CONTENT),
@@ -162,6 +174,7 @@ describe('UsersControllerV2', () => {
     service = app.get<UserServiceV2>(UserServiceV2);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
+    authServiceV2 = app.get<AuthenticationServiceV2>(AuthenticationServiceV2);
     socialSyncService = app.get<SocialSyncServiceV2>(SocialSyncServiceV2);
     contentService = app.get<ContentService>(ContentService);
     appController = app.get<UsersControllerV2>(UsersControllerV2);
@@ -1012,6 +1025,81 @@ describe('UsersControllerV2', () => {
       } as GetDateDto);
 
       expect(userResponse.pdpa).toBeTruthy();
+    });
+  });
+
+  describe('getReferee', () => {
+    let mocksUsers: MockUserDetail[];
+
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      const guestDemo = await authService.createAccount({
+        deviceUUID: `testuuid1`,
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios',
+        },
+        device: `testdevice1`,
+      });
+
+      await authServiceV2.registerWithEmail(guestDemo.credentialDocument, {
+        hostUrl: 'http://test.com',
+        ip: '0.0.0.0',
+        email: `test1@gmail.com`,
+        password: '12345678Ab',
+        displayName: `Test1`,
+        castcleId: `test1`,
+        referral: mocksUsers[0].account._id,
+      });
+    });
+    it('should get user referee', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+
+      const referee = await appController.getReferee(
+        authorizer,
+        {
+          userId: mocksUsers[0].user._id,
+        } as GetUserParam,
+        { hasRelationshipExpansion: false },
+      );
+
+      expect(referee.payload).toHaveLength(1);
+    });
+  });
+
+  describe('getReferrer', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(1, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+    });
+    it('should get user referrer', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+      const referrer = await appController.getReferrer(
+        authorizer,
+        {
+          userId: mocksUsers[0].user._id,
+        } as GetUserParam,
+        {
+          hasRelationshipExpansion: false,
+        },
+      );
+
+      expect(referrer.payload).not.toBeNull();
     });
   });
 });
