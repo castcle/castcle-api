@@ -910,7 +910,7 @@ export class UsersControllerV2 {
     await this.socialSyncService.disconnectSocialSync(syncSocialId, user._id);
   }
 
-  @Post('me/pdpa')
+  @Put('me/pdpa')
   @CastcleBasicAuth()
   async updatePDPA(
     @Auth() authorizer: Authorizer,
