@@ -312,13 +312,18 @@ export class AuthenticationServiceV2 {
     account.email = dto.email;
 
     if (Environment.PDPA_ACCEPT_DATE) {
-      const arrayOfPDPA = Environment.PDPA_ACCEPT_DATE.split(',');
-      const pdpaDate = arrayOfPDPA.map((date) => {
-        return {
-          [date]: true,
-        };
-      });
-      account.pdpa = Object.assign({}, ...pdpaDate);
+      const ofPDPA = Environment.PDPA_ACCEPT_DATE.split(',');
+
+      if (Array.isArray(ofPDPA)) {
+        const pdpaDate = ofPDPA.map((date) => {
+          return {
+            [date]: true,
+          };
+        });
+        account.pdpa = Object.assign({}, ...pdpaDate);
+      } else {
+        account.pdpa[ofPDPA] = true;
+      }
     }
 
     account.password = Password.hash(dto.password);
