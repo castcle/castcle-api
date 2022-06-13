@@ -26,6 +26,7 @@ import { Password, Token } from '@castcle-api/utils/commons';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 import {
+  AcceptDatePDPA,
   AccountActivation,
   AccountActivationType,
   AccountAuthentications,
@@ -101,6 +102,10 @@ class AccountDocument extends CastcleBase {
 
   @Prop({ type: Array })
   devices: AccountDevice[];
+
+  @Prop({ type: Object })
+  pdpa?: AcceptDatePDPA;
+
   /**
    * TO DO !!! this is a hot fix for guests
    */

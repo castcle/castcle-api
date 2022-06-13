@@ -23,7 +23,11 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
+import {
+  CastcleDate,
+  CastcleQRCode,
+  LocalizationLang,
+} from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -756,6 +760,32 @@ export class UserServiceV2 {
         `${Environment.QR_CODE_REDIRECT_URL}${qrcodeParams}`,
         size ?? QRCodeImageSize.Thumbnail,
       ),
+    });
+  }
+
+  async updatePDPA(date: string, account: Account) {
+    const pdpaDate = Environment.PDPA_ACCEPT_DATE.split(',');
+
+    if (!pdpaDate.includes(date)) throw CastcleException.INVALID_DATE;
+
+    if (account.pdpa) {
+      account.pdpa[date] = true;
+    } else {
+      pdpaDate.map((date) => {
+        return {
+          [date]: true,
+        };
+      });
+      account.pdpa = Object.assign({}, ...pdpaDate);
+    }
+
+    account.markModified('pdpa');
+    await account.save();
+
+    const user = await this.repository.findUser({ accountId: account._id });
+
+    return user.toUserResponseV2({
+      pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
     });
   }
 }

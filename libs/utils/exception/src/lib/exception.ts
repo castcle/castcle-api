@@ -84,6 +84,7 @@ export class CastcleException<T = any> extends Error {
   static REACHED_MAX_CLAIMS = new CastcleException('4004');
   static REWARD_IS_NOT_ENOUGH = new CastcleException('4005');
   static CHANGE_CASTCLE_ID_FAILED = new CastcleException('4006');
+  static INVALID_DATE = new CastcleException('4007');
   static FEATURE_NOT_EXIST = new CastcleException('5001');
   static PAYLOAD_TYPE_MISMATCH = new CastcleException('5002');
   static CONTENT_NOT_FOUND = new CastcleException('5003');

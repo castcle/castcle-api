@@ -69,3 +69,6 @@ export interface AccountRequirements {
     continentCode: string;
   };
 }
+export class AcceptDatePDPA {
+  [key: string]: boolean;
+}
