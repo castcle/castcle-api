@@ -749,6 +749,8 @@ export class UserServiceV2 {
   async createQRCode(chainId: string, size: string, userId: string) {
     const user = await this.repository.findUser({ _id: userId });
 
+    if (!user) throw CastcleException.USER_ID_IS_EXIST;
+
     const qrcodeParams = CastcleQRCode.generateQRCodeText([
       chainId,
       user._id,
