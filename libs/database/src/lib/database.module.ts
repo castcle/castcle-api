@@ -56,6 +56,7 @@ import {
   OtpSchema,
   QueueSchema,
   RelationshipSchema,
+  ReportingSchema,
   RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
@@ -120,6 +121,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Queue', schema: QueueSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
+  { name: 'Reporting', schema: ReportingSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([

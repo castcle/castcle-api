@@ -55,7 +55,7 @@ import {
   UserField,
   UserResponseDto,
 } from '../dtos';
-import { CampaignType, EngagementType, UserType } from '../models';
+import { CampaignType, EngagementType, ReportType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
@@ -332,9 +332,17 @@ export class UserServiceV2 {
   }
 
   async reportContent(user: User, targetContentId: string, message: string) {
-    const targetContent = await this.repository.findContent({
-      _id: targetContentId,
-    });
+    const targetContent = await this.repository.findContent(
+      {
+        _id: targetContentId,
+      },
+      {
+        projection: {
+          createdAt: 0,
+          updatedAt: 0,
+        },
+      },
+    );
 
     if (!targetContent) throw CastcleException.CONTENT_NOT_FOUND;
 
@@ -364,12 +372,28 @@ export class UserServiceV2 {
       },
       message,
     );
+
+    await this.repository.createReporting({
+      user: targetContent.author.id,
+      type: ReportType.CONTENT,
+      reported: targetContent,
+      reportedBy: user._id,
+      message,
+    });
   }
 
   async reportUser(user: User, targetCastcleId: string, message: string) {
-    const targetUser = await this.repository.findUser({
-      _id: targetCastcleId,
-    });
+    const targetUser = await this.repository.findUser(
+      {
+        _id: targetCastcleId,
+      },
+      {
+        projection: {
+          createdAt: 0,
+          updatedAt: 0,
+        },
+      },
+    );
 
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
@@ -378,6 +402,14 @@ export class UserServiceV2 {
       { _id: targetUser._id, displayName: targetUser.displayName },
       message,
     );
+
+    await this.repository.createReporting({
+      user: targetUser._id,
+      type: ReportType.USER,
+      reported: targetUser,
+      reportedBy: user._id,
+      message,
+    });
   }
 
   async updateMobile(

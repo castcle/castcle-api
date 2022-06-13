@@ -97,6 +97,7 @@ import {
   Queue,
   AccountReferral as Referral,
   Relationship,
+  Reporting,
   Revision,
   SocialSync,
   Transaction,
@@ -246,6 +247,8 @@ export class Repository {
     @InjectModel('CAccount') private caccountModel: Model<CAccount>,
     @InjectModel('AdsPlacement') private adsPlacementModel: Model<AdsPlacement>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
+    @InjectModel('Reporting') private reportingModel: Model<Reporting>,
+
     private httpService: HttpService,
   ) {}
 
@@ -752,8 +755,10 @@ export class Repository {
     return this.relationshipModel.deleteOne(filter, queryOptions);
   }
 
-  findContent(filter: ContentQuery) {
-    return this.contentModel.findOne(this.getContentQuery(filter)).exec();
+  findContent(filter: ContentQuery, queryOptions?: QueryOptions) {
+    return this.contentModel
+      .findOne(this.getContentQuery(filter), {}, queryOptions)
+      .exec();
   }
 
   findContents(filter: ContentQuery, queryOptions?: QueryOptions) {
@@ -1267,5 +1272,9 @@ export class Repository {
     });
 
     return Promise.all($userResponses);
+  }
+
+  createReporting(reporting: AnyKeys<Reporting>) {
+    return new this.reportingModel(reporting).save();
   }
 }
