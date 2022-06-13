@@ -23,6 +23,9 @@
 
 import { DateTime, DateTimeUnit } from 'luxon';
 
+class AcceptDatePDPA {
+  [key: string]: boolean;
+}
 export class CastcleDate {
   /**
    * Convert a timezone string to a UTC offset.
@@ -69,4 +72,14 @@ export class CastcleDate {
       ).getTime()
     );
   };
+
+  static isPDPA(pdpa: AcceptDatePDPA) {
+    const [lastKey] = Object.keys(pdpa).sort((a, b) => {
+      return (
+        new Date(DateTime.fromFormat(b, 'yLLdd').toString()).getTime() -
+        new Date(DateTime.fromFormat(a, 'yLLdd').toString()).getTime()
+      );
+    });
+    return pdpa[lastKey];
+  }
 }

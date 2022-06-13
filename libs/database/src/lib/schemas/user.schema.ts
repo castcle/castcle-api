@@ -111,6 +111,7 @@ type UserResponseOptionV2 = {
   linkSocial?: AccountAuthentications;
   syncSocials?: SocialSync[];
   casts?: number;
+  pdpa?: boolean;
 };
 
 export class User extends UserDocument {
@@ -236,6 +237,7 @@ UserSchema.methods.toUserResponseV2 = async function ({
   linkSocial,
   syncSocials,
   casts,
+  pdpa,
 }: UserResponseOptionV2 = {}) {
   const self = await this.populate('ownerAccount').execPopulate();
   const response = _covertToUserResponse(self as User, followed);
@@ -246,6 +248,7 @@ UserSchema.methods.toUserResponseV2 = async function ({
   response.wallet = { balance };
   response.mobile = mobile;
   response.linkSocial = {};
+  response.pdpa = pdpa;
 
   Object.values(SocialProvider).forEach((provider) => {
     response.linkSocial[provider] = linkSocial?.[provider]

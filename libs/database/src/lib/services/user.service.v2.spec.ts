@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { CastcleBullModule } from '@castcle-api/environments';
+import { CastcleBullModule, Environment } from '@castcle-api/environments';
 import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
@@ -59,6 +59,8 @@ import { AuthenticationService } from './authentication.service';
 import { CommentService } from './comment.service';
 import { ContentService } from './content.service';
 import { HashtagService } from './hashtag.service';
+
+jest.mock('@castcle-api/environments');
 
 describe('UserServiceV2', () => {
   let mongod: MongoMemoryReplSet;
@@ -484,6 +486,40 @@ describe('UserServiceV2', () => {
     });
   });
 
+  describe('updatePDPA', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      Environment.PDPA_ACCEPT_DATE = '20200601,20200701';
+    });
+
+    it('should get user data pdpa in response', async () => {
+      const userResponse = await userServiceV2.updatePDPA(
+        '20200601',
+        mocksUsers[0].account,
+      );
+
+      expect(userResponse.pdpa).toBeTruthy();
+    });
+
+    it('should get user data pdpa latest in response', async () => {
+      mocksUsers[0].account.pdpa = {
+        '20200701': false,
+      };
+      await mocksUsers[0].account.save();
+
+      const userResponse = await userServiceV2.updatePDPA(
+        '20200701',
+        mocksUsers[0].account,
+      );
+
+      expect(userResponse.pdpa).toBeTruthy();
+    });
+  });
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();

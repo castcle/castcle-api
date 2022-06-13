@@ -256,6 +256,11 @@ export const DefaultErrors = {
     code: '4006',
     message: 'You cannot change your Castcle Id.',
   },
+  '4007': {
+    statusCode: '400',
+    code: '4007',
+    message: 'Invalid date. Please try again.',
+  },
   '5001': {
     statusCode: '400',
     code: '5001',

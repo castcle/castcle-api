@@ -33,7 +33,7 @@ import {
   TwilioStatus,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { Password, Token } from '@castcle-api/utils/commons';
+import { CastcleDate, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { DateTime } from 'luxon';
@@ -169,6 +169,7 @@ export class AuthenticationServiceV2 {
       refreshToken,
       profile: await user?.toUserResponseV2({
         passwordNotSet: !account.password,
+        pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
       }),
       pages: user && pages.map((page) => page.toPageResponseV2()),
     };
@@ -227,7 +228,11 @@ export class AuthenticationServiceV2 {
         const duplicateUser = await this.repository.findUser({
           accountId: duplicateAccount._id,
         });
-        const profile = await duplicateUser?.toUserResponseV2();
+        const profile = await duplicateUser?.toUserResponseV2({
+          pdpa: duplicateAccount.pdpa
+            ? CastcleDate.isPDPA(duplicateAccount.pdpa)
+            : false,
+        });
         throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
           profile ? { profile } : null,
         );
@@ -305,6 +310,17 @@ export class AuthenticationServiceV2 {
 
     account.isGuest = false;
     account.email = dto.email;
+
+    if (Environment.PDPA_ACCEPT_DATE) {
+      const arrayOfPDPA = Environment.PDPA_ACCEPT_DATE.split(',');
+      const pdpaDate = arrayOfPDPA.map((date) => {
+        return {
+          [date]: true,
+        };
+      });
+      account.pdpa = Object.assign({}, ...pdpaDate);
+    }
+
     account.password = Password.hash(dto.password);
     const activation = account.createActivation(AccountActivationType.EMAIL);
     await this.updateReferral(account, dto.referral, dto.ip);

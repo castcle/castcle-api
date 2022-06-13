@@ -240,6 +240,9 @@ export class Environment {
   static LIMIT_CONTENT = Number(process.env.LIMIT_CONTENT) || 2000;
   static DECAY_DAY_CONTENT = Number(process.env.DECAY_DAY_CONTENT) || 7;
 
-  //  Generate QRCode
+  // Generate QRCode
   static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
+
+  // Accept date PDPA
+  static PDPA_ACCEPT_DATE = process.env.PDPA_ACCEPT_DATE || '';
 }
