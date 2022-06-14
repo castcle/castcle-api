@@ -76,6 +76,7 @@ import { DownloaderMock } from 'libs/utils/aws/src/lib/downloader.spec';
 import { FacebookClientMock } from 'libs/utils/clients/src/lib/facebook/facebook.client.spec';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { SuggestionService } from '../services/suggestion.service';
+import { WalletService } from '../services/wallet.service';
 import { UsersControllerV2 } from './users.controller.v2';
 
 describe('UsersControllerV2', () => {
@@ -123,6 +124,7 @@ describe('UsersControllerV2', () => {
         CampaignService,
         TAccountService,
         SuggestionService,
+        WalletService,
         AdsService,
         AnalyticService,
         NotificationService,

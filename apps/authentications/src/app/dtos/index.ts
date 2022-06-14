@@ -22,7 +22,7 @@
  */
 import {
   AcceptPlatform,
-  AccountAuthenIdType,
+  AuthenticationProvider,
   OtpObjective,
   PageResponseDto,
   UserResponseDto,
@@ -177,7 +177,7 @@ export interface SocialConnect {
   socialId: string;
   email: string;
   name: string;
-  provider: AccountAuthenIdType;
+  provider: AuthenticationProvider;
   profileImage: string;
   socialToken: string;
   socialSecretToken: string;

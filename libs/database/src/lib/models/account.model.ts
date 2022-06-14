@@ -22,7 +22,7 @@
  */
 
 import { AcceptPlatform } from '../dtos';
-import { SocialProvider } from './social-sync.enum';
+import { AuthenticationProvider } from './account.enum';
 
 export class AccountAuthentication {
   socialId: string;
@@ -30,12 +30,8 @@ export class AccountAuthentication {
   avatar?: string;
 }
 
-export class AccountCampaigns {
-  [campaignId: string]: Date[];
-}
-
 export type AccountAuthentications = Partial<
-  Record<SocialProvider, AccountAuthentication>
+  Record<AuthenticationProvider, AccountAuthentication>
 >;
 
 export enum AccountActivationType {
@@ -49,6 +45,10 @@ export class AccountActivation {
   verifyTokenExpireDate: Date;
   activationDate?: Date;
   revocationDate?: Date;
+}
+
+export class AccountCampaigns {
+  [campaignId: string]: Date[];
 }
 
 export class AccountDevice {

@@ -21,9 +21,10 @@
  * or have any questions.
  */
 
-export * from './delete-user.dto';
-export * from './dto';
-export * from './get-airdrop-balances.dto';
-export * from './get-page.dto';
-export * from './reporting.dto';
-export * from './wallet.dto';
+export enum AuthenticationProvider {
+  APPLE = 'apple',
+  FACEBOOK = 'facebook',
+  GOOGLE = 'google',
+  TELEGRAM = 'telegram',
+  TWITTER = 'twitter',
+}

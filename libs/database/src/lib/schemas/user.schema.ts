@@ -14,7 +14,7 @@ import {
 } from '../dtos';
 import {
   AccountAuthentications,
-  SocialProvider,
+  AuthenticationProvider,
   UserType,
   UserVerified,
 } from '../models';
@@ -108,7 +108,7 @@ type UserResponseOptionV2 = {
   followed?: boolean;
   balance?: number;
   mobile?: { countryCode: string; number: string };
-  linkSocial?: AccountAuthentications;
+  authentications?: AccountAuthentications;
   syncSocials?: SocialSync[];
   casts?: number;
   pdpa?: boolean;
@@ -195,7 +195,7 @@ UserSchema.methods.toUserResponse = async function ({
   if (linkSocial) {
     response.linkSocial = Object.assign(
       {},
-      ...linkSocial.map((social: AccountAuthenId) => {
+      ...linkSocial.map((social) => {
         return {
           [social.type]: {
             socialId: social.socialId,
@@ -234,7 +234,7 @@ UserSchema.methods.toUserResponseV2 = async function ({
   followed,
   balance,
   mobile,
-  linkSocial,
+  authentications,
   syncSocials,
   casts,
   pdpa,
@@ -250,9 +250,9 @@ UserSchema.methods.toUserResponseV2 = async function ({
   response.linkSocial = {};
   response.pdpa = pdpa;
 
-  Object.values(SocialProvider).forEach((provider) => {
-    response.linkSocial[provider] = linkSocial?.[provider]
-      ? { socialId: linkSocial[provider].socialId }
+  Object.values(AuthenticationProvider).forEach((provider) => {
+    response.linkSocial[provider] = authentications?.[provider]
+      ? { socialId: authentications[provider].socialId }
       : null;
   });
 
