@@ -37,6 +37,7 @@ import { QRCodeControllerV2 } from './controllers/qrcodes.controller.v2';
 import { UsersController } from './controllers/users.controller';
 import { UsersControllerV2 } from './controllers/users.controller.v2';
 import { SuggestionService } from './services/suggestion.service';
+import { WalletService } from './services/wallet.service';
 
 @Module({
   imports: [
@@ -58,6 +59,6 @@ import { SuggestionService } from './services/suggestion.service';
     UsersController,
     UsersControllerV2,
   ],
-  providers: [SuggestionService],
+  providers: [SuggestionService, WalletService],
 })
 export class AppModule {}
