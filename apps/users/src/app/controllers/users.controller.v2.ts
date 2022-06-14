@@ -920,11 +920,7 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
-    return this.userServiceV2.getReferee(
-      query,
-      user,
-      authorizer.account.isGuest,
-    );
+    return this.userServiceV2.getReferral(query, user, authorizer.user, true);
   }
 
   @CastcleAuth(CacheKeyName.Referrer)
@@ -938,10 +934,6 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
-    return this.userServiceV2.getReferrer(
-      query,
-      user,
-      authorizer.account.isGuest,
-    );
+    return this.userServiceV2.getReferral(query, user, authorizer.user, false);
   }
 }

@@ -639,26 +639,24 @@ export class UserServiceV2 {
   async updatePDPA(date: string, account: Account) {
     await account.set(`pdpa.${date}`, true).save();
   }
-  async getReferee(
+
+  async getReferral(
     {
       hasRelationshipExpansion,
       maxResults,
       userFields,
       ...query
     }: PaginationQuery,
-    viewer: User,
-    isGuest: boolean,
+    targetUser: User,
+    requestBy: User,
+    refereeBy: boolean,
   ) {
-    if (!viewer) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const accountsCount = await this.repository.countAccount({
-      referredBy: viewer.ownerAccount as any,
-      ...query,
-    });
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
     const accounts = await this.repository.findAccounts(
       {
-        referredBy: viewer.ownerAccount as any,
+        _id: !refereeBy ? (targetUser.ownerAccount as any) : undefined,
+        referredBy: refereeBy ? (targetUser.ownerAccount as any) : undefined,
         ...query,
       },
       {
@@ -666,82 +664,32 @@ export class UserServiceV2 {
       },
     );
 
-    if (!accounts.length)
-      return ResponseDto.ok({
-        payload: [],
-        meta: { resultCount: 0 },
-      });
-
     const accountId = accounts.map((account) => account._id);
+
     const users = await this.repository.findUsers({
-      accountId,
+      accountId: accountId,
       type: UserType.PEOPLE,
     });
 
-    if (isGuest)
-      return ResponseDto.ok({
-        payload: await Promise.all(
-          users.map((user) =>
-            user.toUserResponseV2({
-              blocked: false,
-              blocking: false,
-              followed: false,
-            }),
-          ),
-        ),
-        meta: Meta.fromDocuments(users as any, accountsCount),
-      });
-
-    return ResponseDto.ok({
-      payload: await this.convertUsersToUserResponsesV2(
-        viewer,
-        users,
-        hasRelationshipExpansion,
-        userFields,
-      ),
-      meta: Meta.fromDocuments(users as any, accountsCount),
-    });
-  }
-
-  async getReferrer(
-    { hasRelationshipExpansion, userFields }: PaginationQuery,
-    viewer: User,
-    isGuest: boolean,
-  ) {
-    if (!viewer) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-
-    const accountRef = await this.repository.findAccount({
-      _id: viewer.ownerAccount as any,
-    });
-
-    if (!accountRef)
-      return ResponseDto.ok({
-        payload: null,
-      });
-
-    const user = await this.repository.findUser({
-      accountId: accountRef._id,
-      type: UserType.PEOPLE,
-    });
-
-    if (isGuest)
-      return ResponseDto.ok({
-        payload: await user.toUserResponseV2({
-          blocked: false,
-          blocking: false,
-          followed: false,
-        }),
-      });
-
-    const [usersResponse] = await this.convertUsersToUserResponsesV2(
-      viewer,
-      [user],
+    const userResponses = await this.convertUsersToUserResponsesV2(
+      requestBy,
+      users,
       hasRelationshipExpansion,
       userFields,
     );
 
+    const accountsCount = refereeBy
+      ? await this.repository.countAccount({
+          referredBy: targetUser.ownerAccount as any,
+          ...query,
+        })
+      : 0;
+
     return ResponseDto.ok({
-      payload: usersResponse,
+      payload: refereeBy ? userResponses : [userResponses],
+      meta: refereeBy
+        ? Meta.fromDocuments(userResponses as any, accountsCount)
+        : undefined,
     });
   }
 }

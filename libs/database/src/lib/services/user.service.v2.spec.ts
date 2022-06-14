@@ -530,10 +530,10 @@ describe('UserServiceV2', () => {
       expect(userResponse).toBeUndefined();
     });
   });
-  describe('getReferee', () => {
+  describe('getReferral', () => {
     let mockUsers: MockUserDetail[];
     beforeAll(async () => {
-      mockUsers = await generateMockUsers(1, 0, {
+      mockUsers = await generateMockUsers(2, 0, {
         userService: userServiceV1,
         accountService: authService,
       });
@@ -558,32 +558,25 @@ describe('UserServiceV2', () => {
       });
     });
     it('should get user referee', async () => {
-      const referee = await userServiceV2.getReferee(
+      const referee = await userServiceV2.getReferral(
         {
           maxResults: 10,
           hasRelationshipExpansion: false,
         },
+        mockUsers[1].user,
         mockUsers[0].user,
-        false,
+        true,
       );
 
       expect(referee.payload).toHaveLength(1);
     });
-  });
 
-  describe('getReferrer', () => {
-    let mockUsers: MockUserDetail[];
-    beforeAll(async () => {
-      mockUsers = await generateMockUsers(1, 0, {
-        userService: userServiceV1,
-        accountService: authService,
-      });
-    });
     it('should get user referrer', async () => {
-      const referrer = await userServiceV2.getReferrer(
+      const referrer = await userServiceV2.getReferral(
         {
           hasRelationshipExpansion: false,
         },
+        mockUsers[1].user,
         mockUsers[0].user,
         false,
       );
