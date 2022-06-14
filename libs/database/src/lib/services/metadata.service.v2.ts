@@ -25,13 +25,13 @@ import { Repository } from '../repositories';
 
 @Injectable()
 export class MetadataServiceV2 {
-  constructor(private repositoryService: Repository) {}
+  constructor(private repository: Repository) {}
 
   getAllLanguage() {
-    return this.repositoryService.findLanguages().exec();
+    return this.repository.findLanguages().exec();
   }
 
   getAllCountry(sortBy: { [key: string]: number }) {
-    return this.repositoryService.findCountries().sort(sortBy).exec();
+    return this.repository.findCountries().sort(sortBy).exec();
   }
 }
