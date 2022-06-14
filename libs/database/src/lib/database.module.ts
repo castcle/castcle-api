@@ -118,8 +118,6 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
 ]);
@@ -129,6 +127,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'FeedItem', useFactory: () => FeedItemSchema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
   { name: 'Revision', useFactory: () => RevisionSchema },
+  { name: 'SocialSync', useFactory: () => SocialSyncSchema },
+  { name: 'Transaction', useFactory: () => TransactionSchema },
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
@@ -152,7 +152,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'User',
     useFactory: UserSchemaFactory,
-    inject: [getModelToken('Relationship')],
+    inject: [
+      getModelToken('Relationship'),
+      getModelToken('SocialSync'),
+      getModelToken('Transaction'),
+    ],
   },
   {
     name: 'Engagement',

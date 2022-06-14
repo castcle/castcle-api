@@ -76,11 +76,6 @@ export enum CastcleQueueAction {
   UpdateProfile = 'updateProfile',
 }
 
-export class CastcleImage {
-  original: string;
-  [key: string]: string;
-}
-
 export class CastcleMeta {
   'oldestId'?: string;
   'newestId'?: string;

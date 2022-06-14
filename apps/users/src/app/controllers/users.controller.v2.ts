@@ -42,7 +42,6 @@ import {
   NotificationServiceV2,
   NotificationSource,
   NotificationType,
-  PageResponseDto,
   PaginationQuery,
   QuoteCastDto,
   RankerService,
@@ -169,21 +168,14 @@ export class UsersControllerV2 {
 
   @CastcleAuth(CacheKeyName.Users)
   @Get(':userId')
-  async getUserById(
+  async getUser(
     @Auth() authorizer: Authorizer,
     @Param() { isMe, userId }: GetUserParam,
-    @Query() userQuery?: ExpansionQuery,
+    @Query() { userFields }: ExpansionQuery,
   ) {
     return isMe
-      ? authorizer.user.toUserResponseV2({
-          passwordNotSet: !authorizer.account.password,
-        })
-      : this.userServiceV2.getById(
-          authorizer.user,
-          await this.userServiceV2.getUser(userId),
-          userQuery?.hasRelationshipExpansion,
-          userQuery?.userFields,
-        );
+      ? authorizer.user.toOwnerResponse({ expansionFields: userFields })
+      : this.userServiceV2.getPublicUser(authorizer.user, userId, userFields);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -217,10 +209,8 @@ export class UsersControllerV2 {
       authorizer.account._id,
     );
 
-    const updateUser = await this.userService.updateUser(user, prepareUser);
-    return updateUser.toUserResponseV2(
-      isMe ? { passwordNotSet: !authorizer.account.password } : undefined,
-    );
+    const updatedUser = await this.userService.updateUser(user, prepareUser);
+    return updatedUser.toOwnerResponse();
   }
 
   @CastcleBasicAuth()
@@ -581,9 +571,7 @@ export class UsersControllerV2 {
   @Get('me/pages')
   async getMyPages(@Auth() authorizer: Authorizer) {
     const pages = await this.userServiceV2.getMyPages(authorizer.user);
-    return ResponseDto.ok<PageResponseDto[]>({
-      payload: pages,
-    });
+    return ResponseDto.ok({ payload: pages });
   }
 
   @Post(':userId/blocking')
@@ -687,7 +675,7 @@ export class UsersControllerV2 {
       ? authorizer.user
       : await this.userService.findUser(userId);
 
-    const { users, meta } = await this.userServiceV2.getBlockedLookup(
+    const { items: users, meta } = await this.userServiceV2.getBlockedLookup(
       user,
       paginationQuery,
     );

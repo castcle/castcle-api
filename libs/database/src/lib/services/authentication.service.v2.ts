@@ -33,7 +33,7 @@ import {
   TwilioStatus,
   TwitterClient,
 } from '@castcle-api/utils/clients';
-import { CastcleDate, Password, Token } from '@castcle-api/utils/commons';
+import { Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { DateTime } from 'luxon';
@@ -50,6 +50,7 @@ import {
   RequestOtpForChangingPasswordDto,
   SocialConnectDto,
   UserAccessTokenPayload,
+  UserField,
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
 } from '../dtos';
@@ -162,12 +163,24 @@ export class AuthenticationServiceV2 {
     return {
       accessToken,
       refreshToken,
-      profile: await user?.toUserResponseV2({
-        passwordNotSet: !account.password,
-        authentications: account.authentications,
-        pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
+      profile: await user?.toOwnerResponse({
+        expansionFields: [
+          UserField.LinkSocial,
+          UserField.SyncSocial,
+          UserField.Wallet,
+        ],
       }),
-      pages: user && pages.map((page) => page.toPageResponseV2()),
+      pages: await Promise.all(
+        pages.map((page) =>
+          page.toOwnerResponse({
+            expansionFields: [
+              UserField.LinkSocial,
+              UserField.SyncSocial,
+              UserField.Wallet,
+            ],
+          }),
+        ),
+      ),
     };
   }
 
@@ -224,11 +237,7 @@ export class AuthenticationServiceV2 {
         const duplicateUser = await this.repository.findUser({
           accountId: duplicateAccount._id,
         });
-        const profile = await duplicateUser?.toUserResponseV2({
-          pdpa: duplicateAccount.pdpa
-            ? CastcleDate.isPDPA(duplicateAccount.pdpa)
-            : false,
-        });
+        const profile = duplicateUser?.toPublicResponse();
         throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
           profile ? { profile } : null,
         );
@@ -307,8 +316,8 @@ export class AuthenticationServiceV2 {
     account.isGuest = false;
     account.email = dto.email;
 
-    if (Environment.PDPA_ACCEPT_DATE) {
-      const ofPDPA = Environment.PDPA_ACCEPT_DATE.split(',');
+    if (Environment.PDPA_ACCEPT_DATES) {
+      const ofPDPA = Environment.PDPA_ACCEPT_DATES;
 
       if (Array.isArray(ofPDPA)) {
         const pdpaDate = ofPDPA.map((date) => {

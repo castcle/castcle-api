@@ -32,7 +32,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { ExcludeType, KeywordType } from '../models';
-import { PageResponseDto, UserResponseDto } from './user.dto';
+import { OwnerResponse, PublicUserResponse } from './user.dto';
 
 export class GetTopTrendQuery {
   @IsOptional()
@@ -72,7 +72,7 @@ export class HashtagResponseDto {
 
 export class TopTrendsResponseDto {
   hashtags: HashtagResponseDto[];
-  users: (UserResponseDto | PageResponseDto)[];
+  users: (PublicUserResponse | OwnerResponse)[];
 }
 
 export class PayloadHashtagOption {
@@ -86,5 +86,5 @@ export class ByKeywordResponseDto {
     isTrending: boolean;
   }[];
   hashtags: HashtagResponseDto[];
-  users: (UserResponseDto | PageResponseDto)[];
+  users: (PublicUserResponse | OwnerResponse)[];
 }

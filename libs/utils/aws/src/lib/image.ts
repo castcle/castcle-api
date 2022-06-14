@@ -20,33 +20,22 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
 import * as sharp from 'sharp';
-import * as Configs from '../config';
+import { CastcleImage, EXPIRE_TIME, IMAGE_BUCKET_FOLDER, Size } from './config';
 import { UploadOptions, Uploader } from './uploader';
 
 const OriginalSuffix = 'original';
-
-export type Size = {
-  name: string;
-  width: number;
-  height: number;
-};
 
 export interface ImageUploadOptions extends UploadOptions {
   sizes?: Size[];
 }
 
 export class Image {
-  constructor(
-    public image: {
-      original: string;
-      [key: string]: string;
-    },
-    public order?: number,
-  ) {}
+  constructor(public image: CastcleImage, public order?: number) {}
 
   toSignUrl(sizeName?: string) {
     //for pass no env test
@@ -68,16 +57,13 @@ export class Image {
 
     return signer.getSignedUrl({
       url,
-      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000),
+      expires: Math.floor((Date.now() + EXPIRE_TIME) / 1000),
     });
   }
 
-  toSignUrls() {
+  toSignUrls(): CastcleImage {
     if (this.image['isSign']) return this.image;
-    const newImage: {
-      original: string;
-      [key: string]: string;
-    } = {
+    const newImage: CastcleImage = {
       original: this.toSignUrl(),
     };
     Object.keys(this.image).forEach((sizeName) => {
@@ -138,7 +124,7 @@ export class Image {
       .toBuffer();
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER,
+      IMAGE_BUCKET_FOLDER,
     );
     return uploader.uploadBufferToS3(newBuffer, fileType, {
       ...options,
@@ -146,16 +132,7 @@ export class Image {
     });
   };
 
-  static download(
-    image: {
-      original: string;
-      [key: string]: string;
-    },
-    defaultImage?: string,
-  ): {
-    original: string;
-    [key: string]: string;
-  } {
+  static download(image: CastcleImage, defaultImage?: string): CastcleImage {
     if (image) {
       const imageInstance = new Image(image);
       return imageInstance.toSignUrls();
@@ -171,15 +148,12 @@ export class Image {
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER,
+      IMAGE_BUCKET_FOLDER,
     );
     const contentType = Uploader.getImageContentType(base64);
     const fileType = Uploader.getFileTypeFromBase64(base64);
     const buffer = Uploader.getBufferFromBase64(base64);
-    const image: {
-      original: string;
-      [key: string]: string;
-    } = {
+    const image: CastcleImage = {
       original: await uploader
         .uploadBufferToS3(buffer, fileType, {
           ...options,
