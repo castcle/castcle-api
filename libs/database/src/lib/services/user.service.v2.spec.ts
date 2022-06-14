@@ -563,8 +563,8 @@ describe('UserServiceV2', () => {
           maxResults: 10,
           hasRelationshipExpansion: false,
         },
-        mockUsers[1].user,
         mockUsers[0].user,
+        mockUsers[1].user,
         true,
       );
 
@@ -576,8 +576,8 @@ describe('UserServiceV2', () => {
         {
           hasRelationshipExpansion: false,
         },
-        mockUsers[1].user,
         mockUsers[0].user,
+        mockUsers[1].user,
         false,
       );
 
