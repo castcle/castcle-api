@@ -21,6 +21,7 @@
  * or have any questions.
  */
 
+export * from './account.enum';
 export * from './account.model';
 export * from './ads.const';
 export * from './ads.enum';

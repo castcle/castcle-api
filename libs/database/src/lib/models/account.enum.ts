@@ -21,54 +21,10 @@
  * or have any questions.
  */
 
-import { AcceptPlatform } from '../dtos';
-import { AuthenticationProvider } from './account.enum';
-
-export class AccountAuthentication {
-  socialId: string;
-  socialToken?: string;
-  avatar?: string;
-}
-
-export type AccountAuthentications = Partial<
-  Record<AuthenticationProvider, AccountAuthentication>
->;
-
-export enum AccountActivationType {
-  EMAIL = 'email',
-  PHONE = 'phone',
-}
-
-export class AccountActivation {
-  type: AccountActivationType;
-  verifyToken: string;
-  verifyTokenExpireDate: Date;
-  activationDate?: Date;
-  revocationDate?: Date;
-}
-
-export class AccountCampaigns {
-  [campaignId: string]: Date[];
-}
-
-export class AccountDevice {
-  uuid: string;
-  firebaseToken: string;
-  platform: AcceptPlatform;
-}
-
-export interface AccountRequirements {
-  header: {
-    platform: string;
-  };
-  device: string;
-  deviceUUID: string;
-  languagesPreferences: string[];
-  geolocation?: {
-    countryCode: string;
-    continentCode: string;
-  };
-}
-export class AcceptDatePDPA {
-  [key: string]: boolean;
+export enum AuthenticationProvider {
+  APPLE = 'apple',
+  FACEBOOK = 'facebook',
+  GOOGLE = 'google',
+  TELEGRAM = 'telegram',
+  TWITTER = 'twitter',
 }
