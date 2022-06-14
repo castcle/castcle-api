@@ -82,6 +82,7 @@ import { LanguageService } from './services/language.service';
 import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
+import { RankerServiceV2 } from './services/ranker.service.v2';
 import { SearchService } from './services/search.service';
 import { SearchServiceV2 } from './services/search.service.v2';
 import { SocialSyncService } from './services/social-sync.service';
@@ -117,8 +118,6 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'SocialSync', schema: SocialSyncSchema },
-  { name: 'Transaction', schema: TransactionSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
 ]);
@@ -128,6 +127,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   { name: 'FeedItem', useFactory: () => FeedItemSchema },
   { name: 'Relationship', useFactory: () => RelationshipSchema },
   { name: 'Revision', useFactory: () => RevisionSchema },
+  { name: 'SocialSync', useFactory: () => SocialSyncSchema },
+  { name: 'Transaction', useFactory: () => TransactionSchema },
   {
     name: 'Comment',
     useFactory: CommentSchemaFactory,
@@ -151,7 +152,11 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
   {
     name: 'User',
     useFactory: UserSchemaFactory,
-    inject: [getModelToken('Relationship')],
+    inject: [
+      getModelToken('Relationship'),
+      getModelToken('SocialSync'),
+      getModelToken('Transaction'),
+    ],
   },
   {
     name: 'Engagement',
@@ -198,6 +203,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationService,
     NotificationServiceV2,
     RankerService,
+    RankerServiceV2,
     Repository,
     SearchService,
     SearchServiceV2,
@@ -226,6 +232,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     NotificationService,
     NotificationServiceV2,
     RankerService,
+    RankerServiceV2,
     SearchService,
     SearchServiceV2,
     SocialSyncService,
@@ -259,6 +266,7 @@ export {
   NotificationService,
   NotificationServiceV2,
   RankerService,
+  RankerServiceV2,
   SearchService,
   SearchServiceV2,
   SocialSyncService,

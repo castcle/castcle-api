@@ -21,6 +21,7 @@
  * or have any questions.
  */
 import { CastLogger } from '@castcle-api/logger';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { TwilioChannel } from '@castcle-api/utils/clients';
 import { CastcleName, CastcleRegExp } from '@castcle-api/utils/commons';
 import { Injectable } from '@nestjs/common';
@@ -33,7 +34,7 @@ import {
   CreateCredentialDto,
   SocialContentDto,
 } from '../dtos/account.dto';
-import { CastcleImage, EntityVisibility } from '../dtos/common.dto';
+import { EntityVisibility } from '../dtos/common.dto';
 import {
   AccessTokenPayload,
   EmailVerifyToken,

@@ -496,8 +496,8 @@ describe('ContentServiceV2', () => {
         mocksUsers[4].user,
       );
       expect(recastResponse.payload).toHaveLength(1);
-      await recastResponse.payload.map((item) => {
-        expect(item.id).toEqual(mocksUsers[1].user._id);
+      recastResponse.payload.map((item) => {
+        expect(item.id).toEqual(mocksUsers[1].user.id);
       });
     });
   });

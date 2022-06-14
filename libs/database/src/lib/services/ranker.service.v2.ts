@@ -21,28 +21,27 @@
  * or have any questions.
  */
 
-import { Size } from './lib/image';
+import { Injectable } from '@nestjs/common';
+import { Repository } from '../repositories';
 
-/** 2 days expiration time (in milliseconds)  */
-export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000;
-export const IMAGE_BUCKET_FOLDER = 'images';
+@Injectable()
+export class RankerServiceV2 {
+  constructor(private repository: Repository) {}
 
-export const AVATAR_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 120, height: 120 },
-  { name: 'medium', width: 480, height: 480 },
-  { name: 'large', width: 1080, height: 1080 },
-  { name: 'fullHd', width: 1920, height: 1920 },
-];
-
-export const COMMON_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 640, height: 360 },
-  { name: 'medium', width: 960, height: 540 },
-  { name: 'large', width: 1280, height: 720 },
-  { name: 'fullHd', width: 1920, height: 1080 },
-];
-
-export const QRCODE_STANDARD_SIZE_CONFIGS: Size[] = [
-  { name: 'thumbnail', width: 250, height: 250 },
-  { name: 'medium', width: 690, height: 690 },
-  { name: 'large', width: 1024, height: 1024 },
-];
+  offViewFeedItem(accountId: string, feedItemId: string) {
+    return this.repository
+      .updateFeedItem(
+        {
+          viewer: accountId as any,
+          _id: feedItemId,
+          offScreenAt: {
+            $exists: false,
+          },
+        },
+        {
+          offScreenAt: new Date(),
+        },
+      )
+      .exec();
+  }
+}

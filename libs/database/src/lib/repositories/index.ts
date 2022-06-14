@@ -62,6 +62,7 @@ import {
   RefreshTokenPayload,
   ShortPayload,
   Url,
+  UserField,
 } from '../dtos';
 import {
   AdsBoostStatus,
@@ -995,6 +996,14 @@ export class Repository {
     return this.socialSyncModel.deleteMany(filter, queryOptions);
   }
 
+  updateFeedItem(
+    filter: FilterQuery<FeedItem>,
+    feedItem: UpdateQuery<FeedItem>,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.feedItemModel.updateOne(filter, feedItem, queryOptions);
+  }
+
   findSocialSync(filter: SocialSyncQuery, queryOptions?: QueryOptions) {
     return this.socialSyncModel
       .findOne(this.getSocialSyncQuery(filter), {}, queryOptions)
@@ -1211,5 +1220,52 @@ export class Repository {
       await session.commitTransaction();
       session.endSession();
     });
+  }
+
+  async getPublicUsers({
+    requestedBy,
+    filter,
+    queryOptions,
+    expansionFields,
+  }: {
+    requestedBy: Types.ObjectId;
+    filter: UserQuery;
+    queryOptions?: QueryOptions;
+    expansionFields?: UserField[];
+  }) {
+    const users = await this.userModel.find(
+      this.getUserQuery(filter),
+      {},
+      queryOptions,
+    );
+    const userIds = users.map((user) => user._id);
+    const relationships = expansionFields?.includes(UserField.Relationships)
+      ? await this.relationshipModel.find({
+          user: requestedBy as any,
+          followedUser: { $in: userIds },
+        })
+      : [];
+
+    const $userResponses = users.map((user) => {
+      if (user.id === String(requestedBy)) {
+        return user.toOwnerResponse({ expansionFields });
+      }
+
+      if (expansionFields?.includes(UserField.Relationships)) {
+        const relationship = relationships.find(
+          (relationship) => String(relationship.followedUser) == user.id,
+        );
+
+        return user.toPublicResponse({
+          blocked: relationship?.blocked ?? false,
+          blocking: relationship?.blocking ?? false,
+          followed: relationship?.following ?? false,
+        });
+      }
+
+      return user.toPublicResponse();
+    });
+
+    return Promise.all($userResponses);
   }
 }

@@ -44,13 +44,7 @@ import {
   UserService,
   UserServiceV2,
 } from '../database.module';
-import {
-  Meta,
-  PageResponseDto,
-  PaginationQuery,
-  QRCodeImageSize,
-  UserResponseDto,
-} from '../dtos';
+import { PaginationQuery, QRCodeImageSize } from '../dtos';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
 import { KeywordType, QueueName } from '../models';
 import { Repository } from '../repositories';
@@ -187,13 +181,13 @@ describe('UserServiceV2', () => {
     });
 
     it('should return blocked lookup user', async () => {
-      const relationship: {
-        users: (PageResponseDto | UserResponseDto)[];
-        meta: Meta;
-      } = await userServiceV2.getBlockedLookup(user1, new PaginationQuery());
+      const relationship = await userServiceV2.getBlockedLookup(
+        user1,
+        new PaginationQuery(),
+      );
 
       expect(relationship).not.toBeNull();
-      expect(relationship.users.length).toBeGreaterThan(0);
+      expect(relationship.items.length).toBeGreaterThan(0);
     });
 
     it('should block user and create blocking relationship', async () => {
@@ -494,7 +488,7 @@ describe('UserServiceV2', () => {
         accountService: authService,
       });
 
-      Environment.PDPA_ACCEPT_DATE = '20200601,20200701';
+      Environment.PDPA_ACCEPT_DATES = ['20200701', '20200601'];
     });
 
     it('should get user data pdpa in response', async () => {

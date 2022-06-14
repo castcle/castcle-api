@@ -21,13 +21,50 @@
  * or have any questions.
  */
 
-export class UserVerified {
+import { CastcleImage } from '@castcle-api/utils/aws';
+
+export class PublicVerification {
+  official: boolean;
+}
+
+export class OwnerVerification extends PublicVerification {
   email: boolean;
   mobile: boolean;
-  official: boolean;
   social: boolean;
 }
 
-export class PageVerified {
-  official: boolean;
+export class UserContact {
+  countryCode?: string;
+  phone?: string;
+  email?: string;
+}
+
+export class UserMobile {
+  countryCode: string;
+  number: string;
+}
+
+export class UserImage {
+  avatar?: CastcleImage;
+  cover?: CastcleImage;
+}
+
+export interface UserProfile {
+  birthdate?: Date;
+  overview?: string;
+  works?: string[];
+  educations?: string[];
+  homeTowns?: string[];
+  websites?: {
+    website: string;
+    detail: string;
+  }[];
+  socials?: {
+    facebook?: string;
+    twitter?: string;
+    youtube?: string;
+    medium?: string;
+  };
+  details?: string;
+  images?: UserImage;
 }

@@ -127,10 +127,11 @@ export class SuggestionServiceV2 {
       sliceUsers = users.slice(0, pageQuery.maxResults);
     }
 
-    const usersConvert = await this.userServiceV2.convertUsersToUserResponsesV2(
+    const usersConvert = await this.userServiceV2.getPublicUsers(
       user,
-      sliceUsers,
-      pageQuery.userFields?.includes(UserField.Relationships),
+      { _id: sliceUsers.map((user) => user._id) },
+      {},
+      [UserField.Relationships],
     );
 
     return {

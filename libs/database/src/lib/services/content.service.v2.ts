@@ -1006,11 +1006,7 @@ export class ContentServiceV2 {
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
       const userResponses = await Promise.all(
-        usersEngagement.map(async ({ user }) => {
-          return user.type === UserType.PAGE
-            ? user.toPageResponseV2()
-            : await user.toUserResponseV2();
-        }),
+        usersEngagement.map(async ({ user }) => user.toPublicResponse()),
       );
       return ResponseDto.ok({
         payload: userResponses,
@@ -1031,19 +1027,11 @@ export class ContentServiceV2 {
       (relationship) => String(relationship.user) === String(viewer?._id),
     );
 
-    const userResponses = await Promise.all(
-      usersEngagement.map(async ({ user }) => {
-        return user.type === UserType.PAGE
-          ? user.toPageResponseV2(
-              relationship?.blocking ?? false,
-              relationship?.blocking ?? false,
-              relationship?.following ?? false,
-            )
-          : await user.toUserResponseV2({
-              blocked: relationship?.blocking ?? false,
-              blocking: relationship?.blocking ?? false,
-              followed: relationship?.following ?? false,
-            });
+    const userResponses = usersEngagement.map(({ user }) =>
+      user.toPublicResponse({
+        blocked: relationship?.blocking ?? false,
+        blocking: relationship?.blocking ?? false,
+        followed: relationship?.following ?? false,
       }),
     );
 
