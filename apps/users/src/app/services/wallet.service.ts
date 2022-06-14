@@ -21,9 +21,35 @@
  * or have any questions.
  */
 
-export * from './delete-user.dto';
-export * from './dto';
-export * from './get-airdrop-balances.dto';
-export * from './get-page.dto';
-export * from './reporting.dto';
-export * from './wallet.dto';
+import { TAccountService, User, WalletType } from '@castcle-api/database';
+import { Injectable } from '@nestjs/common';
+import { WalletResponse } from '../dtos';
+
+@Injectable()
+export class WalletService {
+  constructor(private taccountService: TAccountService) {}
+
+  async getWalletBalance(user: User): Promise<WalletResponse> {
+    const personalBalance = await this.taccountService.getAccountBalance(
+      user.id,
+      WalletType.PERSONAL,
+    );
+    const adsCreditBalance = await this.taccountService.getAccountBalance(
+      user.id,
+      WalletType.ADS,
+    );
+    const farmingBalance = await this.taccountService.getAccountBalance(
+      user.id,
+      WalletType.FARM_LOCKED,
+    );
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      castcleId: user.displayId,
+      availableBalance: personalBalance,
+      adsCredit: adsCreditBalance,
+      farmBalance: farmingBalance,
+      totalBalance: personalBalance + adsCreditBalance + farmingBalance,
+    };
+  }
+}

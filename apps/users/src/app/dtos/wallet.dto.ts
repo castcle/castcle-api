@@ -21,9 +21,12 @@
  * or have any questions.
  */
 
-export * from './delete-user.dto';
-export * from './dto';
-export * from './get-airdrop-balances.dto';
-export * from './get-page.dto';
-export * from './reporting.dto';
-export * from './wallet.dto';
+export class WalletResponse {
+  id: string;
+  castcleId?: string;
+  displayName?: string;
+  totalBalance: number;
+  farmBalance: number;
+  availableBalance: number;
+  adsCredit: number;
+}
