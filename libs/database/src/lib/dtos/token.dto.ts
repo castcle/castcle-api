@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
-import { PageVerified, UserVerified } from '../models';
-import { CastcleImage } from './common.dto';
+import { CastcleImage } from '@castcle-api/utils/aws';
+import { OwnerVerification, PublicVerification } from '../models';
 
 export interface AccessTokenPayload {
   id: string;
@@ -37,11 +37,11 @@ export interface PageInfoPayload {
   displayName: string;
   avatar: CastcleImage;
   role: 'admin'; // admin or member
-  verified: PageVerified;
+  verified: PublicVerification;
 }
 
 export interface UserAccessTokenPayload extends AccessTokenPayload {
-  verified: UserVerified; // ถ้ายังไม่ verify ไม่สามารถ post ได้
+  verified: OwnerVerification; // ถ้ายังไม่ verify ไม่สามารถ post ได้
   showAds: boolean;
 }
 

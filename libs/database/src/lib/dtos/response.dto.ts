@@ -22,7 +22,6 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { Document } from 'mongoose';
 import { CastcleIncludes } from './content.dto';
 
 export class Meta {
@@ -32,7 +31,7 @@ export class Meta {
   resultTotal?: number;
 
   static fromDocuments = (
-    documents: Document[],
+    documents: { _id?: string; id?: string }[],
     resultTotal?: number,
   ): Meta => {
     return {

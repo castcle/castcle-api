@@ -23,11 +23,7 @@
 import { Environment } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import { Mailer } from '@castcle-api/utils/clients';
-import {
-  CastcleDate,
-  CastcleQRCode,
-  LocalizationLang,
-} from '@castcle-api/utils/commons';
+import { CastcleQRCode, LocalizationLang } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -61,10 +57,9 @@ import {
 } from '../dtos';
 import { CampaignType, EngagementType, UserType } from '../models';
 import { Repository } from '../repositories';
-import { Account, Relationship, SocialSync, User } from '../schemas';
+import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 import { CampaignService } from './campaign.service';
-import { ContentService } from './content.service';
 import { NotificationService } from './notification.service';
 
 @Injectable()
@@ -74,13 +69,10 @@ export class UserServiceV2 {
   constructor(
     @InjectModel('Relationship')
     private relationshipModel: Model<Relationship>,
-    @InjectModel('SocialSync')
-    private socialSyncModel: Model<SocialSync>,
     @InjectModel('User')
     private userModel: Model<User>,
     private analyticService: AnalyticService,
     private campaignService: CampaignService,
-    private contentService: ContentService,
     private mailerService: Mailer,
     private notificationService: NotificationService,
     private repository: Repository,
@@ -91,6 +83,47 @@ export class UserServiceV2 {
     if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
     return user;
   };
+
+  getPublicUser = async (
+    requestedBy: User,
+    userId: string,
+    expansionFields?: UserField[],
+  ) => {
+    const [user] = await this.repository.getPublicUsers({
+      requestedBy: requestedBy._id,
+      filter: { _id: userId },
+      expansionFields,
+    });
+
+    if (!user) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    return user;
+  };
+
+  async getPublicUsers(
+    requestedBy: User,
+    filter: { _id: Types.ObjectId[] },
+    queryOptions?: CastcleQueryOptions,
+    expansionFields?: UserField[],
+  ) {
+    const total = await this.repository.findUserCount(filter);
+    const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
+    const users = await this.repository.getPublicUsers({
+      requestedBy: requestedBy._id,
+      filter,
+      queryOptions: {
+        limit: queryOptions.limit,
+        skip: queryOptions.page - 1,
+        sort: { [queryOptions.sortBy?.field ?? 'updatedAt']: sortKey },
+      },
+      expansionFields,
+    });
+
+    return {
+      items: users,
+      meta: Meta.fromDocuments(users, total),
+    };
+  }
 
   getUserRelationships = async (viewer: User, blocking: boolean) => {
     if (!viewer) return [];
@@ -119,127 +152,23 @@ export class UserServiceV2 {
     ];
   };
 
-  async convertUsersToUserResponsesV2(
-    viewer: User | null,
-    users: User[],
-    hasRelationshipExpansion = false,
-    userFields?: UserField[],
-  ) {
-    if (!hasRelationshipExpansion && !userFields) {
-      return Promise.all(
-        users.map(async (user) => {
-          return user.type === UserType.PAGE
-            ? user.toPageResponseV2()
-            : await user.toUserResponseV2();
-        }),
-      );
-    }
-
-    const userIds = users.map((user) => user.id);
-
-    const relationships = viewer
-      ? await this.relationshipModel.find({
-          $or: [
-            { user: viewer._id, followedUser: { $in: userIds } },
-            { user: { $in: userIds }, followedUser: viewer._id },
-          ],
-          visibility: EntityVisibility.Publish,
-        })
-      : [];
-
-    return Promise.all(
-      users.map(async (user) => {
-        const syncSocials =
-          String(user.ownerAccount) === String(viewer?.ownerAccount) &&
-          userFields?.includes(UserField.SyncSocial)
-            ? await this.socialSyncModel.find({ 'author.id': user.id }).exec()
-            : [];
-
-        const account =
-          userFields?.includes(UserField.LinkSocial) &&
-          String(user.ownerAccount) === String(viewer?.ownerAccount)
-            ? await this.repository.findAccount({ _id: user.ownerAccount })
-            : undefined;
-
-        const content = userFields?.includes(UserField.Casts)
-          ? await this.contentService.getContentsFromUser(user.id)
-          : undefined;
-
-        const balance = userFields?.includes(UserField.Wallet)
-          ? await this.repository.getBalance({
-              accountId: String(user.ownerAccount),
-            })
-          : undefined;
-
-        const userResponse =
-          user.type === UserType.PAGE
-            ? user.toPageResponseV2(
-                undefined,
-                undefined,
-                undefined,
-                syncSocials,
-                content?.total,
-              )
-            : await user.toUserResponseV2({
-                casts: content?.total,
-                authentications: account?.authentications,
-                syncSocials,
-                balance,
-              });
-
-        const getterRelationship = hasRelationshipExpansion
-          ? relationships.find(
-              ({ followedUser, user: userRelation }) =>
-                String(followedUser) === String(user.id) &&
-                String(userRelation) === String(viewer?.id),
-            )
-          : undefined;
-
-        userResponse.blocked = Boolean(getterRelationship?.blocked);
-        userResponse.blocking = Boolean(getterRelationship?.blocking);
-        userResponse.followed = Boolean(getterRelationship?.following);
-
-        return userResponse;
-      }),
-    );
-  }
-
-  getById = async (
-    user: User,
-    targetUser: User,
-    hasRelationshipExpansion = false,
-    userFields?: UserField[],
-  ) => {
-    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
-    const [userResponse] = await this.convertUsersToUserResponsesV2(
-      user,
-      [targetUser],
-      hasRelationshipExpansion,
-      userFields,
-    );
-
-    return userResponse;
-  };
-
   /**
    * get all page it's own by user
    * @param user credential from request typeof Credential
    * @returns payload of result from user pages array typeof PageResponseDto[]
    */
-  async getMyPages(user: User) {
-    const filterQuery = {
-      accountId: user.ownerAccount._id,
+  async getMyPages(requestedBy: User) {
+    const filter = {
+      accountId: requestedBy.ownerAccount._id,
       type: UserType.PAGE,
     };
-    const findUser = await this.repository.findUsers(filterQuery);
-    const pages = await this.convertUsersToUserResponsesV2(
-      user,
-      findUser,
-      false,
-      [UserField.SyncSocial],
-    );
+    const pages = await this.repository.getPublicUsers({
+      requestedBy: requestedBy._id,
+      filter,
+      expansionFields: [UserField.SyncSocial],
+    });
 
-    return pages as PageResponseDto[];
+    return pages;
   }
 
   async followUser(user: User, targetCastcleId: string, account: Account) {
@@ -370,7 +299,7 @@ export class UserServiceV2 {
 
   async getBlockedLookup(
     user: User,
-    { hasRelationshipExpansion, maxResults, sinceId, untilId }: PaginationQuery,
+    { userFields, maxResults, sinceId, untilId }: PaginationQuery,
   ) {
     const filterQuery = {
       sinceId,
@@ -389,51 +318,8 @@ export class UserServiceV2 {
       ({ followedUser }) => followedUser as unknown as Types.ObjectId,
     );
 
-    return this.getByCriteria(
-      user,
-      { _id: userIds },
-      {},
-      hasRelationshipExpansion,
-    );
+    return this.getPublicUsers(user, { _id: userIds }, {}, userFields);
   }
-
-  getByCriteria = async (
-    viewer: User,
-    query: { _id: Types.ObjectId[] },
-    queryOptions?: CastcleQueryOptions,
-    hasRelationshipExpansion = false,
-    userFields?: UserField[],
-  ) => {
-    const { items: targetUsers, meta } = await this.getAllByCriteria(
-      query,
-      queryOptions,
-    );
-    const users = await this.convertUsersToUserResponsesV2(
-      viewer,
-      targetUsers,
-      hasRelationshipExpansion,
-      userFields,
-    );
-    return { users, meta };
-  };
-
-  getAllByCriteria = async (
-    filterQuery: { _id: Types.ObjectId[] },
-    queryOptions?: CastcleQueryOptions,
-  ) => {
-    const total = await this.repository.findUserCount(filterQuery);
-    const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
-    const users = await this.repository.findUsers(filterQuery, {
-      limit: queryOptions.limit,
-      skip: queryOptions.page - 1,
-      sort: { [queryOptions.sortBy?.field ?? 'updatedAt']: sortKey },
-    });
-
-    return {
-      items: users,
-      meta: Meta.fromDocuments(users, total),
-    };
-  };
 
   async unfollowUser(user: User, targetCastcleId: string) {
     const targetUser = await this.repository
@@ -576,14 +462,15 @@ export class UserServiceV2 {
   }
 
   async getUserByKeyword(
-    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
-    viewer: User,
+    { userFields, ...query }: GetKeywordQuery,
+    requestedBy: User,
   ) {
-    const blocking = await this.getUserRelationships(viewer, true);
+    const blocking = await this.getUserRelationships(requestedBy, true);
 
-    const users = await this.repository.findUsers({
-      excludeRelationship: blocking,
-      ...query,
+    const users = await this.repository.getPublicUsers({
+      requestedBy: requestedBy._id,
+      filter: { excludeRelationship: blocking, ...query },
+      expansionFields: userFields,
     });
 
     if (!users.length)
@@ -592,15 +479,9 @@ export class UserServiceV2 {
         meta: { resultCount: 0 },
       });
 
-    const userResponses = await this.convertUsersToUserResponsesV2(
-      viewer,
-      users,
-      hasRelationshipExpansion,
-      userFields,
-    );
     return ResponseDto.ok({
-      payload: userResponses,
-      meta: Meta.fromDocuments(userResponses as any),
+      payload: users,
+      meta: Meta.fromDocuments(users),
     });
   }
 
@@ -635,12 +516,11 @@ export class UserServiceV2 {
       };
     });
 
-    const { users } = await this.getByCriteria(
-      viewer,
-      { _id: followingUsersId.map((f) => f.userId) },
-      {},
-      followQuery.hasRelationshipExpansion,
-    );
+    const users = await this.repository.getPublicUsers({
+      requestedBy: viewer._id,
+      filter: { _id: followingUsersId.map((f) => f.userId) },
+      expansionFields: followQuery.userFields,
+    });
 
     const relationTotal = userRelationCount[0]?.total ?? 0;
 
@@ -683,12 +563,11 @@ export class UserServiceV2 {
       };
     });
 
-    const { users } = await this.getByCriteria(
-      viewer,
-      { _id: followingUsersId.map((f) => f.userId) },
-      {},
-      followQuery.hasRelationshipExpansion,
-    );
+    const users = await this.repository.getPublicUsers({
+      requestedBy: viewer._id,
+      filter: { _id: followingUsersId.map((f) => f.userId) },
+      expansionFields: followQuery.userFields,
+    });
 
     const relationTotal = userRelationCount[0]?.total ?? 0;
 
@@ -735,13 +614,7 @@ export class UserServiceV2 {
       displayName: body.displayName,
     });
 
-    const convertPage = await this.convertUsersToUserResponsesV2(
-      null,
-      [page],
-      false,
-    );
-
-    return convertPage[0];
+    return page.toOwnerResponse();
   }
 
   async createQRCode(chainId: string, size: string, userId: string) {
@@ -749,7 +622,7 @@ export class UserServiceV2 {
 
     if (!user) throw CastcleException.USER_ID_IS_EXIST;
 
-    const qrcodeParams = CastcleQRCode.generateQRCodeText([
+    const qrCodeParams = CastcleQRCode.generateQRCodeText([
       chainId,
       user._id,
       user.displayId,
@@ -757,14 +630,14 @@ export class UserServiceV2 {
 
     return ResponseDto.ok({
       payload: await CastcleQRCode.generateQRCode(
-        `${Environment.QR_CODE_REDIRECT_URL}${qrcodeParams}`,
+        `${Environment.QR_CODE_REDIRECT_URL}${qrCodeParams}`,
         size ?? QRCodeImageSize.Thumbnail,
       ),
     });
   }
 
   async updatePDPA(date: string, account: Account) {
-    const ofPDPA = Environment.PDPA_ACCEPT_DATE.split(',');
+    const ofPDPA = Environment.PDPA_ACCEPT_DATES;
 
     if (!ofPDPA.includes(date)) throw CastcleException.INVALID_DATE;
 
@@ -784,8 +657,6 @@ export class UserServiceV2 {
 
     const user = await this.repository.findUser({ accountId: account._id });
 
-    return user.toUserResponseV2({
-      pdpa: account.pdpa ? CastcleDate.isPDPA(account.pdpa) : false,
-    });
+    return user.toOwnerResponse();
   }
 }

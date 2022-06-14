@@ -243,6 +243,8 @@ export class Environment {
   // Generate QRCode
   static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
 
-  // Accept date PDPA
-  static PDPA_ACCEPT_DATE = process.env.PDPA_ACCEPT_DATE || '';
+  /** List of dates for each PDPA version (latest first) */
+  static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
+    .split(',')
+    .sort((a, b) => b.localeCompare(a));
 }

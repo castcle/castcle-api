@@ -67,10 +67,15 @@ import {
   UpdateModelUserDto,
   UpdateUserDto,
   UserField,
-  UserModelImage,
   createFilterQuery,
 } from '../dtos';
-import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
+import {
+  CastcleNumber,
+  QueueName,
+  UserImage,
+  UserMessage,
+  UserType,
+} from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -1241,7 +1246,7 @@ Message: ${message}`,
     this.logger.debug(`uploading info avatar-${accountId}`);
     this.logger.debug(body);
 
-    const images: UserModelImage = {};
+    const images: UserImage = {};
 
     if (body.images?.avatar) {
       const avatar = await Image.upload(body.images.avatar as string, {

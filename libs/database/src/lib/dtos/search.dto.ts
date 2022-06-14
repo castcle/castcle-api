@@ -21,8 +21,8 @@
  * or have any questions.
  */
 
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleImage } from './common.dto';
 
 export class TopTrendsQueryOptions {
   exclude?: string = '';

@@ -21,12 +21,12 @@
  * or have any questions.
  */
 import { Configs } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage, Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { isString } from 'class-validator';
 import * as mongoose from 'mongoose';
 import { Model } from 'mongoose';
-import { CastcleImage, CastcleMetric } from '../dtos/common.dto';
+import { CastcleMetric } from '../dtos';
 import {
   Author,
   BlogPayload,

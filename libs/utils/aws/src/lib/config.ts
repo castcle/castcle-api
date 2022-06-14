@@ -21,7 +21,21 @@
  * or have any questions.
  */
 
-import { Size } from './lib/image';
+export enum SizeName {
+  ORIGINAL = 'original',
+  THUMBNAIL = 'thumbnail',
+  MEDIUM = 'medium',
+  LARGE = 'large',
+  FULL_HD = 'fullHd',
+}
+
+export type Size = {
+  name: string;
+  width: number;
+  height: number;
+};
+
+export type CastcleImage = Partial<Record<SizeName, string>>;
 
 /** 2 days expiration time (in milliseconds)  */
 export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000;
@@ -41,7 +55,7 @@ export const COMMON_SIZE_CONFIGS: Size[] = [
   { name: 'fullHd', width: 1920, height: 1080 },
 ];
 
-export const QRCODE_STANDARD_SIZE_CONFIGS: Size[] = [
+export const QR_CODE_STANDARD_SIZE_CONFIGS: Size[] = [
   { name: 'thumbnail', width: 250, height: 250 },
   { name: 'medium', width: 690, height: 690 },
   { name: 'large', width: 1024, height: 1024 },
