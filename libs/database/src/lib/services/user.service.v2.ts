@@ -332,17 +332,9 @@ export class UserServiceV2 {
   }
 
   async reportContent(user: User, targetContentId: string, message: string) {
-    const targetContent = await this.repository.findContent(
-      {
-        _id: targetContentId,
-      },
-      {
-        projection: {
-          createdAt: 0,
-          updatedAt: 0,
-        },
-      },
-    );
+    const targetContent = await this.repository.findContent({
+      _id: targetContentId,
+    });
 
     if (!targetContent) throw CastcleException.CONTENT_NOT_FOUND;
 
@@ -383,17 +375,9 @@ export class UserServiceV2 {
   }
 
   async reportUser(user: User, targetCastcleId: string, message: string) {
-    const targetUser = await this.repository.findUser(
-      {
-        _id: targetCastcleId,
-      },
-      {
-        projection: {
-          createdAt: 0,
-          updatedAt: 0,
-        },
-      },
-    );
+    const targetUser = await this.repository.findUser({
+      _id: targetCastcleId,
+    });
 
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
 
