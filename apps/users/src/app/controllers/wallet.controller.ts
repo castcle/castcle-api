@@ -59,9 +59,6 @@ export class WalletController {
       ? authorizer.user
       : await this.userServiceV2.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
-    const response = await this.walletService.getWalletBalance(userId);
-    response.displayName = authorizer.user.displayName;
-    response.castcleId = authorizer.user.displayId;
-    return response;
+    return this.walletService.getWalletBalance(user);
   }
 }

@@ -21,7 +21,7 @@
  * or have any questions.
  */
 
-import { TAccountService, WalletType } from '@castcle-api/database';
+import { TAccountService, User, WalletType } from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
 import { WalletResponse } from '../dtos';
 
@@ -29,21 +29,23 @@ import { WalletResponse } from '../dtos';
 export class WalletService {
   constructor(private taccountService: TAccountService) {}
 
-  async getWalletBalance(userId: string): Promise<WalletResponse> {
+  async getWalletBalance(user: User): Promise<WalletResponse> {
     const personalBalance = await this.taccountService.getAccountBalance(
-      userId,
+      user.id,
       WalletType.PERSONAL,
     );
     const adsCreditBalance = await this.taccountService.getAccountBalance(
-      userId,
+      user.id,
       WalletType.ADS,
     );
     const farmingBalance = await this.taccountService.getAccountBalance(
-      userId,
+      user.id,
       WalletType.FARM_LOCKED,
     );
     return {
-      id: userId,
+      id: user.id,
+      displayName: user.displayName,
+      castcleId: user.displayId,
       availableBalance: personalBalance,
       adsCredit: adsCreditBalance,
       farmBalance: farmingBalance,

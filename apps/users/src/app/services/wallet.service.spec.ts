@@ -118,9 +118,11 @@ describe('WalletController', () => {
 
   describe('getWalletBalance()', () => {
     it('should return personal balance', async () => {
-      const balance = await service.getWalletBalance(mocksUsers[0].user.id);
+      const balance = await service.getWalletBalance(mocksUsers[0].user);
       expect(balance).toEqual({
         id: mocksUsers[0].user.id,
+        displayName: mocksUsers[0].user.displayName,
+        castcleId: mocksUsers[0].user.displayId,
         farmBalance: 0,
         adsCredit: 0,
         availableBalance: 5555,
