@@ -182,8 +182,8 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
       { name: QueueName.USER },
     ),
     HttpModule,
-    MongooseAsyncFeatures,
     MongooseForFeatures,
+    MongooseAsyncFeatures,
     UtilsClientsModule,
   ],
   providers: [
