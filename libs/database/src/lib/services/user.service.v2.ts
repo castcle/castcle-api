@@ -637,9 +637,6 @@ export class UserServiceV2 {
   }
 
   async updatePDPA(date: string, account: Account) {
-    (account.pdpa ??= {})[date] = true;
-
-    account.markModified('pdpa');
-    await account.save();
+    await account.set(`pdpa.${date}`, true).save();
   }
 }

@@ -316,9 +316,8 @@ export class AuthenticationServiceV2 {
     account.isGuest = false;
     account.email = dto.email;
 
-    if (Environment.PDPA_ACCEPT_DATES.length) {
-      (account.pdpa ??= {})[Environment.PDPA_ACCEPT_DATES[0]] = true;
-    }
+    if (Environment.PDPA_ACCEPT_DATES.length)
+      account.set(`pdpa.${Environment.PDPA_ACCEPT_DATES[0]}`, true);
 
     account.password = Password.hash(dto.password);
     const activation = account.createActivation(AccountActivationType.EMAIL);
