@@ -908,4 +908,32 @@ export class UsersControllerV2 {
 
     return authorizer.user.toOwnerResponse();
   }
+
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':userId/referee')
+  async getReferee(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() query: PaginationQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.userServiceV2.getReferral(query, user, authorizer.user, true);
+  }
+
+  @CastcleAuth(CacheKeyName.Referrer)
+  @Get(':userId/referrer')
+  async getReferrer(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() query: ExpansionQuery,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userService.findUser(userId);
+
+    return this.userServiceV2.getReferral(query, user, authorizer.user, false);
+  }
 }

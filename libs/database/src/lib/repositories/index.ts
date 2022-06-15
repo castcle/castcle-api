@@ -124,7 +124,7 @@ type AccountQuery = {
 type UserQuery = {
   /** Mongo ID or castcle ID */
   _id?: string | Types.ObjectId[] | string[];
-  accountId?: string;
+  accountId?: string | Types.ObjectId[];
   castcleId?: string;
   excludeRelationship?: string[] | User[];
   keyword?: {
@@ -476,8 +476,12 @@ export class Repository {
     return this.accountModel.findOne(this.getAccountQuery(filter));
   }
 
-  findAccounts(filter: AccountQuery) {
-    return this.accountModel.find(this.getAccountQuery(filter));
+  findAccounts(filter: AccountQuery, queryOptions?: QueryOptions) {
+    return this.accountModel.find(
+      this.getAccountQuery(filter),
+      {},
+      queryOptions,
+    );
   }
 
   updateAccount(filter: AccountQuery, updateQuery?: UpdateQuery<Account>) {
@@ -485,6 +489,12 @@ export class Repository {
       this.getAccountQuery(filter),
       updateQuery,
     );
+  }
+
+  countAccount(filter: AccountQuery) {
+    return this.accountModel
+      .countDocuments(this.getAccountQuery(filter))
+      .exec();
   }
 
   updateCredentials(
@@ -606,6 +616,9 @@ export class Repository {
     const query: FilterQuery<User> = {
       visibility: EntityVisibility.Publish,
     };
+
+    if (isArray(filter.accountId))
+      query.ownerAccount = { $in: filter.accountId as any };
 
     if (filter.accountId) query.ownerAccount = filter.accountId as any;
     if (filter.type) query.type = filter.type;

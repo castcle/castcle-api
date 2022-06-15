@@ -655,4 +655,46 @@ export class UserServiceV2 {
   async updatePDPA(date: string, account: Account) {
     await account.set(`pdpa.${date}`, true).save();
   }
+
+  async getReferral(
+    { maxResults, userFields, ...query }: PaginationQuery,
+    targetUser: User,
+    requestedBy: User,
+    refereeBy: boolean,
+  ) {
+    if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
+
+    const accounts = await this.repository.findAccounts(
+      {
+        _id: !refereeBy ? (targetUser.ownerAccount as any) : undefined,
+        referredBy: refereeBy ? (targetUser.ownerAccount as any) : undefined,
+        ...query,
+      },
+      {
+        limit: maxResults,
+      },
+    );
+
+    const accountId = accounts.map((account) => account._id);
+
+    const accountsCount = refereeBy
+      ? await this.repository.countAccount({
+          referredBy: targetUser.ownerAccount as any,
+          ...query,
+        })
+      : 0;
+
+    const userResponses = await this.repository.getPublicUsers({
+      requestedBy: requestedBy?._id,
+      filter: { accountId: accountId, type: UserType.PEOPLE },
+      expansionFields: userFields,
+    });
+
+    return ResponseDto.ok({
+      payload: refereeBy ? userResponses : userResponses[0],
+      meta: refereeBy
+        ? Meta.fromDocuments(userResponses as any, accountsCount)
+        : undefined,
+    });
+  }
 }
