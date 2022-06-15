@@ -21,31 +21,12 @@
  * or have any questions.
  */
 
-export * from './account.enum';
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './analytic.model';
-export * from './caccount.const';
-export * from './caccount.model';
-export * from './campaign.enum';
-export * from './content-farming.enum';
-export * from './content.message';
-export * from './engagement.enum';
-export * from './feed.enum';
-export * from './feed.model';
-export * from './notification.message';
-export * from './number.model';
-export * from './otp.enum';
-export * from './otp.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './reporting.enum';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './user.message';
-export * from './user.model';
-export * from './wallet.enum';
-export * from './wallet.model';
+export enum ReportType {
+  CONTENT = 'content',
+  USER = 'user',
+}
+
+export enum ReportStatus {
+  REVIEWING = 'reviewing',
+  DONE = 'done',
+}

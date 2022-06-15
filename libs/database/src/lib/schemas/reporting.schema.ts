@@ -21,31 +21,56 @@
  * or have any questions.
  */
 
-export * from './account.enum';
-export * from './account.model';
-export * from './ads.const';
-export * from './ads.enum';
-export * from './ads.model';
-export * from './analytic.enum';
-export * from './analytic.model';
-export * from './caccount.const';
-export * from './caccount.model';
-export * from './campaign.enum';
-export * from './content-farming.enum';
-export * from './content.message';
-export * from './engagement.enum';
-export * from './feed.enum';
-export * from './feed.model';
-export * from './notification.message';
-export * from './number.model';
-export * from './otp.enum';
-export * from './otp.model';
-export * from './queue.enum';
-export * from './queue.model';
-export * from './reporting.enum';
-export * from './social-sync.enum';
-export * from './user.enum';
-export * from './user.message';
-export * from './user.model';
-export * from './wallet.enum';
-export * from './wallet.model';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
+import { ReportStatus, ReportType } from '../models';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
+
+@Schema({ timestamps: true })
+export class Reporting extends CastcleBase {
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  user: Types.ObjectId;
+
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  by?: Types.ObjectId;
+
+  @Prop({
+    required: true,
+    type: ReportType,
+    index: true,
+  })
+  type: ReportType;
+
+  @Prop({
+    required: true,
+    type: Object,
+  })
+  payload: User | Content;
+
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  message: string;
+
+  @Prop({
+    type: ReportStatus,
+    default: ReportStatus.REVIEWING,
+  })
+  status: ReportStatus;
+}
+
+export const ReportingSchema = SchemaFactory.createForClass(Reporting);

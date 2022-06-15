@@ -55,7 +55,7 @@ import {
   UserField,
   UserResponseDto,
 } from '../dtos';
-import { CampaignType, EngagementType, UserType } from '../models';
+import { CampaignType, EngagementType, ReportType, UserType } from '../models';
 import { Repository } from '../repositories';
 import { Account, Relationship, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
@@ -364,6 +364,14 @@ export class UserServiceV2 {
       },
       message,
     );
+
+    await this.repository.createReporting({
+      user: targetContent.author.id,
+      type: ReportType.CONTENT,
+      payload: targetContent,
+      by: user._id,
+      message,
+    });
   }
 
   async reportUser(user: User, targetCastcleId: string, message: string) {
@@ -378,6 +386,14 @@ export class UserServiceV2 {
       { _id: targetUser._id, displayName: targetUser.displayName },
       message,
     );
+
+    await this.repository.createReporting({
+      user: targetUser._id,
+      type: ReportType.USER,
+      payload: targetUser,
+      by: user._id,
+      message,
+    });
   }
 
   async updateMobile(
