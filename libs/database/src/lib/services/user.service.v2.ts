@@ -636,26 +636,11 @@ export class UserServiceV2 {
     });
   }
 
-  async updatePDPA(date: string, account: Account) {
-    const ofPDPA = Environment.PDPA_ACCEPT_DATES;
-
-    if (!ofPDPA.includes(date)) throw CastcleException.INVALID_DATE;
-
-    if (account.pdpa || !Array.isArray(ofPDPA)) {
-      account.pdpa[date] = true;
-    } else {
-      const pdpaDate = ofPDPA.map((date) => {
-        return {
-          [date]: true,
-        };
-      });
-      account.pdpa = Object.assign({}, ...pdpaDate);
-    }
+  async updatePDPA(date: string, user: User, account: Account) {
+    (account.pdpa ??= {})[date] = true;
 
     account.markModified('pdpa');
     await account.save();
-
-    const user = await this.repository.findUser({ accountId: account._id });
 
     return user.toOwnerResponse();
   }

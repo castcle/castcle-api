@@ -58,25 +58,4 @@ describe('#CastcleDate', () => {
     expect(startDate.toISOString()).toBe('2022-02-28T17:00:00.000Z');
     expect(endDate.toISOString()).toBe('2022-03-31T16:59:59.999Z');
   });
-
-  describe('isPDPA', () => {
-    it('should able convert pdpa one date sort desc', () => {
-      const pdpaMock = {
-        '20200601': true,
-      };
-      const isPDPA = CastcleDate.isPDPA(pdpaMock);
-
-      expect(isPDPA).toBeTruthy();
-    });
-
-    it('should able convert pdpa more than one date sort desc', () => {
-      const pdpaMock = {
-        '20200601': true,
-        '20200701': false,
-      };
-      const isPDPA = CastcleDate.isPDPA(pdpaMock);
-
-      expect(isPDPA).toBeFalsy();
-    });
-  });
 });

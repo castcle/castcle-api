@@ -316,19 +316,8 @@ export class AuthenticationServiceV2 {
     account.isGuest = false;
     account.email = dto.email;
 
-    if (Environment.PDPA_ACCEPT_DATES) {
-      const ofPDPA = Environment.PDPA_ACCEPT_DATES;
-
-      if (Array.isArray(ofPDPA)) {
-        const pdpaDate = ofPDPA.map((date) => {
-          return {
-            [date]: true,
-          };
-        });
-        account.pdpa = Object.assign({}, ...pdpaDate);
-      } else {
-        account.pdpa[ofPDPA] = true;
-      }
+    if (Environment.PDPA_ACCEPT_DATES.length) {
+      (account.pdpa ??= {})[Environment.PDPA_ACCEPT_DATES[0]] = true;
     }
 
     account.password = Password.hash(dto.password);

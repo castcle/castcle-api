@@ -488,12 +488,13 @@ describe('UserServiceV2', () => {
         accountService: authService,
       });
 
-      Environment.PDPA_ACCEPT_DATES = ['20200701', '20200601'];
+      Environment.PDPA_ACCEPT_DATES = ['20200701'];
     });
 
     it('should get user data pdpa in response', async () => {
       const userResponse = await userServiceV2.updatePDPA(
-        '20200601',
+        '20200701',
+        mocksUsers[0].user,
         mocksUsers[0].account,
       );
 
@@ -508,6 +509,7 @@ describe('UserServiceV2', () => {
 
       const userResponse = await userServiceV2.updatePDPA(
         '20200701',
+        mocksUsers[0].user,
         mocksUsers[0].account,
       );
 
