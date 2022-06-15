@@ -488,16 +488,16 @@ describe('UserServiceV2', () => {
         accountService: authService,
       });
 
-      Environment.PDPA_ACCEPT_DATES = ['20200701', '20200601'];
+      Environment.PDPA_ACCEPT_DATES = ['20200701'];
     });
 
     it('should get user data pdpa in response', async () => {
       const userResponse = await userServiceV2.updatePDPA(
-        '20200601',
+        '20200701',
         mocksUsers[0].account,
       );
 
-      expect(userResponse.pdpa).toBeTruthy();
+      expect(userResponse).toBeUndefined();
     });
 
     it('should get user data pdpa latest in response', async () => {
@@ -511,7 +511,7 @@ describe('UserServiceV2', () => {
         mocksUsers[0].account,
       );
 
-      expect(userResponse.pdpa).toBeTruthy();
+      expect(userResponse).toBeUndefined();
     });
   });
   it('should be defined', () => {

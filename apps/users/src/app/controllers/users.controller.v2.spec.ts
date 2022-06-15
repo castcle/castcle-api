@@ -38,6 +38,7 @@ import {
   EntityVisibility,
   GetContentDto,
   GetContentQuery,
+  GetDateDto,
   GetSourceContentParam,
   GetUserParam,
   HashtagService,
@@ -62,6 +63,7 @@ import {
   UserServiceV2,
   generateMockUsers,
 } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { Downloader } from '@castcle-api/utils/aws';
 import { FacebookClient, Mailer } from '@castcle-api/utils/clients';
 import { Authorizer } from '@castcle-api/utils/decorators';
@@ -985,6 +987,31 @@ describe('UsersControllerV2', () => {
       ).repository.findSocialSync({ _id: syncId });
 
       expect(socialSync).toBeNull();
+    });
+  });
+
+  describe('updatePDPA', () => {
+    let mocksUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mocksUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      Environment.PDPA_ACCEPT_DATES = ['20200701', '20200601'];
+    });
+
+    it('should get user data pdpa in response', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[0].account,
+        mocksUsers[0].user,
+        mocksUsers[0].credential,
+      );
+      const userResponse = await appController.updatePDPA(authorizer, {
+        date: '20200701',
+      } as GetDateDto);
+
+      expect(userResponse.pdpa).toBeTruthy();
     });
   });
 });

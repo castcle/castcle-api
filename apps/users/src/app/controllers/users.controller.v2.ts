@@ -904,6 +904,8 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() { date }: GetDateDto,
   ) {
-    return this.userServiceV2.updatePDPA(date, authorizer.account);
+    await this.userServiceV2.updatePDPA(date, authorizer.account);
+
+    return authorizer.user.toOwnerResponse();
   }
 }
