@@ -44,7 +44,7 @@ export class Reporting extends CastcleBase {
     ref: 'User',
     index: true,
   })
-  reportedBy?: Types.ObjectId;
+  by?: Types.ObjectId;
 
   @Prop({
     required: true,
@@ -57,7 +57,7 @@ export class Reporting extends CastcleBase {
     required: true,
     type: Object,
   })
-  reported: User | Content;
+  payload: User | Content;
 
   @Prop({
     required: true,

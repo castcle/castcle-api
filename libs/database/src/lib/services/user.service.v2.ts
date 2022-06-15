@@ -368,8 +368,8 @@ export class UserServiceV2 {
     await this.repository.createReporting({
       user: targetContent.author.id,
       type: ReportType.CONTENT,
-      reported: targetContent,
-      reportedBy: user._id,
+      payload: targetContent,
+      by: user._id,
       message,
     });
   }
@@ -390,8 +390,8 @@ export class UserServiceV2 {
     await this.repository.createReporting({
       user: targetUser._id,
       type: ReportType.USER,
-      reported: targetUser,
-      reportedBy: user._id,
+      payload: targetUser,
+      by: user._id,
       message,
     });
   }
