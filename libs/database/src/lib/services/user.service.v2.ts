@@ -668,7 +668,6 @@ export class UserServiceV2 {
         })
       : 0;
 
-    // if (requestedBy) {
     const userResponses = await this.repository.getPublicUsers({
       requestedBy: requestedBy?._id,
       filter: { accountId: accountId, type: UserType.PEOPLE },
@@ -681,22 +680,5 @@ export class UserServiceV2 {
         ? Meta.fromDocuments(userResponses as any, accountsCount)
         : undefined,
     });
-    // }
-
-    // const users = await this.repository.findUsers({
-    //   accountId: accountId,
-    //   type: UserType.PEOPLE,
-    // });
-
-    // const userResponses = await Promise.all(
-    //   users.map((user) => user.toPublicResponse()),
-    // );
-
-    // return ResponseDto.ok({
-    //   payload: refereeBy ? userResponses : userResponses[0],
-    //   meta: refereeBy
-    //     ? Meta.fromDocuments(userResponses as any, accountsCount)
-    //     : undefined,
-    // });
   }
 }
