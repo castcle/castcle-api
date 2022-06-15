@@ -641,14 +641,9 @@ export class UserServiceV2 {
   }
 
   async getReferral(
-    {
-      hasRelationshipExpansion,
-      maxResults,
-      userFields,
-      ...query
-    }: PaginationQuery,
+    { maxResults, userFields, ...query }: PaginationQuery,
     targetUser: User,
-    requestBy: User,
+    requestedBy: User,
     refereeBy: boolean,
   ) {
     if (!targetUser) throw CastcleException.USER_OR_PAGE_NOT_FOUND;
@@ -666,18 +661,6 @@ export class UserServiceV2 {
 
     const accountId = accounts.map((account) => account._id);
 
-    const users = await this.repository.findUsers({
-      accountId: accountId,
-      type: UserType.PEOPLE,
-    });
-
-    const userResponses = await this.convertUsersToUserResponsesV2(
-      requestBy,
-      users,
-      hasRelationshipExpansion,
-      userFields,
-    );
-
     const accountsCount = refereeBy
       ? await this.repository.countAccount({
           referredBy: targetUser.ownerAccount as any,
@@ -685,11 +668,35 @@ export class UserServiceV2 {
         })
       : 0;
 
+    // if (requestedBy) {
+    const userResponses = await this.repository.getPublicUsers({
+      requestedBy: requestedBy?._id,
+      filter: { accountId: accountId, type: UserType.PEOPLE },
+      expansionFields: userFields,
+    });
+
     return ResponseDto.ok({
-      payload: refereeBy ? userResponses : [userResponses],
+      payload: refereeBy ? userResponses : userResponses[0],
       meta: refereeBy
         ? Meta.fromDocuments(userResponses as any, accountsCount)
         : undefined,
     });
+    // }
+
+    // const users = await this.repository.findUsers({
+    //   accountId: accountId,
+    //   type: UserType.PEOPLE,
+    // });
+
+    // const userResponses = await Promise.all(
+    //   users.map((user) => user.toPublicResponse()),
+    // );
+
+    // return ResponseDto.ok({
+    //   payload: refereeBy ? userResponses : userResponses[0],
+    //   meta: refereeBy
+    //     ? Meta.fromDocuments(userResponses as any, accountsCount)
+    //     : undefined,
+    // });
   }
 }
