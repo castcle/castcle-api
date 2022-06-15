@@ -636,12 +636,10 @@ export class UserServiceV2 {
     });
   }
 
-  async updatePDPA(date: string, user: User, account: Account) {
+  async updatePDPA(date: string, account: Account) {
     (account.pdpa ??= {})[date] = true;
 
     account.markModified('pdpa');
     await account.save();
-
-    return user.toOwnerResponse();
   }
 }

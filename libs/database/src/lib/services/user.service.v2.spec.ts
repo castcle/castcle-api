@@ -494,11 +494,10 @@ describe('UserServiceV2', () => {
     it('should get user data pdpa in response', async () => {
       const userResponse = await userServiceV2.updatePDPA(
         '20200701',
-        mocksUsers[0].user,
         mocksUsers[0].account,
       );
 
-      expect(userResponse.pdpa).toBeTruthy();
+      expect(userResponse).toBeUndefined();
     });
 
     it('should get user data pdpa latest in response', async () => {
@@ -509,11 +508,10 @@ describe('UserServiceV2', () => {
 
       const userResponse = await userServiceV2.updatePDPA(
         '20200701',
-        mocksUsers[0].user,
         mocksUsers[0].account,
       );
 
-      expect(userResponse.pdpa).toBeTruthy();
+      expect(userResponse).toBeUndefined();
     });
   });
   it('should be defined', () => {
