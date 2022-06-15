@@ -40,7 +40,6 @@ export class CountryService {
    * @returns {Country[]} return all country Document
    */
   async getAll(options: CastcleQueryOptions = DEFAULT_COUNTRY_QUERY_OPTIONS) {
-    console.log(options);
     let query = this._countryModel.find();
     if (options.sortBy.type === 'desc') {
       query = query.sort(`-${options.sortBy.field}`);

@@ -22,7 +22,13 @@
  */
 
 import { CastcleBullModule, Environment } from '@castcle-api/environments';
-import { Mailer } from '@castcle-api/utils/clients';
+import {
+  FacebookClient,
+  GoogleClient,
+  Mailer,
+  TwilioClient,
+  TwitterClient,
+} from '@castcle-api/utils/clients';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HttpModule } from '@nestjs/axios';
 import { BullModule, getQueueToken } from '@nestjs/bull';
@@ -33,6 +39,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import {
   AdsService,
   AnalyticService,
+  AuthenticationServiceV2,
   CampaignService,
   DataService,
   MongooseAsyncFeatures,
@@ -61,6 +68,7 @@ describe('UserServiceV2', () => {
   let userServiceV2: UserServiceV2;
   let userServiceV1: UserService;
   let authService: AuthenticationService;
+  let authServiceV2: AuthenticationServiceV2;
   let guestDemo: {
     accountDocument: Account;
     credentialDocument: Credential;
@@ -87,6 +95,7 @@ describe('UserServiceV2', () => {
         AdsService,
         AnalyticService,
         AuthenticationService,
+        AuthenticationServiceV2,
         CommentService,
         ContentService,
         DataService,
@@ -99,7 +108,11 @@ describe('UserServiceV2', () => {
         UserService,
         UserServiceV2,
         { provide: CampaignService, useValue: {} },
-        { provide: Mailer, useValue: {} },
+        { provide: FacebookClient, useValue: {} },
+        { provide: GoogleClient, useValue: {} },
+        { provide: TwitterClient, useValue: {} },
+        { provide: TwilioClient, useValue: {} },
+        { provide: Mailer, useValue: { sendRegistrationEmail: jest.fn() } },
         {
           provide: getQueueToken(QueueName.CONTENT),
           useValue: { add: jest.fn() },
@@ -118,6 +131,9 @@ describe('UserServiceV2', () => {
     dataService = module.get<DataService>(DataService);
     repository = module.get<Repository>(Repository);
     authService = module.get<AuthenticationService>(AuthenticationService);
+    authServiceV2 = module.get<AuthenticationServiceV2>(
+      AuthenticationServiceV2,
+    );
     suggestServiceV2 = module.get<SuggestionServiceV2>(SuggestionServiceV2);
     guestDemo = await authService.createAccount({
       deviceUUID: 'test12354',
@@ -514,6 +530,61 @@ describe('UserServiceV2', () => {
       expect(userResponse).toBeUndefined();
     });
   });
+  describe('getReferral', () => {
+    let mockUsers: MockUserDetail[];
+    beforeAll(async () => {
+      mockUsers = await generateMockUsers(2, 0, {
+        userService: userServiceV1,
+        accountService: authService,
+      });
+
+      guestDemo = await authService.createAccount({
+        deviceUUID: `testuuid1`,
+        languagesPreferences: ['th', 'th'],
+        header: {
+          platform: 'ios',
+        },
+        device: `testdevice1`,
+      });
+
+      await authServiceV2.registerWithEmail(guestDemo.credentialDocument, {
+        hostUrl: 'http://test.com',
+        ip: '0.0.0.0',
+        email: `test1@gmail.com`,
+        password: '12345678Ab',
+        displayName: `Test1`,
+        castcleId: `test1`,
+        referral: mockUsers[0].account._id,
+      });
+    });
+    it('should get user referee', async () => {
+      const referee = await userServiceV2.getReferral(
+        {
+          maxResults: 10,
+          hasRelationshipExpansion: false,
+        },
+        mockUsers[0].user,
+        mockUsers[1].user,
+        true,
+      );
+
+      expect(referee.payload).toHaveLength(1);
+    });
+
+    it('should get user referrer', async () => {
+      const referrer = await userServiceV2.getReferral(
+        {
+          hasRelationshipExpansion: false,
+        },
+        mockUsers[0].user,
+        mockUsers[1].user,
+        false,
+      );
+
+      expect(referrer.payload).not.toBeNull();
+    });
+  });
+
   it('should be defined', () => {
     expect(repository).toBeDefined();
     expect(userServiceV2).toBeDefined();

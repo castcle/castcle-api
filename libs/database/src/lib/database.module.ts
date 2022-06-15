@@ -56,6 +56,7 @@ import {
   OtpSchema,
   QueueSchema,
   RelationshipSchema,
+  ReportingSchema,
   RevisionSchema,
   SocialSyncSchema,
   TransactionSchema,
@@ -79,6 +80,7 @@ import { CountryService } from './services/country.service';
 import { DataService } from './services/data.service';
 import { HashtagService } from './services/hashtag.service';
 import { LanguageService } from './services/language.service';
+import { MetadataServiceV2 } from './services/metadata.service.v2';
 import { NotificationService } from './services/notification.service';
 import { NotificationServiceV2 } from './services/notification.service.v2';
 import { RankerService } from './services/ranker.service';
@@ -120,6 +122,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Queue', schema: QueueSchema },
   { name: 'UxEngagement', schema: UxEngagementSchema },
   { name: 'ContentFarming', schema: ContentFarmingSchema },
+  { name: 'Reporting', schema: ReportingSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -200,6 +203,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     HashtagService,
     LanguageService,
+    MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
     RankerService,
@@ -229,6 +233,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     DataService,
     HashtagService,
     LanguageService,
+    MetadataServiceV2,
     NotificationService,
     NotificationServiceV2,
     RankerService,
@@ -263,6 +268,7 @@ export {
   getSocialPrefix,
   HashtagService,
   LanguageService,
+  MetadataServiceV2,
   NotificationService,
   NotificationServiceV2,
   RankerService,

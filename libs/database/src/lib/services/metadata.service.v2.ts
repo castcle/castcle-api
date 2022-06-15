@@ -21,34 +21,17 @@
  * or have any questions.
  */
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { LanguagePayloadDto } from '../dtos/language.dto';
-import { Language } from '../schemas';
+import { Repository } from '../repositories';
 
 @Injectable()
-export class LanguageService {
-  constructor(
-    @InjectModel('Language') public _languageModel: Model<Language>,
-  ) {}
+export class MetadataServiceV2 {
+  constructor(private repository: Repository) {}
 
-  /**
-   * get all data from Language Document
-   *
-   * @returns {Language[]} return all Language Document
-   */
-  async getAll() {
-    return this._languageModel.find().exec();
+  getAllLanguage() {
+    return this.repository.findLanguages().exec();
   }
 
-  /**
-   * create new language
-   * @param {LanguagePayloadDto} language language payload
-   * @returns {Language} return new language document
-   */
-  create = async (language: LanguagePayloadDto) => {
-    console.log('save language');
-    const createResult = await new this._languageModel(language).save();
-    return createResult;
-  };
+  getAllCountry(sortBy: { [key: string]: number }) {
+    return this.repository.findCountries().sort(sortBy).exec();
+  }
 }

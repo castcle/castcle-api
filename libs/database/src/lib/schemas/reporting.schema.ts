@@ -20,35 +20,57 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { LanguagePayloadDto } from '../dtos/language.dto';
-import { Language } from '../schemas';
 
-@Injectable()
-export class LanguageService {
-  constructor(
-    @InjectModel('Language') public _languageModel: Model<Language>,
-  ) {}
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { SchemaTypes, Types } from 'mongoose';
+import { ReportStatus, ReportType } from '../models';
+import { CastcleBase } from './base.schema';
+import { Content } from './content.schema';
+import { User } from './user.schema';
 
-  /**
-   * get all data from Language Document
-   *
-   * @returns {Language[]} return all Language Document
-   */
-  async getAll() {
-    return this._languageModel.find().exec();
-  }
+@Schema({ timestamps: true })
+export class Reporting extends CastcleBase {
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  user: Types.ObjectId;
 
-  /**
-   * create new language
-   * @param {LanguagePayloadDto} language language payload
-   * @returns {Language} return new language document
-   */
-  create = async (language: LanguagePayloadDto) => {
-    console.log('save language');
-    const createResult = await new this._languageModel(language).save();
-    return createResult;
-  };
+  @Prop({
+    required: true,
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    index: true,
+  })
+  by?: Types.ObjectId;
+
+  @Prop({
+    required: true,
+    type: ReportType,
+    index: true,
+  })
+  type: ReportType;
+
+  @Prop({
+    required: true,
+    type: Object,
+  })
+  payload: User | Content;
+
+  @Prop({
+    required: true,
+    type: String,
+    index: true,
+  })
+  message: string;
+
+  @Prop({
+    type: ReportStatus,
+    default: ReportStatus.REVIEWING,
+  })
+  status: ReportStatus;
 }
+
+export const ReportingSchema = SchemaFactory.createForClass(Reporting);
