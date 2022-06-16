@@ -65,8 +65,8 @@ export class Environment {
   );
 
   // Cloudfront
-  static CLOUDFRONT_ACCESS_KEY_ID = process.env.CLOUDFRONT_ACCESS_KEY_ID;
-  static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY;
+  static CLOUDFRONT_ACCESS_KEY_ID = process.env.CLOUDFRONT_ACCESS_KEY_ID || '';
+  static CLOUDFRONT_PRIVATE_KEY = process.env.CLOUDFRONT_PRIVATE_KEY || '';
 
   // Redis
   static REDIS_CACHE_HOST = process.env.REDIS_CACHE_HOST;

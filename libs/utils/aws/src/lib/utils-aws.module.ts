@@ -3,7 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { Downloader } from './downloader';
 import { predictContents, predictSuggestion } from './functions';
-import { Image, ImageUploadOptions } from './image';
+import { CastcleImage, Image } from './image';
 import { UploadOptions, Uploader } from './uploader';
 
 @Module({
@@ -19,11 +19,11 @@ import { UploadOptions, Uploader } from './uploader';
 export class UtilsAwsModule {}
 
 export {
+  CastcleImage,
   Image,
   Uploader,
   UploadOptions,
   Downloader,
-  ImageUploadOptions,
   predictContents,
   predictSuggestion,
 };

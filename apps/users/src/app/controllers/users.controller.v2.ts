@@ -21,7 +21,6 @@
  * or have any questions.
  */
 import {
-  AuthenticationService,
   Comment,
   CommentParam,
   CommentServiceV2,
@@ -95,18 +94,18 @@ import { SuggestionService } from '../services/suggestion.service';
 @CastcleControllerV2({ path: 'users' })
 export class UsersControllerV2 {
   private logger = new CastLogger(UsersControllerV2.name);
+
   constructor(
-    private socialSyncService: SocialSyncServiceV2,
-    private authService: AuthenticationService,
-    private userService: UserService,
-    private userServiceV2: UserServiceV2,
+    /** @deprecated */ private contentService: ContentService,
+    /** @deprecated */ private userServiceV1: UserService,
     private commentService: CommentServiceV2,
-    private contentService: ContentService,
     private contentServiceV2: ContentServiceV2,
     private notificationServiceV2: NotificationServiceV2,
     private rankerService: RankerService,
+    private socialSyncService: SocialSyncServiceV2,
     private suggestionService: SuggestionService,
     private suggestionServiceV2: SuggestionServiceV2,
+    private userService: UserServiceV2,
   ) {}
 
   private validateObjectId(id: string) {
@@ -122,7 +121,7 @@ export class UsersControllerV2 {
     @Auth() { account }: Authorizer,
     @Body() { password }: DeleteUserDto,
   ) {
-    return this.userServiceV2.deleteCastcleAccount(account, password);
+    return this.userService.deleteCastcleAccount(account, password);
   }
 
   @CastcleBasicAuth()
@@ -133,7 +132,7 @@ export class UsersControllerV2 {
     @Body() updateMobileDto: UpdateMobileDto,
     @RequestMeta() { ip }: RequestMetadata,
   ) {
-    return this.userServiceV2.updateMobile(
+    return this.userService.updateMobile(
       authorizer.account,
       updateMobileDto,
       ip,
@@ -149,7 +148,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -163,7 +162,7 @@ export class UsersControllerV2 {
     @Query() query: GetKeywordQuery,
   ) {
     authorizer.requestAccessForAccount(authorizer.account._id);
-    return this.userServiceV2.getUserByKeyword(query, authorizer.user);
+    return this.userService.getUserByKeyword(query, authorizer.user);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -175,7 +174,7 @@ export class UsersControllerV2 {
   ) {
     return isMe
       ? authorizer.user.toOwnerResponse({ expansionFields: userFields })
-      : this.userServiceV2.getPublicUser(authorizer.user, userId, userFields);
+      : this.userService.getPublicUser(authorizer.user, userId, userFields);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.Users)
@@ -188,7 +187,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -196,20 +195,18 @@ export class UsersControllerV2 {
       if (!user.canUpdateCastcleId())
         throw CastcleException.CHANGE_CASTCLE_ID_FAILED;
 
-      const userExisting = await this.authService.getExistedUserFromCastcleId(
-        body.castcleId,
-      );
+      const userExisting = await this.userService.getUser(body.castcleId);
 
       if (userExisting && String(userExisting?.id) !== String(user?.id))
         throw CastcleException.USER_ID_IS_EXIST;
     }
 
-    const prepareUser = await this.userService.uploadUserInfo(
+    const prepareUser = await this.userServiceV1.uploadUserInfo(
       body,
       authorizer.account._id,
     );
 
-    const updatedUser = await this.userService.updateUser(user, prepareUser);
+    const updatedUser = await this.userServiceV1.updateUser(user, prepareUser);
     return updatedUser.toOwnerResponse();
   }
 
@@ -220,11 +217,9 @@ export class UsersControllerV2 {
     @Body() commentDto: CreateCommentDto,
     @Param() { isMe, userId }: GetUserParam,
   ) {
-    this.logger.log('Start comment : ' + JSON.stringify(commentDto));
-
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -238,9 +233,7 @@ export class UsersControllerV2 {
       { message: commentDto.message },
     );
 
-    const userOwner = await this.userService.getByIdOrCastcleId(
-      content.author.id,
-    );
+    const userOwner = await this.userService.getUser(content.author.id);
 
     await this.notificationServiceV2.notifyToUser(
       {
@@ -283,7 +276,7 @@ export class UsersControllerV2 {
     );
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
     this.validateObjectId(sourceCommentId);
@@ -312,7 +305,7 @@ export class UsersControllerV2 {
     this.logger.log(`Start delete comment id: ${sourceCommentId})}`);
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
     this.validateObjectId(sourceCommentId);
     const comment = await this.contentService.getCommentById(sourceCommentId);
     if (!comment || String(comment.author._id) !== String(user.id))
@@ -334,7 +327,7 @@ export class UsersControllerV2 {
     );
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
     this.validateObjectId(sourceCommentId);
@@ -346,9 +339,7 @@ export class UsersControllerV2 {
       message: replyCommentBody.message,
     });
 
-    const userOwner = await this.userService.getByIdOrCastcleId(
-      comment.author._id,
-    );
+    const userOwner = await this.userService.getUser(comment.author._id);
 
     await this.notificationServiceV2.notifyToUser(
       {
@@ -391,7 +382,7 @@ export class UsersControllerV2 {
     );
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
     this.validateObjectId(sourceCommentId);
@@ -434,7 +425,7 @@ export class UsersControllerV2 {
     );
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     this.validateObjectId(sourceCommentId);
 
@@ -461,7 +452,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -492,7 +483,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -509,7 +500,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -560,7 +551,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
     this.validateObjectId(sourceCommentId);
@@ -570,7 +561,7 @@ export class UsersControllerV2 {
   @CastcleAuth(CacheKeyName.Users)
   @Get('me/pages')
   async getMyPages(@Auth() authorizer: Authorizer) {
-    const pages = await this.userServiceV2.getMyPages(authorizer.user);
+    const pages = await this.userService.getMyPages(authorizer.user);
     return ResponseDto.ok({ payload: pages });
   }
 
@@ -585,10 +576,10 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.userServiceV2.blockUser(user, targetCastcleId);
+    return this.userService.blockUser(user, targetCastcleId);
   }
 
   @Delete(':userId/blocking/:targetCastcleId')
@@ -601,10 +592,10 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.userServiceV2.unblockUser(user, targetCastcleId);
+    return this.userService.unblockUser(user, targetCastcleId);
   }
 
   @CastcleBasicAuth()
@@ -617,7 +608,7 @@ export class UsersControllerV2 {
     this.logger.log(`Start recast content id: ${contentId}`);
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -656,7 +647,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -673,9 +664,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    const { items: users, meta } = await this.userServiceV2.getBlockedLookup(
+    const { items: users, meta } = await this.userService.getBlockedLookup(
       user,
       paginationQuery,
     );
@@ -693,7 +684,7 @@ export class UsersControllerV2 {
     this.logger.log(`Start quote cast content id: ${contentId}`);
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(user.ownerAccount);
 
@@ -733,10 +724,10 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    await this.userServiceV2.followUser(
+    await this.userService.followUser(
       user,
       body.targetCastcleId,
       user.ownerAccount,
@@ -753,10 +744,10 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
 
-    return this.userServiceV2.unfollowUser(user, targetCastcleId);
+    return this.userService.unfollowUser(user, targetCastcleId);
   }
 
   @CastcleAuth(CacheKeyName.Users)
@@ -781,7 +772,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     authorizer.requestAccessForAccount(authorizer.account._id);
 
@@ -797,9 +788,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    const { users, meta } = await this.userServiceV2.getFollowing(
+    const { users, meta } = await this.userService.getFollowing(
       authorizer.account,
       user,
       query,
@@ -817,9 +808,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    const { users, meta } = await this.userServiceV2.getFollowers(
+    const { users, meta } = await this.userService.getFollowers(
       authorizer.account,
       user,
       query,
@@ -838,9 +829,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    await this.userServiceV2.reportUser(user, targetCastcleId, message);
+    await this.userService.reportUser(user, targetCastcleId, message);
   }
 
   @Post(':userId/reporting/content')
@@ -853,9 +844,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    await this.userServiceV2.reportContent(user, targetContentId, message);
+    await this.userService.reportContent(user, targetContentId, message);
   }
 
   @CastcleClearCacheAuth(CacheKeyName.SyncSocial)
@@ -866,7 +857,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     return this.socialSyncService.setAutoPost(syncSocialId, user._id, true);
   }
@@ -879,7 +870,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     return this.socialSyncService.setAutoPost(syncSocialId, user._id, false);
   }
@@ -893,7 +884,7 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
     await this.socialSyncService.disconnectSocialSync(syncSocialId, user._id);
   }
@@ -904,7 +895,7 @@ export class UsersControllerV2 {
     @Auth() authorizer: Authorizer,
     @Query() { date }: GetDateDto,
   ) {
-    await this.userServiceV2.updatePDPA(date, authorizer.account);
+    await this.userService.updatePDPA(date, authorizer.account);
 
     return authorizer.user.toOwnerResponse();
   }
@@ -918,9 +909,9 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    return this.userServiceV2.getReferral(query, user, authorizer.user, true);
+    return this.userService.getReferral(query, user, authorizer.user, true);
   }
 
   @CastcleAuth(CacheKeyName.Referrer)
@@ -932,8 +923,8 @@ export class UsersControllerV2 {
   ) {
     const user = isMe
       ? authorizer.user
-      : await this.userService.findUser(userId);
+      : await this.userService.getUser(userId);
 
-    return this.userServiceV2.getReferral(query, user, authorizer.user, false);
+    return this.userService.getReferral(query, user, authorizer.user, false);
   }
 }

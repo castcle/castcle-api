@@ -1144,22 +1144,18 @@ export class ContentServiceV2 {
       _id: contentId,
       author: user._id,
     });
+
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
-    await this.repository.updateContent(
-      { _id: contentId },
-      { $set: { visibility: EntityVisibility.Deleted } },
+    await this.repository.deleteContents({ _id: contentId });
+    await this.repository.updateUser(
+      { _id: user._id },
+      { $inc: { casts: -1 } },
     );
 
-    if (content.isRecast || content.isQuote)
+    if (content.isRecast || content.isQuote) {
       await this.repository.deleteEngagements({ itemId: content._id });
-
-    if (content.hashtags)
-      await this.repository.removeFromTags(content.hashtags, {
-        $inc: {
-          score: -1,
-        },
-      });
+    }
   };
 
   getParticipates = async (contentId: string, account: Account) => {

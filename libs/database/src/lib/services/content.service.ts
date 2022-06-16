@@ -77,6 +77,7 @@ import {
 } from '../utils/common';
 import { HashtagService } from './hashtag.service';
 
+/** @deprecated */
 @Injectable()
 export class ContentService {
   private logger = new CastLogger(ContentService.name);
@@ -192,6 +193,11 @@ export class ContentService {
 
     const contentsToCreate = await Promise.all($contentsToCreate);
     const contents = await this._contentModel.insertMany(contentsToCreate);
+
+    await this._userModel.updateOne(
+      { _id: author.id },
+      { $inc: { casts: contents.length } },
+    );
 
     contents.forEach((content) => {
       this.contentQueue.add(

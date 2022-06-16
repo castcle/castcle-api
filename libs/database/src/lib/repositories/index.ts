@@ -804,8 +804,13 @@ export class Repository {
     return this.relationshipModel.aggregate<T>(pipeline);
   }
 
-  createContent(content: AnyKeys<Content>) {
-    return new this.contentModel(content).save();
+  async createContent(dto: AnyKeys<Content>) {
+    const [content] = await Promise.all([
+      new this.contentModel(dto).save(),
+      this.userModel.updateOne({ _id: dto.author.id }, { $inc: { casts: 1 } }),
+    ]);
+
+    return content;
   }
 
   updateContent(
@@ -1258,7 +1263,7 @@ export class Repository {
     queryOptions,
     expansionFields,
   }: {
-    requestedBy: Types.ObjectId;
+    requestedBy: User;
     filter: UserQuery;
     queryOptions?: QueryOptions;
     expansionFields?: UserField[];
@@ -1269,15 +1274,16 @@ export class Repository {
       queryOptions,
     );
     const userIds = users.map((user) => user._id);
-    const relationships = expansionFields?.includes(UserField.Relationships)
-      ? await this.relationshipModel.find({
-          user: requestedBy as any,
-          followedUser: { $in: userIds },
-        })
-      : [];
+    const relationships =
+      requestedBy && expansionFields?.includes(UserField.Relationships)
+        ? await this.relationshipModel.find({
+            user: requestedBy,
+            followedUser: { $in: userIds },
+          })
+        : [];
 
     const $userResponses = users.map((user) => {
-      if (user.id === String(requestedBy)) {
+      if (String(user.ownerAccount) === String(requestedBy?.ownerAccount)) {
         return user.toOwnerResponse({ expansionFields });
       }
 

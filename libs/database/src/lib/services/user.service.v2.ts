@@ -90,7 +90,7 @@ export class UserServiceV2 {
     expansionFields?: UserField[],
   ) => {
     const [user] = await this.repository.getPublicUsers({
-      requestedBy: requestedBy._id,
+      requestedBy: requestedBy,
       filter: { _id: userId },
       expansionFields,
     });
@@ -109,7 +109,7 @@ export class UserServiceV2 {
     const total = await this.repository.findUserCount(filter);
     const sortKey = queryOptions.sortBy?.type === SortDirection.DESC ? -1 : 1;
     const users = await this.repository.getPublicUsers({
-      requestedBy: requestedBy._id,
+      requestedBy: requestedBy,
       filter,
       queryOptions: {
         limit: queryOptions.limit,
@@ -163,7 +163,7 @@ export class UserServiceV2 {
       type: UserType.PAGE,
     };
     const pages = await this.repository.getPublicUsers({
-      requestedBy: requestedBy._id,
+      requestedBy,
       filter,
       expansionFields: [UserField.SyncSocial],
     });
@@ -484,7 +484,7 @@ export class UserServiceV2 {
     const blocking = await this.getUserRelationships(requestedBy, true);
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: requestedBy._id,
+      requestedBy: requestedBy,
       filter: { excludeRelationship: blocking, ...query },
       expansionFields: userFields,
     });
@@ -533,7 +533,7 @@ export class UserServiceV2 {
     });
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: viewer._id,
+      requestedBy: viewer,
       filter: { _id: followingUsersId.map((f) => f.userId) },
       expansionFields: followQuery.userFields,
     });
@@ -580,7 +580,7 @@ export class UserServiceV2 {
     });
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: viewer._id,
+      requestedBy: viewer,
       filter: { _id: followingUsersId.map((f) => f.userId) },
       expansionFields: followQuery.userFields,
     });
