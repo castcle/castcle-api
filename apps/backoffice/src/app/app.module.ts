@@ -27,10 +27,6 @@ import {
   DatabaseModule,
   UserSchema,
 } from '@castcle-api/database';
-import {
-  CastcleBackofficeModule,
-  CastcleMongooseModule,
-} from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Module } from '@nestjs/common';
