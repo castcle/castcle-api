@@ -76,7 +76,6 @@ import {
   COMMON_SIZE_CONFIGS,
   Downloader,
   Image,
-  ImageUploadOptions,
 } from '@castcle-api/utils/aws';
 import { FacebookClient } from '@castcle-api/utils/clients';
 import {
@@ -143,9 +142,6 @@ export class UsersController {
     private rankerService: RankerService,
     private socialSyncServiceV2: SocialSyncServiceV2,
   ) {}
-
-  _uploadImage = (base64: string, options?: ImageUploadOptions) =>
-    Image.upload(base64, options);
 
   /**
    * return user document that has same castcleId but check if this request should have access to that user
@@ -1724,7 +1720,7 @@ export class UsersController {
           );
 
           this.logger.log('upload avatar to s3');
-          const avatar = await this._uploadImage(imgAvatar, {
+          const avatar = await Image.upload(imgAvatar, {
             filename: `page-avatar-${sugguestDisplayId}`,
             addTime: true,
             sizes: AVATAR_SIZE_CONFIGS,
@@ -1740,7 +1736,7 @@ export class UsersController {
           const imgCover = await this.download.getImageFromUrl(syncBody.cover);
 
           this.logger.log('upload cover to s3');
-          const cover = await this._uploadImage(imgCover, {
+          const cover = await Image.upload(imgCover, {
             filename: `page-cover-${sugguestDisplayId}`,
             addTime: true,
             sizes: COMMON_SIZE_CONFIGS,
@@ -1893,7 +1889,7 @@ export class UsersController {
 
     if (syncBody.avatar) {
       const imageAvatar = await this.download.getImageFromUrl(syncBody.avatar);
-      const { image } = await this._uploadImage(imageAvatar, {
+      const { image } = await Image.upload(imageAvatar, {
         filename: `page-avatar-${syncBody.castcleId}`,
         addTime: true,
         sizes: AVATAR_SIZE_CONFIGS,
@@ -1904,7 +1900,7 @@ export class UsersController {
 
     if (syncBody.cover) {
       const imageAvatar = await this.download.getImageFromUrl(syncBody.cover);
-      const { image } = await this._uploadImage(imageAvatar, {
+      const { image } = await Image.upload(imageAvatar, {
         filename: `page-cover-${syncBody.castcleId}`,
         addTime: true,
         sizes: COMMON_SIZE_CONFIGS,
