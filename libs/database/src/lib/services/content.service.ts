@@ -77,6 +77,7 @@ import {
 } from '../utils/common';
 import { HashtagService } from './hashtag.service';
 
+/** @deprecated */
 @Injectable()
 export class ContentService {
   private logger = new CastLogger(ContentService.name);

@@ -198,7 +198,7 @@ describe('AppController', () => {
     appController = app.get<AuthenticationController>(AuthenticationController);
     userService = app.get<UserService>(UserService);
 
-    jest.spyOn(appService, '_uploadImage').mockImplementation(async () => {
+    jest.spyOn(Image, 'upload').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image({
         original: 'test',

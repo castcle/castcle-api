@@ -82,7 +82,7 @@ export class SearchServiceV2 {
         true,
       );
       users = await this.repository.getPublicUsers({
-        requestedBy: viewer?._id,
+        requestedBy: viewer,
         filter: { excludeRelationship: blocking },
         queryOptions: { limit: +limit, sort: { followCount: -1 } },
       });
@@ -111,7 +111,7 @@ export class SearchServiceV2 {
     );
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: viewer?._id,
+      requestedBy: viewer,
       filter: {
         excludeRelationship: blocking,
         keyword: keyword,
@@ -149,7 +149,7 @@ export class SearchServiceV2 {
     );
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: viewer?._id,
+      requestedBy: viewer,
       filter: {
         excludeRelationship: blocking,
         _id: following,
@@ -172,7 +172,7 @@ export class SearchServiceV2 {
     );
 
     const users = await this.repository.getPublicUsers({
-      requestedBy: viewer?._id,
+      requestedBy: viewer,
       filter: { excludeRelationship: blocking, ...query },
       expansionFields: userFields,
     });

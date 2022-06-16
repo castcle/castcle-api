@@ -84,6 +84,7 @@ export interface SignupSocialRequirements {
   ip?: string;
 }
 
+/** @deprecated */
 @Injectable()
 export class AuthenticationService {
   private logger = new CastLogger(AuthenticationService.name);

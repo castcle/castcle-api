@@ -94,6 +94,7 @@ import {
 import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
 
+/** @deprecated */
 @Injectable()
 export class UserService {
   private logger = new CastLogger(UserService.name);

@@ -1,5 +1,5 @@
 import { Configs, Environment } from '@castcle-api/environments';
-import { Image } from '@castcle-api/utils/aws';
+import { CastcleImage, Image } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DateTime } from 'luxon';
 import { Model, SchemaTypes } from 'mongoose';
@@ -329,7 +329,14 @@ export const UserSchemaFactory = (
       email: this.email,
       overview: this.profile?.overview,
       dob: this.profile?.birthdate,
-      image: this.profile?.images,
+      image: {
+        avatar: this.profile?.images?.avatar
+          ? CastcleImage.sign(this.profile.images.avatar)
+          : Configs.DefaultAvatarImages,
+        cover: this.profile?.images?.cover
+          ? CastcleImage.sign(this.profile.images.cover)
+          : Configs.DefaultAvatarCovers,
+      },
       links: {
         ...this.profile?.socials,
         website: this.profile?.websites?.[0]?.website,

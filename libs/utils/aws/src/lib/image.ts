@@ -24,28 +24,51 @@
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
+import { DateTime } from 'luxon';
 import * as sharp from 'sharp';
-import { CastcleImage, EXPIRE_TIME, IMAGE_BUCKET_FOLDER, Size } from './config';
+import { EXPIRE_TIME, IMAGE_BUCKET_FOLDER, Size, SizeName } from './config';
 import { UploadOptions, Uploader } from './uploader';
 
-const OriginalSuffix = 'original';
+export class CastcleImage {
+  private static signer = new AWS.CloudFront.Signer(
+    env.CLOUDFRONT_ACCESS_KEY_ID,
+    Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64').toString('ascii'),
+  );
 
-export interface ImageUploadOptions extends UploadOptions {
-  sizes?: Size[];
+  [SizeName.ORIGINAL]: string;
+  [SizeName.FULL_HD]?: string;
+  [SizeName.LARGE]?: string;
+  [SizeName.MEDIUM]?: string;
+  [SizeName.THUMBNAIL]?: string;
+
+  static sign(image: CastcleImage) {
+    if (!image || !env.CLOUDFRONT_PRIVATE_KEY) return image;
+
+    return Object.assign(
+      {},
+      ...Object.keys(image).map((size) => ({
+        [size]: CastcleImage.signer.getSignedUrl({
+          url: `${env.ASSETS_HOST}/${image[size]}`,
+          expires: DateTime.now()
+            .plus({ milliseconds: EXPIRE_TIME })
+            .toSeconds(),
+        }),
+      })),
+    );
+  }
 }
 
 export class Image {
   constructor(public image: CastcleImage, public order?: number) {}
 
+  /** @deprecated */
   toSignUrl(sizeName?: string) {
     //for pass no env test
     if (!env.CLOUDFRONT_PRIVATE_KEY) return this.image.original;
     const buff = Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64');
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
-      env.CLOUDFRONT_ACCESS_KEY_ID
-        ? env.CLOUDFRONT_ACCESS_KEY_ID
-        : 'testCloudKey',
+      env.CLOUDFRONT_ACCESS_KEY_ID,
       cloudFrontPrivateKey,
     );
 
@@ -61,6 +84,7 @@ export class Image {
     });
   }
 
+  /** @deprecated */
   toSignUrls(): CastcleImage {
     if (this.image['isSign']) return this.image;
     const newImage: CastcleImage = {
@@ -113,7 +137,7 @@ export class Image {
     buffer: Buffer,
     size: Size,
     fileType: string,
-    options?: ImageUploadOptions,
+    options?: UploadOptions & { sizes?: Size[] },
   ) => {
     const sharpImage = sharp(buffer);
     const metaData = await sharpImage.metadata();
@@ -143,7 +167,11 @@ export class Image {
     } else return undefined;
   }
 
-  static async upload(base64: string, options?: ImageUploadOptions) {
+  static async upload(
+    base64: string,
+    options?: UploadOptions & { sizes?: Size[] },
+  ) {
+    const OriginalSuffix = 'original';
     const logger = new CastLogger(Image.name);
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(

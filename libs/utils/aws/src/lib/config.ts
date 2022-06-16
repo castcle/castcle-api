@@ -35,8 +35,6 @@ export type Size = {
   height: number;
 };
 
-export type CastcleImage = Partial<Record<SizeName, string>>;
-
 /** 2 days expiration time (in milliseconds)  */
 export const EXPIRE_TIME = 2 * 24 * 60 * 60 * 1000;
 export const IMAGE_BUCKET_FOLDER = 'images';
