@@ -437,10 +437,6 @@ export class GetUserParam {
   isMe = () => this.userId === 'me';
 }
 
-export class LinkSocialDetail {
-  [key: string]: string;
-}
-
 export class UpdateUserDtoV2 {
   @IsOptional()
   @IsString()
@@ -464,7 +460,7 @@ export class UpdateUserDtoV2 {
 
   @IsOptional()
   @IsObject()
-  links?: LinkSocialDetail;
+  links?: SocialLinks;
 
   @IsOptional()
   @IsObject()

@@ -804,8 +804,13 @@ export class Repository {
     return this.relationshipModel.aggregate<T>(pipeline);
   }
 
-  createContent(content: AnyKeys<Content>) {
-    return new this.contentModel(content).save();
+  async createContent(dto: AnyKeys<Content>) {
+    const [content] = await Promise.all([
+      new this.contentModel(dto).save(),
+      this.userModel.updateOne({ _id: dto.author.id }, { $inc: { casts: 1 } }),
+    ]);
+
+    return content;
   }
 
   updateContent(
