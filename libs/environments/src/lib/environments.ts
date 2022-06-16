@@ -38,7 +38,8 @@ export class Environment {
   private static DB_HOST = process.env.DB_HOST || 'localhost';
   private static DB_USE_LOCAL = Environment.DB_HOST === 'localhost';
   private static DB_FORMAT = `mongodb${Environment.DB_USE_LOCAL ? '' : '+srv'}`;
-  private static DB_DATABASE_NAME = process.env.DB_DATABASE_NAME || '';
+  static DB_DATABASE_NAME = process.env.DB_DATABASE_NAME || '';
+
   static DB_URI = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME}?retryWrites=true&w=majority`;
 
   // Mail Service
@@ -243,6 +244,11 @@ export class Environment {
   // Generate QRCode
   static QR_CODE_REDIRECT_URL = process.env.QR_CODE_REDIRECT_URL || '';
 
+  static DB_DATABASE_NAME_BACKOFFICE =
+    process.env.DB_DATABASE_NAME_BACKOFFICE || '';
+
+  //Backoffice
+  static DB_URI_BACKOFFICE = `${Environment.DB_FORMAT}://${Environment.DB_AUTHENTICATION}${Environment.DB_HOST}/${Environment.DB_DATABASE_NAME_BACKOFFICE}?retryWrites=true&w=majority`;
   /** List of dates for each PDPA version (latest first) */
   static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
     .split(',')
