@@ -328,6 +328,7 @@ export class AuthenticationServiceV2 {
       displayId: dto.castcleId,
       displayName: dto.displayName,
       type: UserType.PEOPLE,
+      email: dto.email,
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
     await this.mailer.sendRegistrationEmail(
@@ -341,50 +342,41 @@ export class AuthenticationServiceV2 {
 
   async registerWithSocial(
     credential: Credential,
-    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string },
+    { ip, referral, ...dto }: SocialConnectDto & { ip: string },
   ) {
     const account = await this.repository.findAccount({
       _id: credential.account._id,
     });
 
     if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
-    if (registerDto.email) {
+    if (dto.email) {
       this.createAccountActivation(account, AccountActivationType.EMAIL, true);
-      account.email = registerDto.email;
+      account.email = dto.email;
       account.activateDate = new Date();
     }
 
-    (account.authentications ||= {})[registerDto.provider] = {
-      socialId: registerDto.socialId,
-      avatar: registerDto.avatar,
+    (account.authentications ||= {})[dto.provider] = {
+      socialId: dto.socialId,
+      avatar: dto.avatar,
     };
 
     await this.updateReferral(account, referral, ip);
     await account.set({ isGuest: false }).save();
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId:
-        registerDto.displayName ||
-        `${registerDto.provider}${registerDto.socialId}`,
-      displayName:
-        registerDto.displayName ||
-        `${registerDto.provider}${registerDto.socialId}`,
+      displayId: dto.displayName || `${dto.provider}${dto.socialId}`,
+      displayName: dto.displayName || `${dto.provider}${dto.socialId}`,
       type: UserType.PEOPLE,
+      email: dto.email,
       profile: {
-        overview: registerDto.overview,
-        socials: { [registerDto.provider]: registerDto.link },
+        overview: dto.overview,
+        socials: { [dto.provider]: dto.link },
         images: {
-          avatar: registerDto.avatar
-            ? await this.repository.createProfileImage(
-                account._id,
-                registerDto.avatar,
-              )
+          avatar: dto.avatar
+            ? await this.repository.createProfileImage(account._id, dto.avatar)
             : null,
-          cover: registerDto.cover
-            ? await this.repository.createCoverImage(
-                account._id,
-                registerDto.cover,
-              )
+          cover: dto.cover
+            ? await this.repository.createCoverImage(account._id, dto.cover)
             : null,
         },
       },
