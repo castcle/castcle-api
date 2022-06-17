@@ -30,8 +30,9 @@ import {
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Get, Param } from '@nestjs/common';
+import { Get, Param, Query } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
 
 import { WalletService } from '../services/wallet.service';
 
@@ -60,5 +61,19 @@ export class WalletController {
       : await this.userServiceV2.getUser(userId);
     authorizer.requestAccessForAccount(user.ownerAccount);
     return this.walletService.getWalletBalance(user);
+  }
+
+  @CastcleAuth(CacheKeyName.Users)
+  @Get(':userId/history')
+  async getUserHistory(
+    @Auth() authorizer: Authorizer,
+    @Param() { isMe, userId }: GetUserParam,
+    @Query() query: WalletHistoryQueryDto,
+  ) {
+    const user = isMe
+      ? authorizer.user
+      : await this.userServiceV2.getUser(userId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    return this.walletService.getWalletHistory(user, query);
   }
 }

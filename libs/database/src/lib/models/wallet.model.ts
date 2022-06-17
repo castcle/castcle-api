@@ -24,3 +24,16 @@
 export class Wallet {
   balance: number;
 }
+
+export class WalletHistoryPayloadItem {
+  'id': string;
+  'type': string;
+  'value': number;
+  'status': 'success' | 'pending' | 'failed';
+  'createdAt': Date;
+  'updatedAt': Date;
+}
+
+export class WalletHistoryResponseDto {
+  payload: WalletHistoryPayloadItem[];
+}

@@ -23,7 +23,7 @@
 
 import { TAccountService, User, WalletType } from '@castcle-api/database';
 import { Injectable } from '@nestjs/common';
-import { WalletResponse } from '../dtos';
+import { WalletHistoryQueryDto, WalletResponse } from '../dtos';
 
 @Injectable()
 export class WalletService {
@@ -51,5 +51,9 @@ export class WalletService {
       farmBalance: farmingBalance,
       totalBalance: personalBalance + adsCreditBalance + farmingBalance,
     };
+  }
+
+  getWalletHistory(user: User, query: WalletHistoryQueryDto) {
+    return this.taccountService.getWalletHistory(user.id, query.filter);
   }
 }

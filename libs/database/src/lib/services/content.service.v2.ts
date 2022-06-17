@@ -54,6 +54,8 @@ import {
   ContentMessageEvent,
   EngagementType,
   QueueName,
+  TransactionFilter,
+  TransactionType,
   UserType,
   WalletType,
 } from '../models';
@@ -661,6 +663,10 @@ export class ContentServiceV2 {
               value: farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.FARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -716,6 +722,10 @@ export class ContentServiceV2 {
               value: farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.FARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -801,6 +811,10 @@ export class ContentServiceV2 {
               value: contentFarming.farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.UNFARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -853,6 +867,10 @@ export class ContentServiceV2 {
             value: contentFarming.farmAmount,
           },
         ],
+        data: {
+          type: TransactionType.FARMED,
+          filter: TransactionFilter.CONTENT_FARMING,
+        },
         ledgers: [
           {
             debit: {
