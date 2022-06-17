@@ -1053,7 +1053,7 @@ describe('UsersControllerV2', () => {
         password: '12345678Ab',
         displayName: `Test1`,
         castcleId: `test1`,
-        referral: mocksUsers[0].account._id,
+        referral: mocksUsers[0].user.displayId,
       });
     });
     it('should get user referee', async () => {
