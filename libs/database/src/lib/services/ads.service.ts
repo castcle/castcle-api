@@ -263,7 +263,7 @@ export class AdsService {
       return false;
     if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
       const page = await this._userModel.findById(adsRequest.castcleId);
-      return String(page.ownerAccount) === String(user._id);
+      return String(page.ownerAccount) === String(user.ownerAccount);
     } else if (adsRequest.contentId) {
       const content = await this._contentModel.findById(adsRequest.contentId);
       return String(content.author.id) === String(user._id);
@@ -309,6 +309,8 @@ export class AdsService {
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
+        dailyBidType: adsRequest.dailyBidType,
+        dailyBidValue: adsRequest.dailyBidValue,
       } as AdsDetail,
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,
@@ -328,6 +330,7 @@ export class AdsService {
       const content = await this._contentModel.findById(
         campaign.adsRef.$id || campaign.adsRef.oid,
       );
+      console.log('transformAdsCampaignToAdsResponse.content', content);
       payload = toSignedContentPayloadItem(content);
     }
     return {
@@ -342,6 +345,8 @@ export class AdsService {
       campaignCode: campaign.detail.code,
       dailyBudget: campaign.detail.dailyBudget,
       duration: campaign.detail.duration,
+      dailyBidType: campaign.detail.dailyBidType,
+      dailyBidValue: campaign.detail.dailyBidValue,
       objective: campaign.objective,
       payload: payload,
       engagement: campaign.statistics.engagements, // this could use,
@@ -423,6 +428,7 @@ export class AdsService {
             message: adsRequest.campaignMessage,
             dailyBudget: adsRequest.dailyBudget,
             duration: adsRequest.duration,
+            dailyBidValue: adsRequest.dailyBidValue,
           } as AdsDetail,
         },
       },

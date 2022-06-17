@@ -69,7 +69,7 @@ export class AdsRequestDto {
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty()
-  dailyBidValue: number;
+  dailyBidValue?: number;
 
   @IsNumber()
   @IsNotEmpty()

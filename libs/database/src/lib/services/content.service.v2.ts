@@ -1085,6 +1085,7 @@ export class ContentServiceV2 {
       viewer: viewer,
       _id: contentId,
     });
+    console.log('getContent.content', contents);
     return this.toContentResponse(contents, hasRelationshipExpansion, viewer);
   };
 
@@ -1132,7 +1133,6 @@ export class ContentServiceV2 {
         removeOnComplete: true,
       },
     );
-
     return this.toContentResponse({
       contents: [content],
       authors: [author as any],
