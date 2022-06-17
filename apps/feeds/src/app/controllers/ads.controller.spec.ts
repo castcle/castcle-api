@@ -151,7 +151,6 @@ describe('AdsController', () => {
       },
       mocksUsers[0].user,
     );
-    console.log('contentPayload', contentPayload);
   });
 
   describe('create User Ads', () => {
