@@ -183,15 +183,16 @@ export class TAccountService {
         { 'to.user': userId, 'data.filter': filter },
       ],
     });
+
     const result: WalletHistoryResponseDto = {
       payload: txs.map((tx) => ({
         id: tx.id,
         status: 'success', //!!! TODO now all tx is success for now
         type: tx.data.type,
         value:
-          tx.from.user === userId
+          String(tx.from.user) === String(userId)
             ? tx.from.value
-            : tx.to.find((t) => t.user === userId).value,
+            : tx.to.find((t) => String(t.user) === String(userId)).value,
         createdAt: tx.createdAt,
         updatedAt: tx.updatedAt,
       })),
