@@ -10,7 +10,7 @@ import { SessionDocument } from '../schemas/session.schema';
 import { Password } from '../utils/password';
 import { CastcleRegExp } from '../utils/regex';
 import { Token } from '../utils/token';
-import { validateEmail, generatePassword } from '../utils/validate';
+import { generatePassword, validateEmail } from '../utils/validate';
 
 @Injectable()
 export class AuthenticationService {
@@ -69,8 +69,8 @@ export class AuthenticationService {
   }
 
   async getStaffList({ firstName, lastName, email }: StaffSearchDto) {
-    let state: any = [],
-      query: any = [];
+    const state: any = [];
+    let query: any = [];
     if (firstName || lastName || email) {
       if (firstName) {
         state.push({

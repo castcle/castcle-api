@@ -32,8 +32,6 @@ class Credential extends CastcleBase {
     required: true,
     type: Object,
   })
-  // account: Account;
-
   @Prop({ required: true, index: true })
   accessToken: string;
 
@@ -60,4 +58,3 @@ class Credential extends CastcleBase {
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);
-

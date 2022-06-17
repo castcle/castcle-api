@@ -21,8 +21,8 @@
  * or have any questions.
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { CastcleImage } from './common.dto';
 import { UserVerified } from '../models';
+import { CastcleImage } from './common.dto';
 
 export class Url {
   @ApiProperty()

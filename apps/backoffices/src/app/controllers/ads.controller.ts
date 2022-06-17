@@ -1,7 +1,8 @@
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { UseInterceptors, Post, HttpCode, Body, Req } from '@nestjs/common';
-import { AdsSearchDto, AdsApproveDto, AdsDeclineDto } from '../dtos/ads.dto';
+import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+import { AdsApproveDto, AdsDeclineDto, AdsSearchDto } from '../dtos/ads.dto';
+import { MongoIdParam } from '../dtos/campaign.dto';
 import {
   CredentialInterceptor,
   CredentialRequest,
@@ -9,7 +10,7 @@ import {
 import { AdsCampaignService } from '../services/ads-campaign.service';
 
 @CastcleController({ path: 'ads', version: '1.0' })
-export class AppController {
+export class AdsController {
   constructor(private adsService: AdsCampaignService) {}
 
   @UseInterceptors(CredentialInterceptor)
@@ -22,16 +23,8 @@ export class AppController {
   @UseInterceptors(CredentialInterceptor)
   @Post('ads-detail')
   @HttpCode(200)
-  async adsDetail(@Req() req: CredentialRequest, @Body() { _id }: any) {
-    let ads = await this.adsService.adsDetail(_id);
-    if (ads.length) {
-      if (ads[0].boostType === 'content') {
-        ads[0].payload = await this.adsService.adsContent(ads[0].previewRef);
-      } else {
-        ads[0].payload = await this.adsService.adsPage(ads[0].previewRef);
-      }
-    }
-    return ads;
+  async adsDetail(@Body() { id }: MongoIdParam) {
+    return await this.adsService.adsDetail(id);
   }
 
   @UseInterceptors(CredentialInterceptor)
@@ -50,9 +43,7 @@ export class AppController {
         body,
         change.duration,
       );
-      if (approveAction['modifiedCount']) {
-        return { message: 'success' };
-      }
+      if (approveAction.nModified > 0) return { message: 'Approve Success.' };
     }
     throw CastcleException.SOMETHING_WRONG;
   }
@@ -70,8 +61,8 @@ export class AppController {
         return { message: 'change' };
       }
       const declineAction = await this.adsService.adsDecline(body);
-      if (declineAction['modifiedCount']) {
-        return { message: 'success' };
+      if (declineAction.nModified > 0) {
+        return { message: 'Decline Success.' };
       }
     }
     throw CastcleException.SOMETHING_WRONG;

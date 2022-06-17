@@ -93,6 +93,4 @@ export class UserDocument extends CastcleBase {
   followedCount: number;
 }
 
-
-
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

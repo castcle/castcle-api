@@ -1,3 +1,5 @@
+import { IsDateString, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+
 export interface AdsTableDto {
   campaign_no: string;
   campaign_name: string;
@@ -12,14 +14,20 @@ export interface AdsSearchDto {
   campaign_name: string;
   status: string;
 }
-export interface AdsApproveDto {
+export class AdsApproveDto {
+  @IsMongoId()
+  @IsNotEmpty()
+  @IsString()
   _id: string;
+
+  @IsNotEmpty()
+  @IsDateString()
   updatedAt: Date;
 }
 
 export interface AdsDeclineDto {
   _id: string;
-  statusReason: Object;
+  statusReason: any;
   updatedAt: Date;
 }
 

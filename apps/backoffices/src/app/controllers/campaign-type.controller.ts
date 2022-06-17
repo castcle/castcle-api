@@ -1,14 +1,20 @@
+import { ResponseDto } from '@castcle-api/database';
 import { CastcleController } from '@castcle-api/utils/decorators';
 import {
   Body,
   Delete,
+  Get,
   HttpCode,
   Param,
   Post,
   Put,
   UseInterceptors,
 } from '@nestjs/common';
-import { CampaignDto } from '../dtos/campaign.dto';
+import {
+  CampaignDto,
+  MongoIdParam,
+  UpdateCampaignDto,
+} from '../dtos/campaign.dto';
 import { CredentialInterceptor } from '../interceptors/credential.interceptor';
 import { CampaignTypeService } from '../services/campaign-type.service';
 
@@ -20,28 +26,36 @@ export class CampaignTypeController {
   @Post('')
   @HttpCode(201)
   async addCampaignType(@Body() body: CampaignDto) {
-    const addCampaign = await this.campaignService.addCampaignType(body);
-    return { payload: addCampaign };
+    return ResponseDto.ok({
+      payload: await this.campaignService.addCampaignType(body),
+    });
   }
 
   @UseInterceptors(CredentialInterceptor)
-  @Post('/list')
+  @Get('')
   @HttpCode(200)
-  async campaignList(@Body() body?: CampaignDto) {
-    return { payload: await this.campaignService.campaignList(body) };
+  async campaignList() {
+    return ResponseDto.ok({
+      payload: await this.campaignService.getCampaignType(),
+    });
   }
 
   @UseInterceptors(CredentialInterceptor)
   @Put(':id')
   @HttpCode(200)
-  async updateCampaign(@Param('id') id: string, @Body() body?: CampaignDto) {
-    return { payload: await this.campaignService.updateCampaignType(id, body) };
+  async updateCampaign(
+    @Param('id') { id }: MongoIdParam,
+    @Body() body?: UpdateCampaignDto,
+  ) {
+    return ResponseDto.ok({
+      payload: await this.campaignService.updateCampaignType(id, body),
+    });
   }
 
   @UseInterceptors(CredentialInterceptor)
   @Delete(':id')
-  @HttpCode(200)
-  deleteCampaign(@Param('id') id: string) {
-    return this.campaignService.deleteCampaignType(id);
+  @HttpCode(204)
+  async deleteCampaign(@Param('id') { id }: MongoIdParam) {
+    await this.campaignService.deleteCampaignType(id);
   }
 }

@@ -24,11 +24,9 @@ import { Prop, Schema } from '@nestjs/mongoose';
 
 @Schema()
 export class CastcleBase {
-
   @Prop()
   createdAt?: Date;
 
   @Prop()
   updatedAt?: Date;
-
 }
