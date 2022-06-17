@@ -316,6 +316,11 @@ export const DefaultErrors = {
     code: '5011',
     message: 'You already said that',
   },
+  '5012': {
+    statusCode: '400',
+    code: '5011',
+    message: 'Slug is exist.',
+  },
   '6001': {
     statusCode: '400',
     code: '6001',

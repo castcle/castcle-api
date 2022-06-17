@@ -25,4 +25,3 @@ export class CastcleImage {
   original: string;
   [key: string]: string;
 }
-

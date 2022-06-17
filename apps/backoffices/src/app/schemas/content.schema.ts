@@ -22,14 +22,12 @@
  */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {
-  ShortPayload,
-  BlogPayload,
   Author,
+  BlogPayload,
   ImagePayload,
+  ShortPayload,
 } from '../dtos/content.dto';
 import { CastcleBase } from './base.schema';
-
-
 @Schema({ timestamps: true })
 export class ContentDocument extends CastcleBase {
   @Prop({ required: true, type: Object })
@@ -68,17 +66,3 @@ export class ContentDocument extends CastcleBase {
 export const ContentSchema = SchemaFactory.createForClass(ContentDocument);
 
 ContentSchema.index({ 'author.id': 1, 'author.castcleId': 1 });
-type ContentEngagement =
-  | {
-      [key: string]: boolean;
-    }
-  | {
-      count: number;
-      participant: {
-        type: string;
-        name: string;
-        id: string;
-      }[];
-    };
-
-

@@ -22,11 +22,9 @@
  */
 
 import { Configs, Environment } from '@castcle-api/environments';
-import { Documentation } from '@castcle-api/utils/commons';
 import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { json, urlencoded } from 'express';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -41,7 +39,7 @@ async function bootstrap() {
     header: Configs.RequiredHeaders.AcceptVersion.name,
   });
 
-  const globalPrefix = 'backoffice';
+  const globalPrefix = 'backoffices';
   app.setGlobalPrefix(globalPrefix);
 
   await app.listen(port, () => {

@@ -33,7 +33,7 @@ export class AuthenticationController {
     return await this.authService.getAccountFromEmail(email, password);
   }
 
-  // @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor)
   @Post('create')
   @HttpCode(201)
   async createAccount(@Body() body: AccountDto) {
@@ -86,9 +86,7 @@ export class AuthenticationController {
   @HttpCode(200)
   async expired(@Body() { id }: ExpiredDto) {
     const deleteSession: any = await this.authService.deleteSessionOne(id);
-    if (deleteSession.deleteCount) {
-      return { delete: deleteSession.deleteCount };
-    }
-    throw CastcleException.PLEASE_TRY_AGAIN;
+    if (deleteSession.deleteCount) return { delete: deleteSession.deleteCount };
+    throw CastcleException.INTERNAL_SERVER_ERROR;
   }
 }

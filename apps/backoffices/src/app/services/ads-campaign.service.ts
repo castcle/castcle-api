@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as moment from 'moment';
 import * as mongoose from 'mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AdsApproveDto, AdsDeclineDto, AdsSearchDto } from '../dtos/ads.dto';
 import { CastcleImage } from '../dtos/common.dto';
 import { AdsBoostStatus, AdsStatus } from '../models';
@@ -20,8 +20,8 @@ export class AdsCampaignService {
   ) {}
 
   async adsList({ campaign_no, campaign_name, status }: AdsSearchDto) {
-    let state: any = [],
-      query: any = [];
+    const state: any = [];
+    let query: any = [];
     if (campaign_no || campaign_name || status) {
       if (campaign_no) {
         state.push({
@@ -62,10 +62,10 @@ export class AdsCampaignService {
   }
 
   async adsDetail(_id: string) {
-    return await this.adsCampaignModel.aggregate([
+    const adsDetails = await this.adsCampaignModel.aggregate([
       {
         $match: {
-          $and: [{ _id: new mongoose.Types.ObjectId(_id) }],
+          $and: [{ _id: new Types.ObjectId(_id) }],
         },
       },
       {
@@ -87,6 +87,16 @@ export class AdsCampaignService {
         },
       },
     ]);
+
+    if (adsDetails.length) {
+      if (adsDetails[0].boostType === 'content') {
+        adsDetails[0].payload = await this.adsContent(adsDetails[0].previewRef);
+      } else {
+        adsDetails[0].payload = await this.adsPage(adsDetails[0].previewRef);
+      }
+    }
+
+    return adsDetails;
   }
 
   async adsPage(ref: any) {
@@ -98,8 +108,6 @@ export class AdsCampaignService {
         payload.profile.image.avatar = new Image(
           payload.profile?.image?.avatar,
         ).toSignUrls();
-      } else {
-        payload.profile.image.avatar = payload.profile?.image?.avatar;
       }
     }
     if (payload.profile?.image?.cover) {
@@ -109,8 +117,6 @@ export class AdsCampaignService {
         payload.profile.image.cover = new Image(
           payload.profile?.image?.cover,
         ).toSignUrls();
-      } else {
-        payload.profile.image.cover = payload.profile?.image?.cover;
       }
     }
     return payload;
@@ -134,8 +140,6 @@ export class AdsCampaignService {
       payload.author.avatar = payload.author.avatar as CastcleImage[];
       if (!payload.author?.avatar['isSign']) {
         payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
-      } else {
-        payload.author.avatar = payload.author.avatar;
       }
     }
 
@@ -159,7 +163,7 @@ export class AdsCampaignService {
   }
   async adsChangeUpdate(_id: any) {
     return await this.adsCampaignModel
-      .findOne({ _id: { $eq: new mongoose.Types.ObjectId(_id) } })
+      .findOne({ _id: { $eq: Types.ObjectId(_id) } })
       .exec();
   }
 

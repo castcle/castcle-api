@@ -7,7 +7,7 @@ const { exclude: _, ...swcJestConfig } = JSON.parse(
 );
 
 export default {
-  displayName: 'backoffice',
+  displayName: 'backoffices',
   preset: '../../jest.preset.js',
   setupFiles: ['../../jest.setup.ts'],
   testEnvironment: 'node',
@@ -15,5 +15,5 @@ export default {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/apps/backoffice',
+  coverageDirectory: '../../coverage/apps/backoffices',
 };

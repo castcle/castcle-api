@@ -23,11 +23,11 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { AdsObjective, AdsBoostStatus, AdsStatus } from '../models/ads.enum';
+import { AdsBoostStatus, AdsObjective, AdsStatus } from '../models/ads.enum';
 import { Account } from './account.schema';
 import { AdsDetail } from './ads-detail.schema';
 import { AdsReasonDetail, AdsReasonDetailSchema } from './ads-reason.schema';
-import { AdsStatisticSchema, AdsStatistic } from './ads-statistic.schema';
+import { AdsStatistic, AdsStatisticSchema } from './ads-statistic.schema';
 import { CastcleBase } from './base.schema';
 
 @Schema({ timestamps: true })

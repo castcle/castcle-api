@@ -20,12 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-/**
- * Detail should not change much once it created
- */
 @Schema({ id: false, _id: false, timestamps: false, versionKey: false })
 export class AdsReasonDetail {
   @Prop()
@@ -35,4 +31,5 @@ export class AdsReasonDetail {
   suggestion: string;
 }
 
-export const AdsReasonDetailSchema = SchemaFactory.createForClass(AdsReasonDetail);
+export const AdsReasonDetailSchema =
+  SchemaFactory.createForClass(AdsReasonDetail);

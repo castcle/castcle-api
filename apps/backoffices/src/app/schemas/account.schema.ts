@@ -30,7 +30,7 @@ export type AccountDocument = Account;
 export class Account extends CastcleBase {
   @Prop({
     index: true,
-    unique: true
+    unique: true,
   })
   email: string;
   @Prop()

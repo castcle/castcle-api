@@ -145,8 +145,6 @@ export class Uploader {
         })
         .promise();
     } catch (error) {
-      const errorLanguage =
-        options && options.language ? options.language : 'en';
       throw CastcleException.UPLOAD_FAILED;
     }
   };

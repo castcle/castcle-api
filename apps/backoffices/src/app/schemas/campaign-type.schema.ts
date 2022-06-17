@@ -20,13 +20,8 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { CastcleBase } from './base.schema';
-
-/**
- * Detail should not change much once it created
- */
 @Schema({ timestamps: true })
 export class CampaignType extends CastcleBase {
   @Prop({ required: true })
@@ -34,7 +29,7 @@ export class CampaignType extends CastcleBase {
 
   @Prop({
     required: true,
-    index: { unique: true, dropDups: true }
+    index: { unique: true, dropDups: true },
   })
   slug: string;
 }
