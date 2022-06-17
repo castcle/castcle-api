@@ -554,7 +554,7 @@ describe('UserServiceV2', () => {
         password: '12345678Ab',
         displayName: `Test1`,
         castcleId: `test1`,
-        referral: mockUsers[0].account._id,
+        referral: mockUsers[0].user.displayId,
       });
     });
     it('should get user referee', async () => {

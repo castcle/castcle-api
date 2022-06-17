@@ -387,18 +387,23 @@ export class AuthenticationServiceV2 {
 
   private async updateReferral(
     account: Account,
-    referrerId: string,
+    referrerCastcleId: string,
     ip: string,
   ) {
     const referrer =
-      (await this.repository.findAccount({ _id: referrerId })) ||
+      (await this.repository.findUser({ _id: referrerCastcleId })) ||
       (await this.analyticService.getReferrer(ip));
 
     if (!referrer) return;
 
-    account.referralBy = referrer._id;
+    const referrerAccount = await this.repository.findAccount({
+      _id: referrer.ownerAccount,
+    });
+
+    account.referralBy = referrerAccount._id;
+
     await this.repository.updateAccount(
-      { _id: referrer._id },
+      { _id: referrerAccount._id },
       { $inc: { referralCount: 1 } },
     );
   }
