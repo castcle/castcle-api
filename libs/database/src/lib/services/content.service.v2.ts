@@ -1103,7 +1103,6 @@ export class ContentServiceV2 {
       viewer: viewer,
       _id: contentId,
     });
-    console.log('getContent.content', contents);
     return this.toContentResponse(contents, hasRelationshipExpansion, viewer);
   };
 
