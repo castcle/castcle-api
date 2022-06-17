@@ -69,11 +69,6 @@ export class AdsController {
   ) {
     this.logger.log('createCastAds()', JSON.stringify(adsRequestDto));
     authorizer.requireActivation();
-    const content = await this.contentService.getContent(
-      adsRequestDto.contentId,
-    );
-    const user = await this.userService.getUser(content.payload.authorId);
-    authorizer.requestAccessForAccount(user.ownerAccount);
     const ads = await this.adsService.createAds(authorizer.user, adsRequestDto);
     return this.adsService.transformAdsCampaignToAdsResponse(ads);
   }

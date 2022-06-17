@@ -263,7 +263,7 @@ export class AdsService {
       return false;
     if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
       const page = await this._userModel.findById(adsRequest.castcleId);
-      return String(page.ownerAccount) === String(user._id);
+      return String(page.ownerAccount) === String(user.ownerAccount);
     } else if (adsRequest.contentId) {
       const content = await this._contentModel.findById(adsRequest.contentId);
       return String(content.author.id) === String(user._id);
