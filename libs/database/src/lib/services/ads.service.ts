@@ -261,8 +261,8 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
-    if (adsRequest.userId && user.id !== adsRequest.userId) {
-      const page = await this._userModel.findById(adsRequest.userId);
+    if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
+      const page = await this._userModel.findById(adsRequest.castcleId);
       return String(page.ownerAccount) === String(user._id);
     } else if (adsRequest.contentId) {
       const content = await this._contentModel.findById(adsRequest.contentId);
@@ -287,10 +287,10 @@ export class AdsService {
    * @returns {AdsCampaign}
    */
   createAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const adsRef = adsRequest.userId
+    const adsRef = adsRequest.castcleId
       ? {
           $ref: 'user',
-          $id: new mongoose.Types.ObjectId(adsRequest.userId),
+          $id: new mongoose.Types.ObjectId(adsRequest.castcleId),
         }
       : {
           $ref: 'content',
