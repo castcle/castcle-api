@@ -20,60 +20,56 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
-import { GetUserParam, UserServiceV2 } from '@castcle-api/database';
+
+import {
+  AdsRequestDto,
+  AdsService,
+  ContentServiceV2,
+  UserServiceV2,
+} from '@castcle-api/database';
 import { CacheKeyName } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import {
   Auth,
   Authorizer,
-  CastcleAuth,
+  CastcleClearCacheAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
-import { Get, Param, Query } from '@nestjs/common';
-import { Types } from 'mongoose';
-import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
+import { Body, Post } from '@nestjs/common';
 
-import { WalletService } from '../services/wallet.service';
+@CastcleControllerV2({ path: 'ads' })
+export class AdsController {
+  private logger = new CastLogger(AdsController.name);
 
-@CastcleControllerV2({ path: 'wallets' })
-export class WalletController {
-  private logger = new CastLogger(WalletController.name);
   constructor(
-    private userServiceV2: UserServiceV2,
-    private walletService: WalletService,
+    private adsService: AdsService,
+    private userService: UserServiceV2,
+    private contentService: ContentServiceV2,
   ) {}
 
-  private validateObjectId(id: string) {
-    this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = Types.ObjectId;
-    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
+  @Post('user')
+  async createUserAds(
+    @Auth() authorizer: Authorizer,
+    @Body() adsRequestDto: AdsRequestDto,
+  ) {
+    this.logger.log('creatcreateUserAds()', JSON.stringify(adsRequestDto));
+    authorizer.requireActivation();
+    const user = await this.userService.getUser(adsRequestDto.castcleId);
+    authorizer.requestAccessForAccount(user.ownerAccount);
+    const ads = await this.adsService.createAds(authorizer.user, adsRequestDto);
+    return this.adsService.transformAdsCampaignToAdsResponse(ads);
   }
 
-  @CastcleAuth(CacheKeyName.Users)
-  @Get(':userId')
-  async getUserWallet(
+  @CastcleClearCacheAuth(CacheKeyName.Feeds)
+  @Post('cast')
+  async createCastAds(
     @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId }: GetUserParam,
+    @Body() adsRequestDto: AdsRequestDto,
   ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
-    authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.walletService.getWalletBalance(user);
-  }
-
-  @CastcleAuth(CacheKeyName.Users)
-  @Get(':userId/history')
-  async getUserHistory(
-    @Auth() authorizer: Authorizer,
-    @Param() { isMe, userId }: GetUserParam,
-    @Query() query: WalletHistoryQueryDto,
-  ) {
-    const user = isMe
-      ? authorizer.user
-      : await this.userServiceV2.getUser(userId);
-    authorizer.requestAccessForAccount(user.ownerAccount);
-    return this.walletService.getWalletHistory(user, query);
+    this.logger.log('createCastAds()', JSON.stringify(adsRequestDto));
+    authorizer.requireActivation();
+    const ads = await this.adsService.createAds(authorizer.user, adsRequestDto);
+    return this.adsService.transformAdsCampaignToAdsResponse(ads);
   }
 }
