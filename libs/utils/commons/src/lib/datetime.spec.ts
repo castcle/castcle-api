@@ -35,8 +35,8 @@ describe('#CastcleDate', () => {
       'today',
     );
 
-    expect(String(startDate.toISOString())).toBe('2022-03-02T17:00:00.000Z');
-    expect(String(endDate.toISOString())).toBe('2022-03-03T16:59:59.999Z');
+    expect(startDate.toISOString()).toBe('2022-03-02T17:00:00.000Z');
+    expect(endDate.toISOString()).toBe('2022-03-03T16:59:59.999Z');
   });
 
   it('should able convert current date startOf - endOf week.', () => {
@@ -45,8 +45,8 @@ describe('#CastcleDate', () => {
       'week',
     );
 
-    expect(String(startDate.toISOString())).toBe('2022-02-27T17:00:00.000Z');
-    expect(String(endDate.toISOString())).toBe('2022-03-06T16:59:59.999Z');
+    expect(startDate.toISOString()).toBe('2022-02-27T17:00:00.000Z');
+    expect(endDate.toISOString()).toBe('2022-03-06T16:59:59.999Z');
   });
 
   it('should able convert current date startOf - endOf month.', () => {
@@ -55,7 +55,7 @@ describe('#CastcleDate', () => {
       'month',
     );
 
-    expect(String(startDate.toISOString())).toBe('2022-02-28T17:00:00.000Z');
-    expect(String(endDate.toISOString())).toBe('2022-03-31T16:59:59.999Z');
+    expect(startDate.toISOString()).toBe('2022-02-28T17:00:00.000Z');
+    expect(endDate.toISOString()).toBe('2022-03-31T16:59:59.999Z');
   });
 });

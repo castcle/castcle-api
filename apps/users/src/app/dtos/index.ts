@@ -26,3 +26,4 @@ export * from './dto';
 export * from './get-airdrop-balances.dto';
 export * from './get-page.dto';
 export * from './reporting.dto';
+export * from './wallet.dto';

@@ -124,7 +124,7 @@ describe('PageController', () => {
       },
     );
     await authService.verifyAccount(accountActivation);
-    jest.spyOn(pageController, '_uploadImage').mockImplementation(async () => {
+    jest.spyOn(Image, 'upload').mockImplementation(async () => {
       console.log('---mock uri--image');
       const mockImage = new Image({
         original: 'mockUri',

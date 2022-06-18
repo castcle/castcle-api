@@ -20,43 +20,55 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+
 import { Environment as env } from '@castcle-api/environments';
 import { CastLogger } from '@castcle-api/logger';
 import * as AWS from 'aws-sdk';
+import { DateTime } from 'luxon';
 import * as sharp from 'sharp';
-import * as Configs from '../config';
+import { EXPIRE_TIME, IMAGE_BUCKET_FOLDER, Size, SizeName } from './config';
 import { UploadOptions, Uploader } from './uploader';
 
-const OriginalSuffix = 'original';
+export class CastcleImage {
+  private static signer = new AWS.CloudFront.Signer(
+    env.CLOUDFRONT_ACCESS_KEY_ID,
+    Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64').toString('ascii'),
+  );
 
-export type Size = {
-  name: string;
-  width: number;
-  height: number;
-};
+  [SizeName.ORIGINAL]: string;
+  [SizeName.FULL_HD]?: string;
+  [SizeName.LARGE]?: string;
+  [SizeName.MEDIUM]?: string;
+  [SizeName.THUMBNAIL]?: string;
 
-export interface ImageUploadOptions extends UploadOptions {
-  sizes?: Size[];
+  static sign(image: CastcleImage) {
+    if (!image || !env.CLOUDFRONT_PRIVATE_KEY) return image;
+
+    return Object.assign(
+      {},
+      ...Object.keys(image).map((size) => ({
+        [size]: CastcleImage.signer.getSignedUrl({
+          url: `${env.ASSETS_HOST}/${image[size]}`,
+          expires: DateTime.now()
+            .plus({ milliseconds: EXPIRE_TIME })
+            .toSeconds(),
+        }),
+      })),
+    );
+  }
 }
 
 export class Image {
-  constructor(
-    public image: {
-      original: string;
-      [key: string]: string;
-    },
-    public order?: number,
-  ) {}
+  constructor(public image: CastcleImage, public order?: number) {}
 
+  /** @deprecated */
   toSignUrl(sizeName?: string) {
     //for pass no env test
     if (!env.CLOUDFRONT_PRIVATE_KEY) return this.image.original;
     const buff = Buffer.from(env.CLOUDFRONT_PRIVATE_KEY, 'base64');
     const cloudFrontPrivateKey = buff.toString('ascii');
     const signer = new AWS.CloudFront.Signer(
-      env.CLOUDFRONT_ACCESS_KEY_ID
-        ? env.CLOUDFRONT_ACCESS_KEY_ID
-        : 'testCloudKey',
+      env.CLOUDFRONT_ACCESS_KEY_ID,
       cloudFrontPrivateKey,
     );
 
@@ -68,16 +80,14 @@ export class Image {
 
     return signer.getSignedUrl({
       url,
-      expires: Math.floor((Date.now() + Configs.EXPIRE_TIME) / 1000),
+      expires: Math.floor((Date.now() + EXPIRE_TIME) / 1000),
     });
   }
 
-  toSignUrls() {
+  /** @deprecated */
+  toSignUrls(): CastcleImage {
     if (this.image['isSign']) return this.image;
-    const newImage: {
-      original: string;
-      [key: string]: string;
-    } = {
+    const newImage: CastcleImage = {
       original: this.toSignUrl(),
     };
     Object.keys(this.image).forEach((sizeName) => {
@@ -127,7 +137,7 @@ export class Image {
     buffer: Buffer,
     size: Size,
     fileType: string,
-    options?: ImageUploadOptions,
+    options?: UploadOptions & { sizes?: Size[] },
   ) => {
     const sharpImage = sharp(buffer);
     const metaData = await sharpImage.metadata();
@@ -138,7 +148,7 @@ export class Image {
       .toBuffer();
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER,
+      IMAGE_BUCKET_FOLDER,
     );
     return uploader.uploadBufferToS3(newBuffer, fileType, {
       ...options,
@@ -146,16 +156,7 @@ export class Image {
     });
   };
 
-  static download(
-    image: {
-      original: string;
-      [key: string]: string;
-    },
-    defaultImage?: string,
-  ): {
-    original: string;
-    [key: string]: string;
-  } {
+  static download(image: CastcleImage, defaultImage?: string): CastcleImage {
     if (image) {
       const imageInstance = new Image(image);
       return imageInstance.toSignUrls();
@@ -166,20 +167,21 @@ export class Image {
     } else return undefined;
   }
 
-  static async upload(base64: string, options?: ImageUploadOptions) {
+  static async upload(
+    base64: string,
+    options?: UploadOptions & { sizes?: Size[] },
+  ) {
+    const OriginalSuffix = 'original';
     const logger = new CastLogger(Image.name);
     logger.log(JSON.stringify(options), 'upload');
     const uploader = new Uploader(
       env.ASSETS_BUCKET_NAME ? env.ASSETS_BUCKET_NAME : 'testBucketName',
-      Configs.IMAGE_BUCKET_FOLDER,
+      IMAGE_BUCKET_FOLDER,
     );
     const contentType = Uploader.getImageContentType(base64);
     const fileType = Uploader.getFileTypeFromBase64(base64);
     const buffer = Uploader.getBufferFromBase64(base64);
-    const image: {
-      original: string;
-      [key: string]: string;
-    } = {
+    const image: CastcleImage = {
       original: await uploader
         .uploadBufferToS3(buffer, fileType, {
           ...options,

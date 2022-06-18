@@ -54,6 +54,8 @@ import {
   ContentMessageEvent,
   EngagementType,
   QueueName,
+  TransactionFilter,
+  TransactionType,
   UserType,
   WalletType,
 } from '../models';
@@ -661,6 +663,10 @@ export class ContentServiceV2 {
               value: farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.FARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -716,6 +722,10 @@ export class ContentServiceV2 {
               value: farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.FARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -801,6 +811,10 @@ export class ContentServiceV2 {
               value: contentFarming.farmAmount,
             },
           ],
+          data: {
+            type: TransactionType.UNFARMING,
+            filter: TransactionFilter.CONTENT_FARMING,
+          },
           ledgers: [
             {
               debit: {
@@ -853,6 +867,10 @@ export class ContentServiceV2 {
             value: contentFarming.farmAmount,
           },
         ],
+        data: {
+          type: TransactionType.FARMED,
+          filter: TransactionFilter.CONTENT_FARMING,
+        },
         ledgers: [
           {
             debit: {
@@ -1006,11 +1024,7 @@ export class ContentServiceV2 {
 
     if (!query.hasRelationshipExpansion || account.isGuest) {
       const userResponses = await Promise.all(
-        usersEngagement.map(async ({ user }) => {
-          return user.type === UserType.PAGE
-            ? user.toPageResponseV2()
-            : await user.toUserResponseV2();
-        }),
+        usersEngagement.map(async ({ user }) => user.toPublicResponse()),
       );
       return ResponseDto.ok({
         payload: userResponses,
@@ -1031,19 +1045,11 @@ export class ContentServiceV2 {
       (relationship) => String(relationship.user) === String(viewer?._id),
     );
 
-    const userResponses = await Promise.all(
-      usersEngagement.map(async ({ user }) => {
-        return user.type === UserType.PAGE
-          ? user.toPageResponseV2(
-              relationship?.blocking ?? false,
-              relationship?.blocking ?? false,
-              relationship?.following ?? false,
-            )
-          : await user.toUserResponseV2({
-              blocked: relationship?.blocking ?? false,
-              blocking: relationship?.blocking ?? false,
-              followed: relationship?.following ?? false,
-            });
+    const userResponses = usersEngagement.map(({ user }) =>
+      user.toPublicResponse({
+        blocked: relationship?.blocking ?? false,
+        blocking: relationship?.blocking ?? false,
+        followed: relationship?.following ?? false,
       }),
     );
 
@@ -1144,7 +1150,6 @@ export class ContentServiceV2 {
         removeOnComplete: true,
       },
     );
-
     return this.toContentResponse({
       contents: [content],
       authors: [author as any],
@@ -1156,22 +1161,18 @@ export class ContentServiceV2 {
       _id: contentId,
       author: user._id,
     });
+
     if (!content) throw CastcleException.CONTENT_NOT_FOUND;
 
-    await this.repository.updateContent(
-      { _id: contentId },
-      { $set: { visibility: EntityVisibility.Deleted } },
+    await this.repository.deleteContents({ _id: contentId });
+    await this.repository.updateUser(
+      { _id: user._id },
+      { $inc: { casts: -1 } },
     );
 
-    if (content.isRecast || content.isQuote)
+    if (content.isRecast || content.isQuote) {
       await this.repository.deleteEngagements({ itemId: content._id });
-
-    if (content.hashtags)
-      await this.repository.removeFromTags(content.hashtags, {
-        $inc: {
-          score: -1,
-        },
-      });
+    }
   };
 
   getParticipates = async (contentId: string, account: Account) => {

@@ -67,10 +67,15 @@ import {
   UpdateModelUserDto,
   UpdateUserDto,
   UserField,
-  UserModelImage,
   createFilterQuery,
 } from '../dtos';
-import { CastcleNumber, QueueName, UserMessage, UserType } from '../models';
+import {
+  CastcleNumber,
+  QueueName,
+  UserImage,
+  UserMessage,
+  UserType,
+} from '../models';
 import {
   Account,
   AccountActivationModel,
@@ -89,6 +94,7 @@ import {
 import { createCastcleFilter, createPagination } from '../utils/common';
 import { ContentService } from './content.service';
 
+/** @deprecated */
 @Injectable()
 export class UserService {
   private logger = new CastLogger(UserService.name);
@@ -1241,7 +1247,7 @@ Message: ${message}`,
     this.logger.debug(`uploading info avatar-${accountId}`);
     this.logger.debug(body);
 
-    const images: UserModelImage = {};
+    const images: UserImage = {};
 
     if (body.images?.avatar) {
       const avatar = await Image.upload(body.images.avatar as string, {

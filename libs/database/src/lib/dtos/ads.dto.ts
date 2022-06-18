@@ -29,7 +29,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { AdsObjective, FilterInterval } from '../models';
+import { AdsBidType, AdsObjective, FilterInterval } from '../models';
 import { AdsCampaign } from '../schemas';
 import { ContentPayloadItem } from './content.dto';
 import { PaginationQuery } from './pagination.dto';
@@ -61,6 +61,16 @@ export class AdsRequestDto {
   @ApiProperty()
   dailyBudget: number;
 
+  @IsEnum([AdsBidType.Auto, AdsBidType.CostPerAccount])
+  @IsNotEmpty()
+  @ApiProperty()
+  dailyBidType: AdsBidType;
+
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty()
+  dailyBidValue?: number;
+
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty()
@@ -78,7 +88,7 @@ export class AdsRequestDto {
 
   @ApiProperty()
   @IsOptional()
-  userId?: string;
+  castcleId?: string;
 }
 
 export class AdsCampaignResponseDto {
@@ -87,6 +97,8 @@ export class AdsCampaignResponseDto {
   'campaignCode': string;
   'objective': string;
   'dailyBudget': number;
+  'dailyBidType': AdsBidType;
+  'dailyBidValue': number;
   'duration': number;
   'adStatus': string;
   'boostStatus': string;

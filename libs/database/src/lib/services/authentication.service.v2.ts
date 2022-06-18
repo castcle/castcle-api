@@ -50,24 +50,20 @@ import {
   RequestOtpForChangingPasswordDto,
   SocialConnectDto,
   UserAccessTokenPayload,
+  UserField,
   VerifyOtpByEmailDto,
   VerifyOtpByMobileDto,
 } from '../dtos';
 import {
   AccountActivationType,
   AccountRequirements,
+  AuthenticationProvider,
   OtpObjective,
   OtpTemplateMessage,
   UserType,
 } from '../models';
 import { Repository } from '../repositories';
-import {
-  Account,
-  AccountAuthenIdType,
-  AccountRole,
-  Credential,
-  User,
-} from '../schemas';
+import { Account, AccountRole, Credential, User } from '../schemas';
 import { AnalyticService } from './analytic.service';
 
 @Injectable()
@@ -167,10 +163,24 @@ export class AuthenticationServiceV2 {
     return {
       accessToken,
       refreshToken,
-      profile: await user?.toUserResponseV2({
-        passwordNotSet: !account.password,
+      profile: await user?.toOwnerResponse({
+        expansionFields: [
+          UserField.LinkSocial,
+          UserField.SyncSocial,
+          UserField.Wallet,
+        ],
       }),
-      pages: user && pages.map((page) => page.toPageResponseV2()),
+      pages: await Promise.all(
+        pages.map((page) =>
+          page.toOwnerResponse({
+            expansionFields: [
+              UserField.LinkSocial,
+              UserField.SyncSocial,
+              UserField.Wallet,
+            ],
+          }),
+        ),
+      ),
     };
   }
 
@@ -197,11 +207,11 @@ export class AuthenticationServiceV2 {
     const { email, socialId, provider, ip, userAgent, authToken } =
       socialConnectDto;
 
-    if (provider === AccountAuthenIdType.Facebook) {
+    if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
       if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
       socialConnectDto.displayName ||= profile.name;
-    } else if (provider === AccountAuthenIdType.Twitter) {
+    } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {
@@ -227,7 +237,7 @@ export class AuthenticationServiceV2 {
         const duplicateUser = await this.repository.findUser({
           accountId: duplicateAccount._id,
         });
-        const profile = await duplicateUser?.toUserResponseV2();
+        const profile = duplicateUser?.toPublicResponse();
         throw CastcleException.DUPLICATE_EMAIL_WITH_PAYLOAD(
           profile ? { profile } : null,
         );
@@ -255,10 +265,10 @@ export class AuthenticationServiceV2 {
     });
 
     if (socialConnected) throw CastcleException.SOCIAL_PROVIDER_IS_EXIST;
-    if (provider === AccountAuthenIdType.Facebook) {
+    if (provider === AuthenticationProvider.FACEBOOK) {
       const profile = await this.facebookClient.getFacebookProfile(authToken);
       if (socialId !== profile.id) throw CastcleException.INVALID_AUTH_TOKEN;
-    } else if (provider === AccountAuthenIdType.Twitter) {
+    } else if (provider === AuthenticationProvider.TWITTER) {
       const [token, secret] = authToken.split('|');
       const profile = await this.twitterClient.verifyCredentials(token, secret);
       if (socialId !== profile.id_str) {
@@ -305,6 +315,10 @@ export class AuthenticationServiceV2 {
 
     account.isGuest = false;
     account.email = dto.email;
+
+    if (Environment.PDPA_ACCEPT_DATES.length)
+      account.set(`pdpa.${Environment.PDPA_ACCEPT_DATES[0]}`, true);
+
     account.password = Password.hash(dto.password);
     const activation = account.createActivation(AccountActivationType.EMAIL);
     await this.updateReferral(account, dto.referral, dto.ip);
@@ -314,6 +328,7 @@ export class AuthenticationServiceV2 {
       displayId: dto.castcleId,
       displayName: dto.displayName,
       type: UserType.PEOPLE,
+      email: dto.email,
     });
     await this.analyticService.trackRegistration(dto.ip, account._id);
     await this.mailer.sendRegistrationEmail(
@@ -327,50 +342,41 @@ export class AuthenticationServiceV2 {
 
   async registerWithSocial(
     credential: Credential,
-    { ip, referral, ...registerDto }: SocialConnectDto & { ip: string },
+    { ip, referral, ...dto }: SocialConnectDto & { ip: string },
   ) {
     const account = await this.repository.findAccount({
       _id: credential.account._id,
     });
 
     if (!account) throw CastcleException.INVALID_ACCESS_TOKEN;
-    if (registerDto.email) {
+    if (dto.email) {
       this.createAccountActivation(account, AccountActivationType.EMAIL, true);
-      account.email = registerDto.email;
+      account.email = dto.email;
       account.activateDate = new Date();
     }
 
-    (account.authentications ||= {})[registerDto.provider] = {
-      socialId: registerDto.socialId,
-      avatar: registerDto.avatar,
+    (account.authentications ||= {})[dto.provider] = {
+      socialId: dto.socialId,
+      avatar: dto.avatar,
     };
 
     await this.updateReferral(account, referral, ip);
     await account.set({ isGuest: false }).save();
     await this.repository.createUser({
       ownerAccount: account._id,
-      displayId:
-        registerDto.displayName ||
-        `${registerDto.provider}${registerDto.socialId}`,
-      displayName:
-        registerDto.displayName ||
-        `${registerDto.provider}${registerDto.socialId}`,
+      displayId: dto.displayName || `${dto.provider}${dto.socialId}`,
+      displayName: dto.displayName || `${dto.provider}${dto.socialId}`,
       type: UserType.PEOPLE,
+      email: dto.email,
       profile: {
-        overview: registerDto.overview,
-        socials: { [registerDto.provider]: registerDto.link },
+        overview: dto.overview,
+        socials: { [dto.provider]: dto.link },
         images: {
-          avatar: registerDto.avatar
-            ? await this.repository.createProfileImage(
-                account._id,
-                registerDto.avatar,
-              )
+          avatar: dto.avatar
+            ? await this.repository.createProfileImage(account._id, dto.avatar)
             : null,
-          cover: registerDto.cover
-            ? await this.repository.createCoverImage(
-                account._id,
-                registerDto.cover,
-              )
+          cover: dto.cover
+            ? await this.repository.createCoverImage(account._id, dto.cover)
             : null,
         },
       },
@@ -381,18 +387,23 @@ export class AuthenticationServiceV2 {
 
   private async updateReferral(
     account: Account,
-    referrerId: string,
+    referrerCastcleId: string,
     ip: string,
   ) {
     const referrer =
-      (await this.repository.findUser({ _id: referrerId })) ||
+      (await this.repository.findUser({ _id: referrerCastcleId })) ||
       (await this.analyticService.getReferrer(ip));
 
     if (!referrer) return;
 
-    account.referralBy = referrer._id;
+    const referrerAccount = await this.repository.findAccount({
+      _id: referrer.ownerAccount,
+    });
+
+    account.referralBy = referrerAccount._id;
+
     await this.repository.updateAccount(
-      { _id: referrer._id },
+      { _id: referrerAccount._id },
       { $inc: { referralCount: 1 } },
     );
   }

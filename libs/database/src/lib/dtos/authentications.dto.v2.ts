@@ -22,6 +22,7 @@
  */
 
 import { CastcleRegExp, RemoveLeadingZero } from '@castcle-api/utils/commons';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -31,7 +32,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { OtpObjective } from '../models';
+import { AuthenticationProvider, OtpObjective } from '../models';
 import { AcceptPlatform } from './common.dto';
 
 export class LoginWithEmailDto {
@@ -173,4 +174,47 @@ export class RegisterFirebaseDto {
   @IsNotEmpty()
   @IsEnum(AcceptPlatform)
   platform: AcceptPlatform;
+}
+
+export class SocialConnectDto {
+  @Transform(({ obj }) =>
+    /apple/.test(obj.provider) ? AuthenticationProvider.APPLE : obj.provider,
+  )
+  @IsEnum(AuthenticationProvider)
+  provider: AuthenticationProvider;
+
+  @IsString()
+  socialId: string;
+
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
+
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  authToken: string;
+
+  @IsString()
+  @IsOptional()
+  referral?: string;
+
+  @IsString()
+  @IsOptional()
+  overview?: string;
+
+  @IsString()
+  @IsOptional()
+  cover?: string;
+
+  @IsString()
+  @IsOptional()
+  link?: string;
 }

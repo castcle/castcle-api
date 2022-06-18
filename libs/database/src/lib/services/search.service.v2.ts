@@ -81,18 +81,16 @@ export class SearchServiceV2 {
         viewer,
         true,
       );
-      users = await this.repository.findUsers(
-        { excludeRelationship: blocking },
-        { limit: +limit, sort: { followCount: -1 } },
-      );
+      users = await this.repository.getPublicUsers({
+        requestedBy: viewer,
+        filter: { excludeRelationship: blocking },
+        queryOptions: { limit: +limit, sort: { followCount: -1 } },
+      });
     }
 
     return {
       hashtags: this.toPayloadHashtags(hashtag),
-      users: await this.userServiceV2.convertUsersToUserResponsesV2(
-        viewer,
-        users,
-      ),
+      users,
     } as TopTrendsResponseDto;
   }
 
@@ -112,13 +110,14 @@ export class SearchServiceV2 {
       true,
     );
 
-    const users = await this.repository.findUsers(
-      {
+    const users = await this.repository.getPublicUsers({
+      requestedBy: viewer,
+      filter: {
         excludeRelationship: blocking,
         keyword: keyword,
       },
-      { limit: +limit, sort: { followCount: -1 } },
-    );
+      queryOptions: { limit: +limit, sort: { followCount: -1 } },
+    });
 
     return {
       keyword: [
@@ -131,15 +130,12 @@ export class SearchServiceV2 {
         key: 'hashtag.castcle',
         isTrending: true,
       }),
-      users: await this.userServiceV2.convertUsersToUserResponsesV2(
-        viewer,
-        users,
-      ),
+      users,
     } as ByKeywordResponseDto;
   }
 
   async getUserMentions(
-    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
+    { userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
     const blocking = await this.userServiceV2.getUserRelationships(
@@ -152,36 +148,22 @@ export class SearchServiceV2 {
       false,
     );
 
-    const users = await this.repository.findUsers(
-      {
+    const users = await this.repository.getPublicUsers({
+      requestedBy: viewer,
+      filter: {
         excludeRelationship: blocking,
         _id: following,
         ...query,
       },
-      {
-        sort: {
-          followCount: -1,
-        },
-      },
-    );
-
-    if (!users.length)
-      return ResponseDto.ok({
-        payload: [],
-      });
-
-    return ResponseDto.ok({
-      payload: await this.userServiceV2.convertUsersToUserResponsesV2(
-        viewer,
-        users,
-        hasRelationshipExpansion,
-        userFields,
-      ),
+      expansionFields: userFields,
+      queryOptions: { sort: { followCount: -1 } },
     });
+
+    return ResponseDto.ok({ payload: users });
   }
 
   async getSearchByKeyword(
-    { hasRelationshipExpansion, userFields, ...query }: GetKeywordQuery,
+    { userFields, ...query }: GetKeywordQuery,
     viewer: User,
   ) {
     const blocking = await this.userServiceV2.getUserRelationships(
@@ -189,28 +171,15 @@ export class SearchServiceV2 {
       true,
     );
 
-    const users = await this.repository.findUsers({
-      excludeRelationship: blocking,
-      ...query,
+    const users = await this.repository.getPublicUsers({
+      requestedBy: viewer,
+      filter: { excludeRelationship: blocking, ...query },
+      expansionFields: userFields,
     });
 
-    if (!users.length)
-      return ResponseDto.ok({
-        payload: [],
-        meta: { resultCount: 0 },
-      });
-
-    const userResponses =
-      await this.userServiceV2.convertUsersToUserResponsesV2(
-        viewer,
-        users,
-        hasRelationshipExpansion,
-        userFields,
-      );
-
     return ResponseDto.ok({
-      payload: userResponses,
-      meta: Meta.fromDocuments(userResponses as any),
+      payload: users,
+      meta: Meta.fromDocuments(users),
     });
   }
 }

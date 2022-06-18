@@ -35,12 +35,11 @@ import {
   UserService,
 } from '../database.module';
 import { EntityVisibility } from '../dtos';
-import { OtpObjective, QueueName } from '../models';
+import { AuthenticationProvider, OtpObjective, QueueName } from '../models';
 import {
   Account,
   AccountActivationV1,
   AccountAuthenId,
-  AccountAuthenIdType,
   Credential,
   Otp,
   User,
@@ -557,7 +556,7 @@ describe('Authentication Service', () => {
       const signupRequirements: SignupSocialRequirements = {
         socialId: '7457356332',
         displayName: 'Dudeee Mock',
-        provider: AccountAuthenIdType.Facebook,
+        provider: AuthenticationProvider.FACEBOOK,
         avatar: {
           original: 'http://placehold.it/200x200',
         },
@@ -609,7 +608,7 @@ describe('Authentication Service', () => {
         const socialId = '453455242';
         const result = await service.createAccountAuthenId(
           createAccountResult.accountDocument,
-          AccountAuthenIdType.Twitter,
+          AuthenticationProvider.TWITTER,
           socialId,
           'testtoken',
           'secret',
@@ -617,7 +616,7 @@ describe('Authentication Service', () => {
 
         const accountSocial = await service.getAccountAuthenIdFromSocialId(
           socialId,
-          AccountAuthenIdType.Twitter,
+          AuthenticationProvider.TWITTER,
         );
 
         expect(result).toBeDefined();
@@ -632,7 +631,7 @@ describe('Authentication Service', () => {
         const fbsocialId = '453457890';
         await service.createAccountAuthenId(
           createAccountResult.accountDocument,
-          AccountAuthenIdType.Facebook,
+          AuthenticationProvider.FACEBOOK,
           fbsocialId,
           'testtoken',
           '',
@@ -640,11 +639,11 @@ describe('Authentication Service', () => {
 
         const accountSocialTw = await service.getAccountAuthenIdFromSocialId(
           twsocialId,
-          AccountAuthenIdType.Twitter,
+          AuthenticationProvider.TWITTER,
         );
         const accountSocialFb = await service.getAccountAuthenIdFromSocialId(
           fbsocialId,
-          AccountAuthenIdType.Facebook,
+          AuthenticationProvider.FACEBOOK,
         );
 
         expect(accountSocialTw).toBeDefined();

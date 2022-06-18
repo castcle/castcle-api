@@ -45,7 +45,11 @@ import {
   QueueStatus,
   QueueTopic,
 } from '../models';
-import { WalletType } from '../models/wallet.enum';
+import {
+  TransactionFilter,
+  TransactionType,
+  WalletType,
+} from '../models/wallet.enum';
 import { Account, Campaign, FeedItem, Queue, TLedger } from '../schemas';
 import { TAccountService } from './taccount.service';
 
@@ -329,7 +333,11 @@ export class CampaignService {
     const transaction = await this.taccountService.transfers({
       from,
       to,
-      data: { campaignId: claimCampaignsAirdropJob.campaignId },
+      data: {
+        campaignId: claimCampaignsAirdropJob.campaignId,
+        type: TransactionType.AIRDROP,
+        filter: TransactionFilter.AIRDROP_REFERAL,
+      },
       ledgers,
     });
     await campaign.save();

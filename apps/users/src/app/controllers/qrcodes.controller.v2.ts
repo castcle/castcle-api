@@ -21,39 +21,21 @@
  * or have any questions.
  */
 
-import {
-  GetChianDto,
-  GetSizeDto,
-  UserService,
-  UserServiceV2,
-} from '@castcle-api/database';
-import { CacheKeyName } from '@castcle-api/environments';
-import {
-  Auth,
-  Authorizer,
-  CastcleAuth,
-  CastcleControllerV2,
-} from '@castcle-api/utils/decorators';
-import { Get, Param, Query } from '@nestjs/common';
+import { GetChianDto, GetSizeDto, UserServiceV2 } from '@castcle-api/database';
+import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
+import { HttpCacheSharedInterceptor } from '@castcle-api/utils/interceptors';
+import { Get, Param, Query, UseInterceptors } from '@nestjs/common';
 
 @CastcleControllerV2({ path: 'qr-codes' })
 export class QRCodeControllerV2 {
-  constructor(
-    private userService: UserService,
-    private userServiceV2: UserServiceV2,
-  ) {}
+  constructor(private userServiceV2: UserServiceV2) {}
 
-  @CastcleAuth(CacheKeyName.Users)
+  @UseInterceptors(HttpCacheSharedInterceptor)
   @Get(':chainId/:userId')
   async createQRCode(
-    @Auth() authorizer: Authorizer,
     @Param() { chainId, userId }: GetChianDto,
     @Query() { size }: GetSizeDto,
   ) {
-    const user = await this.userService.findUser(userId);
-
-    authorizer.requireActivation();
-
-    return this.userServiceV2.createQRCode(chainId, size, user._id);
+    return this.userServiceV2.createQRCode(chainId, size, userId);
   }
 }

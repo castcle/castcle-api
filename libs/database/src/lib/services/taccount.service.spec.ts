@@ -24,9 +24,9 @@
 import { MongooseModule } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MongooseAsyncFeatures, MongooseForFeatures } from '../database.module';
-import { WalletType } from '../models';
+import { TransactionFilter, TransactionType, WalletType } from '../models';
 import { MicroTransaction, TLedger, Transaction } from '../schemas';
 import { CAccount } from '../schemas/caccount.schema';
 import { TAccountService } from './taccount.service';
@@ -237,6 +237,92 @@ describe('TAccount Service', () => {
       expect(
         await service.getBalance(CHART_OF_ACCOUNT.MINTANDBURN.caccount.no),
       ).toEqual(mintValue * 2);
+    });
+  });
+  describe('getWalletHistory()', () => {
+    it('should get wallet history', async () => {
+      const depositValue = 10;
+      const sendValue = 9;
+      const fakeUserId = String(new Types.ObjectId());
+      await new transactionModel({
+        from: {
+          type: WalletType.CASTCLE_MINT_CONTRACT,
+          value: depositValue,
+          user: fakeUserId,
+        } as MicroTransaction,
+        to: [
+          {
+            type: WalletType.CASTCLE_AIRDROP,
+            value: depositValue,
+          } as MicroTransaction,
+        ],
+        data: {
+          type: TransactionType.DEPOSIT,
+          filter: TransactionFilter.DEPOSIT_SEND,
+        },
+        ledgers: [
+          {
+            debit: {
+              caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+              value: depositValue,
+            },
+            credit: {
+              caccountNo:
+                CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+              value: depositValue,
+            },
+          } as TLedger,
+        ],
+      }).save();
+      await new transactionModel({
+        from: {
+          type: WalletType.CASTCLE_MINT_CONTRACT,
+          value: sendValue,
+        } as MicroTransaction,
+        to: [
+          {
+            type: WalletType.CASTCLE_AIRDROP,
+            value: sendValue,
+            user: fakeUserId,
+          } as MicroTransaction,
+        ],
+        data: {
+          type: TransactionType.SEND,
+          filter: TransactionFilter.DEPOSIT_SEND,
+        },
+        ledgers: [
+          {
+            debit: {
+              caccountNo: CHART_OF_ACCOUNT.VAULT.AIRDROP.caccount.no,
+              value: sendValue,
+            },
+            credit: {
+              caccountNo:
+                CHART_OF_ACCOUNT.MINTANDBURN.DISTRIBUTED_AIRDROP.caccount.no,
+              value: sendValue,
+            },
+          } as TLedger,
+        ],
+      }).save();
+      const result = await service.getWalletHistory(
+        fakeUserId,
+        TransactionFilter.DEPOSIT_SEND,
+      );
+      const expectArr = [
+        expect.objectContaining({
+          type: TransactionType.SEND,
+          /*  value: {
+            $numberDecimal: `${sendValue}`
+          },*/
+        }),
+        expect.objectContaining({
+          type: TransactionType.DEPOSIT,
+          /*value: {
+            $numberDecimal: `${depositValue}`
+          },*/
+        }),
+      ];
+      expect(result.payload).toEqual(expect.arrayContaining(expectArr));
     });
   });
   describe('canSpend()', () => {

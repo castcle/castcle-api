@@ -20,9 +20,11 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { Environment } from '@castcle-api/environments';
 import { TransformStringToKeyword } from '@castcle-api/utils/commons';
 import {
   IsEnum,
+  IsIn,
   IsMongoId,
   IsNotEmpty,
   IsOptional,
@@ -63,4 +65,11 @@ export class GetSyncSocialParam extends GetUserParam {
   @IsNotEmpty()
   @IsMongoId()
   syncSocialId: string;
+}
+
+export class GetDateDto {
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(Environment.PDPA_ACCEPT_DATES)
+  date: string;
 }

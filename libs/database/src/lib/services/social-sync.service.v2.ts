@@ -85,7 +85,7 @@ export class SocialSyncServiceV2 {
   async setAutoPost(syncSocialId: string, userId: string, isAutoPost: boolean) {
     const socialSync = await this.repository.findSocialSync({
       _id: syncSocialId,
-      authorId: userId,
+      authorId: String(userId),
     });
 
     if (!socialSync) throw CastcleException.FORBIDDEN;
