@@ -54,3 +54,8 @@ export enum FilterInterval {
   Week = 'week',
   Month = 'month',
 }
+
+export enum AdsBidType {
+  Auto = 'auto',
+  CostPerAccount = 'cost-per-account',
+}

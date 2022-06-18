@@ -29,6 +29,7 @@ import { CastcleTracingModule } from '@castcle-api/tracing';
 import { UtilsInterceptorsModule } from '@castcle-api/utils/interceptors';
 import { UtilsPipesModule } from '@castcle-api/utils/pipes';
 import { Module } from '@nestjs/common';
+import { AdsController } from './controllers/ads.controller';
 import { CommentController } from './controllers/comment.controller';
 import { CommentControllerV2 } from './controllers/comment.controller.v2';
 import { ContentController } from './controllers/content.controller';
@@ -54,6 +55,7 @@ import { AppService, SuggestionService } from './services';
     UtilsPipesModule,
   ],
   controllers: [
+    AdsController,
     CommentController,
     CommentControllerV2,
     ContentController,

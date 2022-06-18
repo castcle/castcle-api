@@ -261,9 +261,9 @@ export class AdsService {
     //invalid balance
     if (!(balance / mockOracleService.getCastPrice() >= adsRequest.dailyBudget))
       return false;
-    if (adsRequest.userId && user.id !== adsRequest.userId) {
-      const page = await this._userModel.findById(adsRequest.userId);
-      return String(page.ownerAccount) === String(user._id);
+    if (adsRequest.castcleId && user.id !== adsRequest.castcleId) {
+      const page = await this._userModel.findById(adsRequest.castcleId);
+      return String(page.ownerAccount) === String(user.ownerAccount);
     } else if (adsRequest.contentId) {
       const content = await this._contentModel.findById(adsRequest.contentId);
       return String(content.author.id) === String(user._id);
@@ -287,10 +287,10 @@ export class AdsService {
    * @returns {AdsCampaign}
    */
   createAds = async (user: User, adsRequest: AdsRequestDto) => {
-    const adsRef = adsRequest.userId
+    const adsRef = adsRequest.castcleId
       ? {
           $ref: 'user',
-          $id: new mongoose.Types.ObjectId(adsRequest.userId),
+          $id: new mongoose.Types.ObjectId(adsRequest.castcleId),
         }
       : {
           $ref: 'content',
@@ -309,6 +309,8 @@ export class AdsService {
         dailyBudget: adsRequest.dailyBudget,
         duration: adsRequest.duration,
         paymentMethod: adsRequest.paymentMethod,
+        dailyBidType: adsRequest.dailyBidType,
+        dailyBidValue: adsRequest.dailyBidValue,
       } as AdsDetail,
       statistics: DefaultAdsStatistic,
       status: AdsStatus.Processing,
@@ -328,6 +330,7 @@ export class AdsService {
       const content = await this._contentModel.findById(
         campaign.adsRef.$id || campaign.adsRef.oid,
       );
+      console.log('transformAdsCampaignToAdsResponse.content', content);
       payload = toSignedContentPayloadItem(content);
     }
     return {
@@ -342,6 +345,8 @@ export class AdsService {
       campaignCode: campaign.detail.code,
       dailyBudget: campaign.detail.dailyBudget,
       duration: campaign.detail.duration,
+      dailyBidType: campaign.detail.dailyBidType,
+      dailyBidValue: campaign.detail.dailyBidValue,
       objective: campaign.objective,
       payload: payload,
       engagement: campaign.statistics.engagements, // this could use,
@@ -423,6 +428,7 @@ export class AdsService {
             message: adsRequest.campaignMessage,
             dailyBudget: adsRequest.dailyBudget,
             duration: adsRequest.duration,
+            dailyBidValue: adsRequest.dailyBidValue,
           } as AdsDetail,
         },
       },

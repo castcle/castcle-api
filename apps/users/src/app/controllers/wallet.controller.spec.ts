@@ -26,14 +26,19 @@ import {
   CampaignService,
   ContentService,
   HashtagService,
+  MicroTransaction,
   MockUserDetail,
   MongooseAsyncFeatures,
   MongooseForFeatures,
   NotificationService,
   QueueName,
   TAccountService,
+  TLedger,
+  TransactionFilter,
+  TransactionType,
   UserService,
   UserServiceV2,
+  WalletType,
   generateMockUsers,
   mockDeposit,
 } from '@castcle-api/database';
@@ -106,7 +111,7 @@ describe('WalletController', () => {
     taccountService = app.get<TAccountService>(TAccountService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    mocksUsers = await generateMockUsers(1, 0, {
+    mocksUsers = await generateMockUsers(2, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
@@ -140,6 +145,104 @@ describe('WalletController', () => {
       } as WalletResponse);
     });
   });
+  describe('getUserHistory()', () => {
+    it('should get user history', async () => {
+      const fakeCACCOUNT = '12345';
+      const depositValue = 10;
+      const sendValue = 5;
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const fakeUserId = authorizer.user.id;
+      const transactionModel = taccountService._transactionModel;
+      await new transactionModel({
+        from: {
+          type: WalletType.CASTCLE_MINT_CONTRACT,
+          value: depositValue,
+          user: fakeUserId,
+        } as MicroTransaction,
+        to: [
+          {
+            type: WalletType.CASTCLE_AIRDROP,
+            value: depositValue,
+          } as MicroTransaction,
+        ],
+        data: {
+          type: TransactionType.DEPOSIT,
+          filter: TransactionFilter.DEPOSIT_SEND,
+        },
+        ledgers: [
+          {
+            debit: {
+              caccountNo: fakeCACCOUNT,
+              value: depositValue,
+            },
+            credit: {
+              caccountNo: fakeCACCOUNT,
+              value: depositValue,
+            },
+          } as TLedger,
+        ],
+      }).save();
+      await new transactionModel({
+        from: {
+          type: WalletType.CASTCLE_MINT_CONTRACT,
+          value: sendValue,
+        } as MicroTransaction,
+        to: [
+          {
+            type: WalletType.CASTCLE_AIRDROP,
+            value: sendValue,
+            user: fakeUserId,
+          } as MicroTransaction,
+        ],
+        data: {
+          type: TransactionType.SEND,
+          filter: TransactionFilter.DEPOSIT_SEND,
+        },
+        ledgers: [
+          {
+            debit: {
+              caccountNo: fakeCACCOUNT,
+              value: sendValue,
+            },
+            credit: {
+              caccountNo: fakeCACCOUNT,
+              value: sendValue,
+            },
+          } as TLedger,
+        ],
+      }).save();
+      const result = await appController.getUserHistory(
+        authorizer,
+        {
+          userId: mocksUsers[0].user.id,
+          isMe: () => true,
+        },
+        {
+          filter: TransactionFilter.DEPOSIT_SEND,
+        },
+      );
+      const expectArr = [
+        expect.objectContaining({
+          type: TransactionType.SEND,
+          /*  value: {
+            $numberDecimal: `${sendValue}`
+          },*/
+        }),
+        expect.objectContaining({
+          type: TransactionType.DEPOSIT,
+          /*value: {
+            $numberDecimal: `${depositValue}`
+          },*/
+        }),
+      ];
+      expect(result.payload).toEqual(expect.arrayContaining(expectArr));
+    });
+  });
+
   afterAll(async () => {
     await app.close();
     await mongod.stop();

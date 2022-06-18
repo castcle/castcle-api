@@ -29,7 +29,12 @@ import {
   GetBalanceResponse,
   pipelineOfGetBalanceFromWalletType,
 } from '../aggregations';
-import { CastcleNumber, WalletType } from '../models';
+import {
+  CastcleNumber,
+  TransactionFilter,
+  WalletHistoryResponseDto,
+  WalletType,
+} from '../models';
 import { TransactionDto } from '../models/caccount.model';
 import { CAccount, CAccountNature } from '../schemas/caccount.schema';
 import { Transaction } from '../schemas/transaction.schema';
@@ -169,5 +174,29 @@ export class TAccountService {
     console.log(caccountNo, 'txs', txs.length, allDebit, allCredit);
     if (caccount.nature === CAccountNature.DEBIT) return allDebit - allCredit;
     else return allCredit - allDebit;
+  }
+
+  async getWalletHistory(userId: string, filter: TransactionFilter) {
+    const txs = await this._transactionModel.find({
+      $or: [
+        { 'from.user': userId, 'data.filter': filter },
+        { 'to.user': userId, 'data.filter': filter },
+      ],
+    });
+
+    const result: WalletHistoryResponseDto = {
+      payload: txs.map((tx) => ({
+        id: tx.id,
+        status: 'success', //!!! TODO now all tx is success for now
+        type: tx.data.type,
+        value:
+          String(tx.from.user) === String(userId)
+            ? tx.from.value
+            : tx.to.find((t) => String(t.user) === String(userId)).value,
+        createdAt: tx.createdAt,
+        updatedAt: tx.updatedAt,
+      })),
+    };
+    return result;
   }
 }

@@ -23,7 +23,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes } from 'mongoose';
-import { AdsPaymentMethod } from '../models';
+import { AdsBidType, AdsPaymentMethod } from '../models';
 
 /**
  * Detail should not change much once it created
@@ -47,6 +47,12 @@ export class AdsDetail {
 
   @Prop({ required: true, type: String })
   paymentMethod: AdsPaymentMethod;
+
+  @Prop({ required: true, type: String })
+  dailyBidType: AdsBidType;
+
+  @Prop()
+  dailyBidValue?: number;
 }
 
 export const AdsDetailSchema = SchemaFactory.createForClass(AdsDetail);
