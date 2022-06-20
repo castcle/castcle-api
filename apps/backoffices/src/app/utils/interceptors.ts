@@ -1,3 +1,4 @@
+import { Environment } from '@castcle-api/environments';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { HeadersRequest } from '@castcle-api/utils/interceptors';
 import { Request } from 'express';
@@ -13,6 +14,14 @@ export const getTokenFromRequest = (request: HeadersRequest) => {
 export const getLanguageFromRequest = (request: Request) => {
   if (request.headers && request.headers['accept-language']) {
     return request.headers['accept-language'];
+  }
+  throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
+};
+
+export const getApikeyFromRequest = (request: Request) => {
+  if (request.headers && request.headers['api-key']) {
+    if (request.headers['api-key'] === Environment.BACKOFFICE_API_KEY)
+      return request.headers['api-key'];
   }
   throw CastcleException.MISSING_AUTHORIZATION_HEADERS;
 };

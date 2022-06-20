@@ -14,3 +14,11 @@ export interface StaffSearchDto {
   lastName: string;
   email: string;
 }
+
+export enum StatusUser {
+  ACTIVE = 'active',
+}
+
+export enum RoleUser {
+  ADMINISTRATOR = 'administrator',
+}

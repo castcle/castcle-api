@@ -21,28 +21,20 @@
  * or have any questions.
  */
 
-import { Configs, Environment } from '@castcle-api/environments';
-import { CastcleExceptionFilter } from '@castcle-api/utils/exception';
-import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
+import { getApikeyFromRequest } from '../utils/interceptors';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3339;
+@Injectable()
+export class HeaderBackofficeInterceptor implements NestInterceptor {
+  async intercept(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    request.$api_key = getApikeyFromRequest(request);
 
-  app.useGlobalFilters(new CastcleExceptionFilter());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  app.enableCors();
-  app.enableVersioning({
-    type: VersioningType.HEADER,
-    header: Configs.RequiredHeaders.AcceptVersion.name,
-  });
-
-  await app.listen(port, () => {
-    Logger.log(`Listening at http://localhost:${port}`);
-    Logger.log(`Environment at ${Environment.NODE_ENV}`);
-  });
+    return next.handle();
+  }
 }
-
-bootstrap();

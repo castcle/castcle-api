@@ -1,12 +1,9 @@
 import { CastcleController } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { Body, HttpCode, Post, Req, UseInterceptors } from '@nestjs/common';
+import { Body, HttpCode, Post, UseInterceptors } from '@nestjs/common';
 import { AdsApproveDto, AdsDeclineDto, AdsSearchDto } from '../dtos/ads.dto';
 import { MongoIdParam } from '../dtos/campaign.dto';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-} from '../interceptors/credential.interceptor';
+import { CredentialInterceptor } from '../interceptors/credential.interceptor';
 import { AdsCampaignService } from '../services/ads-campaign.service';
 
 @CastcleController({ path: 'ads', version: '1.0' })
@@ -51,7 +48,7 @@ export class AdsController {
   @UseInterceptors(CredentialInterceptor)
   @Post('ads-decline')
   @HttpCode(200)
-  async adsDecline(@Req() req: CredentialRequest, @Body() body: AdsDeclineDto) {
+  async adsDecline(@Body() body: AdsDeclineDto) {
     const change: any = await this.adsService.adsChangeUpdate(body._id);
     if (change) {
       if (

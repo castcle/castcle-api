@@ -1,6 +1,9 @@
-import { CastcleController } from '@castcle-api/utils/decorators';
+import { CastcleControllerV2 } from '@castcle-api/utils/decorators';
 import { CastcleException } from '@castcle-api/utils/exception';
-import { HeadersInterceptor } from '@castcle-api/utils/interceptors';
+import {
+  CredentialRequest,
+  HeadersInterceptor,
+} from '@castcle-api/utils/interceptors';
 import {
   Body,
   Get,
@@ -16,18 +19,16 @@ import {
   ResetPasswordDto,
 } from '../dtos/authentication.dto';
 import { AccountDto, StaffSearchDto } from '../dtos/user.dto';
-import {
-  CredentialInterceptor,
-  CredentialRequest,
-} from '../interceptors/credential.interceptor';
+import { CredentialInterceptor } from '../interceptors/credential.interceptor';
+import { HeaderBackofficeInterceptor } from '../interceptors/header-backoffice.interceptor';
 import { AuthenticationService } from '../services/authentication.service';
 
-@CastcleController({ path: 'authentication', version: '1.0' })
+@CastcleControllerV2({ path: 'backoffices' })
 export class AuthenticationController {
   constructor(private authService: AuthenticationService) {}
 
-  @UseInterceptors(HeadersInterceptor)
-  @Post('login')
+  @UseInterceptors(HeadersInterceptor, HeaderBackofficeInterceptor)
+  @Post('login/email')
   @HttpCode(200)
   async login(@Body() { email, password }: LoginDto) {
     return await this.authService.getAccountFromEmail(email, password);
@@ -40,14 +41,14 @@ export class AuthenticationController {
     return await this.authService.createAccountFromEmail(body);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Post('staff-list')
   @HttpCode(200)
   async staffList(@Body() body: StaffSearchDto) {
     return await this.authService.getStaffList(body);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Post('logout')
   @HttpCode(200)
   async logout(@Body() { uid }: LogoutDto) {
@@ -58,21 +59,21 @@ export class AuthenticationController {
     throw CastcleException.INTERNAL_SERVER_ERROR;
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Post('reset-password')
   @HttpCode(200)
   async resetPassword(@Body() { uid }: ResetPasswordDto) {
     return await this.authService.resetPassword(uid);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Post('update')
   @HttpCode(204)
   async updateAccount(@Body() body: AccountDto) {
     await this.authService.updateAccount(body);
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Get('session')
   @HttpCode(200)
   async checkSession(@Req() req: CredentialRequest) {
@@ -81,7 +82,7 @@ export class AuthenticationController {
     throw CastcleException.INVALID_ACCESS_TOKEN;
   }
 
-  @UseInterceptors(CredentialInterceptor)
+  @UseInterceptors(CredentialInterceptor, HeaderBackofficeInterceptor)
   @Post('expired')
   @HttpCode(200)
   async expired(@Body() { id }: ExpiredDto) {

@@ -1,12 +1,18 @@
 import { Environment } from '@castcle-api/environments';
+import { Mailer } from '@castcle-api/utils/clients';
 import { CastcleRegExp, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AccessTokenPayload } from '../dtos/token.dto';
-import { AccountDto, StaffSearchDto } from '../dtos/user.dto';
-import { AccountDocument } from '../schemas/account.schema';
+import {
+  AccountDto,
+  RoleUser,
+  StaffSearchDto,
+  StatusUser,
+} from '../dtos/user.dto';
+import { Account, AccountDocument } from '../schemas/account.schema';
 import { SessionDocument } from '../schemas/session.schema';
 import { generatePassword } from '../utils/password';
 
@@ -15,16 +21,18 @@ export class AuthenticationService {
   constructor(
     @InjectModel('Staff') public staffModel: Model<AccountDocument>,
     @InjectModel('StaffSession') public sessionModel: Model<SessionDocument>,
+    private mailService: Mailer,
   ) {}
 
   async getAccountFromEmail(email: string, password: string) {
-    const findStaff: any = await this.staffModel
+    const findStaff = await this.staffModel
       .findOne({
         email: CastcleRegExp.fromString(email),
+        status: StatusUser.ACTIVE,
       })
       .exec();
     if (findStaff) {
-      if (await this.checkPasswordMatch(password, findStaff.password)) {
+      if (Password.verify(password, findStaff.password)) {
         await this.deleteSession(findStaff._id);
         const session = await this.createSession(findStaff);
         const accessToken = this.generateAccessToken({
@@ -40,32 +48,30 @@ export class AuthenticationService {
     throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
   }
 
-  async createAccountFromEmail(body: AccountDto) {
-    body.password = generatePassword();
+  async createAccountFromEmail(accountBody: AccountDto) {
+    accountBody.password = generatePassword();
 
     const account = await new this.staffModel({
-      email: body.email,
-      password: await Password.create(body.password),
-      firstName: body.firstName,
-      lastName: body.lastName,
-      role: 'administrator',
-      status: '1',
+      email: accountBody.email,
+      password: Password.create(accountBody.password),
+      firstName: accountBody.firstName,
+      lastName: accountBody.lastName,
+      role: RoleUser.ADMINISTRATOR,
+      status: StatusUser.ACTIVE,
     });
 
     await account.save().catch(() => {
       throw CastcleException.EMAIL_OR_PHONE_IS_EXIST;
     });
 
-    return { email: body.email, password: body.password };
-  }
+    await this.mailService.sendPasswordToStaff(account.email, account.password);
 
-  async checkPasswordMatch(password: string, encrypt: string) {
-    return Password.verify(password, encrypt);
+    return { email: accountBody.email, password: accountBody.password };
   }
 
   async getStaffList({ firstName, lastName, email }: StaffSearchDto) {
-    const state: any = [];
-    let query: any = [];
+    const state = [];
+    let query = [];
     if (firstName || lastName || email) {
       if (firstName) {
         state.push({
@@ -106,29 +112,28 @@ export class AuthenticationService {
   generateAccessToken(payload: AccessTokenPayload) {
     const now = new Date();
     const accessTokenExpireDate = new Date(
-      now.getTime() + Number(Environment.JWT_ACCESS_EXPIRES_IN) * 1000,
+      now.getTime() +
+        Number(Environment.BACKOFFICE_JWT_ACCESS_EXPIRES_IN) * 1000,
     );
     payload.accessTokenExpiresTime = accessTokenExpireDate.toISOString();
     const accessToken = Token.generateToken(
       payload,
-      Environment.JWT_ACCESS_SECRET,
-      Number(Environment.JWT_ACCESS_EXPIRES_IN),
+      Environment.BACKOFFICE_JWT_ACCESS_SECRET,
+      Number(Environment.BACKOFFICE_JWT_ACCESS_EXPIRES_IN),
     );
-    return {
-      accessToken,
-      accessTokenExpireDate,
-    };
+
+    return { accessToken };
   }
 
   accessTokenValid(token: string) {
-    return Token.isTokenValid(token, Environment.JWT_ACCESS_SECRET);
+    return Token.isTokenValid(token, Environment.BACKOFFICE_JWT_ACCESS_SECRET);
   }
 
   accessTokenExpired(token: string) {
-    return Token.isTokenExpire(token, Environment.JWT_ACCESS_SECRET);
+    return Token.isTokenExpire(token, Environment.BACKOFFICE_JWT_ACCESS_SECRET);
   }
 
-  async decodeTokenValid(user: any) {
+  async decodeTokenValid(user: Account) {
     if (await this.staffModel.findOne({ email: user.email }).exec()) {
       return true;
     }
@@ -155,13 +160,15 @@ export class AuthenticationService {
   async resetPassword(id: string) {
     const newPassword = generatePassword();
 
-    const reset = await this.staffModel.updateOne(
-      { _id: Types.ObjectId(id) },
-      { password: await Password.create(newPassword) },
-    );
+    const reset = await this.staffModel.findOne({ _id: Types.ObjectId(id) });
+
+    Object.assign(reset, { password: Password.create(newPassword) });
+
+    await reset.save();
 
     if (reset) {
       await this.deleteSession(id);
+      await this.mailService.sendPasswordToStaff(reset.email, newPassword);
       return { password: newPassword };
     }
 

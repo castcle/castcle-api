@@ -253,4 +253,26 @@ export class Environment {
   static PDPA_ACCEPT_DATES = (process.env.PDPA_ACCEPT_DATE || '')
     .split(',')
     .sort((a, b) => b.localeCompare(a));
+
+  //Backoffice
+  static BACKOFFICE_API_KEY = process.env.BACKOFFICE_API_KEY;
+  static BACKOFFICE_JWT_ACCESS_SECRET =
+    process.env.BACKOFFICE_JWT_ACCESS_SECRET;
+  static BACKOFFICE_DB_DATABASE_NAME = process.env.BACKOFFICE_DB_DATABASE_NAME;
+  static BACKOFFICE_JWT_ACCESS_EXPIRES_IN =
+    process.env.BACKOFFICE_JWT_ACCESS_EXPIRES_IN;
+  static BACKOFFICE_DB_USERNAME = process.env.BACKOFFICE_DB_USERNAME;
+  static BACKOFFICE_DB_PASSWORD = process.env.BACKOFFICE_DB_PASSWORD;
+  static BACKOFFICE_DB_HOST = process.env.BACKOFFICE_DB_HOST;
+  static BACKOFFICE_CLOUDFRONT_ACCESS_KEY_ID =
+    process.env.BACKOFFICE_CLOUDFRONT_ACCESS_KEY_ID;
+  static BACKOFFICE_CLOUDFRONT_PRIVATE_KEY =
+    process.env.BACKOFFICE_CLOUDFRONT_PRIVATE_KEY;
+
+  private static BACKOFFICE_DB_AUTHENTICATION =
+    Environment.BACKOFFICE_DB_USERNAME && Environment.BACKOFFICE_DB_PASSWORD
+      ? `${Environment.BACKOFFICE_DB_USERNAME}:${Environment.BACKOFFICE_DB_PASSWORD}@`
+      : '';
+
+  static BACKOFFICE_DB_URI = `${Environment.DB_FORMAT}://${Environment.BACKOFFICE_DB_AUTHENTICATION}${Environment.BACKOFFICE_DB_HOST}/${Environment.BACKOFFICE_DB_DATABASE_NAME}?retryWrites=true&w=majority`;
 }

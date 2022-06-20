@@ -31,6 +31,7 @@ import {
 import { Environment } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
+import { Mailer } from '@castcle-api/utils/clients';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AdsController } from './controllers/ads.controller';
@@ -51,7 +52,7 @@ export const MongooseForFeaturesBO = MongooseModule.forFeature(
     { name: 'StaffSession', schema: SessionSchema },
     { name: 'CampaignType', schema: CampaignTypeSchema },
   ],
-  Environment.DB_DATABASE_NAME_BACKOFFICE,
+  Environment.BACKOFFICE_DB_DATABASE_NAME,
 );
 
 export const MongooseForFeaturesApp = MongooseModule.forFeature(
@@ -66,13 +67,13 @@ export const MongooseForFeaturesApp = MongooseModule.forFeature(
 
 @Module({
   imports: [
-    CastcleHealthyModule.register({ pathPrefix: '' }),
-    CastcleTracingModule.forRoot({ serviceName: 'backoffice' }),
+    CastcleHealthyModule.register({ pathPrefix: 'backoffices' }),
+    CastcleTracingModule.forRoot({ serviceName: 'backoffices' }),
     DatabaseModule,
     MongooseForFeaturesApp,
     MongooseForFeaturesBO,
-    MongooseModule.forRoot(Environment.DB_URI_BACKOFFICE, {
-      connectionName: Environment.DB_DATABASE_NAME_BACKOFFICE,
+    MongooseModule.forRoot(Environment.BACKOFFICE_DB_URI, {
+      connectionName: Environment.BACKOFFICE_DB_DATABASE_NAME,
     }),
     MongooseModule.forRoot(Environment.DB_URI, {
       connectionName: Environment.DB_DATABASE_NAME,
@@ -89,6 +90,7 @@ export const MongooseForFeaturesApp = MongooseModule.forFeature(
     AuthenticationService,
     CampaignTypeService,
     ReportService,
+    Mailer,
   ],
 })
 export class AppModule {}

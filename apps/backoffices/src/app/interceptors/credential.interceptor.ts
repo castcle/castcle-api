@@ -28,18 +28,12 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { CredentialDocument } from '../schemas/credential.schema';
 import { AuthenticationService } from '../services/authentication.service';
 import {
   getLanguageFromRequest,
   getTokenFromRequest,
 } from '../utils/interceptors';
 import { Token } from '../utils/token';
-import { TokenRequest } from './token.interceptor';
-
-export interface CredentialRequest extends TokenRequest {
-  $credential: CredentialDocument;
-}
 
 @Injectable()
 export class CredentialInterceptor implements NestInterceptor {
