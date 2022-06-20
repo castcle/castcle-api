@@ -32,11 +32,8 @@ import {
   MongooseForFeatures,
   NotificationService,
   QueueName,
-  TAccountService,
   UserService,
-  UserServiceV2,
   generateMockUsers,
-  mockDeposit,
 } from '@castcle-api/database';
 import { Mailer } from '@castcle-api/utils/clients';
 import { HttpModule } from '@nestjs/axios';
@@ -54,7 +51,6 @@ describe('AddressBookService', () => {
   let userServiceV1: UserService;
   let authService: AuthenticationService;
   let mocksUsers: MockUserDetail[];
-  let taccountService: TAccountService;
   let shortcutId: string;
 
   beforeAll(async () => {
@@ -69,14 +65,12 @@ describe('AddressBookService', () => {
       ],
       controllers: [],
       providers: [
-        AnalyticService,
         AuthenticationService,
-        ContentService,
-        TAccountService,
         AddressBookService,
         Repository,
         UserService,
-        UserServiceV2,
+        { provide: AnalyticService, useValue: {} },
+        { provide: ContentService, useValue: {} },
         { provide: CampaignService, useValue: {} },
         { provide: HashtagService, useValue: {} },
         { provide: Mailer, useValue: {} },
@@ -89,31 +83,17 @@ describe('AddressBookService', () => {
           provide: getQueueToken(QueueName.USER),
           useValue: { add: jest.fn() },
         },
-        {
-          provide: getQueueToken(QueueName.CAMPAIGN),
-          useValue: { add: jest.fn() },
-        },
-        {
-          provide: getQueueToken(QueueName.NOTIFICATION),
-          useValue: { add: jest.fn() },
-        },
       ],
     }).compile();
+
     service = app.get<AddressBookService>(AddressBookService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    taccountService = app.get<TAccountService>(TAccountService);
 
     mocksUsers = await generateMockUsers(3, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
-    //init
-    await mockDeposit(
-      mocksUsers[0].user,
-      5555,
-      taccountService._transactionModel,
-    );
   });
 
   describe('createWalletShortcut', () => {
@@ -155,21 +135,6 @@ describe('AddressBookService', () => {
     });
   });
 
-  describe('toWalletShortcutResponse', () => {
-    it('should return payload wallet shortcut', async () => {
-      const shortcut = await (service as any).repository.findWallerShortcut({
-        accountId: mocksUsers[1].account._id,
-      });
-
-      const payloadShortcut = await service.toWalletShortcutResponse(
-        mocksUsers[0].user,
-        shortcut,
-      );
-      expect(payloadShortcut.userId).toEqual(mocksUsers[0].user._id);
-      expect(payloadShortcut.castcleId).toEqual(mocksUsers[0].user.displayId);
-    });
-  });
-
   describe('sortWalletShortcut', () => {
     beforeAll(async () => {
       await service.createWalletShortcut(
@@ -196,21 +161,18 @@ describe('AddressBookService', () => {
       const sort = shortcuts.map((shortcut, index) => {
         return {
           id: shortcut._id,
-          order: index++,
+          order: index++ + 1,
         };
       });
 
       await service.sortWalletShortcut(sort, mocksUsers[1].account._id);
 
-      const newShortcuts = await (
-        service as any
-      ).repository.findWallerShortcuts({
-        accountId: mocksUsers[1].account._id,
-      });
+      const payloadShortcut = await service.getWalletShortcut(
+        mocksUsers[1].account._id,
+      );
 
-      newShortcuts.map((shortcut, index) => {
-        expect(shortcut.order).toEqual(index++);
-      });
+      expect(payloadShortcut.shortcuts[0].order).toEqual(1);
+      expect(payloadShortcut.shortcuts[1].order).toEqual(2);
     });
   });
 
@@ -218,7 +180,7 @@ describe('AddressBookService', () => {
     await (service as any).repository.walletShortcutModel.deleteMany({});
     await (service as any).repository.userModel.deleteMany({});
     await (service as any).repository.accountModel.deleteMany({});
-    await app.close();
-    await mongod.stop();
+    app.close();
+    mongod.stop();
   });
 });
