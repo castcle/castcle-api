@@ -35,7 +35,7 @@ import {
 import { ContentType, EntityVisibility, SortDirection } from '../dtos';
 import { Author, SaveContentDto, ShortPayload } from '../dtos/content.dto';
 import { MockUserDetail, generateMockUsers } from '../mocks/user.mocks';
-import { QueueName, UserVerified } from '../models';
+import { OwnerVerification, QueueName } from '../models';
 import { Account, Comment, Content, Credential, User } from '../schemas';
 import { AuthenticationService } from './authentication.service';
 import { ContentService } from './content.service';
@@ -192,7 +192,7 @@ describe('ContentService', () => {
         mobile: false,
         official: false,
         social: false,
-      } as UserVerified);
+      } as OwnerVerification);
     });
     it('should create a hashtag stat', async () => {
       const shortPayload: ShortPayload = {
