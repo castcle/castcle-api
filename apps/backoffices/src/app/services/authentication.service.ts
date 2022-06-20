@@ -4,15 +4,10 @@ import { CastcleRegExp, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { AccessTokenPayload } from '../dtos/token.dto';
-import {
-  AccountDto,
-  RoleUser,
-  StaffSearchDto,
-  StatusUser,
-} from '../dtos/user.dto';
-import { Account, AccountDocument } from '../schemas/account.schema';
+import { AccountDto, RoleUser, StatusUser } from '../dtos/user.dto';
+import { AccountDocument } from '../schemas/account.schema';
 import { SessionDocument } from '../schemas/session.schema';
 import { generatePassword } from '../utils/password';
 
@@ -25,35 +20,35 @@ export class AuthenticationService {
   ) {}
 
   async getAccountFromEmail(email: string, password: string) {
-    const findStaff = await this.staffModel
-      .findOne({
-        email: CastcleRegExp.fromString(email),
-        status: StatusUser.ACTIVE,
-      })
-      .exec();
+    const findStaff = await this.findStaff({
+      email: CastcleRegExp.fromString(email),
+      status: StatusUser.ACTIVE,
+    });
     if (findStaff) {
       if (Password.verify(password, findStaff.password)) {
-        await this.deleteSession(findStaff._id);
-        const session = await this.createSession(findStaff);
-        const accessToken = this.generateAccessToken({
+        const token = this.generateAccessToken({
           id: findStaff._id,
           email: findStaff.email,
           firstName: findStaff.firstName,
           lastName: findStaff.lastName,
-          session: session._id,
+          status: findStaff.status,
+          role: findStaff.role,
         });
-        return accessToken;
+        findStaff.loginAt.push(new Date());
+        findStaff.accessToken = token.accessToken;
+        await findStaff.save();
+
+        return token;
       }
     }
     throw CastcleException.INVALID_EMAIL_OR_PASSWORD;
   }
 
   async createAccountFromEmail(accountBody: AccountDto) {
-    accountBody.password = generatePassword();
-
+    const password = generatePassword();
     const account = await new this.staffModel({
       email: accountBody.email,
-      password: Password.create(accountBody.password),
+      password: Password.create(password),
       firstName: accountBody.firstName,
       lastName: accountBody.lastName,
       role: RoleUser.ADMINISTRATOR,
@@ -66,47 +61,11 @@ export class AuthenticationService {
 
     await this.mailService.sendPasswordToStaff(account.email, account.password);
 
-    return { email: accountBody.email, password: accountBody.password };
+    return { email: accountBody.email, password: password };
   }
 
-  async getStaffList({ firstName, lastName, email }: StaffSearchDto) {
-    const state = [];
-    let query = [];
-    if (firstName || lastName || email) {
-      if (firstName) {
-        state.push({
-          firstName: { $regex: firstName, $options: 'i' },
-        });
-      }
-      if (lastName) {
-        state.push({
-          lastName: { $regex: lastName, $options: 'i' },
-        });
-      }
-      if (email) {
-        state.push({
-          email: { $regex: lastName, $options: 'i' },
-        });
-      }
-    }
-
-    if (state.length) {
-      query = [...query, { $match: { $and: state } }];
-    }
-
-    query = [
-      ...query,
-      {
-        $project: {
-          email: '$email',
-          firstName: '$firstName',
-          lastName: '$lastName',
-          role: '$role',
-          regDate: '$createdAt',
-        },
-      },
-    ];
-    return await this.staffModel.aggregate(query);
+  async getStaffs() {
+    return this.staffModel.find().exec();
   }
 
   generateAccessToken(payload: AccessTokenPayload) {
@@ -125,69 +84,47 @@ export class AuthenticationService {
     return { accessToken };
   }
 
-  accessTokenValid(token: string) {
-    return Token.isTokenValid(token, Environment.BACKOFFICE_JWT_ACCESS_SECRET);
-  }
-
   accessTokenExpired(token: string) {
     return Token.isTokenExpire(token, Environment.BACKOFFICE_JWT_ACCESS_SECRET);
   }
 
-  async decodeTokenValid(user: Account) {
-    if (await this.staffModel.findOne({ email: user.email }).exec()) {
-      return true;
-    }
-    return false;
-  }
-
-  async createSession(data: any) {
-    const session = await new this.sessionModel({
-      uid: String(data._id),
-    });
-    return session.save();
-  }
-
-  async deleteSession(uid: string) {
-    return await this.sessionModel.deleteMany({ uid });
-  }
-
-  async deleteSessionOne(id: string) {
-    return await this.sessionModel.deleteOne({
-      _id: Types.ObjectId(id),
-    });
+  async findByAccessToken(accessToken: string) {
+    return await this.findStaff({ accessToken });
   }
 
   async resetPassword(id: string) {
-    const newPassword = generatePassword();
+    try {
+      const newPassword = generatePassword();
+      const staff = await this.findStaff({ _id: Types.ObjectId(id) });
 
-    const reset = await this.staffModel.findOne({ _id: Types.ObjectId(id) });
+      if (staff) {
+        Object.assign(staff, { password: Password.create(newPassword) });
+        await staff.save();
+        await this.mailService.sendPasswordToStaff(staff.email, newPassword);
+        return { password: newPassword };
+      }
 
-    Object.assign(reset, { password: Password.create(newPassword) });
-
-    await reset.save();
-
-    if (reset) {
-      await this.deleteSession(id);
-      await this.mailService.sendPasswordToStaff(reset.email, newPassword);
-      return { password: newPassword };
+      throw new CastcleException('STAFF_NOT_FOUND');
+    } catch (error) {
+      throw new CastcleException('STAFF_NOT_FOUND');
     }
-
-    throw CastcleException.INTERNAL_SERVER_ERROR;
   }
 
-  async updateAccount(body: AccountDto) {
-    return await this.staffModel.updateOne(
-      { _id: Types.ObjectId(body.uid) },
-      {
-        firstName: body.firstName,
-        lastName: body.lastName,
-      },
-    );
+  async removeToken(staffId: string) {
+    const findStaff = await this.findStaff({ _id: Types.ObjectId(staffId) });
+    findStaff.set('accessToken', undefined);
+    await findStaff.save();
   }
 
-  async checkSession(body: any) {
-    return await this.sessionModel
-      .findOne({ _id: Types.ObjectId(body.session) })
-      .exec();
+  findStaff(filter: FilterQuery<AccountDocument>) {
+    return this.staffModel.findOne(filter).exec();
+  }
+
+  deleteStaff(staffId: string) {
+    try {
+      return this.staffModel.deleteOne({ _id: Types.ObjectId(staffId) }).exec();
+    } catch (error) {
+      throw new CastcleException('STAFF_NOT_FOUND');
+    }
   }
 }

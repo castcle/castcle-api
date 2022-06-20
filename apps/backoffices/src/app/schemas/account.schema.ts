@@ -33,16 +33,27 @@ export class Account extends CastcleBase {
     unique: true,
   })
   email: string;
+
   @Prop()
   password: string;
+
   @Prop({ index: true })
   firstName: string;
+
   @Prop({ index: true })
   lastName: string;
+
   @Prop({ index: true })
   status: string;
+
   @Prop()
   role: string;
+
+  @Prop()
+  loginAt: Date[];
+
+  @Prop()
+  accessToken: string;
 }
 
 export const AccountSchema = SchemaFactory.createForClass(Account);

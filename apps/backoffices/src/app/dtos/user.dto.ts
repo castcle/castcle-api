@@ -1,18 +1,19 @@
-import { IsEmail } from 'class-validator';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class AccountDto {
-  uid?: string;
-  @IsEmail()
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}
+  id?: string;
 
-export interface StaffSearchDto {
-  firstName: string;
-  lastName: string;
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
+
+  password: string;
+
+  @IsNotEmpty()
+  firstName: string;
+
+  @IsNotEmpty()
+  lastName: string;
 }
 
 export enum StatusUser {

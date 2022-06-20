@@ -50,12 +50,11 @@ const isTokenExpire = (token: string, secret: string) => {
     });
   });
 };
-const decodeToken = (token: string) => {
+const decodeToken = <T = any>(token: string) => {
   try {
-    return jwt.decode(token);
+    return jwt.decode(token) as T;
   } catch (error) {
-    console.log('error', error);
-    return false;
+    throw new Error(error);
   }
 };
 
