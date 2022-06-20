@@ -96,7 +96,6 @@ export class CastcleException<T = any> extends Error {
   static CONTENT_FARMING_NOT_AVAIABLE_BALANCE = new CastcleException('5009');
   static CONTENT_FARMING_LIMIT = new CastcleException('5010');
   static QUOTE_IS_EXIST = new CastcleException('5011');
-  static SLUG_IS_EXIST = new CastcleException('5012');
   static NOTIFICATION_NOT_FOUND = new CastcleException('6001');
   static SOMETHING_WRONG = new CastcleException('7001');
   static INVALID_TRANSACTIONS_DATA = new CastcleException('8001');

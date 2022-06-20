@@ -18,13 +18,13 @@ export class CampaignTypeService {
   async addCampaignType(campaign: CampaignDto) {
     const createdCampaign = new this.campaignModel(campaign);
     return await createdCampaign.save().catch(() => {
-      throw CastcleException.SLUG_IS_EXIST;
+      throw new CastcleException('SLUG_ALREADY_EXISTS');
     });
   }
 
   async updateCampaignType(_id: string, campaign: UpdateCampaignDto) {
     return await this.campaignModel.updateOne({ _id }, campaign).catch(() => {
-      throw CastcleException.SLUG_IS_EXIST;
+      throw new CastcleException('SLUG_ALREADY_EXISTS');
     });
   }
 

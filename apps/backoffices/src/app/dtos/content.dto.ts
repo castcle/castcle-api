@@ -20,9 +20,9 @@
  * Thailand 10160, or visit www.castcle.com if you need additional information
  * or have any questions.
  */
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserVerified } from '../models';
-import { CastcleImage } from './common.dto';
 
 export class Url {
   @ApiProperty()
