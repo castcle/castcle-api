@@ -22,7 +22,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 import { CommentPayload } from './comment.dto';
 import { Author, IncludeUser } from './content.dto';
 import { GetUserParam } from './user.dto';
@@ -62,20 +62,17 @@ export class CreateCommentDto {
   contentId: string;
 }
 export class CommentParam extends GetUserParam {
-  @IsString()
+  @IsMongoId()
   @ApiProperty()
   sourceCommentId: string;
 }
 
-export class ReplyCommentParam extends GetUserParam {
-  @IsString()
-  @ApiProperty()
-  sourceCommentId: string;
-
-  @IsString()
+export class ReplyCommentParam extends CommentParam {
+  @IsMongoId()
   @ApiProperty()
   replyCommentId: string;
 }
+
 export class CommentResponse {
   @ApiProperty()
   payload: CommentPayload;

@@ -120,8 +120,3 @@ export const getSocialPrefix = (socialId: string, provider: string) => {
     }
   }
 };
-
-export const validateObjectId = (id: string) => {
-  const ObjectId = mongoose.Types.ObjectId;
-  return ObjectId.isValid(id);
-};

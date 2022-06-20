@@ -29,9 +29,7 @@ import {
   CastcleAuth,
   CastcleControllerV2,
 } from '@castcle-api/utils/decorators';
-import { CastcleException } from '@castcle-api/utils/exception';
 import { Get, Param, Query } from '@nestjs/common';
-import { Types } from 'mongoose';
 import { WalletHistoryQueryDto } from '../dtos/wallet.dto';
 
 import { WalletService } from '../services/wallet.service';
@@ -43,12 +41,6 @@ export class WalletController {
     private userServiceV2: UserServiceV2,
     private walletService: WalletService,
   ) {}
-
-  private validateObjectId(id: string) {
-    this.logger.log(`Validate is object id: ${id}`);
-    const ObjectId = Types.ObjectId;
-    if (!ObjectId.isValid(id)) throw CastcleException.CONTENT_NOT_FOUND;
-  }
 
   @CastcleAuth(CacheKeyName.Users)
   @Get(':userId')

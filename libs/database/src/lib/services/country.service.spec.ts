@@ -34,14 +34,14 @@ import { Repository } from '../repositories';
 import { MetadataServiceV2 } from './metadata.service.v2';
 
 describe('CountryService', () => {
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let metadataServiceV2: MetadataServiceV2;
   let mongod: MongoMemoryServer;
   let service: CountryService;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         HttpModule,
         MongooseModule.forRoot(mongod.getUri()),
@@ -50,12 +50,12 @@ describe('CountryService', () => {
       ],
       providers: [CountryService, MetadataServiceV2, Repository],
     }).compile();
-    service = app.get<CountryService>(CountryService);
-    metadataServiceV2 = app.get<MetadataServiceV2>(MetadataServiceV2);
+    service = moduleRef.get<CountryService>(CountryService);
+    metadataServiceV2 = moduleRef.get<MetadataServiceV2>(MetadataServiceV2);
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 

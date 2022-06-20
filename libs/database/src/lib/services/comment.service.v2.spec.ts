@@ -45,8 +45,9 @@ import { UserService } from './user.service';
 
 describe('CommentServiceV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: CommentServiceV2;
+  let repository: Repository;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userService: UserService;
@@ -58,7 +59,7 @@ describe('CommentServiceV2', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -90,11 +91,12 @@ describe('CommentServiceV2', () => {
       ],
     }).compile();
 
-    authService = app.get(AuthenticationService);
-    contentService = app.get(ContentService);
-    service = app.get(CommentServiceV2);
-    userService = app.get(UserService);
-    notifyService = app.get(NotificationServiceV2);
+    authService = moduleRef.get(AuthenticationService);
+    contentService = moduleRef.get(ContentService);
+    service = moduleRef.get(CommentServiceV2);
+    repository = moduleRef.get(Repository);
+    userService = moduleRef.get(UserService);
+    notifyService = moduleRef.get(NotificationServiceV2);
 
     mocksUsers = await generateMockUsers(3, 0, {
       userService: userService,
@@ -299,7 +301,7 @@ describe('CommentServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
 
-      await (notifyService as any).repository.updateNotification(
+      await repository.updateNotification(
         {
           _id: notify_1._id,
         },
@@ -321,7 +323,7 @@ describe('CommentServiceV2', () => {
         account: mocksUsers[0].account._id,
       });
 
-      await (notifyService as any).repository.updateNotification(
+      await repository.updateNotification(
         {
           _id: notify_2._id,
         },
@@ -352,7 +354,7 @@ describe('CommentServiceV2', () => {
         },
       });
 
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         type: NotificationType.Like,
         contentRef: content._id,
         commentRef: comment._id,
@@ -392,7 +394,7 @@ describe('CommentServiceV2', () => {
         },
       });
 
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         type: NotificationType.Like,
         contentRef: content._id,
         commentRef: comment._id,
@@ -431,7 +433,7 @@ describe('CommentServiceV2', () => {
         },
       });
 
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         type: NotificationType.Like,
         contentRef: content._id,
         commentRef: comment._id,
@@ -473,7 +475,7 @@ describe('CommentServiceV2', () => {
         },
       });
 
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         type: NotificationType.Like,
         contentRef: content._id,
         commentRef: comment._id,
@@ -494,9 +496,7 @@ describe('CommentServiceV2', () => {
     });
   });
   afterAll(async () => {
-    await (service as any).repository.notificationModel.deleteMany({});
-    await (service as any).repository.engagementModel.deleteMany({});
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 });

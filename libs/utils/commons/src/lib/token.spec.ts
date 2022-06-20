@@ -26,93 +26,44 @@ import { Token } from './token';
 describe('Token', () => {
   describe('#generateToken()', () => {
     it('should return string', () => {
-      const result = Token.generateToken(
-        { testPayload: 'yo' },
-        'randomSecret',
-        1000,
-      );
+      const result = Token.generateToken({}, 'secret', 1000);
       expect(typeof result).toBe('string');
     });
+
     it('should return different token with the same payload and different secret', () => {
-      const result1 = Token.generateToken(
-        { testPayload: 'yo' },
-        'randomSecret',
-        1000,
-      );
-      const result2 = Token.generateToken(
-        { testPayload: 'yo' },
-        'random2',
-        1000,
-      );
+      const result1 = Token.generateToken({}, 'secret-1', 1000);
+      const result2 = Token.generateToken({}, 'secret-2', 1000);
       expect(result1 === result2).toBe(false);
     });
   });
+
   describe('#isTokenValid()', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+    });
+
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
     it("should return true if secret is correct and it's not expired", () => {
-      const secret = 'secret';
-      const token = Token.generateToken({ whatsup: 'castcle' }, secret, 5);
-      expect(Token.isTokenValid(token, secret)).toBe(true);
+      const token = Token.generateToken({}, 'secret', 5);
+      expect(Token.isTokenValid(token, 'secret')).toBe(true);
     });
+
     it('should return false if secret is not correct', () => {
-      const secret = 'secret';
-      const token = Token.generateToken({ whatsup: 'castcle' }, secret, 5);
-      const wrongSecret = 'wrong';
-      expect(Token.isTokenValid(token, wrongSecret)).toBe(false);
+      const token = Token.generateToken({}, 'secret', 5);
+      expect(Token.isTokenValid(token, 'invalid-secret')).toBe(false);
     });
+
     it('should return false if token is expire', async () => {
-      const secret = 'secret';
-      const timeoutSecond = 2;
-      const token = Token.generateToken(
-        { whatsup: 'castcle' },
-        secret,
-        timeoutSecond,
-      );
-      expect(Token.isTokenValid(token, secret)).toBe(true);
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(true);
-        }, timeoutSecond * 1000);
-      });
-      expect(Token.isTokenValid(token, secret)).toBe(false);
-    });
-  });
-  describe('#isTokenExpire()', () => {
-    it('should return true if token is expire', async () => {
-      const secret = 'secret';
-      const timeoutSecond = 2;
-      const token = Token.generateToken(
-        { whatsup: 'castcle' },
-        secret,
-        timeoutSecond,
-      );
-      expect(Token.isTokenValid(token, secret)).toBe(true);
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(true);
-        }, timeoutSecond * 1000);
-      });
-      expect(await Token.isTokenExpire(token, secret)).toBe(true);
-    });
-    it('should return false if token is not valid but not expire', async () => {
-      const secret = 'secret';
-      const timeoutSecond = 2;
-      const token = Token.generateToken(
-        { whatsup: 'castcle' },
-        secret,
-        timeoutSecond,
-      );
-      const wrongSecret = 'wrongSecret';
-      expect(await Token.isTokenExpire(token, wrongSecret)).toBe(false);
-    });
-    it('should return false if token is valid but not expire', async () => {
-      const secret = 'secret';
-      const timeoutSecond = 2;
-      const token = Token.generateToken(
-        { whatsup: 'castcle' },
-        secret,
-        timeoutSecond,
-      );
-      expect(await Token.isTokenExpire(token, secret)).toBe(false);
+      const expiresInSeconds = 5;
+      const token = Token.generateToken({}, 'secret', expiresInSeconds);
+      expect(Token.isTokenValid(token, 'secret')).toBe(true);
+      jest.setSystemTime(expiresInSeconds * 1_000);
+      expect(Token.isTokenValid(token, 'secret')).toBe(false);
     });
   });
 });

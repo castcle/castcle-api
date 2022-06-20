@@ -40,7 +40,6 @@ describe('Castcle E2E Tests', () => {
     global.mongoUri = mongoMemoryReplSet.getUri();
 
     await connect(mongoMemoryReplSet.getUri('test'), {
-      useCreateIndex: true,
       useFindAndModify: false,
       useNewUrlParser: true,
     });

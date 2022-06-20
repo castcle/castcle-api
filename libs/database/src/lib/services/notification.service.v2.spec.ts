@@ -50,12 +50,11 @@ import { HashtagService } from './hashtag.service';
 import { NotificationServiceV2 } from './notification.service.v2';
 import { UserService } from './user.service';
 
-jest.mock('@castcle-api/environments');
-
 describe('NotificationServiceV2', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: NotificationServiceV2;
+  let repository: Repository;
   let authService: AuthenticationService;
   let contentService: ContentService;
   let userService: UserService;
@@ -66,7 +65,7 @@ describe('NotificationServiceV2', () => {
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         CacheModule.register(),
         MongooseModule.forRoot(mongod.getUri()),
@@ -97,10 +96,11 @@ describe('NotificationServiceV2', () => {
       ],
     }).compile();
 
-    authService = app.get(AuthenticationService);
-    contentService = app.get(ContentService);
-    service = app.get(NotificationServiceV2);
-    userService = app.get(UserService);
+    authService = moduleRef.get(AuthenticationService);
+    contentService = moduleRef.get(ContentService);
+    service = moduleRef.get(NotificationServiceV2);
+    userService = moduleRef.get(UserService);
+    repository = moduleRef.get(Repository);
 
     mocksUsers = await generateMockUsers(3, 0, {
       userService: userService,
@@ -121,7 +121,7 @@ describe('NotificationServiceV2', () => {
     await contentService.replyComment(user, comment, {
       message: 'reply comment #1',
     });
-    const notify_1 = await (service as any).repository.createNotification({
+    const notify_1 = await repository.createNotification({
       source: NotificationSource.Profile,
       sourceUserId: mocksUsers[1].user._id,
       type: NotificationType.Comment,
@@ -131,7 +131,7 @@ describe('NotificationServiceV2', () => {
       account: mocksUsers[0].account._id,
     });
 
-    const notify_2 = await (service as any).repository.createNotification({
+    const notify_2 = await repository.createNotification({
       source: NotificationSource.Profile,
       sourceUserId: mocksUsers[1].user._id,
       type: NotificationType.Follow,
@@ -158,7 +158,7 @@ describe('NotificationServiceV2', () => {
 
   describe('checkNotify', () => {
     it('checking the notification type is disabled in the environment', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         commentRef: comment._id,
         type: NotificationType.Comment,
         account: mocksUsers[0].account._id,
@@ -171,7 +171,7 @@ describe('NotificationServiceV2', () => {
 
   describe('generateMessageByType', () => {
     it('generate message by type notification and language default.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         commentRef: comment._id,
         type: NotificationType.Comment,
         account: mocksUsers[0].account._id,
@@ -188,7 +188,7 @@ describe('NotificationServiceV2', () => {
     });
 
     it('generate message by type notification and language thai.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         commentRef: comment._id,
         type: NotificationType.Comment,
         account: mocksUsers[0].account._id,
@@ -207,7 +207,7 @@ describe('NotificationServiceV2', () => {
 
   describe('checkNotificationTypePage', () => {
     it('checking notification type comment to redirect page is exist.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         commentRef: comment._id,
         type: NotificationType.Comment,
         account: mocksUsers[0].account._id,
@@ -221,7 +221,7 @@ describe('NotificationServiceV2', () => {
     });
 
     it('checking notification type followed to redirect page is exist.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
@@ -239,7 +239,7 @@ describe('NotificationServiceV2', () => {
       Environment.NOTIFY_FOLLOW_INTERVAL = 24; // 24 Hours
     });
     it('checking if the notification is within the interval', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
@@ -253,14 +253,14 @@ describe('NotificationServiceV2', () => {
     });
 
     it('checking if the notification is without the interval', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
       });
 
-      const setNewDate = new Date(notify.createdAt);
-      notify.createdAt = setNewDate.setDate(setNewDate.getDate() - 1);
+      notify.createdAt = new Date(notify.createdAt);
+      notify.createdAt.setDate(notify.createdAt.getDate() - 1);
 
       const isInterval = (service as any).checkIntervalNotify(
         notify.type,
@@ -271,7 +271,7 @@ describe('NotificationServiceV2', () => {
   });
   describe('getFromId', () => {
     it('should get notification data is exists.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
@@ -351,7 +351,7 @@ describe('NotificationServiceV2', () => {
   });
   describe('generateMessage', () => {
     it('should generate message notification by language default is correct.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
@@ -366,7 +366,7 @@ describe('NotificationServiceV2', () => {
     });
 
     it('should generate message notification by language thai is correct.', async () => {
-      const notify = await (service as any).repository.findNotification({
+      const notify = await repository.findNotification({
         profileRef: mocksUsers[0].user._id,
         type: NotificationType.Follow,
         account: mocksUsers[0].account._id,
@@ -477,11 +477,7 @@ describe('NotificationServiceV2', () => {
   });
 
   afterAll(async () => {
-    await (service as any).repository.contentModel.deleteMany({});
-    await (service as any).repository.userModel.deleteMany({});
-    await (service as any).repository.notificationModel.deleteMany({});
-    await (service as any).repository.engagementModel.deleteMany({});
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 });

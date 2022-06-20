@@ -34,15 +34,15 @@ import { SocialSync, User } from '../schemas';
 
 describe('SocialSyncService', () => {
   let mongod: MongoMemoryServer;
-  let app: TestingModule;
+  let moduleRef: TestingModule;
   let service: SocialSyncService;
   let mocksUser: User;
-
   let mocksPage: User;
   let mockSocialSync: SocialSync;
+
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    app = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [
         MongooseModule.forRoot(mongod.getUri()),
         MongooseAsyncFeatures,
@@ -51,7 +51,7 @@ describe('SocialSyncService', () => {
       providers: [SocialSyncService],
     }).compile();
 
-    service = app.get<SocialSyncService>(SocialSyncService);
+    service = moduleRef.get<SocialSyncService>(SocialSyncService);
 
     mocksUser = new (service as any).userModel({
       ownerAccount: '61b4a3b3bb19fc8ed04edb8e',
@@ -80,7 +80,7 @@ describe('SocialSyncService', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await moduleRef.close();
     await mongod.stop();
   });
 
