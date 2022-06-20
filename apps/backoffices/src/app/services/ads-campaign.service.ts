@@ -1,15 +1,15 @@
+import { Configs } from '@castcle-api/environments';
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as moment from 'moment';
 import * as mongoose from 'mongoose';
 import { Model, Types } from 'mongoose';
 import { AdsApproveDto, AdsDeclineDto, AdsSearchDto } from '../dtos/ads.dto';
-import { CastcleImage } from '../dtos/common.dto';
 import { AdsBoostStatus, AdsStatus } from '../models';
 import { AdsCampaign } from '../schemas/ads-campaign.schema';
 import { ContentDocument } from '../schemas/content.schema';
 import { UserDocument } from '../schemas/user.schema';
-import { Image } from '../utils/image';
 
 @Injectable()
 export class AdsCampaignService {
@@ -105,41 +105,39 @@ export class AdsCampaignService {
       payload.profile.image.avatar = payload.profile?.image
         ?.avatar as CastcleImage[];
       if (!payload.profile?.image?.avatar['isSign']) {
-        payload.profile.image.avatar = new Image(
-          payload.profile?.image?.avatar,
-        ).toSignUrls();
+        payload.profile.image.avatar = payload.profile.image.avatar
+          ? CastcleImage.sign(payload.profile.image.avatar)
+          : Configs.DefaultAvatarImages;
       }
     }
     if (payload.profile?.image?.cover) {
       payload.profile.image.cover = payload.profile?.image
         ?.cover as CastcleImage[];
       if (!payload.profile?.image?.cover['isSign']) {
-        payload.profile.image.cover = new Image(
-          payload.profile?.image?.cover,
-        ).toSignUrls();
+        payload.profile.image.cover = payload.profile.image.cover
+          ? CastcleImage.sign(payload.profile.image.cover)
+          : Configs.DefaultAvatarImages;
       }
     }
     return payload;
   }
 
   async adsContent(ref: any) {
-    const payload: any = await this.contentModel.findOne({ _id: ref }).exec();
+    const payload = await this.contentModel.findOne({ _id: ref }).exec();
     if (payload.payload?.photo?.contents) {
       payload.payload.photo.contents = (
         payload.payload.photo.contents as CastcleImage[]
       ).map((url: CastcleImage) => {
-        if (!url['isSign']) {
-          return new Image(url).toSignUrls();
-        } else {
-          return url;
-        }
+        return CastcleImage.sign(url);
       });
     }
 
     if (payload.author?.avatar) {
-      payload.author.avatar = payload.author.avatar as CastcleImage[];
+      payload.author.avatar = payload.author.avatar as CastcleImage;
       if (!payload.author?.avatar['isSign']) {
-        payload.author.avatar = new Image(payload.author.avatar).toSignUrls();
+        payload.author.avatar = payload.author.avatar
+          ? CastcleImage.sign(payload.author.avatar)
+          : Configs.DefaultAvatarImages;
       }
     }
 
@@ -152,11 +150,10 @@ export class AdsCampaignService {
       { _id: new mongoose.Types.ObjectId(_id) },
       {
         $set: {
-          status: AdsStatus['Approved'],
-          boostStatus: AdsBoostStatus['Running'],
+          status: AdsStatus.Approved,
+          boostStatus: AdsBoostStatus.Running,
           startedAt: dateNow,
           endedAt: new Date(moment(dateNow).add(duration, 'days').format()),
-          updatedAt: new Date(),
         },
       },
     );
@@ -174,7 +171,6 @@ export class AdsCampaignService {
         $set: {
           status: AdsStatus['Declined'],
           statusReason: statusReason,
-          updatedAt: new Date(),
         },
       },
     );

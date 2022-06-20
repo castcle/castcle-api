@@ -21,9 +21,9 @@
  * or have any questions.
  */
 
+import { CastcleImage } from '@castcle-api/utils/aws';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { CastcleImage } from '../dtos/common.dto';
 import { UserVerified } from '../models';
 import { CastcleBase } from './base.schema';
 
@@ -67,10 +67,6 @@ export class UserDocument extends CastcleBase {
   })
   ownerAccount: any;
 
-  /**
-   * This is the same as castcleId
-   * @field this is field displayName
-   */
   @Prop({ required: true })
   displayName: string;
 

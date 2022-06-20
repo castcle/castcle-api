@@ -1,4 +1,5 @@
 import { Environment } from '@castcle-api/environments';
+import { CastcleRegExp, Password, Token } from '@castcle-api/utils/commons';
 import { CastcleException } from '@castcle-api/utils/exception';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -7,10 +8,7 @@ import { AccessTokenPayload } from '../dtos/token.dto';
 import { AccountDto, StaffSearchDto } from '../dtos/user.dto';
 import { AccountDocument } from '../schemas/account.schema';
 import { SessionDocument } from '../schemas/session.schema';
-import { Password } from '../utils/password';
-import { CastcleRegExp } from '../utils/regex';
-import { Token } from '../utils/token';
-import { generatePassword, validateEmail } from '../utils/validate';
+import { generatePassword } from '../utils/password';
 
 @Injectable()
 export class AuthenticationService {
@@ -43,14 +41,11 @@ export class AuthenticationService {
   }
 
   async createAccountFromEmail(body: AccountDto) {
-    const validEmail = await validateEmail(body.email);
-    if (!validEmail) throw CastcleException.INVALID_EMAIL;
-
     body.password = generatePassword();
 
     const account = await new this.staffModel({
       email: body.email,
-      password: await Password.generate(body.password),
+      password: await Password.create(body.password),
       firstName: body.firstName,
       lastName: body.lastName,
       role: 'administrator',
@@ -162,7 +157,7 @@ export class AuthenticationService {
 
     const reset = await this.staffModel.updateOne(
       { _id: Types.ObjectId(id) },
-      { password: await Password.generate(newPassword) },
+      { password: await Password.create(newPassword) },
     );
 
     if (reset) {

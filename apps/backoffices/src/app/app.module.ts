@@ -28,11 +28,11 @@ import {
   ReportingSchema,
   UserSchema,
 } from '@castcle-api/database';
+import { Environment } from '@castcle-api/environments';
 import { CastcleHealthyModule } from '@castcle-api/healthy';
 import { CastcleTracingModule } from '@castcle-api/tracing';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { environment } from '../environments/environment';
 import { AdsController } from './controllers/ads.controller';
 import { AuthenticationController } from './controllers/authentication.controller';
 import { CampaignTypeController } from './controllers/campaign-type.controller';
@@ -51,7 +51,7 @@ export const MongooseForFeaturesBO = MongooseModule.forFeature(
     { name: 'StaffSession', schema: SessionSchema },
     { name: 'CampaignType', schema: CampaignTypeSchema },
   ],
-  environment.DB_DATABASE_NAME_BACKOFFICE,
+  Environment.DB_DATABASE_NAME_BACKOFFICE,
 );
 
 export const MongooseForFeaturesApp = MongooseModule.forFeature(
@@ -61,7 +61,7 @@ export const MongooseForFeaturesApp = MongooseModule.forFeature(
     { name: 'User', schema: UserSchema },
     { name: 'Reporting', schema: ReportingSchema },
   ],
-  environment.DB_DATABASE_NAME,
+  Environment.DB_DATABASE_NAME,
 );
 
 @Module({
@@ -71,11 +71,11 @@ export const MongooseForFeaturesApp = MongooseModule.forFeature(
     DatabaseModule,
     MongooseForFeaturesApp,
     MongooseForFeaturesBO,
-    MongooseModule.forRoot(environment.DB_URI_BACKOFFICE, {
-      connectionName: environment.DB_DATABASE_NAME_BACKOFFICE,
+    MongooseModule.forRoot(Environment.DB_URI_BACKOFFICE, {
+      connectionName: Environment.DB_DATABASE_NAME_BACKOFFICE,
     }),
-    MongooseModule.forRoot(environment.DB_URI, {
-      connectionName: environment.DB_DATABASE_NAME,
+    MongooseModule.forRoot(Environment.DB_URI, {
+      connectionName: Environment.DB_DATABASE_NAME,
     }),
   ],
   controllers: [

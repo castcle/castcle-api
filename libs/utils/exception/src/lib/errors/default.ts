@@ -316,9 +316,9 @@ export const DefaultErrors = {
     code: '5011',
     message: 'You already said that',
   },
-  '5012': {
+  SLUG_ALREADY_EXISTS: {
     statusCode: '400',
-    code: '5011',
+    code: '5012',
     message: 'Slug is exist.',
   },
   '6001': {

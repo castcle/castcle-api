@@ -1,5 +1,8 @@
-export interface AccountDto {
+import { IsEmail } from 'class-validator';
+
+export class AccountDto {
   uid?: string;
+  @IsEmail()
   email: string;
   password: string;
   firstName: string;
