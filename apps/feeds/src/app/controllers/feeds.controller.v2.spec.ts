@@ -116,12 +116,12 @@ describe('FeedsControllerV2', () => {
 
     controller = app.get<FeedsControllerV2>(FeedsControllerV2);
 
-    mocksUsers = await generateMockUsers(20, 0, {
+    mocksUsers = await generateMockUsers(5, 0, {
       userService: userService,
       accountService: authService,
     });
 
-    for (let index = 0; index < 20; index++) {
+    for (let index = 0; index < 5; index++) {
       contentServiceV2.createContent(
         {
           payload: {
@@ -147,11 +147,11 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Word,
           input: 'h',
         },
-        maxResults: 20,
+        maxResults: 5,
         hasRelationshipExpansion: true,
       });
 
-      expect(getSearchRecent.payload).toHaveLength(20);
+      expect(getSearchRecent.payload).toHaveLength(5);
     });
 
     it('should recent search is empty', async () => {
@@ -165,7 +165,7 @@ describe('FeedsControllerV2', () => {
           type: KeywordType.Mention,
           input: 'test',
         },
-        maxResults: 20,
+        maxResults: 5,
         hasRelationshipExpansion: true,
       });
 
@@ -181,7 +181,7 @@ describe('FeedsControllerV2', () => {
             type: KeywordType.Word,
             input: 'h',
           },
-          maxResults: 20,
+          maxResults: 5,
           decayDays: 7,
           excludeAuthor: [],
         },
@@ -215,8 +215,6 @@ describe('FeedsControllerV2', () => {
     });
   });
   afterAll(async () => {
-    await (contentServiceV2 as any).repository.hashtagModel.deleteMany({});
-    await (contentServiceV2 as any).repository.userModel.deleteMany({});
     await app.close();
     await mongod.stop();
   });

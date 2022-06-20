@@ -106,7 +106,7 @@ describe('SearchesControllerV2', () => {
 
     controller = app.get<SearchesControllerV2>(SearchesControllerV2);
 
-    mocksUsers = await generateMockUsers(20, 0, {
+    mocksUsers = await generateMockUsers(5, 0, {
       userService: userService,
       accountService: authService,
     });
@@ -122,7 +122,7 @@ describe('SearchesControllerV2', () => {
       await hashtagService.create(newHashtag);
     };
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 5; i++) {
       await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
     }
   });
@@ -136,11 +136,11 @@ describe('SearchesControllerV2', () => {
       );
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
-        limit: 10,
+        limit: 5,
       });
 
-      expect(getTopTrends.hashtags).toHaveLength(10);
-      expect(getTopTrends.users).toHaveLength(10);
+      expect(getTopTrends.hashtags).toHaveLength(5);
+      expect(getTopTrends.users).toHaveLength(5);
     });
 
     it('should get top trend exclude hashtags', async () => {
@@ -151,12 +151,12 @@ describe('SearchesControllerV2', () => {
       );
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
-      expect(getTopTrends.users.length).toEqual(10);
+      expect(getTopTrends.users.length).toEqual(5);
     });
 
     it('should get top trend exclude users', async () => {
@@ -167,11 +167,11 @@ describe('SearchesControllerV2', () => {
       );
 
       const getTopTrends = await controller.getTopTrends(authorizer, {
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Users],
       });
 
-      expect(getTopTrends.hashtags.length).toEqual(10);
+      expect(getTopTrends.hashtags.length).toEqual(5);
       expect(getTopTrends.users.length).toEqual(0);
     });
 
@@ -211,8 +211,8 @@ describe('SearchesControllerV2', () => {
         text: 'c',
         isTrending: true,
       });
-      expect(getByKeyword.hashtags).toHaveLength(10);
-      expect(getByKeyword.users).toHaveLength(10);
+      expect(getByKeyword.hashtags).toHaveLength(5);
+      expect(getByKeyword.users).toHaveLength(5);
     });
 
     it('should get user by keyword is empty', async () => {
@@ -294,7 +294,7 @@ describe('SearchesControllerV2', () => {
           maxResults: 25,
           keyword: {
             type: KeywordType.Mention,
-            input: 'mock-10',
+            input: 'mock-1',
           },
           hasRelationshipExpansion: false,
         },

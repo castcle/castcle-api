@@ -62,6 +62,7 @@ import {
   TransactionSchema,
   UserSchemaFactory,
   UxEngagementSchema,
+  WalletShortcutSchema,
 } from './schemas';
 import { AccountDeviceSchema } from './schemas/account-device.schema';
 import { AdsPlacementSchema } from './schemas/ads-placement.schema';
@@ -94,6 +95,7 @@ import { TAccountService } from './services/taccount.service';
 import { UserService } from './services/user.service';
 import { UserServiceV2 } from './services/user.service.v2';
 import { UxEngagementService } from './services/uxengagement.service';
+import { WalletShortcutService } from './services/wallet-shortcut.service';
 import {
   createCastcleMeta,
   getRelationship,
@@ -110,6 +112,7 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Analytic', schema: AnalyticSchema },
   { name: 'CAccount', schema: CAccountSchema },
   { name: 'Campaign', schema: CampaignSchema },
+  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Country', schema: CountrySchema },
   { name: 'DefaultContent', schema: DefaultContentSchema },
   { name: 'DsContentReach', schema: DsContentReachSchema },
@@ -119,9 +122,9 @@ export const MongooseForFeatures = MongooseModule.forFeature([
   { name: 'Notification', schema: NotificationSchema },
   { name: 'Otp', schema: OtpSchema },
   { name: 'Queue', schema: QueueSchema },
-  { name: 'UxEngagement', schema: UxEngagementSchema },
-  { name: 'ContentFarming', schema: ContentFarmingSchema },
   { name: 'Reporting', schema: ReportingSchema },
+  { name: 'UxEngagement', schema: UxEngagementSchema },
+  { name: 'WalletShortcut', schema: WalletShortcutSchema },
 ]);
 
 export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
@@ -217,6 +220,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserService,
     UserServiceV2,
     UxEngagementService,
+    WalletShortcutService,
   ],
   exports: [
     AdsService,
@@ -246,6 +250,7 @@ export const MongooseAsyncFeatures = MongooseModule.forFeatureAsync([
     UserService,
     UserServiceV2,
     UxEngagementService,
+    WalletShortcutService,
   ],
 })
 export class DatabaseModule {}
@@ -281,4 +286,5 @@ export {
   UserService,
   UserServiceV2,
   UxEngagementService,
+  WalletShortcutService,
 };

@@ -25,6 +25,7 @@ import {
   AuthenticationService,
   CampaignService,
   ContentService,
+  GetShortcutParam,
   HashtagService,
   MicroTransaction,
   MockUserDetail,
@@ -32,12 +33,15 @@ import {
   MongooseForFeatures,
   NotificationService,
   QueueName,
+  ShortcutInternalDto,
+  ShortcutSortDto,
   TAccountService,
   TLedger,
   TransactionFilter,
   TransactionType,
   UserService,
   UserServiceV2,
+  WalletShortcutService,
   WalletType,
   generateMockUsers,
   mockDeposit,
@@ -63,6 +67,8 @@ describe('WalletController', () => {
   let authService: AuthenticationService;
   let mocksUsers: MockUserDetail[];
   let taccountService: TAccountService;
+  let walletShortcutService: WalletShortcutService;
+  let shortcutId: string;
 
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
@@ -77,6 +83,7 @@ describe('WalletController', () => {
       controllers: [WalletController],
       providers: [
         AnalyticService,
+        WalletShortcutService,
         AuthenticationService,
         ContentService,
         Repository,
@@ -111,7 +118,10 @@ describe('WalletController', () => {
     taccountService = app.get<TAccountService>(TAccountService);
     userServiceV1 = app.get<UserService>(UserService);
     authService = app.get<AuthenticationService>(AuthenticationService);
-    mocksUsers = await generateMockUsers(2, 0, {
+    walletShortcutService = app.get<WalletShortcutService>(
+      WalletShortcutService,
+    );
+    mocksUsers = await generateMockUsers(3, 0, {
       userService: userServiceV1,
       accountService: authService,
     });
@@ -243,8 +253,140 @@ describe('WalletController', () => {
     });
   });
 
+  describe('createWalletShortcut', () => {
+    it('should create wallet shortcut', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      const payloadShortcut = await appController.createWalletShortcut(
+        authorizer,
+        {
+          accountId: mocksUsers[1].account._id,
+        },
+        {
+          chainId: 'castcle',
+          userId: mocksUsers[0].user._id,
+        } as ShortcutInternalDto,
+      );
+
+      shortcutId = payloadShortcut.id;
+
+      expect(payloadShortcut.userId).toEqual(mocksUsers[0].user._id);
+      expect(payloadShortcut.castcleId).toEqual(mocksUsers[0].user.displayId);
+    });
+  });
+
+  describe('getWalletShortcut', () => {
+    it('should create wallet shortcut', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+
+      const payloadShortcut = await appController.getWalletShortcut(
+        authorizer,
+        { accountId: mocksUsers[1].account._id },
+      );
+
+      expect(payloadShortcut.accounts).toHaveLength(1);
+      expect(payloadShortcut.shortcuts).toHaveLength(1);
+    });
+  });
+
+  describe('deleteWalletShortcut', () => {
+    it('should delete wallet shortcut', async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+
+      await appController.deleteWalletShortcut(authorizer, {
+        accountId: mocksUsers[1].account._id,
+        shortcutId,
+      } as GetShortcutParam);
+
+      const shortcut = await (
+        walletShortcutService as any
+      ).repository.findWallerShortcut({
+        _id: shortcutId,
+      });
+
+      expect(shortcut).toBeNull();
+    });
+  });
+
+  describe('sortWalletShortcut', () => {
+    beforeAll(async () => {
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+      await appController.createWalletShortcut(
+        authorizer,
+        {
+          accountId: mocksUsers[1].account._id,
+        },
+        {
+          chainId: 'castcle',
+          userId: mocksUsers[0].user._id,
+        } as ShortcutInternalDto,
+      );
+
+      await appController.createWalletShortcut(
+        authorizer,
+        {
+          accountId: mocksUsers[1].account._id,
+        },
+        {
+          chainId: 'castcle',
+          userId: mocksUsers[2].user._id,
+        } as ShortcutInternalDto,
+      );
+    });
+    it('should update order wallet shortcut', async () => {
+      const shortcuts = await (
+        walletShortcutService as any
+      ).repository.findWallerShortcuts({
+        accountId: mocksUsers[1].account._id,
+      });
+
+      const sort = shortcuts.map((shortcut, index) => {
+        return {
+          id: shortcut._id,
+          order: index++,
+        };
+      });
+
+      const authorizer = new Authorizer(
+        mocksUsers[1].account,
+        mocksUsers[1].user,
+        mocksUsers[1].credential,
+      );
+
+      await appController.sortWalletShortcut(
+        authorizer,
+        {
+          accountId: mocksUsers[1].account._id,
+        },
+        { payload: sort } as ShortcutSortDto,
+      );
+
+      const newShortcuts = await (
+        walletShortcutService as any
+      ).repository.findWallerShortcuts({
+        accountId: mocksUsers[1].account._id,
+      });
+
+      expect(newShortcuts).toHaveLength(2);
+    });
+  });
+
   afterAll(async () => {
-    await app.close();
-    await mongod.stop();
+    await Promise.all([app?.close(), mongod.stop()]);
   });
 });

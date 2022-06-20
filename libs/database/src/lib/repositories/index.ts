@@ -106,6 +106,7 @@ import {
   User,
   UxEngagement,
 } from '../schemas';
+import { WalletShortcut } from '../schemas/wallet-shortcut.schema';
 import { createCastcleFilter } from '../utils/common';
 
 type AccountQuery = {
@@ -218,6 +219,12 @@ type SocialSyncQuery = {
   authorId?: string;
 };
 
+type WalletShortcutQuery = {
+  _id?: string;
+  address?: string;
+  accountId?: string;
+};
+
 @Injectable()
 export class Repository {
   constructor(
@@ -251,7 +258,8 @@ export class Repository {
     @InjectModel('User') private userModel: Model<User>,
     @InjectModel('UxEngagement') private uxEngagementModel: Model<UxEngagement>,
     @InjectModel('Reporting') private reportingModel: Model<Reporting>,
-
+    @InjectModel('WalletShortcut')
+    private walletShortcutModel: Model<WalletShortcut>,
     private httpService: HttpService,
   ) {}
 
@@ -467,6 +475,17 @@ export class Repository {
 
     return query;
   }
+
+  private getWalletShortcutQuery(filter: WalletShortcutQuery) {
+    const query: FilterQuery<WalletShortcut> = {};
+
+    if (filter._id) query._id = filter._id as any;
+    if (filter.accountId) query.account = filter.accountId as any;
+    if (filter.address) query.address = filter.address;
+
+    return query;
+  }
+
   deleteAccount(filter: AccountQuery) {
     return this.accountModel.deleteOne(this.getAccountQuery(filter));
   }
@@ -1304,7 +1323,43 @@ export class Repository {
     return Promise.all($userResponses);
   }
 
-  createReporting(reporting: AnyKeys<Reporting>) {
-    return new this.reportingModel(reporting).save();
+  createReporting(dto: AnyKeys<Reporting>) {
+    return new this.reportingModel(dto).save();
+  }
+
+  createWallerShortcut(dto: AnyKeys<WalletShortcut>) {
+    return new this.walletShortcutModel(dto).save();
+  }
+
+  findWallerShortcut(filter: WalletShortcutQuery, queryOptions?: QueryOptions) {
+    return this.walletShortcutModel
+      .findOne(this.getWalletShortcutQuery(filter), {}, queryOptions)
+      .exec();
+  }
+
+  findWallerShortcuts(
+    filter: WalletShortcutQuery,
+    queryOptions?: QueryOptions,
+  ) {
+    return this.walletShortcutModel
+      .find(this.getWalletShortcutQuery(filter), {}, queryOptions)
+      .exec();
+  }
+  updateWallerShortcut(
+    filter: WalletShortcutQuery,
+    updateQuery: UpdateQuery<WalletShortcut>,
+    options?: QueryOptions,
+  ) {
+    return this.walletShortcutModel.updateOne(
+      this.getWalletShortcutQuery(filter),
+      updateQuery,
+      options,
+    );
+  }
+
+  deleteWalletShortcut(filter: WalletShortcutQuery) {
+    return this.walletShortcutModel.deleteOne(
+      this.getWalletShortcutQuery(filter),
+    );
   }
 }

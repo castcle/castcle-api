@@ -99,7 +99,7 @@ describe('SearchServiceV2', () => {
     userService = app.get(UserService);
     userServiceV2 = app.get(UserServiceV2);
 
-    mocksUsers = await generateMockUsers(10, 0, {
+    mocksUsers = await generateMockUsers(5, 0, {
       userService: userService,
       accountService: authService,
     });
@@ -115,7 +115,7 @@ describe('SearchServiceV2', () => {
       await hashtagService.create(newHashtag);
     };
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 5; i++) {
       await mockHashtag(`#castcle${i}`, `Castcle ${i}`, 90 - i);
     }
   });
@@ -124,27 +124,27 @@ describe('SearchServiceV2', () => {
     it('should get all top trend', async () => {
       const getTopTrends = await service.getTopTrends({ limit: 100 });
 
-      expect(getTopTrends.hashtags).toHaveLength(10);
-      expect(getTopTrends.users).toHaveLength(10);
+      expect(getTopTrends.hashtags).toHaveLength(5);
+      expect(getTopTrends.users).toHaveLength(5);
     });
 
     it('should get top trend exclude hashtags', async () => {
       const getTopTrends = await service.getTopTrends({
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Hashtags],
       });
 
       expect(getTopTrends.hashtags.length).toEqual(0);
-      expect(getTopTrends.users.length).toEqual(10);
+      expect(getTopTrends.users.length).toEqual(5);
     });
 
     it('should get top trend exclude users', async () => {
       const getTopTrends = await service.getTopTrends({
-        limit: 10,
+        limit: 5,
         exclude: [ExcludeType.Users],
       });
 
-      expect(getTopTrends.hashtags.length).toEqual(10);
+      expect(getTopTrends.hashtags.length).toEqual(5);
       expect(getTopTrends.users.length).toEqual(0);
     });
 
@@ -201,7 +201,7 @@ describe('SearchServiceV2', () => {
     it('should get user by keyword', async () => {
       const getByKeyword = await service.getByKeyword(
         {
-          limit: 10,
+          limit: 5,
           keyword: {
             type: KeywordType.Mention,
             input: 'c',
@@ -214,14 +214,14 @@ describe('SearchServiceV2', () => {
         text: 'c',
         isTrending: true,
       });
-      expect(getByKeyword.hashtags).toHaveLength(10);
-      expect(getByKeyword.users).toHaveLength(10);
+      expect(getByKeyword.hashtags).toHaveLength(5);
+      expect(getByKeyword.users).toHaveLength(5);
     });
 
     it('should get user by keyword is empty', async () => {
       const getByKeyword = await service.getByKeyword(
         {
-          limit: 10,
+          limit: 5,
           keyword: {
             type: KeywordType.Mention,
             input: 'empty',
